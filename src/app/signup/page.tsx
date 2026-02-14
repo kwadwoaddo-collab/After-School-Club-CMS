@@ -447,7 +447,7 @@ export default function SignupPage() {
                       }
                       setStep(step + 1);
                     }}
-                    disabled={step === 1 && !formData.organisationName}
+                    disabled={step === 1 && !formData.organisationName.trim()}
                     className="flex-1 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue

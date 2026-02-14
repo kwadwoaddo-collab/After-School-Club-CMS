@@ -124,6 +124,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (dbUser) {
             token.organisationId = dbUser.organisationId;
             token.role = dbUser.role;
+
+            // Optional: Verify organisation actually exists if organisationId is present
+            if (dbUser.organisationId) {
+              const org = await db.query.organisations.findFirst({
+                where: eq(organisations.id, dbUser.organisationId),
+                columns: { id: true }
+              });
+              if (!org) {
+                token.organisationId = null;
+              }
+            }
+          } else {
+            // User not found in DB anymore, clear tokens
+            token.organisationId = null;
           }
         } catch (error) {
           console.error('Error refreshing session from DB:', error);
