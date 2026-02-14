@@ -24,9 +24,16 @@ interface RecentStudentsTableProps {
     students: Student[];
 }
 
+import { useState, useEffect } from 'react';
+
 export default function RecentStudentsTable({ students }: RecentStudentsTableProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleRowClick = (student: Student) => {
         router.push(`/dashboard/students/${student.id}`);
@@ -59,36 +66,49 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
         if (!status) return null;
 
         const config = {
-            confirmed: { color: 'bg-primary', glow: 'shadow-primary/40', text: 'Confirmed' },
-            completed: { color: 'bg-emerald-500', glow: 'shadow-emerald-500/40', text: 'Completed' },
-            cancelled: { color: 'bg-rose-500', glow: 'shadow-rose-500/40', text: 'Cancelled' },
-            rescheduled: { color: 'bg-amber-500', glow: 'shadow-amber-500/40', text: 'Rescheduled' },
+            confirmed: {
+                color: 'bg-primary',
+                bg: 'bg-primary/10',
+                border: 'border-primary/20',
+                text: 'Confirmed'
+            },
+            completed: {
+                color: 'bg-emerald-500',
+                bg: 'bg-emerald-500/10',
+                border: 'border-emerald-500/20',
+                text: 'Completed'
+            },
+            cancelled: {
+                color: 'bg-rose-500',
+                bg: 'bg-rose-500/10',
+                border: 'border-rose-500/20',
+                text: 'Cancelled'
+            },
+            rescheduled: {
+                color: 'bg-amber-500',
+                bg: 'bg-amber-500/10',
+                border: 'border-amber-500/20',
+                text: 'Rescheduled'
+            },
         };
 
-        const { color, text } = config[status as keyof typeof config] || { color: 'bg-slate-400', text: status };
+        const { color, bg, border, text } = config[status as keyof typeof config] || { color: 'bg-slate-400', bg: 'bg-slate-100', border: 'border-slate-200', text: status };
 
         return (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-100 w-fit">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${bg} border ${border} w-fit transition-all group-hover:scale-105`}>
                 <span className={`status-dot ${color}`}></span>
-                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{text}</span>
+                <span className={`text-[10px] font-bold text-slate-700 uppercase tracking-widest`}>{text}</span>
             </div>
         );
     };
 
-    const [hasMounted, setHasMounted] = (typeof window !== 'undefined') ? [true, () => { }] : [false, () => { }];
-    // In a real app we'd use a proper useHasMounted hook, but for a quick fix:
-    const [mounted, setMounted] = (require('react')).useState(false);
-    (require('react')).useEffect(() => {
-        setMounted(true);
-    }, []);
-
     const formatApptDate = (date: Date) => {
-        if (!mounted) return "";
+        if (!mounted) return "...";
         return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
     };
 
     const formatApptTime = (date: Date) => {
-        if (!mounted) return "";
+        if (!mounted) return "...";
         return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     };
 

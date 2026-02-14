@@ -109,7 +109,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                     <ExportReportButton />
                     <Link
                         href="/dashboard/bookings/new"
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/20"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         <Plus className="w-4 h-4" /> New Assessment
                     </Link>
@@ -160,35 +160,25 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                     {/* Simple Bottom Card */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <BookingLinkCard bookingLink={bookingLink} />
-
-                        <div className="glass-card p-8 rounded-[32px] relative overflow-hidden group">
-                            <div className="relative z-10">
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">Need Help?</h3>
-                                <p className="text-slate-500 text-sm font-medium mb-6">Our support team is available 24/7 to help you with any issues.</p>
-                                <button className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-colors">
-                                    Open Support Ticket
-                                </button>
-                            </div>
-                            {/* Decorative background element */}
-                            <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
-                        </div>
                     </div>
                 </div>
 
-                {/* Sidebar/Right Column: Quick Actions */}
+                {/* Sidebar/Right Column: Quick Actions - Cleaned up to only show relevant info */}
                 <div className="space-y-8">
-                    <div className="glass-card p-8 rounded-[32px] bg-primary group hover:bg-blue-700 transition-all cursor-pointer">
+                    <div
+                        className="glass-card p-8 rounded-[32px] gradient-violet group hover:scale-[1.02] transition-all cursor-pointer glow-primary border-none shadow-violet-500/30"
+                    >
                         <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white">
+                            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/20">
                                 <Plus className="w-6 h-6" />
                             </div>
-                            <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold text-white tracking-widest uppercase">Quick Add</span>
+                            <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold text-white tracking-widest uppercase">Propel Growth</span>
                         </div>
-                        <h3 className="text-lg font-bold text-white mb-2">New Centre?</h3>
-                        <p className="text-white/70 text-sm font-medium">Easily scale your business by adding more locations.</p>
-                        <div className="mt-6 flex items-center gap-2 text-white font-bold text-sm">
-                            GET STARTED <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">New Assessment</h3>
+                        <p className="text-white/80 text-sm font-medium leading-relaxed">Schedule a new student assessment easily. Scale your academy with ease.</p>
+                        <Link href="/dashboard/bookings/new" className="mt-8 flex items-center gap-2 text-white font-bold text-sm bg-white/10 w-fit px-5 py-2.5 rounded-2xl border border-white/20 hover:bg-white/20 transition-all">
+                            BOOK NOW <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </Link>
                     </div>
                 </div>
             </div>

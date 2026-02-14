@@ -30,8 +30,8 @@ export default async function DashboardLayout({
         { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
-        { name: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance' },
-        { name: 'Payments', icon: CreditCard, href: '/dashboard/payments' },
+        // { name: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance' },
+        // { name: 'Payments', icon: CreditCard, href: '/dashboard/payments' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ];
 
