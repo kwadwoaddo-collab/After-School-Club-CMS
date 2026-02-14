@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { updateBookingStatus } from '@/features/bookings/actions';
-import { useTransition } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 import { Calendar, User, Clock, ChevronRight } from 'lucide-react';
 
 interface Student {
@@ -23,8 +23,6 @@ interface Student {
 interface RecentStudentsTableProps {
     students: Student[];
 }
-
-import { useState, useEffect } from 'react';
 
 export default function RecentStudentsTable({ students }: RecentStudentsTableProps) {
     const router = useRouter();
@@ -135,23 +133,23 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
                         students.map((student) => (
                             <tr
                                 key={student.id}
-                                className="group hover:bg-slate-50/50 transition-all cursor-pointer"
+                                className="group hover:bg-white transition-all cursor-pointer relative"
                                 onClick={() => handleRowClick(student)}
                             >
-                                <td className="px-8 py-4">
+                                <td className="px-8 py-5">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200 group-hover:border-primary/30 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200 group-hover:border-primary/30 group-hover:bg-primary/5 group-hover:text-primary transition-all shadow-sm">
                                             {student.firstName[0]}{student.lastName[0]}
                                         </div>
                                         <div>
                                             <div className="font-bold text-slate-900 leading-none">{student.firstName} {student.lastName}</div>
-                                            <div className="text-[11px] font-bold text-primary mt-1 px-1.5 py-0.5 bg-primary/5 rounded w-fit uppercase">{student.grade}</div>
+                                            <div className="text-[10px] font-bold text-primary mt-2 px-2 py-0.5 bg-primary/5 rounded-lg w-fit uppercase border border-primary/10 tracking-widest">{student.grade}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-5">
                                     <div className="flex items-center gap-2 text-slate-600">
-                                        <Calendar className="w-4 h-4 text-slate-400" />
+                                        <Calendar className="w-4 h-4 text-primary/60" />
                                         <div className="text-sm font-medium">
                                             {student.nextAppointment ? (
                                                 <>
@@ -161,22 +159,22 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
                                             ) : '-'}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5 mt-1">
+                                    <div className="flex items-center gap-1.5 mt-1.5">
                                         <Clock className="w-3.5 h-3.5 text-slate-300" />
-                                        <span className="text-[11px] font-medium text-slate-400 tracking-wide">{student.centreName}</span>
+                                        <span className="text-[11px] font-medium text-slate-400 tracking-wide uppercase">{student.centreName}</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-5">
                                     <div onClick={(e) => handleStatusClick(e, student)}>
                                         {getStatusIndicator(student.status)}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-5">
                                     <div className="text-sm font-bold text-slate-900">{student.parentFirstName} {student.parentLastName}</div>
-                                    <div className="text-xs font-medium text-slate-400 mt-0.5">{student.parentEmail || student.parentPhone}</div>
+                                    <div className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-tight">{student.parentEmail || student.parentPhone}</div>
                                 </td>
-                                <td className="px-8 py-4 text-right">
-                                    <button className="p-2 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+                                <td className="px-8 py-5 text-right">
+                                    <button className="p-2.5 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/30 transition-all">
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </td>
