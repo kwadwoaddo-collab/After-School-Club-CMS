@@ -7,4 +7,48 @@
 - Network:       http://192.168.1.229:3000
 
 ✓ Starting...
-✓ Ready in 394ms
+✓ Ready in 645ms
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at ad (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:40929)
+    at async ab (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:50354)
+    at async a_ (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:54604)
+    at async rW.do (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:20169)
+    at async rW.handle (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:24949)
+    at async l (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:20200)
+    at async rW.handleResponse (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:1:104149)
+    at async p (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:21241)
+    at async Module.k (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:22319)
+    at async NextNodeServer.renderToResponseWithComponentsImpl (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/server/base-server.js:1442:9)
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at ad (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:40929)
+    at async ab (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:50354)
+    at async a_ (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:54604)
+    at async rW.do (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:20169)
+    at async rW.handle (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:24949)
+    at async l (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:20200)
+    at async rW.handleResponse (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:1:104149)
+    at async p (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:21241)
+    at async Module.k (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:22319)
+    at async NextNodeServer.renderToResponseWithComponentsImpl (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/server/base-server.js:1442:9)
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at ad (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:40929)
+    at async ab (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:50354)
+    at async a_ (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:54604)
+    at async rW.do (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:20169)
+    at async rW.handle (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:24949)
+    at async l (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:20200)
+    at async rW.handleResponse (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:1:104149)
+    at async p (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:21241)
+    at async Module.k (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:22319)
+    at async NextNodeServer.renderToResponseWithComponentsImpl (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/server/base-server.js:1442:9)
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at ad (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:40929)
+    at async ab (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:50354)
+    at async a_ (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/_3221c64e._.js:404:54604)
+    at async rW.do (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:20169)
+    at async rW.handle (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:24949)
+    at async l (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:20200)
+    at async rW.handleResponse (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:1:104149)
+    at async p (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:21241)
+    at async Module.k (/Users/KWADW/Desktop/after-school-club-cms/.next/server/chunks/[root-of-the-server]__6cbe4248._.js:1:22319)
+    at async NextNodeServer.renderToResponseWithComponentsImpl (/Users/KWADW/Desktop/after-school-club-cms/node_modules/next/dist/server/base-server.js:1442:9)
