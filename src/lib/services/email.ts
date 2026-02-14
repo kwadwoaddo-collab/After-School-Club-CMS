@@ -1,0 +1,378 @@
+/**
+ * Email Service using Resend
+ * 
+ * Handles booking confirmation emails and other transactional notifications.
+ */
+
+import { Resend } from 'resend';
+
+// Initialize Resend client only if API key is allowed
+const resendApiKey = process.env.RESEND_API_KEY;
+const isResendConfigured = resendApiKey && !resendApiKey.startsWith('re_xxx');
+const resend = isResendConfigured ? new Resend(resendApiKey) : null;
+
+const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_NAME = process.env.FROM_NAME || 'After School Tuition (Test)';
+
+interface BookingEmailData {
+  parentFirstName: string;
+  parentEmail: string;
+  children: { firstName: string; lastName: string; subjects: string[] }[];
+  centreName?: string;
+  centreAddress?: string;
+  modality: 'in_person' | 'online';
+  startAt: Date;
+  duration: number;
+  confirmationCode: string;
+  magicLink: string;
+}
+
+interface EmailResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+/**
+ * Email Service class for sending transactional emails
+ */
+export class EmailService {
+  /**
+   * Send booking confirmation email
+   */
+  async sendBookingConfirmation(data: BookingEmailData): Promise<EmailResult> {
+    // Check if API key is configured
+    if (!resend) {
+      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(data.startAt);
+
+      const formattedTime = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(data.startAt);
+
+      const childrenNames = data.children.map(c => `${c.firstName} ${c.lastName}`).join(', ');
+
+      const childrenDetailsHtml = data.children.map(child => `
+        <div class="details-row" style="background-color: #f9f9f9; border-left: 3px solid #4F46E5; margin-bottom: 8px;">
+          <div style="padding: 10px;">
+            <strong>${child.firstName} ${child.lastName}</strong><br/>
+            <span style="color: #6b7280; font-size: 0.9em;">Subjects: ${child.subjects.join(', ')}</span>
+          </div>
+        </div>
+      `).join('');
+
+      const location = data.modality === 'in_person'
+        ? `${data.centreName}<br/>${data.centreAddress}`
+        : 'Online (link will be sent closer to the appointment)';
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmed</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #1a1a1a; 
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #f8fafc;
+      padding: 40px 0;
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .header { 
+      background: #4F46E5; 
+      color: #ffffff; 
+      padding: 40px 20px; 
+      text-align: center; 
+    }
+    .header h1 { 
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+    .content { 
+      padding: 40px; 
+    }
+    .greeting {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .intro {
+      color: #4b5563;
+      margin-bottom: 32px;
+    }
+    .details-card { 
+      background: #f1f5f9; 
+      padding: 24px; 
+      border-radius: 12px; 
+      margin-bottom: 32px;
+    }
+    .details-row { 
+      display: flex; 
+      margin-bottom: 12px;
+    }
+    .details-row:last-child { margin-bottom: 0; }
+    .details-label { 
+      font-weight: 600; 
+      width: 100px; 
+      color: #64748b;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .details-value {
+      color: #1e293b;
+      font-weight: 500;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+    .child-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #4F46E5;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .child-name {
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    .child-subjects {
+      font-size: 14px;
+      color: #64748b;
+    }
+    .code-box { 
+      margin: 40px 0;
+      text-align: center;
+      padding: 24px;
+      background: #eef2ff;
+      border: 2px dashed #4F46E5;
+      border-radius: 12px;
+    }
+    .code-label {
+      font-size: 14px;
+      color: #4F46E5;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .code-value {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 32px;
+      font-weight: 800;
+      color: #4F46E5;
+      letter-spacing: 2px;
+    }
+    .button-container {
+      text-align: center;
+      margin: 40px 0;
+    }
+    .button { 
+      display: inline-block; 
+      background-color: #4F46E5; 
+      color: #ffffff !important; 
+      padding: 16px 32px; 
+      text-decoration: none; 
+      border-radius: 12px; 
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+    }
+    .footer { 
+      text-align: center; 
+      padding: 40px 20px; 
+      color: #94a3b8; 
+      font-size: 14px; 
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>Booking Confirmed!</h1>
+      </div>
+      <div class="content">
+        <div class="greeting">Hi ${data.parentFirstName},</div>
+        <p class="intro">Great news! Your assessment booking has been confirmed. We look forward to seeing you.</p>
+        
+        <div class="details-card">
+          <div class="details-row">
+            <span class="details-label">Date</span>
+            <span class="details-value">${formattedDate}</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Time</span>
+            <span class="details-value">${formattedTime}</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Duration</span>
+            <span class="details-value">${data.duration} minutes</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Location</span>
+            <span class="details-value">${location}</span>
+          </div>
+        </div>
+
+        <div class="section-title">Children for Assessment</div>
+        ${data.children.map(child => `
+          <div class="child-card">
+            <div class="child-name">${child.firstName} ${child.lastName}</div>
+            <div class="child-subjects">Subjects: ${child.subjects.join(', ')}</div>
+          </div>
+        `).join('')}
+
+        <div class="code-box">
+          <div class="code-label">Your Confirmation Code</div>
+          <div class="code-value">${data.confirmationCode}</div>
+        </div>
+
+        <div class="button-container">
+          <a href="${data.magicLink}" class="button" style="color: #ffffff;">View or Manage Booking</a>
+        </div>
+
+        <p style="color: #64748b; font-size: 14px; text-align: center; margin-top: 40px;">
+          If you need to reschedule or cancel, please use the button above or reply to this email.
+        </p>
+      </div>
+      <div class="footer">
+        <p>Sent with ❤️ by ${data.centreName || 'our service'}</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `Booking Confirmed: Assessment for ${childrenNames} on ${formattedDate}`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('[EmailService] Failed to send confirmation:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`[EmailService] Confirmation email sent: ${result?.id}`);
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[EmailService] Error sending email:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Send booking cancellation email
+   */
+  async sendBookingCancellation(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    childrenNames: string; // Pre-formatted string usually
+    startAt: Date;
+    confirmationCode: string;
+  }): Promise<EmailResult> {
+    if (!resend) {
+      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(data.startAt);
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #EF4444; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Booking Cancelled</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${data.parentFirstName},</p>
+      <p>Your assessment booking for <strong>${data.childrenNames}</strong> on ${formattedDate} has been cancelled.</p>
+      <p>Confirmation Code: <strong>${data.confirmationCode}</strong></p>
+      <p>If you'd like to book a new assessment, please visit our website.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `Booking Cancelled: ${data.confirmationCode}`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('[EmailService] Failed to send cancellation:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`[EmailService] Cancellation email sent: ${result?.id}`);
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[EmailService] Error sending email:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+}
+
+// Export singleton instance
+export const emailService = new EmailService();

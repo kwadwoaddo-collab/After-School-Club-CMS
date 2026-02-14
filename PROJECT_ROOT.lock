@@ -1,0 +1,49 @@
+PROJECT ROOT LOCK
+
+This folder is the ONLY project root because package.json lives here.
+
+ROOT RULES
+- Never create nested project folders.
+- Never move or rename the project root.
+- Never create or edit files outside this folder.
+
+IGNORE
+- Ignore .next completely. It is build output.
+- Ignore node_modules completely.
+- Ignore generated files unless explicitly instructed.
+
+CODE LOCATION RULES
+- All editable application code lives under src/.
+- UI and UX changes may ONLY touch:
+  - src/app/
+  - src/components/
+- Business logic and helpers live under:
+  - src/lib/
+  - src/scripts/
+- Database code lives under:
+  - src/db/
+- Never invent paths. Verify existence before editing.
+
+EDIT SAFETY RULES
+- ALWAYS list “Touched files” (full paths) before editing.
+- Modify ONLY the listed files.
+- Max 7 files for small UI/UX changes.
+- Do not reformat unrelated code.
+- Do not refactor unless explicitly requested.
+
+NO-GO FILES (unless explicitly instructed)
+- next.config.ts
+- eslint.config.mjs
+- tsconfig.json
+- package.json / package-lock.json
+- drizzle.config.ts
+- drizzle migrations
+- NextAuth configuration behaviour
+- Stripe webhook behaviour
+
+PATH SAFETY
+- Before editing a file, confirm the path exists.
+- If a folder/file does not exist, create it explicitly first.
+- Do not reference files that do not exist.
+
+This lock must be obeyed for ALL changes.
