@@ -128,10 +128,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Auto-create organisation for new Google OAuth users
       if (user.email && !user.organisationId) {
         try {
+          const orgName = user.name || user.email?.split('@')[0] || 'My Organisation';
+          const slug = orgName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
           const [organisation] = await db
             .insert(organisations)
             .values({
-              name: user.name || user.email?.split('@')[0] || 'My Organisation',
+              name: orgName,
+              slug: slug,
               contactEmail: user.email,
             })
             .returning();
@@ -141,7 +148,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .update(users)
             .set({
               organisationId: organisation.id,
-              role: 'admin',
+              role: 'ORG_OWNER',
             })
             .where(eq(users.id, user.id));
         } catch (error) {

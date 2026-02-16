@@ -34,11 +34,18 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Generate slug from organisation name
+        const slug = name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
         // Create organisation
         const [organisation] = await db
             .insert(organisations)
             .values({
                 name: name,
+                slug: slug,
                 contactEmail: email,
                 contactPhone: phone || '',
             })
@@ -49,7 +56,7 @@ export async function POST(request: NextRequest) {
             email: email,
             passwordHash: hashedPassword,
             name: email.split('@')[0], // Use email prefix as name
-            role: 'admin',
+            role: 'ORG_OWNER',
             organisationId: organisation.id,
         });
 
