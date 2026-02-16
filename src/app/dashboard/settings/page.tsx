@@ -40,7 +40,7 @@ export default async function SettingsPage() {
         {
             id: 'logo',
             title: 'Upload Logo',
-            description: 'Customize your organisation\'s branding with a logo',
+            description: 'Customise your organisation\'s branding with a logo',
             icon: Image,
             color: 'cyan',
             href: '/dashboard/settings/branding',
@@ -48,7 +48,7 @@ export default async function SettingsPage() {
         {
             id: 'colors',
             title: 'Brand Colours',
-            description: 'Customize the colour scheme for your booking pages',
+            description: 'Customise the colour scheme for your booking pages',
             icon: Palette,
             color: 'amber',
             href: '/dashboard/settings/branding',
@@ -93,7 +93,7 @@ export default async function SettingsPage() {
 
             {/* Settings Options Grid */}
             <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Customization Options</h3>
+                <h3 className="text-lg font-bold text-slate-900 mb-4">Customisation Options</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {settingsSections.map((section) => {
                         const colorClasses = {

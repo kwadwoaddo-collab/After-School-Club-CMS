@@ -49,10 +49,10 @@ export default function BrandingPage() {
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        Branding & Customization
+                        Branding & Customisation
                     </h1>
                     <p className="text-slate-500 font-medium mt-1">
-                        Customize your organisation's logo and brand colours
+                        Customise your organisation's logo and brand colours
                     </p>
                 </div>
                 <button
@@ -160,8 +160,8 @@ export default function BrandingPage() {
                                         key={color.value}
                                         onClick={() => setPrimaryColor(color.value)}
                                         className={`p-4 rounded-xl border-2 transition-all ${primaryColor === color.value
-                                                ? 'border-slate-900 shadow-lg'
-                                                : 'border-slate-200 hover:border-slate-300'
+                                            ? 'border-slate-900 shadow-lg'
+                                            : 'border-slate-200 hover:border-slate-300'
                                             }`}
                                     >
                                         <div
