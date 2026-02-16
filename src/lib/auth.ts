@@ -122,6 +122,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+
+  events: {
+    async createUser({ user }) {
+      // Auto-create organisation for new Google OAuth users
+      if (user.email && !user.organisationId) {
+        try {
+          const [organisation] = await db
+            .insert(organisations)
+            .values({
+              name: user.name || user.email?.split('@')[0] || 'My Organisation',
+              contactEmail: user.email,
+            })
+            .returning();
+
+          // Update user with organisation
+          await db
+            .update(users)
+            .set({
+              organisationId: organisation.id,
+              role: 'admin',
+            })
+            .where(eq(users.id, user.id));
+        } catch (error) {
+          console.error('Failed to create organisation for new user:', error);
+        }
+      }
+    },
+  },
 });
 
 // Helper to get current user with organisation

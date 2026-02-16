@@ -236,19 +236,19 @@ export default function SignupPage() {
               <div
                 key={item.num}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentStep === item.num
-                    ? 'bg-blue-500/20 border-blue-400'
-                    : currentStep > item.num
-                      ? 'bg-green-500/10 border-green-400/30'
-                      : 'bg-white/5 border-white/10'
+                  ? 'bg-blue-500/20 border-blue-400'
+                  : currentStep > item.num
+                    ? 'bg-green-500/10 border-green-400/30'
+                    : 'bg-white/5 border-white/10'
                   }`}
                 style={{ border: '1px solid' }}
               >
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep === item.num
-                      ? 'bg-blue-500 text-white'
-                      : currentStep > item.num
-                        ? 'bg-green-500 text-white'
-                        : 'bg-white/10 text-white/50'
+                    ? 'bg-blue-500 text-white'
+                    : currentStep > item.num
+                      ? 'bg-green-500 text-white'
+                      : 'bg-white/10 text-white/50'
                     }`}
                 >
                   {currentStep > item.num ? '✓' : item.num}
@@ -368,7 +368,7 @@ export default function SignupPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="+1 (555) 000-0000"
+                    placeholder="020 1234 5678"
                     required
                   />
                 </div>
