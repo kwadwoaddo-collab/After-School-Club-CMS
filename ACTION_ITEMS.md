@@ -19,26 +19,21 @@ This file tracks immediate action items that will improve the app. Check off ite
 
 ## 🔥 **Do This Week (High Impact, Low Effort)**
 
-### **1. Add Database Indexes** ⏱️ 15 minutes
+### **1. Add Database Indexes** ⏱️ 15 minutes ✅ COMPLETED
 **Impact:** 10-100x faster queries  
 **Cost:** Free  
-**Instructions:** See `SCALING_ROADMAP.md` → Phase 2 → Priority 1
+**Status:** ✅ Done on February 16, 2026
 
-**SQL to run in Neon console:**
-```sql
-CREATE INDEX idx_bookings_org ON bookings(organisation_id);
-CREATE INDEX idx_centres_org ON centres(organisation_id);
-CREATE INDEX idx_users_org ON users(organisation_id);
-CREATE INDEX idx_bookings_centre ON bookings(centre_id);
-CREATE INDEX idx_children_parent ON children(parent_id);
-CREATE INDEX idx_booking_attendees_booking ON booking_attendees(booking_id);
-CREATE INDEX idx_bookings_created_at ON bookings(created_at);
-CREATE INDEX idx_centre_memberships_user ON centre_memberships(user_id);
-```
+**Indexes created:**
+- 17 performance indexes
+- Centre-based filtering
+- Date/status filtering
+- Authentication speedup
+- Composite indexes for dashboard
 
-- [ ] Run SQL in Neon console
-- [ ] Test dashboard load time
-- [ ] Mark as complete
+- [x] Run SQL in Neon console
+- [x] Test dashboard load time
+- [x] Mark as complete
 
 ---
 

@@ -7,16 +7,15 @@
 --        (won't error if indexes already exist)
 -- ==========================================
 
--- Organization filtering (most important!)
--- These speed up every query that filters by organisation_id
-CREATE INDEX IF NOT EXISTS idx_bookings_org ON bookings(organisation_id);
+-- Centre-based filtering (CRITICAL for data isolation)
+-- Bookings are filtered by centre, not directly by organisation
+CREATE INDEX IF NOT EXISTS idx_bookings_centre ON bookings(centre_id);
+CREATE INDEX IF NOT EXISTS idx_centre_memberships_centre ON centre_memberships(centre_id);
+
+-- Organization filtering
 CREATE INDEX IF NOT EXISTS idx_centres_org ON centres(organisation_id);
 CREATE INDEX IF NOT EXISTS idx_users_org ON users(organisation_id);
 CREATE INDEX IF NOT EXISTS idx_parents_org ON parents(organisation_id);
-
--- Centre-based filtering (for data isolation)
-CREATE INDEX IF NOT EXISTS idx_bookings_centre ON bookings(centre_id);
-CREATE INDEX IF NOT EXISTS idx_centre_memberships_centre ON centre_memberships(centre_id);
 
 -- User/staff filtering (for permissions)
 CREATE INDEX IF NOT EXISTS idx_centre_memberships_user ON centre_memberships(user_id);
@@ -25,6 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_centre_memberships_user ON centre_memberships(use
 CREATE INDEX IF NOT EXISTS idx_children_parent ON children(parent_id);
 
 -- Booking relationships (for attendee lists)
+CREATE INDEX IF NOT EXISTS idx_bookings_parent ON bookings(parent_id);
 CREATE INDEX IF NOT EXISTS idx_booking_attendees_booking ON booking_attendees(booking_id);
 CREATE INDEX IF NOT EXISTS idx_booking_attendees_child ON booking_attendees(child_id);
 
@@ -49,11 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 -- ==========================================
 -- These optimize queries that filter by multiple columns
 
--- Dashboard queries (org + date range)
-CREATE INDEX IF NOT EXISTS idx_bookings_org_created ON bookings(organisation_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_bookings_org_start ON bookings(organisation_id, start_at);
-
--- Centre-filtered bookings
+-- Centre-filtered bookings (most common dashboard query)
 CREATE INDEX IF NOT EXISTS idx_bookings_centre_start ON bookings(centre_id, start_at);
 CREATE INDEX IF NOT EXISTS idx_bookings_centre_status ON bookings(centre_id, status);
 
@@ -75,14 +71,11 @@ ORDER BY tablename, indexname;
 -- ==========================================
 -- Expected Result
 -- ==========================================
--- You should see 20+ indexes listed
--- If any are missing, they either:
---   1. Already existed (safe to re-run)
---   2. The table doesn't exist yet (also safe)
+-- You should see 17+ indexes listed
 -- ==========================================
 
 -- ==========================================
--- Performance Testing
+-- Performance Impact
 -- ==========================================
 -- Before indexes (typical):
 -- Dashboard query: 500-2000ms
