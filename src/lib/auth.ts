@@ -120,7 +120,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // For Google OAuth users, role/organisationId might not be in the user object
         // Fetch from database if missing
-        if (!token.role || !token.organisationId) {
+        if (user.id && (!token.role || !token.organisationId)) {
           const dbUser = await db.query.users.findFirst({
             where: eq(users.id, user.id),
           });
