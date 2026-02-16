@@ -147,28 +147,14 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                             )}
                         </div>
 
-                        {/* Upload Button */}
-                        <label className="block">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                            />
-                            <div className="w-full px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-bold text-slate-700 text-center cursor-pointer transition-all">
-                                Choose Logo File
-                            </div>
-                        </label>
+                        {/* Upload Button - Disabled */}
+                        <div className="w-full px-6 py-3 bg-slate-200 rounded-2xl text-sm font-bold text-slate-400 text-center cursor-not-allowed">
+                            Coming Soon
+                        </div>
 
                         <p className="text-xs text-slate-500 text-center">
-                            Recommended: PNG or SVG, max 2MB, square aspect ratio
+                            Logo upload feature launching soon
                         </p>
-
-                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                            <p className="text-xs text-amber-900 font-medium">
-                                ⚠️ Logo upload requires cloud storage setup. Contact support to enable this feature.
-                            </p>
-                        </div>
                     </div>
                 </div>
 
