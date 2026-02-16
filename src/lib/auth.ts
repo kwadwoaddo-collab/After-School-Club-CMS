@@ -126,7 +126,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       // Auto-create organisation for new Google OAuth users
-      if (user.email && !user.organisationId) {
+      if (user.email && user.id && !user.organisationId) {
         try {
           const orgName = user.name || user.email?.split('@')[0] || 'My Organisation';
           const slug = orgName
