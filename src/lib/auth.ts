@@ -105,6 +105,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
+    // Allow automatic account linking for Google OAuth
+    async signIn({ user, account, profile }) {
+      // Always allow credentials provider (email/password)
+      if (account?.provider === 'credentials') {
+        return true;
+      }
+
+      // For OAuth providers (Google), allow automatic linking
+      // if a user already exists with the same email
+      if (account?.provider === 'google' && user?.email) {
+        // Check if user with this email already exists
+        const existingUser = await db.query.users.findFirst({
+          where: eq(users.email, user.email),
+        });
+
+        // If user exists, allow the sign-in (this will link the accounts)
+        if (existingUser) {
+          return true;
+        }
+      }
+
+      return true; // Allow all other sign-in attempts
+    },
+
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
