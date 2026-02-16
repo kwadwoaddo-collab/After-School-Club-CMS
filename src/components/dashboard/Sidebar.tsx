@@ -12,6 +12,7 @@ import {
     ChevronRight,
     Plus,
     Share2,
+    UserCircle2,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -26,6 +27,7 @@ export default function Sidebar({ userName }: SidebarProps) {
     const navItems = [
         { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
+        { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ];
