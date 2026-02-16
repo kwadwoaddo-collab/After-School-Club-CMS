@@ -11,7 +11,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/db';
 import { users, organisations, accounts, sessions, verificationTokens } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -112,17 +112,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return true;
       }
 
-      // For OAuth providers (Google), allow automatic linking
-      // if a user already exists with the same email
+      // For OAuth providers (Google), manually link accounts
+      // This is required because allowDangerousEmailAccountLinking doesn't work with JWT sessions
       if (account?.provider === 'google' && user?.email) {
-        // Check if user with this email already exists
-        const existingUser = await db.query.users.findFirst({
-          where: eq(users.email, user.email),
-        });
+        try {
+          // Check if user with this email already exists
+          const existingUser = await db.query.users.findFirst({
+            where: eq(users.email, user.email),
+          });
 
-        // If user exists, allow the sign-in (this will link the accounts)
-        if (existingUser) {
-          return true;
+          // If user exists, manually create the account link
+          if (existingUser) {
+            // Check if this Google account is already linked
+            const [existingAccount] = await db
+              .select()
+              .from(accounts)
+              .where(
+                and(
+                  eq(accounts.provider, 'google'),
+                  eq(accounts.providerAccountId, account.providerAccountId)
+                )
+              )
+              .limit(1);
+
+            // Only create the link if it doesn't already exist
+            if (!existingAccount) {
+              await db.insert(accounts).values({
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: account.session_state,
+              });
+            }
+
+            // Update user object to match existing user
+            user.id = existingUser.id;
+            return true;
+          }
+        } catch (error) {
+          console.error('Error linking OAuth account:', error);
+          // Don't block sign-in on error
         }
       }
 
