@@ -117,6 +117,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = (user as any).role;
         token.organisationId = (user as any).organisationId;
+
+        // For Google OAuth users, role/organisationId might not be in the user object
+        // Fetch from database if missing
+        if (!token.role || !token.organisationId) {
+          const dbUser = await db.query.users.findFirst({
+            where: eq(users.id, user.id),
+          });
+
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.organisationId = dbUser.organisationId;
+          }
+        }
       }
       return token;
     },
