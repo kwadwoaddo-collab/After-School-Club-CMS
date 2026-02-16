@@ -28,7 +28,7 @@ export default function StatCard({ title, value, icon: Icon, trend, trendType, c
         <div className={`glass-card p-6 rounded-3xl ${glowClasses[color]} border group hover:scale-[1.02] transition-all`}>
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm font-semibold text-slate-500 mb-1 uppercase tracking-wider">{title}</p>
+                    <p className="text-sm font-semibold text-slate-700 mb-1 uppercase tracking-wider">{title}</p>
                     <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{value}</h3>
 
                     {trend && (
@@ -36,7 +36,7 @@ export default function StatCard({ title, value, icon: Icon, trend, trendType, c
                             <span className={`text-xs font-bold ${trendType === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {trendType === 'up' ? '↑' : '↓'} {trend}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">vs last month</span>
+                            <span className="text-xs text-slate-600 font-medium">vs last month</span>
                         </div>
                     )}
                 </div>

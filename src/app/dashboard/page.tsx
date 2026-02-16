@@ -184,7 +184,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
             <div className="flex items-end justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Overview</h1>
-                    <p className="text-slate-600 font-medium mt-1">Welcome back, {session.user.name?.split(' ')[0] || 'User'}! Here's what's happening today.</p>
+                    <p className="text-slate-700 font-medium mt-1">Welcome back, {session.user.name?.split(' ')[0] || 'User'}! Here's what's happening today.</p>
                 </div>
                 <div className="flex gap-3">
                     <ShareBookingLinkButton bookingUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${org.slug}`} />
