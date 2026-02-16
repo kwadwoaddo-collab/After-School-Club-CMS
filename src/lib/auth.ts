@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }) as any, // Type assertion needed for drizzle-orm compatibility
 
   session: {
-    strategy: 'jwt',
+    strategy: 'database',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
@@ -105,103 +105,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    // Allow automatic account linking for Google OAuth
     async signIn({ user, account, profile }) {
-      // Always allow credentials provider (email/password)
-      if (account?.provider === 'credentials') {
-        return true;
-      }
-
-      // For OAuth providers (Google), manually link accounts
-      // This is required because allowDangerousEmailAccountLinking doesn't work with JWT sessions
-      if (account?.provider === 'google' && user?.email) {
-        try {
-          // Check if user with this email already exists
-          const existingUser = await db.query.users.findFirst({
-            where: eq(users.email, user.email),
-          });
-
-          // If user exists, manually create the account link
-          if (existingUser) {
-            // Check if this Google account is already linked
-            const [existingAccount] = await db
-              .select()
-              .from(accounts)
-              .where(
-                and(
-                  eq(accounts.provider, 'google'),
-                  eq(accounts.providerAccountId, account.providerAccountId)
-                )
-              )
-              .limit(1);
-
-            // Only create the link if it doesn't already exist
-            if (!existingAccount) {
-              await db.insert(accounts).values({
-                userId: existingUser.id,
-                type: account.type as any,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                refresh_token: account.refresh_token as string | null,
-                access_token: account.access_token as string | null,
-                expires_at: account.expires_at as number | null,
-                token_type: account.token_type as string | null,
-                scope: account.scope as string | null,
-                id_token: account.id_token as string | null,
-                session_state: account.session_state as string | null,
-              });
-            }
-
-            // Update user object to match existing user
-            user.id = existingUser.id;
-            return true;
-          }
-        } catch (error) {
-          console.error('Error linking OAuth account:', error);
-          // Don't block sign-in on error
-        }
-      }
-
-      return true; // Allow all other sign-in attempts
+      // Allow all sign-in attempts
+      // The database already has correct account linkages
+      return true;
     },
 
-    async jwt({ token, user, trigger }) {
+
+    async session({ session, user }) {
+      // With database sessions, user comes from the database
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.organisationId = (user as any).organisationId;
-      }
-
-      // Only refresh from DB on 'update' trigger (when session.update() is called)
-      // This avoids hitting the DB on every single request
-      if (trigger === 'update' && token.id) {
-        try {
-          const [dbUser] = await db
-            .select({
-              organisationId: users.organisationId,
-              role: users.role
-            })
-            .from(users)
-            .where(eq(users.id, token.id as string))
-            .limit(1);
-
-          if (dbUser) {
-            token.organisationId = dbUser.organisationId;
-            token.role = dbUser.role;
-          }
-        } catch (error) {
-          console.error('Error refreshing session from DB:', error);
-        }
-      }
-
-      return token;
-    },
-
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        (session as any).user.role = token.role;
-        (session as any).user.organisationId = token.organisationId;
+        session.user.id = user.id;
+        (session as any).user.role = (user as any).role;
+        (session as any).user.organisationId = (user as any).organisationId;
       }
       return session;
     },
