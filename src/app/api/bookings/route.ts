@@ -3,13 +3,45 @@ import { bookingSchema } from '@/lib/validations/booking';
 import { BookingService } from '@/lib/services/booking';
 import { AvailabilityService } from '@/lib/services/availability';
 import { ZodError } from 'zod';
+import { auth } from '@/lib/auth';
+import { canUserAccessCentre } from '@/lib/permissions';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
 
     // Validate input
     const validated = bookingSchema.parse(body);
+
+    // Ensure centreId is present
+    if (!validated.appointment.centreId) {
+      return NextResponse.json(
+        { error: 'Centre ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user has access to this centre
+    const hasAccess = await canUserAccessCentre(
+      session.user.id,
+      validated.appointment.centreId
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'You do not have access to create bookings for this centre' },
+        { status: 403 }
+      );
+    }
 
     const bookingService = new BookingService();
     const availabilityService = new AvailabilityService();
@@ -47,3 +79,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

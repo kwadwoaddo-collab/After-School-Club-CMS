@@ -6,9 +6,20 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { AvailabilityService } from '@/lib/services/availability';
+import { auth } from '@/lib/auth';
+import { canUserAccessCentre } from '@/lib/permissions';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const centreId = searchParams.get('centreId');
     const date = searchParams.get('date');
@@ -19,6 +30,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'centreId and date are required' },
         { status: 400 }
+      );
+    }
+
+    // Check if user has access to this centre
+    const hasAccess = await canUserAccessCentre(session.user.id, centreId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'You do not have access to view availability for this centre' },
+        { status: 403 }
       );
     }
 
