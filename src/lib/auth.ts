@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }) as any, // Type assertion needed for drizzle-orm compatibility
 
   session: {
-    strategy: 'database',
+    strategy: 'jwt', // Changed from 'database' to support credentials provider
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
@@ -111,13 +111,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
 
-
-    async session({ session, user }) {
-      // With database sessions, user comes from the database
+    async jwt({ token, user, account }) {
+      // Initial sign in
       if (user) {
-        session.user.id = user.id;
-        (session as any).user.role = (user as any).role;
-        (session as any).user.organisationId = (user as any).organisationId;
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.organisationId = (user as any).organisationId;
+      }
+      return token;
+    },
+
+    async session({ session, token }) {
+      // With JWT sessions, data comes from the token
+      if (token) {
+        session.user.id = token.id as string;
+        (session as any).user.role = token.role;
+        (session as any).user.organisationId = token.organisationId;
       }
       return session;
     },
