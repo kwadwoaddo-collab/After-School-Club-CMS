@@ -101,7 +101,7 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-4 py-3 rounded-lg bg-white border border-pink-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
               placeholder="you@yourcentre.com"
               required
             />
@@ -115,7 +115,7 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full px-4 py-3 rounded-lg bg-white border border-pink-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
               placeholder="Your password"
               // Password not required for magic link interaction, but strictly for this form submittal it's required for credentials
               required
