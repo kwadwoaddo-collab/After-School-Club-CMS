@@ -1,10 +1,11 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations, children, parents, bookings, bookingAttendees } from '@/db/schema';
-import { eq, desc, sql, min } from 'drizzle-orm';
+import { organisations, children, parents, bookings, bookingAttendees, centres } from '@/db/schema';
+import { eq, desc, sql, min, inArray, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Users, Calendar, Mail, Phone, ArrowRight } from 'lucide-react';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export default async function StudentsPage() {
     const session = await auth();
@@ -19,6 +20,9 @@ export default async function StudentsPage() {
         .limit(1);
 
     if (!org) return redirect('/onboarding');
+
+    // Get centres accessible to this user (ORG_OWNER sees all, others see assigned centres)
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
 
     // Fetch all students with their parent info
     const studentsList = await db
@@ -38,7 +42,7 @@ export default async function StudentsPage() {
         .where(eq(parents.organisationId, org.id))
         .orderBy(desc(children.createdAt));
 
-    // Get booking counts and next assessment date for each student
+    // Get booking counts and next assessment date for each student (filtered by accessible centres)
     const bookingData = await db
         .select({
             childId: bookingAttendees.childId,
@@ -47,6 +51,7 @@ export default async function StudentsPage() {
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
+        .where(inArray(bookings.centreId, accessibleCentreIds))
         .groupBy(bookingAttendees.childId);
 
     const bookingDataMap = new Map(

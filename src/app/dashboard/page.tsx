@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, centres, parents, children, bookings, bookingAttendees } from '@/db/schema';
-import { eq, desc, asc, sql, count, and, gte, lt } from 'drizzle-orm';
+import { eq, desc, asc, sql, count, and, gte, lt, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import RecentStudentsTable from '@/components/dashboard/RecentStudentsTable';
 import StatCard from '@/components/dashboard/StatCard';
@@ -11,6 +11,8 @@ import BookingLinkCard from '@/components/dashboard/BookingLinkCard';
 import Pagination from '@/components/ui/Pagination';
 import ExportReportButton from '@/components/dashboard/ExportReportButton';
 import ShareBookingLinkButton from '@/components/dashboard/ShareBookingLinkButton';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
+
 
 export default async function DashboardPage(props: { searchParams: Promise<{ page?: string }> }) {
     const searchParams = await props.searchParams;
@@ -33,12 +35,22 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
 
     if (!org) return redirect('/onboarding');
 
+    // Get centres accessible to this user (ORG_OWNER sees all, others see assigned centres)
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+
+    //  If user has no accessible centres, show empty state
+    if (accessibleCentreIds.length === 0) {
+        // This shouldn't happen in normal operation, but handle it gracefully
+        console.warn(`User ${session.user.email} has no accessible centres`);
+    }
+
     const bookingLink = `${process.env.NEXT_PUBLIC_BASE_URL}/book/${org.slug}`;
 
     // --- FETCH DATA ---
     const page = searchParams.page ? parseInt(searchParams.page) : 1;
     const limit = 5;
     const offset = Math.max(0, (page - 1) * limit);
+
 
     // Calculate date ranges for trend analysis
     const now = new Date();
@@ -52,15 +64,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(eq(parents.organisationId, org.id));
 
-    // Students trend: Compare current month vs last month
+    // Students trend: Compare current month vs last month (filtered by accessible centres)
     const [currentMonthStudents] = await db
         .select({ count: sql<number>`count(distinct ${bookingAttendees.childId})` })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
         .where(
             and(
-                eq(centres.organisationId, org.id),
+                inArray(bookings.centreId, accessibleCentreIds),
                 gte(bookings.createdAt, firstDayOfCurrentMonth)
             )
         );
@@ -69,10 +80,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         .select({ count: sql<number>`count(distinct ${bookingAttendees.childId})` })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
         .where(
             and(
-                eq(centres.organisationId, org.id),
+                inArray(bookings.centreId, accessibleCentreIds),
                 gte(bookings.createdAt, firstDayOfLastMonth),
                 lt(bookings.createdAt, firstDayOfCurrentMonth)
             )
@@ -86,14 +96,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         : currentStudents > 0 ? 100 : 0;
     const studentTrendType = studentTrend >= 0 ? 'up' : 'down';
 
-    // 2. Assessment Bookings - Current month's bookings
+    // 2. Assessment Bookings - Current month's bookings (filtered by accessible centres)
     const [currentMonthBookings] = await db
         .select({ count: sql<number>`count(distinct ${bookings.id})` })
         .from(bookings)
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
         .where(
             and(
-                eq(centres.organisationId, org.id),
+                inArray(bookings.centreId, accessibleCentreIds),
                 gte(bookings.createdAt, firstDayOfCurrentMonth)
             )
         );
@@ -101,10 +110,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
     const [lastMonthBookingsCount] = await db
         .select({ count: sql<number>`count(distinct ${bookings.id})` })
         .from(bookings)
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
         .where(
             and(
-                eq(centres.organisationId, org.id),
+                inArray(bookings.centreId, accessibleCentreIds),
                 gte(bookings.createdAt, firstDayOfLastMonth),
                 lt(bookings.createdAt, firstDayOfCurrentMonth)
             )
@@ -141,7 +149,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         .innerJoin(children, eq(bookingAttendees.childId, children.id))
         .innerJoin(parents, eq(children.parentId, parents.id))
         .innerJoin(centres, eq(bookings.centreId, centres.id))
-        .where(eq(centres.organisationId, org.id))
+        .where(inArray(bookings.centreId, accessibleCentreIds))
         .orderBy(asc(bookings.startAt)) // Closest date on top
         .limit(limit)
         .offset(offset);
@@ -149,8 +157,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
     const [totalBookings] = await db
         .select({ count: sql<number>`count(*)` })
         .from(bookings)
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
-        .where(eq(centres.organisationId, org.id));
+        .where(inArray(bookings.centreId, accessibleCentreIds));
 
     const totalPages = Math.ceil((totalBookings?.count || 0) / limit);
 

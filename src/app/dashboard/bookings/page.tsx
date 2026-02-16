@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
 import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 
 export default async function BookingsPage(props: {
     searchParams: Promise<{
@@ -36,11 +37,8 @@ export default async function BookingsPage(props: {
 
     if (!org) redirect('/onboarding');
 
-    // Get all centres for filter dropdown
-    const orgCentres = await db
-        .select({ id: centres.id, name: centres.name })
-        .from(centres)
-        .where(eq(centres.organisationId, orgId));
+    // Get centres accessible to this user (ORG_OWNER sees all, others see assigned centres)
+    const orgCentres = await getUserAccessibleCentres(session.user.id);
 
     const centreIds = orgCentres.map(c => c.id);
 
