@@ -139,16 +139,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (!existingAccount) {
               await db.insert(accounts).values({
                 userId: existingUser.id,
-                type: account.type,
+                type: account.type as any,
                 provider: account.provider,
                 providerAccountId: account.providerAccountId,
-                refresh_token: account.refresh_token,
-                access_token: account.access_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-                session_state: account.session_state,
+                refresh_token: account.refresh_token as string | null,
+                access_token: account.access_token as string | null,
+                expires_at: account.expires_at as number | null,
+                token_type: account.token_type as string | null,
+                scope: account.scope as string | null,
+                id_token: account.id_token as string | null,
+                session_state: account.session_state as string | null,
               });
             }
 
