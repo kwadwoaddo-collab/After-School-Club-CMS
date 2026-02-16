@@ -404,3 +404,14 @@ export const childSubjectsRelations = relations(childSubjects, ({ one }) => ({
     references: [children.id],
   }),
 }));
+
+export const centreMembershipsRelations = relations(centreMemberships, ({ one }) => ({
+  centre: one(centres, {
+    fields: [centreMemberships.centreId],
+    references: [centres.id],
+  }),
+  user: one(users, {
+    fields: [centreMemberships.userId],
+    references: [users.id],
+  }),
+}));
