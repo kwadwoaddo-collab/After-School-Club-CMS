@@ -2,10 +2,10 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import AppointmentScorecard from '@/features/bookings/components/AppointmentScorecard';
+import { eq } from 'drizzle-orm';
 import Link from 'next/link';
-import { ChevronLeft } from '@/components/ui/Icons';
+import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface BookingPageProps {
     params: Promise<{ bookingId: string }>;
@@ -16,119 +16,264 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     const session = await auth();
     if (!session?.user?.organisationId) redirect('/login');
 
-    // Skip query if this is 'new' (static route should handle it, but for safety:)
+    // Skip query if this is 'new'
     if (bookingId === 'new') return notFound();
 
-    // Basic UUID format check to prevent Drizzle/Postgres crash
+    // Basic UUID format check
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(bookingId)) return notFound();
 
-    // First find the booking to identify the parent
-    const initialBooking = await db.query.bookings.findFirst({
+    // Fetch the booking
+    const booking = await db.query.bookings.findFirst({
         where: eq(bookings.id, bookingId),
         with: {
             parent: true,
-            centre: true
-        }
-    });
-
-    if (!initialBooking) {
-        notFound();
-    }
-
-    // Security check
-    if (!initialBooking.centre || initialBooking.centre.organisationId !== session.user.organisationId) {
-        notFound();
-    }
-
-    const parentId = initialBooking.parentId;
-
-    // Now fetch all bookings for this parent
-    const parentBookings = await db.query.bookings.findMany({
-        where: eq(bookings.parentId, parentId),
-        orderBy: [desc(bookings.startAt)],
-        with: {
             centre: true,
-            parent: true,
             attendees: {
                 with: {
-                    child: {
-                        with: {
-                            subjects: true
-                        }
-                    }
+                    child: true
                 }
             },
             tutor: true,
-            child: { // Deprecated: for legacy bookings before multi-child feature
-                with: {
-                    subjects: true
-                }
-            }
+            child: true
         }
     });
 
-    // Filter to ensure all fetched bookings belong to the current organisation
-    // Safely check b.centre is not null
-    const validBookings = parentBookings.filter(b => b.centre && b.centre.organisationId === session.user.organisationId);
+    if (!booking) return notFound();
 
-    // Group bookings by centre name
-    const groupedBookings: Record<string, typeof validBookings> = {};
-    validBookings.forEach((b) => {
-        if (!b.centre) return;
-        const centreName = b.centre.name;
-        if (!groupedBookings[centreName]) {
-            groupedBookings[centreName] = [];
+    // Security check
+    if (!booking.centre || booking.centre.organisationId !== session.user.organisationId) {
+        return notFound();
+    }
+
+    const getStatusBadge = (status: string) => {
+        const styles: Record<string, { bg: string; text: string; ring: string }> = {
+            confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20' },
+            pending: { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-600/20' },
+            completed: { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20' },
+            cancelled: { bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-slate-600/20' },
+        };
+
+        const style = styles[status] || styles.pending;
+        return (
+            <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide ring-1 ${style.bg} ${style.text} ${style.ring}`}>
+                {status}
+            </span>
+        );
+    };
+
+    const getStudentInfo = () => {
+        if (booking.attendees && booking.attendees.length > 0) {
+            const child = booking.attendees[0].child;
+            return {
+                name: `${child.firstName} ${child.lastName}`,
+                grade: child.schoolYear,
+                dob: child.dateOfBirth,
+                initials: `${child.firstName[0]}${child.lastName[0]}`.toUpperCase()
+            };
         }
-        groupedBookings[centreName].push(b);
-    });
+        if (booking.child) {
+            return {
+                name: `${booking.child.firstName} ${booking.child.lastName}`,
+                grade: booking.child.schoolYear,
+                dob: booking.child.dateOfBirth,
+                initials: `${booking.child.firstName[0]}${booking.child.lastName[0]}`.toUpperCase()
+            };
+        }
+        return { name: 'Unknown Student', grade: null, dob: null, initials: '?' };
+    };
 
-    // Sort centre names alphabetically
-    const sortedCentreNames = Object.keys(groupedBookings).sort();
+    const student = getStudentInfo();
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-3xl mx-auto">
+        <div className="space-y-8 animate-in fade-in duration-700">
+            {/* Header */}
+            <div className="flex items-center gap-4">
                 <Link
-                    href="/dashboard"
-                    className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 mb-6 transition-colors"
+                    href="/dashboard/bookings"
+                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
                 >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    ← Back to Dashboard
+                    <ChevronLeft className="w-5 h-5 text-slate-600" />
                 </Link>
-
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Booking Record</h1>
-                        <p className="text-gray-500 mt-1">
-                            For {initialBooking.parent.firstName} {initialBooking.parent.lastName}
-                        </p>
-                    </div>
+                <div className="flex-1">
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Booking Details</h1>
+                    <p className="text-slate-500 font-medium mt-1">
+                        View and manage assessment booking
+                    </p>
                 </div>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={`/dashboard/bookings/${bookingId}/reschedule`}
+                        className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all"
+                    >
+                        Reschedule
+                    </Link>
+                    <button className="px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30">
+                        Mark as Attended
+                    </button>
+                </div>
+            </div>
 
-                <div className="space-y-10">
-                    {sortedCentreNames.map((centreName) => (
-                        <div key={centreName} className="space-y-4">
-                            <h2 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-2">
-                                {centreName}
-                            </h2>
-                            <div className="space-y-6">
-                                {groupedBookings[centreName].map((b) => (
-                                    <AppointmentScorecard
-                                        key={b.id}
-                                        booking={b as any}
-                                        defaultExpanded={b.id === bookingId}
-                                    />
-                                ))}
+            {/* Student Info Card */}
+            <div className="glass-card rounded-[32px] p-8">
+                <div className="flex items-start justify-between mb-8">
+                    <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                            {student.initials}
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-2">{student.name}</h2>
+                            <div className="flex items-center gap-4">
+                                <span className="px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold uppercase">
+                                    {student.grade || 'Grade N/A'}
+                                </span>
+                                {student.dob && (
+                                    <span className="text-sm text-slate-500 font-medium">
+                                        Born: {format(new Date(student.dob), 'MMM d, yyyy')}
+                                    </span>
+                                )}
                             </div>
                         </div>
-                    ))}
+                    </div>
+                    {getStatusBadge(booking.status)}
+                </div>
 
-                    {sortedCentreNames.length === 0 && (
-                        <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-                            <p className="text-gray-500">No confirmed bookings found for this organisation.</p>
+                {/* Booking Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                Assessment Date
+                            </p>
+                            <p className="text-lg font-bold text-slate-900">
+                                {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d, yyyy') : 'Date TBD'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-accent-violet/10 flex items-center justify-center flex-shrink-0">
+                            <Clock className="w-6 h-6 text-accent-violet" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                Time Slot
+                            </p>
+                            <p className="text-lg font-bold text-slate-900">
+                                {booking.startAt
+                                    ? format(new Date(booking.startAt), 'h:mm a')
+                                    : 'Time TBD'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-accent-cyan/10 flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-6 h-6 text-accent-cyan" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                Location
+                            </p>
+                            <p className="text-lg font-bold text-slate-900">
+                                {booking.centre.name}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Parent Information */}
+            <div className="glass-card rounded-3xl p-8">
+                <h3 className="text-xl font-bold text-slate-900 mb-6">Parent Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            <User className="w-6 h-6 text-slate-600" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                Parent Name
+                            </p>
+                            <p className="text-base font-bold text-slate-900">
+                                {booking.parent.firstName} {booking.parent.lastName}
+                            </p>
+                            <p className="text-xs text-primary font-semibold mt-1">
+                                Assessment Point of Contact
+                            </p>
+                        </div>
+                    </div>
+
+                    {booking.parent.phone && (
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                <Phone className="w-6 h-6 text-slate-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                    Phone
+                                </p>
+                                <a href={`tel:${booking.parent.phone}`} className="text-base font-bold text-slate-900 hover:text-primary transition-colors">
+                                    {booking.parent.phone}
+                                </a>
+                            </div>
                         </div>
                     )}
+
+                    {booking.parent.email && (
+                        <div className="flex items-center gap-4 md:col-span-2">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                <Mail className="w-6 h-6 text-slate-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                    Email
+                                </p>
+                                <a href={`mailto:${booking.parent.email}`} className="text-base font-bold text-slate-900 hover:text-primary transition-colors">
+                                    {booking.parent.email}
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Assessment & Feedback */}
+            <div className="glass-card rounded-3xl p-8">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-slate-900">Assessment & Feedback</h3>
+                    <span className="px-3 py-1 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold uppercase ring-1 ring-amber-600/20">
+                        Pending
+                    </span>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                            Score (Optional)
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="e.g. 8/10 or A"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            disabled
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                            Tutor Observations
+                        </label>
+                        <textarea
+                            placeholder="Add assessment observations here..."
+                            rows={4}
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
+                            disabled
+                        />
+                    </div>
                 </div>
             </div>
         </div>

@@ -7,6 +7,7 @@ import { Calendar, User, Clock, ChevronRight } from 'lucide-react';
 
 interface Student {
     id: string;
+    uniqueKey?: string; // Composite key for React rendering
     firstName: string;
     lastName: string;
     grade: string | null;
@@ -114,15 +115,15 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
         <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[900px]">
                 <thead>
-                    <tr className="border-b border-slate-100">
-                        <th className="px-8 py-5 font-bold text-[11px] text-slate-400 uppercase tracking-widest">Student</th>
-                        <th className="px-6 py-5 font-bold text-[11px] text-slate-400 uppercase tracking-widest">Appointment</th>
-                        <th className="px-6 py-5 font-bold text-[11px] text-slate-400 uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-5 font-bold text-[11px] text-slate-400 uppercase tracking-widest">Parent & Contact</th>
-                        <th className="px-6 py-5 font-bold text-[11px] text-slate-400 uppercase tracking-widest text-right">Action</th>
+                    <tr className="border-b border-slate-200">
+                        <th className="px-8 py-5 font-bold text-[11px] text-slate-500 uppercase tracking-widest">Student</th>
+                        <th className="px-6 py-5 font-bold text-[11px] text-slate-500 uppercase tracking-widest">Appointment</th>
+                        <th className="px-6 py-5 font-bold text-[11px] text-slate-500 uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-5 font-bold text-[11px] text-slate-500 uppercase tracking-widest">Parent & Contact</th>
+                        <th className="px-6 py-5 font-bold text-[11px] text-slate-500 uppercase tracking-widest text-right">Action</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                     {students.length === 0 ? (
                         <tr>
                             <td colSpan={5} className="px-8 py-12 text-center text-slate-400 font-medium">
@@ -130,56 +131,75 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
                             </td>
                         </tr>
                     ) : (
-                        students.map((student) => (
-                            <tr
-                                key={student.id}
-                                className="group hover:bg-white transition-all cursor-pointer relative"
-                                onClick={() => handleRowClick(student)}
-                            >
-                                <td className="px-8 py-5">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200 group-hover:border-primary/30 group-hover:bg-primary/5 group-hover:text-primary transition-all shadow-sm">
-                                            {student.firstName[0]}{student.lastName[0]}
+                        students.map((student) => {
+                            // Generate gradient colors based on initials
+                            const colorPairs = [
+                                ['from-purple-500', 'to-pink-500'],
+                                ['from-cyan-500', 'to-blue-500'],
+                                ['from-amber-500', 'to-orange-500'],
+                                ['from-emerald-500', 'to-cyan-500'],
+                                ['from-pink-500', 'to-purple-500'],
+                            ];
+                            const hash = (student.firstName[0] + student.lastName[0]).charCodeAt(0) % colorPairs.length;
+                            const [fromColor, toColor] = colorPairs[hash];
+
+                            return (
+                                <tr
+                                    key={student.uniqueKey || student.id}
+                                    className="group hover:bg-slate-50 transition-all cursor-pointer relative"
+                                    onClick={() => handleRowClick(student)}
+                                >
+                                    <td className="px-8 py-5">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${fromColor} ${toColor} flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all`}>
+                                                {student.firstName[0]}{student.lastName[0]}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-900 leading-none">{student.firstName} {student.lastName}</div>
+                                                <div className="text-[10px] font-bold text-primary mt-2 px-2 py-0.5 bg-blue-50 rounded-lg w-fit uppercase border border-blue-200 tracking-widest">{student.grade}</div>
+                                            </div>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                            <Calendar className="w-4 h-4 text-blue-500" />
+                                            <div className="text-sm font-medium">
+                                                {student.nextAppointment ? (
+                                                    <>
+                                                        <span className="text-slate-900 font-bold">{formatApptDate(student.nextAppointment)}</span>
+                                                        <span className="text-slate-500 ml-2">{formatApptTime(student.nextAppointment)}</span>
+                                                    </>
+                                                ) : '-'}
+                                            </div>
+                                        </div>
+                                        {student.centreName && (
+                                            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500 font-medium">
+                                                <Clock className="w-3 h-3" />
+                                                <span>{student.centreName}</span>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div onClick={(e) => handleStatusClick(e, student)}>
+                                            {getStatusIndicator(student.status)}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5">
                                         <div>
-                                            <div className="font-bold text-slate-900 leading-none">{student.firstName} {student.lastName}</div>
-                                            <div className="text-[10px] font-bold text-primary mt-2 px-2 py-0.5 bg-primary/5 rounded-lg w-fit uppercase border border-primary/10 tracking-widest">{student.grade}</div>
+                                            <div className="font-bold text-slate-900 text-sm leading-tight">
+                                                {student.parentFirstName} {student.parentLastName}
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-medium mt-2">{student.parentEmail || student.parentPhone || 'No contact'}</div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-5">
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <Calendar className="w-4 h-4 text-primary/60" />
-                                        <div className="text-sm font-medium">
-                                            {student.nextAppointment ? (
-                                                <>
-                                                    <span className="text-slate-900 font-bold">{formatApptDate(student.nextAppointment)}</span>
-                                                    <span className="text-slate-400 ml-2">{formatApptTime(student.nextAppointment)}</span>
-                                                </>
-                                            ) : '-'}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 mt-1.5">
-                                        <Clock className="w-3.5 h-3.5 text-slate-300" />
-                                        <span className="text-[11px] font-medium text-slate-400 tracking-wide uppercase">{student.centreName}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-5">
-                                    <div onClick={(e) => handleStatusClick(e, student)}>
-                                        {getStatusIndicator(student.status)}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-5">
-                                    <div className="text-sm font-bold text-slate-900">{student.parentFirstName} {student.parentLastName}</div>
-                                    <div className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-tight">{student.parentEmail || student.parentPhone}</div>
-                                </td>
-                                <td className="px-8 py-5 text-right">
-                                    <button className="p-2.5 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/30 transition-all">
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))
+                                    </td>
+                                    <td className="px-6 py-5 text-right">
+                                        <button className="text-primary group-hover:text-blue-700 group-hover:translate-x-1 transition-all transform inline-flex items-center justify-center w-8 h-8 rounded-lg group-hover:bg-blue-50">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })
                     )}
                 </tbody>
             </table>

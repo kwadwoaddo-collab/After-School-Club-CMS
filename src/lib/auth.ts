@@ -105,39 +105,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
         token.organisationId = (user as any).organisationId;
       }
 
-      // Refresh session data from DB if user is logged in
-      // This ensures that when an organisation is created, the session reflects it immediately
-      if (token.id) {
+      // Only refresh from DB on 'update' trigger (when session.update() is called)
+      // This avoids hitting the DB on every single request
+      if (trigger === 'update' && token.id) {
         try {
-          const dbUser = await db.query.users.findFirst({
-            where: eq(users.id, token.id as string),
-            columns: { organisationId: true, role: true }
-          });
+          const [dbUser] = await db
+            .select({
+              organisationId: users.organisationId,
+              role: users.role
+            })
+            .from(users)
+            .where(eq(users.id, token.id as string))
+            .limit(1);
 
           if (dbUser) {
             token.organisationId = dbUser.organisationId;
             token.role = dbUser.role;
-
-            // Optional: Verify organisation actually exists if organisationId is present
-            if (dbUser.organisationId) {
-              const org = await db.query.organisations.findFirst({
-                where: eq(organisations.id, dbUser.organisationId),
-                columns: { id: true }
-              });
-              if (!org) {
-                token.organisationId = null;
-              }
-            }
-          } else {
-            // User not found in DB anymore, clear tokens
-            token.organisationId = null;
           }
         } catch (error) {
           console.error('Error refreshing session from DB:', error);

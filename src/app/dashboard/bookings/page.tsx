@@ -1,11 +1,24 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations, bookings, bookingAttendees, centres, parents, children, users } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
-import { BookingList } from '@/features/bookings';
+import { organisations, bookings, centres } from '@/db/schema';
+import { eq, desc, and, gte, lte } from 'drizzle-orm';
+import Link from 'next/link';
+import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
+import BookingsTable from '@/components/bookings/BookingsTable';
+import BookingsFilters from '@/components/bookings/BookingsFilters';
 
-export default async function BookingsPage() {
+export default async function BookingsPage(props: {
+    searchParams: Promise<{
+        view?: string;
+        status?: string;
+        centre?: string;
+        search?: string;
+        from?: string;
+        to?: string;
+    }>
+}) {
+    const searchParams = await props.searchParams;
     const session = await auth();
 
     if (!session?.user?.organisationId) {
@@ -14,13 +27,18 @@ export default async function BookingsPage() {
 
     const orgId = session.user.organisationId;
 
-    // Fetch all bookings for the organisation's centres
-    // We need to join through multiple tables to get full details
-    // Strategy: Fetch bookings where centre belongs to org
+    // Get organisation
+    const [org] = await db
+        .select()
+        .from(organisations)
+        .where(eq(organisations.id, orgId))
+        .limit(1);
 
-    // 1. Get Centre IDs for this Org
+    if (!org) redirect('/onboarding');
+
+    // Get all centres for filter dropdown
     const orgCentres = await db
-        .select({ id: centres.id })
+        .select({ id: centres.id, name: centres.name })
         .from(centres)
         .where(eq(centres.organisationId, orgId));
 
@@ -28,31 +46,42 @@ export default async function BookingsPage() {
 
     if (centreIds.length === 0) {
         return (
-            <div className="p-8">
-                <h1 className="text-2xl font-bold mb-6 text-gray-900">Bookings</h1>
-                <div className="p-12 text-center bg-white rounded-xl shadow-sm border border-gray-200">
-                    <p className="text-gray-500">No centres found. Please set up a centre first.</p>
+            <div className="space-y-8 animate-in fade-in duration-700">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/dashboard"
+                        className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-slate-600" />
+                    </Link>
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Bookings</h1>
+                        <p className="text-slate-500 font-medium mt-1">
+                            Manage upcoming and past appointments
+                        </p>
+                    </div>
+                </div>
+
+                <div className="glass-card rounded-[32px] p-12 text-center">
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Calendar className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">No centres found</h3>
+                    <p className="text-slate-500 mb-6">
+                        Please set up a centre first before creating bookings
+                    </p>
+                    <Link
+                        href="/dashboard/centres/add"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all"
+                    >
+                        <Plus className="w-4 h-4" /> Add Centre
+                    </Link>
                 </div>
             </div>
         );
     }
 
-    // 2. Fetch Bookings with relations
-    // Since Drizzle's query builder is powerful, let's try to use it if relations are set up correctly
-    // Otherwise manually join. The schema shows relations are defined.
-
-    // However, `findMany` with deeply nested relations and `where` filters on related tables (like centre.orgId) can be tricky or slow if not carefully constructed.
-    // Let's filter by centreId directly since we have the IDs.
-
-    /* 
-       We need: 
-       - Booking
-       - Centre
-       - Parent
-       - Attendees -> Child
-       - Tutor (User)
-    */
-
+    // Fetch bookings with filters
     const bookingsData = await db.query.bookings.findMany({
         where: (bookings, { inArray }) => inArray(bookings.centreId, centreIds),
         orderBy: [desc(bookings.startAt)],
@@ -65,27 +94,71 @@ export default async function BookingsPage() {
                 }
             },
             tutor: true,
-            child: true // Deprecated: for legacy bookings before multi-child feature
+            child: true
         }
     });
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-5xl mx-auto">
-                <header className="mb-8 flex justify-between items-start">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
-                        <p className="text-gray-500 text-sm">Manage upcoming and past appointments</p>
-                    </div>
-                    <a
+        <div className="space-y-6 animate-in fade-in duration-700">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4">
+                    <Link
                         href="/dashboard"
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors mt-2"
+                        className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
                     >
-                        ← Back to Dashboard
-                    </a>
-                </header>
+                        <ChevronLeft className="w-5 h-5 text-slate-600" />
+                    </Link>
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Bookings</h1>
+                        <p className="text-slate-500 font-medium mt-1">
+                            Manage upcoming and past appointments
+                        </p>
+                    </div>
+                </div>
 
-                <BookingList bookings={bookingsData as any} />
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all">
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export</span>
+                    </button>
+                    <Link
+                        href="/dashboard/bookings/new"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    >
+                        <Plus className="w-4 h-4" /> New Assessment
+                    </Link>
+                </div>
+            </div>
+
+            {/* Filters and View Toggle */}
+            <div className="glass-card rounded-3xl p-6">
+                <BookingsFilters centres={orgCentres} />
+            </div>
+
+            {/* Bookings Table */}
+            <BookingsTable bookings={bookingsData as any} />
+
+            {/* Stats Footer */}
+            <div className="glass-card rounded-3xl p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="text-center">
+                        <p className="text-2xl font-bold text-slate-900">{bookingsData.length}</p>
+                        <p className="text-sm text-slate-500 font-medium">Total Bookings</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-2xl font-bold text-emerald-600">
+                            {bookingsData.filter(b => b.status === 'confirmed').length}
+                        </p>
+                        <p className="text-sm text-slate-500 font-medium">Confirmed</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-2xl font-bold text-amber-600">
+                            {bookingsData.filter(b => b.status === 'pending').length}
+                        </p>
+                        <p className="text-sm text-slate-500 font-medium">Pending</p>
+                    </div>
+                </div>
             </div>
         </div>
     );

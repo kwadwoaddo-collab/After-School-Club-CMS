@@ -108,9 +108,9 @@ export default function ExportReportButton() {
                     setShowCustomRange(false);
                 }}
                 disabled={isExporting}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-2xl text-sm font-bold text-white transition-all shadow-lg shadow-cyan-500/30 disabled:opacity-50"
             >
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Download className="w-4 h-4" />}
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 Export Report
                 <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
             </button>

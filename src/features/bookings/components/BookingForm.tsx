@@ -386,22 +386,22 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                                <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" placeholder="Enter first name" />
+                                <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Enter first name" />
                                 {errors.parent?.firstName && <p className="text-red-600 text-sm mt-1">{errors.parent.firstName.message}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                                <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" placeholder="Enter last name" />
+                                <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Enter last name" />
                                 {errors.parent?.lastName && <p className="text-red-600 text-sm mt-1">{errors.parent.lastName.message}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" placeholder="email@example.com" />
+                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="email@example.com" />
                                 {errors.parent?.email && <p className="text-red-600 text-sm mt-1">{errors.parent.email.message}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-                                <input type="tel" {...register('parent.phone')} placeholder="+44 7XXX XXX XXX" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" />
+                                <input type="tel" {...register('parent.phone')} placeholder="+44 7XXX XXX XXX" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
@@ -434,22 +434,22 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                                        <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" placeholder="Child's first name" />
+                                        <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's first name" />
                                         {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                                        <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" placeholder="Child's last name" />
+                                        <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's last name" />
                                         {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
-                                        <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" />
+                                        <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                         {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">School Year *</label>
-                                        <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none">
+                                        <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900">
                                             <option value="">Select year...</option>
                                             {SCHOOL_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
                                         </select>
@@ -486,7 +486,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                                 <input
                                                     {...register(`children.${index}.customSubject`)}
                                                     placeholder="Please specify subject..."
-                                                    className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50"
+                                                    className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50 text-gray-900"
                                                 />
                                             </div>
                                         )}
@@ -494,7 +494,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
-                                        <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none" />
+                                        <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                     </div>
                                 </div>
                             </div>
@@ -539,7 +539,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                     onChange={(e) => setSelectedDate(e.target.value)}
                                     min={today}
                                     max={maxDate}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900"
                                 />
                             </div>
 
@@ -561,7 +561,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                                         type="button"
                                                         disabled={!slot.available}
                                                         onClick={() => setValue('appointment.startAt', slot.startAt)}
-                                                        className={`py-3 px-2 rounded-lg font-medium text-sm transition-all ${!slot.available ? 'bg-gray-100 text-gray-400 cursor-not-allowed line-through' : isSelected ? 'brand-bg text-white shadow-md' : 'bg-white border border-gray-200 hover:border-gray-400'}`}
+                                                        className={`py-3 px-2 rounded-lg font-medium text-sm transition-all ${!slot.available ? 'bg-gray-100 text-gray-400 cursor-not-allowed line-through' : isSelected ? 'brand-bg text-white shadow-md' : 'bg-white border border-gray-200 hover:border-gray-400 text-gray-900'}`}
                                                     >
                                                         {time}
                                                     </button>
@@ -581,21 +581,22 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                             <h2 className="text-xl font-semibold text-gray-900">Confirm Booking</h2>
                             <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
-                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Centre</span><span className="font-medium">{centreName}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Session Type</span><span className="font-medium">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-medium">{watch('appointment.startAt') ? new Date(watch('appointment.startAt')).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Centre</span><span className="font-medium text-gray-900">{centreName}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Session Type</span><span className="font-medium text-gray-900">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-medium text-gray-900">{watch('appointment.startAt') ? new Date(watch('appointment.startAt')).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
 
-                                <div className="px-4 py-3">
-                                    <span className="text-gray-500 block mb-2">Children</span>
-                                    <div className="space-y-2">
-                                        {watchedChildren.map((child, i) => (
-                                            <div key={i} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                                                <span className="font-medium">{child.firstName} {child.lastName}</span>
-                                                <span className="text-gray-600">{child.subjects?.join(', ') || 'No subjects'}</span>
-                                            </div>
-                                        ))}
+                                {watchedChildren.map((child, i) => (
+                                    <div key={i} className="px-4 py-3">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-gray-500">Child {i + 1}</span>
+                                            <span className="font-medium text-gray-900">{child.firstName} {child.lastName}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Subjects</span>
+                                            <span className="font-medium text-gray-900">{child.subjects?.join(', ') || 'No subjects'}</span>
+                                        </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
 
                             <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">

@@ -10,6 +10,7 @@ export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Ot
 
 export const assessmentTypeEnum = pgEnum('assessment_type', ['initial_assessment', 'progress_review', 'subject_specific']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'cancelled', 'past_due', 'trialing']);
+export const notificationTypeEnum = pgEnum('notification_type', ['booking_created', 'booking_cancelled', 'booking_rescheduled', 'assessment_reminder', 'system']);
 
 // ==================== ORGANISATIONS & CENTRES ====================
 export const organisations = pgTable('organisations', {
@@ -275,6 +276,19 @@ export const auditEvents = pgTable('audit_events', {
   userId: uuid('user_id').references(() => users.id),
   eventType: varchar('event_type', { length: 100 }).notNull(),
   eventData: text('event_data'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ==================== NOTIFICATIONS ====================
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  type: notificationTypeEnum('type').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }),
+  isRead: boolean('is_read').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

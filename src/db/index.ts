@@ -4,5 +4,11 @@ import * as schema from './schema';
 
 const connectionString = process.env.DATABASE_URL!;
 
-export const client = postgres(connectionString);
+// Configure connection pool to handle concurrent requests
+export const client = postgres(connectionString, {
+    max: 10, // Maximum pool size
+    idle_timeout: 20, // Close idle connections after 20 seconds
+    connect_timeout: 10, // Connection timeout in seconds
+});
+
 export const db = drizzle(client, { schema });
