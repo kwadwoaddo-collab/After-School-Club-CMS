@@ -36,14 +36,22 @@ export default function Home() {
                         <a href="#how-it-works" className="landing-navbar-link">How It Works</a>
                         <a href="#pricing" className="landing-navbar-link">Pricing</a>
                         <a href="#faq" className="landing-navbar-link">FAQ</a>
-                        <Link href="/login" className="btn-login">
-                            Login
+                        <Link href="/login" className="landing-navbar-link">
+                            Log in
+                        </Link>
+                        <Link href="/signup" className="btn-login">
+                            Get Started
                         </Link>
                     </div>
                     {/* Mobile menu button - simplified */}
-                    <Link href="/login" className="md:hidden btn-login">
-                        Login
-                    </Link>
+                    <div className="md:hidden flex items-center gap-3">
+                        <Link href="/login" className="landing-navbar-link">
+                            Log in
+                        </Link>
+                        <Link href="/signup" className="btn-login">
+                            Get Started
+                        </Link>
+                    </div>
                 </div>
             </nav>
 

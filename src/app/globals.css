@@ -198,8 +198,24 @@ body {
   animation: fade-in 0.5s ease-out;
 }
 
+
 .slide-in-from-top-2 {
   animation: slide-in-from-top 0.2s ease-out;
+}
+
+/* Scrolling animation for testimonials */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 30s linear infinite;
 }
 
 /* Responsive table improvements */
