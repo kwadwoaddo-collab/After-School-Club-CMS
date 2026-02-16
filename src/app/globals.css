@@ -46,6 +46,48 @@ body {
   min-height: 100vh;
 }
 
+/* Input Field Visibility - CRITICAL FOR UX */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea,
+select {
+  color: #0f172a !important;
+  /* Slate-900 - dark, highly visible */
+  font-weight: 500;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+  /* Slate-400 - visible but distinct from input text */
+  font-weight: 400;
+}
+
+/* Ensure focus states are visible */
+input:focus,
+textarea:focus,
+select:focus {
+  color: #0f172a !important;
+  outline-offset: 2px;
+}
+
+/* Disabled states should still be readable */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  color: #64748b !important;
+  /* Slate-500 */
+  opacity: 0.7;
+}
+
 /* Light Glassmorphism with subtle frosting */
 .glass-panel {
   background: rgba(255, 255, 255, 0.7);
