@@ -129,7 +129,7 @@ export default async function BookingPage({
             centreId={centre.id}
             centreName={centre.name}
             brandColor={brandColor}
-            backToCentresUrl={org.centres.length > 1 ? `/book/${orgSlug}` : undefined}
+            backToCentresUrl={orgCentres.length > 1 ? `/book/${orgSlug}` : undefined}
             rescheduleData={bookingToReschedule}
           />
         </div>
