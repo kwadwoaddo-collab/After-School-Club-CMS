@@ -167,7 +167,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#05070A' }}>
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">

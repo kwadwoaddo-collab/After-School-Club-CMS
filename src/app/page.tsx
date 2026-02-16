@@ -50,11 +50,11 @@ export default function Home() {
             {/* Hero Section */}
             <section className="landing-section text-center" style={{ paddingTop: '8rem' }}>
                 <div className="max-w-4xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full" 
-                         style={{ 
-                             background: 'rgba(59, 130, 246, 0.1)', 
-                             border: '1px solid rgba(59, 130, 246, 0.2)' 
-                         }}>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full"
+                        style={{
+                            background: 'rgba(59, 130, 246, 0.1)',
+                            border: '1px solid rgba(59, 130, 246, 0.2)'
+                        }}>
                         <span className="relative flex h-3 w-3">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
@@ -67,8 +67,8 @@ export default function Home() {
                         <span className="gradient-text">Manage Your Tuition Business</span>
                     </h1>
 
-                    <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto" 
-                       style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                    <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto"
+                        style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                         Streamline bookings, student registrations, invoicing, and staff management—all in one place.
                     </p>
 
@@ -211,7 +211,7 @@ export default function Home() {
                                 Perfect for getting started
                             </p>
                         </div>
-                        
+
                         <ul className="mb-8 space-y-3">
                             <li className="flex items-start gap-2">
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +256,7 @@ export default function Home() {
                                 For growing centres
                             </p>
                         </div>
-                        
+
                         <ul className="mb-8 space-y-3">
                             <li className="flex items-start gap-2">
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -301,7 +301,7 @@ export default function Home() {
                                 For large organizations
                             </p>
                         </div>
-                        
+
                         <ul className="mb-8 space-y-3">
                             <li className="flex items-start gap-2">
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -424,10 +424,88 @@ export default function Home() {
             </section>
 
             {/* Footer */}
-            <footer className="py-8 text-center" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                <p style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                    © 2026 SprintScale IT. All rights reserved.
-                </p>
+            <footer className="py-16 px-8" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div className="max-w-7xl mx-auto">
+                    {/* Main Footer Content */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+                        {/* Brand Column */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                    <span className="text-xl">🚀</span>
+                                </div>
+                                <span className="text-2xl font-bold">SprintScale</span>
+                            </div>
+                            <p className="text-sm leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                Empowering tuition centres to streamline operations and scale their business with intelligent management tools.
+                            </p>
+                        </div>
+
+                        {/* Product Column */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4">Product</h3>
+                            <ul className="space-y-3">
+                                <li>
+                                    <a href="#features" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        Features
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#pricing" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        Pricing
+                                    </a>
+                                </li>
+                                <li>
+                                    <Link href="/dashboard" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        Dashboard
+                                    </Link>
+                                </li>
+                                <li>
+                                    <a href="#how-it-works" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        How It Works
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#faq" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        FAQ
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Contact Column */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4">Contact</h3>
+                            <div className="space-y-3">
+                                <a
+                                    href="mailto:support@sprintscale.com"
+                                    className="flex items-center gap-2 text-sm hover:text-white transition-colors"
+                                    style={{ color: 'rgba(255, 255, 255, 0.6)' }}
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    support@sprintscale.com
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Bar */}
+                    <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                            © 2026 SprintScale IT. All rights reserved.
+                        </p>
+                        <div className="flex gap-6">
+                            <Link href="/privacy" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                                Privacy Policy
+                            </Link>
+                            <Link href="/terms" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                                Terms and Conditions
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </footer>
         </div>
     );
