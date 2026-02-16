@@ -169,8 +169,8 @@ export default function BookingLinkContent({ organisation, centres }: Props) {
                     <button
                         onClick={() => copyToClipboard(bookingLink, 'link')}
                         className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${copiedLink
-                                ? 'bg-green-500 text-white'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
                             }`}
                     >
                         {copiedLink ? (
@@ -217,8 +217,8 @@ export default function BookingLinkContent({ organisation, centres }: Props) {
                                 key={size}
                                 onClick={() => setEmbedSize(size)}
                                 className={`px-4 py-2 rounded-lg font-medium capitalize transition-colors ${embedSize === size
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                     }`}
                             >
                                 {size}
@@ -309,11 +309,129 @@ export default function BookingLinkContent({ organisation, centres }: Props) {
                 </div>
             )}
 
+            {/* Platform-Specific Guides */}
+            <div className="bg-white rounded-lg border border-slate-200 p-6">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                    Platform-Specific Integration Guides
+                </h2>
+                <p className="text-sm text-slate-600 mb-4">
+                    Click on your website platform below for step-by-step instructions:
+                </p>
+
+                <div className="space-y-3">
+                    {/* WordPress */}
+                    <details className="group border border-slate-200 rounded-lg">
+                        <summary className="px-4 py-3 cursor-pointer hover:bg-slate-50 font-medium text-slate-900 flex items-center justify-between">
+                            <span>📝 WordPress</span>
+                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm space-y-2">
+                            <p className="font-semibold text-slate-800">Steps:</p>
+                            <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Edit the page where you want the booking form</li>
+                                <li>Click the <strong>+</strong> button to add a new block</li>
+                                <li>Search for "Custom HTML" or "HTML" block</li>
+                                <li>Paste your embed code</li>
+                                <li>Click "Preview" to see it working</li>
+                                <li>Publish your page</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    {/* Squarespace */}
+                    <details className="group border border-slate-200 rounded-lg">
+                        <summary className="px-4 py-3 cursor-pointer hover:bg-slate-50 font-medium text-slate-900 flex items-center justify-between">
+                            <span>⬛ Squarespace</span>
+                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm space-y-2">
+                            <p className="font-semibold text-slate-800">Steps:</p>
+                            <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Edit your page in Squarespace</li>
+                                <li>Click where you want to add the form</li>
+                                <li>Click <strong>+</strong> → <strong>Code</strong></li>
+                                <li>Paste your embed code in the code box</li>
+                                <li>Click "Apply"</li>
+                                <li>Save and publish your page</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    {/* Wix */}
+                    <details className="group border border-slate-200 rounded-lg">
+                        <summary className="px-4 py-3 cursor-pointer hover:bg-slate-50 font-medium text-slate-900 flex items-center justify-between">
+                            <span>🔷 Wix</span>
+                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm space-y-2">
+                            <p className="font-semibold text-slate-800">Steps:</p>
+                            <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Click <strong>+</strong> button on the left sidebar</li>
+                                <li>Select <strong>Embed</strong> → <strong>HTML iframe</strong></li>
+                                <li>Paste your embed code into the code box</li>
+                                <li>Adjust size if needed</li>
+                                <li>Click "Update"</li>
+                                <li>Publish your site</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    {/* Shopify */}
+                    <details className="group border border-slate-200 rounded-lg">
+                        <summary className="px-4 py-3 cursor-pointer hover:bg-slate-50 font-medium text-slate-900 flex items-center justify-between">
+                            <span>🛍️ Shopify</span>
+                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm space-y-2">
+                            <p className="font-semibold text-slate-800">Steps:</p>
+                            <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Go to <strong>Online Store</strong> → <strong>Pages</strong></li>
+                                <li>Create a new page or edit an existing one</li>
+                                <li>Click <strong>Show HTML</strong> (bottom left)</li>
+                                <li>Paste your embed code where you want it</li>
+                                <li>Click "Show HTML" again to return to editor</li>
+                                <li>Save the page</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    {/* Custom HTML */}
+                    <details className="group border border-slate-200 rounded-lg">
+                        <summary className="px-4 py-3 cursor-pointer hover:bg-slate-50 font-medium text-slate-900 flex items-center justify-between">
+                            <span>💻 Custom HTML Website</span>
+                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 text-sm space-y-2">
+                            <p className="font-semibold text-slate-800">Simply paste the embed code in your HTML file:</p>
+                            <pre className="bg-slate-900 text-green-400 p-3 rounded text-xs overflow-x-auto mt-2">
+                                {`<div class="booking-container">
+  <!-- PASTE YOUR EMBED CODE HERE -->
+</div>`}
+                            </pre>
+                        </div>
+                    </details>
+                </div>
+
+                {/* Download Guide Button */}
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                    <p className="text-sm text-slate-600 mb-3">
+                        Need more detailed instructions?
+                    </p>
+                    <a
+                        href="/ORGANIZATION_GUIDE.md"
+                        download
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                        📥 Download Complete Guide
+                    </a>
+                </div>
+            </div>
+
             {/* Usage Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
                     <Code className="w-5 h-5" />
-                    How to Use
+                    Quick Start
                 </h3>
                 <ol className="space-y-2 text-sm text-blue-800">
                     <li className="flex gap-2">
