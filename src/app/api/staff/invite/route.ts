@@ -76,9 +76,14 @@ export async function POST(request: NextRequest) {
         console.log(`Staff invitation created for ${email} with role ${role}`);
         console.log(`Invite token: ${token} (expires: ${expiresAt})`);
 
+        // Get base URL from request
+        const protocol = request.headers.get('x-forwarded-proto') || 'http';
+        const host = request.headers.get('host') || 'localhost:3000';
+        const baseUrl = `${protocol}://${host}`;
+
         return NextResponse.json({
             message: 'Invitation sent successfully',
-            inviteLink: `${process.env.NEXT_PUBLIC_APP_URL}/accept-invite?token=${token}`,
+            inviteLink: `${baseUrl}/accept-invite?token=${token}`,
         });
     } catch (error) {
         console.error('Staff invite error:', error);
