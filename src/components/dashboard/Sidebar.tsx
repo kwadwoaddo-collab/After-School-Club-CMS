@@ -12,7 +12,6 @@ import {
     ChevronRight,
     Plus,
     Share2,
-    Copy,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -22,7 +21,6 @@ interface SidebarProps {
 
 export default function Sidebar({ userName }: SidebarProps) {
     const { collapsed, setCollapsed } = useSidebar();
-    const [showLinkCopied, setShowLinkCopied] = useState(false);
     const pathname = usePathname();
 
     const navItems = [
@@ -31,13 +29,6 @@ export default function Sidebar({ userName }: SidebarProps) {
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ];
-
-    const handleShareLink = () => {
-        const bookingUrl = `${window.location.origin}/book/bright-star-academy`;
-        navigator.clipboard.writeText(bookingUrl);
-        setShowLinkCopied(true);
-        setTimeout(() => setShowLinkCopied(false), 2000);
-    };
 
     return (
         <>
@@ -94,22 +85,18 @@ export default function Sidebar({ userName }: SidebarProps) {
                                     </Link>
 
                                     {/* Booking Link Button */}
-                                    <button
-                                        onClick={handleShareLink}
-                                        className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all overflow-hidden w-full"
+                                    <Link
+                                        href="/dashboard/booking-link"
+                                        className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all overflow-hidden"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50">
-                                            {showLinkCopied ? (
-                                                <Copy className="w-4 h-4 text-white" />
-                                            ) : (
-                                                <Share2 className="w-4 h-4 text-white" />
-                                            )}
+                                            <Share2 className="w-4 h-4 text-white" />
                                         </div>
                                         <span className="relative text-sm font-bold text-white">
-                                            {showLinkCopied ? 'Link Copied!' : 'Booking Link'}
+                                            Booking Link
                                         </span>
-                                    </button>
+                                    </Link>
                                 </div>
                             </div>
 
