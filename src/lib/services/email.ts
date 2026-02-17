@@ -303,6 +303,177 @@ export class EmailService {
   }
 
   /**
+   * Send staff invitation email
+   */
+  async sendStaffInvitation(data: {
+    email: string;
+    role: string;
+    inviteLink: string;
+    organisationName: string;
+    inviterName: string;
+  }): Promise<EmailResult> {
+    if (!resend) {
+      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const roleDisplay = data.role.replace('_', ' ').toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Invitation</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #1a1a1a; 
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #f8fafc;
+      padding: 40px 0;
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .header { 
+      background: #10B981; 
+      color: #ffffff; 
+      padding: 40px 20px; 
+      text-align: center; 
+    }
+    .header h1 { 
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+    .content { 
+      padding: 40px; 
+    }
+    .greeting {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .intro {
+      color: #4b5563;
+      margin-bottom: 32px;
+    }
+    .role-badge {
+      display: inline-block;
+      background: #eef2ff;
+      color: #4F46E5;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      margin: 16px 0;
+    }
+    .button-container {
+      text-align: center;
+      margin: 40px 0;
+    }
+    .button { 
+      display: inline-block; 
+      background-color: #10B981; 
+      color: #ffffff !important; 
+      padding: 16px 32px; 
+      text-decoration: none; 
+      border-radius: 12px; 
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+    }
+    .expiry-note {
+      text-align: center;
+      color: #64748b;
+      font-size: 14px;
+      margin-top: 24px;
+    }
+    .footer { 
+      text-align: center; 
+      padding: 40px 20px; 
+      color: #94a3b8; 
+      font-size: 14px; 
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>You're Invited!</h1>
+      </div>
+      <div class="content">
+        <div class="greeting">Hello,</div>
+        <p class="intro">
+          ${data.inviterName} has invited you to join <strong>${data.organisationName}</strong> as a team member.
+        </p>
+        
+        <p style="margin: 24px 0;">
+          Your role: <span class="role-badge">${roleDisplay}</span>
+        </p>
+
+        <p style="color: #4b5563; margin: 24px 0;">
+          Click the button below to accept your invitation and set up your account. The link will expire in 7 days.
+        </p>
+
+        <div class="button-container">
+          <a href="${data.inviteLink}" class="button" style="color: #ffffff;">Accept Invitation</a>
+        </div>
+
+        <p class="expiry-note">
+          This invitation link will expire in <strong>7 days</strong>. If you didn't expect this invitation, you can safely ignore this email.
+        </p>
+      </div>
+      <div class="footer">
+        <p>Sent from ${data.organisationName}</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.email,
+        subject: `Invitation to join ${data.organisationName}`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('[EmailService] Failed to send staff invitation:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`[EmailService] Staff invitation email sent: ${result?.id}`);
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[EmailService] Error sending staff invitation email:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
    * Send booking cancellation email
    */
   async sendBookingCancellation(data: {
