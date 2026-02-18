@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
 
         // Send invitation email
         console.log('[Staff Invite] Preparing to send email to:', email);
+        let emailSent = false;
+        let emailError = null;
+
         try {
             // Get organisation name
             const org = await db.query.organisations.findFirst({
@@ -99,19 +102,26 @@ export async function POST(request: NextRequest) {
 
             if (!result.success) {
                 console.error('[Staff Invite] Email sending failed:', result.error);
-                // Don't fail the request - invite is created, email failure is non-critical
+                emailError = result.error;
             } else {
                 console.log(`[Staff Invite] ✅ Invitation email sent successfully to ${email}`);
+                emailSent = true;
             }
-        } catch (emailError) {
-            console.error('[Staff Invite] Exception caught while sending email:', emailError);
-            console.error('[Staff Invite] Error stack:', emailError instanceof Error ? emailError.stack : 'No stack');
-            // Don't fail the request - invite is created, email failure is non-critical
+        } catch (error) {
+            console.error('[Staff Invite] Exception caught while sending email:', error);
+            console.error('[Staff Invite] Error stack:', error instanceof Error ? error.stack : 'No stack');
+            emailError = error instanceof Error ? error.message : 'Unknown error';
         }
 
         return NextResponse.json({
-            message: 'Invitation sent successfully',
+            message: 'Invitation created successfully',
             inviteLink,
+            emailSent,
+            emailError,
+            debug: {
+                hasEmailService: !!emailService,
+                organisationId: session.user.organisationId,
+            }
         });
     } catch (error) {
         console.error('Staff invite error:', error);
