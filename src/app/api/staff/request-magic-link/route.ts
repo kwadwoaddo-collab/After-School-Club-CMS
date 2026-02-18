@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users, staffInvites } from '@/db/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { users, staffInvites, organisations } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
 
@@ -28,14 +28,28 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
+        // If the user has been removed from the org (organisationId is null),
+        // they can't log in — silently succeed (don't reveal account status)
+        if (!user.organisationId) {
+            console.warn(`[Magic Link] User ${email} has no organisationId — access revoked`);
+            return NextResponse.json({ success: true });
+        }
+
+        // Fetch the organisation name for the email sender
+        const [org] = await db
+            .select({ name: organisations.name })
+            .from(organisations)
+            .where(eq(organisations.id, user.organisationId))
+            .limit(1);
+
         // Generate a new magic link token
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date();
-        expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minute expiry for login links
+        expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minute expiry
 
         // Store as a staff invite (reusing the table)
         await db.insert(staffInvites).values({
-            organisationId: user.organisationId!,
+            organisationId: user.organisationId,
             email,
             role: user.role,
             token,
@@ -47,16 +61,23 @@ export async function POST(request: NextRequest) {
         const host = request.headers.get('host') || 'localhost:3000';
         const magicLink = `${protocol}://${host}/accept-invite?token=${token}`;
 
-        // Send the email
-        await emailService.sendMagicLink({
+        // Send the email — sender will show as "[Org Name] via SprintScale"
+        const emailResult = await emailService.sendMagicLink({
             email,
             name: user.name || user.firstName || 'there',
             magicLink,
+            orgName: org?.name,
         });
 
+        if (!emailResult.success) {
+            console.error(`[Magic Link] Failed to send email to ${email}:`, emailResult.error);
+            return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
+        }
+
+        console.log(`[Magic Link] Sent to ${email}, token expires at ${expiresAt.toISOString()}`);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[Magic Link] Error:', error);
+        console.error('[Magic Link] Unexpected error:', error);
         return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
     }
 }

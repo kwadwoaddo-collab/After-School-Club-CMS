@@ -12,7 +12,7 @@ const isResendConfigured = resendApiKey && !resendApiKey.startsWith('re_xxx');
 const resend = isResendConfigured ? new Resend(resendApiKey) : null;
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
-const FROM_NAME = process.env.FROM_NAME || 'After School Tuition (Test)';
+const FROM_NAME = process.env.FROM_NAME || 'SprintScale';
 
 interface BookingEmailData {
   parentFirstName: string;
@@ -514,8 +514,9 @@ export class EmailService {
 </html>
       `;
 
+      const senderName = `${data.organisationName} via SprintScale`;
       const { data: result, error } = await resend.emails.send({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        from: `${senderName} <${FROM_EMAIL}>`,
         to: data.email,
         subject: `Invitation to join ${data.organisationName}`,
         html: htmlContent,
@@ -613,6 +614,7 @@ export class EmailService {
     email: string;
     name: string;
     magicLink: string;
+    orgName?: string;
   }): Promise<EmailResult> {
     if (!resend) {
       return { success: false, error: 'Email service not configured' };
@@ -653,8 +655,9 @@ export class EmailService {
 </html>`;
 
     try {
+      const magicLinkSender = data.orgName ? `${data.orgName} via SprintScale` : FROM_NAME;
       const { data: result, error } = await resend.emails.send({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        from: `${magicLinkSender} <${FROM_EMAIL}>`,
         to: data.email,
         subject: 'Your login link',
         html,
