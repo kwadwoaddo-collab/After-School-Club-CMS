@@ -10,7 +10,13 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-    const [collapsed, setCollapsed] = useState(false);
+    // Start collapsed on mobile, expanded on desktop
+    const [collapsed, setCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 1024;
+        }
+        return false;
+    });
 
     return (
         <SidebarContext.Provider value={{ collapsed, setCollapsed }}>

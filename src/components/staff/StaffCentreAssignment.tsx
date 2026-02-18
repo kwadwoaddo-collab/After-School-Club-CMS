@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Check, Save } from 'lucide-react';
+import { MapPin, Check, Save, Trash2, AlertTriangle } from 'lucide-react';
 
 interface Centre {
     id: string;
@@ -30,6 +30,8 @@ export default function StaffCentreAssignment({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const [removing, setRemoving] = useState(false);
 
     const handleToggleCentre = (centreId: string) => {
         setSelectedCentres((prev) =>
@@ -75,6 +77,27 @@ export default function StaffCentreAssignment({
 
     const hasChanges = JSON.stringify([...selectedCentres].sort()) !== JSON.stringify([...currentAssignments].sort());
 
+    const handleRemoveStaff = async () => {
+        setRemoving(true);
+        try {
+            const res = await fetch('/api/staff/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to remove staff member');
+            }
+            router.push('/dashboard/staff');
+            router.refresh();
+        } catch (err: any) {
+            setError(err.message);
+            setRemoving(false);
+            setShowRemoveConfirm(false);
+        }
+    };
+
     return (
         <div className="glass-card rounded-[32px] overflow-hidden border border-slate-200">
             <div className="px-8 py-6 border-b border-slate-200">
@@ -113,8 +136,8 @@ export default function StaffCentreAssignment({
                                     <label
                                         key={centre.id}
                                         className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : 'border-slate-200 hover:border-slate-300 bg-white'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-slate-200 hover:border-slate-300 bg-white'
                                             }`}
                                     >
                                         <input
@@ -164,7 +187,53 @@ export default function StaffCentreAssignment({
                 )}
             </div>
 
-            {/* Action Buttons */}
+            {/* Remove Staff Member */}
+            <div className="px-8 py-6 border-t border-slate-200">
+                {!showRemoveConfirm ? (
+                    <button
+                        onClick={() => setShowRemoveConfirm(true)}
+                        className="flex items-center gap-2 text-sm font-semibold text-red-500 hover:text-red-700 transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        Remove {staffName} from organisation
+                    </button>
+                ) : (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-3 mb-4">
+                            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="font-bold text-red-900 text-sm">Remove {staffName}?</p>
+                                <p className="text-sm text-red-700 mt-1">
+                                    They will immediately lose access to the dashboard on their next page load. Their account is not deleted — they just lose access to this organisation.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleRemoveStaff}
+                                disabled={removing}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                            >
+                                {removing ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                )}
+                                Yes, remove access
+                            </button>
+                            <button
+                                onClick={() => setShowRemoveConfirm(false)}
+                                disabled={removing}
+                                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Save / Cancel Buttons */}
             {allCentres.length > 0 && (
                 <div className="px-8 py-6 border-t border-slate-200 flex items-center justify-between">
                     <button

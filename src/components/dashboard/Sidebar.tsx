@@ -67,7 +67,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR' }: SidebarProps) 
                     fixed inset-y-0 left-0 z-50
                     sidebar-gradient text-white flex flex-col
                     transition-all duration-300 ease-in-out
-                    ${collapsed ? 'w-20' : 'w-64'}
+                    w-64
+                    ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0'}
                     shadow-2xl
                 `}
             >

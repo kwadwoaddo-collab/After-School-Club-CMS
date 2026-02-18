@@ -181,17 +181,19 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
-            <div className="flex items-end justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Overview</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Overview</h1>
                     <p className="text-slate-700 font-medium mt-1">Welcome back, {session.user.name?.split(' ')[0] || 'User'}! Here's what's happening today.</p>
                 </div>
                 <div className="flex gap-3">
-                    <ShareBookingLinkButton bookingUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${org.slug}`} />
-                    <ExportReportButton />
+                    <div className="hidden sm:flex gap-3">
+                        <ShareBookingLinkButton bookingUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${org.slug}`} />
+                        <ExportReportButton />
+                    </div>
                     <Link
                         href="/dashboard/bookings/new"
-                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         <Plus className="w-4 h-4" /> New Assessment
                     </Link>

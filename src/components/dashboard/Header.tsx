@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User } from 'lucide-react';
+import { Search, Bell, User, Menu } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
+import { useSidebar } from './SidebarContext';
 interface HeaderProps {
     userName?: string;
     userInitial?: string;
@@ -28,6 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
+    const { setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -117,10 +118,19 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className="h-20 glass-panel sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between border-b border-slate-200/50">
-            {/* Search Bar */}
+        <header className="h-16 sm:h-20 glass-panel sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-slate-200/50">
+            {/* Hamburger — mobile only */}
+            <button
+                className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors flex-shrink-0"
+                onClick={() => setCollapsed(false)}
+                aria-label="Open menu"
+            >
+                <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Search Bar — hidden on mobile */}
             {!hideSearch && (
-                <div className="flex-1 max-w-xl">
+                <div className="hidden sm:block flex-1 max-w-xl">
                     <form onSubmit={handleSearch} className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                         <input
