@@ -167,6 +167,11 @@ export async function getExportData() {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
+    // Tutors are not allowed to export data
+    if ((session.user as any).role === 'TUTOR') {
+        throw new Error('Forbidden: Tutors cannot export reports');
+    }
+
     return await db
         .select({
             bookingId: bookings.id,

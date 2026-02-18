@@ -37,6 +37,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
 
     // Get centres accessible to this user (ORG_OWNER sees all, others see assigned centres)
     const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    const userRole = (session.user as any).role as string;
 
     //  If user has no accessible centres, show empty state
     if (accessibleCentreIds.length === 0) {
@@ -187,10 +188,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                     <p className="text-slate-700 font-medium mt-1">Welcome back, {session.user.name?.split(' ')[0] || 'User'}! Here's what's happening today.</p>
                 </div>
                 <div className="flex gap-3">
-                    <div className="hidden sm:flex gap-3">
-                        <ShareBookingLinkButton bookingUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${org.slug}`} />
-                        <ExportReportButton />
-                    </div>
+                    {userRole !== 'TUTOR' && (
+                        <div className="hidden sm:flex gap-3">
+                            <ShareBookingLinkButton bookingUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${org.slug}`} />
+                            <ExportReportButton />
+                        </div>
+                    )}
                     <Link
                         href="/dashboard/bookings/new"
                         className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
