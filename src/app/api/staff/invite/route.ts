@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users, staffInvites, organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { emailService } from '@/lib/services/email';
 
 export async function POST(request: NextRequest) {
     try {
@@ -77,8 +78,6 @@ export async function POST(request: NextRequest) {
         // Send invitation email
         console.log('[Staff Invite] Preparing to send email to:', email);
         try {
-            const { emailService } = await import('@/lib/services/email');
-
             // Get organisation name
             const org = await db.query.organisations.findFirst({
                 where: eq(organisations.id, session.user.organisationId),
