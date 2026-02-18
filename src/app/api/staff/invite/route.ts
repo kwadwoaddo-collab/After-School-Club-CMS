@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { users, staffInvites, organisations, centres } from '@/db/schema';
+import { users, staffInvites, organisations, centres, centreMemberships } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
@@ -57,15 +57,24 @@ export async function POST(request: NextRequest) {
 
         // Create the user account immediately (no password - magic link only)
         const fullName = `${firstName} ${lastName}`.trim();
-        await db.insert(users).values({
+        const [newUser] = await db.insert(users).values({
             email,
             firstName,
             lastName,
             name: fullName,
             role,
             organisationId: session.user.organisationId,
-            emailVerified: null, // Will be set when they first log in
-        });
+            emailVerified: null,
+        }).returning({ id: users.id });
+
+        // If a centre was selected, assign the user to it immediately
+        if (centreId && newUser?.id) {
+            await db.insert(centreMemberships).values({
+                centreId,
+                userId: newUser.id,
+                role,
+            });
+        }
 
         // Generate invite token (magic link)
         const token = crypto.randomBytes(32).toString('hex');
