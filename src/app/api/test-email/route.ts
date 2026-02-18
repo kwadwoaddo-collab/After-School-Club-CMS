@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     try {
         // Test email sending
         const result = await emailService.sendStaffInvitation({
-            email: 'kaddo@sydenhamasc.co.uk', // Your email
+            email: 'brakatuaddo@gmail.com', // Your Gmail
             role: 'MANAGER',
             inviteLink: 'https://after-school-club-cms.vercel.app/accept-invite?token=test123',
             organisationName: 'Test Organization',
