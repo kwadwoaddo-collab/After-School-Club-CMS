@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
         const inviteLink = `${baseUrl}/accept-invite?token=${token}`;
 
         // Send invitation email
+        console.log('[Staff Invite] Preparing to send email to:', email);
         try {
             const { emailService } = await import('@/lib/services/email');
 
@@ -82,6 +83,10 @@ export async function POST(request: NextRequest) {
             const org = await db.query.organisations.findFirst({
                 where: eq(organisations.id, session.user.organisationId),
             });
+
+            console.log('[Staff Invite] Organization found:', org?.name || 'NOT FOUND');
+            console.log('[Staff Invite] Inviter name:', currentUser.firstName || currentUser.name || 'NOT FOUND');
+            console.log('[Staff Invite] About to call emailService.sendStaffInvitation');
 
             const result = await emailService.sendStaffInvitation({
                 email,
@@ -91,14 +96,17 @@ export async function POST(request: NextRequest) {
                 inviterName: currentUser.firstName || currentUser.name || 'Your colleague',
             });
 
+            console.log('[Staff Invite] Email service result:', JSON.stringify(result));
+
             if (!result.success) {
-                console.warn('[Staff Invite] Email sending failed:', result.error);
+                console.error('[Staff Invite] Email sending failed:', result.error);
                 // Don't fail the request - invite is created, email failure is non-critical
             } else {
-                console.log(`[Staff Invite] Invitation email sent successfully to ${email}`);
+                console.log(`[Staff Invite] ✅ Invitation email sent successfully to ${email}`);
             }
         } catch (emailError) {
-            console.error('[Staff Invite] Error sending email:', emailError);
+            console.error('[Staff Invite] Exception caught while sending email:', emailError);
+            console.error('[Staff Invite] Error stack:', emailError instanceof Error ? emailError.stack : 'No stack');
             // Don't fail the request - invite is created, email failure is non-critical
         }
 
