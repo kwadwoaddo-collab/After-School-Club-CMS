@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, UserPlus, Shield, MapPin } from 'lucide-react';
+import { ArrowLeft, Mail, UserPlus, Shield, MapPin, Building2 } from 'lucide-react';
 
 export default function InviteStaffPage() {
     const router = useRouter();
@@ -12,9 +12,22 @@ export default function InviteStaffPage() {
         role: 'FRONT_DESK' as 'MANAGER' | 'FRONT_DESK' | 'TUTOR',
         firstName: '',
         lastName: '',
+        centreId: '',
     });
+    const [centres, setCentres] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        // Fetch centres for the dropdown
+        fetch('/api/centres')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setCentres(data);
+                else if (data.centres) setCentres(data.centres);
+            })
+            .catch(console.error);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -159,6 +172,33 @@ export default function InviteStaffPage() {
                         </div>
                     </div>
 
+                    {/* Centre Selection */}
+                    {centres.length > 0 && (
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <span className="flex items-center gap-2">
+                                    <Building2 className="w-4 h-4" />
+                                    Primary Centre (optional)
+                                </span>
+                            </label>
+                            <select
+                                value={formData.centreId}
+                                onChange={(e) => setFormData({ ...formData, centreId: e.target.value })}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            >
+                                <option value="">Select a centre (optional)</option>
+                                {centres.map((centre) => (
+                                    <option key={centre.id} value={centre.id}>
+                                        {centre.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">
+                                The invitation email will mention this centre. You can assign more centres after they join.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Role Selection */}
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-3">
@@ -169,8 +209,8 @@ export default function InviteStaffPage() {
                                 <label
                                     key={role.value}
                                     className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.role === role.value
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-slate-200 hover:border-slate-300'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-slate-200 hover:border-slate-300'
                                         }`}
                                 >
                                     <input

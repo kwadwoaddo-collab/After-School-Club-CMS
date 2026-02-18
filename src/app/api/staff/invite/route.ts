@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { users, staffInvites, organisations } from '@/db/schema';
+import { users, staffInvites, organisations, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { email, role, firstName, lastName } = body;
+        const { email, role, firstName, lastName, centreId } = body;
 
         // Validate input
         if (!email || !role) {
@@ -81,21 +81,31 @@ export async function POST(request: NextRequest) {
         let emailError = null;
 
         try {
-            // Get organisation name
-            const org = await db.query.organisations.findFirst({
-                where: eq(organisations.id, session.user.organisationId),
-            });
+            // Get centre name if provided, otherwise fall back to organisation name
+            let locationName = 'our organisation';
 
-            console.log('[Staff Invite] Organization found:', org?.name || 'NOT FOUND');
-            console.log('[Staff Invite] Inviter name:', currentUser.firstName || currentUser.name || 'NOT FOUND');
-            console.log('[Staff Invite] About to call emailService.sendStaffInvitation');
+            if (centreId) {
+                const centre = await db.query.centres.findFirst({
+                    where: eq(centres.id, centreId),
+                });
+                if (centre?.name) locationName = centre.name;
+            } else {
+                const org = await db.query.organisations.findFirst({
+                    where: eq(organisations.id, session.user.organisationId),
+                });
+                if (org?.name) locationName = org.name;
+            }
+
+            const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim()
+                || currentUser.name
+                || 'Your colleague';
 
             const result = await emailService.sendStaffInvitation({
                 email,
                 role,
                 inviteLink,
-                organisationName: org?.name || 'our organization',
-                inviterName: currentUser.firstName || currentUser.name || 'Your colleague',
+                organisationName: locationName,
+                inviterName,
             });
 
             console.log('[Staff Invite] Email service result:', JSON.stringify(result));
@@ -114,14 +124,9 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-            message: 'Invitation created successfully',
+            message: 'Invitation sent successfully',
             inviteLink,
             emailSent,
-            emailError,
-            debug: {
-                hasEmailService: !!emailService,
-                organisationId: session.user.organisationId,
-            }
         });
     } catch (error) {
         console.error('Staff invite error:', error);
