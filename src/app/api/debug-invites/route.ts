@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
                 id: inv.id,
                 email: inv.email,
                 role: inv.role,
-                status: inv.status,
                 createdAt: inv.createdAt,
                 expiresAt: inv.expiresAt,
+                usedAt: inv.usedAt,
             })),
         });
     } catch (error) {
