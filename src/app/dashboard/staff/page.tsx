@@ -1,9 +1,9 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { users, organisations, centres, centreMemberships } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { UserPlus, Users, Shield, Mail, MapPin } from 'lucide-react';
+import { users, organisations, centres, staffInvites } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { UserPlus, Users, Shield, Mail, MapPin, Clock, CheckCircle2, XCircle, Send } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function StaffPage() {
@@ -22,7 +22,7 @@ export default async function StaffPage() {
 
     if (!org) return redirect('/onboarding');
 
-    // Fetch all staff members (excluding current user)
+    // Fetch all staff members
     const staffMembers = await db.query.users.findMany({
         where: eq(users.organisationId, org.id),
         with: {
@@ -40,6 +40,22 @@ export default async function StaffPage() {
         orderBy: (centres, { asc }) => [asc(centres.name)],
     });
 
+    // Fetch all invitations for this organisation, most recent first
+    const invitations = await db
+        .select()
+        .from(staffInvites)
+        .where(eq(staffInvites.organisationId, org.id))
+        .orderBy(desc(staffInvites.createdAt));
+
+    const now = new Date();
+
+    // Derive invite status
+    const getInviteStatus = (invite: typeof invitations[0]) => {
+        if (invite.usedAt) return 'accepted';
+        if (now > invite.expiresAt) return 'expired';
+        return 'pending';
+    };
+
     // Helper to get role badge color
     const getRoleBadge = (role: string) => {
         const styles = {
@@ -49,6 +65,27 @@ export default async function StaffPage() {
             TUTOR: 'bg-amber-100 text-amber-700 border-amber-200',
         };
         return styles[role as keyof typeof styles] || 'bg-gray-100 text-gray-700 border-gray-200';
+    };
+
+    const statusConfig = {
+        accepted: {
+            label: 'Accepted',
+            icon: CheckCircle2,
+            classes: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            iconClass: 'text-emerald-500',
+        },
+        pending: {
+            label: 'Pending',
+            icon: Clock,
+            classes: 'bg-amber-50 text-amber-700 border-amber-200',
+            iconClass: 'text-amber-500',
+        },
+        expired: {
+            label: 'Expired',
+            icon: XCircle,
+            classes: 'bg-red-50 text-red-600 border-red-200',
+            iconClass: 'text-red-400',
+        },
     };
 
     return (
@@ -117,9 +154,7 @@ export default async function StaffPage() {
                                                 {member.name || member.email}
                                             </h3>
                                             <span
-                                                className={`px-3 py-1 rounded-full text-xs font-semibold border ${getRoleBadge(
-                                                    member.role
-                                                )}`}
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold border ${getRoleBadge(member.role)}`}
                                             >
                                                 {member.role.replace('_', ' ')}
                                             </span>
@@ -176,6 +211,77 @@ export default async function StaffPage() {
                     )}
                 </div>
             </div>
+
+            {/* Invitations List */}
+            {invitations.length > 0 && (
+                <div className="glass-card rounded-[32px] overflow-hidden border border-slate-200">
+                    <div className="px-8 py-6 border-b border-slate-200">
+                        <div className="flex items-center gap-2">
+                            <Send className="w-5 h-5 text-slate-600" />
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Invitations ({invitations.length})
+                            </h2>
+                        </div>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Track all staff invitations you've sent
+                        </p>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                        {invitations.map((invite) => {
+                            const status = getInviteStatus(invite);
+                            const cfg = statusConfig[status];
+                            const StatusIcon = cfg.icon;
+
+                            return (
+                                <div key={invite.id} className="px-8 py-5 hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            {/* Avatar placeholder */}
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0">
+                                                <Mail className="w-4 h-4 text-slate-400" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-slate-900 truncate">{invite.email}</p>
+                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getRoleBadge(invite.role)}`}>
+                                                        {invite.role.replace('_', ' ')}
+                                                    </span>
+                                                    <span className="text-xs text-slate-400">
+                                                        Sent {new Date(invite.createdAt).toLocaleDateString('en-GB', {
+                                                            day: 'numeric', month: 'short', year: 'numeric'
+                                                        })}
+                                                    </span>
+                                                    {status === 'accepted' && invite.usedAt && (
+                                                        <span className="text-xs text-slate-400">
+                                                            · Accepted {new Date(invite.usedAt).toLocaleDateString('en-GB', {
+                                                                day: 'numeric', month: 'short', year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    )}
+                                                    {status === 'pending' && (
+                                                        <span className="text-xs text-slate-400">
+                                                            · Expires {new Date(invite.expiresAt).toLocaleDateString('en-GB', {
+                                                                day: 'numeric', month: 'short', year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Status badge */}
+                                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border flex-shrink-0 ${cfg.classes}`}>
+                                            <StatusIcon className={`w-3.5 h-3.5 ${cfg.iconClass}`} />
+                                            {cfg.label}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Centres Overview */}
             {allCentres.length > 0 && (
