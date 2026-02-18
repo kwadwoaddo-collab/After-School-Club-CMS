@@ -11,6 +11,7 @@ export default async function SettingsPage() {
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
+    if ((session.user as any).role !== 'ORG_OWNER') return redirect('/dashboard');
 
     const [org] = await db
         .select()

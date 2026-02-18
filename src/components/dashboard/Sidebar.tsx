@@ -18,11 +18,29 @@ import { useSidebar } from './SidebarContext';
 
 interface SidebarProps {
     userName?: string;
+    userRole?: string;
 }
 
-export default function Sidebar({ userName }: SidebarProps) {
+const ROLE_NAV: Record<string, string[]> = {
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students'],
+    FRONT_DESK: ['Dashboard', 'Students'],
+    TUTOR: ['Dashboard', 'Students'],
+};
+
+const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
+    ORG_OWNER: ['new-assessment', 'booking-link'],
+    MANAGER: ['new-assessment', 'booking-link'],
+    FRONT_DESK: ['new-assessment'],
+    TUTOR: [],
+};
+
+export default function Sidebar({ userName, userRole = 'TUTOR' }: SidebarProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
+
+    const allowedNav = ROLE_NAV[userRole] || ROLE_NAV['TUTOR'];
+    const allowedActions = ROLE_QUICK_ACTIONS[userRole] || [];
 
     const navItems = [
         { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -30,7 +48,7 @@ export default function Sidebar({ userName }: SidebarProps) {
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
-    ];
+    ].filter(item => allowedNav.includes(item.name));
 
     return (
         <>
@@ -69,38 +87,41 @@ export default function Sidebar({ userName }: SidebarProps) {
                     {/* Quick Actions - Only show when expanded */}
                     {!collapsed && (
                         <>
-                            <div className="mb-6">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">
-                                    Quick Actions
-                                </p>
-                                <div className="space-y-2">
-                                    {/* New Assessment Button */}
-                                    <Link
-                                        href="/dashboard/bookings/new"
-                                        className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-purple-500/20 hover:border-purple-500/40 transition-all overflow-hidden"
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-pink-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-                                            <Plus className="w-4 h-4 text-white" />
-                                        </div>
-                                        <span className="relative text-sm font-bold text-white">New Assessment</span>
-                                    </Link>
-
-                                    {/* Booking Link Button */}
-                                    <Link
-                                        href="/dashboard/booking-link"
-                                        className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all overflow-hidden"
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50">
-                                            <Share2 className="w-4 h-4 text-white" />
-                                        </div>
-                                        <span className="relative text-sm font-bold text-white">
-                                            Booking Link
-                                        </span>
-                                    </Link>
+                            {(allowedActions.includes('new-assessment') || allowedActions.includes('booking-link')) && (
+                                <div className="mb-6">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">
+                                        Quick Actions
+                                    </p>
+                                    <div className="space-y-2">
+                                        {allowedActions.includes('new-assessment') && (
+                                            <Link
+                                                href="/dashboard/bookings/new"
+                                                className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-purple-500/20 hover:border-purple-500/40 transition-all overflow-hidden"
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-pink-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+                                                    <Plus className="w-4 h-4 text-white" />
+                                                </div>
+                                                <span className="relative text-sm font-bold text-white">New Assessment</span>
+                                            </Link>
+                                        )}
+                                        {allowedActions.includes('booking-link') && (
+                                            <Link
+                                                href="/dashboard/booking-link"
+                                                className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all overflow-hidden"
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50">
+                                                    <Share2 className="w-4 h-4 text-white" />
+                                                </div>
+                                                <span className="relative text-sm font-bold text-white">
+                                                    Booking Link
+                                                </span>
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Divider */}
                             <div className="h-px bg-white/10 mb-6" />

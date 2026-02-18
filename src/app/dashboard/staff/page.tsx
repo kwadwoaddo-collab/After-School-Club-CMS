@@ -11,6 +11,7 @@ export default async function StaffPage() {
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
+    if ((session.user as any).role !== 'ORG_OWNER') return redirect('/dashboard');
 
     // Fetch organisation
     const [org] = await db

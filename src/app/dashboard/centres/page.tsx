@@ -11,6 +11,8 @@ export default async function CentresPage() {
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
+    const userRole = (session.user as any).role;
+    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) return redirect('/dashboard');
 
     const [org] = await db
         .select()
