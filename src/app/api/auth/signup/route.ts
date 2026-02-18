@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users, organisations } from '@/db/schema';
+import { users } from '@/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { name, email, password, phone } = body;
+        const { firstName, lastName, email, password } = body;
 
-        // Validation
-        if (!email || !password || !name) {
+        if (!email || !password || !firstName || !lastName) {
             return NextResponse.json(
-                { error: 'Missing required fields' },
+                { error: 'All fields are required' },
+                { status: 400 }
+            );
+        }
+
+        if (password.length < 8) {
+            return NextResponse.json(
+                { error: 'Password must be at least 8 characters' },
                 { status: 400 }
             );
         }
@@ -31,33 +37,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
+        const fullName = `${firstName} ${lastName}`.trim();
 
-        // Generate slug from organisation name
-        const slug = name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-
-        // Create organisation
-        const [organisation] = await db
-            .insert(organisations)
-            .values({
-                name: name,
-                slug: slug,
-                contactEmail: email,
-                contactPhone: phone || '',
-            })
-            .returning();
-
-        //Create user
+        // Create user — no org yet, that happens in /onboarding
         await db.insert(users).values({
-            email: email,
+            email,
             passwordHash: hashedPassword,
-            name: email.split('@')[0], // Use email prefix as name
+            firstName,
+            lastName,
+            name: fullName,
             role: 'ORG_OWNER',
-            organisationId: organisation.id,
+            organisationId: null,
         });
 
         return NextResponse.json(
