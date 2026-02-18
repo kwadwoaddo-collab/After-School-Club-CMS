@@ -19,6 +19,7 @@ import { useSidebar } from './SidebarContext';
 interface SidebarProps {
     userName?: string;
     userRole?: string;
+    orgName?: string;
 }
 
 const ROLE_NAV: Record<string, string[]> = {
@@ -35,7 +36,7 @@ const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
     TUTOR: [],
 };
 
-export default function Sidebar({ userName, userRole = 'TUTOR' }: SidebarProps) {
+export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'AfterSchool' }: SidebarProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
 
@@ -75,12 +76,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR' }: SidebarProps) 
                 {/* Header */}
                 <div className="p-6">
                     <div className={`flex items-center gap-3 mb-8 ${collapsed ? 'justify-center' : ''}`}>
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20 flex-shrink-0">
-                            AS
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-primary/20 flex-shrink-0">
+                            {orgName.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
-                            <span className="text-xl font-bold tracking-tight whitespace-nowrap">
-                                AfterSchool
+                            <span className="text-base font-bold tracking-tight whitespace-nowrap leading-tight">
+                                {orgName}
                             </span>
                         )}
                     </div>

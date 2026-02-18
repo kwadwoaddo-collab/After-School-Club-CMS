@@ -11,7 +11,7 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const isResendConfigured = resendApiKey && !resendApiKey.startsWith('re_xxx');
 const resend = isResendConfigured ? new Resend(resendApiKey) : null;
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@sprintscaleit.co.uk';
 const FROM_NAME = process.env.FROM_NAME || 'SprintScale';
 
 interface BookingEmailData {

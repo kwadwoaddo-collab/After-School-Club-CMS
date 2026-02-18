@@ -4,6 +4,9 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import { SidebarProvider } from '@/components/dashboard/SidebarContext';
 import DashboardContent from '@/components/dashboard/DashboardContent';
+import { db } from '@/db';
+import { organisations } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Which roles can access which route prefixes
 const ROUTE_PERMISSIONS: Record<string, string[]> = {
@@ -31,6 +34,20 @@ export default async function DashboardLayout({
     }
 
     const userRole = (session.user as any).role || 'TUTOR';
+    const organisationId = (session.user as any).organisationId as string;
+
+    // Fetch org name for sidebar branding
+    let orgName = 'AfterSchool';
+    try {
+        const [org] = await db
+            .select({ name: organisations.name })
+            .from(organisations)
+            .where(eq(organisations.id, organisationId))
+            .limit(1);
+        if (org?.name) orgName = org.name;
+    } catch {
+        // Non-critical — fall back to default
+    }
 
     return (
         <SidebarProvider>
@@ -39,6 +56,7 @@ export default async function DashboardLayout({
                 <Sidebar
                     userName={session.user?.name || undefined}
                     userRole={userRole}
+                    orgName={orgName}
                 />
 
                 {/* Main Content Area - Responsive margin */}
