@@ -47,6 +47,7 @@ export default async function DashboardLayout({
                     <Header
                         userName={session.user?.name || undefined}
                         userInitial={session.user?.name?.[0].toUpperCase() || 'A'}
+                        userRole={userRole}
                     />
 
                     {/* Dynamic Page Content */}

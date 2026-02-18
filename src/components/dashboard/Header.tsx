@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 interface HeaderProps {
     userName?: string;
     userInitial?: string;
+    userRole?: string;
     hideSearch?: boolean;
 }
 
@@ -18,7 +19,15 @@ interface Notification {
     read: boolean;
 }
 
-export default function Header({ userName, userInitial, hideSearch }: HeaderProps) {
+const ROLE_LABELS: Record<string, string> = {
+    ORG_OWNER: 'Owner',
+    ADMIN: 'Admin',
+    MANAGER: 'Manager',
+    TUTOR: 'Tutor',
+    STAFF: 'Staff',
+};
+
+export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -211,7 +220,7 @@ export default function Header({ userName, userInitial, hideSearch }: HeaderProp
                         <p className="text-sm font-bold text-slate-900 leading-none">
                             {userName || 'Admin User'}
                         </p>
-                        <p className="text-xs font-medium text-slate-500 mt-1">Admin</p>
+                        <p className="text-xs font-medium text-slate-500 mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
                         {userInitial || 'A'}
