@@ -22,8 +22,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.organisationId) {
-        return NextResponse.json({ error: 'Organisation already set' }, { status: 400 });
+    // Check DB directly — session token may be stale right after Google OAuth
+    const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+    });
+
+    if (existingUser?.organisationId) {
+        return NextResponse.json({ error: 'Organisation already set up' }, { status: 400 });
     }
 
     try {

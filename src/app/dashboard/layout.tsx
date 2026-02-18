@@ -25,6 +25,11 @@ export default async function DashboardLayout({
         return redirect('/login');
     }
 
+    // Google users who haven't completed onboarding yet
+    if (!(session.user as any).organisationId) {
+        return redirect('/onboarding');
+    }
+
     const userRole = (session.user as any).role || 'TUTOR';
 
     return (

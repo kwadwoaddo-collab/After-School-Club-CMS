@@ -2,27 +2,29 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import OnboardingForm from '@/components/onboarding/OnboardingForm';
 import { db } from '@/db';
-import { organisations } from '@/db/schema';
+import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export default async function OnboardingPage() {
     const session = await auth();
 
-    if (!session?.user) {
+    if (!session?.user?.id) {
         redirect('/login');
     }
 
-    if (session.user.organisationId) {
-        const org = await db.query.organisations.findFirst({
-            where: eq(organisations.id, session.user.organisationId)
-        });
-        if (org) {
-            redirect('/dashboard');
-        }
+    // Check DB directly — session may be stale right after Google OAuth
+    const dbUser = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        with: { organisation: true },
+    });
+
+    // If they already have a complete org, they don't need onboarding
+    if (dbUser?.organisationId && (dbUser as any).organisation) {
+        redirect('/dashboard');
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
             <OnboardingForm />
         </div>
     );

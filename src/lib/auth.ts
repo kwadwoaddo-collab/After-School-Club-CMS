@@ -10,7 +10,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/db';
-import { users, organisations, accounts, sessions, verificationTokens } from '@/db/schema';
+import { users, accounts, sessions, verificationTokens } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
@@ -154,9 +154,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Allow all sign-in attempts
-      // The database already has correct account linkages
+    async signIn({ user, account }) {
+      // For Google OAuth: if user has no org yet, send them to onboarding
+      // (Don't block sign-in — just let the JWT/session callbacks handle the redirect)
+      if (account?.provider === 'google' && user.id) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.id, user.id),
+        });
+        // If no org, flag it on the token via the user object
+        if (dbUser && !dbUser.organisationId) {
+          (user as any).needsOnboarding = true;
+        }
+      }
       return true;
     },
 
@@ -166,6 +175,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = (user as any).role;
         token.organisationId = (user as any).organisationId;
+        token.needsOnboarding = (user as any).needsOnboarding ?? false;
 
         // For Google OAuth users, role/organisationId might not be in the user object
         // Fetch from database if missing
@@ -176,19 +186,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (dbUser) {
             token.role = dbUser.role;
-            token.organisationId = dbUser.organisationId;
+            token.organisationId = dbUser.organisationId ?? null;
+            // If still no org, they need onboarding
+            if (!dbUser.organisationId) {
+              token.needsOnboarding = true;
+            }
           }
         }
       }
+
+      // On subsequent requests, re-check if org has been set
+      // (handles the case where onboarding just completed)
+      if (token.needsOnboarding && token.id) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.id, token.id as string),
+        });
+        if (dbUser?.organisationId) {
+          token.organisationId = dbUser.organisationId;
+          token.role = dbUser.role;
+          token.needsOnboarding = false;
+        }
+      }
+
       return token;
     },
 
     async session({ session, token }) {
-      // With JWT sessions, data comes from the token
       if (token) {
         session.user.id = token.id as string;
         (session as any).user.role = token.role;
         (session as any).user.organisationId = token.organisationId;
+        (session as any).user.needsOnboarding = token.needsOnboarding;
       }
       return session;
     },
@@ -196,34 +224,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   events: {
     async createUser({ user }) {
-      // Auto-create organisation for new Google OAuth users
-      if (user.email && user.id && !user.organisationId) {
+      // For Google OAuth users: set role to ORG_OWNER but do NOT create an org.
+      // They will be redirected to /onboarding to set up their org and first centre.
+      if (user.id) {
         try {
-          const orgName = user.name || user.email?.split('@')[0] || 'My Organisation';
-          const slug = orgName
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-
-          const [organisation] = await db
-            .insert(organisations)
-            .values({
-              name: orgName,
-              slug: slug,
-              contactEmail: user.email,
-            })
-            .returning();
-
-          // Update user with organisation
           await db
             .update(users)
-            .set({
-              organisationId: organisation.id,
-              role: 'ORG_OWNER',
-            })
+            .set({ role: 'ORG_OWNER' })
             .where(eq(users.id, user.id));
         } catch (error) {
-          console.error('Failed to create organisation for new user:', error);
+          console.error('Failed to set role for new user:', error);
         }
       }
     },
