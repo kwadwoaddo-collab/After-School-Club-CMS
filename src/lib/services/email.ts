@@ -329,62 +329,85 @@ export class EmailService {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Invitation</title>
+  <title>Team Invitation</title>
   <style>
     body { 
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
       line-height: 1.6; 
-      color: #1a1a1a; 
-      background-color: #f8fafc;
+      color: #1f2937; 
+      background-color: #f9fafb;
       margin: 0;
       padding: 0;
     }
     .wrapper {
       width: 100%;
-      background-color: #f8fafc;
-      padding: 40px 0;
+      background-color: #f9fafb;
+      padding: 50px 20px;
     }
     .container { 
-      max-width: 600px; 
+      max-width: 580px; 
       margin: 0 auto; 
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e7eb;
     }
     .header { 
-      background: #10B981; 
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%); 
       color: #ffffff; 
-      padding: 40px 20px; 
+      padding: 48px 32px; 
       text-align: center; 
     }
     .header h1 { 
       margin: 0;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.025em;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
     }
     .content { 
-      padding: 40px; 
+      padding: 48px 40px; 
     }
     .greeting {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 600;
-      margin-bottom: 8px;
+      color: #111827;
+      margin-bottom: 16px;
     }
     .intro {
-      color: #4b5563;
-      margin-bottom: 32px;
+      color: #6b7280;
+      font-size: 16px;
+      line-height: 1.7;
+      margin: 0 0 32px 0;
+    }
+    .org-name {
+      color: #10B981;
+      font-weight: 600;
+    }
+    .info-box {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+    .info-label {
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
     }
     .role-badge {
       display: inline-block;
-      background: #eef2ff;
-      color: #4F46E5;
-      padding: 8px 16px;
+      background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+      color: #ffffff;
+      padding: 10px 20px;
       border-radius: 8px;
-      font-weight: 700;
-      font-size: 14px;
-      margin: 16px 0;
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: 0.3px;
     }
     .button-container {
       text-align: center;
@@ -392,26 +415,55 @@ export class EmailService {
     }
     .button { 
       display: inline-block; 
-      background-color: #10B981; 
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
       color: #ffffff !important; 
-      padding: 16px 32px; 
+      padding: 18px 48px; 
       text-decoration: none; 
-      border-radius: 12px; 
-      font-weight: 700;
-      font-size: 16px;
-      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+      border-radius: 10px; 
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: 0.3px;
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.2);
+      transition: all 0.2s;
+    }
+    .button:hover {
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4), 0 4px 6px -2px rgba(16, 185, 129, 0.3);
+    }
+    .note-box {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 16px 20px;
+      margin: 32px 0;
+      border-radius: 6px;
+    }
+    .note-box p {
+      margin: 0;
+      color: #92400e;
+      font-size: 14px;
+      line-height: 1.6;
     }
     .expiry-note {
       text-align: center;
-      color: #64748b;
-      font-size: 14px;
-      margin-top: 24px;
+      color: #9ca3af;
+      font-size: 13px;
+      margin-top: 32px;
+      line-height: 1.5;
     }
     .footer { 
+      background: #f9fafb;
       text-align: center; 
-      padding: 40px 20px; 
-      color: #94a3b8; 
-      font-size: 14px; 
+      padding: 32px 20px; 
+      color: #9ca3af; 
+      font-size: 13px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer p {
+      margin: 4px 0;
+    }
+    .security-note {
+      color: #6b7280;
+      font-size: 12px;
+      margin-top: 16px;
     }
   </style>
 </head>
@@ -419,32 +471,42 @@ export class EmailService {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1>You're Invited!</h1>
+        <h1>Welcome to the Team!</h1>
       </div>
       <div class="content">
         <div class="greeting">Hello,</div>
         <p class="intro">
-          ${data.inviterName} has invited you to join <strong>${data.organisationName}</strong> as a team member.
+          <strong>${data.inviterName}</strong> has invited you to join <span class="org-name">${data.organisationName}</span> as a team member. We're excited to have you on board!
         </p>
         
-        <p style="margin: 24px 0;">
-          Your role: <span class="role-badge">${roleDisplay}</span>
-        </p>
+        <div class="info-box">
+          <div class="info-label">Your Role</div>
+          <div><span class="role-badge">${roleDisplay}</span></div>
+        </div>
 
-        <p style="color: #4b5563; margin: 24px 0;">
-          Click the button below to accept your invitation and set up your account. The link will expire in 7 days.
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.7; margin: 28px 0;">
+          To get started, click the button below to accept your invitation and create your account. You'll be able to access the platform and start collaborating with your team right away.
         </p>
 
         <div class="button-container">
-          <a href="${data.inviteLink}" class="button" style="color: #ffffff;">Accept Invitation</a>
+          <a href="${data.inviteLink}" class="button" style="color: #ffffff;">Accept Invitation &rarr;</a>
+        </div>
+
+        <div class="note-box">
+          <p><strong>Important:</strong> This invitation link will expire in 7 days. Please accept it soon to ensure you don't lose access.</p>
         </div>
 
         <p class="expiry-note">
-          This invitation link will expire in <strong>7 days</strong>. If you didn't expect this invitation, you can safely ignore this email.
+          If you didn't expect this invitation or received it by mistake, you can safely ignore this email.
+        </p>
+        
+        <p class="security-note" style="text-align: center; margin-top: 24px;">
+          This is an automated email. Please do not reply to this message.
         </p>
       </div>
       <div class="footer">
-        <p>Sent from ${data.organisationName}</p>
+        <p><strong>${data.organisationName}</strong></p>
+        <p style="margin-top: 8px;">Powered by SprintScale</p>
       </div>
     </div>
   </div>
