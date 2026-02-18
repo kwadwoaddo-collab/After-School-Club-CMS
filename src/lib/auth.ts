@@ -102,6 +102,55 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+
+    // Magic link / invite token login for staff
+    CredentialsProvider({
+      id: 'inviteToken',
+      name: 'Invite Token',
+      credentials: {
+        token: { label: 'Invite Token', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.token) return null;
+
+        const { staffInvites } = await import('@/db/schema');
+
+        const [invite] = await db
+          .select()
+          .from(staffInvites)
+          .where(eq(staffInvites.token, credentials.token as string))
+          .limit(1);
+
+        if (!invite || invite.usedAt || new Date() > invite.expiresAt) {
+          return null;
+        }
+
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, invite.email),
+        });
+
+        if (!user) return null;
+
+        // Mark invite as used and email as verified
+        await db
+          .update(staffInvites)
+          .set({ usedAt: new Date() })
+          .where(eq(staffInvites.id, invite.id));
+
+        await db
+          .update(users)
+          .set({ emailVerified: new Date() })
+          .where(eq(users.id, user.id));
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          role: user.role,
+          organisationId: user.organisationId,
+        };
+      },
+    }),
   ],
 
   callbacks: {

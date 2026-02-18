@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
         const { email, role, firstName, lastName, centreId } = body;
 
         // Validate input
-        if (!email || !role) {
+        if (!email || !role || !firstName || !lastName) {
             return NextResponse.json(
-                { error: 'Email and role are required' },
+                { error: 'Email, role, first name and last name are required' },
                 { status: 400 }
             );
         }
@@ -55,12 +55,24 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate invite token
+        // Create the user account immediately (no password - magic link only)
+        const fullName = `${firstName} ${lastName}`.trim();
+        await db.insert(users).values({
+            email,
+            firstName,
+            lastName,
+            name: fullName,
+            role,
+            organisationId: session.user.organisationId,
+            emailVerified: null, // Will be set when they first log in
+        });
+
+        // Generate invite token (magic link)
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
 
-        // Create invite
+        // Create invite record
         await db.insert(staffInvites).values({
             organisationId: session.user.organisationId,
             email,
@@ -75,31 +87,27 @@ export async function POST(request: NextRequest) {
         const baseUrl = `${protocol}://${host}`;
         const inviteLink = `${baseUrl}/accept-invite?token=${token}`;
 
+        // Get location name for email
+        let locationName = 'the team';
+        if (centreId) {
+            const centre = await db.query.centres.findFirst({
+                where: eq(centres.id, centreId),
+            });
+            if (centre?.name) locationName = centre.name;
+        } else {
+            const org = await db.query.organisations.findFirst({
+                where: eq(organisations.id, session.user.organisationId),
+            });
+            if (org?.name) locationName = org.name;
+        }
+
+        const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim()
+            || currentUser.name
+            || 'Your colleague';
+
         // Send invitation email
-        console.log('[Staff Invite] Preparing to send email to:', email);
         let emailSent = false;
-        let emailError = null;
-
         try {
-            // Get centre name if provided, otherwise fall back to organisation name
-            let locationName = 'our organisation';
-
-            if (centreId) {
-                const centre = await db.query.centres.findFirst({
-                    where: eq(centres.id, centreId),
-                });
-                if (centre?.name) locationName = centre.name;
-            } else {
-                const org = await db.query.organisations.findFirst({
-                    where: eq(organisations.id, session.user.organisationId),
-                });
-                if (org?.name) locationName = org.name;
-            }
-
-            const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim()
-                || currentUser.name
-                || 'Your colleague';
-
             const result = await emailService.sendStaffInvitation({
                 email,
                 role,
@@ -107,20 +115,12 @@ export async function POST(request: NextRequest) {
                 organisationName: locationName,
                 inviterName,
             });
-
-            console.log('[Staff Invite] Email service result:', JSON.stringify(result));
-
+            emailSent = result.success;
             if (!result.success) {
-                console.error('[Staff Invite] Email sending failed:', result.error);
-                emailError = result.error;
-            } else {
-                console.log(`[Staff Invite] ✅ Invitation email sent successfully to ${email}`);
-                emailSent = true;
+                console.error('[Staff Invite] Email failed:', result.error);
             }
-        } catch (error) {
-            console.error('[Staff Invite] Exception caught while sending email:', error);
-            console.error('[Staff Invite] Error stack:', error instanceof Error ? error.stack : 'No stack');
-            emailError = error instanceof Error ? error.message : 'Unknown error';
+        } catch (emailError) {
+            console.error('[Staff Invite] Email exception:', emailError);
         }
 
         return NextResponse.json({

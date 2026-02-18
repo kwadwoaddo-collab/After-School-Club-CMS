@@ -2,15 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 
+/**
+ * POST /api/staff/accept-invite
+ * Called when staff click their magic link.
+ * Marks the invite as used and marks the user as email-verified.
+ * The frontend then calls signIn('credentials') with the invite token to create a session.
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { token, password, firstName, lastName } = body;
+        const { token } = body;
 
-        if (!token || !password) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!token) {
+            return NextResponse.json({ error: 'Missing token' }, { status: 400 });
         }
 
         // Find and validate the invitation
@@ -32,40 +37,34 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'This invitation has expired' }, { status: 400 });
         }
 
-        // Check if user already exists
-        const existingUser = await db.query.users.findFirst({
+        // Find the pre-created user account
+        const user = await db.query.users.findFirst({
             where: eq(users.email, invite.email),
         });
 
-        if (existingUser) {
-            return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+        if (!user) {
+            return NextResponse.json({ error: 'User account not found' }, { status: 404 });
         }
 
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 10);
+        // Mark email as verified and mark invite as used
+        await db
+            .update(users)
+            .set({ emailVerified: new Date() })
+            .where(eq(users.id, user.id));
 
-        // Create user account
-        await db.insert(users).values({
-            email: invite.email,
-            passwordHash,
-            firstName,
-            lastName,
-            name: firstName && lastName ? `${firstName} ${lastName}` : invite.email.split('@')[0],
-            role: invite.role,
-            organisationId: invite.organisationId,
-        });
-
-        // Mark invitation as used
         await db
             .update(staffInvites)
             .set({ usedAt: new Date() })
             .where(eq(staffInvites.id, invite.id));
 
         return NextResponse.json({
-            message: 'Account created successfully',
+            success: true,
+            email: invite.email,
+            name: user.name,
+            role: invite.role,
         });
     } catch (error) {
         console.error('Accept invite error:', error);
-        return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to accept invitation' }, { status: 500 });
     }
 }
