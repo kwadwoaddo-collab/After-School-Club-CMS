@@ -673,6 +673,77 @@ export class EmailService {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Send password reset email to org admins/owners
+   */
+  async sendPasswordReset(data: {
+    email: string;
+    name: string;
+    resetUrl: string;
+  }): Promise<EmailResult> {
+    if (!resend) {
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; margin: 0; padding: 40px 20px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background: linear-gradient(135deg, #3b82f6, #7c3aed); padding: 40px 32px; text-align: center;">
+      <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0;">Reset Your Password</h1>
+    </div>
+    <div style="padding: 40px 32px;">
+      <p style="color: #374151; font-size: 16px; margin: 0 0 16px;">Hi ${data.name},</p>
+      <p style="color: #6b7280; font-size: 15px; margin: 0 0 32px;">
+        We received a request to reset your password. Click the button below to set a new password.
+        This link expires in <strong>1 hour</strong>.
+      </p>
+      <div style="text-align: center; margin-bottom: 32px;">
+        <a href="${data.resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #7c3aed); color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; padding: 16px 40px; border-radius: 12px;">
+          Reset Password &rarr;
+        </a>
+      </div>
+      <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px 20px; border-radius: 6px; margin-bottom: 24px;">
+        <p style="color: #92400e; font-size: 14px; margin: 0;">
+          <strong>Didn't request this?</strong> You can safely ignore this email. Your password won't change.
+        </p>
+      </div>
+      <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0;">
+        If the button doesn't work, copy and paste this link into your browser.
+      </p>
+    </div>
+    <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">SprintScale &middot; support@sprintscaleit.co.uk</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.email,
+        subject: 'Reset your SprintScale password',
+        html,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: errorMessage };
+    }
+  }
 }
 
 // Export singleton instance

@@ -15,18 +15,15 @@ export default function ForgotPasswordPage() {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('/api/staff/request-magic-link', {
+            const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to send login link');
-            }
+            // Always show success (prevents email enumeration)
             setSent(true);
         } catch (err: any) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -109,9 +106,9 @@ export default function ForgotPasswordPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-white font-semibold text-lg mb-2">Check your inbox!</h3>
-                                <p className="text-white/60 text-sm mb-1">We've sent a one-click login link to:</p>
+                                <p className="text-white/60 text-sm mb-1">We've sent a password reset link to:</p>
                                 <p className="text-white font-medium mb-4">{email}</p>
-                                <p className="text-white/40 text-xs mb-6">The link expires in 15 minutes. Check your spam folder if you don't see it.</p>
+                                <p className="text-white/40 text-xs mb-6">The link expires in 1 hour. Check your spam folder if you don't see it.</p>
                                 <button
                                     onClick={() => { setSent(false); setEmail(''); }}
                                     className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors"

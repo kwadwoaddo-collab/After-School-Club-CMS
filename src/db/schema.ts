@@ -64,6 +64,8 @@ export const users = pgTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }),
   emailVerified: timestamp('email_verified'),
   image: varchar('image', { length: 500 }),
+  passwordResetToken: varchar('password_reset_token', { length: 255 }),
+  passwordResetExpiry: timestamp('password_reset_expiry'),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
