@@ -102,7 +102,7 @@ export default function RegisterPage() {
     }, [orgSlug]);
 
     // ── Child helpers ──────────────────────────────────────────────
-    const updateChild = (i: number, field: keyof ChildEntry, v: string) =>
+    const updateChild = (i: number, field: keyof ChildEntry, v: string | string[]) =>
         setChildList(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: v } : c));
     const addChild = () => setChildList(prev => [...prev, emptyChild()]);
     const removeChild = (i: number) => setChildList(prev => prev.filter((_, idx) => idx !== i));
