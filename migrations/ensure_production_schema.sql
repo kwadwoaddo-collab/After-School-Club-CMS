@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS audit_events (
 
 -- 3. New columns on existing tables
 ALTER TABLE organisations ADD COLUMN IF NOT EXISTS registration_terms text;
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS session_slots text;
+ALTER TABLE organisations ADD COLUMN IF NOT EXISTS registration_pricing text;
 ALTER TABLE parents ADD COLUMN IF NOT EXISTS relationship varchar(50);
 ALTER TABLE parents ADD COLUMN IF NOT EXISTS address_line1 varchar(255);
 ALTER TABLE parents ADD COLUMN IF NOT EXISTS address_line2 varchar(255);
