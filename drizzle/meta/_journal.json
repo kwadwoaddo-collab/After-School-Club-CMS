@@ -15,6 +15,13 @@
       "when": 1770671347760,
       "tag": "0001_friendly_maddog",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771690594245,
+      "tag": "0002_add_session_slots",
+      "breakpoints": true
     }
   ]
 }

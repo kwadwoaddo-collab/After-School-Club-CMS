@@ -13,6 +13,7 @@ import {
     Plus,
     Share2,
     UserCircle2,
+    ClipboardList,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -23,10 +24,11 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Registrations', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Registrations'],
     FRONT_DESK: ['Dashboard', 'Students'],
-    TUTOR: ['Dashboard', 'Students'],
+    TUTOR: ['Dashboard'],
+
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -48,6 +50,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
+        { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ].filter(item => allowedNav.includes(item.name));
 

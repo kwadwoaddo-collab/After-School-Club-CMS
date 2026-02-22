@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { redirect, RedirectType } from 'next/navigation';
+import { headers } from 'next/headers';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import { SidebarProvider } from '@/components/dashboard/SidebarContext';
@@ -15,7 +16,11 @@ const ROUTE_PERMISSIONS: Record<string, string[]> = {
     '/dashboard/centres': ['ORG_OWNER', 'MANAGER'],
     '/dashboard/bookings/new': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
     '/dashboard/booking-link': ['ORG_OWNER', 'MANAGER'],
+    // Student data — tutors cannot access
+    '/dashboard/students': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
+    '/dashboard/registrations': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
 };
+
 
 export default async function DashboardLayout({
     children,
@@ -35,6 +40,15 @@ export default async function DashboardLayout({
 
     const userRole = (session.user as any).role || 'TUTOR';
     const organisationId = (session.user as any).organisationId as string;
+
+    // ── Enforce route-level role restrictions ───────────────────────
+    const headersList = await headers();
+    const currentPath = headersList.get('x-invoke-path') || headersList.get('x-pathname') || '';
+    for (const [prefix, allowedRoles] of Object.entries(ROUTE_PERMISSIONS)) {
+        if (currentPath.startsWith(prefix) && !allowedRoles.includes(userRole)) {
+            return redirect('/dashboard');
+        }
+    }
 
     // Fetch org name for sidebar branding
     let orgName = 'AfterSchool';

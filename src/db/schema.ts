@@ -11,6 +11,10 @@ export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Ot
 export const assessmentTypeEnum = pgEnum('assessment_type', ['initial_assessment', 'progress_review', 'subject_specific']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'cancelled', 'past_due', 'trialing']);
 export const notificationTypeEnum = pgEnum('notification_type', ['booking_created', 'booking_cancelled', 'booking_rescheduled', 'assessment_reminder', 'system']);
+export const registrationStatusEnum2 = pgEnum('registration_status_v2', ['pending', 'approved', 'rejected']);
+export const fundingTypeEnum = pgEnum('funding_type', ['tax_free_childcare', 'childcare_vouchers', 'student_finance', 'self_funded', 'other']);
+export const studentSourceEnum = pgEnum('student_source', ['assessment', 'registration', 'both']);
+export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
 
 // ==================== ORGANISATIONS & CENTRES ====================
 export const organisations = pgTable('organisations', {
@@ -33,6 +37,11 @@ export const organisations = pgTable('organisations', {
   subscriptionStatus: subscriptionStatusEnum('subscription_status').default('active'),
   subscriptionTier: varchar('subscription_tier', { length: 50 }).default('free'),
   subscriptionExpiresAt: timestamp('subscription_expires_at'),
+
+  // Registration feature
+  registrationTerms: text('registration_terms'),
+  sessionSlots: text('session_slots'),          // JSON-encoded string[] of session time options
+  registrationPricing: text('registration_pricing'), // JSON: {selfFinanceRate: number, taxCreditRate: number}
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -139,6 +148,13 @@ export const parents = pgTable('parents', {
   magicLinkToken: varchar('magic_link_token', { length: 255 }).unique(),
   magicLinkExpiresAt: timestamp('magic_link_expires_at'),
 
+  // Registration enrichment fields (added by student registration feature)
+  relationship: parentRelationshipEnum('relationship'),
+  addressLine1: varchar('address_line1', { length: 255 }),
+  addressLine2: varchar('address_line2', { length: 255 }),
+  city: varchar('city', { length: 100 }),
+  postcode: varchar('postcode', { length: 10 }),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -151,6 +167,12 @@ export const children = pgTable('children', {
   dateOfBirth: timestamp('date_of_birth'),
   schoolYear: varchar('school_year', { length: 10 }).notNull(),
   notes: text('notes'),
+
+  // Registration feature enrichment (additive)
+  source: studentSourceEnum('source').default('assessment'),
+  isRegistered: boolean('is_registered').default(false),
+  registeredAt: timestamp('registered_at'),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -269,6 +291,69 @@ export const studentRegistrations = pgTable('student_registrations', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ==================== FULL REGISTRATION FORMS ====================
+// New tables for the multi-child, multi-parent registration form
+// Linked back to children/parents tables via matching logic
+
+export const registrations = pgTable('registrations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+
+  // Status
+  status: registrationStatusEnum2('status').default('pending').notNull(),
+
+  // Child start date (common to all children in this submission)
+  startDate: timestamp('start_date'),
+
+  // Funding
+  fundingTypes: text('funding_types').array(), // e.g. ['tax_free_childcare', 'self_funded']
+  fundingOther: text('funding_other'),           // If 'other' selected
+
+  // Special needs (applies across all children in submission)
+  hasSpecialNeeds: boolean('has_special_needs').default(false),
+  specialNeedsDetails: text('special_needs_details'),
+
+  // Emergency contact (separate person from main parents)
+  emergencyContactName: varchar('emergency_contact_name', { length: 255 }),
+  emergencyContactPhone: varchar('emergency_contact_phone', { length: 20 }),
+  emergencyContactRelationship: varchar('emergency_contact_relationship', { length: 50 }),
+
+  // Consent
+  termsAgreed: boolean('terms_agreed').default(false).notNull(),
+
+  submittedAt: timestamp('submitted_at').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Links each registration to the resolved children records
+export const registrationChildren = pgTable('registration_children', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  registrationId: uuid('registration_id').references(() => registrations.id, { onDelete: 'cascade' }).notNull(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'set null' }), // Nullable: set after match/create
+  // Snapshot of submitted data (in case child record doesn't exist yet at submission time)
+  submittedFirstName: varchar('submitted_first_name', { length: 100 }).notNull(),
+  submittedLastName: varchar('submitted_last_name', { length: 100 }).notNull(),
+  submittedDateOfBirth: timestamp('submitted_date_of_birth'),
+  submittedSchoolYear: varchar('submitted_school_year', { length: 10 }),
+  wasMatched: boolean('was_matched').default(false), // true if linked to existing child
+});
+
+// Links each registration to the resolved parent records
+export const registrationParents = pgTable('registration_parents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  registrationId: uuid('registration_id').references(() => registrations.id, { onDelete: 'cascade' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'set null' }), // Nullable: set after match/create
+  isPrimary: boolean('is_primary').default(true), // First parent = primary
+  // Snapshot of submitted data
+  submittedFirstName: varchar('submitted_first_name', { length: 100 }).notNull(),
+  submittedLastName: varchar('submitted_last_name', { length: 100 }).notNull(),
+  submittedEmail: varchar('submitted_email', { length: 255 }),
+  submittedPhone: varchar('submitted_phone', { length: 20 }),
+  submittedRelationship: varchar('submitted_relationship', { length: 50 }),
+  wasMatched: boolean('was_matched').default(false), // true if linked to existing parent
 });
 
 // ==================== AUDIT LOGS ====================
@@ -397,6 +482,37 @@ export const studentRegistrationsRelations = relations(studentRegistrations, ({ 
   centre: one(centres, {
     fields: [studentRegistrations.centreId],
     references: [centres.id],
+  }),
+}));
+
+export const registrationsRelations = relations(registrations, ({ one, many }) => ({
+  organisation: one(organisations, {
+    fields: [registrations.organisationId],
+    references: [organisations.id],
+  }),
+  registrationChildren: many(registrationChildren),
+  registrationParents: many(registrationParents),
+}));
+
+export const registrationChildrenRelations = relations(registrationChildren, ({ one }) => ({
+  registration: one(registrations, {
+    fields: [registrationChildren.registrationId],
+    references: [registrations.id],
+  }),
+  child: one(children, {
+    fields: [registrationChildren.childId],
+    references: [children.id],
+  }),
+}));
+
+export const registrationParentsRelations = relations(registrationParents, ({ one }) => ({
+  registration: one(registrations, {
+    fields: [registrationParents.registrationId],
+    references: [registrations.id],
+  }),
+  parent: one(parents, {
+    fields: [registrationParents.parentId],
+    references: [parents.id],
   }),
 }));
 

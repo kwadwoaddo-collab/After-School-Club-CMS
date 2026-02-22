@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Building2, Palette, Image, Mail, Clock } from 'lucide-react';
+import { Plus, Building2, Palette, Image, Mail, Clock, FileText } from 'lucide-react';
 
 export default async function SettingsPage() {
     const session = await auth();
@@ -53,6 +53,14 @@ export default async function SettingsPage() {
             icon: Palette,
             color: 'amber',
             href: '/dashboard/settings/branding',
+        },
+        {
+            id: 'registration-terms',
+            title: 'Registration Terms & Conditions',
+            description: 'Edit the T&Cs shown on the public student registration form',
+            icon: FileText,
+            color: 'blue',
+            href: '/dashboard/settings/registration',
         },
     ];
 
