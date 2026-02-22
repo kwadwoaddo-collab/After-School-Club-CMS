@@ -41,7 +41,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
 
     //  If user has no accessible centres, show empty state
     if (accessibleCentreIds.length === 0) {
-        // This shouldn't happen in normal operation, but handle it gracefully
         console.warn(`User ${session.user.email} has no accessible centres`);
     }
 
@@ -51,7 +50,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
     const page = searchParams.page ? parseInt(searchParams.page) : 1;
     const limit = 5;
     const offset = Math.max(0, (page - 1) * limit);
-
 
     // Calculate date ranges for trend analysis
     const now = new Date();
@@ -65,8 +63,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(eq(parents.organisationId, org.id));
 
-    // Students trend: Compare current month vs last month (filtered by accessible centres)
-    const [currentMonthStudents] = await db
+    // Guard: inArray with empty array crashes Postgres — skip booking queries if no centres
+    const hasCentres = accessibleCentreIds.length > 0;
+
+    const [currentMonthStudents] = hasCentres ? await db
         .select({ count: sql<number>`count(distinct ${bookingAttendees.childId})` })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
@@ -75,9 +75,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                 inArray(bookings.centreId, accessibleCentreIds),
                 gte(bookings.createdAt, firstDayOfCurrentMonth)
             )
-        );
+        ) : [{ count: 0 }];
 
-    const [lastMonthStudents] = await db
+    const [lastMonthStudents] = hasCentres ? await db
         .select({ count: sql<number>`count(distinct ${bookingAttendees.childId})` })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
@@ -87,7 +87,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                 gte(bookings.createdAt, firstDayOfLastMonth),
                 lt(bookings.createdAt, firstDayOfCurrentMonth)
             )
-        );
+        ) : [{ count: 0 }];
 
     // Calculate student trend percentage
     const currentStudents = currentMonthStudents?.count || 0;
@@ -98,7 +98,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
     const studentTrendType = studentTrend >= 0 ? 'up' : 'down';
 
     // 2. Assessment Bookings - Current month's bookings (filtered by accessible centres)
-    const [currentMonthBookings] = await db
+    const [currentMonthBookings] = hasCentres ? await db
         .select({ count: sql<number>`count(distinct ${bookings.id})` })
         .from(bookings)
         .where(
@@ -106,9 +106,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                 inArray(bookings.centreId, accessibleCentreIds),
                 gte(bookings.createdAt, firstDayOfCurrentMonth)
             )
-        );
+        ) : [{ count: 0 }];
 
-    const [lastMonthBookingsCount] = await db
+    const [lastMonthBookingsCount] = hasCentres ? await db
         .select({ count: sql<number>`count(distinct ${bookings.id})` })
         .from(bookings)
         .where(
@@ -117,7 +117,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
                 gte(bookings.createdAt, firstDayOfLastMonth),
                 lt(bookings.createdAt, firstDayOfCurrentMonth)
             )
-        );
+        ) : [{ count: 0 }];
 
     // Calculate bookings trend percentage
     const currentBookings = currentMonthBookings?.count || 0;
@@ -127,9 +127,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         : currentBookings > 0 ? 100 : 0;
     const bookingsTrendType = bookingsTrend >= 0 ? 'up' : 'down';
 
-
     // 2. Recent Bookings for the table (Closest first)
-    const recentBookingsData = await db
+    const recentBookingsData = hasCentres ? await db
         .select({
             bookingId: bookings.id,
             startAt: bookings.startAt,
@@ -151,14 +150,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
         .innerJoin(parents, eq(children.parentId, parents.id))
         .innerJoin(centres, eq(bookings.centreId, centres.id))
         .where(inArray(bookings.centreId, accessibleCentreIds))
-        .orderBy(asc(bookings.startAt)) // Closest date on top
+        .orderBy(asc(bookings.startAt))
         .limit(limit)
-        .offset(offset);
+        .offset(offset) : [];
 
-    const [totalBookings] = await db
+    const [totalBookings] = hasCentres ? await db
         .select({ count: sql<number>`count(*)` })
         .from(bookings)
-        .where(inArray(bookings.centreId, accessibleCentreIds));
+        .where(inArray(bookings.centreId, accessibleCentreIds)) : [{ count: 0 }];
 
     const totalPages = Math.ceil((totalBookings?.count || 0) / limit);
 
