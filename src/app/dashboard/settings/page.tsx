@@ -5,6 +5,7 @@ import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Building2, Palette, Image, Mail, Clock, FileText } from 'lucide-react';
+import OrganisationInfoForm from '@/components/settings/OrganisationInfoForm';
 
 export default async function SettingsPage() {
     const session = await auth();
@@ -75,30 +76,7 @@ export default async function SettingsPage() {
             </div>
 
             {/* Organisation Info Card */}
-            <div className="glass-card rounded-3xl p-6">
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Organisation Information</h3>
-                <div className="space-y-3">
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">Organisation Name</p>
-                        <p className="text-base font-bold text-slate-900">{org.name}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">Slug</p>
-                        <p className="text-base font-mono text-slate-900">{org.slug}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">Booking URL</p>
-                        <a
-                            href={`${process.env.NEXT_PUBLIC_BASE_URL}/book/${org.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-base text-primary hover:underline font-medium"
-                        >
-                            {process.env.NEXT_PUBLIC_BASE_URL}/book/{org.slug}
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <OrganisationInfoForm org={org} baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ''} />
 
             {/* Settings Options Grid */}
             <div>
