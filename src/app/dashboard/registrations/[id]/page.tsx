@@ -15,9 +15,9 @@ const FUNDING_LABELS: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-    pending: 'bg-amber-500/20 text-amber-300 border border-amber-400/20',
-    approved: 'bg-green-500/20 text-green-300 border border-green-400/20',
-    rejected: 'bg-red-500/20 text-red-300 border border-red-400/20',
+    pending: 'bg-amber-100 text-amber-700 border border-amber-200',
+    approved: 'bg-green-100 text-green-700 border border-green-200',
+    rejected: 'bg-red-100 text-red-700 border border-red-200',
 };
 
 export default async function RegistrationDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,24 +38,25 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            {/* Back + header */}
-            <div className="flex items-center gap-4 mb-8">
-                <Link href="/dashboard/registrations" className="text-white/40 hover:text-white text-sm transition-colors">
-                    ← All Registrations
-                </Link>
-            </div>
+            {/* Back link */}
+            <Link href="/dashboard/registrations" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm transition-colors mb-8">
+                ← All Registrations
+            </Link>
 
-            <div className="flex items-start justify-between mb-8">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">
+                    <h1 className="text-2xl font-bold text-slate-900">
                         {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Registration'}
                     </h1>
-                    <p className="text-white/40 text-sm mt-1">
+                    <p className="text-slate-500 text-sm mt-1">
                         Submitted {new Date(reg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_BADGE[reg.status]}`}>{reg.status}</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_BADGE[reg.status] || ''}`}>
+                        {reg.status}
+                    </span>
                     <RegistrationStatusUpdater registrationId={id} currentStatus={reg.status} />
                 </div>
             </div>
@@ -63,22 +64,24 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 {/* Children */}
-                <div className="md:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-6">
-                    <h2 className="text-white font-semibold mb-4">Children ({kids.length})</h2>
+                <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-6">
+                    <h2 className="text-slate-900 font-semibold mb-4">Children ({kids.length})</h2>
                     <div className="space-y-3">
-                        {kids.map((k, i) => (
-                            <div key={k.id} className="flex items-center justify-between py-3 border-b border-white/10 last:border-0">
+                        {kids.map((k) => (
+                            <div key={k.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
                                 <div>
-                                    <p className="text-white font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
-                                    <p className="text-white/40 text-sm">{k.submittedSchoolYear}</p>
+                                    <p className="text-slate-900 font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
+                                    <p className="text-slate-500 text-sm">{k.submittedSchoolYear}</p>
                                     {k.submittedDateOfBirth && (
-                                        <p className="text-white/30 text-xs">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
+                                        <p className="text-slate-400 text-xs">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
                                     )}
                                 </div>
                                 <div className="text-right">
-                                    {k.wasMatched && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/20">Matched record</span>}
+                                    {k.wasMatched && (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">Matched record</span>
+                                    )}
                                     {k.childId && (
-                                        <Link href={`/dashboard/children/${k.childId}`} className="block text-xs text-blue-400 hover:text-blue-300 mt-1 transition-colors">
+                                        <Link href={`/dashboard/children/${k.childId}`} className="block text-xs text-blue-600 hover:text-blue-800 mt-1 transition-colors">
                                             View profile →
                                         </Link>
                                     )}
@@ -89,23 +92,27 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 </div>
 
                 {/* Parents */}
-                {pars.map((p, i) => (
-                    <div key={p.id} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                        <h2 className="text-white font-semibold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
+                {pars.map((p) => (
+                    <div key={p.id} className="bg-white border border-slate-200 rounded-2xl p-6">
+                        <h2 className="text-slate-900 font-semibold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
                         <dl className="space-y-3 text-sm">
                             <DetailRow label="Name" value={`${p.submittedFirstName} ${p.submittedLastName}`} />
                             <DetailRow label="Relationship" value={p.submittedRelationship ?? '—'} />
                             <DetailRow label="Email" value={p.submittedEmail ?? '—'} />
                             <DetailRow label="Phone" value={p.submittedPhone ?? '—'} />
-                            {p.wasMatched && <p className="text-xs text-blue-300 bg-blue-500/10 border border-blue-400/20 rounded px-2 py-1">✓ Matched to existing parent record</p>}
+                            {p.wasMatched && (
+                                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-1">
+                                    ✓ Matched to existing parent record
+                                </p>
+                            )}
                         </dl>
                     </div>
                 ))}
 
                 {/* Emergency Contact */}
                 {reg.emergencyContactName && (
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                        <h2 className="text-white font-semibold mb-4">Emergency Contact</h2>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                        <h2 className="text-slate-900 font-semibold mb-4">Emergency Contact</h2>
                         <dl className="space-y-3 text-sm">
                             <DetailRow label="Name" value={reg.emergencyContactName} />
                             <DetailRow label="Relationship" value={reg.emergencyContactRelationship ?? '—'} />
@@ -114,9 +121,9 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     </div>
                 )}
 
-                {/* Funding & Registration details */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                    <h2 className="text-white font-semibold mb-4">Funding &amp; Details</h2>
+                {/* Funding & Details */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                    <h2 className="text-slate-900 font-semibold mb-4">Funding &amp; Details</h2>
                     <dl className="space-y-3 text-sm">
                         <DetailRow label="Start Date" value={reg.startDate ? new Date(reg.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not specified'} />
                         <DetailRow label="Funding" value={reg.fundingTypes?.map(t => FUNDING_LABELS[t] ?? t).join(', ') || 'Not specified'} />
@@ -134,8 +141,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 function DetailRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex justify-between gap-4">
-            <dt className="text-white/40 flex-shrink-0">{label}</dt>
-            <dd className="text-white text-right">{value}</dd>
+            <dt className="text-slate-500 flex-shrink-0">{label}</dt>
+            <dd className="text-slate-900 text-right font-medium">{value}</dd>
         </div>
     );
 }
