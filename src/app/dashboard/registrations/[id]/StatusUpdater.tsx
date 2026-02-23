@@ -2,12 +2,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Status = 'pending' | 'approved' | 'rejected';
+type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
 const OPTIONS: { value: Status; label: string; cls: string }[] = [
-    { value: 'pending', label: 'Pending', cls: 'text-amber-700 hover:bg-amber-50' },
-    { value: 'approved', label: 'Approved', cls: 'text-green-700 hover:bg-green-50' },
-    { value: 'rejected', label: 'Rejected', cls: 'text-red-700  hover:bg-red-50' },
+    { value: 'awaiting_confirmation', label: 'Awaiting Confirmation', cls: 'text-amber-700 hover:bg-amber-50' },
+    { value: 'signed_up', label: 'Signed Up', cls: 'text-green-700 hover:bg-green-50' },
+    { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-500 hover:bg-slate-50' },
 ];
 
 export default function RegistrationStatusUpdater({
@@ -40,7 +40,7 @@ export default function RegistrationStatusUpdater({
                 {saving ? 'Saving…' : 'Update Status ▾'}
             </button>
             {open && (
-                <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden">
                     {OPTIONS.map(o => (
                         <button key={o.value} onClick={() => update(o.value)}
                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${o.cls} ${o.value === currentStatus ? 'opacity-40 cursor-default' : ''}`}>

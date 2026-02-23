@@ -11,7 +11,7 @@ export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Ot
 export const assessmentTypeEnum = pgEnum('assessment_type', ['initial_assessment', 'progress_review', 'subject_specific']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'cancelled', 'past_due', 'trialing']);
 export const notificationTypeEnum = pgEnum('notification_type', ['booking_created', 'booking_cancelled', 'booking_rescheduled', 'assessment_reminder', 'system']);
-export const registrationStatusEnum2 = pgEnum('registration_status_v2', ['pending', 'approved', 'rejected']);
+export const registrationStatusEnum2 = pgEnum('registration_status_v2', ['awaiting_confirmation', 'signed_up', 'not_interested']);
 export const fundingTypeEnum = pgEnum('funding_type', ['tax_free_childcare', 'childcare_vouchers', 'student_finance', 'self_funded', 'other']);
 export const studentSourceEnum = pgEnum('student_source', ['assessment', 'registration', 'both']);
 export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
@@ -302,7 +302,7 @@ export const registrations = pgTable('registrations', {
   organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
 
   // Status
-  status: registrationStatusEnum2('status').default('pending').notNull(),
+  status: registrationStatusEnum2('status').default('awaiting_confirmation').notNull(),
 
   // Child start date (common to all children in this submission)
   startDate: timestamp('start_date'),

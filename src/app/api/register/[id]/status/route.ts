@@ -10,7 +10,7 @@ export async function PATCH(
     const { id } = await params;
     const { status } = await req.json();
 
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
+    if (!['awaiting_confirmation', 'signed_up', 'not_interested'].includes(status)) {
         return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 

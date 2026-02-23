@@ -7,9 +7,15 @@ import Link from 'next/link';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 
 const STATUS_BADGE: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700 border border-amber-200',
-    approved: 'bg-green-100 text-green-700 border border-green-200',
-    rejected: 'bg-red-100 text-red-700 border border-red-200',
+    awaiting_confirmation: 'bg-amber-100 text-amber-700 border border-amber-200',
+    signed_up: 'bg-green-100 text-green-700 border border-green-200',
+    not_interested: 'bg-slate-100 text-slate-500 border border-slate-200',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+    awaiting_confirmation: 'Awaiting Confirmation',
+    signed_up: 'Signed Up',
+    not_interested: 'Not Interested',
 };
 
 export default async function RegistrationsPage() {
@@ -121,8 +127,8 @@ export default async function RegistrationsPage() {
                                             <p className="text-slate-900 font-medium truncate">
                                                 {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
                                             </p>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_BADGE[r.status] || ''}`}>
-                                                {r.status}
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[r.status] || ''}`}>
+                                                {STATUS_LABEL[r.status] ?? r.status}
                                             </span>
                                         </div>
                                         <p className="text-slate-500 text-sm truncate">

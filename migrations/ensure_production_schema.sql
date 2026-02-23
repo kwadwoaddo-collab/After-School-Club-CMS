@@ -103,3 +103,17 @@ CREATE TABLE IF NOT EXISTS registration_parents (
   was_matched boolean DEFAULT false,
   created_at timestamp DEFAULT now() NOT NULL
 );
+
+-- 5. Migrate registration status enum to new values
+-- Add new values (safe to run multiple times)
+DO $$ BEGIN ALTER TYPE registration_status_v2 ADD VALUE IF NOT EXISTS 'awaiting_confirmation'; EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE registration_status_v2 ADD VALUE IF NOT EXISTS 'signed_up';             EXCEPTION WHEN others THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE registration_status_v2 ADD VALUE IF NOT EXISTS 'not_interested';        EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Migrate existing rows to new values
+UPDATE registrations SET status = 'awaiting_confirmation' WHERE status = 'pending';
+UPDATE registrations SET status = 'signed_up'             WHERE status = 'approved';
+UPDATE registrations SET status = 'not_interested'        WHERE status = 'rejected';
+
+-- Update column default
+ALTER TABLE registrations ALTER COLUMN status SET DEFAULT 'awaiting_confirmation';
