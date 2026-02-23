@@ -130,6 +130,12 @@ export default async function SettingsPage() {
                                 border: 'border-accent-amber/20',
                                 hover: 'hover:shadow-accent-amber/20',
                             },
+                            blue: {
+                                bg: 'bg-blue-100',
+                                text: 'text-blue-700',
+                                border: 'border-blue-200',
+                                hover: 'hover:shadow-blue-200',
+                            },
                         };
 
                         const colors = colorClasses[section.color as keyof typeof colorClasses];
