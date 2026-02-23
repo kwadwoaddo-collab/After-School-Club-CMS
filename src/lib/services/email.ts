@@ -787,7 +787,7 @@ export class EmailService {
     </div>
     <div style="padding:40px 32px;">
       <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentName},</p>
-      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">Thank you for submitting your registration. Here's a copy of what we received:</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">Thank you for submitting your registration. Below is a summary of what we received. A text copy is also attached to this email.</p>
 
       <div style="margin-bottom:24px;">
         <p style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Requested Start Date</p>
@@ -822,11 +822,46 @@ export class EmailService {
 </html>`;
 
     try {
+      // Build plain-text attachment content
+      const childrenText = data.children
+        .map((c, i) => `  ${i + 1}. ${c.firstName} ${c.lastName} — Year ${c.schoolYear}`)
+        .join('\n');
+
+      const attachmentText = [
+        `REGISTRATION CONFIRMATION`,
+        `Organisation: ${data.orgName}`,
+        `Date Submitted: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+        ``,
+        `PARENT / GUARDIAN`,
+        `Name: ${data.parentName}`,
+        `Email: ${data.parentEmail}`,
+        ``,
+        `REQUESTED START DATE`,
+        formattedDate,
+        ``,
+        `CHILDREN REGISTERED`,
+        childrenText,
+        ``,
+        `FUNDING METHOD`,
+        data.fundingTypes.map(fundingLabel).join(', ') || 'Not specified',
+        ``,
+        `---`,
+        `The team at ${data.orgName} will review your registration and be in touch to confirm your place and provide next steps.`,
+        ``,
+        `Powered by SprintScale | support@sprintscaleit.co.uk`,
+      ].join('\n');
+
       const { data: result, error } = await resend.emails.send({
         from: `${data.orgName} via SprintScale <${FROM_EMAIL}>`,
         to: data.parentEmail,
         subject: `Registration received — ${data.orgName}`,
         html,
+        attachments: [
+          {
+            filename: `registration-${data.parentName.toLowerCase().replace(/\s+/g, '-')}.txt`,
+            content: Buffer.from(attachmentText, 'utf-8'),
+          },
+        ],
       });
       if (error) return { success: false, error: error.message };
       return { success: true, messageId: result?.id };
