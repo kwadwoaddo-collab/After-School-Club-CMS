@@ -401,7 +401,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-                                <input type="tel" {...register('parent.phone')} placeholder="+44 7XXX XXX XXX" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
+                                <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
