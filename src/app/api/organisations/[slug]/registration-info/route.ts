@@ -18,6 +18,18 @@ export async function GET(
 
     const org = await db.query.organisations.findFirst({
         where: eq(organisations.slug, slug),
+        with: {
+            centres: {
+                columns: {
+                    id: true,
+                    name: true,
+                    address: true,
+                    slug: true,
+                    operatingHours: true,
+                    sessionSlots: true,
+                },
+            },
+        },
         columns: {
             id: true,
             name: true,

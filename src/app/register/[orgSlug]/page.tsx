@@ -68,9 +68,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function RegisterPage() {
     const { orgSlug } = useParams<{ orgSlug: string }>();
-    const [orgInfo, setOrgInfo] = useState<{ name: string; logoUrl?: string; registrationTerms?: string; sessionSlots?: string[] | null; pricing?: { selfFinanceRate: number; taxCreditRate: number } } | null>(null);
+    const [orgInfo, setOrgInfo] = useState<{
+        name: string; logoUrl?: string; registrationTerms?: string; sessionSlots?: string[] | null; pricing?: { selfFinanceRate: number; taxCreditRate: number },
+        centres?: { id: string; name: string; address: string | null; slug: string; operatingHours: string | null; sessionSlots: string | null }[]
+    } | null>(null);
     const [orgLoading, setOrgLoading] = useState(true);
     const [orgNotFound, setOrgNotFound] = useState(false);
+    const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
     const [showFeesIntro, setShowFeesIntro] = useState(true);
     const [step, setStep] = useState(1);
     const TOTAL_STEPS = 6;
@@ -96,7 +100,14 @@ export default function RegisterPage() {
                 if (!r.ok) { setOrgNotFound(true); return null; }
                 return r.json();
             })
-            .then(data => { if (data) setOrgInfo(data); })
+            .then(data => {
+                if (data) {
+                    setOrgInfo(data);
+                    if (data.centres && data.centres.length === 1) {
+                        setSelectedCentreId(data.centres[0].id);
+                    }
+                }
+            })
             .catch(() => { setOrgNotFound(true); })
             .finally(() => setOrgLoading(false));
     }, [orgSlug]);
@@ -119,6 +130,9 @@ export default function RegisterPage() {
     // ── Reset to start ─────────────────────────────────────────────
     const resetToStart = () => {
         setShowFeesIntro(true);
+        if (orgInfo?.centres && orgInfo.centres.length > 1) {
+            setSelectedCentreId(null);
+        }
         setStep(1);
         setChildList([emptyChild()]);
         setParentList([emptyParent()]);
@@ -136,6 +150,7 @@ export default function RegisterPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     orgSlug,
+                    centreId: selectedCentreId,
                     startDate,
                     children: childList,
                     parents: parentList,
@@ -293,6 +308,55 @@ export default function RegisterPage() {
         );
     }
 
+    // ── Centre Selection Screen (if multiple centres) ──────────────────
+    if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
+        return (
+            <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
+                <div className="bg-white/5 border-b border-white/10 px-6 py-4">
+                    <div className="max-w-2xl mx-auto flex items-center gap-3">
+                        {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+                        <button onClick={resetToStart} className="text-left group cursor-pointer">
+                            <p className="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors">{orgInfo?.name}</p>
+                            <p className="text-white/40 text-xs group-hover:text-white/60 transition-colors">Student Registration Form</p>
+                        </button>
+                    </div>
+                </div>
+                <div className="max-w-md mx-auto px-4 py-16">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-blue-500/10 border border-blue-400/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-white mb-2">Select a Centre</h1>
+                        <p className="text-white/50 text-sm">Choose the location where you would like to register your child.</p>
+                    </div>
+                    <div className="space-y-4">
+                        {orgInfo.centres.map(centre => (
+                            <button
+                                key={centre.id}
+                                onClick={() => setSelectedCentreId(centre.id)}
+                                className="w-full text-left p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-400 hover:bg-white/10 transition-all group"
+                            >
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-white font-medium mb-1">{centre.name}</p>
+                                        <p className="text-white/50 text-sm">{centre.address || 'After School provisions'}</p>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:border-blue-400 transition-colors">
+                                        <svg className="w-4 h-4 text-white/30 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // ── Success screen ─────────────────────────────────────────────
     if (submitted) {
         return (
@@ -315,12 +379,14 @@ export default function RegisterPage() {
         <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
             {/* Header */}
             <div className="bg-white/5 border-b border-white/10 px-6 py-4">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
-                    <button onClick={resetToStart} className="text-left group cursor-pointer">
-                        <p className="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors">{orgInfo?.name ?? '...'}</p>
-                        <p className="text-white/40 text-xs group-hover:text-white/60 transition-colors">Student Registration Form</p>
-                    </button>
+                <div className="max-w-2xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+                        <button onClick={resetToStart} className="text-left group cursor-pointer flex flex-col justify-center">
+                            <p className="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors leading-tight">{orgInfo?.name ?? '...'}</p>
+                            <p className="text-white/40 text-[10px] uppercase tracking-widest mt-0.5">{orgInfo?.centres?.find(c => c.id === selectedCentreId)?.name ?? 'Student Registration Form'}</p>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -373,23 +439,30 @@ export default function RegisterPage() {
                                     </div>
                                     <p className="text-amber-400/80 text-xs mb-4">⚠ Session times selected can be changed by mutual agreement with the centre and yourself at any time.</p>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {(orgInfo?.sessionSlots ?? SESSION_SLOTS).map(slot => (
-                                            <label key={slot} className="flex items-center gap-2.5 cursor-pointer group">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`child-${i}-session-${slot}`}
-                                                    checked={c.sessions.includes(slot)}
-                                                    onChange={e => {
-                                                        const updated = e.target.checked
-                                                            ? [...c.sessions, slot]
-                                                            : c.sessions.filter(s => s !== slot);
-                                                        updateChild(i, 'sessions', updated);
-                                                    }}
-                                                    className="w-4 h-4 rounded border-white/20 bg-white/5 accent-blue-500 cursor-pointer"
-                                                />
-                                                <span className="text-white/70 text-xs group-hover:text-white/90 transition-colors">{slot}</span>
-                                            </label>
-                                        ))}
+                                        {(() => {
+                                            const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
+                                            let slotsToUse = orgInfo?.sessionSlots ?? SESSION_SLOTS;
+                                            if (activeCentre?.sessionSlots) {
+                                                try { slotsToUse = JSON.parse(activeCentre.sessionSlots); } catch { /* ignore */ }
+                                            }
+                                            return slotsToUse.map((slot: string) => (
+                                                <label key={slot} className="flex items-center gap-2.5 cursor-pointer group bg-white/5 border border-white/10 p-3 rounded-lg hover:border-white/20 transition-all">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`child-${i}-session-${slot}`}
+                                                        checked={c.sessions.includes(slot)}
+                                                        onChange={e => {
+                                                            const updated = e.target.checked
+                                                                ? [...c.sessions, slot]
+                                                                : c.sessions.filter(s => s !== slot);
+                                                            updateChild(i, 'sessions', updated);
+                                                        }}
+                                                        className="w-4 h-4 rounded border-white/20 bg-white/5 accent-blue-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-white/80 text-xs group-hover:text-white transition-colors break-words w-full">{slot}</span>
+                                                </label>
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             </div>

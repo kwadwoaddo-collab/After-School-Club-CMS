@@ -11,7 +11,7 @@ export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Ot
 export const assessmentTypeEnum = pgEnum('assessment_type', ['initial_assessment', 'progress_review', 'subject_specific']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'cancelled', 'past_due', 'trialing']);
 export const notificationTypeEnum = pgEnum('notification_type', ['booking_created', 'booking_cancelled', 'booking_rescheduled', 'assessment_reminder', 'system']);
-export const registrationStatusEnum2 = pgEnum('registration_status_v2', ['awaiting_confirmation', 'signed_up', 'not_interested']);
+export const registrationStatusEnum2 = pgEnum('registration_status_v2', ['awaiting_confirmation', 'signed_up', 'not_interested', 'pending']);
 export const fundingTypeEnum = pgEnum('funding_type', ['tax_free_childcare', 'childcare_vouchers', 'student_finance', 'self_funded', 'other']);
 export const studentSourceEnum = pgEnum('student_source', ['assessment', 'registration', 'both']);
 export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
@@ -55,6 +55,7 @@ export const centres = pgTable('centres', {
   address: text('address'),
   timezone: varchar('timezone', { length: 50 }).default('Europe/London').notNull(),
   operatingHours: text('operating_hours'),
+  sessionSlots: text('session_slots'), // JSON-encoded string[] of session time options for this specific centre
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -99,7 +100,8 @@ export const accounts = pgTable('accounts', {
 }));
 
 export const sessions = pgTable('sessions', {
-  sessionToken: varchar('session_token', { length: 255 }).notNull().primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(), // ADDED missing column
+  sessionToken: varchar('session_token', { length: 255 }).notNull().unique(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   expires: timestamp('expires').notNull(),
 });
@@ -300,6 +302,7 @@ export const studentRegistrations = pgTable('student_registrations', {
 export const registrations = pgTable('registrations', {
   id: uuid('id').defaultRandom().primaryKey(),
   organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }), // Can be null for backwards compatibility to existing incomplete registrations
 
   // Status
   status: registrationStatusEnum2('status').default('awaiting_confirmation').notNull(),
@@ -338,7 +341,8 @@ export const registrationChildren = pgTable('registration_children', {
   submittedLastName: varchar('submitted_last_name', { length: 100 }).notNull(),
   submittedDateOfBirth: timestamp('submitted_date_of_birth'),
   submittedSchoolYear: varchar('submitted_school_year', { length: 10 }),
-  wasMatched: boolean('was_matched').default(false), // true if linked to existing child
+  wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing child
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // Links each registration to the resolved parent records
@@ -353,7 +357,8 @@ export const registrationParents = pgTable('registration_parents', {
   submittedEmail: varchar('submitted_email', { length: 255 }),
   submittedPhone: varchar('submitted_phone', { length: 20 }),
   submittedRelationship: varchar('submitted_relationship', { length: 50 }),
-  wasMatched: boolean('was_matched').default(false), // true if linked to existing parent
+  wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing parent
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // ==================== AUDIT LOGS ====================
