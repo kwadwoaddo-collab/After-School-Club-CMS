@@ -100,8 +100,7 @@ export const accounts = pgTable('accounts', {
 }));
 
 export const sessions = pgTable('sessions', {
-  id: uuid('id').defaultRandom().primaryKey(), // ADDED missing column
-  sessionToken: varchar('session_token', { length: 255 }).notNull().unique(),
+  sessionToken: varchar('session_token', { length: 255 }).notNull().primaryKey(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   expires: timestamp('expires').notNull(),
 });
