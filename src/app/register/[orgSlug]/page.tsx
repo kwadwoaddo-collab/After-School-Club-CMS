@@ -24,6 +24,7 @@ const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Other'];
 const FUNDING_OPTIONS = [
     { value: 'tax_free_childcare', label: 'Tax-Free Childcare' },
     { value: 'childcare_vouchers', label: 'Childcare Vouchers' },
+    { value: 'universal_credit', label: 'Universal Credit' },
     { value: 'student_finance', label: 'Student Finance (CCG)' },
     { value: 'self_funded', label: 'Self-Funded' },
     { value: 'other', label: 'Other' },
