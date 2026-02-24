@@ -97,7 +97,7 @@ export default async function CentreHoursPage() {
                         </div>
                         <div>
                             <p className="font-semibold text-slate-900">Opening Hours</p>
-                            <p className="text-slate-600 text-xs mt-0.5">When the centre is physically open (Mon–Sun)</p>
+                            <p className="text-slate-600 text-xs mt-0.5">Controls when parents can book assessments</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -106,7 +106,7 @@ export default async function CentreHoursPage() {
                         </div>
                         <div>
                             <p className="font-semibold text-slate-900">Session Slots</p>
-                            <p className="text-slate-600 text-xs mt-0.5">The specific time blocks parents pick on the registration form</p>
+                            <p className="text-slate-600 text-xs mt-0.5">When students attend — shown on the registration form for parents to choose</p>
                         </div>
                     </div>
                 </div>

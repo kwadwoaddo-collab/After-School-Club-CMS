@@ -175,7 +175,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">Opening Hours</h2>
-                        <p className="text-sm text-slate-600">Set the days and times the centre is physically open.</p>
+                        <p className="text-sm text-slate-600">Controls when parents can book assessments at this centre.</p>
                     </div>
                 </div>
 
@@ -256,7 +256,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">Registration Session Slots</h2>
-                        <p className="text-sm text-slate-600">The exact time blocks parents can select when registering their child.</p>
+                        <p className="text-sm text-slate-600">The time blocks when students attend sessions — parents choose from these on the registration form.</p>
                     </div>
                 </div>
 
