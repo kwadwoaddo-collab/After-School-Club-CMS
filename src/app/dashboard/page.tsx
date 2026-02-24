@@ -80,37 +80,27 @@ export default async function DashboardPage() {
         .orderBy(asc(bookings.startAt))
         .limit(3) : [];
 
-    // ── Registrations ─────────────────────────────────────────────────────
-    const orgCentreIds = hasCentres ? accessibleCentreIds : [];
-
-    // Get all org's centre IDs for registration lookup
-    const orgCentres = await db
-        .select({ id: centres.id, name: centres.name })
-        .from(centres)
-        .where(eq(centres.organisationId, org.id));
-
-    const allOrgCentreIds = orgCentres.map(c => c.id);
-
-    const [{ count: totalRegistrations }] = allOrgCentreIds.length > 0 ? await db
+    // Count ALL registrations by organisation_id — works for legacy rows where centre_id IS NULL
+    const [{ count: totalRegistrations }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(registrations)
-        .where(inArray(registrations.centreId, allOrgCentreIds)) : [{ count: 0 }];
+        .where(eq(registrations.organisationId, org.id));
 
-    const [{ count: pendingRegistrations }] = allOrgCentreIds.length > 0 ? await db
+    const [{ count: pendingRegistrations }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(registrations)
         .where(and(
-            inArray(registrations.centreId, allOrgCentreIds),
+            eq(registrations.organisationId, org.id),
             eq(registrations.status, 'awaiting_confirmation'),
-        )) : [{ count: 0 }];
+        ));
 
-    const [{ count: registrationsThisMonth }] = allOrgCentreIds.length > 0 ? await db
+    const [{ count: registrationsThisMonth }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(registrations)
         .where(and(
-            inArray(registrations.centreId, allOrgCentreIds),
+            eq(registrations.organisationId, org.id),
             gte(registrations.submittedAt, firstDayThisMonth),
-        )) : [{ count: 0 }];
+        ));
 
     const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/register/${org.slug}`;
 
