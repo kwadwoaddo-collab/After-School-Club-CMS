@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface SidebarContextType {
     collapsed: boolean;
@@ -10,13 +10,21 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-    // Start collapsed on mobile, expanded on desktop
-    const [collapsed, setCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerWidth < 1024;
-        }
-        return false;
-    });
+    // Default to collapsed (hidden) — works correctly for both SSR and mobile first-render
+    const [collapsed, setCollapsed] = useState(true);
+
+    // After hydration: expand on desktop, keep collapsed on mobile
+    useEffect(() => {
+        const mq = window.matchMedia('(min-width: 1024px)');
+        setCollapsed(!mq.matches);
+
+        const handler = (e: MediaQueryListEvent) => {
+            // When resizing to desktop, auto-expand; shrinking to mobile, auto-collapse
+            setCollapsed(!e.matches);
+        };
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
 
     return (
         <SidebarContext.Provider value={{ collapsed, setCollapsed }}>

@@ -10,7 +10,10 @@ export default function DashboardContent({ children }: { children: React.ReactNo
             className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'
                 }`}
         >
-            {children}
+            {/* Extra bottom padding on mobile to clear the fixed bottom nav */}
+            <div className="flex-1 flex flex-col pb-16 lg:pb-0">
+                {children}
+            </div>
         </div>
     );
 }

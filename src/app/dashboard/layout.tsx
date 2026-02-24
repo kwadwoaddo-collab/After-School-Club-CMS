@@ -5,6 +5,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import { SidebarProvider } from '@/components/dashboard/SidebarContext';
 import DashboardContent from '@/components/dashboard/DashboardContent';
+import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -72,6 +73,9 @@ export default async function DashboardLayout({
                     userRole={userRole}
                     orgName={orgName}
                 />
+
+                {/* Mobile Bottom Navigation */}
+                <MobileBottomNav userRole={userRole} />
 
                 {/* Main Content Area - Responsive margin */}
                 <DashboardContent>
