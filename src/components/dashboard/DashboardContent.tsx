@@ -10,8 +10,11 @@ export default function DashboardContent({ children }: { children: React.ReactNo
             className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'
                 }`}
         >
-            {/* Extra bottom padding on mobile to clear the fixed bottom nav */}
-            <div className="flex-1 flex flex-col pb-16 lg:pb-0">
+            {/*
+              pt-16 sm:pt-20 = space for the fixed header (h-16 on mobile, h-20 on sm+)
+              pb-16 lg:pb-0  = space for the fixed mobile bottom nav
+            */}
+            <div className="flex-1 flex flex-col pt-16 sm:pt-20 pb-16 lg:pb-0">
                 {children}
             </div>
         </div>

@@ -28,7 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
-    const { setCollapsed } = useSidebar();
+    const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -118,7 +118,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className="h-16 sm:h-20 glass-panel sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-slate-200/50">
+        <header className={`h-16 sm:h-20 glass-panel fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-slate-200/50 transition-all duration-300 ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'
+            }`}>
             {/* Hamburger — mobile only */}
             <button
                 className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors flex-shrink-0"
