@@ -5,7 +5,7 @@ const SCHOOL_YEARS = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10
 export const childSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  dateOfBirth: z.string().optional(),
   schoolYear: z.enum(SCHOOL_YEARS, { message: 'Please select a valid school year' }),
   subjects: z.array(z.enum(['Maths', 'English', 'Science', 'Other'])).min(1, 'Please select at least one subject'),
   customSubject: z.string().max(100).optional(),

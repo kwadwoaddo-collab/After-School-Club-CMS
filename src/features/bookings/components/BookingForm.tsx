@@ -442,8 +442,8 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                         <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's last name" />
                                         {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                                    <div className="hidden">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                                         <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                         {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                     </div>
