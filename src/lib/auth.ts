@@ -25,8 +25,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }) as any, // Type assertion needed for drizzle-orm compatibility
 
   session: {
-    strategy: 'jwt', // Changed from 'database' to support credentials provider
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60,   // re-issue token once per day max
+  },
+
+  // Explicit cookie config prevents stale-cookie conflicts when switching
+  // between regular and incognito Chrome sessions.
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
 
   pages: {
