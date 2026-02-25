@@ -79,12 +79,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             >
                 {/* Header */}
                 <div className="p-6">
-                    <div className={`flex items-center gap-3 mb-8 ${collapsed ? 'justify-center' : ''}`}>
+                    <div className={`flex items-center gap-3 mb-8 overflow-hidden ${collapsed ? 'justify-center' : ''}`}>
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-primary/20 flex-shrink-0">
                             {orgName.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
-                            <span className="text-base font-bold tracking-tight whitespace-nowrap leading-tight">
+                            <span className="text-base font-bold tracking-tight truncate leading-tight">
                                 {orgName}
                             </span>
                         )}
