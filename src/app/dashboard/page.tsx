@@ -41,66 +41,60 @@ export default async function DashboardPage() {
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    // ── Students ──────────────────────────────────────────────────────────
-    const [{ count: totalStudents }] = await db
-        .select({ count: sql<number>`count(distinct ${children.id})` })
-        .from(children)
-        .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(eq(parents.organisationId, org.id));
+    // ── Run all DB queries in parallel ────────────────────────────────────
+    const [
+        [{ count: totalStudents }],
+        [{ count: totalBookingsAll }],
+        [{ count: bookingsThisMonth }],
+        recentBookings,
+        [{ count: totalRegistrations }],
+        [{ count: pendingRegistrations }],
+        [{ count: registrationsThisMonth }],
+    ] = await Promise.all([
+        // Students
+        db.select({ count: sql<number>`count(distinct ${children.id})` })
+            .from(children)
+            .innerJoin(parents, eq(children.parentId, parents.id))
+            .where(eq(parents.organisationId, org.id)),
 
-    // ── Bookings ──────────────────────────────────────────────────────────
-    const [{ count: totalBookingsAll }] = hasCentres ? await db
-        .select({ count: sql<number>`count(*)` })
-        .from(bookings)
-        .where(inArray(bookings.centreId, accessibleCentreIds)) : [{ count: 0 }];
+        // Total bookings
+        hasCentres
+            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
+            : Promise.resolve([{ count: 0 }]),
 
-    const [{ count: bookingsThisMonth }] = hasCentres ? await db
-        .select({ count: sql<number>`count(*)` })
-        .from(bookings)
-        .where(and(
-            inArray(bookings.centreId, accessibleCentreIds),
-            gte(bookings.createdAt, firstDayThisMonth),
-        )) : [{ count: 0 }];
+        // Bookings this month
+        hasCentres
+            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.createdAt, firstDayThisMonth)))
+            : Promise.resolve([{ count: 0 }]),
 
-    // Recent bookings (last 3 for preview)
-    const recentBookings = hasCentres ? await db
-        .select({
-            id: bookings.id,
-            startAt: bookings.startAt,
-            status: bookings.status,
-            centreName: centres.name,
-            childFirst: children.firstName,
-            childLast: children.lastName,
-        })
-        .from(bookings)
-        .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
-        .innerJoin(children, eq(bookingAttendees.childId, children.id))
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
-        .where(inArray(bookings.centreId, accessibleCentreIds))
-        .orderBy(asc(bookings.startAt))
-        .limit(3) : [];
+        // Recent bookings preview
+        hasCentres
+            ? db.select({
+                id: bookings.id,
+                startAt: bookings.startAt,
+                status: bookings.status,
+                centreName: centres.name,
+                childFirst: children.firstName,
+                childLast: children.lastName,
+            })
+                .from(bookings)
+                .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
+                .innerJoin(children, eq(bookingAttendees.childId, children.id))
+                .innerJoin(centres, eq(bookings.centreId, centres.id))
+                .where(inArray(bookings.centreId, accessibleCentreIds))
+                .orderBy(asc(bookings.startAt))
+                .limit(3)
+            : Promise.resolve([]),
 
-    // Count ALL registrations by organisation_id — works for legacy rows where centre_id IS NULL
-    const [{ count: totalRegistrations }] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(registrations)
-        .where(eq(registrations.organisationId, org.id));
+        // Total registrations
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(eq(registrations.organisationId, org.id)),
 
-    const [{ count: pendingRegistrations }] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(registrations)
-        .where(and(
-            eq(registrations.organisationId, org.id),
-            eq(registrations.status, 'awaiting_confirmation'),
-        ));
+        // Pending registrations
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), eq(registrations.status, 'awaiting_confirmation'))),
 
-    const [{ count: registrationsThisMonth }] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(registrations)
-        .where(and(
-            eq(registrations.organisationId, org.id),
-            gte(registrations.submittedAt, firstDayThisMonth),
-        ));
+        // Registrations this month
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.submittedAt, firstDayThisMonth))),
+    ]);
 
     const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/register/${org.slug}`;
 

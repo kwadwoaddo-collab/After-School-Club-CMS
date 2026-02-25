@@ -155,48 +155,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async signIn({ user, account }) {
-      // For Google OAuth: if user has no org yet, send them to onboarding
-      // (Don't block sign-in — just let the JWT/session callbacks handle the redirect)
-      if (account?.provider === 'google' && user.id) {
-        const dbUser = await db.query.users.findFirst({
-          where: eq(users.id, user.id),
-        });
-        // If no org, flag it on the token via the user object
-        if (dbUser && !dbUser.organisationId) {
-          (user as any).needsOnboarding = true;
-        }
-      }
+      // Always allow sign-in — the jwt callback will handle org/onboarding state.
+      // Previously we did a DB lookup here which caused a race on first Google login.
       return true;
     },
 
     async jwt({ token, user, account }) {
-      // Initial sign in
+      // ── Initial sign in only ─────────────────────────────────────────────
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
-        token.organisationId = (user as any).organisationId;
-        token.needsOnboarding = (user as any).needsOnboarding ?? false;
+        token.organisationId = (user as any).organisationId ?? null;
+        token.needsOnboarding = false;
 
-        // For Google OAuth users, role/organisationId might not be in the user object
-        // Fetch from database if missing
+        // For Google/Email OAuth the user object won't carry role/org — fetch from DB
         if (user.id && (!token.role || !token.organisationId)) {
           const dbUser = await db.query.users.findFirst({
-            where: eq(users.id, user.id),
+            where: eq(users.id, user.id as string),
           });
-
           if (dbUser) {
             token.role = dbUser.role;
             token.organisationId = dbUser.organisationId ?? null;
-            // If still no org, they need onboarding
-            if (!dbUser.organisationId) {
-              token.needsOnboarding = true;
-            }
+            token.needsOnboarding = !dbUser.organisationId;
           }
         }
+
+        return token;
       }
 
-      // On subsequent requests, re-check if org has been set
-      // (handles the case where onboarding just completed)
+      // ── Subsequent requests: only poll DB while onboarding is pending ────
+      // This lets the token self-heal after /onboarding completes without
+      // hitting the DB on every normal page load.
       if (token.needsOnboarding && token.id) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.id, token.id as string),
