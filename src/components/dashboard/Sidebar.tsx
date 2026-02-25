@@ -10,11 +10,11 @@ import {
     Settings,
     ChevronLeft,
     ChevronRight,
-    Plus,
-    Share2,
+    ChevronDown,
     UserCircle2,
     ClipboardList,
-    Link2,
+    CalendarDays,
+    ExternalLink,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -25,11 +25,10 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Registrations', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Registrations'],
-    FRONT_DESK: ['Dashboard', 'Students'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations'],
+    FRONT_DESK: ['Dashboard', 'Students', 'Bookings'],
     TUTOR: ['Dashboard'],
-
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -42,6 +41,7 @@ const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
 export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'AfterSchool' }: SidebarProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
+    const [quickActionsOpen, setQuickActionsOpen] = useState(false);
 
     const allowedNav = ROLE_NAV[userRole] || ROLE_NAV['TUTOR'];
     const allowedActions = ROLE_QUICK_ACTIONS[userRole] || [];
@@ -51,6 +51,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
+        { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ].filter(item => allowedNav.includes(item.name));
@@ -90,53 +91,40 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         )}
                     </div>
 
-                    {/* Quick Actions - Only show when expanded */}
+                    {/* Quick Links - Only show when expanded */}
                     {!collapsed && (
                         <>
-                            {(allowedActions.includes('new-assessment') || allowedActions.includes('booking-link')) && (
+                            {(allowedActions.includes('booking-link') || allowedActions.includes('registration-link')) && (
                                 <div className="mb-6">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">
-                                        Quick Actions
-                                    </p>
-                                    <div className="space-y-2">
-                                        {allowedActions.includes('new-assessment') && (
-                                            <Link
-                                                href="/dashboard/bookings/new"
-                                                className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-purple-500/20 hover:border-purple-500/40 transition-all overflow-hidden"
-                                            >
-                                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-pink-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-                                                    <Plus className="w-4 h-4 text-white" />
-                                                </div>
-                                                <span className="relative text-sm font-bold text-white">New Assessment</span>
-                                            </Link>
-                                        )}
+                                    {/* Collapsible header */}
+                                    <button
+                                        onClick={() => setQuickActionsOpen(o => !o)}
+                                        className="flex items-center justify-between w-full px-2 mb-3 group"
+                                    >
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-300 transition-colors">
+                                            Quick Links
+                                        </p>
+                                        <ChevronDown
+                                            className={`w-3 h-3 text-slate-500 group-hover:text-slate-300 transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+                                    <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${quickActionsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
                                         {allowedActions.includes('booking-link') && (
                                             <Link
                                                 href="/dashboard/booking-link"
-                                                className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all overflow-hidden"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-medium group"
                                             >
-                                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50">
-                                                    <Share2 className="w-4 h-4 text-white" />
-                                                </div>
-                                                <span className="relative text-sm font-bold text-white">
-                                                    Booking Link
-                                                </span>
+                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                                                Booking
                                             </Link>
                                         )}
                                         {allowedActions.includes('registration-link') && (
                                             <Link
                                                 href="/dashboard/registration-link"
-                                                className="group relative flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-violet-500/10 hover:from-purple-500/20 hover:to-violet-500/20 border border-purple-500/20 hover:border-purple-500/40 transition-all overflow-hidden"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-medium group"
                                             >
-                                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-violet-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-                                                    <Link2 className="w-4 h-4 text-white" />
-                                                </div>
-                                                <span className="relative text-sm font-bold text-white">
-                                                    Reg. Link
-                                                </span>
+                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                                                Registration
                                             </Link>
                                         )}
                                     </div>
