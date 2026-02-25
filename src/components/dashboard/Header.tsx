@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User, Menu } from 'lucide-react';
+import { Search, Bell, Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { useSidebar } from './SidebarContext';
 interface HeaderProps {
     userName?: string;
@@ -31,7 +32,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showUserMenu, setShowUserMenu] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
+    const userMenuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
     // Fetch real notifications from API
@@ -102,6 +105,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         function handleClickOutside(event: MouseEvent) {
             if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
                 setShowNotifications(false);
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false);
             }
         }
 
@@ -225,17 +231,45 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 {/* Divider */}
                 <div className="h-8 w-[1px] bg-slate-200 mx-2" />
 
-                {/* User Profile */}
-                <div className="flex items-center gap-3 pl-2">
-                    <div className="text-right hidden sm:block">
-                        <p className="text-sm font-bold text-slate-900 leading-none">
-                            {userName || 'Admin User'}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500 mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
-                        {userInitial || 'A'}
-                    </div>
+                {/* User Profile Dropdown */}
+                <div className="relative" ref={userMenuRef}>
+                    <button
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="flex items-center gap-3 pl-2 rounded-xl hover:bg-slate-100 pr-2 py-1.5 transition-colors"
+                        aria-label="User menu"
+                    >
+                        <div className="text-right hidden sm:block">
+                            <p className="text-sm font-bold text-slate-900 leading-none">
+                                {userName || 'Admin User'}
+                            </p>
+                            <p className="text-xs font-medium text-slate-500 mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0">
+                            {userInitial || 'A'}
+                        </div>
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* User Dropdown */}
+                    {showUserMenu && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="p-4 border-b border-slate-100">
+                                <p className="font-bold text-slate-900 text-sm truncate">{userName || 'Admin User'}</p>
+                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                    {userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}
+                                </span>
+                            </div>
+                            <div className="p-2">
+                                <button
+                                    onClick={() => signOut({ callbackUrl: '/login' })}
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors text-sm font-semibold"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
