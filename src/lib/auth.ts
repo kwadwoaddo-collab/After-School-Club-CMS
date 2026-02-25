@@ -164,17 +164,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // ── Initial sign in only ─────────────────────────────────────────────
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = (user as any).role ?? null;
         token.organisationId = (user as any).organisationId ?? null;
         token.needsOnboarding = false;
 
-        // For Google/Email OAuth the user object won't carry role/org — fetch from DB
+        // For Google OAuth: the `createUser` event that sets role='ORG_OWNER' fires
+        // AFTER the jwt callback, so on a brand-new account the DB row has role=null.
+        // We set role optimistically here — the DB write happens in the createUser event.
+        if (account?.provider === 'google' && !token.role) {
+          token.role = 'ORG_OWNER';
+        }
+
+        // Fetch from DB to get org/role if still missing (returning users, email provider, etc.)
         if (user.id && (!token.role || !token.organisationId)) {
           const dbUser = await db.query.users.findFirst({
             where: eq(users.id, user.id as string),
           });
           if (dbUser) {
-            token.role = dbUser.role;
+            token.role = dbUser.role ?? token.role; // keep optimistic value if DB still null
             token.organisationId = dbUser.organisationId ?? null;
             token.needsOnboarding = !dbUser.organisationId;
           }
@@ -184,8 +191,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // ── Subsequent requests: only poll DB while onboarding is pending ────
-      // This lets the token self-heal after /onboarding completes without
-      // hitting the DB on every normal page load.
       if (token.needsOnboarding && token.id) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.id, token.id as string),
