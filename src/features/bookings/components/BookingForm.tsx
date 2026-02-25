@@ -54,7 +54,7 @@ function ErrorAlert({ message, onDismiss }: { message: string; onDismiss: () => 
 
 const SUBJECTS = ['Maths', 'English', 'Science', 'Other'] as const;
 const DEFAULT_DURATION = 60;
-const SCHOOL_YEARS = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
+const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
 export default function BookingForm({ centreId, centreName, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
     // ... state ...

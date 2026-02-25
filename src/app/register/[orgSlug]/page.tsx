@@ -19,7 +19,7 @@ interface EmergencyContact { name: string; relationship: string; phone: string; 
 interface Funding { type: string; other: string; }
 interface SpecialNeeds { has: boolean; details: string; }
 
-const YEAR_GROUPS = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
+const YEAR_GROUPS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Other'];
 const FUNDING_OPTIONS = [
     { value: 'tax_free_childcare', label: 'Tax-Free Childcare' },
