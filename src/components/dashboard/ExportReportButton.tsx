@@ -13,10 +13,12 @@ export default function ExportReportButton() {
     const [showCustomRange, setShowCustomRange] = useState(false);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [exportMsg, setExportMsg] = useState<{ text: string; type: 'error' | 'info' } | null>(null);
 
     const handleExport = async (filter: FilterType) => {
+        setExportMsg(null);
         if (filter === 'custom' && (!startDate || !endDate)) {
-            alert('Please select both start and end dates');
+            setExportMsg({ text: 'Please select both start and end dates.', type: 'error' });
             return;
         }
 
@@ -50,7 +52,7 @@ export default function ExportReportButton() {
             });
 
             if (filteredData.length === 0) {
-                alert('No records found for the selected period.');
+                setExportMsg({ text: 'No records found for the selected period.', type: 'info' });
                 return;
             }
 
@@ -58,7 +60,7 @@ export default function ExportReportButton() {
             const headers = ['Booking ID', 'Date', 'Status', 'Student', 'Parent Email', 'Centre', 'Feedback Status', 'Score'];
             const rows = filteredData.map(item => [
                 item.bookingId,
-                new Date(item.startAt).toLocaleString(),
+                new Date(item.startAt).toLocaleString('en-GB'),
                 item.status,
                 `${item.childFirstName} ${item.childLastName}`,
                 item.parentEmail,
@@ -94,7 +96,7 @@ export default function ExportReportButton() {
             }
         } catch (error) {
             console.error('Export failed:', error);
-            alert('Failed to export report. See console for details.');
+            setExportMsg({ text: 'Export failed. Please try again.', type: 'error' });
         } finally {
             setIsExporting(false);
         }
@@ -111,9 +113,15 @@ export default function ExportReportButton() {
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-2xl text-sm font-bold text-white transition-all shadow-lg shadow-cyan-500/30 disabled:opacity-50"
             >
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Export Report
+                {isExporting ? 'Exporting…' : 'Export Report'}
                 <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
             </button>
+
+            {exportMsg && (
+                <p className={`absolute right-0 mt-1 text-xs font-semibold px-3 py-1.5 rounded-xl whitespace-nowrap ${
+                    exportMsg.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-50 text-slate-600 border border-slate-100'
+                }`}>{exportMsg.text}</p>
+            )}
 
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-72 bg-white rounded-3xl shadow-2xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">

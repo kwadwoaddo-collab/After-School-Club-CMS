@@ -102,13 +102,13 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
     };
 
     const formatApptDate = (date: Date) => {
-        if (!mounted) return "...";
-        return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        if (!mounted) return '…';
+        return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
     };
 
     const formatApptTime = (date: Date) => {
-        if (!mounted) return "...";
-        return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        if (!mounted) return '';
+        return new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     };
 
     return (

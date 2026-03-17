@@ -12,11 +12,13 @@ function PortalLoginForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSent, setIsSent] = useState(false);
     const [debugLink, setDebugLink] = useState<string | null>(null);
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setDebugLink(null);
+        setError('');
 
         try {
             const res = await fetch('/api/portal/login', {
@@ -30,11 +32,11 @@ function PortalLoginForm() {
                 setIsSent(true);
                 if (data.debugLink) setDebugLink(data.debugLink);
             } else {
-                alert(data.error || 'Failed to send link');
+                setError(data.error || 'Failed to send link. Please try again.');
             }
         } catch (err) {
             console.error(err);
-            alert('Something went wrong');
+            setError('Something went wrong. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -73,12 +75,17 @@ function PortalLoginForm() {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                             />
                         </div>
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-lg text-sm mb-4">
+                                {error}
+                            </div>
+                        )}
                         <button
                             type="submit"
                             disabled={isSubmitting}
                             className="w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
                         >
-                            {isSubmitting ? 'Sending Link...' : 'Send Magic Link'}
+                            {isSubmitting ? 'Sending Link…' : 'Send Magic Link'}
                         </button>
                     </form>
                 ) : (

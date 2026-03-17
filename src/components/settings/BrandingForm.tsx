@@ -16,6 +16,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
     const [logoPreview, setLogoPreview] = useState<string | null>(logoUrl || null);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [saveError, setSaveError] = useState('');
 
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -52,7 +53,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error) {
             console.error('Save error:', error);
-            alert('Failed to save branding settings. Please try again.');
+            setSaveError('Failed to save branding settings. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -112,6 +113,12 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                             Brand color saved successfully!
                         </p>
                     </div>
+                </div>
+            )}
+
+            {saveError && (
+                <div className="glass-card rounded-2xl p-4 bg-red-50 border border-red-200">
+                    <p className="text-sm font-semibold text-red-700">{saveError}</p>
                 </div>
             )}
 

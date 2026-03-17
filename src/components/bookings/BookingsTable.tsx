@@ -108,15 +108,21 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
 
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
-            confirmed: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-            pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
-            completed: 'bg-violet-50 text-violet-700 ring-violet-600/20',
-            cancelled: 'bg-slate-100 text-slate-600 ring-slate-600/20',
+            confirmed:  'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+            pending:    'bg-amber-50 text-amber-700 ring-amber-600/20',
+            completed:  'bg-violet-50 text-violet-700 ring-violet-600/20',
+            cancelled:  'bg-slate-100 text-slate-600 ring-slate-600/20',
+            rescheduled:'bg-blue-50 text-blue-700 ring-blue-600/20',
         };
+        // Map DB values to human-friendly labels
+        const labels: Record<string, string> = {
+            completed: 'Attended',
+        };
+        const label = labels[status] ?? status;
 
         return (
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ${styles[status] || styles.pending}`}>
-                {status}
+                {label}
             </span>
         );
     };

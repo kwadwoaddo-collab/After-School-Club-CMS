@@ -29,6 +29,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
     const [rescheduleSlots, setRescheduleSlots] = useState<{ startAt: string; available: boolean }[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+    const [rescheduleError, setRescheduleError] = useState('');
 
     // Assessment Section State
     const [showAssessment, setShowAssessment] = useState(false);
@@ -77,6 +78,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
 
     const confirmReschedule = () => {
         if (!selectedSlot) return;
+        setRescheduleError('');
         startTransition(async () => {
             try {
                 await rescheduleBooking(booking.id, selectedSlot);
@@ -85,7 +87,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                 setSelectedSlot(null);
             } catch (error) {
                 console.error('Failed to reschedule:', error);
-                alert('Failed to reschedule. Please try again.');
+                setRescheduleError('Failed to reschedule. Please try again.');
             }
         });
     };
@@ -414,6 +416,12 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                 </div>
                             )}
 
+                            {rescheduleError && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+                                    {rescheduleError}
+                                </div>
+                            )}
+
                             <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
                                 <button
                                     onClick={() => { setShowReschedule(false); setRescheduleDate(''); setSelectedSlot(null); }}
@@ -446,6 +454,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
     const [isSaving, startSaving] = useTransition();
     const [isSending, startSending] = useTransition();
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [sendConfirm, setSendConfirm] = useState(false);
 
     // Update local state when prop updates (e.g. after revalidation)
     useEffect(() => {
@@ -494,7 +503,6 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
     };
 
     const handleSend = () => {
-        if (!confirm('Are you sure you want to send this feedback to the parent? This action cannot be undone.')) return;
         startSending(async () => {
             // Save first to ensure server has latest data before marking sent
             await saveAssessmentFeedback(attendee.id, {
@@ -505,6 +513,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
             });
             await sendAssessmentFeedback(attendee.id);
             setStatus('SENT');
+            setSendConfirm(false);
         });
     };
 
@@ -524,7 +533,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
                 </div>
                 {status === 'SENT' && attendee.feedbackSentAt && (
                     <span className="text-xs text-slate-500">
-                        Sent {new Date(attendee.feedbackSentAt).toLocaleDateString()}
+                        Sent {new Date(attendee.feedbackSentAt).toLocaleDateString('en-GB')}
                     </span>
                 )}
             </div>
@@ -602,15 +611,35 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
                             disabled={isSaving || isSending}
                             className="px-3 py-1.5 text-xs font-medium text-indigo-300 hover:text-indigo-200 hover:bg-indigo-900/30 rounded border border-indigo-900/50 transition-colors disabled:opacity-50"
                         >
-                            {isSaving ? 'Saving...' : 'Save Draft'}
+                            {isSaving ? 'Saving…' : 'Save Draft'}
                         </button>
-                        <button
-                            onClick={handleSend}
-                            disabled={isSaving || isSending || (!notes && !fileBase64)}
-                            className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded shadow-sm shadow-indigo-900/20 transition-all disabled:opacity-50"
-                        >
-                            {isSending ? 'Sending...' : 'Send to Parent'}
-                        </button>
+
+                        {sendConfirm ? (
+                            <>
+                                <span className="text-xs text-slate-400">Send to parent?</span>
+                                <button
+                                    onClick={() => setSendConfirm(false)}
+                                    className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 rounded border border-slate-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSend}
+                                    disabled={isSaving || isSending}
+                                    className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded shadow-sm transition-all disabled:opacity-50"
+                                >
+                                    {isSending ? 'Sending…' : 'Yes, Send'}
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => setSendConfirm(true)}
+                                disabled={isSaving || isSending || (!notes && !fileBase64)}
+                                className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded shadow-sm shadow-indigo-900/20 transition-all disabled:opacity-50"
+                            >
+                                Send to Parent
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

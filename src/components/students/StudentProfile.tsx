@@ -202,7 +202,7 @@ export default function AssessmentProfile({ student }: AssessmentProfileProps) {
                                 <span className="w-1 h-1 bg-slate-200 rounded-full" />
                                 <span className="flex items-center gap-1.5 font-bold text-sm">
                                     <Calendar className="w-4 h-4 text-violet-500" />
-                                    Born: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}
+                                    Born: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'N/A'}
                                 </span>
                             </div>
                         </div>
@@ -374,7 +374,7 @@ export default function AssessmentProfile({ student }: AssessmentProfileProps) {
                                     <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center gap-2">
                                         <FileText className="w-4 h-4 text-emerald-600" />
                                         <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
-                                            Feedback sent on {new Date(latestAssessment.feedbackSentAt).toLocaleDateString()}
+                                            Feedback sent on {new Date(latestAssessment.feedbackSentAt).toLocaleDateString('en-GB')}
                                         </p>
                                     </div>
                                 )}
