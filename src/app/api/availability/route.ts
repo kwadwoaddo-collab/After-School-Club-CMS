@@ -1,44 +1,29 @@
 /**
  * Availability API
- * 
- * GET: Fetch available time slots for a centre on a given date
+ *
+ * GET: Fetch available time slots for a centre on a given date.
+ *
+ * This endpoint is intentionally PUBLIC (no auth required) because it is
+ * called by the parent-facing booking form at /book/[slug], where users
+ * have no active session. Centre availability data (open/close hours) is
+ * non-sensitive — it is equivalent to a business listing its opening times.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { AvailabilityService } from '@/lib/services/availability';
-import { auth } from '@/lib/auth';
-import { canUserAccessCentre } from '@/lib/permissions';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const centreId = searchParams.get('centreId');
     const dateStr = searchParams.get('date'); // Expected: YYYY-MM-DD
-    const duration = parseInt(searchParams.get('duration') || '45', 10);
-    const modality = searchParams.get('modality') as 'in_person' | 'online' || 'in_person';
+    const duration = parseInt(searchParams.get('duration') || '60', 10);
+    const modality = (searchParams.get('modality') as 'in_person' | 'online') || 'in_person';
 
     if (!centreId || !dateStr) {
       return NextResponse.json(
         { error: 'centreId and date are required' },
         { status: 400 }
-      );
-    }
-
-    // Check if user has access to this centre
-    const hasAccess = await canUserAccessCentre(session.user.id, centreId);
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'You do not have access to view availability for this centre' },
-        { status: 403 }
       );
     }
 
@@ -73,3 +58,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

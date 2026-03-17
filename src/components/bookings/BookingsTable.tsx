@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2 } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface BookingsTableProps {
     bookings: any[];
@@ -16,33 +17,46 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     // confirmDelete holds the bookingId pending permanent deletion
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    // confirmCancel holds the bookingId pending cancellation
+    const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
     const router = useRouter();
+    const { toast } = useToast();
 
     const handleReschedule = (bookingId: string) => {
-        // Navigate to reschedule page (we'll create this)
         router.push(`/dashboard/bookings/${bookingId}/reschedule`);
         setActiveDropdown(null);
     };
 
-    const handleCancel = async (bookingId: string) => {
-        if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
-            return;
-        }
+    // Opens the branded cancel confirmation modal
+    const openCancelModal = (bookingId: string) => {
+        setConfirmCancel(bookingId);
+        setActiveDropdown(null);
+    };
 
+    // Called when admin confirms the cancel dialog
+    const handleCancelConfirm = async () => {
+        if (!confirmCancel) return;
+        setIsCancelling(true);
         try {
-            const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
+            const response = await fetch(`/api/bookings/${confirmCancel}/cancel`, {
                 method: 'POST',
             });
 
             if (response.ok) {
-                router.refresh();
-                setActiveDropdown(null);
+                // Optimistic update — flip the status badge immediately
+                setBookings(prev =>
+                    prev.map(b => b.id === confirmCancel ? { ...b, status: 'cancelled' } : b)
+                );
+                toast('Booking cancelled successfully.', 'success');
             } else {
-                alert('Failed to cancel booking. Please try again.');
+                toast('Failed to cancel booking. Please try again.', 'error');
             }
-        } catch (error) {
-            console.error('Error canceling booking:', error);
-            alert('An error occurred. Please try again.');
+        } catch {
+            toast('An error occurred. Please try again.', 'error');
+        } finally {
+            setIsCancelling(false);
+            setConfirmCancel(null);
         }
     };
 
@@ -58,12 +72,12 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
             if (response.ok) {
                 // Optimistic removal — no page refresh needed
                 setBookings(prev => prev.filter(b => b.id !== confirmDelete));
+                toast('Booking permanently deleted.', 'success');
             } else {
-                alert('Failed to delete booking. Please try again.');
+                toast('Failed to delete booking. Please try again.', 'error');
             }
-        } catch (error) {
-            console.error('Error deleting booking:', error);
-            alert('An error occurred. Please try again.');
+        } catch {
+            toast('An error occurred. Please try again.', 'error');
         } finally {
             setIsDeleting(false);
             setConfirmDelete(null);
@@ -132,6 +146,36 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
 
     return (
         <>
+        {/* Cancel Confirmation Modal */}
+        {confirmCancel && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                    <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <X className="w-7 h-7 text-amber-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Cancel Booking?</h3>
+                    <p className="text-sm text-slate-500 text-center mb-6">
+                        The booking will be marked as <strong>cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setConfirmCancel(null)}
+                            disabled={isCancelling}
+                            className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all"
+                        >
+                            Keep Booking
+                        </button>
+                        <button
+                            onClick={handleCancelConfirm}
+                            disabled={isCancelling}
+                            className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {isCancelling ? 'Cancelling…' : 'Yes, Cancel'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         {/* Task 6: Confirmation dialog */}
         {confirmDelete && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -265,7 +309,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         Reschedule
                                                     </button>
                                                     <button
-                                                        onClick={() => handleCancel(booking.id)}
+                                                        onClick={() => openCancelModal(booking.id)}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-red-600 transition-colors w-full text-left"
                                                     >
                                                         <X className="w-4 h-4" />

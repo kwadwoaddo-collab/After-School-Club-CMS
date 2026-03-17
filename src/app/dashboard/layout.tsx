@@ -6,6 +6,7 @@ import Header from '@/components/dashboard/Header';
 import { SidebarProvider } from '@/components/dashboard/SidebarContext';
 import DashboardContent from '@/components/dashboard/DashboardContent';
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -65,33 +66,35 @@ export default async function DashboardLayout({
     }
 
     return (
-        <SidebarProvider>
-            <div className="flex min-h-screen bg-[#f8fafc]">
-                {/* Collapsible Sidebar */}
-                <Sidebar
-                    userName={session.user?.name || undefined}
-                    userRole={userRole}
-                    orgName={orgName}
-                />
-
-                {/* Mobile Bottom Navigation */}
-                <MobileBottomNav userRole={userRole} />
-
-                {/* Main Content Area - Responsive margin */}
-                <DashboardContent>
-                    {/* Header with Search and Notifications */}
-                    <Header
+        <ToastProvider>
+            <SidebarProvider>
+                <div className="flex min-h-screen bg-[#f8fafc]">
+                    {/* Collapsible Sidebar */}
+                    <Sidebar
                         userName={session.user?.name || undefined}
-                        userInitial={session.user?.name?.[0].toUpperCase() || 'A'}
                         userRole={userRole}
+                        orgName={orgName}
                     />
 
-                    {/* Dynamic Page Content */}
-                    <main className="p-4 sm:p-8 flex-1">
-                        {children}
-                    </main>
-                </DashboardContent>
-            </div>
-        </SidebarProvider>
+                    {/* Mobile Bottom Navigation */}
+                    <MobileBottomNav userRole={userRole} />
+
+                    {/* Main Content Area - Responsive margin */}
+                    <DashboardContent>
+                        {/* Header with Search and Notifications */}
+                        <Header
+                            userName={session.user?.name || undefined}
+                            userInitial={session.user?.name?.[0].toUpperCase() || 'A'}
+                            userRole={userRole}
+                        />
+
+                        {/* Dynamic Page Content */}
+                        <main className="p-4 sm:p-8 flex-1">
+                            {children}
+                        </main>
+                    </DashboardContent>
+                </div>
+            </SidebarProvider>
+        </ToastProvider>
     );
 }
