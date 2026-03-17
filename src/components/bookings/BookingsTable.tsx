@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -10,8 +10,12 @@ interface BookingsTableProps {
     bookings: any[];
 }
 
-export default function BookingsTable({ bookings }: BookingsTableProps) {
+export default function BookingsTable({ bookings: initialBookings }: BookingsTableProps) {
+    const [bookings, setBookings] = useState<any[]>(initialBookings);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    // confirmDelete holds the bookingId pending permanent deletion
+    const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
 
     const handleReschedule = (bookingId: string) => {
@@ -39,6 +43,31 @@ export default function BookingsTable({ bookings }: BookingsTableProps) {
         } catch (error) {
             console.error('Error canceling booking:', error);
             alert('An error occurred. Please try again.');
+        }
+    };
+
+    // Task 6: Permanently delete a booking
+    const handleDelete = async () => {
+        if (!confirmDelete) return;
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`/api/bookings/${confirmDelete}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                // Optimistic removal — no page refresh needed
+                setBookings(prev => prev.filter(b => b.id !== confirmDelete));
+            } else {
+                alert('Failed to delete booking. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error deleting booking:', error);
+            alert('An error occurred. Please try again.');
+        } finally {
+            setIsDeleting(false);
+            setConfirmDelete(null);
+            setActiveDropdown(null);
         }
     };
 
@@ -102,6 +131,38 @@ export default function BookingsTable({ bookings }: BookingsTableProps) {
     };
 
     return (
+        <>
+        {/* Task 6: Confirmation dialog */}
+        {confirmDelete && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                    <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <Trash2 className="w-7 h-7 text-red-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Delete Booking?</h3>
+                    <p className="text-sm text-slate-500 text-center mb-6">
+                        This will permanently remove the booking record. This action <strong>cannot be undone</strong>.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setConfirmDelete(null)}
+                            disabled={isDeleting}
+                            className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div className="glass-card rounded-3xl overflow-hidden">
             {/* Table for Desktop */}
             <div className="hidden lg:block overflow-x-auto">
@@ -210,6 +271,15 @@ export default function BookingsTable({ bookings }: BookingsTableProps) {
                                                         <X className="w-4 h-4" />
                                                         Cancel Booking
                                                     </button>
+                                                    {/* Task 6: Permanent delete option */}
+                                                    <div className="mx-3 my-1 border-t border-slate-100" />
+                                                    <button
+                                                        onClick={() => { setConfirmDelete(booking.id); setActiveDropdown(null); }}
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-700 transition-colors w-full text-left"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        Delete Booking
+                                                    </button>
                                                 </div>
                                             </>
                                         )}
@@ -253,16 +323,26 @@ export default function BookingsTable({ bookings }: BookingsTableProps) {
                             </div>
                         </div>
 
-                        <Link
-                            href={`/dashboard/bookings/${booking.id}`}
-                            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-all"
-                        >
-                            <Eye className="w-4 h-4" />
-                            View Details
-                        </Link>
+                        <div className="flex gap-2 mt-3">
+                            <Link
+                                href={`/dashboard/bookings/${booking.id}`}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-all"
+                            >
+                                <Eye className="w-4 h-4" />
+                                View Details
+                            </Link>
+                            <button
+                                onClick={() => setConfirmDelete(booking.id)}
+                                className="px-3 py-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
+                                title="Delete Booking"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
         </div>
+        </>
     );
 }

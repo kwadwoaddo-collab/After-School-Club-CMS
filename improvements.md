@@ -21,3 +21,12 @@ Description: Add required to date picker; disable "Continue" until a slot is cho
 [ ] Task 5: Fix "Mark as Attended" Functionality
 Status: Pending
 Description: Implement backend PATCH for booking status and update the UI to show the "Attended" state.
+[ ] Task 6: Implement "Delete Booking" Functionality
+Status: Pending
+Location: Bookings List Page (/bookings) - Actions Menu (three dots)
+Description:
+UI: Add a "Delete Booking" option to the actions dropdown menu (below "Cancel Booking"). Style it in red text to indicate a destructive action.
+Safety: When clicked, show a Confirmation Dialog ("Are you sure you want to permanently delete this booking? This action cannot be undone.").
+Backend: Create a DELETE endpoint in the FastAPI backend (e.g., DELETE /api/bookings/{id}) to remove the record from the database.
+Frontend: Upon successful deletion, remove the row from the table immediately without requiring a full page refresh.
+Goal: Allow admins to clean up test data and accidental entries.
