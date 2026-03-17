@@ -17,18 +17,9 @@ export const parentSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').max(100),
   phone: z.string().regex(/^\+?[\d\s\-]{7,15}$/, 'Invalid phone format').optional().or(z.literal('')),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  preferredContact: z.enum(['phone', 'email']),
-}).refine(
-  (data) => {
-    if (data.preferredContact === 'phone') return !!data.phone && data.phone.trim().length > 0;
-    if (data.preferredContact === 'email') return !!data.email && data.email.trim().length > 0;
-    return false;
-  },
-  {
-    message: 'Required field missing for selected contact method',
-    path: ['preferredContact'],
-  }
-);
+  // Task 1: preferredContact is now optional — no longer a required field
+  preferredContact: z.enum(['phone', 'email']).optional(),
+});
 
 export const appointmentSchema = z.object({
   centreId: z.string().uuid('Invalid centre ID').optional(),

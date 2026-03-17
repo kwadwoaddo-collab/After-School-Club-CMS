@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone } from 'lucide-react';
 import { format } from 'date-fns';
+import MarkAttendedButton from '@/components/bookings/MarkAttendedButton';
 
 interface BookingPageProps {
     params: Promise<{ bookingId: string }>;
@@ -47,17 +48,19 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     }
 
     const getStatusBadge = (status: string) => {
-        const styles: Record<string, { bg: string; text: string; ring: string }> = {
-            confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20' },
-            pending: { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-600/20' },
-            completed: { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20' },
-            cancelled: { bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-slate-600/20' },
+        const styles: Record<string, { bg: string; text: string; ring: string; label: string }> = {
+            confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20', label: 'Confirmed' },
+            pending: { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-600/20', label: 'Pending' },
+            // 'completed' is how the DB stores it; we display it as 'Attended'
+            completed: { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20', label: 'Attended' },
+            rescheduled: { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-600/20', label: 'Rescheduled' },
+            cancelled: { bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-slate-600/20', label: 'Cancelled' },
         };
 
         const style = styles[status] || styles.pending;
         return (
             <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide ring-1 ${style.bg} ${style.text} ${style.ring}`}>
-                {status}
+                {style.label}
             </span>
         );
     };
@@ -108,9 +111,8 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     >
                         Reschedule
                     </Link>
-                    <button className="px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30">
-                        Mark as Attended
-                    </button>
+                    {/* Task 5: Interactive Mark as Attended button — updates status to 'completed' via PATCH API */}
+                    <MarkAttendedButton bookingId={bookingId} initialStatus={booking.status} />
                 </div>
             </div>
 

@@ -52,7 +52,8 @@ export class BookingService {
         lastName: input.parent.lastName,
         phone: input.parent.phone || undefined,
         email: input.parent.email || undefined,
-        preferredContact: input.parent.preferredContact,
+        // Task 1: preferredContact is optional in Zod but notNull in DB — fall back to 'email'
+        preferredContact: input.parent.preferredContact ?? 'email',
         organisationId: centre.organisationId,
       }).returning();
     }
@@ -217,7 +218,7 @@ export class BookingService {
         parentFirstName: input.parent.firstName,
         parentEmail: input.parent.email,
         parentPhone: input.parent.phone,
-        preferredContact: input.parent.preferredContact,
+        preferredContact: input.parent.preferredContact ?? 'email',
         children: createdChildren,
         centreName: centreDetails?.name,
         centreAddress: centreDetails?.address,

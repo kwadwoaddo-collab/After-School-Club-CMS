@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const centreId = searchParams.get('centreId');
-    const date = searchParams.get('date');
+    const dateStr = searchParams.get('date'); // Expected: YYYY-MM-DD
     const duration = parseInt(searchParams.get('duration') || '45', 10);
     const modality = searchParams.get('modality') as 'in_person' | 'online' || 'in_person';
 
-    if (!centreId || !date) {
+    if (!centreId || !dateStr) {
       return NextResponse.json(
         { error: 'centreId and date are required' },
         { status: 400 }
@@ -42,10 +42,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // FIX (Task 2 / Timezone bug):
+    // new Date('2026-03-22') parses as UTC midnight, but .getDay() uses LOCAL time.
+    // On a BST (UTC+1) server, Sunday 00:00 UTC = Saturday 23:00 local → wrong day fetched.
+    // Constructing Date from explicit year/month/day avoids UTC interpretation entirely.
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const localDate = new Date(year, month - 1, day); // month is 0-indexed in JS
+
     const availabilityService = new AvailabilityService();
     const slots = await availabilityService.getAvailableSlots({
       centreId,
-      date: new Date(date),
+      date: localDate,
       duration,
       modality,
     });

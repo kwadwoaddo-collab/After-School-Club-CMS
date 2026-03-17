@@ -405,7 +405,8 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact Method *</label>
+                                {/* Task 1: preferredContact is now optional — removed * and required validation */}
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact Method</label>
                                 <div className="flex gap-4">
                                     {['email', 'phone'].map((method) => (
                                         <label key={method} className="flex items-center gap-2 cursor-pointer">
@@ -519,12 +520,22 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     {[
-                                        { value: 'in_person', label: '🏫 In-Person', desc: `At ${centreName}` },
-                                        { value: 'online', label: '💻 Online', desc: 'Via video call' },
+                                        { value: 'in_person', label: '🏫 In-Person', desc: `At ${centreName}`, disabled: false },
+                                        // Task 3: Online is disabled — greyed out and not selectable
+                                        { value: 'online', label: '💻 Online', desc: 'Coming Soon', disabled: true },
                                     ].map((opt) => (
-                                        <label key={opt.value} className={`p-4 border-2 rounded-lg cursor-pointer transition-all text-center ${modality === opt.value ? 'brand-border bg-white shadow-md' : 'border-gray-200 hover:border-gray-300'}`}>
-                                            <input type="radio" {...register('appointment.modality')} value={opt.value} className="sr-only" />
-                                            <div className={`text-lg font-medium ${modality === opt.value ? 'brand-text' : 'text-gray-900'}`}>{opt.label}</div>
+                                        <label
+                                            key={opt.value}
+                                            className={`p-4 border-2 rounded-lg text-center transition-all ${
+                                                opt.disabled
+                                                    ? 'border-gray-200 bg-gray-50 opacity-50 pointer-events-none cursor-not-allowed'
+                                                    : modality === opt.value
+                                                        ? 'brand-border bg-white shadow-md cursor-pointer'
+                                                        : 'border-gray-200 hover:border-gray-300 cursor-pointer'
+                                            }`}
+                                        >
+                                            <input type="radio" {...register('appointment.modality')} value={opt.value} disabled={opt.disabled} className="sr-only" />
+                                            <div className={`text-lg font-medium ${opt.disabled ? 'text-gray-400' : modality === opt.value ? 'brand-text' : 'text-gray-900'}`}>{opt.label}</div>
                                             <div className="text-sm text-gray-500">{opt.desc}</div>
                                         </label>
                                     ))}
@@ -532,16 +543,20 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+                                {/* Task 4: Date is now mandatory — label updated and helptext added */}
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Date *</label>
                                 <input
                                     type="date"
                                     value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    onChange={(e) => {
+                                        setSelectedDate(e.target.value);
+                                        // Reset time slot when date changes
+                                        setValue('appointment.startAt', '');
+                                    }}
                                     min={today}
                                     max={maxDate}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900"
-                                />
-                            </div>
+                                /></div>
 
                             {selectedDate && (
                                 <div>
@@ -616,7 +631,15 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">← Back</button>
                     )}
                     {step < 4 ? (
-                        <button type="button" onClick={validateStep} className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md">Continue →</button>
+                        // Task 4: on step 3, require both a date AND a time slot before enabling Continue
+                        <button
+                            type="button"
+                            onClick={validateStep}
+                            disabled={step === 3 && (!selectedDate || !watch('appointment.startAt'))}
+                            className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Continue →
+                        </button>
                     ) : (
                         <button type="submit" disabled={isSubmitting} className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             {isSubmitting ? <><Spinner size="sm" /><span>Booking...</span></> : 'Confirm Booking ✓'}
