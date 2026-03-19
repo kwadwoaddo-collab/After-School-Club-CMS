@@ -71,7 +71,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             <aside
                 className={`
                     fixed inset-y-0 left-0 z-50
-                    sidebar-gradient text-white flex flex-col
+                    bg-[#1c1b1b] text-[#e5e2e1] flex flex-col
                     transition-all duration-300 ease-in-out
                     w-64
                     ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0'}
@@ -101,18 +101,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         onClick={() => setQuickActionsOpen(o => !o)}
                                         className="flex items-center justify-between w-full px-2 mb-3 group"
                                     >
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-300 transition-colors">
+                                        <p className="text-[10px] font-bold text-[#8c909f] uppercase tracking-widest group-hover:text-[#c2c6d6] transition-colors">
                                             Quick Links
                                         </p>
                                         <ChevronDown
-                                            className={`w-3 h-3 text-slate-500 group-hover:text-slate-300 transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
+                                            className={`w-3 h-3 text-[#8c909f] group-hover:text-[#c2c6d6] transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
                                         />
                                     </button>
                                     <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${quickActionsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
                                         {allowedActions.includes('booking-link') && (
                                             <Link
                                                 href="/dashboard/booking-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-medium group"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[#c2c6d6] hover:text-[#adc6ff] hover:bg-[#2a2a2a] transition-all text-sm font-medium group"
                                             >
                                                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                                                 Booking
@@ -121,7 +121,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         {allowedActions.includes('registration-link') && (
                                             <Link
                                                 href="/dashboard/registration-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-medium group"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[#c2c6d6] hover:text-[#adc6ff] hover:bg-[#2a2a2a] transition-all text-sm font-medium group"
                                             >
                                                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                                                 Registration
@@ -132,7 +132,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             )}
 
                             {/* Divider */}
-                            <div className="h-px bg-white/10 mb-6" />
+                            <div className="h-px bg-[#424754]/15 mb-6" />
                         </>
                     )}
 
@@ -154,8 +154,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         flex items-center gap-3 px-4 py-3 rounded-xl
                                         transition-all group relative
                                         ${isActive
-                                            ? 'text-white bg-white/10'
-                                            : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                            ? 'text-[#adc6ff] bg-[#393939]'
+                                            : 'text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#2a2a2a]'
                                         }
                                         ${collapsed ? 'justify-center' : ''}
                                     `}
@@ -176,11 +176,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                 {/* Quick Support Section */}
                 <div className={`mt-auto p-6 ${collapsed ? 'hidden' : ''}`}>
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <p className="text-xs text-slate-500 font-medium mb-2 uppercase tracking-wider">
+                    <div className="p-4 rounded-2xl bg-[#2a2a2a] border border-[#424754]/15">
+                        <p className="text-xs text-[#8c909f] font-medium mb-2 uppercase tracking-wider">
                             Quick Support
                         </p>
-                        <p className="text-sm text-slate-300">
+                        <p className="text-sm text-[#c2c6d6]">
                             Need help with bookings or payments?
                         </p>
                         <a
@@ -197,18 +197,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     onClick={() => setCollapsed(!collapsed)}
                     className={`
                         absolute -right-3 top-20
-                        w-6 h-6 bg-white rounded-full
+                        w-6 h-6 bg-[#20201f] rounded-full
                         flex items-center justify-center
-                        shadow-lg border border-slate-200
-                        hover:bg-slate-50 transition-all
+                        shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15
+                        hover:bg-[#353535] transition-all
                         group z-50
                     `}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
                     {collapsed ? (
-                        <ChevronRight className="w-4 h-4 text-slate-600" />
+                        <ChevronRight className="w-4 h-4 text-[#e5e2e1]" />
                     ) : (
-                        <ChevronLeft className="w-4 h-4 text-slate-600" />
+                        <ChevronLeft className="w-4 h-4 text-[#e5e2e1]" />
                     )}
                 </button>
             </aside>

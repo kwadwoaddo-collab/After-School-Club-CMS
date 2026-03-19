@@ -104,10 +104,10 @@ export default async function DashboardPage() {
             {/* ── Page Header ─────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">
                         Overview
                     </h1>
-                    <p className="text-slate-600 font-medium mt-1">
+                    <p className="text-[#8c909f] font-medium mt-1">
                         Welcome back, {firstName}! Here's what's happening today.
                     </p>
                 </div>
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
                         <ExportReportButton />
                         <Link
                             href="/dashboard/bookings/new"
-                            className="flex items-center gap-2 px-5 py-2.5 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-[#adc6ff] rounded-2xl text-sm font-bold text-[#131313] hover:bg-[#8facff] transition-all shadow-[0_4px_16px_rgba(173,198,255,0.2)]"
                         >
                             <Plus className="w-4 h-4" /> New Assessment
                         </Link>
@@ -128,172 +128,187 @@ export default async function DashboardPage() {
             {/* ── Top-level stats row ──────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Students', value: totalStudents, icon: Users, color: 'bg-violet-100 text-violet-600' },
-                    { label: 'All-time Bookings', value: totalBookingsAll, icon: CalendarCheck, color: 'bg-cyan-100 text-cyan-600' },
-                    { label: 'Registrations', value: totalRegistrations, icon: ClipboardList, color: 'bg-emerald-100 text-emerald-600' },
-                    { label: 'Pending Approval', value: pendingRegistrations, icon: ClipboardList, color: 'bg-amber-100 text-amber-600' },
+                    { label: 'TOTAL STUDENTS', value: totalStudents, icon: Users },
+                    { label: 'ALL-TIME BOOKINGS', value: totalBookingsAll, icon: CalendarCheck },
+                    { label: 'REGISTRATIONS', value: totalRegistrations, icon: ClipboardList },
+                    { label: 'PENDING APPROVAL', value: pendingRegistrations, icon: ClipboardList },
                 ].map(stat => (
-                    <div key={stat.label} className="glass-card rounded-2xl p-5">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${stat.color}`}>
+                    <div key={stat.label} className="bg-[#20201f] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-[#2a2a2a] text-[#adc6ff]`}>
                             <stat.icon className="w-5 h-5" />
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">{stat.value ?? 0}</p>
-                        <p className="text-xs text-slate-500 font-medium mt-1">{stat.label}</p>
+                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{stat.value ?? 0}</p>
+                        <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">{stat.label}</p>
                     </div>
                 ))}
             </div>
 
             {/* ── Feature Module Cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* Assessments & Bookings */}
-                <div className="glass-card rounded-3xl p-6 flex flex-col gap-5 border border-slate-200 hover:shadow-xl transition-shadow">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-cyan-100 rounded-2xl flex items-center justify-center">
-                                <CalendarCheck className="w-6 h-6 text-cyan-600" />
+                {/* Left Column - Assessments (Span 7) */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
+
+                    {/* Assessments & Bookings */}
+                    <div className="bg-[#20201f] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
+                                    <CalendarCheck className="w-6 h-6 text-[#adc6ff]" />
+                                </div>
+                                <div>
+                                    <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Assessments & Bookings</h2>
+                                    <p className="text-sm text-[#8c909f] mt-1">Manage schedules and attendance</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="font-bold text-slate-900 text-lg leading-tight">Assessments</h2>
-                                <p className="text-xs text-slate-500">Booking & attendance</p>
+                            <span className="text-xs font-bold px-3 py-1 bg-[#adc6ff]/10 text-[#adc6ff] rounded-full border border-[#adc6ff]/20">
+                                LIVE
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15">
+                                <p className="text-2xl font-bold text-[#e5e2e1]">{totalBookingsAll}</p>
+                                <p className="text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Total Bookings</p>
                             </div>
-                        </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-full border border-cyan-200">
-                            LIVE
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-slate-50 rounded-xl">
-                            <p className="text-xl font-bold text-slate-900">{totalBookingsAll}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">Total bookings</p>
-                        </div>
-                        <div className="p-3 bg-cyan-50 rounded-xl">
-                            <p className="text-xl font-bold text-cyan-700">{bookingsThisMonth}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">This month</p>
-                        </div>
-                    </div>
-
-                    {/* Recent preview */}
-                    {recentBookings.length > 0 ? (
-                        <div className="space-y-2">
-                            {recentBookings.map(b => (
-                                <Link
-                                    key={b.id}
-                                    href={`/dashboard/bookings/${b.id}`}
-                                    className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group"
-                                >
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-800">{b.childFirst} {b.childLast}</p>
-                                        <p className="text-xs text-slate-500">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                </Link>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-slate-400 italic text-center py-2">No recent bookings</p>
-                    )}
-
-                    <Link
-                        href="/dashboard/bookings"
-                        className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-cyan-200 bg-cyan-50 text-cyan-700 text-sm font-bold hover:bg-cyan-100 transition-colors"
-                    >
-                        View All Assessments <ArrowRight className="w-4 h-4" />
-                    </Link>
-                </div>
-
-                {/* Registrations */}
-                <div className="glass-card rounded-3xl p-6 flex flex-col gap-5 border border-slate-200 hover:shadow-xl transition-shadow">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
-                                <ClipboardList className="w-6 h-6 text-emerald-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-slate-900 text-lg leading-tight">Registrations</h2>
-                                <p className="text-xs text-slate-500">Student sign-ups</p>
+                            <div className="p-4 bg-[#adc6ff]/10 rounded-2xl border border-[#adc6ff]/20">
+                                <p className="text-2xl font-bold text-[#adc6ff]">{bookingsThisMonth}</p>
+                                <p className="text-xs text-[#adc6ff] opacity-80 font-bold mt-1 uppercase tracking-wider">This Month</p>
                             </div>
                         </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                            LIVE
-                        </span>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-slate-50 rounded-xl">
-                            <p className="text-xl font-bold text-slate-900">{totalRegistrations}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">Total submitted</p>
+                        {/* Recent preview */}
+                        <div className="flex-1 flex flex-col min-h-[200px]">
+                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">Recent Bookings</h3>
+                            {recentBookings.length > 0 ? (
+                                <div className="space-y-2">
+                                    {recentBookings.map(b => (
+                                        <Link
+                                            key={b.id}
+                                            href={`/dashboard/bookings/${b.id}`}
+                                            className="flex items-center justify-between p-4 rounded-2xl bg-[#1c1b1b] hover:bg-[#353535] border border-[#424754]/15 transition-all group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-[#adc6ff]/10 flex items-center justify-center text-[#adc6ff] font-bold">
+                                                    {b.childFirst[0]}{b.childLast[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-[#e5e2e1]">{b.childFirst} {b.childLast}</p>
+                                                    <p className="text-xs text-[#8c909f] mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-[#424754] group-hover:text-[#adc6ff] transition-colors" />
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-[#8c909f] italic text-center py-6">No recent bookings found.</p>
+                            )}
                         </div>
-                        <div className="p-3 bg-amber-50 rounded-xl">
-                            <p className="text-xl font-bold text-amber-600">{pendingRegistrations}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">Awaiting review</p>
-                        </div>
-                    </div>
 
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 space-y-2">
-                        <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Registration Link</p>
-                        <p className="text-xs text-slate-600 break-all font-mono">{registrationLink}</p>
-                        <p className="text-xs text-slate-500">{registrationsThisMonth} new form{registrationsThisMonth !== 1 ? 's' : ''} submitted this month</p>
-                    </div>
-
-                    <div className="flex gap-2 mt-auto">
                         <Link
-                            href="/dashboard/registrations"
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-bold hover:bg-emerald-100 transition-colors"
+                            href="/dashboard/bookings"
+                            className="mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
                         >
-                            View All <ArrowRight className="w-4 h-4" />
+                            View All Assessments <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
                 </div>
 
-                {/* Staff — Coming Soon */}
-                <div className="glass-card rounded-3xl p-6 flex flex-col gap-5 border border-dashed border-slate-300 opacity-80">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center">
-                                <UserCircle2 className="w-6 h-6 text-slate-400" />
+                {/* Right Column - Registrations & Staff (Span 5) */}
+                <div className="lg:col-span-5 flex flex-col gap-6">
+                    {/* Registrations */}
+                    <div className="bg-[#20201f] rounded-[32px] p-6 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
+                                    <ClipboardList className="w-6 h-6 text-[#d0bcff]" />
+                                </div>
+                                <div>
+                                    <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Registrations</h2>
+                                    <p className="text-sm text-[#8c909f] mt-1">Student sign-ups</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="font-bold text-slate-700 text-lg leading-tight">Staff</h2>
-                                <p className="text-xs text-slate-400">Scheduling & payroll</p>
+                            <span className="text-xs font-bold px-3 py-1 bg-[#d0bcff]/10 text-[#d0bcff] rounded-full border border-[#d0bcff]/20">
+                                LIVE
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15">
+                                <p className="text-2xl font-bold text-[#e5e2e1]">{totalRegistrations}</p>
+                                <p className="text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Total Submitted</p>
+                            </div>
+                            <div className="p-4 bg-[#ffb599]/10 rounded-2xl border border-[#ffb599]/20">
+                                <p className="text-2xl font-bold text-[#ffb599]">{pendingRegistrations}</p>
+                                <p className="text-xs text-[#ffb599] opacity-80 font-bold mt-1 uppercase tracking-wider">Awaiting Review</p>
                             </div>
                         </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200">
-                            COMING SOON
-                        </span>
+
+                        <div className="p-4 rounded-2xl bg-[#1c1b1b] border border-[#424754]/15 space-y-3">
+                            <p className="text-xs font-bold text-[#d0bcff] uppercase tracking-wider">Public Link Box</p>
+                            <p className="text-sm text-[#e5e2e1] break-all font-mono opacity-80">{registrationLink}</p>
+                            <p className="text-xs text-[#8c909f]">{registrationsThisMonth} new form{registrationsThisMonth !== 1 ? 's' : ''} submitted this month</p>
+                        </div>
+
+                        <div className="flex mt-auto">
+                            <Link
+                                href="/dashboard/registrations"
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#d0bcff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
+                            >
+                                View All Registrations <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col items-center justify-center py-8 gap-3">
-                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center">
-                            <UserCircle2 className="w-8 h-8 text-slate-300" />
+                    {/* Staff — Coming Soon */}
+                    <div className="bg-[#20201f] rounded-[32px] p-6 flex flex-col gap-5 border border-dashed border-[#424754] opacity-70">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
+                                    <UserCircle2 className="w-6 h-6 text-[#8c909f]" />
+                                </div>
+                                <div>
+                                    <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Staff</h2>
+                                    <p className="text-sm text-[#8c909f] mt-1">Scheduling & payroll</p>
+                                </div>
+                            </div>
+                            <span className="text-xs font-bold px-3 py-1 bg-[#2a2a2a] text-[#8c909f] rounded-full border border-[#424754]/15">
+                                COMING SOON
+                            </span>
                         </div>
-                        <div className="text-center">
-                            <p className="text-sm font-semibold text-slate-500">Manage your team</p>
-                            <p className="text-xs text-slate-400 mt-1">Rota scheduling, pay rates, and attendance tracking — coming next.</p>
-                        </div>
-                    </div>
 
-                    <button disabled className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-400 text-sm font-bold cursor-not-allowed">
-                        Coming Soon
-                    </button>
+                        <div className="flex-1 flex flex-col items-center justify-center py-8 gap-3">
+                            <div className="w-16 h-16 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
+                                <UserCircle2 className="w-8 h-8 text-[#8c909f] opacity-50" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-[#8c909f]">Manage your team</p>
+                                <p className="text-xs text-[#8c909f] opacity-80 mt-1 max-w-[200px] mx-auto">Rota scheduling, pay rates, and attendance tracking — coming next.</p>
+                            </div>
+                        </div>
+
+                        <button disabled className="mt-auto flex items-center justify-center gap-2 py-3 rounded-2xl border border-[#424754]/15 bg-[#2a2a2a] text-[#8c909f] text-sm font-bold cursor-not-allowed">
+                            Coming Soon
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* ── Students summary row ─────────────────────────────────── */}
-            <div className="glass-card rounded-3xl p-6 flex items-center justify-between gap-4 border border-slate-200">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <Users className="w-6 h-6 text-violet-600" />
+            {/* ── Student Ecosystem row ─────────────────────────────────── */}
+            <div className="bg-[#20201f] rounded-[32px] p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-[#2a2a2a] rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <Users className="w-7 h-7 text-[#adc6ff]" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-slate-900">Students</h2>
-                        <p className="text-sm text-slate-500">{totalStudents} student{totalStudents !== 1 ? 's' : ''} registered across all centres</p>
+                        <h2 className="font-bold text-[#e5e2e1] text-xl">Student Ecosystem</h2>
+                        <p className="text-sm text-[#8c909f] mt-1">{totalStudents} student{totalStudents !== 1 ? 's' : ''} registered across all centres</p>
                     </div>
                 </div>
                 <Link
                     href="/dashboard/students"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-violet-200 bg-violet-50 text-violet-700 text-sm font-bold hover:bg-violet-100 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-[#424754]/15 bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors whitespace-nowrap"
                 >
                     View Students <ArrowRight className="w-4 h-4" />
                 </Link>

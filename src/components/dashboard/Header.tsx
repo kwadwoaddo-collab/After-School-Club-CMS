@@ -124,11 +124,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className={`h-16 sm:h-20 glass-panel fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-slate-200/50 transition-all duration-300 ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'
+        <header className={`h-16 sm:h-20 bg-[#131313]/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-[#424754]/15 transition-all duration-300 ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'
             }`}>
             {/* Hamburger — mobile only */}
             <button
-                className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors flex-shrink-0"
+                className="lg:hidden p-2 rounded-xl hover:bg-[#20201f] text-[#8c909f] transition-colors flex-shrink-0"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
             >
@@ -139,13 +139,13 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             {!hideSearch && (
                 <div className="hidden sm:block flex-1 max-w-xl">
                     <form onSubmit={handleSearch} className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search students, bookings (Cmd + K)"
-                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 border-none rounded-2xl text-sm text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            className="w-full pl-11 pr-4 py-2.5 bg-[#20201f] border-none rounded-2xl text-sm text-[#e5e2e1] placeholder:text-[#8c909f] focus:ring-2 focus:ring-[#4d8eff]/30 transition-all outline-none"
                         />
                     </form>
                 </div>
@@ -157,23 +157,23 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <div className="relative" ref={notificationRef}>
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
-                        className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 relative transition-colors"
+                        className="p-2.5 rounded-xl hover:bg-[#20201f] text-[#8c909f] relative transition-colors"
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white">
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-[#f66018] rounded-full border-2 border-[#131313]">
                             </span>
                         )}
                     </button>
 
                     {/* Notifications Dropdown */}
                     {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="p-4 border-b border-slate-100">
-                                <h3 className="font-bold text-slate-900">Notifications</h3>
+                        <div className="absolute right-0 mt-2 w-80 bg-[#2a2a2a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="p-4 border-b border-[#424754]/15">
+                                <h3 className="font-bold text-[#e5e2e1]">Notifications</h3>
                                 {unreadCount > 0 && (
-                                    <p className="text-xs text-slate-500 mt-1">
+                                    <p className="text-xs text-[#8c909f] mt-1">
                                         You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
                                     </p>
                                 )}
@@ -181,33 +181,33 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             <div className="max-h-96 overflow-y-auto">
                                 {isLoadingNotifications ? (
                                     <div className="p-8 text-center">
-                                        <p className="text-sm text-slate-500">Loading notifications...</p>
+                                        <p className="text-sm text-[#8c909f]">Loading notifications...</p>
                                     </div>
                                 ) : notifications.length === 0 ? (
                                     <div className="p-8 text-center">
-                                        <Bell className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                                        <p className="text-sm text-slate-500">No notifications yet</p>
+                                        <Bell className="w-12 h-12 text-[#424754] mx-auto mb-2" />
+                                        <p className="text-sm text-[#8c909f]">No notifications yet</p>
                                     </div>
                                 ) : (
                                     notifications.map((notification) => (
                                         <div
                                             key={notification.id}
                                             onClick={() => handleNotificationClick(notification)}
-                                            className={`p-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors ${!notification.read ? 'bg-blue-50/50' : ''
+                                            className={`p-4 border-b border-[#424754]/15 hover:bg-[#353535] cursor-pointer transition-colors ${!notification.read ? 'bg-[#adc6ff]/10' : ''
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 {!notification.read && (
-                                                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+                                                    <div className="w-2 h-2 bg-[#adc6ff] shadow-[0_0_8px_rgba(173,198,255,0.6)] rounded-full mt-2 flex-shrink-0" />
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-sm text-slate-900">
+                                                    <p className="font-semibold text-sm text-[#e5e2e1]">
                                                         {notification.title}
                                                     </p>
-                                                    <p className="text-sm text-slate-600 mt-1">
+                                                    <p className="text-sm text-[#c2c6d6] mt-1">
                                                         {notification.message}
                                                     </p>
-                                                    <p className="text-xs text-slate-400 mt-2">
+                                                    <p className="text-xs text-[#8c909f] mt-2">
                                                         {notification.time}
                                                     </p>
                                                 </div>
@@ -216,10 +216,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     ))
                                 )}
                             </div>
-                            <div className="p-3 border-t border-slate-100 bg-slate-50">
+                            <div className="p-3 border-t border-[#424754]/15 bg-[#20201f]">
                                 <button
                                     onClick={handleMarkAllAsRead}
-                                    className="text-xs font-semibold text-primary hover:text-blue-600 w-full text-center"
+                                    className="text-xs font-semibold text-[#adc6ff] hover:text-[#4d8eff] w-full text-center"
                                 >
                                     Mark all as read
                                 </button>
@@ -229,40 +229,40 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 </div>
 
                 {/* Divider */}
-                <div className="h-8 w-[1px] bg-slate-200 mx-2" />
+                <div className="h-8 w-[1px] bg-[#424754]/30 mx-2" />
 
                 {/* User Profile Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                     <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-3 pl-2 rounded-xl hover:bg-slate-100 pr-2 py-1.5 transition-colors"
+                        className="flex items-center gap-3 pl-2 rounded-xl hover:bg-[#20201f] pr-2 py-1.5 transition-colors"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-slate-900 leading-none">
+                            <p className="text-sm font-bold text-[#e5e2e1] leading-none">
                                 {userName || 'Admin User'}
                             </p>
-                            <p className="text-xs font-medium text-slate-500 mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
+                            <p className="text-xs font-medium text-[#8c909f] mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                         </div>
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 flex items-center justify-center text-[#adc6ff] font-bold flex-shrink-0">
                             {userInitial || 'A'}
                         </div>
-                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 text-[#8c909f] transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* User Dropdown */}
                     {showUserMenu && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="p-4 border-b border-slate-100">
-                                <p className="font-bold text-slate-900 text-sm truncate">{userName || 'Admin User'}</p>
-                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        <div className="absolute right-0 mt-2 w-56 bg-[#2a2a2a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="p-4 border-b border-[#424754]/15">
+                                <p className="font-bold text-[#e5e2e1] text-sm truncate">{userName || 'Admin User'}</p>
+                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#adc6ff]/10 text-[#adc6ff]">
                                     {userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}
                                 </span>
                             </div>
                             <div className="p-2">
                                 <button
                                     onClick={() => signOut({ callbackUrl: '/login' })}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors text-sm font-semibold"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#ffb4ab] hover:bg-[#93000a]/20 transition-colors text-sm font-semibold"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     Sign Out
