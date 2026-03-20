@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import {
     organisations, centres, parents, children,
-    bookings, bookingAttendees, registrations,
+    bookings, bookingAttendees, registrations, registrationChildren,
 } from '@/db/schema';
 import { eq, desc, asc, sql, count, and, gte, lt, inArray } from 'drizzle-orm';
 import Link from 'next/link';
@@ -50,6 +50,7 @@ export default async function DashboardPage() {
         [{ count: totalRegistrations }],
         [{ count: pendingRegistrations }],
         [{ count: registrationsThisMonth }],
+        recentRegistrations,
     ] = await Promise.all([
         // Students
         db.select({ count: sql<number>`count(distinct ${children.id})` })
@@ -100,6 +101,20 @@ export default async function DashboardPage() {
 
         // Registrations this month
         db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.submittedAt, firstDayThisMonth))),
+
+        // Recent registrations preview
+        db.select({
+            childFirst: registrationChildren.submittedFirstName,
+            childLast: registrationChildren.submittedLastName,
+            submittedAt: registrations.submittedAt,
+            status: registrations.status,
+            registrationId: registrations.id,
+        })
+            .from(registrationChildren)
+            .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
+            .where(eq(registrations.organisationId, org.id))
+            .orderBy(desc(registrations.submittedAt), asc(registrationChildren.submittedFirstName))
+            .limit(5),
     ]);
 
     const recentBookingsChildIds = recentBookings.map(b => b.childId);
@@ -294,20 +309,53 @@ export default async function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="p-4 rounded-2xl bg-[#1c1b1b] border border-[#424754]/15 space-y-3">
-                            <p className="text-xs font-bold text-[#d0bcff] uppercase tracking-wider">Public Link Box</p>
-                            <p className="text-sm text-[#e5e2e1] break-all font-mono opacity-80">{registrationLink}</p>
-                            <p className="text-xs text-[#8c909f]">{registrationsThisMonth} new form{registrationsThisMonth !== 1 ? 's' : ''} submitted this month</p>
+                        {/* Recent preview */}
+                        <div className="flex flex-col">
+                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">Recent Registrations</h3>
+                            {recentRegistrations.length > 0 ? (
+                                <div className="space-y-2">
+                                    {recentRegistrations.map((r, i) => (
+                                        <Link
+                                            key={`${r.registrationId}-${i}`}
+                                            href={`/dashboard/registrations/${r.registrationId}`}
+                                            className="flex items-center justify-between p-4 rounded-2xl bg-[#1c1b1b] hover:bg-[#353535] border border-[#424754]/15 transition-all group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-[#d0bcff]/10 flex items-center justify-center text-[#d0bcff] font-bold">
+                                                    {r.childFirst[0]}{r.childLast[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-[#e5e2e1]">{r.childFirst} {r.childLast}</p>
+                                                    <p className="text-xs text-[#8c909f] mt-0.5">
+                                                        {r.status === 'awaiting_confirmation' ? 'Awaiting Review' : r.status === 'signed_up' ? 'Signed Up' : 'Pending'} · {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-[#424754] group-hover:text-[#d0bcff] transition-colors" />
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-[#8c909f] italic text-center py-6">No recent registrations found.</p>
+                            )}
                         </div>
 
-                        <div className="flex mt-auto">
-                            <Link
-                                href="/dashboard/registrations"
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#d0bcff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
-                            >
-                                View All Registrations <ArrowRight className="w-4 h-4" />
-                            </Link>
+                        <div className="flex flex-col gap-2 mt-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-bold text-[#d0bcff] uppercase tracking-wider">Public Link</p>
+                                <p className="text-[10px] text-[#8c909f]">{registrationsThisMonth} new this month</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-[#2a2a2a] border border-[#424754]/15">
+                                <p className="text-xs text-[#e5e2e1] font-mono truncate">{registrationLink}</p>
+                            </div>
                         </div>
+
+                        <Link
+                            href="/dashboard/registrations"
+                            className="mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#d0bcff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
+                        >
+                            View All Registrations <ArrowRight className="w-4 h-4" />
+                        </Link>
                     </div>
                 </div>
 

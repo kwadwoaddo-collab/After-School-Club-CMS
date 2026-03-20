@@ -65,17 +65,17 @@ Fix Applied:
 - **Issue:** Selecting Sunday still shows "No slots available."
 - **Technical Fix:** Check for a mismatch between JS `getDay()` (Sunday=0) and Python `weekday()` (Sunday=6). Ensure the backend queries the `SessionSlots` table correctly for "Sunday" entries.
 
-## [ ] Task 11: Implement Professional Notification System
-- **Status:** Pending
+## [x] Task 11: Implement Professional Notification System
+- **Status:** COMPLETE
 - **Description:** Replace standard browser `alert()` popups with professional "Toast" notifications (e.g., using a library or custom Tailwind component). 
 - **Goal:** Show a green "Success" toast when a booking is confirmed and a red "Error" toast if something fails.
 
-## [ ] Task 12: Add "Empty State" Designs
-- **Status:** Pending
+## [x] Task 12: Add "Empty State" Designs
+- **Status:** COMPLETE
 - **Description:** If a user visits the "Bookings" or "Students" page and there is no data, show a professional "Empty State" graphic and a "Add New" button instead of just a blank table.
 
-## [ ] Task 13: Full Professional UI Audit & Polish
-- **Status:** Pending
+## [x] Task 13: Full Professional UI Audit & Polish
+- **Status:** COMPLETE
 - **Goal:** Self-improvement. The agent must review every page for:
     - **Consistency:** Padding, margins, and button sizes must be identical across the app.
     - **Loading States:** Every button should show a "Loading..." spinner while waiting for the backend.
@@ -140,8 +140,8 @@ Goal: Ensure every step of the registration process allows the user to return to
     - **Theme:** Switched global dashboard layout to the deep-dark professional theme (`#0f1115` background) and updated all cards to `#1a1d23`.
     - **Student Ecosystem:** Added the "Student Ecosystem" footer bar featuring overlapping student avatars alongside the view action.
 
-    ## [ ] Task 20: Integrate "Export" Feature into Professional UI
-- **Status:** Pending
+    ## [x] Task 20: Integrate "Export" Feature into Professional UI
+- **Status:** COMPLETE
 - **Location:** Dashboard Header or Sidebar
 - **Description:** 
     - **UI Change:** Remove the large "Export Report" button from the main dashboard area to match the "SprintScale" design.
@@ -160,22 +160,22 @@ Goal: Ensure every step of the registration process allows the user to return to
     - **Navigation:** Clicking a search result must take the user directly to that record's detail page (e.g., clicking a booking result opens the "Booking Details" page).
 - **Goal:** Allow the admin to find any student or booking instantly from any page in the app.
 
-[ ] Task 22: Fix Contrast for "Bookings" Header
-Status: Pending
+[x] Task 22: Fix Contrast for "Bookings" Header
+Status: COMPLETE
 Location: Bookings Page Header
 Issue: The word "Bookings" has low visibility against the dark background.
 Fix: Update the text color to a higher contrast shade (e.g., pure white #FFFFFF or a very light gray #F8FAFC). Ensure it meets WCAG AA standards (at least 4.5:1 contrast ratio).[1][2][3]
 
-[ ] Task 23: Implement Clickable Table Rows
-Status: Pending
+[x] Task 23: Implement Clickable Table Rows
+Status: COMPLETE
 Location: Bookings Table (/bookings)
 Description:
 Logic: Make the entire <tr> (table row) clickable. Clicking anywhere on the row should navigate the user to the "Booking Details" page for that specific record.
 Interactive Elements: Ensure that clicking the Three Dots (Actions Menu) or any specific buttons within the row still triggers their specific menus/actions and does not trigger the row navigation (use e.stopPropagation() in JavaScript).
 UX: Add a hover:bg-slate-800 (or similar) effect to the row so the user knows it is interactive.
 
-[ ] Task 24: Persistent Internal Notes System
-Status: Pending
+[x] Task 24: Persistent Internal Notes System
+Status: COMPLETE
 Description: Refactor "Assessment & Feedback" into a unified "Internal Notes" system.
 Database Logic:
 Move the notes storage from the Booking model to the Student (or Child) model.
@@ -234,3 +234,14 @@ UI (The Badge): If a student has an active note categorized as 'Safeguarding', d
 Tooltip: On hover, display the safeguarding note content (e.g., "Court order: Father restricted from collection").
 Privacy Note: Ensure these notes are strictly internal and clearly labeled as "Highly Confidential" in the UI.
 Goal: Protect children by making collection restrictions and legal alerts visible to staff at a glance during checkout.
+
+[x] Task 29: Align "Registrations" Card UI with "Bookings" Card
+Status: COMPLETE
+Location: Dashboard -> Registrations Card (Middle)
+Description:
+Visual Mirroring: Refactor the Registrations card to match the "Assessments & Bookings" card layout exactly.
+List Content: Display the 5 most recently registered students (those who completed the full registration form).
+Sorting: Use Latest First (Descending by registration date) so the newest sign-ups are always at the top.
+Public Link Placement: Move the "Public Registration Link" box to a more subtle position—either as a small, secondary section at the very bottom of the card or as a "Copy Link" icon/button in the card header.
+Footer: Ensure the "View All Registrations" button is positioned at the bottom, matching the "View All Assessments" button on the left.
+Goal: Create a consistent, data-rich dashboard where the admin can see both new leads (Assessments) and new members (Registrations) at a glance.
