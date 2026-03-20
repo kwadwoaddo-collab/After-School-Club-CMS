@@ -20,9 +20,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }) as any, // Type assertion needed for drizzle-orm compatibility
+    sessionsTable: sessions as any,
+    verificationTokensTable: verificationTokens as any,
+  } as any) as any, // Type assertion needed for drizzle-orm compatibility
 
   session: {
     strategy: 'jwt',
