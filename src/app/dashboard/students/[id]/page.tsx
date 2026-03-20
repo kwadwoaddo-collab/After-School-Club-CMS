@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
+import { getStudentNotes } from '@/features/students/notes.actions';
 
 export default async function StudentProfilePage(
     props: {
@@ -69,6 +70,8 @@ export default async function StudentProfilePage(
         .orderBy(desc(bookings.startAt))
         .limit(10);
 
+    const initialNotes = await getStudentNotes(student.id);
+
     return (
         <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
             <StudentProfile
@@ -76,6 +79,7 @@ export default async function StudentProfilePage(
                     ...student,
                     bookings: studentBookings
                 }}
+                initialNotes={initialNotes}
             />
         </div>
     );

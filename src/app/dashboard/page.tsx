@@ -10,8 +10,9 @@ import Link from 'next/link';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import {
     Users, CalendarCheck, ClipboardList, UserCircle2,
-    ArrowRight, ChevronRight,
+    ArrowRight, ChevronRight, AlertTriangle, Shield
 } from 'lucide-react';
+import { studentNotes } from '@/db/schema';
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -75,6 +76,7 @@ export default async function DashboardPage() {
                 centreName: centres.name,
                 childFirst: children.firstName,
                 childLast: children.lastName,
+                childId: children.id,
             })
                 .from(bookings)
                 .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
@@ -99,6 +101,30 @@ export default async function DashboardPage() {
         // Registrations this month
         db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.submittedAt, firstDayThisMonth))),
     ]);
+
+    const recentBookingsChildIds = recentBookings.map(b => b.childId);
+    
+    // Fetch medical and safeguarding notes
+    const safetyNotes = recentBookingsChildIds.length > 0 ? await db.query.studentNotes.findMany({
+        where: and(
+            inArray(studentNotes.childId, recentBookingsChildIds),
+            inArray(studentNotes.category, ['Medical', 'Safeguarding'])
+        )
+    }) : [];
+
+    // Map to bookings
+    const recentBookingsWithNotes = recentBookings.map(b => {
+        const studentSafetyNotes = safetyNotes.filter(n => n.childId === b.childId);
+        const medNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
+        const safeguardNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
+        return {
+            ...b,
+            hasMedicalNote: medNotes.length > 0,
+            medicalNotesContent: medNotes.map(n => n.content).join('\n\n'),
+            hasSafeguardingNote: safeguardNotes.length > 0,
+            safeguardingNotesContent: safeguardNotes.map(n => n.content).join('\n\n')
+        };
+    });
 
     const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/register/${org.slug}`;
 
@@ -177,9 +203,9 @@ export default async function DashboardPage() {
                         {/* Recent preview */}
                         <div className="flex flex-col">
                             <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">Recent Bookings</h3>
-                            {recentBookings.length > 0 ? (
+                            {recentBookingsWithNotes.length > 0 ? (
                                 <div className="space-y-2">
-                                    {recentBookings.map(b => (
+                                    {recentBookingsWithNotes.map(b => (
                                         <Link
                                             key={b.id}
                                             href={`/dashboard/bookings/${b.id}`}
@@ -190,7 +216,33 @@ export default async function DashboardPage() {
                                                     {b.childFirst[0]}{b.childLast[0]}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-[#e5e2e1]">{b.childFirst} {b.childLast}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-bold text-[#e5e2e1]">{b.childFirst} {b.childLast}</p>
+                                                        {b.hasMedicalNote && (
+                                                            <div className="relative group/tooltip flex items-center outline-none">
+                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-sm">
+                                                                    <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                                                </div>
+                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-[#2a2a2a] border border-[#424754]/50 text-[#e5e2e1] text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                    <div className="font-bold text-rose-400 mb-1 border-b border-[#424754]/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                    {b.medicalNotesContent}
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2a2a2a]"></div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {b.hasSafeguardingNote && (
+                                                            <div className="relative group/tooltip flex items-center outline-none">
+                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 cursor-help shadow-sm">
+                                                                    <Shield className="w-3 h-3 text-blue-400" />
+                                                                </div>
+                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-[#2a2a2a] border border-[#424754]/50 text-[#e5e2e1] text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                    <div className="font-bold text-blue-400 mb-1 border-b border-[#424754]/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                    {b.safeguardingNotesContent}
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2a2a2a]"></div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-[#8c909f] mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
                                                 </div>
                                             </div>

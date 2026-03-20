@@ -53,7 +53,7 @@ export default async function BookingsPage(props: {
                         <ChevronLeft className="w-5 h-5 text-slate-600" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Bookings</h1>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">Bookings</h1>
                         <p className="text-slate-500 font-medium mt-1">
                             Manage upcoming and past appointments
                         </p>
@@ -88,11 +88,19 @@ export default async function BookingsPage(props: {
             parent: true,
             attendees: {
                 with: {
-                    child: true
+                    child: {
+                        with: {
+                            notes: true
+                        }
+                    }
                 }
             },
             tutor: true,
-            child: true
+            child: {
+                with: {
+                    notes: true
+                }
+            }
         }
     });
 
@@ -108,7 +116,7 @@ export default async function BookingsPage(props: {
                         <ChevronLeft className="w-5 h-5 text-slate-600" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Bookings</h1>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">Bookings</h1>
                         <p className="text-slate-500 font-medium mt-1">
                             Manage upcoming and past appointments
                         </p>

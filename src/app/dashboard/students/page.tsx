@@ -4,7 +4,8 @@ import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, centres } from '@/db/schema';
 import { eq, desc, sql, min, inArray, and } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Users, Calendar, Mail, Phone, ArrowRight } from 'lucide-react';
+import { Plus, Users, Calendar, Mail, Phone, ArrowRight, AlertTriangle, Shield } from 'lucide-react';
+import { studentNotes } from '@/db/schema';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export default async function StudentsPage() {
@@ -57,6 +58,14 @@ export default async function StudentsPage() {
     const bookingDataMap = new Map(
         bookingData.map((bd) => [bd.childId, { count: bd.count, nextAssessment: bd.nextAssessment }])
     );
+
+    const studentIds = studentsList.map(s => s.id);
+    const safetyNotes = studentIds.length > 0 ? await db.query.studentNotes.findMany({
+        where: and(
+            inArray(studentNotes.childId, studentIds),
+            inArray(studentNotes.category, ['Medical', 'Safeguarding'])
+        )
+    }) : [];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -121,6 +130,15 @@ export default async function StudentsPage() {
                                     const bookingInfo = bookingDataMap.get(student.id);
                                     const bookingCount = bookingInfo?.count || 0;
                                     const nextAssessment = bookingInfo?.nextAssessment;
+                                    const studentSafetyNotes = safetyNotes.filter(n => n.childId === student.id);
+                                    const studentMedicalNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
+                                    const studentSafeguardingNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
+
+                                    const hasMedicalNote = studentMedicalNotes.length > 0;
+                                    const medicalNotesContent = studentMedicalNotes.map(n => n.content).join('\n\n');
+
+                                    const hasSafeguardingNote = studentSafeguardingNotes.length > 0;
+                                    const safeguardingNotesContent = studentSafeguardingNotes.map(n => n.content).join('\n\n');
 
                                     return (
                                         <tr
@@ -133,9 +151,35 @@ export default async function StudentsPage() {
                                                         {student.firstName[0]}{student.lastName[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900">
-                                                            {student.firstName} {student.lastName}
-                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-bold text-slate-900 group-hover:text-primary transition-colors">
+                                                                {student.firstName} {student.lastName}
+                                                            </p>
+                                                            {hasMedicalNote && (
+                                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 border border-rose-100 cursor-help shadow-sm">
+                                                                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                                                                    </div>
+                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                        <div className="font-bold text-rose-300 mb-1 border-b border-rose-500/30 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
+                                                                        {medicalNotesContent}
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {hasSafeguardingNote && (
+                                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 border border-blue-100 cursor-help shadow-sm">
+                                                                        <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                                                    </div>
+                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                        <div className="font-bold text-blue-300 mb-1 border-b border-blue-500/30 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                        {safeguardingNotesContent}
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <p className="text-xs text-slate-500">
                                                             DOB: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}
                                                         </p>

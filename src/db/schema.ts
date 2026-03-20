@@ -100,7 +100,8 @@ export const accounts = pgTable('accounts', {
 }));
 
 export const sessions = pgTable('sessions', {
-  sessionToken: varchar('session_token', { length: 255 }).notNull().primaryKey(),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  sessionToken: varchar('session_token', { length: 255 }).notNull().unique(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   expires: timestamp('expires').notNull(),
 });
@@ -178,6 +179,19 @@ export const children = pgTable('children', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const studentNotes = pgTable('student_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  content: text('content').notNull(),
+  authorName: varchar('author_name', { length: 255 }).notNull(),
+  category: varchar('category', { length: 50 }).default('General').notNull(),
+  pinnedAt: timestamp('pinned_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+
 export const childSubjects = pgTable('child_subjects', {
   id: uuid('id').defaultRandom().primaryKey(),
   childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
@@ -186,6 +200,8 @@ export const childSubjects = pgTable('child_subjects', {
 }, (table) => ({
   uniqueSubject: unique().on(table.childId, table.subject),
 }));
+
+
 
 // ==================== BOOKINGS ====================
 // ==================== BOOKINGS ====================
@@ -419,6 +435,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   auditEvents: many(auditEvents),
   accounts: many(accounts),
   sessions: many(sessions),
+  studentNotes: many(studentNotes),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -448,6 +465,18 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
   bookings: many(bookings), // This might refer to legacy bookings or via attendees if we want deep relation, but simplistic 'bookings' on children is fine for now
   subjects: many(childSubjects),
   attendances: many(bookingAttendees),
+  notes: many(studentNotes),
+}));
+
+export const studentNotesRelations = relations(studentNotes, ({ one }) => ({
+  child: one(children, {
+    fields: [studentNotes.childId],
+    references: [children.id],
+  }),
+  user: one(users, {
+    fields: [studentNotes.userId],
+    references: [users.id],
+  }),
 }));
 
 export const bookingsRelations = relations(bookings, ({ one, many }) => ({

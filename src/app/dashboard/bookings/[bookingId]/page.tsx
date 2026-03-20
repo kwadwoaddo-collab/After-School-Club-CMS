@@ -7,6 +7,9 @@ import Link from 'next/link';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import MarkAttendedButton from '@/components/bookings/MarkAttendedButton';
+import StudentNotesPanel from '@/components/students/StudentNotesPanel';
+import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
+import { getStudentNotes } from '@/features/students/notes.actions';
 
 interface BookingPageProps {
     params: Promise<{ bookingId: string }>;
@@ -32,11 +35,23 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             centre: true,
             attendees: {
                 with: {
-                    child: true
+                    child: {
+                        with: {
+                            notes: {
+                                orderBy: (notes, { desc }) => [desc(notes.createdAt)]
+                            }
+                        }
+                    }
                 }
             },
             tutor: true,
-            child: true
+            child: {
+                with: {
+                    notes: {
+                        orderBy: (notes, { desc }) => [desc(notes.createdAt)]
+                    }
+                }
+            }
         }
     });
 
@@ -69,6 +84,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         if (booking.attendees && booking.attendees.length > 0) {
             const child = booking.attendees[0].child;
             return {
+                id: child.id,
                 name: `${child.firstName} ${child.lastName}`,
                 grade: child.schoolYear,
                 dob: child.dateOfBirth,
@@ -77,16 +93,18 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         }
         if (booking.child) {
             return {
+                id: booking.child.id,
                 name: `${booking.child.firstName} ${booking.child.lastName}`,
                 grade: booking.child.schoolYear,
                 dob: booking.child.dateOfBirth,
                 initials: `${booking.child.firstName[0]}${booking.child.lastName[0]}`.toUpperCase()
             };
         }
-        return { name: 'Unknown Student', grade: null, dob: null, initials: '?' };
+        return { id: '', name: 'Unknown Student', grade: null, dob: null, initials: '?' };
     };
 
     const student = getStudentInfo();
+    const initialNotes = student.id ? await getStudentNotes(student.id) : [];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -243,40 +261,17 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 </div>
             </div>
 
-            {/* Assessment & Feedback */}
+            {/* Internal Notes Timeline */}
             <div className="glass-card rounded-3xl p-8">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-slate-900">Assessment & Feedback</h3>
-                    <span className="px-3 py-1 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold uppercase ring-1 ring-amber-600/20">
-                        Pending
-                    </span>
+                    <h3 className="text-xl font-bold text-slate-900">Internal Notes</h3>
                 </div>
 
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">
-                            Score (Optional)
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="e.g. 8/10 or A"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            disabled
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">
-                            Tutor Observations
-                        </label>
-                        <textarea
-                            placeholder="Add assessment observations here..."
-                            rows={4}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
-                            disabled
-                        />
-                    </div>
-                </div>
+                {student.id ? (
+                    <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
+                ) : (
+                    <p className="text-sm text-slate-500 italic">No student associated with this booking to attach notes to.</p>
+                )}
             </div>
         </div>
     );

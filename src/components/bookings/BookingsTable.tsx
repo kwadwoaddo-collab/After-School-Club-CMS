@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2 } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -142,12 +142,64 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     const getStudentInitials = (booking: any) => {
         if (booking.attendees && booking.attendees.length > 0 && booking.attendees[0].child) {
             const child = booking.attendees[0].child;
-            return `${child.firstName?.[0]}${child.lastName?.[0]}`.toUpperCase();
+            return `${child.firstName?.[0] || ''}${child.lastName?.[0] || ''}`.toUpperCase();
         }
         if (booking.child) {
-            return `${booking.child.firstName?.[0]}${booking.child.lastName?.[0]}`.toUpperCase();
+            return `${booking.child.firstName?.[0] || ''}${booking.child.lastName?.[0] || ''}`.toUpperCase();
         }
         return '?';
+    };
+
+    const hasMedicalNote = (booking: any) => {
+        if (booking.attendees && booking.attendees.length > 0) {
+            return booking.attendees.some((a: any) => 
+                a.child?.notes?.some((n: any) => n.category === 'Medical')
+            );
+        }
+        if (booking.child && booking.child.notes) {
+            return booking.child.notes.some((n: any) => n.category === 'Medical');
+        }
+        return false;
+    };
+
+    const getMedicalNotesContent = (booking: any) => {
+        let notes: any[] = [];
+        if (booking.attendees && booking.attendees.length > 0) {
+            booking.attendees.forEach((a: any) => {
+                if (a.child?.notes) {
+                    notes = notes.concat(a.child.notes.filter((n: any) => n.category === 'Medical'));
+                }
+            });
+        } else if (booking.child && booking.child.notes) {
+            notes = booking.child.notes.filter((n: any) => n.category === 'Medical');
+        }
+        return notes.map(n => n.content).join('\n\n');
+    };
+
+    const hasSafeguardingNote = (booking: any) => {
+        if (booking.attendees && booking.attendees.length > 0) {
+            return booking.attendees.some((a: any) => 
+                a.child?.notes?.some((n: any) => n.category === 'Safeguarding')
+            );
+        }
+        if (booking.child && booking.child.notes) {
+            return booking.child.notes.some((n: any) => n.category === 'Safeguarding');
+        }
+        return false;
+    };
+
+    const getSafeguardingNotesContent = (booking: any) => {
+        let notes: any[] = [];
+        if (booking.attendees && booking.attendees.length > 0) {
+            booking.attendees.forEach((a: any) => {
+                if (a.child?.notes) {
+                    notes = notes.concat(a.child.notes.filter((n: any) => n.category === 'Safeguarding'));
+                }
+            });
+        } else if (booking.child && booking.child.notes) {
+            notes = booking.child.notes.filter((n: any) => n.category === 'Safeguarding');
+        }
+        return notes.map(n => n.content).join('\n\n');
     };
 
     return (
@@ -243,7 +295,8 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                         {bookings.map((booking) => (
                             <tr
                                 key={booking.id}
-                                className="hover:bg-slate-50/50 transition-colors group"
+                                onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
+                                className="cursor-pointer hover:bg-slate-50/50 transition-colors group"
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col">
@@ -262,12 +315,38 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold">
+                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm">
                                             {getStudentInitials(booking)}
                                         </div>
-                                        <span className="text-sm font-semibold text-slate-900">
-                                            {getStudentNames(booking)}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">
+                                                {getStudentNames(booking)}
+                                            </span>
+                                            {hasMedicalNote(booking) && (
+                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 border border-rose-100 cursor-help shadow-sm">
+                                                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                                                    </div>
+                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                        <div className="font-bold text-rose-300 mb-1 border-b border-rose-500/30 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
+                                                        {getMedicalNotesContent(booking)}
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {hasSafeguardingNote(booking) && (
+                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 border border-blue-100 cursor-help shadow-sm">
+                                                        <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                                    </div>
+                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                        <div className="font-bold text-blue-300 mb-1 border-b border-blue-500/30 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                        {getSafeguardingNotesContent(booking)}
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
@@ -287,7 +366,10 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 <td className="px-6 py-4 text-right">
                                     <div className="relative inline-block">
                                         <button
-                                            onClick={() => setActiveDropdown(activeDropdown === booking.id ? null : booking.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
+                                            }}
                                             className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
                                         >
                                             <MoreVertical className="w-4 h-4 text-slate-500" />
@@ -344,16 +426,46 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
             {/* Card View for Mobile */}
             <div className="lg:hidden divide-y divide-slate-100">
                 {bookings.map((booking) => (
-                    <div key={booking.id} className="p-5 hover:bg-slate-50/50 transition-colors">
+                    <div 
+                        key={booking.id} 
+                        onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
+                        className="p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                    >
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold">
                                     {getStudentInitials(booking)}
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-900">
-                                        {getStudentNames(booking)}
-                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="text-sm font-bold text-slate-900">
+                                            {getStudentNames(booking)}
+                                        </h4>
+                                        {hasMedicalNote(booking) && (
+                                            <div className="relative group/tooltip flex items-center">
+                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-50 border border-rose-100">
+                                                    <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                                </div>
+                                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed">
+                                                    <div className="font-bold text-rose-300 mb-1">Medical Alert</div>
+                                                    {getMedicalNotesContent(booking)}
+                                                    <div className="absolute top-full left-4 border-4 border-transparent border-t-slate-900"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {hasSafeguardingNote(booking) && (
+                                            <div className="relative group/tooltip flex items-center">
+                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 border border-blue-100">
+                                                    <Shield className="w-3 h-3 text-blue-600" />
+                                                </div>
+                                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed">
+                                                    <div className="font-bold text-blue-300 mb-1">Safeguarding Alert</div>
+                                                    {getSafeguardingNotesContent(booking)}
+                                                    <div className="absolute top-full left-4 border-4 border-transparent border-t-slate-900"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                     <p className="text-xs text-slate-500 font-medium mt-0.5">
                                         {booking.centre?.name}
                                     </p>
@@ -382,7 +494,10 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 View Details
                             </Link>
                             <button
-                                onClick={() => setConfirmDelete(booking.id)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmDelete(booking.id);
+                                }}
                                 className="px-3 py-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
                                 title="Delete Booking"
                             >

@@ -159,3 +159,78 @@ Goal: Ensure every step of the registration process allows the user to return to
     - **Keyboard Shortcut:** Add a listener for Cmd + K (Mac) and Ctrl + K (Windows) to automatically focus the search bar.
     - **Navigation:** Clicking a search result must take the user directly to that record's detail page (e.g., clicking a booking result opens the "Booking Details" page).
 - **Goal:** Allow the admin to find any student or booking instantly from any page in the app.
+
+[ ] Task 22: Fix Contrast for "Bookings" Header
+Status: Pending
+Location: Bookings Page Header
+Issue: The word "Bookings" has low visibility against the dark background.
+Fix: Update the text color to a higher contrast shade (e.g., pure white #FFFFFF or a very light gray #F8FAFC). Ensure it meets WCAG AA standards (at least 4.5:1 contrast ratio).[1][2][3]
+
+[ ] Task 23: Implement Clickable Table Rows
+Status: Pending
+Location: Bookings Table (/bookings)
+Description:
+Logic: Make the entire <tr> (table row) clickable. Clicking anywhere on the row should navigate the user to the "Booking Details" page for that specific record.
+Interactive Elements: Ensure that clicking the Three Dots (Actions Menu) or any specific buttons within the row still triggers their specific menus/actions and does not trigger the row navigation (use e.stopPropagation() in JavaScript).
+UX: Add a hover:bg-slate-800 (or similar) effect to the row so the user knows it is interactive.
+
+[ ] Task 24: Persistent Internal Notes System
+Status: Pending
+Description: Refactor "Assessment & Feedback" into a unified "Internal Notes" system.
+Database Logic:
+Move the notes storage from the Booking model to the Student (or Child) model.
+If a student doesn't exist yet when a booking is made, the system should create a "Lead/Student" record immediately to hold these notes.
+Requirements:
+Rename: Change "Assessment & Feedback" header to "Internal Notes".
+Persistence: These notes must stay with the student profile forever.
+Visibility: Add a "Notes" tab/section to the Student Details page (Registration view).
+Access: Ensure an admin can add/edit/delete notes from either the Booking Details page OR the Student Registration page.
+Goal: Create a single "Source of Truth" for a child's history that is never shared with parents.
+
+[x] Task 25: Implement Multi-Note Audit Trail (Author & Timestamp)
+Status: COMPLETE
+Location: Internal Notes Section (Booking Details & Student Profile)
+Description:
+Database Change: Instead of a single "Notes" text field, create a StudentNote model/table.
+Relationships: Each note must be linked to a student_id and a user_id (the staff member who wrote it).
+Fields:
+content (Text)
+created_at (Timestamp - Auto-generated)
+author_name (String - The name of the logged-in user)
+UI/UX:
+Input: A clean text area to "Add a New Note."
+Display: Below the input, show a vertical list of previous notes.
+Style: Each note should look like a "Message Bubble" or a clean list item saying: "Observation by [Author Name] • [Date] at [Time]".
+Permission: Allow the Author or an Admin to edit/delete their own notes, but keep the history visible.
+Goal: Enable multiple staff members to contribute to a child's internal record over time.
+
+[x] Task 26: Implement "Pinned Notes" (High-Priority Alerts)
+Status: COMPLETE
+Location: Internal Notes Section (Booking Details & Student Profile)
+Description:
+Database: Added pinned_at timestamp to the StudentNote model to track pins.
+Logic: Any note marked as "Pinned" is pulled out of the chronological timeline and displayed in a dedicated "Important Alerts" section at the very top of the notes area.
+UI/UX:
+Visuals: Pinned notes have a distinct "Sticky Note" style (a light yellow/amber background with a thumbtack icon watermark) to ensure they are the first thing a tutor sees.
+Interaction: Added a "Pin" icon (`lucide-react`) to each note in the audit trail. Clicking it toggles the pinned state.
+Goal: Ensure critical information (medical, safeguarding, or urgent needs) is impossible to miss.
+
+[x] Task 27: Implement "Medical/Allergy Alert" Badges in Tables
+Status: COMPLETE
+Location: Bookings Table, Dashboard "Recent Bookings," and Students Table.
+Description:
+Logic: Create a way to "Flag" a note specifically as Medical/Allergy.
+Database: Add a category field to the StudentNote model (e.g., "General", "Medical", "Safeguarding").
+UI (The Badge): If a student has an active note in the "Medical" or "Allergy" category, display a small Red Medical Icon (e.g., a cross or alert triangle) or a "Medical" pill badge directly next to their name in all table views.
+Hover Tooltip: When a staff member hovers over the badge, show a tooltip with the content of that pinned medical note (e.g., "Severe Nut Allergy").
+Goal: Instant visual safety awareness for staff without needing to open the full student profile.
+
+[x] Task 28: Implement "Safeguarding Alert" Badges (Blue Shield)
+Status: COMPLETE
+Location: Bookings Table, Students Table, and Dashboard List.
+Description:
+Logic: Add a 'Safeguarding' category to the StudentNote model (alongside 'General' and 'Medical').
+UI (The Badge): If a student has an active note categorized as 'Safeguarding', display a small Blue Shield Icon next to their name in all table views.
+Tooltip: On hover, display the safeguarding note content (e.g., "Court order: Father restricted from collection").
+Privacy Note: Ensure these notes are strictly internal and clearly labeled as "Highly Confidential" in the UI.
+Goal: Protect children by making collection restrictions and legal alerts visible to staff at a glance during checkout.
