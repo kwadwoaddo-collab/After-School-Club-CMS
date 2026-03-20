@@ -51,7 +51,7 @@ export async function addStudentNote(childId: string, content: string) {
 
     await db.insert(studentNotes).values({
         childId,
-        authorId: session.user.id,
+        userId: session.user.id,
         authorName,
         content,
     });
@@ -67,7 +67,7 @@ export async function deleteStudentNote(noteId: string) {
     const [note] = await db.select().from(studentNotes).where(eq(studentNotes.id, noteId));
     if (!note) throw new Error('Note not found');
 
-    if (note.authorId !== session.user.id && (session.user as any).role !== 'ORG_OWNER' && (session.user as any).role !== 'MANAGER') {
+    if (note.userId !== session.user.id && (session.user as any).role !== 'ORG_OWNER' && (session.user as any).role !== 'MANAGER') {
         throw new Error('Unauthorized to delete this note');
     }
 
