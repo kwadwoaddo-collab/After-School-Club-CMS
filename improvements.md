@@ -45,3 +45,117 @@ Fix Applied:
   - googleError state renders inline error message if popup is blocked.
   - Goal achieved: Google popup appears on first click, no race condition.
 
+## [x] Task 8: Make Email Optional (Frontend & Backend)
+- **Status:** COMPLETE
+- **Location:** Parent Details Step
+- **Description:** 
+    - Remove `required` attribute from the Email input.
+    - Remove the `*` (asterisk) from the "Email" label.
+    - **Backend:** Update the Pydantic/FastAPI models to allow `email` to be `null` or an empty string.
+
+## [x] Task 9: Fix UI Contrast & Styling in Booking Flow
+- **Status:** COMPLETE
+- **Location:** Parent Details -> Preferred Contact
+- **Issue:** The blue background on "Email" and "Phone" labels makes text unreadable.
+- **Fix:** Remove the background colors. Use a clean, professional font color (e.g., dark slate #1e293b) that matches the rest of the form. Ensure all labels are consistently styled.
+
+## [x] Task 10: FIX SUNDAY SLOTS LOGIC (High Priority)
+- **Status:** COMPLETE
+- **Location:** `AvailabilityService` / Backend logic
+- **Issue:** Selecting Sunday still shows "No slots available."
+- **Technical Fix:** Check for a mismatch between JS `getDay()` (Sunday=0) and Python `weekday()` (Sunday=6). Ensure the backend queries the `SessionSlots` table correctly for "Sunday" entries.
+
+## [ ] Task 11: Implement Professional Notification System
+- **Status:** Pending
+- **Description:** Replace standard browser `alert()` popups with professional "Toast" notifications (e.g., using a library or custom Tailwind component). 
+- **Goal:** Show a green "Success" toast when a booking is confirmed and a red "Error" toast if something fails.
+
+## [ ] Task 12: Add "Empty State" Designs
+- **Status:** Pending
+- **Description:** If a user visits the "Bookings" or "Students" page and there is no data, show a professional "Empty State" graphic and a "Add New" button instead of just a blank table.
+
+## [ ] Task 13: Full Professional UI Audit & Polish
+- **Status:** Pending
+- **Goal:** Self-improvement. The agent must review every page for:
+    - **Consistency:** Padding, margins, and button sizes must be identical across the app.
+    - **Loading States:** Every button should show a "Loading..." spinner while waiting for the backend.
+    - **Mobile View:** Ensure the booking flow is 100% responsive and looks great on a phone.
+
+    [x] Task 14: Remove All Assessment Capacity Limits
+Status: COMPLETE
+Location: Backend (AvailabilityService / crud.py / main.py)
+Issue: The system is preventing bookings with the error "This time slot is no longer available."
+Logic Change:
+Remove Capacity Check: Locate the logic that counts existing bookings for a specific date and time_slot. Delete or disable the validation that blocks a booking if a "limit" is reached.
+Unlimited Bookings: Ensure that even if multiple parents choose the same 11:00 AM slot, the database accepts all of them.
+Validation: Remove the frontend and backend error message: "This time slot is no longer available."
+Goal: Ensure the "Confirm Booking" step always succeeds regardless of how many other students are booked at that time.
+
+[x] Task 15: Redesign the "Booking Confirmed" Success Screen
+Status: COMPLETE
+Location: Success/Confirmation Screen (Post-form submission)
+Description:
+Remove the Code: Hide or remove the long alphanumeric confirmation code from the UI. It feels unnecessary for parents.
+Add a Summary: Instead of a code, show a clear summary of what they just booked so they can screenshot it:
+Child Name
+Date & Time
+Centre Location
+Clear Call to Action: Keep the "Done" button, but make the email message more prominent.
+Goal: Make the screen feel welcoming and provide the parent with the immediate info they need (the "When" and "Where") rather than a technical ID.
+
+[x] Task 16: Refine Dashboard "Recent Bookings" Layout
+Status: COMPLETE
+Location: Dashboard -> Assessments & Bookings Card
+Description:
+Remove Dead Space: Tighten the layout so the "View All Assessments" button sits directly below the last list item.
+Increase Density: Instead of showing only 3 bookings, increase the count to 5 or 6 items (enough to fill the card height without excessive empty "real estate").
+Goal: Make the card look full and active while reducing unnecessary scrolling/gap.
+[x] Task 17: Update Sorting Logic for Dashboard List
+Status: COMPLETE
+Location: Dashboard API / Frontend Sorting
+Description:
+Sorting order: Display bookings by Nearest Date First (Chronological order).
+Logic: Sort by date (Ascending) and then time_slot (Ascending).
+Filter: Ideally, this list should only show Upcoming or Today's bookings, hiding past ones.
+Goal: Ensure the most immediate appointments are at the very top of the list so the user knows who is arriving next.
+
+[x] Task 18: Add Consistent "Back" Navigation to Registration Flow
+Status: COMPLETE
+Location: Registration Funnel (Fees Page, Centre Selection, Step 1)
+Description:
+Fees & Payment Page: Add a "Back" button at the bottom left. Since this is the entry point, it should link back to the main landing page or the previous site.
+Select a Centre Page: Add a "Back" button at the bottom left to return to the "Fees & Payment" page.
+Step 1 (Children's Details): Add a "Back" button at the bottom left to return to the "Select a Centre" page.
+UI/UX: The buttons must match the styling of the "Back" button seen in Step 2 (Image 4)—using the same outline style, positioning, and hover effects.
+Goal: Ensure every step of the registration process allows the user to return to the previous screen easily.
+
+## [x] Task 19: Visual Realignment to the "SprintScale" Design
+- **Status:** COMPLETE
+- **Location:** Global Dashboard (`layout.tsx`, `page.tsx`, `Header.tsx`, `Sidebar.tsx`)
+- **Issue:** The current UI (Image 2) uses large gradient buttons and a basic layout that does not match the professional "SprintScale" reference (Image 1).
+- **Fix Applied:**
+    - **Header:** Cleaned the top navigation header by removing the action buttons (New Assessment, Export, Booking Link).
+    - **Sidebar:** Refactored the sidebar to `#1a1d23` matching the dark theme, removed inline Quick Links, and added a sticky "New Booking" button above Quick Support at the bottom.
+    - **Cards:** Refactored `page.tsx` into a precise 3-column layout (`lg:grid-cols-3`): Left (Assessments), Middle (Registrations with Public Link box), Right (Staff Management).
+    - **Theme:** Switched global dashboard layout to the deep-dark professional theme (`#0f1115` background) and updated all cards to `#1a1d23`.
+    - **Student Ecosystem:** Added the "Student Ecosystem" footer bar featuring overlapping student avatars alongside the view action.
+
+    ## [ ] Task 20: Integrate "Export" Feature into Professional UI
+- **Status:** Pending
+- **Location:** Dashboard Header or Sidebar
+- **Description:** 
+    - **UI Change:** Remove the large "Export Report" button from the main dashboard area to match the "SprintScale" design.
+    - **New Placement:** Add a "Reports" item to the Sidebar (below Settings) OR add a subtle "Export" icon (a tray with an arrow) in the top right header next to the notification bell.
+    - **Functionality:** Clicking this should trigger the existing export logic (CSV/PDF generation).
+    - **Goal:** Keep the powerful reporting features available but maintain the high-end, uncluttered design of the new dashboard.
+
+## [x] Task 21: Implement Functional Global Search (Cmd + K)
+- **Status:** COMPLETE
+- **Location:** Header / Search Bar
+- **Issue:** The search bar is currently just a visual placeholder and does not return results.
+- **Requirements:**
+    - **Backend:** Create a search API endpoint (e.g., `/api/search?q=...`) that performs a partial match (ILIKE) across Students (name/email), Bookings (parent/child name), and Centres.
+    - **Frontend:** Implement a live-search dropdown. As the user types, show the top 5-10 results categorized by type (e.g., "Students", "Bookings").
+    - **Keyboard Shortcut:** Add a listener for Cmd + K (Mac) and Ctrl + K (Windows) to automatically focus the search bar.
+    - **Navigation:** Clicking a search result must take the user directly to that record's detail page (e.g., clicking a booking result opens the "Booking Details" page).
+- **Goal:** Allow the admin to find any student or booking instantly from any page in the app.

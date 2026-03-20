@@ -296,13 +296,18 @@ export default function RegisterPage() {
                     </div>
 
                     {/* CTA */}
-                    <button
-                        onClick={() => setShowFeesIntro(false)}
-                        className="w-full py-4 rounded-2xl font-semibold text-white text-base transition-all"
-                        style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
-                    >
-                        I understand — Proceed to Registration →
-                    </button>
+                    <div className="flex justify-between items-center mt-8 gap-4">
+                        <Link href="/" className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm whitespace-nowrap">
+                            ← Back
+                        </Link>
+                        <button
+                            onClick={() => setShowFeesIntro(false)}
+                            className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all"
+                            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
+                        >
+                            I understand — Proceed to Registration →
+                        </button>
+                    </div>
                     <p className="text-center text-white/30 text-xs mt-3">You will be asked to confirm your agreement to these terms at the end of the form.</p>
                 </div>
             </div>
@@ -352,6 +357,11 @@ export default function RegisterPage() {
                                 </div>
                             </button>
                         ))}
+                    </div>
+                    <div className="mt-8 flex justify-start">
+                        <button onClick={() => setShowFeesIntro(true)} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
+                            ← Back
+                        </button>
                     </div>
                 </div>
             </div>
@@ -689,7 +699,17 @@ export default function RegisterPage() {
                         <button onClick={() => setStep(s => s - 1)} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
                             ← Back
                         </button>
-                    ) : <div />}
+                    ) : (
+                        <button onClick={() => {
+                            if (orgInfo?.centres && orgInfo.centres.length > 1) {
+                                setSelectedCentreId(null);
+                            } else {
+                                setShowFeesIntro(true);
+                            }
+                        }} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
+                            ← Back
+                        </button>
+                    )}
                     {step < TOTAL_STEPS && (
                         <button onClick={() => setStep(s => s + 1)} className="px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors text-sm">
                             Continue →

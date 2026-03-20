@@ -78,14 +78,20 @@ export default async function StudentsPage() {
 
             {/* Students List */}
             {studentsList.length === 0 ? (
-                <div className="glass-card rounded-[32px] p-12 text-center">
-                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-8 h-8 text-primary" />
+                <div className="glass-card rounded-[32px] p-16 text-center shadow-sm border border-slate-200 bg-white">
+                    <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-primary/20">
+                        <Users className="w-10 h-10 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No students yet</h3>
-                    <p className="text-slate-500 mb-6">
-                        Students will appear here once they book assessments
+                    <h3 className="text-2xl font-bold text-slate-900 mb-3">No students yet</h3>
+                    <p className="text-slate-500 mb-8 max-w-xs mx-auto">
+                        Students will appear here once they book assessments, or you can add one manually.
                     </p>
+                    <Link
+                        href="/dashboard/students/add"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    >
+                        <Plus className="w-4 h-4" /> Add New Student
+                    </Link>
                 </div>
             ) : (
                 <div className="glass-card rounded-[32px] overflow-hidden">

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Link from 'next/link'; // Add this
+import Link from 'next/link';
+import toast from 'react-hot-toast';
 import {
     bookingSchema,
     parentSchema,
@@ -214,6 +215,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
             });
 
             setError('Please correct the red fields below to continue.');
+            toast.error('Please correct the highlighted fields.');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -240,10 +242,13 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
             }
 
             const result = await response.json();
+            toast.success('Booking Confirmed!');
             setConfirmationCode(result.confirmationCode);
             setSuccess(true);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Booking failed. Please try again.');
+            const msg = err instanceof Error ? err.message : 'Booking failed. Please try again.';
+            setError(msg);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }
@@ -294,11 +299,29 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
                     {rescheduleData ? 'Reschedule Confirmed!' : 'Booking Confirmed!'}
                 </h2>
-                <p className="text-gray-600 mb-6">Your new confirmation code is:</p>
-                <p className="text-4xl font-mono font-bold brand-text mb-8 tracking-wider">{confirmationCode}</p>
-                <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
-                    <p className="text-sm text-gray-800">
-                        📧 You&apos;ll receive a {rescheduleData ? 'updated ' : ''}confirmation email shortly with all the details.
+                <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-6 max-w-md mx-auto mb-8 text-left space-y-5 animate-fadeIn">
+                    <div className="border-b border-gray-100 pb-4">
+                        <p className="text-sm font-medium text-gray-500 mb-1">Child(ren)</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                            {watchedChildren.map(c => `${c.firstName} ${c.lastName}`).filter(n => n.trim() !== '').join(', ') || 'Not specified'}
+                        </p>
+                    </div>
+                    <div className="border-b border-gray-100 pb-4">
+                        <p className="text-sm font-medium text-gray-500 mb-1">Date & Time</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                            {watch('appointment.startAt') ? new Date(watch('appointment.startAt')).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">Centre</p>
+                        <p className="text-lg font-semibold text-gray-900">{centreName}</p>
+                    </div>
+                </div>
+
+                <div className="bg-blue-50/80 rounded-lg p-4 max-w-md mx-auto flex items-start gap-3 text-left">
+                    <span className="text-blue-500 text-xl mt-0.5">📧</span>
+                    <p className="text-sm text-blue-900 leading-relaxed">
+                        You&apos;ll receive a {rescheduleData ? 'updated ' : ''}confirmation email shortly with all the details.
                     </p>
                 </div>
 
@@ -385,37 +408,39 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         <h2 className="text-xl font-semibold text-gray-900">Parent Details</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
                                 <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Enter first name" />
                                 {errors.parent?.firstName && <p className="text-red-600 text-sm mt-1">{errors.parent.firstName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
                                 <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Enter last name" />
                                 {errors.parent?.lastName && <p className="text-red-600 text-sm mt-1">{errors.parent.lastName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Email <span className="text-gray-400 font-normal">(Optional)</span></label>
                                 <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="email@example.com" />
                                 {errors.parent?.email && <p className="text-red-600 text-sm mt-1">{errors.parent.email.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Phone *</label>
                                 <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
-                                {/* Task 1: preferredContact is now optional — removed * and required validation */}
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact Method</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-2">Preferred Contact Method</label>
                                 <div className="flex gap-4">
-                                    {['email', 'phone'].map((method) => (
-                                        <label key={method} className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" {...register('parent.preferredContact')} value={method} className="w-4 h-4 brand-checkbox text-indigo-600 focus:ring-indigo-500" style={{ accentColor: brandColor }} />
-                                            <span className="capitalize">{method}</span>
-                                        </label>
-                                    ))}
+                                    {['email', 'phone'].map((method) => {
+                                        const isSelected = watch('parent.preferredContact') === method;
+                                        return (
+                                            <label key={method} className={`flex-1 flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg border-2 transition-all ${isSelected ? 'border-gray-800 bg-gray-50 text-gray-900 font-semibold shadow-sm' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50'}`}>
+                                                <input type="radio" {...register('parent.preferredContact')} value={method} className="sr-only" />
+                                                <span className="capitalize">{method}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
-                                {errors.parent?.preferredContact && <p className="text-red-600 text-sm mt-1">{errors.parent.preferredContact.message}</p>}
+                                {errors.parent?.preferredContact && <p className="text-red-600 text-sm mt-2">{errors.parent.preferredContact.message}</p>}
                             </div>
                         </div>
                     </div>
@@ -434,22 +459,22 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                                        <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
                                         <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's first name" />
                                         {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                                        <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
                                         <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's last name" />
                                         {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                     </div>
                                     <div className="hidden">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                        <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>
                                         <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                         {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">School Year *</label>
+                                        <label className="block text-sm font-medium text-slate-800 mb-1">School Year *</label>
                                         <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900">
                                             <option value="">Select year...</option>
                                             {SCHOOL_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
@@ -457,7 +482,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                         {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Subjects for Assessment *</label>
+                                        <label className="block text-sm font-medium text-slate-800 mb-2">Subjects for Assessment *</label>
                                         <Controller
                                             name={`children.${index}.subjects`}
                                             control={control}
@@ -473,7 +498,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                                                     const newValue = isSelected ? field.value?.filter((s) => s !== subject) : [...(field.value || []), subject];
                                                                     field.onChange(newValue);
                                                                 }}
-                                                                className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'}`}
+                                                                className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-white' : 'bg-white border-gray-300 text-slate-800 hover:border-gray-400'}`}
                                                             >
                                                                 {isSelected && '✓ '}{subject}
                                                             </button>
@@ -494,7 +519,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                         {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
+                                        <label className="block text-sm font-medium text-slate-800 mb-1">Additional Notes (Optional)</label>
                                         <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                     </div>
                                 </div>
@@ -517,7 +542,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                             <h2 className="text-xl font-semibold text-gray-900">Choose Appointment</h2>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-2">Session Type</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     {[
                                         { value: 'in_person', label: '🏫 In-Person', desc: `At ${centreName}`, disabled: false },
@@ -544,7 +569,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
 
                             <div>
                                 {/* Task 4: Date is now mandatory — label updated and helptext added */}
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Date *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-2">Select Date *</label>
                                 <input
                                     type="date"
                                     value={selectedDate}
@@ -560,7 +585,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
 
                             {selectedDate && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Available Times</label>
+                                    <label className="block text-sm font-medium text-slate-800 mb-2">Available Times</label>
                                     {loadingSlots ? (
                                         <div className="flex items-center justify-center py-8"><Spinner size="lg" /><span className="ml-3 text-gray-500">Loading available slots...</span></div>
                                     ) : timeSlots.length === 0 ? (
@@ -628,7 +653,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                 {/* Buttons */}
                 <div className="flex gap-4">
                     {step > 1 && (
-                        <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">← Back</button>
+                        <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-gray-300 text-slate-800 rounded-lg font-semibold hover:bg-gray-50 transition-colors">← Back</button>
                     )}
                     {step < 4 ? (
                         // Task 4: on step 3, require both a date AND a time slot before enabling Continue

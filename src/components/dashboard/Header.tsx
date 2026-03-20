@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Menu, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Bell, Menu, LogOut, ChevronDown, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useSidebar } from './SidebarContext';
@@ -31,6 +31,12 @@ const ROLE_LABELS: Record<string, string> = {
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
+
     const [showNotifications, setShowNotifications] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -100,7 +106,48 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    // Close notifications when clicking outside
+    // Keyboard shortcut for Cmd+K or Ctrl+K
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // Debounced search
+    useEffect(() => {
+        const fetchResults = async () => {
+            if (searchQuery.trim().length < 2) {
+                setSearchResults([]);
+                return;
+            }
+            setIsSearching(true);
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSearchResults(data.results || []);
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+            } finally {
+                setIsSearching(false);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            if (searchQuery) fetchResults();
+            else setSearchResults([]);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Close notifications and search when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -108,6 +155,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             }
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
                 setShowUserMenu(false);
+            }
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                setShowSearchResults(false);
             }
         }
 
@@ -124,11 +174,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className={`h-16 sm:h-20 bg-[#131313]/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-[#424754]/15 transition-all duration-300 ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'
+        <header className={`h-16 sm:h-20 bg-[#0f1115]/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-[#424754]/15 transition-all duration-300 ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'
             }`}>
             {/* Hamburger — mobile only */}
             <button
-                className="lg:hidden p-2 rounded-xl hover:bg-[#20201f] text-[#8c909f] transition-colors flex-shrink-0"
+                className="lg:hidden p-2 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] transition-colors flex-shrink-0"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
             >
@@ -137,17 +187,71 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
 
             {/* Search Bar — hidden on mobile */}
             {!hideSearch && (
-                <div className="hidden sm:block flex-1 max-w-xl">
+                <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
                     <form onSubmit={handleSearch} className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
                         <input
+                            ref={searchInputRef}
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setShowSearchResults(true);
+                            }}
+                            onFocus={() => {
+                                if (searchQuery.trim().length >= 2) setShowSearchResults(true);
+                            }}
                             placeholder="Search students, bookings (Cmd + K)"
-                            className="w-full pl-11 pr-4 py-2.5 bg-[#20201f] border-none rounded-2xl text-sm text-[#e5e2e1] placeholder:text-[#8c909f] focus:ring-2 focus:ring-[#4d8eff]/30 transition-all outline-none"
+                            className="w-full pl-11 pr-4 py-2.5 bg-[#1a1d23] border border-[#424754]/15 rounded-[12px] text-sm text-[#e5e2e1] placeholder:text-[#8c909f] focus:ring-2 focus:ring-[#4d8eff]/30 transition-all outline-none"
                         />
+                        {isSearching && (
+                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] animate-spin" />
+                        )}
+                        {/* Keyboard shortcut hint overlay for inactive state */}
+                        {!searchQuery && !isSearching && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
+                                <span className="text-xs bg-[#2a2d35] px-1.5 py-0.5 rounded border border-[#424754] text-[#8c909f]">⌘</span>
+                                <span className="text-xs bg-[#2a2d35] px-1.5 py-0.5 rounded border border-[#424754] text-[#8c909f]">K</span>
+                            </div>
+                        )}
                     </form>
+
+                    {/* Search Results Dropdown */}
+                    {showSearchResults && searchQuery.trim().length >= 2 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            {searchResults.length === 0 && !isSearching ? (
+                                <div className="p-4 text-center text-sm text-[#8c909f]">
+                                    No results found for "{searchQuery}"
+                                </div>
+                            ) : (
+                                <div className="max-h-96 overflow-y-auto">
+                                    {searchResults.map((result) => (
+                                        <div
+                                            key={`${result.type}-${result.id}`}
+                                            onClick={() => {
+                                                router.push(result.url);
+                                                setShowSearchResults(false);
+                                                setSearchQuery('');
+                                            }}
+                                            className="p-3 border-b border-[#424754]/15 hover:bg-[#353535] cursor-pointer transition-colors flex items-center justify-between group"
+                                        >
+                                            <div>
+                                                <p className="font-semibold text-sm text-[#e5e2e1] group-hover:text-[#adc6ff] transition-colors">
+                                                    {result.title}
+                                                </p>
+                                                <p className="text-xs text-[#8c909f] mt-0.5">
+                                                    {result.subtitle}
+                                                </p>
+                                            </div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#424754]/30 text-[#8c909f]">
+                                                {result.type}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -157,19 +261,19 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <div className="relative" ref={notificationRef}>
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
-                        className="p-2.5 rounded-xl hover:bg-[#20201f] text-[#8c909f] relative transition-colors"
+                        className="p-2.5 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] relative transition-colors"
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-[#f66018] rounded-full border-2 border-[#131313]">
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-[#f66018] rounded-full border-2 border-[#0f1115]">
                             </span>
                         )}
                     </button>
 
                     {/* Notifications Dropdown */}
                     {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-[#2a2a2a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute right-0 mt-2 w-80 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="p-4 border-b border-[#424754]/15">
                                 <h3 className="font-bold text-[#e5e2e1]">Notifications</h3>
                                 {unreadCount > 0 && (
@@ -216,7 +320,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     ))
                                 )}
                             </div>
-                            <div className="p-3 border-t border-[#424754]/15 bg-[#20201f]">
+                            <div className="p-3 border-t border-[#424754]/15 bg-[#1a1d23]">
                                 <button
                                     onClick={handleMarkAllAsRead}
                                     className="text-xs font-semibold text-[#adc6ff] hover:text-[#4d8eff] w-full text-center"

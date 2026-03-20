@@ -13,6 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { Toaster } from 'react-hot-toast';
+
 export const metadata: Metadata = {
   title: "After School Club CMS",
   description: "Management system for after school clubs and tuition centres",
@@ -29,7 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+            {children}
+            <Toaster position="bottom-right" />
+        </SessionProvider>
       </body>
     </html>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -87,18 +87,18 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
 
     if (bookings.length === 0) {
         return (
-            <div className="glass-card rounded-[32px] p-16 text-center">
-                <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                    <CalendarIcon className="w-10 h-10 text-primary" />
+            <div className="rounded-3xl border border-[#2a2a2a] bg-[#1a1a1a]/50 p-16 text-center backdrop-blur-md shadow-2xl">
+                <div className="w-20 h-20 bg-[#4F46E5]/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-[#4F46E5]/30">
+                    <CalendarIcon className="w-10 h-10 text-[#4F46E5]" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">No bookings found</h3>
-                <p className="text-slate-500 max-w-md mx-auto mb-8">
+                <h3 className="text-2xl font-bold text-[#e5e2e1] mb-3">No bookings found</h3>
+                <p className="text-[#a19d9c] max-w-md mx-auto mb-8">
                     Upcoming or past bookings will appear here once they are created.
                     Try adjusting your filters or create a new assessment booking.
                 </p>
                 <Link
                     href="/dashboard/bookings/new"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] hover:bg-[#4338ca] text-white rounded-2xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)]"
                 >
                     + New Assessment
                 </Link>
@@ -174,9 +174,9 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                         <button
                             onClick={handleCancelConfirm}
                             disabled={isCancelling}
-                            className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {isCancelling ? 'Cancelling…' : 'Yes, Cancel'}
+                            {isCancelling ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : 'Yes, Cancel'}
                         </button>
                     </div>
                 </div>
@@ -204,9 +204,9 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                         <button
                             onClick={handleDelete}
                             disabled={isDeleting}
-                            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+                            {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Yes, Delete'}
                         </button>
                     </div>
                 </div>

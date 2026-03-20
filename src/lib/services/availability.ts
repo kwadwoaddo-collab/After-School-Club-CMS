@@ -21,7 +21,7 @@ interface TimeSlot {
 // Default operating hours when no rules are configured
 // Monday-Saturday: 09:00-18:00, Sunday: closed
 const DEFAULT_HOURS: Record<number, { startTime: string; endTime: string } | null> = {
-    0: null, // Sunday - closed
+    0: { startTime: '10:00', endTime: '16:00' }, // Sunday - Fixed to be open
     1: { startTime: '09:00', endTime: '18:00' }, // Monday
     2: { startTime: '09:00', endTime: '18:00' }, // Tuesday
     3: { startTime: '09:00', endTime: '18:00' }, // Wednesday
@@ -37,8 +37,8 @@ export class AvailabilityService {
     async getAvailableSlots(query: AvailabilityQuery): Promise<TimeSlot[]> {
         const { centreId, modality, date, duration, checkGoogleCalendar = false } = query;
 
-        // Get centre availability rules
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+        const jsDayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+        const dbDayOfWeek = jsDayOfWeek === 0 ? 6 : jsDayOfWeek - 1; // Map to DB/Python format: 0 = Mon, 6 = Sun
 
         let rule: { startTime: string; endTime: string } | null = null;
 
@@ -47,7 +47,7 @@ export class AvailabilityService {
                 const rules = await db.query.centreAvailabilityRules.findMany({
                     where: and(
                         eq(centreAvailabilityRules.centreId, centreId),
-                        eq(centreAvailabilityRules.dayOfWeek, dayOfWeek)
+                        eq(centreAvailabilityRules.dayOfWeek, dbDayOfWeek)
                     ),
                 });
 
@@ -60,19 +60,16 @@ export class AvailabilityService {
         }
 
         console.log('[Debug] Date:', date);
-        console.log('[Debug] Day:', dayOfWeek);
+        console.log('[Debug] Day:', jsDayOfWeek);
+        console.log('[Debug] DB Day:', dbDayOfWeek);
         console.log('[Debug] Rule found in DB?', !!rule);
 
         // Use default hours if no rules found
         if (!rule) {
-            rule = DEFAULT_HOURS[dayOfWeek];
+            rule = DEFAULT_HOURS[jsDayOfWeek];
             console.log('[Debug] Using default rule:', rule);
         }
 
-        // Use default hours if no rules found
-        if (!rule) {
-            rule = DEFAULT_HOURS[dayOfWeek];
-        }
 
         if (!rule) {
             return []; // Day is closed (e.g., Sunday)
@@ -173,15 +170,14 @@ export class AvailabilityService {
             const slotStart = new Date(slot.startAt);
             const slotEnd = new Date(slot.endAt);
 
-            // Check bookings
-            // Check bookings (Limit 10 per slot for now - "as many as possible")
+            // Check bookings (Limit removed for Task 14)
             const overlappingBookings = existingBookings.filter(booking => {
                 const bookingStart = new Date(booking.startAt);
                 const bookingEnd = addMinutes(bookingStart, booking.duration);
                 return slotStart < bookingEnd && slotEnd > bookingStart;
             });
 
-            const hasCapacityConflict = overlappingBookings.length >= 10;
+            const hasCapacityConflict = false; // overlappingBookings.length >= 10;
 
             // Check holds
             const hasHoldConflict = activeHolds.some(hold => {
@@ -206,20 +202,8 @@ export class AvailabilityService {
      * Hold a slot for 5 minutes to prevent race conditions
      */
     async holdSlot(centreId: string | undefined, modality: string, startAt: Date): Promise<boolean> {
-        const resourceKey = centreId ? `${centreId}_${modality}` : `online_${modality}`;
-        const expiresAt = addMinutes(new Date(), 5);
-
-        try {
-            await db.insert(slotHolds).values({
-                resourceKey,
-                timeBucket: startAt,
-                expiresAt,
-            });
-            return true;
-        } catch (error) {
-            // Unique constraint violation - slot already held
-            return false;
-        }
+        // Task 14: Return true unconditionally to allow infinite concurrent bookings
+        return true;
     }
 
     /**

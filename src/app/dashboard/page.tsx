@@ -10,10 +10,8 @@ import Link from 'next/link';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import {
     Users, CalendarCheck, ClipboardList, UserCircle2,
-    ArrowRight, Plus, Share2, ChevronRight,
+    ArrowRight, ChevronRight,
 } from 'lucide-react';
-import ShareBookingLinkButton from '@/components/dashboard/ShareBookingLinkButton';
-import ExportReportButton from '@/components/dashboard/ExportReportButton';
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -38,6 +36,7 @@ export default async function DashboardPage() {
     const firstName = session.user.name?.split(' ')[0] || 'there';
 
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
@@ -81,9 +80,14 @@ export default async function DashboardPage() {
                 .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
                 .innerJoin(children, eq(bookingAttendees.childId, children.id))
                 .innerJoin(centres, eq(bookings.centreId, centres.id))
-                .where(inArray(bookings.centreId, accessibleCentreIds))
+                .where(
+                    and(
+                        inArray(bookings.centreId, accessibleCentreIds),
+                        gte(bookings.startAt, today)
+                    )
+                )
                 .orderBy(asc(bookings.startAt))
-                .limit(3)
+                .limit(5)
             : Promise.resolve([]),
 
         // Total registrations
@@ -112,15 +116,8 @@ export default async function DashboardPage() {
                     </p>
                 </div>
                 {userRole !== 'TUTOR' && (
-                    <div className="flex flex-wrap gap-3">
-                        <ShareBookingLinkButton bookingUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${org.slug}`} />
-                        <ExportReportButton />
-                        <Link
-                            href="/dashboard/bookings/new"
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#adc6ff] rounded-2xl text-sm font-bold text-[#131313] hover:bg-[#8facff] transition-all shadow-[0_4px_16px_rgba(173,198,255,0.2)]"
-                        >
-                            <Plus className="w-4 h-4" /> New Assessment
-                        </Link>
+                    <div className="hidden">
+                        {/* Header actions (New Assessment, Export, Links) removed per design. Functions accessible via Sidebar or Card sections. */}
                     </div>
                 )}
             </div>
@@ -133,7 +130,7 @@ export default async function DashboardPage() {
                     { label: 'REGISTRATIONS', value: totalRegistrations, icon: ClipboardList },
                     { label: 'PENDING APPROVAL', value: pendingRegistrations, icon: ClipboardList },
                 ].map(stat => (
-                    <div key={stat.label} className="bg-[#20201f] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div key={stat.label} className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-[#2a2a2a] text-[#adc6ff]`}>
                             <stat.icon className="w-5 h-5" />
                         </div>
@@ -144,13 +141,13 @@ export default async function DashboardPage() {
             </div>
 
             {/* ── Feature Module Cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* Left Column - Assessments (Span 7) */}
-                <div className="lg:col-span-7 flex flex-col gap-6">
+                {/* Left Column - Assessments */}
+                <div className="flex flex-col gap-6">
 
                     {/* Assessments & Bookings */}
-                    <div className="bg-[#20201f] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
+                    <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
@@ -178,7 +175,7 @@ export default async function DashboardPage() {
                         </div>
 
                         {/* Recent preview */}
-                        <div className="flex-1 flex flex-col min-h-[200px]">
+                        <div className="flex flex-col">
                             <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">Recent Bookings</h3>
                             {recentBookings.length > 0 ? (
                                 <div className="space-y-2">
@@ -215,10 +212,10 @@ export default async function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Right Column - Registrations & Staff (Span 5) */}
-                <div className="lg:col-span-5 flex flex-col gap-6">
+                {/* Middle Column - Registrations */}
+                <div className="flex flex-col gap-6">
                     {/* Registrations */}
-                    <div className="bg-[#20201f] rounded-[32px] p-6 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <div className="bg-[#1a1d23] rounded-[32px] p-6 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
@@ -260,9 +257,12 @@ export default async function DashboardPage() {
                             </Link>
                         </div>
                     </div>
+                </div>
 
+                {/* Right Column - Staff */}
+                <div className="flex flex-col gap-6">
                     {/* Staff — Coming Soon */}
-                    <div className="bg-[#20201f] rounded-[32px] p-6 flex flex-col gap-5 border border-dashed border-[#424754] opacity-70">
+                    <div className="bg-[#1a1d23] rounded-[32px] p-6 flex flex-col gap-5 border border-dashed border-[#424754] shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full opacity-70">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
@@ -296,7 +296,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* ── Student Ecosystem row ─────────────────────────────────── */}
-            <div className="bg-[#20201f] rounded-[32px] p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className="bg-[#1a1d23] rounded-[32px] p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center gap-5">
                     <div className="w-14 h-14 bg-[#2a2a2a] rounded-2xl flex items-center justify-center flex-shrink-0">
                         <Users className="w-7 h-7 text-[#adc6ff]" />
@@ -306,12 +306,23 @@ export default async function DashboardPage() {
                         <p className="text-sm text-[#8c909f] mt-1">{totalStudents} student{totalStudents !== 1 ? 's' : ''} registered across all centres</p>
                     </div>
                 </div>
-                <Link
-                    href="/dashboard/students"
-                    className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-[#424754]/15 bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors whitespace-nowrap"
-                >
-                    View Students <ArrowRight className="w-4 h-4" />
-                </Link>
+                
+                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end mt-4 sm:mt-0">
+                    {/* Overlapping Avatars */}
+                    <div className="hidden sm:flex -space-x-3">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="w-10 h-10 rounded-full border-2 border-[#1a1d23] bg-[#2a2a2a] flex items-center justify-center text-[#8c909f] shadow-sm relative z-[1]">
+                                <UserCircle2 className="w-5 h-5 opacity-60" />
+                            </div>
+                        ))}
+                    </div>
+                    <Link
+                        href="/dashboard/students"
+                        className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-[#424754]/15 bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors whitespace-nowrap"
+                    >
+                        View Students <ArrowRight className="w-4 h-4" />
+                    </Link>
+                </div>
             </div>
         </div>
     );

@@ -15,6 +15,7 @@ import {
     ClipboardList,
     CalendarDays,
     ExternalLink,
+    BarChart,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -25,8 +26,8 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Reports', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Reports'],
     FRONT_DESK: ['Dashboard', 'Students', 'Bookings'],
     TUTOR: ['Dashboard'],
 };
@@ -53,6 +54,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
+        { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ].filter(item => allowedNav.includes(item.name));
 
