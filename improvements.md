@@ -245,3 +245,12 @@ Sorting: Use Latest First (Descending by registration date) so the newest sign-u
 Public Link Placement: Move the "Public Registration Link" box to a more subtle position—either as a small, secondary section at the very bottom of the card or as a "Copy Link" icon/button in the card header.
 Footer: Ensure the "View All Registrations" button is positioned at the bottom, matching the "View All Assessments" button on the left.
 Goal: Create a consistent, data-rich dashboard where the admin can see both new leads (Assessments) and new members (Registrations) at a glance.
+
+[x] Task 30: Implement Status Pills on Dashboard Lists
+Status: COMPLETE
+Location: Dashboard -> Both "Bookings" and "Registrations" cards.
+Description:
+Registration Status: Next to each name in the Registrations card, add a small "Status Pill" (e.g., "Pending Review" in yellow or "Approved" in green). This should pull from the status field in your Registration database.
+Booking Status: Ensure the Bookings card also shows a status pill (e.g., "Confirmed", "Attended", or "Cancelled").
+UI Alignment: Position the pills on the right side of each list item, vertically centered. Use a soft background with dark text for a professional, high-end "SaaS" look.
+Goal: Allow the admin to see which new sign-ups or assessments require immediate action without leaving the dashboard.

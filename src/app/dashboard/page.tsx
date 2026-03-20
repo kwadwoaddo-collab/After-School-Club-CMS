@@ -233,6 +233,14 @@ export default async function DashboardPage() {
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-bold text-[#e5e2e1]">{b.childFirst} {b.childLast}</p>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                            b.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                            b.status === 'completed' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                                            b.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                                                            'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                                        }`}>
+                                                            {b.status === 'completed' ? 'Attended' : b.status}
+                                                        </span>
                                                         {b.hasMedicalNote && (
                                                             <div className="relative group/tooltip flex items-center outline-none">
                                                                 <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-sm">
@@ -325,9 +333,19 @@ export default async function DashboardPage() {
                                                     {r.childFirst[0]}{r.childLast[0]}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-[#e5e2e1]">{r.childFirst} {r.childLast}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-bold text-[#e5e2e1]">{r.childFirst} {r.childLast}</p>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                            r.status === 'awaiting_confirmation' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                                            r.status === 'signed_up' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                            'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                                        }`}>
+                                                            {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
+                                                             r.status === 'signed_up' ? 'Approved' : 'Pending'}
+                                                        </span>
+                                                    </div>
                                                     <p className="text-xs text-[#8c909f] mt-0.5">
-                                                        {r.status === 'awaiting_confirmation' ? 'Awaiting Review' : r.status === 'signed_up' ? 'Signed Up' : 'Pending'} · {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                                                        {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
                                                     </p>
                                                 </div>
                                             </div>
