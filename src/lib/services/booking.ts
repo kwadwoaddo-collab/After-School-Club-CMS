@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { bookings, bookingAttendees, parents, children, childSubjects, centres } from '@/db/schema';
+import { bookings, bookingAttendees, parents, children, childSubjects, centres, studentNotes } from '@/db/schema';
 import { BookingInput } from '@/lib/validations/booking';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
@@ -135,6 +135,16 @@ export class BookingService {
         bookingId: booking.id,
         childId: child.id,
       });
+
+      // Task 31: If the parent provided notes during booking, create an initial 'System' internal note
+      if (childInput.notes) {
+        await db.insert(studentNotes).values({
+          childId: child.id,
+          content: childInput.notes,
+          authorName: 'System',
+          category: 'General',
+        });
+      }
 
       createdChildren.push({
         firstName: child.firstName,

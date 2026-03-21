@@ -254,3 +254,14 @@ Registration Status: Next to each name in the Registrations card, add a small "S
 Booking Status: Ensure the Bookings card also shows a status pill (e.g., "Confirmed", "Attended", or "Cancelled").
 UI Alignment: Position the pills on the right side of each list item, vertically centered. Use a soft background with dark text for a professional, high-end "SaaS" look.
 Goal: Allow the admin to see which new sign-ups or assessments require immediate action without leaving the dashboard.
+
+[x] Task 31: Fix "Unauthorized" Error on Booking Submission
+Status: COMPLETE
+Location: Backend POST /bookings endpoint / src/app/api/bookings/route.ts & src/lib/services/booking.ts
+Issue: Parents are getting an "Unauthorized" error when trying to confirm a booking.
+Cause: Recent changes to the "Internal Notes" system (Task 25) likely made the booking endpoint require an authenticated Admin/Staff user.
+Fix:
+Public Access: Ensured the POST /api/bookings endpoint is publicly accessible and does not require a Bearer token or Login session.
+Note Attribution: If the parent provides notes during booking, the system creates an initial internal note with the author set to "System".
+CORS/Session: Verified unauthenticated POST requests are allowed.
+Goal: Restore the ability for parents to book assessments without being logged in.
