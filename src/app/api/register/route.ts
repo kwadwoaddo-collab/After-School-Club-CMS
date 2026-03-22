@@ -3,6 +3,7 @@ import { db } from '@/db';
 import {
     organisations, parents, children,
     registrations, registrationChildren, registrationParents,
+    studentNotes,
 } from '@/db/schema';
 import { eq, and, ilike } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
@@ -170,6 +171,16 @@ export async function POST(req: NextRequest) {
                 submittedSchoolYear: c.schoolYear ?? null,
                 wasMatched: matched,
             });
+
+            // If special needs were provided, create an initial 'System' internal note for each child
+            if (specialNeeds?.details && childId) {
+                await db.insert(studentNotes).values({
+                    childId,
+                    content: `Special Needs (from Registration): ${specialNeeds.details}`,
+                    authorName: 'System',
+                    category: 'General',
+                });
+            }
         }
 
         // ── 5. Send confirmation email to primary parent ─────────────────
