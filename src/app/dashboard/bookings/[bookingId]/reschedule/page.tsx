@@ -62,8 +62,8 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
                     <ChevronLeft className="w-5 h-5 text-slate-600" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Reschedule Booking</h1>
-                    <p className="text-slate-500 font-medium mt-1">
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Reschedule Booking</h1>
+                    <p className="text-slate-300 font-medium mt-1">
                         Select a new date and time for {firstChild?.childFirstName || 'child'} {firstChild?.childLastName || ''}
                     </p>
                 </div>

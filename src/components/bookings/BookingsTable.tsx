@@ -425,7 +425,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         View Details
                                                     </Link>
                                                     <button
-                                                        onClick={() => handleReschedule(booking.id)}
+                                                        onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors w-full text-left"
                                                     >
                                                         <CalendarIcon className="w-4 h-4" />

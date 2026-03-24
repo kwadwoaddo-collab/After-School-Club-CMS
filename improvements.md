@@ -290,10 +290,16 @@ Status: Pending
 Location: Booking Details Page
 Description: Update the "Booking Details" and "View and manage..." titles to High-Contrast White for better visibility on the dark background.
 
-[ ] Task 35: Direct Reschedule Navigation
+[ ] Task 35: FIX INCORRECT RESCHEDULE NAVIGATION (High Priority)
 Status: Pending
-Location: Bookings Table -> Actions Menu
-Description: Ensure the "Reschedule" option in the 3-dot menu links directly to the Reschedule page (/bookings/{id}/reschedule) instead of opening a modal or the details page first.
+Location:
+Bookings Table -> 3-Dot Menu -> "Reschedule"
+Booking Details Page -> "Reschedule" Button (Top Right)
+Issue: Clicking "Reschedule" incorrectly navigates to the Booking Details page (/bookings/{id}) instead of the Reschedule page (/bookings/{id}/reschedule).
+Fix:
+Update the href or onclick navigation logic for all Reschedule buttons.
+Ensure they point directly to the /reschedule route.
+Verification: When clicked, the user must see the "Select New Date & Time" screen (Image 2) immediately.
 [ ] Task 36: Auto-Reset Status on Reschedule
 Status: Pending
 Location: Backend PATCH /bookings/{id}/reschedule
