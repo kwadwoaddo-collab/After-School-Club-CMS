@@ -138,17 +138,19 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     }
 
     const getStatusBadge = (status: string) => {
-        // Task 32: DB enum is confirmed | cancelled | rescheduled | completed | pending
-        // confirmed → Booked (blue), completed → Attended (violet)
+        // DB enum: confirmed | cancelled | rescheduled | completed | pending | signed_up
+        // confirmed → Booked (blue), completed → Attended (violet), signed_up → Signed-up (emerald)
         const styles: Record<string, string> = {
             confirmed:   'bg-blue-50 text-blue-700 ring-blue-600/20',
             pending:     'bg-amber-50 text-amber-700 ring-amber-600/20',
+            signed_up:   'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
             completed:   'bg-violet-50 text-violet-700 ring-violet-600/20',
             cancelled:   'bg-slate-100 text-slate-600 ring-slate-600/20',
             rescheduled: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
         };
         const labels: Record<string, string> = {
             confirmed: 'Booked',
+            signed_up: 'Signed-up',
             completed: 'Attended',
         };
         const label = labels[status] ?? status;
@@ -439,6 +441,14 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     >
                                                         <BookOpen className="w-4 h-4" />
                                                         Mark as Booked
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleQuickStatus(booking.id, 'signed_up')}
+                                                        disabled={updatingStatus === booking.id}
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-emerald-700 transition-colors w-full text-left disabled:opacity-50"
+                                                    >
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        Mark as Signed-up
                                                     </button>
                                                     <button
                                                         onClick={() => handleQuickStatus(booking.id, 'completed')}

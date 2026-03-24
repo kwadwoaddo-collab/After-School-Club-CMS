@@ -3,7 +3,7 @@ import { relations } from 'drizzle-orm';
 
 // ==================== ENUMS ====================
 export const userRoleEnum = pgEnum('user_role', ['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR']);
-export const bookingStatusEnum = pgEnum('booking_status', ['confirmed', 'cancelled', 'rescheduled', 'completed']);
+export const bookingStatusEnum = pgEnum('booking_status', ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']);
 export const modalityEnum = pgEnum('modality', ['in_person', 'online']);
 export const preferredContactEnum = pgEnum('preferred_contact', ['phone', 'email']);
 export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Other']);

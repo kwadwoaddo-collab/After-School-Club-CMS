@@ -5,9 +5,9 @@ import { bookings, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
-// Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed
+// Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up
 const statusSchema = z.object({
-    status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed']),
+    status: z.enum(['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']),
 });
 
 interface RouteContext {
