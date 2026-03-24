@@ -265,3 +265,50 @@ Public Access: Ensured the POST /api/bookings endpoint is publicly accessible an
 Note Attribution: If the parent provides notes during booking, the system creates an initial internal note with the author set to "System".
 CORS/Session: Verified unauthenticated POST requests are allowed.
 Goal: Restore the ability for parents to book assessments without being logged in.
+
+[ ] Task 32: Rename Statuses and Update Color Palette
+Status: Pending
+Location: Global Status Pills (Tables, Dashboard, Details)
+Description:
+Rename: Change the status "Confirmed" to "Booked".
+Color Change:
+Signed-up: Use Green (Success/Complete state).
+Booked: Use Blue/Indigo (Planned/Upcoming state).
+Attended: Use Purple (Completed action).
+Goal: Use Green specifically for "Signed-up" to indicate the final successful stage of the funnel.
+[ ] Task 33: Expand "Actions" Menu with Quick Status Updates
+Status: Pending
+Location: Bookings Table -> Actions Dropdown (Three Dots)
+Description:
+New Options: Add the following three options to the existing menu:
+Signed-up (Sets status to Green "Signed-up")
+Booked (Sets status to Blue "Booked")
+Attended (Sets status to Purple "Attended")
+Functionality: Clicking any of these must update the database immediately and refresh the status pill in the UI without a page reload.
+[ ] Task 34: Fix Visibility of Details Page Header
+Status: Pending
+Location: Booking Details Page
+Description: Update the "Booking Details" and "View and manage..." titles to High-Contrast White for better visibility on the dark background.
+
+[ ] Task 35: Direct Reschedule Navigation
+Status: Pending
+Location: Bookings Table -> Actions Menu
+Description: Ensure the "Reschedule" option in the 3-dot menu links directly to the Reschedule page (/bookings/{id}/reschedule) instead of opening a modal or the details page first.
+[ ] Task 36: Auto-Reset Status on Reschedule
+Status: Pending
+Location: Backend PATCH /bookings/{id}/reschedule
+Logic: When a booking is successfully rescheduled (new date/time saved), the system must automatically update the status field back to "BOOKED".
+Goal: If a student was "Cancelled" or "Attended" but is now moving to a future date, their status should reflect that they are back in the "Booked" queue.
+[ ] Task 37: Clean Up Duplicate Status Badges
+Status: Pending
+Location: Bookings Table / Details Page
+Issue: Image 2 shows "ATTENDED" appearing in multiple places or styles that look repetitive.
+Fix: Ensure the status is only shown once per row in a clear, consistent pill format. Remove any redundant status buttons that clutter the "Actions" area.
+[ ] Task 38: Instant In-Place Status Updates
+Status: Pending
+Location: Bookings Table -> 3-Dot Menu Logic
+Issue: Selecting a status from the menu currently redirects the user to the Booking Details page (Image 3) to see the change.
+Fix: Update the frontend JavaScript to use an AJAX/Fetch call.
+When a status is clicked in the menu, the backend should be updated in the background.
+The status pill in the table row should update its color and text immediately.
+No page redirect or refresh should occur.
