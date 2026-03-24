@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -20,12 +20,43 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     // confirmCancel holds the bookingId pending cancellation
     const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
     const router = useRouter();
     const { toast } = useToast();
 
     const handleReschedule = (bookingId: string) => {
         router.push(`/dashboard/bookings/${bookingId}/reschedule`);
         setActiveDropdown(null);
+    };
+
+    // Task 33: Quick status update
+    const handleQuickStatus = async (bookingId: string, status: string) => {
+        setUpdatingStatus(bookingId);
+        setActiveDropdown(null);
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            if (response.ok) {
+                setBookings(prev =>
+                    prev.map(b => b.id === bookingId ? { ...b, status } : b)
+                );
+                const labels: Record<string, string> = {
+                    signed_up: 'Signed-up',
+                    confirmed: 'Booked',
+                    completed: 'Attended',
+                };
+                toast(`Status updated to "${labels[status] ?? status}".`, 'success');
+            } else {
+                toast('Failed to update status. Please try again.', 'error');
+            }
+        } catch {
+            toast('An error occurred. Please try again.', 'error');
+        } finally {
+            setUpdatingStatus(null);
+        }
     };
 
     // Opens the branded cancel confirmation modal
@@ -107,15 +138,17 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     }
 
     const getStatusBadge = (status: string) => {
+        // Task 32: DB enum is confirmed | cancelled | rescheduled | completed | pending
+        // confirmed → Booked (blue), completed → Attended (violet)
         const styles: Record<string, string> = {
-            confirmed:  'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-            pending:    'bg-amber-50 text-amber-700 ring-amber-600/20',
-            completed:  'bg-violet-50 text-violet-700 ring-violet-600/20',
-            cancelled:  'bg-slate-100 text-slate-600 ring-slate-600/20',
-            rescheduled:'bg-blue-50 text-blue-700 ring-blue-600/20',
+            confirmed:   'bg-blue-50 text-blue-700 ring-blue-600/20',
+            pending:     'bg-amber-50 text-amber-700 ring-amber-600/20',
+            completed:   'bg-violet-50 text-violet-700 ring-violet-600/20',
+            cancelled:   'bg-slate-100 text-slate-600 ring-slate-600/20',
+            rescheduled: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
         };
-        // Map DB values to human-friendly labels
         const labels: Record<string, string> = {
+            confirmed: 'Booked',
             completed: 'Attended',
         };
         const label = labels[status] ?? status;
@@ -381,7 +414,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     className="fixed inset-0 z-10"
                                                     onClick={() => setActiveDropdown(null)}
                                                 />
-                                                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-20">
+                                                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-20">
                                                     <Link
                                                         href={`/dashboard/bookings/${booking.id}`}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors"
@@ -396,6 +429,26 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         <CalendarIcon className="w-4 h-4" />
                                                         Reschedule
                                                     </button>
+                                                    {/* Task 33: Quick status updates */}
+                                                    <div className="mx-3 my-1 border-t border-slate-100" />
+                                                    <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Status</p>
+                                                    <button
+                                                        onClick={() => handleQuickStatus(booking.id, 'confirmed')}
+                                                        disabled={updatingStatus === booking.id}
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-blue-50 text-sm font-medium text-blue-700 transition-colors w-full text-left disabled:opacity-50"
+                                                    >
+                                                        <BookOpen className="w-4 h-4" />
+                                                        Mark as Booked
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleQuickStatus(booking.id, 'completed')}
+                                                        disabled={updatingStatus === booking.id}
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-violet-50 text-sm font-medium text-violet-700 transition-colors w-full text-left disabled:opacity-50"
+                                                    >
+                                                        <GraduationCap className="w-4 h-4" />
+                                                        Mark as Attended
+                                                    </button>
+                                                    <div className="mx-3 my-1 border-t border-slate-100" />
                                                     <button
                                                         onClick={() => openCancelModal(booking.id)}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-red-600 transition-colors w-full text-left"
@@ -403,7 +456,6 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         <X className="w-4 h-4" />
                                                         Cancel Booking
                                                     </button>
-                                                    {/* Task 6: Permanent delete option */}
                                                     <div className="mx-3 my-1 border-t border-slate-100" />
                                                     <button
                                                         onClick={() => { setConfirmDelete(booking.id); setActiveDropdown(null); }}

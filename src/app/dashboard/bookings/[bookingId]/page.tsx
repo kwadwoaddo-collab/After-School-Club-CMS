@@ -62,14 +62,15 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         return notFound();
     }
 
+    // Task 32: colour/label map aligned with BookingsTable (DB enum: confirmed | cancelled | rescheduled | completed | pending)
     const getStatusBadge = (status: string) => {
         const styles: Record<string, { bg: string; text: string; ring: string; label: string }> = {
-            confirmed: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20', label: 'Confirmed' },
-            pending: { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-600/20', label: 'Pending' },
-            // 'completed' is how the DB stores it; we display it as 'Attended'
-            completed: { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20', label: 'Attended' },
-            rescheduled: { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-600/20', label: 'Rescheduled' },
-            cancelled: { bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-slate-600/20', label: 'Cancelled' },
+            confirmed:   { bg: 'bg-blue-50',   text: 'text-blue-700',   ring: 'ring-blue-600/20',   label: 'Booked' },
+            pending:     { bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-600/20',  label: 'Pending' },
+            // 'completed' is stored in DB; displayed as 'Attended'
+            completed:   { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20', label: 'Attended' },
+            rescheduled: { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-600/20', label: 'Rescheduled' },
+            cancelled:   { bg: 'bg-slate-100', text: 'text-slate-600',  ring: 'ring-slate-600/20',  label: 'Cancelled' },
         };
 
         const style = styles[status] || styles.pending;
@@ -116,9 +117,10 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 >
                     <ChevronLeft className="w-5 h-5 text-slate-600" />
                 </Link>
+                {/* Task 34: high-contrast text for dark dashboard background */}
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Booking Details</h1>
-                    <p className="text-slate-500 font-medium mt-1">
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Booking Details</h1>
+                    <p className="text-slate-300 font-medium mt-1">
                         View and manage assessment booking
                     </p>
                 </div>
