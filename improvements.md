@@ -318,3 +318,12 @@ Fix: Update the frontend JavaScript to use an AJAX/Fetch call.
 When a status is clicked in the menu, the backend should be updated in the background.
 The status pill in the table row should update its color and text immediately.
 No page redirect or refresh should occur.
+
+[ ] Task 36: Forced Status Reset to "BOOKED" on Reschedule
+Status: Pending
+Location: Backend PATCH /bookings/{id}/reschedule (or similar update endpoint)
+Logic:
+Trigger: Any successful update of the assessment_date or time_slot via the Reschedule form.
+Action: The system must automatically overwrite the current status field to "BOOKED".
+Requirement: This must happen regardless of the previous status. Even if a booking was marked as "ATTENDED" or "CANCELLED", rescheduling it makes it an active upcoming appointment again.
+Goal: Ensure the "Bookings" table correctly reflects rescheduled students as "Booked" for their new date.

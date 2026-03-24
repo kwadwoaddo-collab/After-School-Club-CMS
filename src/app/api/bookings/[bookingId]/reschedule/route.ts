@@ -28,11 +28,14 @@ export async function POST(
             return NextResponse.json({ error: 'Cannot reschedule to a past date' }, { status: 400 });
         }
 
-        // Update the booking (endAt is calculated from startAt + duration, not stored)
+        // Update the booking — always reset status to 'confirmed' (Booked) on reschedule
+        // so the student appears in Upcoming with a blue Booked badge, even if they
+        // previously had 'completed' (Attended) status on the old date.
         await db
             .update(bookings)
             .set({
                 startAt: newStartDate,
+                status: 'confirmed',
                 updatedAt: new Date(),
             })
             .where(eq(bookings.id, bookingId));
