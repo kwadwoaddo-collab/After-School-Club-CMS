@@ -234,12 +234,12 @@ export default async function DashboardPage() {
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-bold text-[#e5e2e1]">{b.childFirst} {b.childLast}</p>
                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                            b.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                            b.status === 'completed' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                                            b.status === 'booked' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                            b.status === 'attended' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
                                                             b.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
                                                             'bg-gray-500/10 text-gray-400 border border-gray-500/20'
                                                         }`}>
-                                                            {b.status === 'completed' ? 'Attended' : b.status}
+                                                            {b.status === 'booked' ? 'Booked' : b.status === 'attended' ? 'Attended' : b.status}
                                                         </span>
                                                         {b.hasMedicalNote && (
                                                             <div className="relative group/tooltip flex items-center outline-none">

@@ -3,7 +3,7 @@ import { relations } from 'drizzle-orm';
 
 // ==================== ENUMS ====================
 export const userRoleEnum = pgEnum('user_role', ['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR']);
-export const bookingStatusEnum = pgEnum('booking_status', ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up']);
+export const bookingStatusEnum = pgEnum('booking_status', ['booked', 'cancelled', 'rescheduled', 'attended', 'pending', 'signed_up']);
 export const modalityEnum = pgEnum('modality', ['in_person', 'online']);
 export const preferredContactEnum = pgEnum('preferred_contact', ['phone', 'email']);
 export const subjectEnum = pgEnum('subject', ['Maths', 'English', 'Science', 'Other']);
@@ -56,6 +56,9 @@ export const centres = pgTable('centres', {
   timezone: varchar('timezone', { length: 50 }).default('Europe/London').notNull(),
   operatingHours: text('operating_hours'),
   sessionSlots: text('session_slots'), // JSON-encoded string[] of session time options for this specific centre
+  // Per-centre pricing (stored in pence, e.g. 4000 = £40.00)
+  feesSelfFinance: integer('fees_self_finance').default(4000), // self-funded weekly fee
+  feesAssistedFinance: integer('fees_assisted_finance').default(800), // tax-credit / assisted weekly fee
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -215,7 +218,7 @@ export const bookings = pgTable('bookings', {
   startAt: timestamp('start_at').notNull(),
   duration: integer('duration').default(30).notNull(),
   modality: modalityEnum('modality').notNull(),
-  status: bookingStatusEnum('status').default('confirmed').notNull(),
+  status: bookingStatusEnum('status').default('booked').notNull(),
   confirmationCode: varchar('confirmation_code', { length: 50 }).notNull().unique(),
   magicLinkToken: varchar('magic_link_token', { length: 255 }).notNull().unique(),
   googleCalendarEventId: varchar('google_calendar_event_id', { length: 255 }),

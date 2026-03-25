@@ -6,7 +6,7 @@ import { eq, and, gt, gte, lte, or, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 
-export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
+export async function updateBookingStatus(bookingId: string, status: 'attended' | 'cancelled' | 'booked' | 'rescheduled') {
     const session = await auth();
 
     if (!session?.user?.organisationId) {
@@ -74,12 +74,12 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
     // Actually, bookings has a unique constraint `unique_time_slot` on (centreId, modality, startAt).
     // So if we update, define modality as same.
 
-    // We update startAt, status back to 'confirmed' (so it shows as scheduled), and maybe updatedAt.
+    // We update startAt, status back to 'booked' (so it shows as scheduled), and maybe updatedAt.
     try {
         await db.update(bookings)
             .set({
                 startAt: startAtDate,
-                status: 'confirmed', // Set to confirmed so it appears as upcoming
+                status: 'booked', // Set to booked so it appears as upcoming
                 updatedAt: new Date()
             })
             .where(eq(bookings.id, bookingId));

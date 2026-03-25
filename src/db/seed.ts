@@ -118,7 +118,7 @@ async function seed() {
       parentId: parent.id,
       startAt: bookingDate,
       modality: 'in_person',
-      status: 'confirmed',
+      status: 'booked',
       confirmationCode: `${data.firstName.toUpperCase()}-${nanoid(4).toUpperCase()}`,
       magicLinkToken: nanoid(32),
     }).returning();

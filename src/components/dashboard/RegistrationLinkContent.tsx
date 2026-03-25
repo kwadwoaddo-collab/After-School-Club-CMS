@@ -69,8 +69,8 @@ export default function RegistrationLinkContent({ organisation }: { organisation
         <div className="p-6 max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-slate-900">Registration Link &amp; Embed Code</h1>
-                <p className="text-slate-600 mt-2">
+                <h1 className="text-3xl font-bold text-white">Registration Link &amp; Embed Code</h1>
+                <p className="text-slate-300 mt-2">
                     Add your student registration form to your website with a simple link or embed code
                 </p>
             </div>

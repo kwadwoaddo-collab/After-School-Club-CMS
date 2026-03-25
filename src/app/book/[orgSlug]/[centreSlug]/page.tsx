@@ -131,6 +131,10 @@ export default async function BookingPage({
             brandColor={brandColor}
             backToCentresUrl={orgCentres.length > 1 ? `/book/${orgSlug}` : undefined}
             rescheduleData={bookingToReschedule}
+            feesSelfFinance={centre.feesSelfFinance ?? 4000}
+            feesAssistedFinance={centre.feesAssistedFinance ?? 800}
+            orgName={org.name}
+            logoUrl={org.logoUrl ?? undefined}
           />
         </div>
       </div>

@@ -64,8 +64,8 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
         fetchSlots();
     }, [rescheduleDate, showReschedule, booking.centre.id, booking.duration, booking.modality]);
 
-    const handleStatusChange = (status: 'completed' | 'cancelled' | 'rescheduled' | 'confirmed') => {
-        const newStatus = booking.status === status ? 'confirmed' : status;
+    const handleStatusChange = (status: 'attended' | 'cancelled' | 'rescheduled' | 'booked') => {
+        const newStatus = booking.status === status ? 'booked' : status;
         startTransition(async () => {
             try {
                 await updateBookingStatus(booking.id, newStatus);
@@ -103,13 +103,13 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
     const timeRange = `${startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
 
     // Determine status color
-    const statusColor = booking.status === 'confirmed' ? 'text-green-400' :
+    const statusColor = booking.status === 'booked' ? 'text-green-400' :
         booking.status === 'cancelled' ? 'text-red-400' :
-            booking.status === 'completed' ? 'text-blue-400' : 'text-yellow-400';
+            booking.status === 'attended' ? 'text-blue-400' : 'text-yellow-400';
 
-    const statusBg = booking.status === 'confirmed' ? 'bg-green-500/10' :
+    const statusBg = booking.status === 'booked' ? 'bg-green-500/10' :
         booking.status === 'cancelled' ? 'bg-red-500/10' :
-            booking.status === 'completed' ? 'bg-blue-500/10' : 'bg-yellow-500/10';
+            booking.status === 'attended' ? 'bg-blue-500/10' : 'bg-yellow-500/10';
 
     return (
         <>
@@ -269,25 +269,25 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                     <div className="text-xs text-slate-400 mb-1">ATTENDANCE</div>
 
                                     <div className="flex flex-col gap-2">
-                                        <div className={`font-bold text-lg flex items-center gap-2 ${booking.status === 'completed' ? 'text-green-400' :
+                                        <div className={`font-bold text-lg flex items-center gap-2 ${booking.status === 'attended' ? 'text-green-400' :
                                             booking.status === 'cancelled' ? 'text-red-400' :
                                                 'text-blue-400'
                                             }`}>
-                                            {booking.status === 'completed' ? 'Attended' :
+                                            {booking.status === 'attended' ? 'Attended' :
                                                 booking.status === 'cancelled' ? 'No Show/Cancelled' :
                                                     'Scheduled'}
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 mt-1">
                                             <button
-                                                onClick={() => handleStatusChange('completed')}
+                                                onClick={() => handleStatusChange('attended')}
                                                 disabled={isPending}
-                                                className={`text-xs px-2 py-1.5 rounded border transition-colors ${booking.status === 'completed'
+                                                className={`text-xs px-2 py-1.5 rounded border transition-colors ${booking.status === 'attended'
                                                     ? 'bg-green-900/40 border-green-500/50 text-green-300 hover:bg-green-900/60'
                                                     : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                                                     } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
-                                                {isPending && booking.status !== 'completed' ? 'Updating...' : 'Mark Attended'}
+                                                {isPending && booking.status !== 'attended' ? 'Updating...' : 'Mark Attended'}
                                             </button>
                                             <button
                                                 onClick={() => handleStatusChange('cancelled')}

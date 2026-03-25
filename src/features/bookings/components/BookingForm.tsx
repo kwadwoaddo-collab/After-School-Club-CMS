@@ -20,6 +20,10 @@ interface BookingFormProps {
     brandColor?: string;
     backToCentresUrl?: string;
     rescheduleData?: any;
+    feesSelfFinance?: number;
+    feesAssistedFinance?: number;
+    orgName?: string;
+    logoUrl?: string;
 }
 
 interface TimeSlot {
@@ -57,9 +61,10 @@ const SUBJECTS = ['Maths', 'English', 'Science', 'Other'] as const;
 const DEFAULT_DURATION = 60;
 const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
-export default function BookingForm({ centreId, centreName, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
+export default function BookingForm({ centreId, centreName, brandColor = '#4F46E5', backToCentresUrl, rescheduleData, feesSelfFinance = 4000, feesAssistedFinance = 800, orgName, logoUrl }: BookingFormProps) {
     // ... state ...
     const [step, setStep] = useState(1);
+    const [showFeesIntro, setShowFeesIntro] = useState(!rescheduleData);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [confirmationCode, setConfirmationCode] = useState('');
@@ -339,6 +344,109 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         Done
                     </Link>
                 </div>
+            </div>
+        );
+    }
+
+    // ── Fees intro screen ──────────────────────────────────────────
+    if (showFeesIntro) {
+        const selfRate = (feesSelfFinance / 100).toFixed(2).replace(/\.00$/, '');
+        const assistedRate = (feesAssistedFinance / 100).toFixed(2).replace(/\.00$/, '');
+
+        return (
+            <div className="space-y-6 animate-fadeIn">
+                {brandStyles}
+
+                {/* Title */}
+                <div>
+                    <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 mb-4">
+                        <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-blue-600 text-xs font-medium">Please read before booking</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">📋 Fees &amp; Payment Information</h2>
+                    <p className="text-gray-500 text-sm">Before you book your assessment, please review our fees and payment terms.</p>
+                </div>
+
+                {/* Mode of Finance card */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+                    <p className="text-gray-400 text-xs uppercase tracking-widest mb-3">Mode of Finance</p>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-600 text-sm">Self Finance</span>
+                            <span className="text-gray-900 font-bold text-lg">£{selfRate} <span className="text-gray-400 font-normal text-sm">per week</span></span>
+                        </div>
+                        <div className="border-t border-blue-100" />
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-600 text-sm">Tax Credit / Universal Credit / Student Finance</span>
+                            <span className="text-gray-900 font-bold text-lg">£{assistedRate} <span className="text-gray-400 font-normal text-sm">per week</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Payment terms */}
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 space-y-4">
+                    <h3 className="text-gray-900 font-semibold text-sm mb-3">💳 Payment Terms</h3>
+                    <div className="space-y-3">
+                        {[
+                            { icon: '📅', text: 'All fees must be paid 1 month in advance.' },
+                            { icon: '⚠️', text: 'Fees are payable for all booked sessions, even if your child is absent, unless alternative arrangements have been agreed in advance with the manager.' },
+                            { icon: '🔄', text: 'If your child misses a session, please contact the manager to request a catch-up session.' },
+                            { icon: '🚫', text: "Persistent late or non-payment of fees may result in suspension or termination of your child's place at the club." },
+                        ].map((item, i) => (
+                            <div key={i} className="flex gap-3">
+                                <span className="text-lg leading-tight">{item.icon}</span>
+                                <p className="text-gray-600 text-sm leading-relaxed">{item.text}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Funding options */}
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
+                    <h3 className="text-gray-900 font-semibold text-sm mb-3">💰 Accepted Funding Methods</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { label: 'Tax-Free Childcare', desc: 'Via HMRC childcare account' },
+                            { label: 'Universal Credit', desc: 'Childcare element — notify DWP of any changes' },
+                            { label: 'Student Finance (CCG)', desc: 'Monthly requests submitted by the club' },
+                            { label: 'Self-Funding', desc: 'Direct payment to the club' },
+                        ].map((f, i) => (
+                            <div key={i} className="bg-white rounded-xl p-3 border border-gray-100">
+                                <p className="text-gray-900 text-sm font-medium">{f.label}</p>
+                                <p className="text-gray-400 text-xs mt-0.5">{f.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Safeguarding note */}
+                <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5">
+                    <p className="text-gray-400 text-xs leading-relaxed">
+                        🔒 All personal information provided on this form is handled securely and confidentially.
+                        Information may be shared with relevant authorities if required under safeguarding or child protection procedures.
+                    </p>
+                </div>
+
+                {/* CTA */}
+                <div className="flex justify-between items-center pt-2 gap-4">
+                    {backToCentresUrl ? (
+                        <Link href={backToCentresUrl} className="px-6 py-3 rounded-xl border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors text-sm whitespace-nowrap">
+                            ← Back
+                        </Link>
+                    ) : (
+                        <div />
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => setShowFeesIntro(false)}
+                        className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all brand-bg hover:opacity-90"
+                    >
+                        I understand — Proceed to Booking →
+                    </button>
+                </div>
+                <p className="text-center text-gray-400 text-xs">You will be asked to confirm your agreement to these terms at the end of the form.</p>
             </div>
         );
     }

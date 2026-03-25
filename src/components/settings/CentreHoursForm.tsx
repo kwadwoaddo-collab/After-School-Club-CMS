@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Plus, X, Clock, Calendar } from 'lucide-react';
+import { Save, Plus, X, Clock, Calendar, PoundSterling } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -19,6 +19,8 @@ interface CentreHoursFormProps {
         name: string;
         sessionSlots: string | null;
         operatingHours: string | null;
+        feesSelfFinance: number | null;
+        feesAssistedFinance: number | null;
     };
 }
 
@@ -97,6 +99,13 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
     const [slotsError, setSlotsError] = useState('');
     const [slotsSuccess, setSlotsSuccess] = useState('');
 
+    // ── Pricing state ─────────────────────────────────────────────────────
+    const [feesSelfFinance, setFeesSelfFinance] = useState<number>(centre.feesSelfFinance ?? 2000);
+    const [feesAssistedFinance, setFeesAssistedFinance] = useState<number>(centre.feesAssistedFinance ?? 3000);
+    const [savingPricing, setSavingPricing] = useState(false);
+    const [pricingError, setPricingError] = useState('');
+    const [pricingSuccess, setPricingSuccess] = useState('');
+
     // ── Handlers: Opening Hours ───────────────────────────────────────────
     const updateDay = (day: string, field: keyof DaySchedule, value: string | boolean) => {
         setHours(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
@@ -160,6 +169,31 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
             setSlotsError(err.message);
         } finally {
             setSavingSlots(false);
+        }
+    };
+
+    // ── Handlers: Pricing ─────────────────────────────────────────────────
+    const handleSavePricing = async () => {
+        setSavingPricing(true);
+        setPricingError('');
+        setPricingSuccess('');
+        try {
+            const res = await fetch(`/api/centres/${centre.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feesSelfFinance, feesAssistedFinance }),
+            });
+            if (!res.ok) {
+                const d = await res.json();
+                throw new Error(d.error || 'Failed to save pricing');
+            }
+            setPricingSuccess('Pricing saved successfully.');
+            router.refresh();
+            setTimeout(() => setPricingSuccess(''), 3000);
+        } catch (err: any) {
+            setPricingError(err.message);
+        } finally {
+            setSavingPricing(false);
         }
     };
 
@@ -308,6 +342,69 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                     >
                         <Save className="w-4 h-4" />
                         {savingSlots ? 'Saving...' : 'Save Session Slots'}
+                    </button>
+                </div>
+            </div>
+
+            {/* ── Section 3: Finance & Pricing ──────────────────────────── */}
+            <div className="glass-card rounded-3xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <PoundSterling className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">Finance &amp; Pricing</h2>
+                        <p className="text-sm text-slate-600">Set the per-session fee for each finance type. Values are in pence (e.g. 2000 = £20.00).</p>
+                    </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Self Finance (pence)</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">£</span>
+                            <input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={feesSelfFinance}
+                                onChange={e => setFeesSelfFinance(Number(e.target.value))}
+                                className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-400">= £{(feesSelfFinance / 100).toFixed(2)} per session</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Assisted Finance (pence)</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">£</span>
+                            <input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={feesAssistedFinance}
+                                onChange={e => setFeesAssistedFinance(Number(e.target.value))}
+                                className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-400">= £{(feesAssistedFinance / 100).toFixed(2)} per session</p>
+                    </div>
+                </div>
+
+                {pricingError && <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{pricingError}</div>}
+
+                <div className="flex items-center justify-between mt-6 pt-5 border-t border-slate-100">
+                    {pricingSuccess
+                        ? <span className="text-amber-600 text-sm font-medium">✓ {pricingSuccess}</span>
+                        : <span className="text-slate-400 text-sm">These fees appear on the public registration form.</span>
+                    }
+                    <button
+                        onClick={handleSavePricing}
+                        disabled={savingPricing}
+                        className="px-6 py-3 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                        <Save className="w-4 h-4" />
+                        {savingPricing ? 'Saving...' : 'Save Pricing'}
                     </button>
                 </div>
             </div>
