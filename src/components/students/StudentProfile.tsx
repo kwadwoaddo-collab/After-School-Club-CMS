@@ -65,7 +65,7 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
 
     const [isPending, startTransition] = useTransition();
 
-    const handleStatusUpdate = (newStatus: 'attended' | 'cancelled' | 'booked') => {
+    const handleStatusUpdate = (newStatus: 'completed' | 'cancelled' | 'confirmed') => {
         if (!latestAssessment) return;
         startTransition(async () => {
             try {
@@ -88,18 +88,18 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                 </Link>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => handleStatusUpdate('booked')}
-                        disabled={isPending || latestAssessment?.status === 'booked'}
+                        onClick={() => handleStatusUpdate('confirmed')}
+                        disabled={isPending || latestAssessment?.status === 'confirmed'}
                         className="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 transition-colors disabled:opacity-50"
                     >
                         Reschedule
                     </button>
                     <button
-                        onClick={() => handleStatusUpdate('attended')}
-                        disabled={isPending || latestAssessment?.status === 'attended'}
+                        onClick={() => handleStatusUpdate('completed')}
+                        disabled={isPending || latestAssessment?.status === 'completed'}
                         className="px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all disabled:opacity-50"
                     >
-                        {isPending ? 'Updating...' : latestAssessment?.status === 'attended' ? 'Attended ✓' : 'Mark as Attended'}
+                        {isPending ? 'Updating...' : latestAssessment?.status === 'completed' ? 'Attended ✓' : 'Mark as Attended'}
                     </button>
                 </div>
             </div>
@@ -231,7 +231,7 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</p>
                                     <p className={cn(
                                         "text-sm font-black uppercase text-[10px] rounded-full px-2 py-0.5 inline-block",
-                                        latestAssessment.status === 'attended' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary/10 text-primary'
+                                        latestAssessment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary/10 text-primary'
                                     )}>
                                         {latestAssessment.status || 'Active'}
                                     </p>

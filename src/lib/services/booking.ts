@@ -101,7 +101,7 @@ export class BookingService {
       startAt: new Date(input.appointment.startAt),
       duration: input.appointment.duration,
       modality: input.appointment.modality as any,
-      status: 'booked' as any,
+      status: 'confirmed' as any,
       confirmationCode,
       magicLinkToken, // We'll keep this on the booking for now too
       communicationsConsent: input.consent.communications,

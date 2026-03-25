@@ -18,7 +18,7 @@ export default function MarkAttendedButton({ bookingId, initialStatus }: MarkAtt
     const [error, setError] = useState<string | null>(null);
 
     // Already marked — show inert badge
-    if (status === 'attended') {
+    if (status === 'completed') {
         return (
             <span className="px-6 py-3 bg-violet-100 text-violet-700 rounded-2xl text-sm font-bold ring-1 ring-violet-600/20 select-none">
                 ✓ Attended
@@ -33,7 +33,7 @@ export default function MarkAttendedButton({ bookingId, initialStatus }: MarkAtt
             const res = await fetch(`/api/bookings/${bookingId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'attended' }),
+                body: JSON.stringify({ status: 'completed' }),
             });
 
             if (!res.ok) {
@@ -42,7 +42,7 @@ export default function MarkAttendedButton({ bookingId, initialStatus }: MarkAtt
             }
 
             // Optimistic update — immediately show "Attended"
-            setStatus('attended');
+            setStatus('completed');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {

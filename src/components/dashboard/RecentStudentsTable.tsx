@@ -18,7 +18,7 @@ interface Student {
     nextAppointment: Date | null;
     centreName: string | null;
     bookingId: string | null;
-    status: 'booked' | 'cancelled' | 'rescheduled' | 'attended' | null;
+    status: 'confirmed' | 'cancelled' | 'rescheduled' | 'completed' | null;
 }
 
 interface RecentStudentsTableProps {
@@ -42,15 +42,15 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
         e.stopPropagation();
         if (!student.bookingId || !student.status || isPending) return;
 
-        const nextStatusMap: Record<string, 'attended' | 'cancelled' | 'booked'> = {
-            'booked': 'attended',
-            'attended': 'cancelled',
-            'cancelled': 'booked',
-            'rescheduled': 'booked',
+        const nextStatusMap: Record<string, 'completed' | 'cancelled' | 'confirmed'> = {
+            'confirmed': 'completed',
+            'completed': 'cancelled',
+            'cancelled': 'confirmed',
+            'rescheduled': 'confirmed',
         };
 
         const currentStatus = student.status;
-        const nextStatus = nextStatusMap[currentStatus] || 'booked';
+        const nextStatus = nextStatusMap[currentStatus] || 'confirmed';
 
         startTransition(async () => {
             try {
@@ -65,17 +65,17 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
         if (!status) return null;
 
         const config = {
-            booked: {
+            confirmed: {
                 color: 'bg-primary',
                 bg: 'bg-primary/10',
                 border: 'border-primary/20',
-                text: 'Booked'
+                text: 'Confirmed'
             },
-            attended: {
+            completed: {
                 color: 'bg-emerald-500',
                 bg: 'bg-emerald-500/10',
                 border: 'border-emerald-500/20',
-                text: 'Attended'
+                text: 'Completed'
             },
             cancelled: {
                 color: 'bg-rose-500',

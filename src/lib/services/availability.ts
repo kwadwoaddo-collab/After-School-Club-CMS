@@ -128,7 +128,7 @@ export class AvailabilityService {
                     eq(bookings.modality, modality),
                     gte(bookings.startAt, dayStart),
                     lt(bookings.startAt, dayEnd),
-                    eq(bookings.status, 'booked')
+                    eq(bookings.status, 'confirmed')
                 ),
             });
         } catch (error) {

@@ -62,12 +62,13 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         return notFound();
     }
 
-    // Task 32: colour/label map aligned with BookingsTable (DB enum: booked | cancelled | rescheduled | attended | pending)
+    // Task 32: colour/label map aligned with BookingsTable (DB enum: confirmed | cancelled | rescheduled | completed | pending)
     const getStatusBadge = (status: string) => {
         const styles: Record<string, { bg: string; text: string; ring: string; label: string }> = {
-            booked:      { bg: 'bg-blue-50',   text: 'text-blue-700',   ring: 'ring-blue-600/20',   label: 'Booked' },
+            confirmed:   { bg: 'bg-blue-50',   text: 'text-blue-700',   ring: 'ring-blue-600/20',   label: 'Booked' },
             pending:     { bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-600/20',  label: 'Pending' },
-            attended:    { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20', label: 'Attended' },
+            // 'completed' is stored in DB; displayed as 'Attended'
+            completed:   { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20', label: 'Attended' },
             rescheduled: { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-600/20', label: 'Rescheduled' },
             cancelled:   { bg: 'bg-slate-100', text: 'text-slate-600',  ring: 'ring-slate-600/20',  label: 'Cancelled' },
         };
@@ -130,7 +131,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     >
                         Reschedule
                     </Link>
-                    {/* Task 5: Interactive Mark as Attended button — updates status to 'attended' via PATCH API */}
+                    {/* Task 5: Interactive Mark as Attended button — updates status to 'completed' via PATCH API */}
                     <MarkAttendedButton bookingId={bookingId} initialStatus={booking.status} />
                 </div>
             </div>

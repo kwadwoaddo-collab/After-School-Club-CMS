@@ -18,9 +18,9 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
 
     const statusOptions = [
         { value: 'all', label: 'All Statuses' },
-        { value: 'booked', label: 'Booked' },
+        { value: 'confirmed', label: 'Confirmed' },
         { value: 'pending', label: 'Pending' },
-        { value: 'attended', label: 'Attended' },
+        { value: 'completed', label: 'Completed' },
         { value: 'cancelled', label: 'Cancelled' },
     ];
 

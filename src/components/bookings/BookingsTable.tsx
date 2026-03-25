@@ -45,8 +45,8 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                 );
                 const labels: Record<string, string> = {
                     signed_up: 'Signed-up',
-                    booked: 'Booked',
-                    attended: 'Attended',
+                    confirmed: 'Booked',
+                    completed: 'Attended',
                 };
                 toast(`Status updated to "${labels[status] ?? status}".`, 'success');
             } else {
@@ -138,20 +138,20 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     }
 
     const getStatusBadge = (status: string) => {
-        // DB enum: booked | cancelled | rescheduled | attended | pending | signed_up
-        // booked → Booked (blue), attended → Attended (violet), signed_up → Signed-up (emerald)
+        // DB enum: confirmed | cancelled | rescheduled | completed | pending | signed_up
+        // confirmed → Booked (blue), completed → Attended (violet), signed_up → Signed-up (emerald)
         const styles: Record<string, string> = {
-            booked:      'bg-blue-50 text-blue-700 ring-blue-600/20',
+            confirmed:   'bg-blue-50 text-blue-700 ring-blue-600/20',
             pending:     'bg-amber-50 text-amber-700 ring-amber-600/20',
             signed_up:   'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-            attended:    'bg-violet-50 text-violet-700 ring-violet-600/20',
+            completed:   'bg-violet-50 text-violet-700 ring-violet-600/20',
             cancelled:   'bg-slate-100 text-slate-600 ring-slate-600/20',
             rescheduled: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
         };
         const labels: Record<string, string> = {
-            booked: 'Booked',
+            confirmed: 'Booked',
             signed_up: 'Signed-up',
-            attended: 'Attended',
+            completed: 'Attended',
         };
         const label = labels[status] ?? status;
 
@@ -248,7 +248,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Cancel Booking?</h3>
                     <p className="text-sm text-slate-500 text-center mb-6">
-                        The booking will be marked as <strong>cancelled</strong>. The record will be kept for your records but no longer shown as booked.
+                        The booking will be marked as <strong>cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
                     </p>
                     <div className="flex gap-3">
                         <button
@@ -435,7 +435,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     <div className="mx-3 my-1 border-t border-slate-100" />
                                                     <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Status</p>
                                                     <button
-                                                        onClick={() => handleQuickStatus(booking.id, 'booked')}
+                                                        onClick={() => handleQuickStatus(booking.id, 'confirmed')}
                                                         disabled={updatingStatus === booking.id}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-blue-50 text-sm font-medium text-blue-700 transition-colors w-full text-left disabled:opacity-50"
                                                     >
@@ -451,7 +451,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         Mark as Signed-up
                                                     </button>
                                                     <button
-                                                        onClick={() => handleQuickStatus(booking.id, 'attended')}
+                                                        onClick={() => handleQuickStatus(booking.id, 'completed')}
                                                         disabled={updatingStatus === booking.id}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-violet-50 text-sm font-medium text-violet-700 transition-colors w-full text-left disabled:opacity-50"
                                                     >

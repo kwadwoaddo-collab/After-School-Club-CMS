@@ -154,15 +154,15 @@ export default async function BookingsPage(props: {
                     </div>
                     <div className="text-center">
                         <p className="text-2xl font-bold text-emerald-600">
-                            {bookingsData.filter(b => b.status === 'booked').length}
+                            {bookingsData.filter(b => b.status === 'confirmed').length}
                         </p>
-                        <p className="text-sm text-slate-500 font-medium">Booked</p>
+                        <p className="text-sm text-slate-500 font-medium">Confirmed</p>
                     </div>
                     <div className="text-center">
                         <p className="text-2xl font-bold text-blue-600">
-                            {bookingsData.filter(b => b.status === 'attended').length}
+                            {bookingsData.filter(b => b.status === 'completed').length}
                         </p>
-                        <p className="text-sm text-slate-500 font-medium">Attended</p>
+                        <p className="text-sm text-slate-500 font-medium">Completed</p>
                     </div>
                 </div>
             </div>
