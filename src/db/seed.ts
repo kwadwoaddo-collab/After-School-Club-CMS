@@ -60,12 +60,19 @@ async function seed() {
   const centreId = demoCentre.id;
 
   // 3. Ensure User exists
+  const bcrypt = (await import('bcryptjs')).default;
+  const passwordHash = await bcrypt.hash('password123', 10);
+
   await db.insert(users).values({
     email: userEmail,
     name: 'Kwadwo Addo',
     organisationId: orgId,
     role: 'ORG_OWNER',
-  }).onConflictDoNothing();
+    passwordHash,
+  }).onConflictDoUpdate({
+    target: users.email,
+    set: { passwordHash }
+  });
 
   // 4. Varied Test Data (10 Students)
   const today = new Date();
