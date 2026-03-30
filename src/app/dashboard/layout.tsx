@@ -5,7 +5,6 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import { SidebarProvider } from '@/components/dashboard/SidebarContext';
 import DashboardContent from '@/components/dashboard/DashboardContent';
-import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
@@ -76,8 +75,6 @@ export default async function DashboardLayout({
                         orgName={orgName}
                     />
 
-                    {/* Mobile Bottom Navigation */}
-                    <MobileBottomNav userRole={userRole} />
 
                     {/* Main Content Area - Responsive margin */}
                     <DashboardContent>

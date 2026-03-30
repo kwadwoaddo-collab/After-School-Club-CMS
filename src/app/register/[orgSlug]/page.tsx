@@ -45,7 +45,7 @@ const emptyParent = (): ParentEntry => ({
 });
 
 // ── Shared input styles ────────────────────────────────────────────
-const inputCls = 'w-full px-4 py-3 rounded-lg bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm';
+const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm';
 const labelCls = 'block text-sm font-medium text-white/70 mb-1';
 const sectionTitle = 'text-white font-semibold text-lg mb-4';
 
@@ -294,12 +294,12 @@ export default function RegisterPage() {
                     <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-400/20 rounded-2xl p-6 mb-5">
                         <p className="text-white/50 text-xs uppercase tracking-widest mb-2">Mode of Finance</p>
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
                                 <span className="text-white/70 text-sm">Self Finance</span>
                                 <span className="text-white font-bold text-lg">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/50 font-normal text-sm">per session</span></span>
                             </div>
                             <div className="border-t border-white/10" />
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
                                 <span className="text-white/70 text-sm">Tax Credit / Universal Credit / Student Finance</span>
                                 <span className="text-white font-bold text-lg">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/50 font-normal text-sm">per session</span></span>
                             </div>

@@ -174,11 +174,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className={`h-16 sm:h-20 bg-[#0f1115]/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-[#424754]/15 transition-all duration-300 ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'
+        <header className={`h-16 sm:h-20 bg-[#0f1115]/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-[#424754]/15 transition-all duration-300 ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'
             }`}>
             {/* Hamburger — mobile only */}
             <button
-                className="lg:hidden p-2 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] transition-colors flex-shrink-0"
+                className="md:hidden p-2 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
             >

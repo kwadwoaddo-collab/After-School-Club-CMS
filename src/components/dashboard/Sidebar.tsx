@@ -16,6 +16,7 @@ import {
     CalendarDays,
     ExternalLink,
     BarChart,
+    X,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -63,7 +64,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             {/* Mobile Overlay */}
             {!collapsed && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
                     onClick={() => setCollapsed(true)}
                 />
             )}
@@ -76,13 +77,22 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     bg-[#1c1b1b] text-[#e5e2e1] flex flex-col
                     transition-all duration-300 ease-in-out
                     w-64
-                    ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0'}
+                    ${collapsed ? '-translate-x-full md:translate-x-0 md:w-20' : 'translate-x-0'}
                     shadow-2xl
                 `}
             >
                 {/* Header */}
-                <div className="p-6">
-                    <div className={`flex items-center gap-3 mb-8 overflow-hidden ${collapsed ? 'justify-center' : ''}`}>
+                <div className="p-6 relative">
+                    {!collapsed && (
+                        <button 
+                            className="absolute top-6 right-6 md:hidden p-1.5 rounded-lg text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            onClick={() => setCollapsed(true)}
+                            aria-label="Close menu"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
+                    <div className={`flex items-center gap-3 mb-8 overflow-hidden ${collapsed ? 'justify-center mt-0' : 'mt-2'}`}>
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-primary/20 flex-shrink-0">
                             {orgName.slice(0, 2).toUpperCase()}
                         </div>
@@ -148,7 +158,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     href={item.href}
                                     onClick={() => {
                                         // Collapse on mobile after clicking
-                                        if (window.innerWidth < 1024) {
+                                        if (window.innerWidth < 768) {
                                             setCollapsed(true);
                                         }
                                     }}

@@ -164,7 +164,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                     { label: 'TOTAL STUDENTS', value: totalStudents, icon: Users },
                     { label: 'ALL-TIME BOOKINGS', value: totalBookingsAll, icon: CalendarCheck },
@@ -182,7 +182,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* ── Feature Module Cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 {/* Left Column - Assessments */}
                 <div className="flex flex-col gap-6">
