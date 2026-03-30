@@ -220,6 +220,25 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
             return;
         }
 
+        // Additional custom validation for step 3 time between min and max limits
+        if (step === 3 && timeSlots.length > 0) {
+            const timeVal = data.appointment.startAt;
+            const currentMinTime = new Date(timeSlots[0].startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const currentMaxTime = new Date(timeSlots[timeSlots.length - 1].endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            if (timeVal < currentMinTime || timeVal > currentMaxTime) {
+                const errorMsg = `Time must be between ${currentMinTime} and ${currentMaxTime}`;
+                setFormError('appointment.startAt', {
+                    type: 'manual',
+                    message: errorMsg
+                });
+                setError(errorMsg);
+                toast.error(errorMsg);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+        }
+
         // If we reach here, validation for the current step passed
         console.log('[BOOKING] Step', step, 'Validation OK');
         setStep(prev => prev + 1);
@@ -309,7 +328,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                     <div className="border-b border-gray-100 pb-4">
                         <p className="text-sm font-medium text-gray-500 mb-1">Date & Time</p>
                         <p className="text-lg font-semibold text-gray-900">
-                            {watch('appointment.startAt') ? new Date(watch('appointment.startAt')).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}
+                            {watch('appointment.startAt') ? new Date(watch('appointment.startAt').includes('T') ? watch('appointment.startAt') : `${selectedDate}T${watch('appointment.startAt')}:00`).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}
                         </p>
                     </div>
                     <div>
@@ -575,6 +594,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                     value={selectedDate}
                                     onChange={(e) => {
                                         setSelectedDate(e.target.value);
+                                        setValue('appointment.date', e.target.value);
                                         // Reset time slot when date changes
                                         setValue('appointment.startAt', '');
                                     }}
@@ -591,22 +611,17 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                                     ) : timeSlots.length === 0 ? (
                                         <div className="text-center py-8 text-gray-500 bg-gray-100 rounded-lg"><p>No slots available for this date.</p></div>
                                     ) : (
-                                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                                            {timeSlots.map((slot) => {
-                                                const time = new Date(slot.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                                                const isSelected = watch('appointment.startAt') === slot.startAt;
-                                                return (
-                                                    <button
-                                                        key={slot.startAt}
-                                                        type="button"
-                                                        disabled={!slot.available}
-                                                        onClick={() => setValue('appointment.startAt', slot.startAt)}
-                                                        className={`py-3 px-2 rounded-lg font-medium text-sm transition-all ${!slot.available ? 'bg-gray-100 text-gray-400 cursor-not-allowed line-through' : isSelected ? 'brand-bg text-white shadow-md' : 'bg-white border border-gray-200 hover:border-gray-400 text-gray-900'}`}
-                                                    >
-                                                        {time}
-                                                    </button>
-                                                );
-                                            })}
+                                        <div className="mt-2">
+                                            <input
+                                                type="time"
+                                                {...register('appointment.startAt')}
+                                                min={new Date(timeSlots[0]?.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                max={new Date(timeSlots[timeSlots.length - 1]?.endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900"
+                                            />
+                                            <p className="mt-2 text-sm text-gray-500">
+                                                Centre hours: {new Date(timeSlots[0]?.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(timeSlots[timeSlots.length - 1]?.endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -623,7 +638,7 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                             <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
                                 <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Centre</span><span className="font-medium text-gray-900">{centreName}</span></div>
                                 <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Session Type</span><span className="font-medium text-gray-900">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-medium text-gray-900">{watch('appointment.startAt') ? new Date(watch('appointment.startAt')).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-medium text-gray-900">{watch('appointment.startAt') ? new Date(watch('appointment.startAt').includes('T') ? watch('appointment.startAt') : `${selectedDate}T${watch('appointment.startAt')}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
 
                                 {watchedChildren.map((child, i) => (
                                     <div key={i} className="px-4 py-3">
@@ -656,11 +671,17 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                         <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-gray-300 text-slate-800 rounded-lg font-semibold hover:bg-gray-50 transition-colors">← Back</button>
                     )}
                     {step < 4 ? (
-                        // Task 4: on step 3, require both a date AND a time slot before enabling Continue
+                        // Task 4: on step 3, require both a date AND a valid time slot before enabling Continue
                         <button
                             type="button"
                             onClick={validateStep}
-                            disabled={step === 3 && (!selectedDate || !watch('appointment.startAt'))}
+                            disabled={step === 3 && (!selectedDate || !watch('appointment.startAt') || (() => {
+                                const timeVal = watch('appointment.startAt');
+                                if (!timeVal) return true;
+                                const currentMinTime = timeSlots[0]?.startAt ? new Date(timeSlots[0].startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                                const currentMaxTime = timeSlots[timeSlots.length - 1]?.endAt ? new Date(timeSlots[timeSlots.length - 1].endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                                return timeVal < currentMinTime || timeVal > currentMaxTime;
+                            })())}
                             className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             Continue →

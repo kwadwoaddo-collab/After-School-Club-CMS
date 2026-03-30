@@ -24,6 +24,7 @@ export const parentSchema = z.object({
 export const appointmentSchema = z.object({
   centreId: z.string().uuid('Invalid centre ID').optional(),
   modality: z.enum(['in_person', 'online']),
+  date: z.string().optional(),
   startAt: z.string().min(1, 'Please select a time slot'),
   duration: z.number().int().positive().default(45),
 });

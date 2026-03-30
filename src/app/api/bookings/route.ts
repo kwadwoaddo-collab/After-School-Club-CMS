@@ -24,11 +24,25 @@ export async function POST(request: NextRequest) {
     const bookingService = new BookingService();
     const availabilityService = new AvailabilityService();
 
+    // Check if startAt is a time string and we have a date
+    let parsedStartDate = new Date(validated.appointment.startAt);
+    if (isNaN(parsedStartDate.getTime()) && validated.appointment.date) {
+       parsedStartDate = new Date(`${validated.appointment.date}T${validated.appointment.startAt}:00`);
+       validated.appointment.startAt = parsedStartDate.toISOString();
+    }
+
+    if (isNaN(parsedStartDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid start time provided' },
+        { status: 400 }
+      );
+    }
+
     // Hold the slot to prevent double-booking
     const slotHeld = await availabilityService.holdSlot(
       validated.appointment.centreId,
       validated.appointment.modality,
-      new Date(validated.appointment.startAt)
+      parsedStartDate
     );
 
     if (!slotHeld) {
