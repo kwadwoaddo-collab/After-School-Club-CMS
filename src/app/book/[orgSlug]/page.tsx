@@ -56,8 +56,8 @@ export default async function OrgBookingPage({
     const brandColor = org.brandColor || '#4F46E5';
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 transform transition-all hover:scale-[1.01] duration-300">
+        <div className="min-h-screen sidebar-gradient flex flex-col items-center justify-center p-4">
+            <div className="max-w-md w-full glass-card !bg-[#1a1c23]/80 !border-[#2a2d35] rounded-[32px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
                 {org.logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -66,17 +66,17 @@ export default async function OrgBookingPage({
                         className="h-20 mx-auto mb-6 object-contain"
                     />
                 ) : (
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
                         🏢
                     </div>
                 )}
 
-                <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Select a Centre</h1>
-                <p className="text-center text-gray-500 mb-8">Choose a location to book your assessment with <strong>{org.name}</strong>.</p>
+                <h1 className="text-2xl font-bold text-center text-white mb-2">Select a Centre</h1>
+                <p className="text-center text-slate-400 mb-8">Choose a location to book your assessment with <strong className="text-white">{org.name}</strong>.</p>
 
                 <div className="space-y-4">
                     {org.centres.length === 0 ? (
-                        <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
+                        <div className="text-center p-4 bg-yellow-500/10 text-yellow-500 rounded-lg border border-yellow-500/20">
                             No centres available yet.
                         </div>
                     ) : (
@@ -84,15 +84,15 @@ export default async function OrgBookingPage({
                             <Link
                                 key={centre.id}
                                 href={`/book/${orgSlug}/${centre.slug}`}
-                                className="block group relative"
+                                className="block group relative rounded-2xl overflow-hidden"
                                 style={{ '--brand-color': brandColor } as React.CSSProperties}
                             >
                                 <div className="absolute inset-0 bg-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ backgroundColor: `${brandColor}10` }} />
-                                <div className="relative p-4 border border-gray-200 rounded-lg group-hover:border-[var(--brand-color)] transition-all flex justify-between items-center bg-white group-hover:bg-transparent">
-                                    <span className="font-medium text-gray-900 group-hover:text-[var(--brand-color)] transition-colors">
+                                <div className="relative p-4 border border-slate-700 rounded-2xl group-hover:border-[var(--brand-color)] transition-all flex justify-between items-center bg-slate-800/50 group-hover:bg-slate-800/80">
+                                    <span className="font-medium text-white group-hover:text-[var(--brand-color)] transition-colors">
                                         {centre.name}
                                     </span>
-                                    <span className="text-gray-400 group-hover:text-[var(--brand-color)] transition-colors">→</span>
+                                    <span className="text-slate-500 group-hover:text-[var(--brand-color)] transition-colors">→</span>
                                 </div>
                             </Link>
                         ))
@@ -100,7 +100,7 @@ export default async function OrgBookingPage({
                 </div>
 
                 <div className="mt-8 text-center">
-                    <a href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+                    <a href="/" className="text-sm text-slate-500 hover:text-white transition-colors">
                         ← Back to Home
                     </a>
                 </div>

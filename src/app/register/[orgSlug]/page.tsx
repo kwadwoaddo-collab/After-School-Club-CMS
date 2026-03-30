@@ -174,7 +174,7 @@ export default function RegisterPage() {
     // ── Loading screen ─────────────────────────────────────────────
     if (orgLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#05070A' }}>
+            <div className="min-h-screen sidebar-gradient">
                 <div className="flex flex-col items-center gap-4">
                     <svg className="w-8 h-8 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -189,7 +189,7 @@ export default function RegisterPage() {
     // ── Not found screen ───────────────────────────────────────────
     if (orgNotFound) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#05070A' }}>
+            <div className="min-h-screen flex items-center justify-center p-6 sidebar-gradient">
                 <div className="max-w-md w-full text-center">
                     <div className="w-20 h-20 bg-red-500/10 border border-red-400/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <svg className="w-10 h-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,7 +209,7 @@ export default function RegisterPage() {
     // ── Centre Selection Screen (if multiple centres) ──────────────────
     if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
         return (
-            <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
+            <div className="min-h-screen sidebar-gradient">
                 <div className="bg-white/5 border-b border-white/10 px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
@@ -265,7 +265,7 @@ export default function RegisterPage() {
         const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
         
         return (
-            <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
+            <div className="min-h-screen sidebar-gradient">
                 {/* Header */}
                 <div className="bg-white/5 border-b border-white/10 px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
@@ -364,8 +364,7 @@ export default function RegisterPage() {
                         )}
                         <button
                             onClick={() => setShowFeesIntro(false)}
-                            className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all"
-                            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
+                            className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all bg-primary glow-btn"
                         >
                             I understand — Proceed to Registration →
                         </button>
@@ -379,7 +378,7 @@ export default function RegisterPage() {
     // ── Success screen ─────────────────────────────────────────────
     if (submitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#05070A' }}>
+            <div className="min-h-screen flex items-center justify-center p-6 sidebar-gradient">
                 <div className="max-w-md w-full text-center">
                     <div className="w-20 h-20 bg-green-500/20 border border-green-400/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <svg className="w-10 h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -395,7 +394,7 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
+        <div className="min-h-screen sidebar-gradient">
             {/* Header */}
             <div className="bg-white/5 border-b border-white/10 px-6 py-4">
                 <div className="max-w-2xl mx-auto flex items-center justify-between">
@@ -692,7 +691,7 @@ export default function RegisterPage() {
                             id="submit-registration"
                             onClick={handleSubmit}
                             disabled={submitting || !termsAgreed}
-                            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-4 rounded-xl bg-primary glow-btn text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {submitting ? (
                                 <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Submitting...</>
@@ -715,7 +714,7 @@ export default function RegisterPage() {
                         </button>
                     )}
                     {step < TOTAL_STEPS && (
-                        <button onClick={() => setStep(s => s + 1)} className="px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors text-sm">
+                        <button onClick={() => setStep(s => s + 1)} className="px-6 py-3 rounded-xl bg-primary glow-btn text-white font-medium transition-colors text-sm">
                             Continue →
                         </button>
                     )}

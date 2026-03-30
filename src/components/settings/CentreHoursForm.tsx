@@ -168,14 +168,14 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
         <div className="space-y-8">
 
             {/* ── Section 1: Opening Hours ─────────────────────────────── */}
-            <div className="glass-card rounded-3xl p-6">
+            <div className="glass-card rounded-3xl p-6 !bg-[#1a1c23]/80 !border-[#2a2d35]">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                         <Calendar className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">Opening Hours</h2>
-                        <p className="text-sm text-slate-600">Controls when parents can book assessments at this centre.</p>
+                        <h2 className="text-xl font-bold text-white">Opening Hours</h2>
+                        <p className="text-sm text-slate-400">Controls when parents can book assessments at this centre.</p>
                     </div>
                 </div>
 
@@ -185,18 +185,18 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                         return (
                             <div
                                 key={day}
-                                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl border transition-colors ${sch.open ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/40 border-dashed border-slate-200 opacity-60'}`}
+                                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl border transition-colors ${sch.open ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-800/30 border-dashed border-slate-700 opacity-60'}`}
                             >
                                 {/* Day label + toggle */}
                                 <div className="flex items-center gap-3 w-36 flex-shrink-0">
                                     <button
                                         type="button"
                                         onClick={() => updateDay(day, 'open', !sch.open)}
-                                        className={`relative w-10 h-5 rounded-full transition-colors ${sch.open ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                        className={`relative w-10 h-5 rounded-full transition-colors ${sch.open ? 'bg-emerald-500' : 'bg-slate-600'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${sch.open ? 'translate-x-5' : ''}`} />
                                     </button>
-                                    <span className="text-sm font-semibold text-slate-700">{DAY_LABELS[day]}</span>
+                                    <span className="text-sm font-semibold text-white">{DAY_LABELS[day]}</span>
                                 </div>
 
                                 {sch.open ? (
@@ -249,21 +249,21 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
             </div>
 
             {/* ── Section 2: Registration Session Slots ────────────────── */}
-            <div className="glass-card rounded-3xl p-6">
+            <div className="glass-card rounded-3xl p-6 !bg-[#1a1c23]/80 !border-[#2a2d35]">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                         <Clock className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">Registration Session Slots</h2>
-                        <p className="text-sm text-slate-600">The time blocks when students attend sessions — parents choose from these on the registration form.</p>
+                        <h2 className="text-xl font-bold text-white">Registration Session Slots</h2>
+                        <p className="text-sm text-slate-400">The time blocks when students attend sessions — parents choose from these on the registration form.</p>
                     </div>
                 </div>
 
                 <div className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                         {slots.map(slot => (
-                            <div key={slot} className="flex justify-between items-center p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700">
+                            <div key={slot} className="flex justify-between items-center p-3 rounded-xl border border-slate-700 bg-slate-800/50 text-sm font-medium text-slate-200">
                                 <span>{slot}</span>
                                 <button
                                     onClick={() => removeSlot(slot)}
@@ -275,13 +275,13 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                         ))}
                     </div>
 
-                    <form onSubmit={addSlot} className="flex gap-2 p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 mt-4">
+                    <form onSubmit={addSlot} className="flex gap-2 p-4 rounded-xl border border-dashed border-slate-700 bg-slate-800/30 mt-4">
                         <input
                             type="text"
                             placeholder="e.g. Wednesday 3:30–5:00 pm"
                             value={newSlot}
                             onChange={e => setNewSlot(e.target.value)}
-                            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                         />
                         <button
                             type="submit"

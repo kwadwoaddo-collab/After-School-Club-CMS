@@ -79,10 +79,10 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                     <ArrowLeft className="w-5 h-5 text-slate-600" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                    <h1 className="text-3xl font-bold text-white tracking-tight">
                         Branding & Customisation
                     </h1>
-                    <p className="text-slate-700 font-medium mt-1">
+                    <p className="text-slate-300 font-medium mt-1">
                         Customise your organisation's logo and brand colours
                     </p>
                 </div>
@@ -124,12 +124,12 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Logo Upload Section */}
-                <div className="glass-card rounded-3xl p-8">
+                <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-accent-cyan/10 rounded-2xl flex items-center justify-center">
                             <Upload className="w-5 h-5 text-accent-cyan" />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-900">Organisation Logo</h2>
+                        <h2 className="text-xl font-bold text-white">Organisation Logo</h2>
                     </div>
 
                     <div className="space-y-4">
@@ -166,18 +166,18 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                 </div>
 
                 {/* Brand Colours Section */}
-                <div className="glass-card rounded-3xl p-8">
+                <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-accent-amber/10 rounded-2xl flex items-center justify-center">
                             <Palette className="w-5 h-5 text-accent-amber" />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-900">Brand Colours</h2>
+                        <h2 className="text-xl font-bold text-white">Brand Colours</h2>
                     </div>
 
                     <div className="space-y-6">
                         {/* Current Color */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-3">
+                            <label className="block text-sm font-semibold text-slate-300 mb-3">
                                 Primary Colour
                             </label>
                             <div className="flex items-center gap-4">
@@ -200,7 +200,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
 
                         {/* Preset Colours */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-3">
+                            <label className="block text-sm font-semibold text-slate-300 mb-3">
                                 Preset Colours
                             </label>
                             <div className="grid grid-cols-3 gap-3">
@@ -217,7 +217,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                                             className="w-full h-8 rounded-lg mb-2"
                                             style={{ backgroundColor: color.value }}
                                         />
-                                        <p className="text-xs font-semibold text-slate-600">
+                                        <p className="text-xs font-semibold text-slate-400">
                                             {color.name}
                                         </p>
                                     </button>
@@ -226,8 +226,8 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                         </div>
 
                         {/* Preview */}
-                        <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200">
-                            <p className="text-sm font-semibold text-slate-700 mb-4">Preview</p>
+                        <div className="mt-8 p-6 rounded-2xl bg-slate-900/50 border border-slate-700">
+                            <p className="text-sm font-semibold text-slate-300 mb-4">Preview</p>
                             <div className="space-y-3">
                                 <button
                                     className="w-full px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all"

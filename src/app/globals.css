@@ -8,7 +8,7 @@
   --color-accent-cyan: #06b6d4;
   --color-accent-amber: #f59e0b;
 
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-inter);
 }
 
 :root {

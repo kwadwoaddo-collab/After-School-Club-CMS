@@ -25,3 +25,26 @@ Logic: Replace the hardcoded £20 and £30 values with dynamic variables pulled 
 Display Format:
 Self Finance: £{centre.fee_self_finance} per session
 Tax Credit / Universal Credit / Student Finance: £{centre.fee_assisted_finance} per session
+
+[x] Task 43: Implement Mobile Hamburger Menu
+Status: Complete
+Location: Global Navigation / Header
+Description:
+Mobile View (< 768px): Hide the sidebar by default.
+Hamburger Icon: Add a "hamburger" (three-line) menu icon to the top-left of the header on mobile devices.
+Overlay Sidebar: When the hamburger icon is clicked, the sidebar should slide in from the left as an overlay.
+Close Action: Add a "Close" (X) icon inside the mobile sidebar or allow the user to click outside the menu to close it.
+Goal: Provide full navigation access on mobile without taking up permanent screen space.
+[x] Task 44: Mobile UI Polish (Tables & Forms)
+Status: Complete
+Location: All Pages
+Description:
+Tables: On small screens, switch from a wide table to a "Card" view for Bookings and Registrations so users don't have to scroll horizontally.
+Forms: Ensure all input fields (Registration Step 1-6) take up 100% of the screen width on mobile.
+Padding: Reduce large desktop paddings so the content fits neatly on a phone screen.
+Goal: Ensure the app is 100% functional and beautiful on iPhone and Android devices.
+[x] Task 45: The Contrast Fix
+Status: Complete
+
+[x] Task 46: Typography & Brand Sync
+Status: Complete

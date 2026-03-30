@@ -95,7 +95,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
     }
 
     return (
-        <div className="glass-card rounded-3xl p-8 bg-white/50 backdrop-blur-md border border-slate-200 shadow-xl">
+        <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35] shadow-xl">
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 text-red-700">
                     <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
@@ -112,7 +112,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
 
             <div className="space-y-6">
                 <div>
-                    <label className="text-sm font-bold text-slate-700 mb-2 block">Select Centre</label>
+                    <label className="text-sm font-bold text-white mb-2 block">Select Centre</label>
                     <select
                         value={selectedCentreId}
                         onChange={(e) => handleCentreChange(e.target.value)}
@@ -129,7 +129,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="text-sm font-bold text-slate-700 mb-2 block">Standard Fee (Self-Finance) (£)</label>
+                        <label className="text-sm font-bold text-white mb-2 block">Standard Fee (Self-Finance) (£)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">£</span>
                             <input
@@ -143,11 +143,11 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                                 disabled={saving}
                             />
                         </div>
-                        <p className="text-xs text-slate-500 mt-2">The standard rate for self-funded students.</p>
+                        <p className="text-xs text-slate-400 mt-2">The standard rate for self-funded students.</p>
                     </div>
 
                     <div>
-                        <label className="text-sm font-bold text-slate-700 mb-2 block">Assisted Finance Fee (£)</label>
+                        <label className="text-sm font-bold text-white mb-2 block">Assisted Finance Fee (£)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">£</span>
                             <input
@@ -161,7 +161,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                                 disabled={saving}
                             />
                         </div>
-                        <p className="text-xs text-slate-500 mt-2">The rate applied when using Tax-Free Childcare, Vouchers, etc.</p>
+                        <p className="text-xs text-slate-400 mt-2">The rate applied when using Tax-Free Childcare, Vouchers, etc.</p>
                     </div>
                 </div>
 

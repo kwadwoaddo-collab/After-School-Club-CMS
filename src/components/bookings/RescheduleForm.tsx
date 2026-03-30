@@ -55,22 +55,22 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime }: 
     const today = new Date().toISOString().split('T')[0];
 
     return (
-        <div className="glass-card rounded-[32px] p-8">
-            <h3 className="text-lg font-bold text-slate-900 mb-6">Select New Date & Time</h3>
+        <div className="glass-card rounded-[32px] p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+            <h3 className="text-lg font-bold text-white mb-6">Select New Date & Time</h3>
 
             {success ? (
                 <div className="text-center py-8">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Check className="w-8 h-8 text-green-600" />
                     </div>
-                    <h4 className="text-xl font-bold text-slate-900 mb-2">Booking Rescheduled!</h4>
+                    <h4 className="text-xl font-bold text-white mb-2">Booking Rescheduled!</h4>
                     <p className="text-slate-600">Redirecting to booking details...</p>
                 </div>
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Date Input */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                        <label className="block text-sm font-bold text-slate-200 mb-2">
                             New Date
                         </label>
                         <div className="relative">
@@ -88,7 +88,7 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime }: 
 
                     {/* Time Input */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                        <label className="block text-sm font-bold text-slate-200 mb-2">
                             New Time
                         </label>
                         <div className="relative">

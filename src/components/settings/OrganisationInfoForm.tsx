@@ -56,8 +56,8 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
     };
 
     return (
-        <div className="glass-card rounded-3xl p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Organisation Information</h3>
+        <div className="glass-card rounded-3xl p-6 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+            <h3 className="text-lg font-bold text-white mb-4">Organisation Information</h3>
 
             {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 text-sm">
@@ -68,7 +68,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium text-slate-500 mb-1 block">Organisation Name</label>
+                    <label className="text-sm font-medium text-slate-300 mb-1 block">Organisation Name</label>
                     {isEditingName ? (
                         <div className="flex items-center gap-2">
                             <input
@@ -103,7 +103,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                         </div>
                     ) : (
                         <div className="flex items-center justify-between group">
-                            <p className="text-base font-bold text-slate-900">{org.name}</p>
+                            <p className="text-base font-bold text-white">{org.name}</p>
                             <button
                                 onClick={() => setIsEditingName(true)}
                                 className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
@@ -115,11 +115,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     )}
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-slate-500 mb-1 block">Slug</label>
-                    <p className="text-base font-mono text-slate-900">{org.slug}</p>
+                    <label className="text-sm font-medium text-slate-300 mb-1 block">Slug</label>
+                    <p className="text-base font-mono text-white">{org.slug}</p>
                 </div>
                 <div>
-                    <label className="text-sm font-medium text-slate-500 mb-1 block">Booking URL</label>
+                    <label className="text-sm font-medium text-slate-300 mb-1 block">Booking URL</label>
                     <a
                         href={`${baseUrl}/book/${org.slug}`}
                         target="_blank"
