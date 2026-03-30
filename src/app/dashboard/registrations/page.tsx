@@ -52,8 +52,8 @@ export default async function RegistrationsPage() {
             {/* Header */}
             <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Registrations</h1>
-                    <p className="text-slate-500 text-sm mt-1">{rows.length} total submission{rows.length !== 1 ? 's' : ''}</p>
+                    <h1 className="text-2xl font-bold text-white">Registrations</h1>
+                    <p className="text-slate-300 text-sm mt-1">{rows.length} total submission{rows.length !== 1 ? 's' : ''}</p>
                 </div>
                 {registrationUrl && (
                     <Link

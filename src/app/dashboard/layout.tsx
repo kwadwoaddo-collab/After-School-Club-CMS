@@ -84,7 +84,7 @@ export default async function DashboardLayout({
                         {/* Header with Search and Notifications */}
                         <Header
                             userName={session.user?.name || undefined}
-                            userInitial={session.user?.name?.[0].toUpperCase() || 'A'}
+                            userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
                             userRole={userRole}
                         />
 
