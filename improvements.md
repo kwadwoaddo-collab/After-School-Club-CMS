@@ -3,8 +3,8 @@ Status: Complete
 Location: /dashboard/registration-link (Image 1)
 Issue: The header "Registration Link & Embed Code" and the descriptive text below it are too dark and illegible.
 Fix: Update these text elements to High-Contrast White (#FFFFFF) to match the professional dark theme.
-[ ] Task 40: Re-order Registration Funnel Logic
-Status: Pending
+[x] Task 40: Re-order Registration Funnel Logic
+Status: Complete
 Location: Public Registration Flow
 Current Flow: Link -> Fees (Image 2) -> Centre Selection (Image 3) -> Step 1 (Image 4).
 New Required Flow:

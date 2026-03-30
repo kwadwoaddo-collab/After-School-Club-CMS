@@ -206,6 +206,60 @@ export default function RegisterPage() {
         );
     }
 
+    // ── Centre Selection Screen (if multiple centres) ──────────────────
+    if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
+        return (
+            <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
+                <div className="bg-white/5 border-b border-white/10 px-6 py-4">
+                    <div className="max-w-2xl mx-auto flex items-center gap-3">
+                        {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+                        <button onClick={resetToStart} className="text-left group cursor-pointer">
+                            <p className="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors">{orgInfo?.name}</p>
+                            <p className="text-white/40 text-xs group-hover:text-white/60 transition-colors">Student Registration Form</p>
+                        </button>
+                    </div>
+                </div>
+                <div className="max-w-md mx-auto px-4 py-16">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-blue-500/10 border border-blue-400/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-white mb-2">Select a Centre</h1>
+                        <p className="text-white/50 text-sm">Choose the location where you would like to register your child.</p>
+                    </div>
+                    <div className="space-y-4">
+                        {orgInfo.centres.map(centre => (
+                            <button
+                                key={centre.id}
+                                onClick={() => setSelectedCentreId(centre.id)}
+                                className="w-full text-left p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-400 hover:bg-white/10 transition-all group"
+                            >
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-white font-medium mb-1">{centre.name}</p>
+                                        <p className="text-white/50 text-sm">{centre.address || 'After School provisions'}</p>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:border-blue-400 transition-colors">
+                                        <svg className="w-4 h-4 text-white/30 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-8 flex justify-start">
+                        <Link href="/" className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
+                            ← Back
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // ── Fees intro screen ──────────────────────────────────────────
     if (showFeesIntro) {
         return (
@@ -297,9 +351,15 @@ export default function RegisterPage() {
 
                     {/* CTA */}
                     <div className="flex justify-between items-center mt-8 gap-4">
-                        <Link href="/" className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm whitespace-nowrap">
-                            ← Back
-                        </Link>
+                        {orgInfo?.centres && orgInfo.centres.length > 1 ? (
+                            <button onClick={() => setSelectedCentreId(null)} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm whitespace-nowrap">
+                                ← Back
+                            </button>
+                        ) : (
+                            <Link href="/" className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm whitespace-nowrap">
+                                ← Back
+                            </Link>
+                        )}
                         <button
                             onClick={() => setShowFeesIntro(false)}
                             className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all"
@@ -309,60 +369,6 @@ export default function RegisterPage() {
                         </button>
                     </div>
                     <p className="text-center text-white/30 text-xs mt-3">You will be asked to confirm your agreement to these terms at the end of the form.</p>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Centre Selection Screen (if multiple centres) ──────────────────
-    if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
-        return (
-            <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
-                <div className="bg-white/5 border-b border-white/10 px-6 py-4">
-                    <div className="max-w-2xl mx-auto flex items-center gap-3">
-                        {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
-                        <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors">{orgInfo?.name}</p>
-                            <p className="text-white/40 text-xs group-hover:text-white/60 transition-colors">Student Registration Form</p>
-                        </button>
-                    </div>
-                </div>
-                <div className="max-w-md mx-auto px-4 py-16">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-blue-500/10 border border-blue-400/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Select a Centre</h1>
-                        <p className="text-white/50 text-sm">Choose the location where you would like to register your child.</p>
-                    </div>
-                    <div className="space-y-4">
-                        {orgInfo.centres.map(centre => (
-                            <button
-                                key={centre.id}
-                                onClick={() => setSelectedCentreId(centre.id)}
-                                className="w-full text-left p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-400 hover:bg-white/10 transition-all group"
-                            >
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <p className="text-white font-medium mb-1">{centre.name}</p>
-                                        <p className="text-white/50 text-sm">{centre.address || 'After School provisions'}</p>
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:border-blue-400 transition-colors">
-                                        <svg className="w-4 h-4 text-white/30 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="mt-8 flex justify-start">
-                        <button onClick={() => setShowFeesIntro(true)} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
-                            ← Back
-                        </button>
-                    </div>
                 </div>
             </div>
         );
@@ -701,11 +707,7 @@ export default function RegisterPage() {
                         </button>
                     ) : (
                         <button onClick={() => {
-                            if (orgInfo?.centres && orgInfo.centres.length > 1) {
-                                setSelectedCentreId(null);
-                            } else {
-                                setShowFeesIntro(true);
-                            }
+                            setShowFeesIntro(true);
                         }} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
                             ← Back
                         </button>
