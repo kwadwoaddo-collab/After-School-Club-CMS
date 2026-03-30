@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Building2, Palette, Image, Mail, Clock, FileText } from 'lucide-react';
+import { Plus, Building2, Palette, Image, Mail, Clock, FileText, Wallet } from 'lucide-react';
 import OrganisationInfoForm from '@/components/settings/OrganisationInfoForm';
 
 export default async function SettingsPage() {
@@ -54,6 +54,14 @@ export default async function SettingsPage() {
             icon: Palette,
             color: 'amber',
             href: '/dashboard/settings/branding',
+        },
+        {
+            id: 'finance',
+            title: 'Finance & Pricing',
+            description: 'Configure fee amounts for your locations',
+            icon: Wallet,
+            color: 'emerald',
+            href: '/dashboard/settings/finance',
         },
         {
             id: 'registration-terms',

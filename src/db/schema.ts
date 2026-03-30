@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ==================== ENUMS ====================
@@ -56,6 +56,8 @@ export const centres = pgTable('centres', {
   timezone: varchar('timezone', { length: 50 }).default('Europe/London').notNull(),
   operatingHours: text('operating_hours'),
   sessionSlots: text('session_slots'), // JSON-encoded string[] of session time options for this specific centre
+  feeSelfFinance: numeric('fee_self_finance', { precision: 10, scale: 2 }),
+  feeAssistedFinance: numeric('fee_assisted_finance', { precision: 10, scale: 2 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

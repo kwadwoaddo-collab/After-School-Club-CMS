@@ -35,7 +35,8 @@ export async function PATCH(
         }
 
         // Validate and update fields
-        const { sessionSlots, operatingHours } = body;
+        // Validate and update fields
+        const { sessionSlots, operatingHours, feeSelfFinance, feeAssistedFinance } = body;
 
         const updateData: any = {};
         if (sessionSlots !== undefined) {
@@ -43,6 +44,12 @@ export async function PATCH(
         }
         if (operatingHours !== undefined) {
             updateData.operatingHours = operatingHours ? JSON.stringify(operatingHours) : null;
+        }
+        if (feeSelfFinance !== undefined) {
+            updateData.feeSelfFinance = feeSelfFinance === '' ? null : feeSelfFinance;
+        }
+        if (feeAssistedFinance !== undefined) {
+            updateData.feeAssistedFinance = feeAssistedFinance === '' ? null : feeAssistedFinance;
         }
 
         const [updatedCentre] = await db

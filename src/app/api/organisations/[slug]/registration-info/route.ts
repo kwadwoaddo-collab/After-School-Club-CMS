@@ -27,6 +27,8 @@ export async function GET(
                     slug: true,
                     operatingHours: true,
                     sessionSlots: true,
+                    feeSelfFinance: true,
+                    feeAssistedFinance: true,
                 },
             },
         },

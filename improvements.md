@@ -12,14 +12,14 @@ Select a Centre: (The very first screen the parent sees).
 Fees & Payment Information: (The parent sees the prices for the centre they just picked).
 Registration Form: (Proceed to Step 1).
 Goal: Ensure parents know which location they are registering for before they review financial terms.
-[ ] Task 41: Implement Dynamic Centre Pricing (Settings)
-Status: Pending
+[x] Task 41: Implement Dynamic Centre Pricing (Settings)
+Status: Complete
 Location: Backend (Centre Model) & Settings Dashboard (Image 6)
 Backend: Add two new fields to the Centre database model: fee_self_finance and fee_assisted_finance.
 Settings UI: Add a new card in the Settings area titled "Finance & Pricing".
 Functionality: This card should allow the Admin to select a centre and set the specific "Self Finance" and "Tax Credit/Universal Credit" amounts for that location.
-[ ] Task 42: Display Dynamic Fees in Registration Flow
-Status: Pending
+[x] Task 42: Display Dynamic Fees in Registration Flow
+Status: Complete
 Location: Fees & Payment Page (Image 5)
 Logic: Replace the hardcoded £20 and £30 values with dynamic variables pulled from the database based on the Centre selected in Step 1.
 Display Format:

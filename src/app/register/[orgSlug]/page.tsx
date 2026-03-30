@@ -71,7 +71,7 @@ export default function RegisterPage() {
     const { orgSlug } = useParams<{ orgSlug: string }>();
     const [orgInfo, setOrgInfo] = useState<{
         name: string; logoUrl?: string; registrationTerms?: string; sessionSlots?: string[] | null; pricing?: { selfFinanceRate: number; taxCreditRate: number },
-        centres?: { id: string; name: string; address: string | null; slug: string; operatingHours: string | null; sessionSlots: string | null }[]
+        centres?: { id: string; name: string; address: string | null; slug: string; operatingHours: string | null; sessionSlots: string | null; feeSelfFinance: string | null; feeAssistedFinance: string | null }[]
     } | null>(null);
     const [orgLoading, setOrgLoading] = useState(true);
     const [orgNotFound, setOrgNotFound] = useState(false);
@@ -262,6 +262,8 @@ export default function RegisterPage() {
 
     // ── Fees intro screen ──────────────────────────────────────────
     if (showFeesIntro) {
+        const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
+        
         return (
             <div className="min-h-screen" style={{ backgroundColor: '#05070A' }}>
                 {/* Header */}
@@ -294,12 +296,12 @@ export default function RegisterPage() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-white/70 text-sm">Self Finance</span>
-                                <span className="text-white font-bold text-lg">£{orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/50 font-normal text-sm">per session</span></span>
+                                <span className="text-white font-bold text-lg">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/50 font-normal text-sm">per session</span></span>
                             </div>
                             <div className="border-t border-white/10" />
                             <div className="flex items-center justify-between">
                                 <span className="text-white/70 text-sm">Tax Credit / Universal Credit / Student Finance</span>
-                                <span className="text-white font-bold text-lg">£{orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/50 font-normal text-sm">per session</span></span>
+                                <span className="text-white font-bold text-lg">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/50 font-normal text-sm">per session</span></span>
                             </div>
                         </div>
 
