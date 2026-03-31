@@ -2,13 +2,65 @@
 
 @theme inline {
   /* Premium Palette */
-  --color-primary: #136dec;
   --color-sidebar: #0f172a;
   --color-accent-violet: #8b5cf6;
   --color-accent-cyan: #06b6d4;
   --color-accent-amber: #f59e0b;
 
   --font-sans: var(--font-inter);
+
+  /* Midnight Luminary / SprintScale Dark Theme Tokens */
+  --color-secondary-fixed-dim: #d6b6ff;
+  --color-on-primary-container: #001e58;
+  --color-outline: #767576;
+  --color-surface-dim: #0e0e0f;
+  --color-surface-container-low: #131314;
+  --color-on-tertiary-fixed: #004819;
+  --color-secondary-dim: #9547f7;
+  --color-secondary-fixed: #e1c7ff;
+  --color-on-error: #490006;
+  --color-surface-container-highest: #262627;
+  --color-error-container: #9f0519;
+  --color-on-primary: #002971;
+  --color-on-secondary: #2f0060;
+  --color-on-surface: #ffffff;
+  --color-surface-container: #19191b;
+  --color-primary-fixed-dim: #638eff;
+  --color-tertiary-dim: #4bee74;
+  --color-tertiary-container: #5cfd80;
+  --color-on-secondary-fixed-variant: #6f08d0;
+  --color-on-primary-fixed-variant: #00276c;
+  --color-primary: #8eabff;
+  --color-on-surface-variant: #adaaab;
+  --color-surface-bright: #2c2c2d;
+  --color-on-tertiary-fixed-variant: #006827;
+  --color-surface: #0e0e0f;
+  --color-inverse-on-surface: #565556;
+  --color-background: #0e0e0f;
+  --color-surface-variant: #262627;
+  --color-surface-tint: #8eabff;
+  --color-on-secondary-container: #ebd8ff;
+  --color-tertiary: #b8ffbb;
+  --color-surface-container-high: #1f1f21;
+  --color-on-background: #ffffff;
+  --color-error: #ff716c;
+  --color-error-dim: #d7383b;
+  --color-on-error-container: #ffa8a3;
+  --color-surface-container-lowest: #000000;
+  --color-on-tertiary: #006727;
+  --color-primary-dim: #156aff;
+  --color-tertiary-fixed: #5cfd80;
+  --color-on-secondary-fixed: #4a0090;
+  --color-inverse-surface: #fcf8f9;
+  --color-secondary: #b884ff;
+  --color-primary-container: #799dff;
+  --color-inverse-primary: #0055d7;
+  --color-secondary-container: #6e06d0;
+  --color-outline-variant: #484849;
+  --color-on-tertiary-container: #005d22;
+  --color-on-primary-fixed: #000000;
+  --color-primary-fixed: #799dff;
+  --color-tertiary-fixed-dim: #4bee74;
 }
 
 :root {

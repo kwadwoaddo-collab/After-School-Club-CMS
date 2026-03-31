@@ -187,10 +187,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             {/* ── Page Header ─────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">
+                    <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight headline-lg">
                         Overview
                     </h1>
-                    <p className="text-[#8c909f] font-medium mt-1">
+                    <p className="text-on-surface-variant body-md mt-2">
                         Welcome back, {firstName}! 
                     </p>
                 </div>
@@ -202,19 +202,21 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             </div>
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'TOTAL STUDENTS', value: totalStudents, icon: Users },
-                    { label: 'ALL-TIME BOOKINGS', value: totalBookingsAll, icon: CalendarCheck },
-                    { label: 'REGISTRATIONS', value: totalRegistrations, icon: ClipboardList },
-                    { label: 'PENDING APPROVAL', value: pendingRegistrations, icon: ClipboardList },
+                    { label: 'Total Students', value: totalStudents, icon: Users, colorClass: 'text-primary bg-primary/10' },
+                    { label: 'All-time Bookings', value: totalBookingsAll, icon: CalendarCheck, colorClass: 'text-secondary bg-secondary/10' },
+                    { label: 'Registrations', value: totalRegistrations, icon: ClipboardList, colorClass: 'text-tertiary bg-tertiary/10' },
+                    { label: 'Pending Approval', value: pendingRegistrations, icon: ClipboardList, colorClass: 'text-error bg-error/10' },
                 ].map(stat => (
-                    <div key={stat.label} className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-[#2a2a2a] text-[#adc6ff]`}>
-                            <stat.icon className="w-5 h-5" />
+                    <div key={stat.label} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 group hover:bg-surface-bright transition-all">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-2.5 rounded-lg ${stat.colorClass}`}>
+                                <stat.icon className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{stat.value ?? 0}</p>
-                        <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">{stat.label}</p>
+                        <p className="text-on-surface-variant text-sm font-medium">{stat.label}</p>
+                        <h3 className="text-3xl font-bold text-white mt-1">{stat.value ?? 0}</h3>
                     </div>
                 ))}
             </div>
@@ -224,103 +226,106 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                 {/* Left Column - Assessments */}
                 {/* Assessments & Bookings */}
-                <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-                    <div className="flex items-start justify-between">
+                <div className="bg-surface-container-high p-6 rounded-2xl border border-secondary/20 relative overflow-hidden group hover:border-secondary/40 transition-all flex flex-col gap-6">
+                    <div className="absolute -right-4 -top-4 w-32 h-32 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-colors pointer-events-none"></div>
+                    
+                    <div className="flex items-start justify-between relative z-10">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
-                                    <CalendarCheck className="w-6 h-6 text-[#adc6ff]" />
+                                <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
+                                    <CalendarCheck className="w-6 h-6 text-secondary" />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Assessments & Bookings</h2>
-                                    <p className="text-sm text-[#8c909f] mt-1">Manage schedules and attendance</p>
+                                    <h2 className="font-bold text-white text-lg leading-tight">Assessments & Bookings</h2>
+                                    <p className="text-sm text-on-surface-variant font-medium mt-1">Manage schedules and attendance</p>
                                 </div>
                             </div>
-                            <span className="text-xs font-bold px-3 py-1 bg-[#adc6ff]/10 text-[#adc6ff] rounded-full border border-[#adc6ff]/20">
-                                LIVE
+                            <span className="flex items-center gap-2 px-3 py-1 bg-secondary-container/20 text-secondary rounded-full border border-secondary/10 shadow-[0_0_12px_rgba(110,6,208,0.2)]">
+                                <span className="flex h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                            <div className="p-3 sm:p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl font-bold text-[#e5e2e1]">{totalBookingsAll}</p>
-                                <p className="text-[10px] sm:text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                            <div className="p-3 sm:p-4 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                                <p className="text-xl sm:text-2xl font-bold text-white">{totalBookingsAll}</p>
+                                <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                             </div>
-                            <div className="p-3 sm:p-4 bg-[#adc6ff]/5 rounded-2xl border border-[#adc6ff]/10 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl font-bold text-[#adc6ff]">{bookingsThisMonth}</p>
-                                <p className="text-[10px] sm:text-xs text-[#adc6ff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                            <div className="p-3 sm:p-4 bg-secondary/5 rounded-xl border border-secondary/10 flex flex-col justify-center hover:bg-secondary/10 transition-all">
+                                <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
+                                <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                             </div>
-                            <div className="p-3 sm:p-4 bg-[#adc6ff]/10 rounded-2xl border border-[#adc6ff]/20 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl font-bold text-[#adc6ff]">{bookingsThisWeek}</p>
-                                <p className="text-[10px] sm:text-xs text-[#adc6ff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                            <div className="p-3 sm:p-4 bg-secondary/10 rounded-xl border border-secondary/20 flex flex-col justify-center hover:bg-secondary/20 transition-all">
+                                <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
+                                <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                             </div>
                         </div>
 
                         {/* Recent preview */}
-                        <div className="flex flex-col flex-1">
-                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
+                        <div className="flex flex-col flex-1 relative z-10">
+                            <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
                             {recentBookingsWithNotes.length > 0 ? (
                                 <div className="space-y-2">
                                     {recentBookingsWithNotes.map(b => (
                                         <Link
                                             key={b.id}
                                             href={`/dashboard/bookings/${b.id}`}
-                                            className="flex items-center justify-between p-4 rounded-2xl bg-[#1c1b1b] hover:bg-[#353535] border border-[#424754]/15 transition-all group"
+                                            className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-[#adc6ff]/10 flex items-center justify-center text-[#adc6ff] font-bold">
+                                                <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
                                                     {b.childFirst[0]}{b.childLast[0]}
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold text-[#e5e2e1]">{b.childFirst} {b.childLast}</p>
+                                                        <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                            b.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                            b.status === 'completed' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                                                            b.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                                                            'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                                            b.status === 'confirmed' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
+                                                            b.status === 'completed' ? 'bg-secondary-container/10 text-secondary border border-secondary/20' :
+                                                            b.status === 'cancelled' ? 'bg-error-container/10 text-error border border-error/20' :
+                                                            'bg-neutral-800 text-neutral-400 border border-neutral-700'
                                                         }`}>
                                                             {b.status === 'completed' ? 'Attended' : b.status}
                                                         </span>
                                                         {b.hasMedicalNote && (
                                                             <div className="relative group/tooltip flex items-center outline-none">
-                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-sm">
-                                                                    <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
+                                                                    <AlertTriangle className="w-3 h-3 text-error" />
                                                                 </div>
-                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-[#2a2a2a] border border-[#424754]/50 text-[#e5e2e1] text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                    <div className="font-bold text-rose-400 mb-1 border-b border-[#424754]/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                    <div className="font-bold text-error mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
                                                                     {b.medicalNotesContent}
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2a2a2a]"></div>
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
                                                                 </div>
                                                             </div>
                                                         )}
                                                         {b.hasSafeguardingNote && (
                                                             <div className="relative group/tooltip flex items-center outline-none">
-                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 cursor-help shadow-sm">
-                                                                    <Shield className="w-3 h-3 text-blue-400" />
+                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
+                                                                    <Shield className="w-3 h-3 text-primary" />
                                                                 </div>
-                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-[#2a2a2a] border border-[#424754]/50 text-[#e5e2e1] text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                    <div className="font-bold text-blue-400 mb-1 border-b border-[#424754]/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                    <div className="font-bold text-primary mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
                                                                     {b.safeguardingNotesContent}
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2a2a2a]"></div>
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
                                                                 </div>
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-[#8c909f] mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
+                                                    <p className="text-xs text-on-surface-variant font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-[#424754] group-hover:text-[#adc6ff] transition-colors" />
+                                            <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
                                         </Link>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
                             )}
                         </div>
 
                         <Link
                             href="/dashboard/bookings"
-                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
+                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10"
                         >
                             View All Assessments <ArrowRight className="w-4 h-4" />
                         </Link>
@@ -328,91 +333,94 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                 {/* Middle Column - Registrations */}
                 {/* Registrations */}
-                <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-                    <div className="flex items-start justify-between">
+                <div className="bg-surface-container-high p-6 rounded-2xl border border-primary/20 relative overflow-hidden group hover:border-primary/40 transition-all flex flex-col gap-6">
+                    <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none"></div>
+
+                    <div className="flex items-start justify-between relative z-10">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
-                                    <ClipboardList className="w-6 h-6 text-[#d0bcff]" />
+                                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                                    <ClipboardList className="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Registrations</h2>
-                                    <p className="text-sm text-[#8c909f] mt-1">Student sign-ups</p>
+                                    <h2 className="font-bold text-white text-lg leading-tight">Registrations</h2>
+                                    <p className="text-sm text-on-surface-variant font-medium mt-1">Student sign-ups</p>
                                 </div>
                             </div>
-                            <span className="text-xs font-bold px-3 py-1 bg-[#d0bcff]/10 text-[#d0bcff] rounded-full border border-[#d0bcff]/20">
-                                LIVE
+                            <span className="flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary rounded-full border border-primary/10 shadow-[0_0_12px_rgba(142,171,255,0.2)]">
+                                <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                            <div className="p-3 sm:p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl font-bold text-[#e5e2e1]">{totalRegistrations}</p>
-                                <p className="text-[10px] sm:text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                            <div className="p-3 sm:p-4 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                                <p className="text-xl sm:text-2xl font-bold text-white">{totalRegistrations}</p>
+                                <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                             </div>
-                            <div className="p-3 sm:p-4 bg-[#d0bcff]/5 rounded-2xl border border-[#d0bcff]/10 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl font-bold text-[#d0bcff]">{registrationsThisMonth}</p>
-                                <p className="text-[10px] sm:text-xs text-[#d0bcff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                            <div className="p-3 sm:p-4 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
+                                <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
+                                <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                             </div>
-                            <div className="p-3 sm:p-4 bg-[#d0bcff]/10 rounded-2xl border border-[#d0bcff]/20 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl font-bold text-[#d0bcff]">{registrationsThisWeek}</p>
-                                <p className="text-[10px] sm:text-xs text-[#d0bcff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                            <div className="p-3 sm:p-4 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/20 transition-all">
+                                <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
+                                <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                             </div>
                         </div>
 
                         {/* Recent preview */}
-                        <div className="flex flex-col flex-1">
-                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
+                        <div className="flex flex-col flex-1 relative z-10">
+                            <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
                             {recentRegistrations.length > 0 ? (
                                 <div className="space-y-2">
                                     {recentRegistrations.map((r, i) => (
                                         <Link
                                             key={`${r.registrationId}-${i}`}
                                             href={`/dashboard/registrations/${r.registrationId}`}
-                                            className="flex items-center justify-between p-4 rounded-2xl bg-[#1c1b1b] hover:bg-[#353535] border border-[#424754]/15 transition-all group"
+                                            className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-[#d0bcff]/10 flex items-center justify-center text-[#d0bcff] font-bold">
+                                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                                                     {r.childFirst[0]}{r.childLast[0]}
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold text-[#e5e2e1]">{r.childFirst} {r.childLast}</p>
+                                                        <p className="text-sm font-bold text-white">{r.childFirst} {r.childLast}</p>
                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                            r.status === 'awaiting_confirmation' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                                            r.status === 'signed_up' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                            'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                                            r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-error border border-error/20' :
+                                                            r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
+                                                            'bg-neutral-800 text-neutral-400 border border-neutral-700'
                                                         }`}>
                                                             {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
                                                              r.status === 'signed_up' ? 'Approved' : 'Pending'}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-[#8c909f] mt-0.5">
+                                                    <p className="text-xs text-on-surface-variant font-medium mt-0.5">
                                                         Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-[#424754] group-hover:text-[#d0bcff] transition-colors" />
+                                            <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
                                         </Link>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
                             )}
                         </div>
 
-                        <div className="flex flex-col gap-2 mt-2">
+                        <div className="flex flex-col gap-2 mt-2 relative z-10">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs font-bold text-[#d0bcff] uppercase tracking-wider">Public Link</p>
-                                <p className="text-[10px] text-[#8c909f]">{registrationsThisMonth} new this month</p>
+                                <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
+                                <p className="text-[10px] text-on-surface-variant">{registrationsThisMonth} new this month</p>
                             </div>
-                            <div className="p-3 rounded-xl bg-[#2a2a2a] border border-[#424754]/15">
-                                <p className="text-xs text-[#e5e2e1] font-mono truncate">{registrationLink}</p>
+                            <div className="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+                                <p className="text-xs text-white font-mono truncate">{registrationLink}</p>
                             </div>
                         </div>
 
                         <Link
                             href="/dashboard/registrations"
-                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#d0bcff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
+                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10"
                         >
                             View All Registrations <ArrowRight className="w-4 h-4" />
                         </Link>
@@ -422,29 +430,37 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             </div>
 
             {/* ── Student Ecosystem row ─────────────────────────────────── */}
-            <div className="bg-[#1a1d23] rounded-[32px] p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-                <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-[#2a2a2a] rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <Users className="w-7 h-7 text-[#adc6ff]" />
+            <div className="bg-surface-container-low rounded-2xl p-6 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-outline-variant/10 group hover:border-primary/30 transition-all relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"></div>
+                <div className="flex items-center gap-5 relative z-10">
+                    <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Users className="w-7 h-7 text-primary" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-[#e5e2e1] text-xl">Student Ecosystem</h2>
-                        <p className="text-sm text-[#8c909f] mt-1">{totalStudents} student{totalStudents !== 1 ? 's' : ''} registered across all centres</p>
+                        <h2 className="font-bold text-white text-xl">Student Ecosystem</h2>
+                        <p className="text-sm text-on-surface-variant font-medium mt-1">{totalStudents} student{totalStudents !== 1 ? 's' : ''} registered across all centres</p>
                     </div>
                 </div>
                 
-                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end mt-4 sm:mt-0">
+                <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto justify-between sm:justify-end mt-2 sm:mt-0 relative z-10">
                     {/* Overlapping Avatars */}
-                    <div className="hidden sm:flex -space-x-3">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="w-10 h-10 rounded-full border-2 border-[#1a1d23] bg-[#2a2a2a] flex items-center justify-center text-[#8c909f] shadow-sm relative z-[1]">
-                                <UserCircle2 className="w-5 h-5 opacity-60" />
-                            </div>
-                        ))}
+                    <div className="flex items-center gap-4 hidden sm:flex">
+                        <div className="flex -space-x-3">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="w-10 h-10 rounded-full border-2 border-surface-container-low bg-surface-container-high flex items-center justify-center text-on-surface-variant shadow-sm relative z-[1]">
+                                    <UserCircle2 className="w-6 h-6 opacity-60" />
+                                </div>
+                            ))}
+                            {totalStudents > 5 && (
+                                <div className="w-10 h-10 rounded-full bg-neutral-800 border-2 border-surface-container-low flex items-center justify-center text-[10px] font-bold text-neutral-400 relative z-[1]">
+                                    +{totalStudents - 5}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <Link
                         href="/dashboard/students"
-                        className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-[#424754]/15 bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl border border-outline-variant/10 bg-surface-container-high text-primary text-sm font-bold hover:bg-surface-bright transition-colors whitespace-nowrap shadow-sm"
                     >
                         View Students <ArrowRight className="w-4 h-4" />
                     </Link>

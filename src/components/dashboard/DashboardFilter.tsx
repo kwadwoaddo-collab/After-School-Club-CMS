@@ -46,14 +46,14 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
     return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             {/* View Toggle */}
-            <div className="flex items-center p-1 rounded-xl bg-[#2a2a2a] border border-[#424754]/30">
+            <div className="flex items-center p-1 rounded-xl bg-surface-container-low border border-outline-variant/10">
                 <button
                     suppressHydrationWarning
                     onClick={() => handleViewChange('weekly')}
                     className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                         currentView === 'weekly'
-                            ? 'bg-[#1a1d23] text-[#e5e2e1] shadow-sm border border-[#424754]/50'
-                            : 'text-[#8c909f] hover:text-[#e5e2e1]'
+                            ? 'bg-surface-container-high text-white shadow-sm border border-outline-variant/50'
+                            : 'text-on-surface-variant hover:text-white'
                     }`}
                 >
                     Weekly
@@ -63,8 +63,8 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
                     onClick={() => handleViewChange('monthly')}
                     className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                         currentView === 'monthly'
-                            ? 'bg-[#1a1d23] text-[#e5e2e1] shadow-sm border border-[#424754]/50'
-                            : 'text-[#8c909f] hover:text-[#e5e2e1]'
+                            ? 'bg-surface-container-high text-white shadow-sm border border-outline-variant/50'
+                            : 'text-on-surface-variant hover:text-white'
                     }`}
                 >
                     Monthly
@@ -73,25 +73,25 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
 
             {/* Date Navigation */}
             <div className="flex items-center gap-2">
-                <div className="flex items-center p-1 rounded-xl bg-[#2a2a2a] border border-[#424754]/30">
+                <div className="flex items-center p-1 rounded-xl bg-surface-container-low border border-outline-variant/10">
                     <button
                         suppressHydrationWarning
                         onClick={() => handleNavigate('prev')}
-                        className="p-1.5 text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] rounded-lg transition-colors"
+                        className="p-1.5 text-on-surface-variant hover:text-white hover:bg-surface-bright rounded-lg transition-colors"
                         title="Previous"
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
                     <div className="flex items-center gap-2 px-3">
-                        <Calendar className="w-3.5 h-3.5 text-[#adc6ff]" />
-                        <span className="text-sm font-bold text-[#e5e2e1] min-w-[120px] text-center">
+                        <Calendar className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-sm font-bold text-white min-w-[120px] text-center">
                             {dateLabel}
                         </span>
                     </div>
                     <button
                         suppressHydrationWarning
                         onClick={() => handleNavigate('next')}
-                        className="p-1.5 text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] rounded-lg transition-colors"
+                        className="p-1.5 text-on-surface-variant hover:text-white hover:bg-surface-bright rounded-lg transition-colors"
                         title="Next"
                     >
                         <ChevronRight className="w-4 h-4" />
@@ -101,7 +101,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
                 <button 
                     suppressHydrationWarning
                     onClick={goToToday}
-                    className="text-xs font-bold text-[#8c909f] hover:text-[#e5e2e1] underline-offset-4 hover:underline transition-colors"
+                    className="text-xs font-bold text-on-surface-variant hover:text-white underline-offset-4 hover:underline transition-colors"
                 >
                     Today
                 </button>

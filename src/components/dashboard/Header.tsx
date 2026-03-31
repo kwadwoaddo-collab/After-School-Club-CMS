@@ -174,12 +174,12 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className={`h-16 sm:h-20 bg-[#0f1115]/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-[#424754]/15 transition-all duration-300 ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'
+        <header className={`h-16 sm:h-20 bg-surface/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-outline-variant/10 transition-all duration-300 ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'
             }`}>
             {/* Hamburger — mobile only */}
             <button
                 suppressHydrationWarning
-                className="md:hidden p-2 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="md:hidden p-2 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
             >
@@ -190,7 +190,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             {!hideSearch && (
                 <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
                     <form onSubmit={handleSearch} className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant group-focus-within:text-primary transition-colors" />
                         <input
                             suppressHydrationWarning
                             ref={searchInputRef}
@@ -204,16 +204,16 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                             }}
                             placeholder="Search students, bookings (Cmd + K)"
-                            className="w-full pl-11 pr-4 py-2.5 bg-[#1a1d23] border border-[#424754]/15 rounded-[12px] text-sm text-[#e5e2e1] placeholder:text-[#8c909f] focus:ring-2 focus:ring-[#4d8eff]/30 transition-all outline-none"
+                            className="w-full pl-11 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/10 rounded-xl text-sm text-white placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary/30 transition-all outline-none"
                         />
                         {isSearching && (
-                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] animate-spin" />
+                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant animate-spin" />
                         )}
                         {/* Keyboard shortcut hint overlay for inactive state */}
                         {!searchQuery && !isSearching && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
-                                <span className="text-xs bg-[#2a2d35] px-1.5 py-0.5 rounded border border-[#424754] text-[#8c909f]">⌘</span>
-                                <span className="text-xs bg-[#2a2d35] px-1.5 py-0.5 rounded border border-[#424754] text-[#8c909f]">K</span>
+                                <span className="text-xs bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/10 text-on-surface-variant">⌘</span>
+                                <span className="text-xs bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/10 text-on-surface-variant">K</span>
                             </div>
                         )}
                     </form>

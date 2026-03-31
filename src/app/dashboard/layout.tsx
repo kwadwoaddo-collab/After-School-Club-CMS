@@ -67,7 +67,7 @@ export default async function DashboardLayout({
     return (
         <ToastProvider>
             <SidebarProvider>
-                <div className="flex min-h-screen bg-[#0f1115] text-[#e5e2e1]">
+                <div className="flex min-h-screen bg-surface text-on-surface">
                     {/* Collapsible Sidebar */}
                     <Sidebar
                         userName={session.user?.name || undefined}
