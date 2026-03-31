@@ -48,3 +48,8 @@ Status: Complete
 
 [x] Task 46: Typography & Brand Sync
 Status: Complete
+
+[x] Task 49: Add Submission Timestamp to Bookings Table
+Status: Complete
+Location: /dashboard/bookings (BookingsTable.tsx)
+Description: Added the `createdAt` timestamp underneath the appointment time in the 'DATE & TIME' column for both desktop and mobile views. Displayed in 'Booked: DD/MM/YY' format with a subtle gray text (`text-xs text-slate-400`).

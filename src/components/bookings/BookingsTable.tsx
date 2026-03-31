@@ -346,6 +346,9 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     : 'Time TBD'
                                             }
                                         </span>
+                                        <span className="text-xs text-slate-400 mt-1">
+                                            Booked: {booking.createdAt ? format(new Date(booking.createdAt), 'dd/MM/yy') : 'N/A'}
+                                        </span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
@@ -541,9 +544,12 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 <CalendarIcon className="w-4 h-4 text-slate-400" />
                                 {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-600">
-                                <Clock className="w-4 h-4 text-slate-400" />
-                                {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
+                            <div className="flex items-start gap-2 text-xs text-slate-600">
+                                <Clock className="w-4 h-4 text-slate-400 mt-0.5" />
+                                <div className="flex flex-col gap-0.5">
+                                    <span>{booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}</span>
+                                    <span className="text-xs text-slate-400">Booked: {booking.createdAt ? format(new Date(booking.createdAt), 'dd/MM/yy') : 'N/A'}</span>
+                                </div>
                             </div>
                         </div>
 
