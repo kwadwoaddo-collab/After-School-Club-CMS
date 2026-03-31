@@ -141,12 +141,12 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
         // DB enum: confirmed | cancelled | rescheduled | completed | pending | signed_up
         // confirmed → Booked (blue), completed → Attended (violet), signed_up → Signed-up (emerald)
         const styles: Record<string, string> = {
-            confirmed:   'bg-blue-50 text-blue-700 ring-blue-600/20',
-            pending:     'bg-amber-50 text-amber-700 ring-amber-600/20',
-            signed_up:   'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-            completed:   'bg-violet-50 text-violet-700 ring-violet-600/20',
-            cancelled:   'bg-slate-100 text-slate-600 ring-slate-600/20',
-            rescheduled: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
+            confirmed:   'bg-blue-500/20 text-blue-400 ring-blue-500/30',
+            pending:     'bg-amber-500/20 text-amber-400 ring-amber-500/30',
+            signed_up:   'bg-emerald-500/20 text-emerald-400 ring-emerald-500/30',
+            completed:   'bg-violet-500/20 text-violet-400 ring-violet-500/30',
+            cancelled:   'bg-slate-500/20 text-slate-400 ring-slate-500/30',
+            rescheduled: 'bg-indigo-500/20 text-indigo-400 ring-indigo-500/30',
         };
         const labels: Record<string, string> = {
             confirmed: 'Booked',
@@ -300,45 +300,45 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
             </div>
         )}
 
-        <div className="glass-card rounded-3xl overflow-hidden">
+        <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl overflow-hidden">
             {/* Table for Desktop */}
             <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="border-b border-slate-200">
-                            <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <tr className="border-b border-[#2a2a2a]">
+                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Date & Time
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Student(s)
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Assessment Type
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Centre
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Status
                             </th>
-                            <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th className="text-right px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-[#2a2a2a]">
                         {bookings.map((booking) => (
                             <tr
                                 key={booking.id}
                                 onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                                className="cursor-pointer hover:bg-slate-50/50 transition-colors group"
+                                className="cursor-pointer hover:bg-[#2a2d35] transition-colors group"
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-slate-900">
+                                        <span className="text-sm font-bold text-[#FFFFFF]">
                                             {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d') : 'N/A'}
                                         </span>
-                                        <span className="text-xs text-slate-500 font-medium mt-0.5">
+                                        <span className="text-xs text-slate-400 font-medium mt-0.5">
                                             {booking.startAt && booking.endAt
                                                 ? `${format(new Date(booking.startAt), 'h:mm a')} - ${format(new Date(booking.endAt), 'h:mm a')}`
                                                 : booking.startAt
@@ -357,7 +357,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                             {getStudentInitials(booking)}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">
+                                            <span className="text-sm font-semibold text-[#FFFFFF] group-hover:text-primary transition-colors">
                                                 {getStudentNames(booking)}
                                             </span>
                                             {hasMedicalNote(booking) && (
@@ -393,8 +393,8 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                                        <MapPin className="w-4 h-4 text-slate-400" />
+                                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                                        <MapPin className="w-4 h-4 text-slate-500" />
                                         {booking.centre?.name || 'Unknown'}
                                     </div>
                                 </td>
@@ -409,7 +409,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                 e.stopPropagation();
                                                 setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
                                             }}
-                                            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                                            className="p-2 hover:bg-[#343843] rounded-xl transition-colors"
                                         >
                                             <MoreVertical className="w-4 h-4 text-slate-500" />
                                         </button>
@@ -420,28 +420,28 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     className="fixed inset-0 z-10"
                                                     onClick={() => setActiveDropdown(null)}
                                                 />
-                                                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-20">
+                                                <div className="absolute right-0 top-full mt-2 w-52 bg-[#1a1d23] rounded-2xl shadow-xl border border-[#2a2a2a] py-2 z-20">
                                                     <Link
                                                         href={`/dashboard/bookings/${booking.id}`}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                         View Details
                                                     </Link>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors w-full text-left"
                                                     >
                                                         <CalendarIcon className="w-4 h-4" />
                                                         Reschedule
                                                     </button>
                                                     {/* Task 33: Quick status updates */}
-                                                    <div className="mx-3 my-1 border-t border-slate-100" />
-                                                    <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Status</p>
+                                                    <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
+                                                    <p className="px-4 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick Status</p>
                                                     <button
                                                         onClick={() => handleQuickStatus(booking.id, 'confirmed')}
                                                         disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-blue-50 text-sm font-medium text-blue-700 transition-colors w-full text-left disabled:opacity-50"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-blue-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <BookOpen className="w-4 h-4" />
                                                         Mark as Booked
@@ -449,7 +449,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     <button
                                                         onClick={() => handleQuickStatus(booking.id, 'signed_up')}
                                                         disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-emerald-700 transition-colors w-full text-left disabled:opacity-50"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-emerald-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <CheckCircle className="w-4 h-4" />
                                                         Mark as Signed-up
@@ -457,23 +457,23 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     <button
                                                         onClick={() => handleQuickStatus(booking.id, 'completed')}
                                                         disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-violet-50 text-sm font-medium text-violet-700 transition-colors w-full text-left disabled:opacity-50"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-violet-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <GraduationCap className="w-4 h-4" />
                                                         Mark as Attended
                                                     </button>
-                                                    <div className="mx-3 my-1 border-t border-slate-100" />
+                                                    <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
                                                     <button
                                                         onClick={() => openCancelModal(booking.id)}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 text-sm font-medium text-red-600 transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2b1f24] text-sm font-medium text-red-400 transition-colors w-full text-left"
                                                     >
                                                         <X className="w-4 h-4" />
                                                         Cancel Booking
                                                     </button>
-                                                    <div className="mx-3 my-1 border-t border-slate-100" />
+                                                    <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
                                                     <button
                                                         onClick={() => { setConfirmDelete(booking.id); setActiveDropdown(null); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-700 transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2b1f24] text-sm font-medium text-red-500 transition-colors w-full text-left"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                         Delete Booking
@@ -490,12 +490,12 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
             </div>
 
             {/* Card View for Mobile */}
-            <div className="lg:hidden divide-y divide-slate-100">
+            <div className="lg:hidden divide-y divide-[#2a2a2a]">
                 {bookings.map((booking) => (
                     <div 
                         key={booking.id} 
                         onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                        className="p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                        className="p-5 cursor-pointer hover:bg-[#2a2d35] transition-colors"
                     >
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -504,7 +504,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h4 className="text-sm font-bold text-slate-900">
+                                        <h4 className="text-sm font-bold text-[#FFFFFF]">
                                             {getStudentNames(booking)}
                                         </h4>
                                         {hasMedicalNote(booking) && (
@@ -532,7 +532,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                    <p className="text-xs text-slate-400 font-medium mt-0.5">
                                         {booking.centre?.name}
                                     </p>
                                 </div>
@@ -557,7 +557,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                         <div className="flex gap-2 mt-3">
                             <Link
                                 href={`/dashboard/bookings/${booking.id}`}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-all"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#2a2d35] hover:bg-[#343843] rounded-xl text-sm font-semibold text-[#FFFFFF] transition-all"
                             >
                                 <Eye className="w-4 h-4" />
                                 View Details
@@ -568,7 +568,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                     e.stopPropagation();
                                     setConfirmDelete(booking.id);
                                 }}
-                                className="px-3 py-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
+                                className="px-3 py-2 bg-[#2b1f24] hover:bg-red-500/20 rounded-xl text-red-400 transition-all"
                                 title="Delete Booking"
                             >
                                 <Trash2 className="w-4 h-4" />

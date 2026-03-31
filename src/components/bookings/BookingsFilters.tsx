@@ -60,7 +60,8 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search students, bookings..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
                         />
                     </div>
                 </form>
@@ -73,7 +74,8 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                             setStatus(e.target.value);
                             setTimeout(applyFilters, 100);
                         }}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
+                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
+                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
                     >
                         {statusOptions.map(opt => (
                             <option key={opt.value} value={opt.value}>
@@ -92,7 +94,8 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                             setCentreId(e.target.value);
                             setTimeout(applyFilters, 100);
                         }}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
+                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
+                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
                     >
                         <option value="all">All Centres</option>
                         {centres.map(centre => (
@@ -108,7 +111,7 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all"
                     >
                         <X className="w-4 h-4" />
                         Clear

@@ -53,18 +53,18 @@ export default async function BookingsPage(props: {
                         <ChevronLeft className="w-5 h-5 text-slate-600" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Bookings</h1>
-                        <p className="text-slate-500 font-medium mt-1">
+                        <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
+                        <p className="text-slate-400 font-medium mt-1">
                             Manage upcoming and past appointments
                         </p>
                     </div>
                 </div>
 
-                <div className="glass-card rounded-[32px] p-12 text-center">
+                <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Calendar className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No centres found</h3>
+                    <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">No centres found</h3>
                     <p className="text-slate-500 mb-6">
                         Please set up a centre first before creating bookings
                     </p>
@@ -116,15 +116,15 @@ export default async function BookingsPage(props: {
                         <ChevronLeft className="w-5 h-5 text-slate-600" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Bookings</h1>
-                        <p className="text-slate-500 font-medium mt-1">
+                        <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
+                        <p className="text-slate-400 font-medium mt-1">
                             Manage upcoming and past appointments
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] border border-[#3a3f4b] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all">
                         <Download className="w-4 h-4" />
                         <span className="hidden sm:inline">Export</span>
                     </button>
@@ -138,7 +138,7 @@ export default async function BookingsPage(props: {
             </div>
 
             {/* Filters and View Toggle */}
-            <div className="glass-card rounded-3xl p-6">
+            <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl p-6">
                 <BookingsFilters centres={orgCentres} />
             </div>
 
@@ -146,23 +146,23 @@ export default async function BookingsPage(props: {
             <BookingsTable bookings={bookingsData as any} />
 
             {/* Stats Footer */}
-            <div className="glass-card rounded-3xl p-6">
+            <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="text-center">
-                        <p className="text-2xl font-bold text-slate-900">{bookingsData.length}</p>
-                        <p className="text-sm text-slate-500 font-medium">Total Bookings</p>
+                        <p className="text-2xl font-bold text-[#FFFFFF]">{bookingsData.length}</p>
+                        <p className="text-sm text-slate-400 font-medium">Total Bookings</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl font-bold text-emerald-600">
+                        <p className="text-2xl font-bold text-blue-500">
                             {bookingsData.filter(b => b.status === 'confirmed').length}
                         </p>
-                        <p className="text-sm text-slate-500 font-medium">Confirmed</p>
+                        <p className="text-sm text-slate-400 font-medium">Booked</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p className="text-2xl font-bold text-accent-violet">
                             {bookingsData.filter(b => b.status === 'completed').length}
                         </p>
-                        <p className="text-sm text-slate-500 font-medium">Completed</p>
+                        <p className="text-sm text-slate-400 font-medium">Attended</p>
                     </div>
                 </div>
             </div>
