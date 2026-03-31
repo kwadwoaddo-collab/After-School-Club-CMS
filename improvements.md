@@ -53,3 +53,37 @@ Status: Complete
 Status: Complete
 Location: /dashboard/bookings (BookingsTable.tsx)
 Description: Added the `createdAt` timestamp underneath the appointment time in the 'DATE & TIME' column for both desktop and mobile views. Displayed in 'Booked: DD/MM/YY' format with a subtle gray text (`text-xs text-slate-400`).
+
+[x] Tasks 51 & 52: Dynamic Dashboard Filtering
+Status: Complete
+Location: /dashboard/page.tsx, /dashboard/DashboardFilter.tsx
+Description: Implemented a Weekly/Monthly toggle and date navigation at the top of the dashboard. Both the Assessments and Registrations cards have been expanded to a 50/50 split and now display dynamically calculated 'Total', 'Month', and 'Week' statistics based on the specifically selected active timeframe. Lists correctly filter against the `startAt` (Assessments) and `startDate` (Registrations) columns, and display an intuitive empty state when no activity is configured for the active period.## [ ] Task 50: Separate Staff Management Page
+- **Status:** Pending
+- **Action:** Remove the "Staff" card from the Dashboard. Move all Staff/Team management (Shifts, Payroll) to the dedicated "Team" page in the sidebar.
+
+## [ ] Task 51: Dynamic Dashboard Stats (Weekly/Monthly)
+- **Status:** Pending
+- **Bookings Summary:** Show "Total Bookings", "This Month", and "This Week".
+- **Registrations Summary:** Show "Total Submitted", "Awaiting Review", "New This Week", and "New This Month".
+
+## [ ] Task 52: Implement Dashboard View Toggle & Date Picker
+- **Status:** Pending
+- **UI:** Add a toggle switch at the top of the Dashboard to swap between "Weekly" and "Monthly" views.
+- **Picker:** Add a navigation element (e.g., "< March 23 - 29 >") to jump between weeks or months. 
+- **Logic:** Default to the current week/month on load.
+
+## [ ] Task 53: Weekly Filter for Assessments (Mon-Sun)
+- **Status:** Pending
+- **Location:** "Recent Bookings" Card
+- **Logic:** Filter the list to show only assessments for the selected week (Monday to Sunday).
+- **Sorting:** Sort by Assessment Date (Nearest first).
+
+## [ ] Task 54: Weekly Filter for Registrations (Start Date)
+- **Status:** Pending
+- **Location:** "Recent Registrations" Card
+- **Logic:** Filter the list based on the **Child's Requested Start Date** for the selected week.
+- **Goal:** See which new students are actually starting their sessions this week.
+
+## [ ] Task 55: Fix UI Real Estate
+- **Status:** Pending
+- **Action:** Now that Staff is gone, expand the Bookings and Registrations cards to fill the width (50/50 split) for a cleaner, wider look.

@@ -5,7 +5,7 @@ import {
     organisations, centres, parents, children,
     bookings, bookingAttendees, registrations, registrationChildren,
 } from '@/db/schema';
-import { eq, desc, asc, sql, count, and, gte, lt, inArray } from 'drizzle-orm';
+import { eq, desc, asc, sql, and, gte, lt, lte, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import {
@@ -13,8 +13,11 @@ import {
     ArrowRight, ChevronRight, AlertTriangle, Shield
 } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
+import { DashboardFilter } from '@/components/dashboard/DashboardFilter';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, format } from 'date-fns';
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const searchParams = await props.searchParams;
     const session = await auth();
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
@@ -37,19 +40,40 @@ export default async function DashboardPage() {
     const firstName = session.user.name?.split(' ')[0] || 'there';
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDateStr = searchParams.date as string | undefined;
+    const targetDate = targetDateStr && isValid(parseISO(targetDateStr)) ? parseISO(targetDateStr) : now;
+    const currentView = searchParams.view === 'monthly' ? 'monthly' : 'weekly';
+
+    const activeStartDate = currentView === 'weekly' 
+        ? startOfWeek(targetDate, { weekStartsOn: 1 }) 
+        : startOfMonth(targetDate);
+    const activeEndDate = currentView === 'weekly'
+        ? endOfWeek(targetDate, { weekStartsOn: 1 })
+        : endOfMonth(targetDate);
+
+    // Month and Week relative to the target date for the 3-column stats
+    const targetMonthStart = startOfMonth(targetDate);
+    const targetMonthEnd = endOfMonth(targetDate);
+    const targetWeekStart = startOfWeek(targetDate, { weekStartsOn: 1 });
+    const targetWeekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
+
+    const dateLabel = currentView === 'weekly'
+        ? `${format(activeStartDate, 'MMM d')} - ${format(activeEndDate, 'MMM d, yyyy')}`
+        : format(activeStartDate, 'MMMM yyyy');
+
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     // ── Run all DB queries in parallel ────────────────────────────────────
     const [
         [{ count: totalStudents }],
         [{ count: totalBookingsAll }],
         [{ count: bookingsThisMonth }],
+        [{ count: bookingsThisWeek }],
         recentBookings,
         [{ count: totalRegistrations }],
         [{ count: pendingRegistrations }],
         [{ count: registrationsThisMonth }],
+        [{ count: registrationsThisWeek }],
         recentRegistrations,
     ] = await Promise.all([
         // Students
@@ -63,9 +87,14 @@ export default async function DashboardPage() {
             ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
             : Promise.resolve([{ count: 0 }]),
 
-        // Bookings this month
+        // Bookings in target month
         hasCentres
-            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.createdAt, firstDayThisMonth)))
+            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetMonthStart), lte(bookings.startAt, targetMonthEnd)))
+            : Promise.resolve([{ count: 0 }]),
+
+        // Bookings in target week
+        hasCentres
+            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetWeekStart), lte(bookings.startAt, targetWeekEnd)))
             : Promise.resolve([{ count: 0 }]),
 
         // Recent bookings preview
@@ -86,21 +115,24 @@ export default async function DashboardPage() {
                 .where(
                     and(
                         inArray(bookings.centreId, accessibleCentreIds),
-                        gte(bookings.startAt, today)
+                        gte(bookings.startAt, activeStartDate),
+                        lte(bookings.startAt, activeEndDate)
                     )
                 )
                 .orderBy(asc(bookings.startAt))
-                .limit(5)
             : Promise.resolve([]),
 
         // Total registrations
         db.select({ count: sql<number>`count(*)` }).from(registrations).where(eq(registrations.organisationId, org.id)),
 
-        // Pending registrations
+        // Pending registrations (for top header, kept as pending but we could remove it or rename if we wanted)
         db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), eq(registrations.status, 'awaiting_confirmation'))),
 
-        // Registrations this month
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.submittedAt, firstDayThisMonth))),
+        // Registrations in target month (filtered by child startDate for consistency, or submittedAt if startDate is null)
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetMonthStart), lte(registrations.startDate, targetMonthEnd))),
+
+        // Registrations in target week
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetWeekStart), lte(registrations.startDate, targetWeekEnd))),
 
         // Recent registrations preview
         db.select({
@@ -112,9 +144,14 @@ export default async function DashboardPage() {
         })
             .from(registrationChildren)
             .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
-            .where(eq(registrations.organisationId, org.id))
+            .where(
+                and(
+                    eq(registrations.organisationId, org.id),
+                    gte(registrations.startDate, activeStartDate),
+                    lte(registrations.startDate, activeEndDate)
+                )
+            )
             .orderBy(desc(registrations.submittedAt), asc(registrationChildren.submittedFirstName))
-            .limit(5),
     ]);
 
     const recentBookingsChildIds = recentBookings.map(b => b.childId);
@@ -153,14 +190,14 @@ export default async function DashboardPage() {
                         Overview
                     </h1>
                     <p className="text-[#8c909f] font-medium mt-1">
-                        Welcome back, {firstName}! Here's what's happening today.
+                        Welcome back, {firstName}! 
                     </p>
                 </div>
-                {userRole !== 'TUTOR' && (
-                    <div className="hidden">
-                        {/* Header actions (New Assessment, Export, Links) removed per design. Functions accessible via Sidebar or Card sections. */}
-                    </div>
-                )}
+                <DashboardFilter 
+                    currentView={currentView}
+                    currentDateIso={targetDate.toISOString()}
+                    dateLabel={dateLabel}
+                />
             </div>
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
@@ -204,20 +241,24 @@ export default async function DashboardPage() {
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15">
-                                <p className="text-2xl font-bold text-[#e5e2e1]">{totalBookingsAll}</p>
-                                <p className="text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Total Bookings</p>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                            <div className="p-3 sm:p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl font-bold text-[#e5e2e1]">{totalBookingsAll}</p>
+                                <p className="text-[10px] sm:text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                             </div>
-                            <div className="p-4 bg-[#adc6ff]/10 rounded-2xl border border-[#adc6ff]/20">
-                                <p className="text-2xl font-bold text-[#adc6ff]">{bookingsThisMonth}</p>
-                                <p className="text-xs text-[#adc6ff] opacity-80 font-bold mt-1 uppercase tracking-wider">This Month</p>
+                            <div className="p-3 sm:p-4 bg-[#adc6ff]/5 rounded-2xl border border-[#adc6ff]/10 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl font-bold text-[#adc6ff]">{bookingsThisMonth}</p>
+                                <p className="text-[10px] sm:text-xs text-[#adc6ff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                            </div>
+                            <div className="p-3 sm:p-4 bg-[#adc6ff]/10 rounded-2xl border border-[#adc6ff]/20 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl font-bold text-[#adc6ff]">{bookingsThisWeek}</p>
+                                <p className="text-[10px] sm:text-xs text-[#adc6ff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                             </div>
                         </div>
 
                         {/* Recent preview */}
-                        <div className="flex flex-col">
-                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">Recent Bookings</h3>
+                        <div className="flex flex-col flex-1">
+                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
                             {recentBookingsWithNotes.length > 0 ? (
                                 <div className="space-y-2">
                                     {recentBookingsWithNotes.map(b => (
@@ -274,7 +315,7 @@ export default async function DashboardPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[#8c909f] italic text-center py-6">No recent bookings found.</p>
+                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity scheduled for this {currentView === 'weekly' ? 'week' : 'month'}.</p>
                             )}
                         </div>
 
@@ -306,20 +347,24 @@ export default async function DashboardPage() {
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15">
-                                <p className="text-2xl font-bold text-[#e5e2e1]">{totalRegistrations}</p>
-                                <p className="text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Total Submitted</p>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                            <div className="p-3 sm:p-4 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl font-bold text-[#e5e2e1]">{totalRegistrations}</p>
+                                <p className="text-[10px] sm:text-xs text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                             </div>
-                            <div className="p-4 bg-[#ffb599]/10 rounded-2xl border border-[#ffb599]/20">
-                                <p className="text-2xl font-bold text-[#ffb599]">{pendingRegistrations}</p>
-                                <p className="text-xs text-[#ffb599] opacity-80 font-bold mt-1 uppercase tracking-wider">Awaiting Review</p>
+                            <div className="p-3 sm:p-4 bg-[#d0bcff]/5 rounded-2xl border border-[#d0bcff]/10 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl font-bold text-[#d0bcff]">{registrationsThisMonth}</p>
+                                <p className="text-[10px] sm:text-xs text-[#d0bcff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                            </div>
+                            <div className="p-3 sm:p-4 bg-[#d0bcff]/10 rounded-2xl border border-[#d0bcff]/20 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl font-bold text-[#d0bcff]">{registrationsThisWeek}</p>
+                                <p className="text-[10px] sm:text-xs text-[#d0bcff] opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                             </div>
                         </div>
 
                         {/* Recent preview */}
-                        <div className="flex flex-col">
-                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">Recent Registrations</h3>
+                        <div className="flex flex-col flex-1">
+                            <h3 className="text-sm font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
                             {recentRegistrations.length > 0 ? (
                                 <div className="space-y-2">
                                     {recentRegistrations.map((r, i) => (
@@ -354,7 +399,7 @@ export default async function DashboardPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[#8c909f] italic text-center py-6">No recent registrations found.</p>
+                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity scheduled for this {currentView === 'weekly' ? 'week' : 'month'}.</p>
                             )}
                         </div>
 
