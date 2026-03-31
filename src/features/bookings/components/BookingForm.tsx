@@ -17,6 +17,7 @@ import { z } from 'zod';
 interface BookingFormProps {
     centreId: string;
     centreName: string;
+    operatingHours?: string | null;
     brandColor?: string;
     backToCentresUrl?: string;
     rescheduleData?: any;
@@ -26,6 +27,17 @@ interface TimeSlot {
     startAt: string;
     endAt: string;
     available: boolean;
+}
+
+function formatAmPm(time: string) {
+    if (!time) return '';
+    const [hStr, mStr] = time.split(':');
+    let h = parseInt(hStr, 10);
+    const m = mStr || '00';
+    const ampm = h >= 12 ? 'pm' : 'am';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return `${h}:${m} ${ampm}`;
 }
 
 // Loading Spinner Component
@@ -57,7 +69,7 @@ const SUBJECTS = ['Maths', 'English', 'Science', 'Other'] as const;
 const DEFAULT_DURATION = 60;
 const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
-export default function BookingForm({ centreId, centreName, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
+export default function BookingForm({ centreId, centreName, operatingHours, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
     // ... state ...
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +79,33 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
     const [selectedDate, setSelectedDate] = useState<string>('');
+    const [daySchedule, setDaySchedule] = useState<{ start: string; end: string; open: boolean } | null>(null);
+
+    // Calculate day schedule when date changes
+    useEffect(() => {
+        if (!selectedDate) {
+            setDaySchedule(null);
+            return;
+        }
+        try {
+            const parsedHours = operatingHours ? JSON.parse(operatingHours) : {
+                monday: { open: true, start: '09:00', end: '17:00' },
+                tuesday: { open: true, start: '09:00', end: '17:00' },
+                wednesday: { open: true, start: '09:00', end: '17:00' },
+                thursday: { open: true, start: '09:00', end: '17:00' },
+                friday: { open: true, start: '09:00', end: '17:00' },
+                saturday: { open: false, start: '09:00', end: '13:00' },
+                sunday: { open: false, start: '09:00', end: '13:00' }
+            };
+            const dateObj = new Date(selectedDate);
+            const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayOfWeek = days[dateObj.getDay()];
+            setDaySchedule(parsedHours[dayOfWeek] || null);
+        } catch (e) {
+            console.error('Failed to parse operating hours', e);
+            setDaySchedule(null);
+        }
+    }, [selectedDate, operatingHours]);
 
     // ... useForm hook ...
     const {
@@ -221,13 +260,13 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
         }
 
         // Additional custom validation for step 3 time between min and max limits
-        if (step === 3 && timeSlots.length > 0) {
+        if (step === 3 && daySchedule && daySchedule.open) {
             const timeVal = data.appointment.startAt;
-            const currentMinTime = new Date(timeSlots[0].startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const currentMaxTime = new Date(timeSlots[timeSlots.length - 1].endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const currentMinTime = daySchedule.start;
+            const currentMaxTime = daySchedule.end;
             
             if (timeVal < currentMinTime || timeVal > currentMaxTime) {
-                const errorMsg = `Time must be between ${currentMinTime} and ${currentMaxTime}`;
+                const errorMsg = `Time must be between ${formatAmPm(currentMinTime)} and ${formatAmPm(currentMaxTime)}`;
                 setFormError('appointment.startAt', {
                     type: 'manual',
                     message: errorMsg
@@ -606,21 +645,19 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                             {selectedDate && (
                                 <div>
                                     <label className="block text-sm font-medium text-slate-800 mb-2">Available Times</label>
-                                    {loadingSlots ? (
-                                        <div className="flex items-center justify-center py-8"><Spinner size="lg" /><span className="ml-3 text-gray-500">Loading available slots...</span></div>
-                                    ) : timeSlots.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-500 bg-gray-100 rounded-lg"><p>No slots available for this date.</p></div>
+                                    {daySchedule && !daySchedule.open ? (
+                                        <div className="text-center py-8 text-gray-500 bg-gray-100 rounded-lg"><p>The centre is closed on this day.</p></div>
                                     ) : (
                                         <div className="mt-2">
                                             <input
                                                 type="time"
                                                 {...register('appointment.startAt')}
-                                                min={new Date(timeSlots[0]?.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                                                max={new Date(timeSlots[timeSlots.length - 1]?.endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                min={daySchedule?.start || '00:00'}
+                                                max={daySchedule?.end || '23:59'}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900"
                                             />
-                                            <p className="mt-2 text-sm text-gray-500">
-                                                Centre hours: {new Date(timeSlots[0]?.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(timeSlots[timeSlots.length - 1]?.endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                            <p className="mt-2 text-sm text-gray-500 font-medium">
+                                                Centre hours: <span className="text-gray-900 font-semibold">{formatAmPm(daySchedule?.start || '00:00')} - {formatAmPm(daySchedule?.end || '23:59')}</span>
                                             </p>
                                         </div>
                                     )}
@@ -677,9 +714,9 @@ export default function BookingForm({ centreId, centreName, brandColor = '#4F46E
                             onClick={validateStep}
                             disabled={step === 3 && (!selectedDate || !watch('appointment.startAt') || (() => {
                                 const timeVal = watch('appointment.startAt');
-                                if (!timeVal) return true;
-                                const currentMinTime = timeSlots[0]?.startAt ? new Date(timeSlots[0].startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-                                const currentMaxTime = timeSlots[timeSlots.length - 1]?.endAt ? new Date(timeSlots[timeSlots.length - 1].endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                                if (!timeVal || !daySchedule || !daySchedule.open) return true;
+                                const currentMinTime = daySchedule.start;
+                                const currentMaxTime = daySchedule.end;
                                 return timeVal < currentMinTime || timeVal > currentMaxTime;
                             })())}
                             className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"

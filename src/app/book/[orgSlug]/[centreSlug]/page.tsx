@@ -128,6 +128,7 @@ export default async function BookingPage({
           <BookingForm
             centreId={centre.id}
             centreName={centre.name}
+            operatingHours={centre.operatingHours}
             brandColor={brandColor}
             backToCentresUrl={orgCentres.length > 1 ? `/book/${orgSlug}` : undefined}
             rescheduleData={bookingToReschedule}
