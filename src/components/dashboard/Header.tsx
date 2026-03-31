@@ -178,6 +178,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             }`}>
             {/* Hamburger — mobile only */}
             <button
+                suppressHydrationWarning
                 className="md:hidden p-2 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
@@ -191,6 +192,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     <form onSubmit={handleSearch} className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
                         <input
+                            suppressHydrationWarning
                             ref={searchInputRef}
                             type="text"
                             value={searchQuery}
@@ -260,6 +262,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                     <button
+                        suppressHydrationWarning
                         onClick={() => setShowNotifications(!showNotifications)}
                         className="p-2.5 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] relative transition-colors"
                         aria-label="Notifications"
@@ -322,6 +325,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             </div>
                             <div className="p-3 border-t border-[#424754]/15 bg-[#1a1d23]">
                                 <button
+                                    suppressHydrationWarning
                                     onClick={handleMarkAllAsRead}
                                     className="text-xs font-semibold text-[#adc6ff] hover:text-[#4d8eff] w-full text-center"
                                 >
@@ -338,6 +342,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 {/* User Profile Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                     <button
+                        suppressHydrationWarning
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center gap-3 pl-2 rounded-xl hover:bg-[#20201f] pr-2 py-1.5 transition-colors"
                         aria-label="User menu"
@@ -365,6 +370,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             </div>
                             <div className="p-2">
                                 <button
+                                    suppressHydrationWarning
                                     onClick={() => signOut({ callbackUrl: '/login' })}
                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#ffb4ab] hover:bg-[#93000a]/20 transition-colors text-sm font-semibold"
                                 >

@@ -139,6 +139,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             childFirst: registrationChildren.submittedFirstName,
             childLast: registrationChildren.submittedLastName,
             submittedAt: registrations.submittedAt,
+            startDate: registrations.startDate,
             status: registrations.status,
             registrationId: registrations.id,
         })
@@ -151,7 +152,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     lte(registrations.startDate, activeEndDate)
                 )
             )
-            .orderBy(desc(registrations.submittedAt), asc(registrationChildren.submittedFirstName))
+            .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
     ]);
 
     const recentBookingsChildIds = recentBookings.map(b => b.childId);
@@ -222,11 +223,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* Left Column - Assessments */}
-                <div className="flex flex-col gap-6">
-
-                    {/* Assessments & Bookings */}
-                    <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
-                        <div className="flex items-start justify-between">
+                {/* Assessments & Bookings */}
+                <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
                                     <CalendarCheck className="w-6 h-6 text-[#adc6ff]" />
@@ -315,24 +314,22 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity scheduled for this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
                             )}
                         </div>
 
                         <Link
                             href="/dashboard/bookings"
-                            className="mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
+                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#adc6ff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
                         >
                             View All Assessments <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
-                </div>
 
                 {/* Middle Column - Registrations */}
-                <div className="flex flex-col gap-6">
-                    {/* Registrations */}
-                    <div className="bg-[#1a1d23] rounded-[32px] p-6 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
-                        <div className="flex items-start justify-between">
+                {/* Registrations */}
+                <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
                                     <ClipboardList className="w-6 h-6 text-[#d0bcff]" />
@@ -390,7 +387,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         </span>
                                                     </div>
                                                     <p className="text-xs text-[#8c909f] mt-0.5">
-                                                        {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                                                        Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -399,7 +396,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity scheduled for this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                <p className="text-sm text-[#8c909f] italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
                             )}
                         </div>
 
@@ -415,12 +412,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                         <Link
                             href="/dashboard/registrations"
-                            className="mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#d0bcff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
+                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2a2a2a] text-[#d0bcff] text-sm font-bold hover:bg-[#353535] transition-colors border border-[#424754]/15"
                         >
                             View All Registrations <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
-                </div>
 
 
             </div>

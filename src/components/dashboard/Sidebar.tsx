@@ -85,6 +85,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 <div className="p-6 relative">
                     {!collapsed && (
                         <button 
+                            suppressHydrationWarning
                             className="absolute top-6 right-6 md:hidden p-1.5 rounded-lg text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
                             aria-label="Close menu"
@@ -110,6 +111,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 <div className="mb-6">
                                     {/* Collapsible header */}
                                     <button
+                                        suppressHydrationWarning
                                         onClick={() => setQuickActionsOpen(o => !o)}
                                         className="flex items-center justify-between w-full px-2 mb-3 group"
                                     >
@@ -206,6 +208,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                 {/* Collapse Toggle Button */}
                 <button
+                    suppressHydrationWarning
                     onClick={() => setCollapsed(!collapsed)}
                     className={`
                         absolute -right-3 top-20

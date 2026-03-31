@@ -48,6 +48,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
             {/* View Toggle */}
             <div className="flex items-center p-1 rounded-xl bg-[#2a2a2a] border border-[#424754]/30">
                 <button
+                    suppressHydrationWarning
                     onClick={() => handleViewChange('weekly')}
                     className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                         currentView === 'weekly'
@@ -58,6 +59,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
                     Weekly
                 </button>
                 <button
+                    suppressHydrationWarning
                     onClick={() => handleViewChange('monthly')}
                     className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                         currentView === 'monthly'
@@ -73,6 +75,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
             <div className="flex items-center gap-2">
                 <div className="flex items-center p-1 rounded-xl bg-[#2a2a2a] border border-[#424754]/30">
                     <button
+                        suppressHydrationWarning
                         onClick={() => handleNavigate('prev')}
                         className="p-1.5 text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] rounded-lg transition-colors"
                         title="Previous"
@@ -86,6 +89,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
                         </span>
                     </div>
                     <button
+                        suppressHydrationWarning
                         onClick={() => handleNavigate('next')}
                         className="p-1.5 text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] rounded-lg transition-colors"
                         title="Next"
@@ -95,6 +99,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
                 </div>
                 
                 <button 
+                    suppressHydrationWarning
                     onClick={goToToday}
                     className="text-xs font-bold text-[#8c909f] hover:text-[#e5e2e1] underline-offset-4 hover:underline transition-colors"
                 >
