@@ -182,7 +182,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* ── Feature Module Cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* Left Column - Assessments */}
                 <div className="flex flex-col gap-6">
@@ -377,40 +377,7 @@ export default async function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Right Column - Staff */}
-                <div className="flex flex-col gap-6">
-                    {/* Staff — Coming Soon */}
-                    <div className="bg-[#1a1d23] rounded-[32px] p-6 flex flex-col gap-5 border border-dashed border-[#424754] shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full opacity-70">
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
-                                    <UserCircle2 className="w-6 h-6 text-[#8c909f]" />
-                                </div>
-                                <div>
-                                    <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Staff</h2>
-                                    <p className="text-sm text-[#8c909f] mt-1">Scheduling & payroll</p>
-                                </div>
-                            </div>
-                            <span className="text-xs font-bold px-3 py-1 bg-[#2a2a2a] text-[#8c909f] rounded-full border border-[#424754]/15">
-                                COMING SOON
-                            </span>
-                        </div>
 
-                        <div className="flex-1 flex flex-col items-center justify-center py-8 gap-3">
-                            <div className="w-16 h-16 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
-                                <UserCircle2 className="w-8 h-8 text-[#8c909f] opacity-50" />
-                            </div>
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-[#8c909f]">Manage your team</p>
-                                <p className="text-xs text-[#8c909f] opacity-80 mt-1 max-w-[200px] mx-auto">Rota scheduling, pay rates, and attendance tracking — coming next.</p>
-                            </div>
-                        </div>
-
-                        <button disabled className="mt-auto flex items-center justify-center gap-2 py-3 rounded-2xl border border-[#424754]/15 bg-[#2a2a2a] text-[#8c909f] text-sm font-bold cursor-not-allowed">
-                            Coming Soon
-                        </button>
-                    </div>
-                </div>
             </div>
 
             {/* ── Student Ecosystem row ─────────────────────────────────── */}

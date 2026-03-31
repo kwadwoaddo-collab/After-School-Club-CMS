@@ -17,31 +17,31 @@ type Status = 'accepted' | 'pending' | 'expired';
 
 const getRoleBadge = (role: string) => {
     const styles: Record<string, string> = {
-        ORG_OWNER: 'bg-purple-100 text-purple-700 border-purple-200',
-        MANAGER: 'bg-blue-100 text-blue-700 border-blue-200',
-        FRONT_DESK: 'bg-green-100 text-green-700 border-green-200',
-        TUTOR: 'bg-amber-100 text-amber-700 border-amber-200',
+        ORG_OWNER: 'bg-[#d0bcff]/10 text-[#d0bcff] border-[#d0bcff]/20',
+        MANAGER: 'bg-[#adc6ff]/10 text-[#adc6ff] border-[#adc6ff]/20',
+        FRONT_DESK: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        TUTOR: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     };
-    return styles[role] || 'bg-gray-100 text-gray-700 border-gray-200';
+    return styles[role] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
 };
 
 const statusConfig = {
     accepted: {
         label: 'Accepted',
         Icon: CheckCircle2,
-        classes: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        iconClass: 'text-emerald-500',
+        classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        iconClass: 'text-emerald-400',
     },
     pending: {
         label: 'Pending',
         Icon: Clock,
-        classes: 'bg-amber-50 text-amber-700 border-amber-200',
-        iconClass: 'text-amber-500',
+        classes: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        iconClass: 'text-amber-400',
     },
     expired: {
         label: 'Expired',
         Icon: XCircle,
-        classes: 'bg-red-50 text-red-600 border-red-200',
+        classes: 'bg-red-500/10 text-red-400 border-red-500/20',
         iconClass: 'text-red-400',
     },
 };
@@ -85,23 +85,22 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
     if (items.length === 0) return null;
 
     return (
-        <div className="glass-card rounded-[32px] overflow-hidden border border-slate-200">
+        <div className="bg-[#1a1d23] rounded-[32px] overflow-hidden border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
             {/* Header */}
-            <div className="px-8 py-6 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-8 py-6 border-b border-[#424754]/15 flex items-center justify-between">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-slate-600" />
-                        <h2 className="text-lg font-bold text-slate-900">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-lg font-bold text-[#e5e2e1]">
                             Invitations ({items.length})
                         </h2>
                     </div>
-                    <p className="text-sm text-slate-500 mt-1">Track all staff invitations you've sent</p>
+                    <p className="text-sm text-[#8c909f] mt-1">Track all staff invitations you've sent</p>
                 </div>
                 {expiredCount > 0 && (
                     <button
                         onClick={handleClearExpired}
                         disabled={clearingExpired}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-xl transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10 border border-red-500/20 rounded-xl transition-colors disabled:opacity-50"
                     >
                         <Trash2 className="w-4 h-4" />
                         {clearingExpired ? 'Clearing...' : `Clear ${expiredCount} expired`}
@@ -110,7 +109,7 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
             </div>
 
             {/* List */}
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#424754]/15">
                 {items.map((invite) => {
                     const status = getStatus(invite);
                     const cfg = statusConfig[status];
@@ -119,40 +118,40 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
                     const isDeleting = deletingId === invite.id;
 
                     return (
-                        <div key={invite.id} className="px-8 py-5 hover:bg-slate-50 transition-colors">
-                            <div className="flex items-center justify-between gap-4">
+                        <div key={invite.id} className="p-4 sm:px-8 sm:py-5 hover:bg-[#202228] transition-colors group">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 {/* Left: info */}
                                 <div className="flex items-center gap-4 min-w-0">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0">
-                                        <Mail className="w-4 h-4 text-slate-400" />
+                                    <div className="w-10 h-10 rounded-full bg-[#2a2a2a] border border-[#424754]/30 flex items-center justify-center flex-shrink-0">
+                                        <Mail className="w-4 h-4 text-[#8c909f]" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 truncate">{invite.email}</p>
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getRoleBadge(invite.role)}`}>
+                                        <p className="font-bold text-[#e5e2e1] truncate text-base">{invite.email}</p>
+                                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getRoleBadge(invite.role)}`}>
                                                 {invite.role.replace('_', ' ')}
                                             </span>
-                                            <span className="text-xs text-slate-400">
+                                            <span className="text-xs font-medium text-[#8c909f]">
                                                 Sent {new Date(invite.createdAt).toLocaleDateString('en-GB', {
                                                     day: 'numeric', month: 'short', year: 'numeric',
                                                 })}
                                             </span>
                                             {status === 'accepted' && invite.usedAt && (
-                                                <span className="text-xs text-slate-400">
-                                                    · Accepted {new Date(invite.usedAt).toLocaleDateString('en-GB', {
+                                                <span className="text-xs font-medium text-[#8c909f]">
+                                                    · <span className="text-emerald-400">Accepted {new Date(invite.usedAt).toLocaleDateString('en-GB', {
                                                         day: 'numeric', month: 'short', year: 'numeric',
-                                                    })}
+                                                    })}</span>
                                                 </span>
                                             )}
                                             {status === 'pending' && (
-                                                <span className="text-xs text-slate-400">
+                                                <span className="text-xs font-medium text-[#8c909f]">
                                                     · Expires {new Date(invite.expiresAt).toLocaleDateString('en-GB', {
                                                         day: 'numeric', month: 'short', year: 'numeric',
                                                     })}
                                                 </span>
                                             )}
                                             {status === 'expired' && (
-                                                <span className="text-xs text-red-400">
+                                                <span className="text-xs font-medium text-red-400">
                                                     · Expired {new Date(invite.expiresAt).toLocaleDateString('en-GB', {
                                                         day: 'numeric', month: 'short', year: 'numeric',
                                                     })}
@@ -163,8 +162,8 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
                                 </div>
 
                                 {/* Right: status + delete */}
-                                <div className="flex items-center gap-3 flex-shrink-0">
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${cfg.classes}`}>
+                                <div className="flex items-center gap-3 flex-shrink-0 self-start sm:self-auto">
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold border ${cfg.classes}`}>
                                         <Icon className={`w-3.5 h-3.5 ${cfg.iconClass}`} />
                                         {cfg.label}
                                     </div>
@@ -172,20 +171,20 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
                                     {/* Delete / Confirm */}
                                     {isConfirming ? (
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500 flex items-center gap-1">
+                                            <span className="text-xs text-[#8c909f] flex items-center gap-1 font-bold">
                                                 <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                                                 Remove?
                                             </span>
                                             <button
                                                 onClick={() => handleDelete(invite.id)}
                                                 disabled={isDeleting}
-                                                className="px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                                className="px-3 py-1.5 text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
                                             >
                                                 {isDeleting ? '...' : 'Yes, delete'}
                                             </button>
                                             <button
                                                 onClick={() => setConfirmId(null)}
-                                                className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                                className="px-3 py-1.5 text-xs font-bold text-[#8c909f] hover:bg-[#353535] hover:text-[#e5e2e1] rounded-lg transition-colors border border-transparent hover:border-[#424754]/30"
                                             >
                                                 Cancel
                                             </button>
@@ -193,7 +192,7 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
                                     ) : (
                                         <button
                                             onClick={() => setConfirmId(invite.id)}
-                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="p-2 text-[#424754] hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20"
                                             title="Delete invitation"
                                         >
                                             <Trash2 className="w-4 h-4" />

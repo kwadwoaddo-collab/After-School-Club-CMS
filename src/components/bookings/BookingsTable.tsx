@@ -404,6 +404,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 <td className="px-6 py-4 text-right">
                                     <div className="relative inline-block">
                                         <button
+                                            suppressHydrationWarning
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
@@ -562,6 +563,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                 View Details
                             </Link>
                             <button
+                                suppressHydrationWarning
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setConfirmDelete(booking.id);
