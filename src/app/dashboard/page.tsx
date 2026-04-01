@@ -201,7 +201,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     lt(bookings.startAt, endOfDay(addDays(now, 7))),
                     eq(bookings.status, 'confirmed')
                 ))
-                .groupBy(bookings.centreId, centres.name, sql`day`)
+                .groupBy(bookings.centreId, centres.name, sql`date_trunc('day', ${bookings.startAt})`)
                 : Promise.resolve([]),
 
             // Growth
@@ -210,7 +210,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 count: sql<number>`count(*)::int`
             }).from(registrations)
             .where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, subDays(now, 56))))
-            .groupBy(sql`weekStart`).orderBy(asc(sql`weekStart`)),
+            .groupBy(sql`date_trunc('week', ${registrations.createdAt})`).orderBy(asc(sql`date_trunc('week', ${registrations.createdAt})`)),
 
             // Status pipeline
             db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
@@ -224,7 +224,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 })
                 .from(bookings)
                 .where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, subDays(now, 30))))
-                .groupBy(sql`dow`).orderBy(desc(sql`count`)).limit(1)
+                .groupBy(sql`EXTRACT(DOW FROM ${bookings.startAt})`).orderBy(desc(sql`count`)).limit(1)
                 : Promise.resolve([])
         ]);
 

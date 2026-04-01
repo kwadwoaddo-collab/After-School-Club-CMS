@@ -50,7 +50,7 @@ export default async function CentresPage() {
             lt(bookings.startAt, endOfDay(next7Days)),
             eq(bookings.status, 'confirmed')
         ))
-        .groupBy(bookings.centreId, sql`day`) : [];
+        .groupBy(bookings.centreId, sql`date_trunc('day', ${bookings.startAt})`) : [];
 
     // Map counts to centres
     const centresWithStats = centresList.map(centre => {
