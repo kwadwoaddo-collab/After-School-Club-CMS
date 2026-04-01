@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, centres, bookings } from '@/db/schema';
-import { eq, and, gte, lt, sql } from 'drizzle-orm';
+import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, MapPin, Users, Calendar, ArrowRight, BarChart3, Clock } from 'lucide-react';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
@@ -41,7 +41,7 @@ export default async function CentresPage() {
         .select({
             centreId: bookings.centreId,
             day: sql<string>`date_trunc('day', ${bookings.startAt})`,
-            count: sql<number>`count(*)`
+            count: sql<number>`count(*)::int`
         })
         .from(bookings)
         .where(and(
