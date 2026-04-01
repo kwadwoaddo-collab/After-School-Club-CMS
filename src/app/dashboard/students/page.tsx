@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Plus, Users, Calendar, Mail, Phone, ArrowRight, AlertTriangle, Shield } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 
 export default async function StudentsPage() {
     const session = await auth();
@@ -47,8 +48,9 @@ export default async function StudentsPage() {
     const bookingData = await db
         .select({
             childId: bookingAttendees.childId,
-            count: sql<number>`count(*)`,
-            nextAssessment: sql<Date | null>`min("bookings"."start_at")`,
+            totalCount: sql<number>`count(*)`,
+            completedCount: sql<number>`count(*) filter (where ${bookings.status} = 'completed')`,
+            nextAssessment: sql<Date | null>`min(${bookings.startAt})`,
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
@@ -56,7 +58,11 @@ export default async function StudentsPage() {
         .groupBy(bookingAttendees.childId);
 
     const bookingDataMap = new Map(
-        bookingData.map((bd) => [bd.childId, { count: bd.count, nextAssessment: bd.nextAssessment }])
+        bookingData.map((bd) => [bd.childId, { 
+            totalCount: bd.totalCount, 
+            completedCount: bd.completedCount,
+            nextAssessment: bd.nextAssessment 
+        }])
     );
 
     const studentIds = studentsList.map(s => s.id);
@@ -128,7 +134,9 @@ export default async function StudentsPage() {
                             <tbody className="divide-y divide-outline-variant/5">
                                 {studentsList.map((student) => {
                                     const bookingInfo = bookingDataMap.get(student.id);
-                                    const bookingCount = bookingInfo?.count || 0;
+                                    const bookingCount = bookingInfo?.totalCount || 0;
+                                    const completedCount = bookingInfo?.completedCount || 0;
+                                    const attendanceRate = bookingCount > 0 ? (completedCount / bookingCount) * 100 : 0;
                                     const nextAssessment = bookingInfo?.nextAssessment;
                                     const studentSafetyNotes = safetyNotes.filter(n => n.childId === student.id);
                                     const studentMedicalNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
@@ -147,9 +155,11 @@ export default async function StudentsPage() {
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary font-bold">
-                                                        {student.firstName[0]}{student.lastName[0]}
-                                                    </div>
+                                                    <AttendanceRadial percentage={attendanceRate} size="sm">
+                                                        <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+                                                            {student.firstName[0]}{student.lastName[0]}
+                                                        </div>
+                                                    </AttendanceRadial>
                                                     <div>
                                                         <div className="flex items-center gap-2">
                                                             <p className="font-bold text-white group-hover:text-primary transition-colors">

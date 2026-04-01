@@ -19,6 +19,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { updateBookingStatus } from '@/features/bookings/actions';
 import { cn } from '@/components/ui/utils';
 import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
+import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 
 interface AssessmentProfileProps {
     student: {
@@ -47,6 +48,7 @@ interface AssessmentProfileProps {
             feedbackAttachmentMime: string | null;
             feedbackSentAt: Date | null;
         }>;
+        attendanceStats?: { total: number; completed: number };
     };
     initialNotes: Array<{
         id: string;
@@ -109,10 +111,15 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                 {/* Visual Header */}
                 <div className="bg-gradient-to-r from-primary/5 via-violet-500/5 to-transparent p-12 pb-0">
                     <div className="flex flex-col md:flex-row items-center gap-8">
-                        <div className="w-32 h-32 rounded-[40px] bg-white shadow-xl flex items-center justify-center border-4 border-white/50 overflow-hidden relative group">
-                            <User className="w-16 h-16 text-slate-200 group-hover:scale-110 transition-transform" />
-                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
+                        <AttendanceRadial 
+                            percentage={student.attendanceStats ? (student.attendanceStats.completed / (student.attendanceStats.total || 1)) * 100 : 0} 
+                            size="lg"
+                        >
+                            <div className="w-full h-full bg-white flex items-center justify-center relative group">
+                                <User className="w-16 h-16 text-slate-200 group-hover:scale-110 transition-transform" />
+                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                        </AttendanceRadial>
                         <div className="text-center md:text-left space-y-2">
                             <div className="flex items-center justify-center md:justify-start gap-3">
                                 <h1 className="text-4xl font-black text-slate-900 tracking-tight">{fullName}</h1>

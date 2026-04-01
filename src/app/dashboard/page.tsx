@@ -8,13 +8,21 @@ import {
 import { eq, desc, asc, sql, and, gte, lt, lte, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
+import { CapacityIndicator } from '@/components/ui/CapacityIndicator';
+import { LoadForecast } from '@/components/dashboard/LoadForecast';
+import { startOfDay, endOfDay, addDays, isSameDay, subDays, eachWeekOfInterval } from 'date-fns';
+import { RegistrationFunnel } from '@/components/dashboard/RegistrationFunnel';
+import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
 import {
     Users, CalendarCheck, ClipboardList, UserCircle2,
-    ArrowRight, ChevronRight, AlertTriangle, Shield
+    ArrowRight, ChevronRight, AlertTriangle, Shield,
+    BarChart3, MapPin, ArrowUpRight, ArrowDownRight, Minus,
+    AlertCircle
 } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
 import { DashboardFilter } from '@/components/dashboard/DashboardFilter';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, format } from 'date-fns';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, format, subWeeks, subMonths } from 'date-fns';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -51,6 +59,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         ? endOfWeek(targetDate, { weekStartsOn: 1 })
         : endOfMonth(targetDate);
 
+    const prevTargetDate = currentView === 'weekly' ? subWeeks(targetDate, 1) : subMonths(targetDate, 1);
+    const prevStartDate = currentView === 'weekly'
+        ? startOfWeek(prevTargetDate, { weekStartsOn: 1 })
+        : startOfMonth(prevTargetDate);
+    const prevEndDate = currentView === 'weekly'
+        ? endOfWeek(prevTargetDate, { weekStartsOn: 1 })
+        : endOfMonth(prevTargetDate);
+
     // Month and Week relative to the target date for the 3-column stats
     const targetMonthStart = startOfMonth(targetDate);
     const targetMonthEnd = endOfMonth(targetDate);
@@ -75,6 +91,17 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         [{ count: registrationsThisMonth }],
         [{ count: registrationsThisWeek }],
         recentRegistrations,
+        [{ count: studentsActivePeriod }],
+        [{ count: studentsPrevPeriod }],
+        [{ count: bookingsActivePeriod }],
+        [{ count: bookingsPrevPeriod }],
+        [{ count: registrationsActivePeriod }],
+        [{ count: registrationsPrevPeriod }],
+        centresList,
+        centreOccupancyData,
+        weeklyRegistrations,
+        registrationPipelineData,
+        peakDayData,
     ] = await Promise.all([
         // Students
         db.select({ count: sql<number>`count(distinct ${children.id})` })
@@ -107,6 +134,15 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 childFirst: children.firstName,
                 childLast: children.lastName,
                 childId: children.id,
+                attendanceStats: sql<string>`(
+                    SELECT json_build_object(
+                        'total', count(*),
+                        'completed', count(*) filter (where status = 'completed')
+                    )
+                    FROM booking_attendees ba
+                    JOIN bookings b2 ON ba.booking_id = b2.id
+                    WHERE ba.child_id = ${children.id}
+                )`
             })
                 .from(bookings)
                 .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
@@ -152,7 +188,95 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     lte(registrations.startDate, activeEndDate)
                 )
             )
-            .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
+            .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName)),
+
+        // New Students active period
+        db.select({ count: sql<number>`count(distinct ${children.id})` })
+            .from(children)
+            .innerJoin(parents, eq(children.parentId, parents.id))
+            .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, activeStartDate), lte(children.createdAt, activeEndDate))),
+
+        // New Students prev period
+        db.select({ count: sql<number>`count(distinct ${children.id})` })
+            .from(children)
+            .innerJoin(parents, eq(children.parentId, parents.id))
+            .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, prevStartDate), lte(children.createdAt, prevEndDate))),
+
+        // Bookings active period
+        hasCentres
+            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, activeStartDate), lte(bookings.startAt, activeEndDate)))
+            : Promise.resolve([{ count: 0 }]),
+
+        // Bookings prev period
+        hasCentres
+            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, prevStartDate), lte(bookings.startAt, prevEndDate)))
+            : Promise.resolve([{ count: 0 }]),
+
+        // Registrations active period
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, activeStartDate), lte(registrations.createdAt, activeEndDate))),
+
+        // Registrations prev period
+        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, prevStartDate), lte(registrations.createdAt, prevEndDate))),
+
+        // Fetch all centres for this organisation
+        db.select().from(centres).where(eq(centres.organisationId, org.id)),
+
+        // 7-day capacity/occupancy stats for each centre
+        hasCentres
+            ? db.select({
+                centreId: bookings.centreId,
+                centreName: centres.name,
+                day: sql<string>`date_trunc('day', ${bookings.startAt})`,
+                count: sql<number>`count(*)`
+            })
+            .from(bookings)
+            .innerJoin(centres, eq(bookings.centreId, centres.id))
+            .where(and(
+                inArray(bookings.centreId, accessibleCentreIds),
+                gte(bookings.startAt, startOfDay(now)),
+                lt(bookings.startAt, endOfDay(addDays(now, 7))),
+                eq(bookings.status, 'confirmed')
+            ))
+            .groupBy(bookings.centreId, centres.name, sql`day`)
+            : Promise.resolve([]),
+
+        // 8-week registration growth
+        db.select({
+            weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
+            count: sql<number>`count(*)`
+        })
+        .from(registrations)
+        .where(and(
+            eq(registrations.organisationId, org.id),
+            gte(registrations.createdAt, subDays(now, 56))
+        ))
+        .groupBy(sql`weekStart`)
+        .orderBy(asc(sql`weekStart`)),
+
+        // Status pipeline
+        db.select({
+            status: registrations.status,
+            count: sql<number>`count(*)`
+        })
+        .from(registrations)
+        .where(eq(registrations.organisationId, org.id))
+        .groupBy(registrations.status),
+
+        // Peak Day Activity (last 30 days)
+        hasCentres
+            ? db.select({
+                dow: sql<number>`EXTRACT(DOW FROM ${bookings.startAt})`,
+                count: sql<number>`count(*)`
+            })
+            .from(bookings)
+            .where(and(
+                inArray(bookings.centreId, accessibleCentreIds),
+                gte(bookings.startAt, subDays(now, 30))
+            ))
+            .groupBy(sql`dow`)
+            .orderBy(desc(sql`count`))
+            .limit(1)
+            : Promise.resolve([])
     ]);
 
     const recentBookingsChildIds = recentBookings.map(b => b.childId);
@@ -181,6 +305,52 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/register/${org.slug}`;
 
+    const calculateTrend = (current: number, previous: number) => {
+        if (current === 0 && previous === 0) return { diff: 0, text: "0%", type: 'neutral' };
+        if (previous === 0) return { diff: current, text: `+${current}`, type: 'positive' };
+        const perc = ((current - previous) / previous) * 100;
+        return {
+            diff: current - previous,
+            text: perc > 0 ? `+${perc.toFixed(0)}%` : `${perc.toFixed(0)}%`,
+            type: perc > 0 ? 'positive' : perc < 0 ? 'negative' : 'neutral'
+        };
+    };
+
+    const studentsTrend = calculateTrend(studentsActivePeriod, studentsPrevPeriod);
+    const bookingsTrend = calculateTrend(bookingsActivePeriod, bookingsPrevPeriod);
+    const registrationsTrend = calculateTrend(registrationsActivePeriod, registrationsPrevPeriod);
+
+    const centresWithOccupancy = centresList.map(centre => {
+        const stats = centreOccupancyData.filter((d: any) => d.centreId === centre.id);
+        const todayStats = stats.find((d: any) => isSameDay(new Date(d.day), now));
+        return {
+            ...centre,
+            todayCount: todayStats?.count || 0,
+            forecast: stats.map((d: any) => ({ day: new Date(d.day), count: d.count }))
+        };
+    });
+
+    // Format Registration Pipeline
+    const pipelineCounts = {
+        new: registrationPipelineData.find(d => d.status === 'awaiting_confirmation')?.count || 0,
+        review: 0, 
+        approved: registrationPipelineData.find(d => d.status === 'signed_up')?.count || 0,
+    };
+
+    // Format Weekly Growth (last 8 weeks)
+    const weeks = eachWeekOfInterval({
+        start: subDays(now, 49),
+        end: now
+    }, { weekStartsOn: 1 });
+    
+    const growthStats = weeks.map(w => {
+        const match = weeklyRegistrations.find(d => isSameDay(new Date(d.weekStart), w));
+        return match?.count || 0;
+    });
+
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const peakDayName = peakDayData[0] ? daysOfWeek[peakDayData[0].dow as number] : null;
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
 
@@ -204,16 +374,33 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             {/* ── Top-level stats row ──────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Students', value: totalStudents, icon: Users, colorClass: 'text-primary bg-primary/10' },
-                    { label: 'All-time Bookings', value: totalBookingsAll, icon: CalendarCheck, colorClass: 'text-secondary bg-secondary/10' },
-                    { label: 'Registrations', value: totalRegistrations, icon: ClipboardList, colorClass: 'text-tertiary bg-tertiary/10' },
+                    { label: 'Total Students', value: totalStudents, icon: Users, colorClass: 'text-primary bg-primary/10', trend: studentsTrend, sparkline: growthStats },
+                    { label: 'All-time Bookings', value: totalBookingsAll, icon: CalendarCheck, colorClass: 'text-secondary bg-secondary/10', trend: bookingsTrend },
+                    { label: 'Registrations', value: totalRegistrations, icon: ClipboardList, colorClass: 'text-tertiary bg-tertiary/10', trend: registrationsTrend, sparkline: growthStats },
                     { label: 'Pending Approval', value: pendingRegistrations, icon: ClipboardList, colorClass: 'text-error bg-error/10' },
                 ].map(stat => (
-                    <div key={stat.label} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 group hover:bg-surface-bright transition-all">
+                    <div key={stat.label} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 group hover:bg-surface-bright transition-all relative">
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p-2.5 rounded-lg ${stat.colorClass}`}>
                                 <stat.icon className="w-5 h-5" />
                             </div>
+                            {stat.sparkline && (
+                                <div className="absolute right-6 top-6 opacity-40 group-hover:opacity-100 transition-opacity">
+                                    <GrowthSparkline data={stat.sparkline} width={60} height={20} />
+                                </div>
+                            )}
+                            {!stat.sparkline && stat.trend && (
+                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold tracking-wider ${
+                                    stat.trend.type === 'positive' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                                    stat.trend.type === 'negative' ? 'bg-error-container/20 text-error border border-error/20' : 
+                                    'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20'
+                                }`}>
+                                    {stat.trend.type === 'positive' && <ArrowUpRight className="w-3 h-3" />}
+                                    {stat.trend.type === 'negative' && <ArrowDownRight className="w-3 h-3" />}
+                                    {stat.trend.type === 'neutral' && <Minus className="w-3 h-3" />}
+                                    {stat.trend.text}
+                                </div>
+                            )}
                         </div>
                         <p className="text-on-surface-variant text-sm font-medium">{stat.label}</p>
                         <h3 className="text-3xl font-bold text-white mt-1">{stat.value ?? 0}</h3>
@@ -221,8 +408,70 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 ))}
             </div>
 
+            {/* ── Centre Capacity Overview ────────────────────────────────── */}
+            {hasCentres && (
+                <div className="bg-surface-container-high p-8 rounded-[32px] border border-outline-variant/10 shadow-xl overflow-hidden relative group">
+                    <div className="absolute -right-24 -top-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                        <div>
+                            <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                                <BarChart3 className="w-5 h-5 text-primary" />
+                                Centre Capacity Overview
+                            </h2>
+                            <p className="text-sm text-on-surface-variant font-medium mt-1">Real-time occupancy and 7-day load forecast</p>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            {peakDayName && (
+                                <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-full border border-outline-variant/10">
+                                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(142,171,255,0.4)]" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Peak Day: {peakDayName}</span>
+                                </div>
+                            )}
+                            <Link href="/dashboard/centres" className="text-xs font-bold text-primary hover:text-blue-500 transition-colors uppercase tracking-widest flex items-center gap-2">
+                               All Centres <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 relative z-10">
+                        {centresWithOccupancy.slice(0, 3).map((centre) => (
+                            <div key={centre.id} className="bg-surface-container-low/50 border border-outline-variant/5 rounded-2xl p-5 hover:border-primary/20 transition-all">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                                            <MapPin className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-white text-sm tracking-tight">{centre.name}</h3>
+                                            <p className="text-[10px] text-on-surface-variant font-medium">{centre.todayCount} bookings today</p>
+                                        </div>
+                                    </div>
+                                    <CapacityIndicator current={centre.todayCount} max={10} size="sm" />
+                                </div>
+                                <LoadForecast data={centre.forecast} max={10} className="mt-4" />
+                            </div>
+                        ))}
+                        {centresWithOccupancy.length === 0 && (
+                            <div className="col-span-full py-8 text-center text-on-surface-variant/50 font-medium italic">
+                                No centre activity tracked for this period.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* ── Feature Module Cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                {/* Registration Pipeline (NEW Placement) */}
+                <div className="bg-surface-container-high p-8 rounded-[32px] border border-outline-variant/10 shadow-xl overflow-hidden relative group flex flex-col justify-between">
+                    <div className="absolute -right-12 -top-12 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                    <RegistrationFunnel data={pipelineCounts} />
+                    <Link href="/dashboard/registrations" className="mt-6 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-emerald-400 text-xs font-black hover:bg-surface-bright transition-colors border border-outline-variant/10 group/btn">
+                        Manage Registration Pipeline <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+                </div>
 
                 {/* Left Column - Assessments */}
                 {/* Assessments & Bookings */}
@@ -272,9 +521,17 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                             className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
-                                                    {b.childFirst[0]}{b.childLast[0]}
-                                                </div>
+                                                <AttendanceRadial 
+                                                    percentage={(() => {
+                                                        const stats = typeof b.attendanceStats === 'string' ? JSON.parse(b.attendanceStats) : b.attendanceStats;
+                                                        return stats.total > 0 ? (stats.completed / (stats.total || 1)) * 100 : 0;
+                                                    })()}
+                                                    size="sm"
+                                                >
+                                                    <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+                                                        {b.childFirst[0]}{b.childLast[0]}
+                                                    </div>
+                                                </AttendanceRadial>
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>

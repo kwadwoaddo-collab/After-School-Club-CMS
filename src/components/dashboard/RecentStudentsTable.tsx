@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { updateBookingStatus } from '@/features/bookings/actions';
 import { useTransition, useState, useEffect } from 'react';
 import { Calendar, User, Clock, ChevronRight } from 'lucide-react';
+import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 
 interface Student {
     id: string;
@@ -19,6 +20,7 @@ interface Student {
     centreName: string | null;
     bookingId: string | null;
     status: 'confirmed' | 'cancelled' | 'rescheduled' | 'completed' | null;
+    attendanceRate?: number;
 }
 
 interface RecentStudentsTableProps {
@@ -151,9 +153,11 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
                                 >
                                     <td className="px-8 py-5">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${fromColor} ${toColor} flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all`}>
-                                                {student.firstName[0]}{student.lastName[0]}
-                                            </div>
+                                            <AttendanceRadial percentage={student.attendanceRate || 0} size="md">
+                                                <div className={`w-full h-full bg-gradient-to-br ${fromColor} ${toColor} flex items-center justify-center text-white font-bold text-sm transition-all`}>
+                                                    {student.firstName[0]}{student.lastName[0]}
+                                                </div>
+                                            </AttendanceRadial>
                                             <div>
                                                 <div className="font-bold text-slate-900 leading-none">{student.firstName} {student.lastName}</div>
                                                 <div className="text-[10px] font-bold text-primary mt-2 px-2 py-0.5 bg-blue-50 rounded-lg w-fit uppercase border border-blue-200 tracking-widest">{student.grade}</div>

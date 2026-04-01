@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 
@@ -72,12 +72,23 @@ export default async function StudentProfilePage(
 
     const initialNotes = await getStudentNotes(student.id);
 
+    // 3. Fetch Full Attendance Stats
+    const [attendanceResults] = await db
+        .select({
+            total: sql<number>`count(*)`,
+            completed: sql<number>`count(*) filter (where ${bookings.status} = 'completed')`
+        })
+        .from(bookingAttendees)
+        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
+        .where(eq(bookingAttendees.childId, student.id));
+
     return (
         <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
             <StudentProfile
                 student={{
                     ...student,
-                    bookings: studentBookings
+                    bookings: studentBookings,
+                    attendanceStats: attendanceResults
                 }}
                 initialNotes={initialNotes}
             />
