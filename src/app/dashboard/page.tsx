@@ -80,225 +80,190 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // ── Run all DB queries in parallel ────────────────────────────────────
-    const [
-        [{ count: totalStudentsRaw }],
-        [{ count: totalBookingsAllRaw }],
-        [{ count: bookingsThisMonthRaw }],
-        [{ count: bookingsThisWeekRaw }],
-        recentBookings,
-        [{ count: totalRegistrationsRaw }],
-        [{ count: pendingRegistrationsRaw }],
-        [{ count: registrationsThisMonthRaw }],
-        [{ count: registrationsThisWeekRaw }],
-        recentRegistrations,
-        [{ count: studentsActivePeriodRaw }],
-        [{ count: studentsPrevPeriodRaw }],
-        [{ count: bookingsActivePeriodRaw }],
-        [{ count: bookingsPrevPeriodRaw }],
-        [{ count: registrationsActivePeriodRaw }],
-        [{ count: registrationsPrevPeriodRaw }],
-        centresList,
-        centreOccupancyData,
-        weeklyRegistrations,
-        registrationPipelineData,
-        peakDayData,
-    ] = await Promise.all([
-        // Students
-        db.select({ count: sql<number>`count(distinct ${children.id})::int` })
-            .from(children)
-            .innerJoin(parents, eq(children.parentId, parents.id))
-            .where(eq(parents.organisationId, org.id)),
-
-        // Total bookings
-        hasCentres
-            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
-            : Promise.resolve([{ count: 0 }]),
-
-        // Bookings in target month
-        hasCentres
-            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetMonthStart), lte(bookings.startAt, targetMonthEnd)))
-            : Promise.resolve([{ count: 0 }]),
-
-        // Bookings in target week
-        hasCentres
-            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetWeekStart), lte(bookings.startAt, targetWeekEnd)))
-            : Promise.resolve([{ count: 0 }]),
-
-        // Recent bookings preview
-        hasCentres
-            ? db.select({
-                id: bookings.id,
-                startAt: bookings.startAt,
-                status: bookings.status,
-                centreName: centres.name,
-                childFirst: children.firstName,
-                childLast: children.lastName,
-                childId: children.id,
-                attendanceStats: sql<string>`(
-                    SELECT json_build_object(
-                        'total', count(*)::int,
-                        'completed', (count(*) filter (where status = 'completed'))::int
-                    )
-                    FROM booking_attendees ba
-                    JOIN bookings b2 ON ba.booking_id = b2.id
-                    WHERE ba.child_id = ${children.id}
-                )`
+    // ── Run all DB queries in parallel (CONSOLIDATED) ────────────────────────────────────
+    let dashboardData: any = {};
+    try {
+        const [
+            [studentKpis],
+            [bookingKpis],
+            recentBookings,
+            [registrationKpis],
+            recentRegistrations,
+            centresList,
+            centreOccupancyData,
+            weeklyRegistrations,
+            registrationPipelineData,
+            peakDayData,
+        ] = await Promise.all([
+            // consolidated Students
+            db.select({ 
+                total: sql<number>`count(distinct ${children.id})::int`,
+                activePeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${activeStartDate} and ${children.createdAt} <= ${activeEndDate})::int`,
+                prevPeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${prevStartDate} and ${children.createdAt} <= ${prevEndDate})::int`
             })
-                .from(bookings)
-                .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
-                .innerJoin(children, eq(bookingAttendees.childId, children.id))
-                .innerJoin(centres, eq(bookings.centreId, centres.id))
+                .from(children)
+                .innerJoin(parents, eq(children.parentId, parents.id))
+                .where(eq(parents.organisationId, org.id)),
+
+            // consolidated bookings
+            hasCentres
+                ? db.select({ 
+                    totalAll: sql<number>`count(*)::int`,
+                    thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart} and ${bookings.startAt} <= ${targetMonthEnd})::int`,
+                    thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart} and ${bookings.startAt} <= ${targetWeekEnd})::int`,
+                    activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate} and ${bookings.startAt} <= ${activeEndDate})::int`,
+                    prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate} and ${bookings.startAt} <= ${prevEndDate})::int`
+                }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
+                : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
+
+            // Recent bookings preview
+            hasCentres
+                ? db.select({
+                    id: bookings.id,
+                    startAt: bookings.startAt,
+                    status: bookings.status,
+                    centreName: centres.name,
+                    childFirst: children.firstName,
+                    childLast: children.lastName,
+                    childId: children.id,
+                    attendanceStats: sql<string>`(
+                        SELECT json_build_object(
+                            'total', count(*)::int,
+                            'completed', (count(*) filter (where status = 'completed'))::int
+                        )
+                        FROM booking_attendees ba
+                        JOIN bookings b2 ON ba.booking_id = b2.id
+                        WHERE ba.child_id = ${children.id}
+                    )`
+                })
+                    .from(bookings)
+                    .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
+                    .innerJoin(children, eq(bookingAttendees.childId, children.id))
+                    .innerJoin(centres, eq(bookings.centreId, centres.id))
+                    .where(
+                        and(
+                            inArray(bookings.centreId, accessibleCentreIds),
+                            gte(bookings.startAt, activeStartDate),
+                            lte(bookings.startAt, activeEndDate)
+                        )
+                    )
+                    .orderBy(asc(bookings.startAt))
+                    .limit(10)
+                : Promise.resolve([]),
+
+            // consolidated Registrations
+            db.select({ 
+                total: sql<number>`count(*)::int`,
+                pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
+                thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart} and ${registrations.startDate} <= ${targetMonthEnd})::int`,
+                thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart} and ${registrations.startDate} <= ${targetWeekEnd})::int`,
+                activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate} and ${registrations.createdAt} <= ${activeEndDate})::int`,
+                prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate} and ${registrations.createdAt} <= ${prevEndDate})::int`
+            }).from(registrations).where(eq(registrations.organisationId, org.id)),
+
+            // Recent registrations preview
+            db.select({
+                childFirst: registrationChildren.submittedFirstName,
+                childLast: registrationChildren.submittedLastName,
+                submittedAt: registrations.submittedAt,
+                startDate: registrations.startDate,
+                status: registrations.status,
+                registrationId: registrations.id,
+            })
+                .from(registrationChildren)
+                .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
                 .where(
                     and(
-                        inArray(bookings.centreId, accessibleCentreIds),
-                        gte(bookings.startAt, activeStartDate),
-                        lte(bookings.startAt, activeEndDate)
+                        eq(registrations.organisationId, org.id),
+                        gte(registrations.startDate, activeStartDate),
+                        lte(registrations.startDate, activeEndDate)
                     )
                 )
-                .orderBy(asc(bookings.startAt))
-                .limit(10)
-            : Promise.resolve([]),
+                .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
+                .limit(10),
 
-        // Total registrations
-        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(eq(registrations.organisationId, org.id)),
+            // All centres
+            db.select().from(centres).where(eq(centres.organisationId, org.id)),
 
-        // Pending registrations (for top header, kept as pending but we could remove it or rename if we wanted)
-        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), eq(registrations.status, 'awaiting_confirmation'))),
+            // Capacity stats
+            hasCentres
+                ? db.select({
+                    centreId: bookings.centreId,
+                    centreName: centres.name,
+                    day: sql<string>`date_trunc('day', ${bookings.startAt})`,
+                    count: sql<number>`count(*)::int`
+                })
+                .from(bookings)
+                .innerJoin(centres, eq(bookings.centreId, centres.id))
+                .where(and(
+                    inArray(bookings.centreId, accessibleCentreIds),
+                    gte(bookings.startAt, startOfDay(now)),
+                    lt(bookings.startAt, endOfDay(addDays(now, 7))),
+                    eq(bookings.status, 'confirmed')
+                ))
+                .groupBy(bookings.centreId, centres.name, sql`day`)
+                : Promise.resolve([]),
 
-        // Registrations in target month (filtered by child startDate for consistency, or submittedAt if startDate is null)
-        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetMonthStart), lte(registrations.startDate, targetMonthEnd))),
-
-        // Registrations in target week
-        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetWeekStart), lte(registrations.startDate, targetWeekEnd))),
-
-        // Recent registrations preview
-        db.select({
-            childFirst: registrationChildren.submittedFirstName,
-            childLast: registrationChildren.submittedLastName,
-            submittedAt: registrations.submittedAt,
-            startDate: registrations.startDate,
-            status: registrations.status,
-            registrationId: registrations.id,
-        })
-            .from(registrationChildren)
-            .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
-            .where(
-                and(
-                    eq(registrations.organisationId, org.id),
-                    gte(registrations.startDate, activeStartDate),
-                    lte(registrations.startDate, activeEndDate)
-                )
-            )
-            .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
-            .limit(10),
-
-        // New Students active period
-        db.select({ count: sql<number>`count(distinct ${children.id})::int` })
-            .from(children)
-            .innerJoin(parents, eq(children.parentId, parents.id))
-            .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, activeStartDate), lte(children.createdAt, activeEndDate))),
-
-        // New Students prev period
-        db.select({ count: sql<number>`count(distinct ${children.id})::int` })
-            .from(children)
-            .innerJoin(parents, eq(children.parentId, parents.id))
-            .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, prevStartDate), lte(children.createdAt, prevEndDate))),
-
-        // Bookings active period
-        hasCentres
-            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, activeStartDate), lte(bookings.startAt, activeEndDate)))
-            : Promise.resolve([{ count: 0 }]),
-
-        // Bookings prev period
-        hasCentres
-            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, prevStartDate), lte(bookings.startAt, prevEndDate)))
-            : Promise.resolve([{ count: 0 }]),
-
-        // Registrations active period
-        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, activeStartDate), lte(registrations.createdAt, activeEndDate))),
-
-        // Registrations prev period
-        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, prevStartDate), lte(registrations.createdAt, prevEndDate))),
-
-        // Fetch all centres for this organisation
-        db.select().from(centres).where(eq(centres.organisationId, org.id)),
-
-        // 7-day capacity/occupancy stats for each centre
-        hasCentres
-            ? db.select({
-                centreId: bookings.centreId,
-                centreName: centres.name,
-                day: sql<string>`date_trunc('day', ${bookings.startAt})`,
+            // Growth
+            db.select({
+                weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
                 count: sql<number>`count(*)::int`
-            })
-            .from(bookings)
-            .innerJoin(centres, eq(bookings.centreId, centres.id))
-            .where(and(
-                inArray(bookings.centreId, accessibleCentreIds),
-                gte(bookings.startAt, startOfDay(now)),
-                lt(bookings.startAt, endOfDay(addDays(now, 7))),
-                eq(bookings.status, 'confirmed')
-            ))
-            .groupBy(bookings.centreId, centres.name, sql`day`)
-            : Promise.resolve([]),
+            }).from(registrations)
+            .where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, subDays(now, 56))))
+            .groupBy(sql`weekStart`).orderBy(asc(sql`weekStart`)),
 
-        // 8-week registration growth
-        db.select({
-            weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
-            count: sql<number>`count(*)::int`
-        })
-        .from(registrations)
-        .where(and(
-            eq(registrations.organisationId, org.id),
-            gte(registrations.createdAt, subDays(now, 56))
-        ))
-        .groupBy(sql`weekStart`)
-        .orderBy(asc(sql`weekStart`)),
+            // Status pipeline
+            db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
+            .from(registrations).where(eq(registrations.organisationId, org.id)).groupBy(registrations.status),
 
-        // Status pipeline
-        db.select({
-            status: registrations.status,
-            count: sql<number>`count(*)::int`
-        })
-        .from(registrations)
-        .where(eq(registrations.organisationId, org.id))
-        .groupBy(registrations.status),
+            // Peak Day
+            hasCentres
+                ? db.select({
+                    dow: sql<number>`EXTRACT(DOW FROM ${bookings.startAt})::int`,
+                    count: sql<number>`count(*)::int`
+                })
+                .from(bookings)
+                .where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, subDays(now, 30))))
+                .groupBy(sql`dow`).orderBy(desc(sql`count`)).limit(1)
+                : Promise.resolve([])
+        ]);
 
-        // Peak Day Activity (last 30 days)
-        hasCentres
-            ? db.select({
-                dow: sql<number>`EXTRACT(DOW FROM ${bookings.startAt})::int`,
-                count: sql<number>`count(*)::int`
-            })
-            .from(bookings)
-            .where(and(
-                inArray(bookings.centreId, accessibleCentreIds),
-                gte(bookings.startAt, subDays(now, 30))
-            ))
-            .groupBy(sql`dow`)
-            .orderBy(desc(sql`count`))
-            .limit(1)
-            : Promise.resolve([])
-    ]);
+        dashboardData = {
+            students: { total: Number(studentKpis.total), active: Number(studentKpis.activePeriod), prev: Number(studentKpis.prevPeriod) },
+            bookings: { total: Number(bookingKpis.totalAll), month: Number(bookingKpis.thisMonth), week: Number(bookingKpis.thisWeek), active: Number(bookingKpis.activePeriod), prev: Number(bookingKpis.prevPeriod) },
+            recentBookings,
+            registrations: { total: Number(registrationKpis.total), pending: Number(registrationKpis.pending), month: Number(registrationKpis.thisMonth), week: Number(registrationKpis.thisWeek), active: Number(registrationKpis.activePeriod), prev: Number(registrationKpis.prevPeriod) },
+            recentRegistrations,
+            centresList,
+            centreOccupancyData,
+            weeklyRegistrations,
+            registrationPipelineData,
+            peakDayData
+        };
+    } catch (e) {
+        console.error('CRITICAL: Dashboard Fetch Failure', e);
+        // Fallback placeholder data to allow page to render partially
+        dashboardData = {
+            students: { total: 0, active: 0, prev: 0 },
+            bookings: { total: 0, month: 0, week: 0, active: 0, prev: 0 },
+            recentBookings: [],
+            registrations: { total: 0, pending: 0, month: 0, week: 0, active: 0, prev: 0 },
+            recentRegistrations: [],
+            centresList: [],
+            centreOccupancyData: [],
+            weeklyRegistrations: [],
+            registrationPipelineData: [],
+            peakDayData: []
+        };
+    }
 
-    // Safe conversion of counts to Number to prevent BigInt serialization issues in React
-    const totalStudents = Number(totalStudentsRaw || 0);
-    const totalBookingsAll = Number(totalBookingsAllRaw || 0);
-    const bookingsThisMonth = Number(bookingsThisMonthRaw || 0);
-    const bookingsThisWeek = Number(bookingsThisWeekRaw || 0);
-    const totalRegistrations = Number(totalRegistrationsRaw || 0);
-    const pendingRegistrations = Number(pendingRegistrationsRaw || 0);
-    const registrationsThisMonth = Number(registrationsThisMonthRaw || 0);
-    const registrationsThisWeek = Number(registrationsThisWeekRaw || 0);
-    const studentsActivePeriod = Number(studentsActivePeriodRaw || 0);
-    const studentsPrevPeriod = Number(studentsPrevPeriodRaw || 0);
-    const bookingsActivePeriod = Number(bookingsActivePeriodRaw || 0);
-    const bookingsPrevPeriod = Number(bookingsPrevPeriodRaw || 0);
-    const registrationsActivePeriod = Number(registrationsActivePeriodRaw || 0);
-    const registrationsPrevPeriod = Number(registrationsPrevPeriodRaw || 0);
+    // Assign variables back for the rest of the logic
+    const { totalStudents, studentsActivePeriod, studentsPrevPeriod } = dashboardData.students;
+    const { totalBookingsAll, bookingsThisMonth, bookingsThisWeek, bookingsActivePeriod, bookingsPrevPeriod } = dashboardData.bookings;
+    const { recentBookings, recentRegistrations, centresList, centreOccupancyData, weeklyRegistrations, registrationPipelineData, peakDayData } = dashboardData;
+    const { totalRegistrations, pendingRegistrations, registrationsThisMonth, registrationsThisWeek, registrationsActivePeriod, registrationsPrevPeriod } = dashboardData.registrations;
 
-    const recentBookingsChildIds = recentBookings.map(b => b.childId);
+    const recentBookingsChildIds = (recentBookings as any[]).map(b => b.childId);
     
     // Fetch medical and safeguarding notes with idiomatic Drizzle Relational API
     const safetyNotes = recentBookingsChildIds.length > 0 ? await db.query.studentNotes.findMany({

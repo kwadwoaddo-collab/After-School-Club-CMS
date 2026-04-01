@@ -36,9 +36,9 @@ export async function getUserAccessibleCentres(userId: string) {
     }
 
     // ORG_OWNER has access to all centres in the organization
-    if (user.role === 'ORG_OWNER') {
+    if (user.role === 'ORG_OWNER' && user.organisationId) {
         const orgCentres = await db.query.centres.findMany({
-            where: eq(centres.organisationId, user.organisationId!),
+            where: eq(centres.organisationId, user.organisationId),
             orderBy: (centres, { asc }) => [asc(centres.name)],
         });
         return orgCentres;
