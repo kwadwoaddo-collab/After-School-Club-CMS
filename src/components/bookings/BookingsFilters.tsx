@@ -38,11 +38,17 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
         applyFilters();
     };
 
-    const applyFilters = () => {
+    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string; newCentre?: string }) => {
         const params = new URLSearchParams();
-        if (search) params.set('search', search);
-        if (status !== 'all') params.set('status', status);
-        if (centreId !== 'all') params.set('centre', centreId);
+        
+        const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
+        if (currentSearch) params.set('search', currentSearch);
+        
+        const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
+        if (currentStatus !== 'all') params.set('status', currentStatus);
+        
+        const currentCentre = overrides?.newCentre !== undefined ? overrides.newCentre : centreId;
+        if (currentCentre !== 'all') params.set('centre', currentCentre);
 
         const queryString = params.toString();
         router.push(`/dashboard/bookings${queryString ? `?${queryString}` : ''}`);
@@ -71,8 +77,9 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                     <select
                         value={status}
                         onChange={(e) => {
-                            setStatus(e.target.value);
-                            setTimeout(applyFilters, 100);
+                            const val = e.target.value;
+                            setStatus(val);
+                            applyFilters({ newStatus: val });
                         }}
                         className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
                         style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
@@ -91,8 +98,9 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                     <select
                         value={centreId}
                         onChange={(e) => {
-                            setCentreId(e.target.value);
-                            setTimeout(applyFilters, 100);
+                            const val = e.target.value;
+                            setCentreId(val);
+                            applyFilters({ newCentre: val });
                         }}
                         className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
                         style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}

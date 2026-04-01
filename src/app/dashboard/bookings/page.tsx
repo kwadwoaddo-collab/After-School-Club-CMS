@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, bookings, centres } from '@/db/schema';
-import { eq, desc, and, gte, lte } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
 import BookingsTable from '@/components/bookings/BookingsTable';
@@ -79,9 +79,30 @@ export default async function BookingsPage(props: {
         );
     }
 
+    // Build query conditions
+    const conditions = [inArray(bookings.centreId, centreIds)];
+
+    // Filter by specific centre if provided
+    if (searchParams.centre && searchParams.centre !== 'all') {
+        // Ensure they can only filter by centres they have access to
+        if (centreIds.includes(searchParams.centre)) {
+            conditions.push(eq(bookings.centreId, searchParams.centre));
+        } else {
+            // Unlikely to happen via UI, but safe fallback: match none if trying to access unauthorized centre
+            conditions.push(eq(bookings.centreId, 'unauthorized_centre_id'));
+        }
+    }
+
+    // Filter by status if provided
+    if (searchParams.status && searchParams.status !== 'all') {
+        conditions.push(eq(bookings.status, searchParams.status));
+    }
+
+    // Filter by search string (optional, depends on how you want to handle it, leaving it simple for now)
+
     // Fetch bookings with filters
     const bookingsData = await db.query.bookings.findMany({
-        where: (bookings, { inArray }) => inArray(bookings.centreId, centreIds),
+        where: (bookings, { inArray }) => and(...conditions),
         orderBy: [desc(bookings.startAt)],
         with: {
             centre: true,
