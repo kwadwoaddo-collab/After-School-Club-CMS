@@ -32,11 +32,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     let org: any;
     try {
-        [org] = await db
+        const orgs = await db
             .select()
             .from(organisations)
             .where(eq(organisations.id, session.user.organisationId))
             .limit(1);
+        org = orgs[0];
     } catch {
         throw new Error('Failed to load organisation data. Please try refreshing.');
     }
@@ -104,24 +105,24 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         peakDayData,
     ] = await Promise.all([
         // Students
-        db.select({ count: sql<number>`count(distinct ${children.id})` })
+        db.select({ count: sql<number>`count(distinct ${children.id})::int` })
             .from(children)
             .innerJoin(parents, eq(children.parentId, parents.id))
             .where(eq(parents.organisationId, org.id)),
 
         // Total bookings
         hasCentres
-            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
+            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
             : Promise.resolve([{ count: 0 }]),
 
         // Bookings in target month
         hasCentres
-            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetMonthStart), lte(bookings.startAt, targetMonthEnd)))
+            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetMonthStart), lte(bookings.startAt, targetMonthEnd)))
             : Promise.resolve([{ count: 0 }]),
 
         // Bookings in target week
         hasCentres
-            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetWeekStart), lte(bookings.startAt, targetWeekEnd)))
+            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, targetWeekStart), lte(bookings.startAt, targetWeekEnd)))
             : Promise.resolve([{ count: 0 }]),
 
         // Recent bookings preview
@@ -136,8 +137,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 childId: children.id,
                 attendanceStats: sql<string>`(
                     SELECT json_build_object(
-                        'total', count(*),
-                        'completed', count(*) filter (where status = 'completed')
+                        'total', count(*)::int,
+                        'completed', (count(*) filter (where status = 'completed'))::int
                     )
                     FROM booking_attendees ba
                     JOIN bookings b2 ON ba.booking_id = b2.id
@@ -199,26 +200,26 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, activeStartDate), lte(children.createdAt, activeEndDate))),
 
         // New Students prev period
-        db.select({ count: sql<number>`count(distinct ${children.id})` })
+        db.select({ count: sql<number>`count(distinct ${children.id})::int` })
             .from(children)
             .innerJoin(parents, eq(children.parentId, parents.id))
             .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, prevStartDate), lte(children.createdAt, prevEndDate))),
 
         // Bookings active period
         hasCentres
-            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, activeStartDate), lte(bookings.startAt, activeEndDate)))
+            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, activeStartDate), lte(bookings.startAt, activeEndDate)))
             : Promise.resolve([{ count: 0 }]),
 
         // Bookings prev period
         hasCentres
-            ? db.select({ count: sql<number>`count(*)` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, prevStartDate), lte(bookings.startAt, prevEndDate)))
+            ? db.select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, prevStartDate), lte(bookings.startAt, prevEndDate)))
             : Promise.resolve([{ count: 0 }]),
 
         // Registrations active period
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, activeStartDate), lte(registrations.createdAt, activeEndDate))),
+        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, activeStartDate), lte(registrations.createdAt, activeEndDate))),
 
         // Registrations prev period
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, prevStartDate), lte(registrations.createdAt, prevEndDate))),
+        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, prevStartDate), lte(registrations.createdAt, prevEndDate))),
 
         // Fetch all centres for this organisation
         db.select().from(centres).where(eq(centres.organisationId, org.id)),
@@ -229,7 +230,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 centreId: bookings.centreId,
                 centreName: centres.name,
                 day: sql<string>`date_trunc('day', ${bookings.startAt})`,
-                count: sql<number>`count(*)`
+                count: sql<number>`count(*)::int`
             })
             .from(bookings)
             .innerJoin(centres, eq(bookings.centreId, centres.id))
@@ -245,7 +246,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         // 8-week registration growth
         db.select({
             weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
-            count: sql<number>`count(*)`
+            count: sql<number>`count(*)::int`
         })
         .from(registrations)
         .where(and(
@@ -258,7 +259,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         // Status pipeline
         db.select({
             status: registrations.status,
-            count: sql<number>`count(*)`
+            count: sql<number>`count(*)::int`
         })
         .from(registrations)
         .where(eq(registrations.organisationId, org.id))
@@ -267,8 +268,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         // Peak Day Activity (last 30 days)
         hasCentres
             ? db.select({
-                dow: sql<number>`EXTRACT(DOW FROM ${bookings.startAt})`,
-                count: sql<number>`count(*)`
+                dow: sql<number>`EXTRACT(DOW FROM ${bookings.startAt})::int`,
+                count: sql<number>`count(*)::int`
             })
             .from(bookings)
             .where(and(
@@ -385,7 +386,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     });
 
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const peakDayName = peakDayData[0] ? daysOfWeek[peakDayData[0].dow as number] : null;
+    const peakDayName = peakDayData[0] ? daysOfWeek[Math.round(Number(peakDayData[0].dow))] : null;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
