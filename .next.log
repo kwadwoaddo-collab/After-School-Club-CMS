@@ -45,3 +45,53 @@
  GET /dashboard/centres 200 in 374ms (compile: 64ms, render: 310ms)
 ✓ Compiled in 1258ms
  GET /dashboard 200 in 955ms (compile: 163ms, render: 792ms)
+ GET /dashboard 200 in 942ms (compile: 117ms, render: 824ms)
+ GET /api/auth/session 200 in 110ms (compile: 19ms, render: 92ms)
+ GET /api/auth/session 200 in 36ms (compile: 16ms, render: 20ms)
+ GET /api/auth/session 200 in 40ms (compile: 11ms, render: 29ms)
+ GET /dashboard/bookings 200 in 2.3s (compile: 1744ms, render: 508ms)
+ GET /dashboard/registrations 200 in 1086ms (compile: 651ms, render: 435ms)
+ GET /dashboard/settings 200 in 579ms (compile: 394ms, render: 185ms)
+ GET /dashboard/settings 200 in 194ms (compile: 23ms, render: 172ms)
+ GET /dashboard/centres 200 in 234ms (compile: 45ms, render: 189ms)
+ GET /dashboard/staff 200 in 448ms (compile: 289ms, render: 159ms)
+ GET /dashboard/staff 200 in 596ms (compile: 53ms, render: 543ms)
+ GET /dashboard/students 200 in 1034ms (compile: 306ms, render: 728ms)
+○ Compiling /dashboard/reports ...
+ GET /dashboard/reports 200 in 6.9s (compile: 6.5s, render: 477ms)
+ GET /dashboard/reports 200 in 265ms (compile: 18ms, render: 246ms)
+✓ Compiled in 725ms
+ GET /dashboard/reports 200 in 1359ms (compile: 92ms, render: 1267ms)
+ GET /dashboard 200 in 1690ms (compile: 498ms, render: 1192ms)
+✓ Compiled in 163ms
+ GET /dashboard/reports 200 in 785ms (compile: 502ms, render: 283ms)
+ GET /dashboard 200 in 1043ms (compile: 290ms, render: 753ms)
+✓ Compiled in 955ms
+ GET /dashboard/reports 200 in 260ms (compile: 16ms, render: 244ms)
+ GET /dashboard 200 in 711ms (compile: 41ms, render: 670ms)
+✓ Compiled in 609ms
+ GET /dashboard/reports 200 in 508ms (compile: 145ms, render: 364ms)
+ GET /dashboard 200 in 822ms (compile: 30ms, render: 792ms)
+✓ Compiled in 390ms
+ GET /dashboard/reports 200 in 1302ms (compile: 82ms, render: 1219ms)
+ GET /dashboard 200 in 1641ms (compile: 16ms, render: 1625ms)
+✓ Compiled in 878ms
+ GET /dashboard/reports 200 in 680ms (compile: 184ms, render: 497ms)
+ GET /dashboard 200 in 869ms (compile: 73ms, render: 796ms)
+✓ Compiled in 420ms
+ GET /dashboard/reports 200 in 497ms (compile: 21ms, render: 476ms)
+ GET /dashboard 200 in 643ms (compile: 21ms, render: 622ms)
+✓ Compiled in 531ms
+✓ Compiled in 1514ms
+✓ Finished filesystem cache database compaction in 12.4s
+✓ Compiled in 475ms
+ GET /dashboard 200 in 2.0s (compile: 405ms, render: 1643ms)
+ GET /api/auth/session 200 in 107ms (compile: 26ms, render: 80ms)
+ GET /api/auth/session 200 in 25ms (compile: 10ms, render: 15ms)
+ GET /api/auth/session 200 in 25ms (compile: 14ms, render: 11ms)
+✓ Compiled in 328ms
+✓ Compiled in 368ms
+✓ Compiled in 365ms
+✓ Compiled in 429ms
+✓ Compiled in 416ms
+✓ Compiled in 330ms

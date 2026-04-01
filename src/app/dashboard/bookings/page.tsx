@@ -46,12 +46,7 @@ export default async function BookingsPage(props: {
         return (
             <div className="space-y-8 animate-in fade-in duration-700">
                 <div className="flex items-center gap-4">
-                    <Link
-                        href="/dashboard"
-                        className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5 text-slate-600" />
-                    </Link>
+
                     <div>
                         <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
                         <p className="text-slate-400 font-medium mt-1">
@@ -142,12 +137,7 @@ export default async function BookingsPage(props: {
             {/* Header */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-4">
-                    <Link
-                        href="/dashboard"
-                        className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5 text-slate-600" />
-                    </Link>
+
                     <div>
                         <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
                         <p className="text-slate-400 font-medium mt-1">

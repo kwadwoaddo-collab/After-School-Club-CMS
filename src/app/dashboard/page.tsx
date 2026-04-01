@@ -37,7 +37,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
     const userRole = (session.user as any).role as string;
     const hasCentres = accessibleCentreIds.length > 0;
-    const firstName = session.user.name?.split(' ')[0] || 'there';
+    const firstName = session.user.name?.split(' ')[0] || '';
 
     const now = new Date();
     const targetDateStr = searchParams.date as string | undefined;
@@ -191,7 +191,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         Overview
                     </h1>
                     <p className="text-on-surface-variant body-md mt-2">
-                        Welcome back, {firstName}! 
+                        Welcome back{firstName ? `, ${firstName}` : ''}! 
                     </p>
                 </div>
                 <DashboardFilter 

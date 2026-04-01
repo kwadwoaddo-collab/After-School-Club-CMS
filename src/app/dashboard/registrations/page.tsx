@@ -7,9 +7,9 @@ import Link from 'next/link';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-amber-100 text-amber-700 border border-amber-200',
-    signed_up: 'bg-green-100 text-green-700 border border-green-200',
-    not_interested: 'bg-slate-100 text-slate-500 border border-slate-200',
+    awaiting_confirmation: 'bg-error-container/10 text-error border border-error/20',
+    signed_up: 'bg-tertiary-container/10 text-tertiary border border-tertiary/20',
+    not_interested: 'bg-neutral-800 text-neutral-400 border border-neutral-700',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -53,7 +53,7 @@ export default async function RegistrationsPage() {
             <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Registrations</h1>
-                    <p className="text-slate-300 text-sm mt-1">{rows.length} total submission{rows.length !== 1 ? 's' : ''}</p>
+                    <p className="text-on-surface-variant text-sm mt-1">{rows.length} total submission{rows.length !== 1 ? 's' : ''}</p>
                 </div>
                 {registrationUrl && (
                     <Link
@@ -72,17 +72,17 @@ export default async function RegistrationsPage() {
 
             {/* Registration link card */}
             {registrationUrl && (
-                <div className="mb-6 bg-blue-50 border border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="mb-6 bg-surface-container-low border border-outline-variant/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Your Registration Link</p>
-                        <p className="text-sm text-slate-700 font-mono truncate">{registrationUrl}</p>
-                        <p className="text-xs text-slate-500 mt-1">Share this link with parents to let them register their children.</p>
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Your Registration Link</p>
+                        <p className="text-sm text-white font-mono truncate">{registrationUrl}</p>
+                        <p className="text-xs text-on-surface-variant mt-1">Share this link with parents to let them register their children.</p>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                         <CopyRegistrationLink url={registrationUrl} />
                         <Link
                             href="/dashboard/settings/registration"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-xl transition-colors"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-bright text-sm font-medium rounded-xl transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -96,10 +96,10 @@ export default async function RegistrationsPage() {
 
             {/* Empty state */}
             {enriched.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 text-3xl">📋</div>
-                    <h3 className="text-slate-700 font-semibold mb-2">No registrations yet</h3>
-                    <p className="text-slate-400 text-sm max-w-sm mb-5">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/20">
+                    <div className="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4 text-3xl">📋</div>
+                    <h3 className="text-white font-semibold mb-2">No registrations yet</h3>
+                    <p className="text-on-surface-variant text-sm max-w-sm mb-5">
                         Share your registration link with parents to start receiving submissions.
                     </p>
                     {registrationUrl && (
@@ -120,30 +120,30 @@ export default async function RegistrationsPage() {
                         const childNames = r.kids.map((k: any) => `${k.submittedFirstName} ${k.submittedLastName}`).join(', ');
                         return (
                             <Link key={r.id} href={`/dashboard/registrations/${r.id}`}
-                                className="block bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-sm transition-all">
+                                className="block bg-surface-container-high border border-outline-variant/10 rounded-2xl p-5 hover:border-primary/30 hover:bg-surface-bright transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-1">
-                                            <p className="text-slate-900 font-medium truncate">
+                                            <p className="text-white font-medium truncate">
                                                 {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
                                             </p>
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[r.status] || ''}`}>
                                                 {STATUS_LABEL[r.status] ?? r.status}
                                             </span>
                                         </div>
-                                        <p className="text-slate-500 text-sm truncate">
+                                        <p className="text-on-surface-variant text-sm truncate">
                                             {r.kids.length} child{r.kids.length !== 1 ? 'ren' : ''}: {childNames}
                                         </p>
                                         {primary?.submittedEmail && (
-                                            <p className="text-slate-400 text-xs mt-1">{primary.submittedEmail}</p>
+                                            <p className="text-on-surface-variant opacity-80 text-xs mt-1">{primary.submittedEmail}</p>
                                         )}
                                     </div>
                                     <div className="text-right flex-shrink-0">
-                                        <p className="text-slate-400 text-xs">
+                                        <p className="text-on-surface-variant text-xs">
                                             {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </p>
                                         {r.startDate && (
-                                            <p className="text-slate-400 text-xs mt-1">
+                                            <p className="text-on-surface-variant text-xs mt-1">
                                                 Start: {new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </p>
                                         )}

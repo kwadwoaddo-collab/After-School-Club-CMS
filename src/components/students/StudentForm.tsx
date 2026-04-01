@@ -101,118 +101,118 @@ export default function StudentForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Global Error Summary */}
             {serverError && (
-                <div className="p-4 bg-red-100 text-red-800 rounded-lg text-sm border-2 border-red-300 shadow-sm font-bold">
+                <div className="p-4 bg-error-container/10 text-error rounded-xl text-sm border border-error/20 font-bold">
                     ⚠️ {serverError}
                 </div>
             )}
 
             {Object.keys(errors).length > 0 && (
-                <div id="error-summary" className="p-4 bg-amber-50 text-amber-900 rounded-lg text-sm border-2 border-amber-400 shadow-sm animate-pulse">
+                <div id="error-summary" className="p-4 bg-amber-500/10 text-amber-400 rounded-xl text-sm border border-amber-500/20 animate-pulse">
                     <div className="flex items-center gap-2 font-bold mb-1">
-                        <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         Missing Required Statistics
                     </div>
-                    <p className="font-semibold text-lg">Please check the {Object.keys(errors).length} fields marked in red below.</p>
+                    <p className="font-semibold text-sm text-amber-300">Please check the {Object.keys(errors).length} fields marked in red below.</p>
                 </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Student Details */}
                 <div className="md:col-span-2">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Student Details</h3>
+                    <h3 className="text-lg font-bold text-white mb-4">Student Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
                             <input
                                 name="firstName"
                                 value={formData.firstName}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.firstName ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.firstName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.firstName && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.firstName}</p>}
+                            {errors.firstName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.firstName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
                             <input
                                 name="lastName"
                                 value={formData.lastName}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.lastName ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.lastName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.lastName && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.lastName}</p>}
+                            {errors.lastName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.lastName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">Date of Birth</label>
                             <input
                                 type="date"
                                 name="dateOfBirth"
                                 value={formData.dateOfBirth}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.dateOfBirth ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.dateOfBirth ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.dateOfBirth && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.dateOfBirth}</p>}
+                            {errors.dateOfBirth && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.dateOfBirth}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">School Year</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">School Year</label>
                             <input
                                 name="schoolYear"
                                 value={formData.schoolYear}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.schoolYear ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.schoolYear ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                                 placeholder="e.g. Year 5"
                             />
-                            {errors.schoolYear && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.schoolYear}</p>}
+                            {errors.schoolYear && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.schoolYear}</p>}
                         </div>
                     </div>
                 </div>
 
                 {/* Parent Details */}
-                <div className="md:col-span-2 border-t pt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Parent / Guardian Details</h3>
+                <div className="md:col-span-2 border-t border-outline-variant/10 pt-6">
+                    <h3 className="text-lg font-bold text-white mb-4">Parent / Guardian Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
                             <input
                                 name="parentFirstName"
                                 value={formData.parentFirstName}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.parentFirstName ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentFirstName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.parentFirstName && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.parentFirstName}</p>}
+                            {errors.parentFirstName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentFirstName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
                             <input
                                 name="parentLastName"
                                 value={formData.parentLastName}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.parentLastName ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentLastName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.parentLastName && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.parentLastName}</p>}
+                            {errors.parentLastName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentLastName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">Email</label>
                             <input
                                 type="email"
                                 name="parentEmail"
                                 value={formData.parentEmail}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.parentEmail ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentEmail ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.parentEmail && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.parentEmail}</p>}
+                            {errors.parentEmail && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentEmail}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <label className="block text-sm font-bold text-slate-300 mb-1">Phone</label>
                             <input
                                 type="tel"
                                 name="parentPhone"
                                 value={formData.parentPhone}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg transition-all ${errors.parentPhone ? 'border-red-500 bg-red-50 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentPhone ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
                             />
-                            {errors.parentPhone && <p className="text-red-600 text-xs font-bold mt-1 uppercase">{errors.parentPhone}</p>}
+                            {errors.parentPhone && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentPhone}</p>}
                         </div>
                     </div>
                 </div>
@@ -222,9 +222,9 @@ export default function StudentForm() {
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-10 py-4 bg-purple-600 text-white font-black text-lg rounded-xl hover:bg-purple-700 shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-10 py-4 bg-primary text-white font-bold text-lg rounded-2xl hover:bg-blue-600 shadow-xl shadow-primary/30 glow-btn active:scale-95 transition-all disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed"
                 >
-                    {isSubmitting ? 'Saving...' : 'ADD STUDENT'}
+                    {isSubmitting ? 'Saving...' : 'Add Student'}
                 </button>
             </div>
         </form>

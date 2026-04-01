@@ -28,6 +28,7 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
             parentEmail: parents.email,
             centreName: centres.name,
             centreId: centres.id,
+            centreOperatingHours: centres.operatingHours,
         })
         .from(bookings)
         .leftJoin(parents, eq(bookings.parentId, parents.id))
@@ -93,6 +94,7 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
                 bookingId={bookingId}
                 currentDate={booking.startAt && !isNaN(new Date(booking.startAt).getTime()) ? format(new Date(booking.startAt), 'yyyy-MM-dd') : ''}
                 currentTime={booking.startAt && !isNaN(new Date(booking.startAt).getTime()) ? format(new Date(booking.startAt), 'HH:mm') : ''}
+                operatingHours={booking.centreOperatingHours}
             />
         </div>
     );

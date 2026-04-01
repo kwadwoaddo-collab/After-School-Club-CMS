@@ -77,8 +77,8 @@ export default async function SettingsPage() {
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Settings</h1>
-                <p className="text-slate-500 font-medium mt-1">
+                <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
+                <p className="text-on-surface-variant font-medium mt-1">
                     Manage your organisation settings and preferences
                 </p>
             </div>
@@ -88,7 +88,7 @@ export default async function SettingsPage() {
 
             {/* Settings Options Grid */}
             <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Customisation Options</h3>
+                <h3 className="text-lg font-bold text-white mb-4">Customisation Options</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {settingsSections.map((section) => {
                         const colorClasses = {
@@ -96,31 +96,31 @@ export default async function SettingsPage() {
                                 bg: 'bg-accent-violet/10',
                                 text: 'text-accent-violet',
                                 border: 'border-accent-violet/20',
-                                hover: 'hover:shadow-accent-violet/20',
+                                hover: 'hover:shadow-[0_0_15px_rgba(167,139,250,0.1)] hover:border-accent-violet/30',
                             },
                             emerald: {
-                                bg: 'bg-emerald-100',
-                                text: 'text-emerald-700',
-                                border: 'border-emerald-200',
-                                hover: 'hover:shadow-emerald-200',
+                                bg: 'bg-emerald-500/10',
+                                text: 'text-emerald-400',
+                                border: 'border-emerald-500/20',
+                                hover: 'hover:shadow-[0_0_15px_rgba(52,211,153,0.1)] hover:border-emerald-500/30',
                             },
                             cyan: {
                                 bg: 'bg-accent-cyan/10',
                                 text: 'text-accent-cyan',
                                 border: 'border-accent-cyan/20',
-                                hover: 'hover:shadow-accent-cyan/20',
+                                hover: 'hover:shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:border-accent-cyan/30',
                             },
                             amber: {
                                 bg: 'bg-accent-amber/10',
                                 text: 'text-accent-amber',
                                 border: 'border-accent-amber/20',
-                                hover: 'hover:shadow-accent-amber/20',
+                                hover: 'hover:shadow-[0_0_15px_rgba(251,191,36,0.1)] hover:border-accent-amber/30',
                             },
                             blue: {
-                                bg: 'bg-blue-100',
-                                text: 'text-blue-700',
-                                border: 'border-blue-200',
-                                hover: 'hover:shadow-blue-200',
+                                bg: 'bg-primary/10',
+                                text: 'text-primary',
+                                border: 'border-primary/20',
+                                hover: 'hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] hover:border-primary/30',
                             },
                         };
 
@@ -130,15 +130,15 @@ export default async function SettingsPage() {
                             <Link
                                 key={section.id}
                                 href={section.href}
-                                className={`glass-card rounded-3xl p-6 hover:shadow-2xl ${colors.hover} transition-all group cursor-pointer`}
+                                className={`bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6 transition-all group cursor-pointer ${colors.hover}`}
                             >
                                 <div className={`w-12 h-12 ${colors.bg} ${colors.border} rounded-2xl flex items-center justify-center mb-4 border group-hover:scale-110 transition-transform`}>
                                     <section.icon className={`w-6 h-6 ${colors.text}`} />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                <h3 className="text-lg font-bold text-white mb-2">
                                     {section.title}
                                 </h3>
-                                <p className="text-sm text-slate-600">{section.description}</p>
+                                <p className="text-sm text-on-surface-variant font-medium">{section.description}</p>
                             </Link>
                         );
                     })}
@@ -146,21 +146,21 @@ export default async function SettingsPage() {
             </div>
 
             {/* Support Section */}
-            <div className="glass-card rounded-3xl p-6 bg-gradient-to-br from-primary/5 to-blue-500/5 border border-primary/20">
+            <div className="bg-surface-container-high rounded-3xl p-6 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20">
                 <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <Mail className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">
+                        <h3 className="text-lg font-bold text-white mb-2">
                             Need Help with Bookings or Payments?
                         </h3>
-                        <p className="text-sm text-slate-600 mb-4">
+                        <p className="text-sm text-on-surface-variant font-medium mb-4">
                             Our support team is here to help you with any questions or issues you might have.
                         </p>
                         <a
                             href="mailto:support@afterschool.com"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
                         >
                             <Mail className="w-4 h-4" /> Contact Support
                         </a>

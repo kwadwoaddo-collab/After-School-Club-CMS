@@ -42,20 +42,20 @@ export default function RegistrationTermsSettingsPage() {
     };
 
     return (
-        <div className="max-w-3xl mx-auto p-6">
+        <div className="max-w-3xl mx-auto p-6 space-y-8 animate-in fade-in duration-700">
             {/* Back link */}
-            <Link href="/dashboard/settings" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm transition-colors mb-8">
+            <Link href="/dashboard/settings" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-white text-sm transition-colors mb-8">
                 <ArrowLeft className="w-4 h-4" /> Back to Settings
             </Link>
 
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 rounded-2xl bg-surface-container-low border border-outline-variant/10 flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Registration Terms &amp; Conditions</h1>
-                        <p className="text-slate-500 text-sm mt-1">Displayed on your public student registration form</p>
+                        <h1 className="text-2xl font-bold text-white">Registration Terms &amp; Conditions</h1>
+                        <p className="text-on-surface-variant text-sm mt-1">Displayed on your public student registration form</p>
                     </div>
                 </div>
                 {orgSlug && (
@@ -63,7 +63,7 @@ export default function RegistrationTermsSettingsPage() {
                         href={`/register/${orgSlug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/10 text-on-surface-variant hover:text-white hover:border-outline-variant/30 transition-colors text-sm"
                     >
                         <ExternalLink className="w-4 h-4" /> Preview form
                     </a>
@@ -77,11 +77,11 @@ export default function RegistrationTermsSettingsPage() {
             ) : (
                 <div className="space-y-5">
                     {/* Info banner */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
-                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-3">
+                        <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-blue-800 text-sm font-semibold">Tip</p>
-                            <p className="text-blue-700 text-sm mt-0.5">
+                            <p className="text-primary font-bold text-sm">Tip</p>
+                            <p className="text-primary/90 text-sm mt-0.5">
                                 Parents will see these T&Cs on Step 6 of the registration form before they submit.
                                 Write clear policies covering fees, absence, notice period, and conduct.
                             </p>
@@ -90,7 +90,7 @@ export default function RegistrationTermsSettingsPage() {
 
                     {/* Textarea */}
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        <label className="block text-sm font-bold text-slate-300 mb-2">
                             Terms &amp; Conditions Text
                         </label>
                         <textarea
@@ -99,14 +99,14 @@ export default function RegistrationTermsSettingsPage() {
                             onChange={e => setTerms(e.target.value)}
                             placeholder={`e.g.\n\nFEES\nAll fees are due 1 month in advance. Late payment may result in loss of place.\n\nABSENCE\nFees are not refunded for absent sessions unless 48 hours notice is given.\n\nNOTICE PERIOD\nOne month's written notice is required to withdraw your child from the programme.`}
                             rows={20}
-                            className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 text-sm font-mono resize-none leading-relaxed"
+                            className="w-full px-4 py-3 rounded-2xl bg-[#13151a] border border-[#2a2d35] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-mono resize-none leading-relaxed transition-all"
                         />
                         <p className="text-slate-400 text-xs mt-2 text-right">{terms.length} characters</p>
                     </div>
 
                     {/* Save / error */}
                     {error && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>
+                        <div className="p-3 bg-error-container/10 border border-error/20 rounded-xl text-error font-bold text-sm">{error}</div>
                     )}
 
                     <div className="flex items-center justify-between">
@@ -122,7 +122,7 @@ export default function RegistrationTermsSettingsPage() {
                             id="save-registration-terms"
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
+                            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white font-bold hover:bg-blue-600 transition-all disabled:opacity-50 disabled:bg-[#2a2d35] shadow-lg shadow-primary/30 glow-btn"
                         >
                             <Save className="w-4 h-4" />
                             {saving ? 'Saving…' : 'Save Terms'}

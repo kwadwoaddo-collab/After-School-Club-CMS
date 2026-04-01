@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -571,6 +571,30 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                                                     </div>
                                                 </div>
                                             )}
+                                            {(booking.parent?.email || booking.parent?.phone) && (
+                                                <div className="flex items-center gap-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {booking.parent.email && (
+                                                        <a 
+                                                            href={`mailto:${booking.parent.email}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="p-1.5 hover:bg-[#343843] rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                            title={`Email ${booking.parent.firstName}`}
+                                                        >
+                                                            <Mail className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                    {booking.parent.phone && (
+                                                        <a 
+                                                            href={`tel:${booking.parent.phone}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="p-1.5 hover:bg-[#343843] rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                            title={`Call ${booking.parent.firstName}`}
+                                                        >
+                                                            <Phone className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </td>
@@ -736,6 +760,28 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                                                     {getSafeguardingNotesContent(booking)}
                                                     <div className="absolute top-full left-4 border-4 border-transparent border-t-slate-900"></div>
                                                 </div>
+                                            </div>
+                                        )}
+                                        {(booking.parent?.email || booking.parent?.phone) && (
+                                            <div className="flex items-center gap-1.5 ml-1">
+                                                {booking.parent.email && (
+                                                    <a 
+                                                        href={`mailto:${booking.parent.email}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="p-1 hover:bg-[#343843] rounded-md text-slate-400 hover:text-white transition-colors"
+                                                    >
+                                                        <Mail className="w-3.5 h-3.5" />
+                                                    </a>
+                                                )}
+                                                {booking.parent.phone && (
+                                                    <a 
+                                                        href={`tel:${booking.parent.phone}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="p-1 hover:bg-[#343843] rounded-md text-slate-400 hover:text-white transition-colors"
+                                                    >
+                                                        <Phone className="w-3.5 h-3.5" />
+                                                    </a>
+                                                )}
                                             </div>
                                         )}
                                     </div>

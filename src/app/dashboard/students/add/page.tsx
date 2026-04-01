@@ -11,21 +11,15 @@ export default async function AddStudentPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="space-y-8 animate-in fade-in duration-700">
             <div className="max-w-2xl mx-auto">
                 <header className="flex justify-between items-start mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Add New Student</h1>
-                        <p className="text-gray-500 text-sm mt-1">Register a new student to your centre</p>
+                        <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight headline-lg">Add New Student</h1>
+                        <p className="text-on-surface-variant body-md mt-2">Register a new student to your centre</p>
                     </div>
-                    <Link
-                        href="/dashboard"
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors mt-2"
-                    >
-                        ← Back to Dashboard
-                    </Link>
                 </header>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-surface-container-high rounded-2xl shadow-xl border border-outline-variant/10 p-6">
                     <StudentForm />
                 </div>
             </div>
