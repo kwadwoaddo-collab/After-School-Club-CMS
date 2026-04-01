@@ -79,30 +79,27 @@ export default async function BookingsPage(props: {
         );
     }
 
-    // Build query conditions
-    const conditions = [inArray(bookings.centreId, centreIds)];
-
-    // Filter by specific centre if provided
-    if (searchParams.centre && searchParams.centre !== 'all') {
-        // Ensure they can only filter by centres they have access to
-        if (centreIds.includes(searchParams.centre)) {
-            conditions.push(eq(bookings.centreId, searchParams.centre));
-        } else {
-            // Unlikely to happen via UI, but safe fallback: match none if trying to access unauthorized centre
-            conditions.push(eq(bookings.centreId, 'unauthorized_centre_id'));
-        }
-    }
-
-    // Filter by status if provided
-    if (searchParams.status && searchParams.status !== 'all') {
-        conditions.push(eq(bookings.status, searchParams.status));
-    }
-
-    // Filter by search string (optional, depends on how you want to handle it, leaving it simple for now)
-
     // Fetch bookings with filters
-    const bookingsData = await db.query.bookings.findMany({
-        where: (bookings, { inArray }) => and(...conditions),
+    let bookingsData = await db.query.bookings.findMany({
+        where: (b, op) => {
+            const conds = [op.inArray(b.centreId, centreIds)];
+            
+            // Filter by specific centre if provided
+            if (searchParams.centre && searchParams.centre !== 'all') {
+                if (centreIds.includes(searchParams.centre as string)) {
+                    conds.push(op.eq(b.centreId, searchParams.centre as string));
+                } else {
+                    conds.push(op.eq(b.centreId, 'unauthorized_centre_id'));
+                }
+            }
+
+            // Filter by status if provided
+            if (searchParams.status && searchParams.status !== 'all') {
+                conds.push(op.eq(b.status, searchParams.status as any));
+            }
+
+            return conds.length === 1 ? conds[0] : op.and(...conds);
+        },
         orderBy: [desc(bookings.startAt)],
         with: {
             centre: true,
@@ -124,6 +121,21 @@ export default async function BookingsPage(props: {
             }
         }
     });
+
+    // Filter by search string
+    if (searchParams.search) {
+        const searchTerm = searchParams.search.toLowerCase();
+        bookingsData = bookingsData.filter((b: any) => {
+            const childName = `${b.child?.firstName || ''} ${b.child?.lastName || ''}`.toLowerCase();
+            const parentName = `${b.parent?.firstName || ''} ${b.parent?.lastName || ''}`.toLowerCase();
+            const attendeeName = b.attendees?.some((a: any) => 
+                `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.toLowerCase().includes(searchTerm)
+            );
+            return childName.includes(searchTerm) || parentName.includes(searchTerm) || attendeeName;
+        });
+    }
+
+    const isFiltered = !!(searchParams.search || (searchParams.status && searchParams.status !== 'all') || (searchParams.centre && searchParams.centre !== 'all'));
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -160,11 +172,11 @@ export default async function BookingsPage(props: {
 
             {/* Filters and View Toggle */}
             <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl p-6">
-                <BookingsFilters centres={orgCentres} />
+                <BookingsFilters centres={orgCentres} resultsCount={bookingsData.length} />
             </div>
 
             {/* Bookings Table */}
-            <BookingsTable bookings={bookingsData as any} />
+            <BookingsTable bookings={bookingsData as any} isFiltered={isFiltered} />
 
             {/* Stats Footer */}
             <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl p-6">

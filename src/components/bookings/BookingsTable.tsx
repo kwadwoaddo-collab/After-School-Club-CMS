@@ -1,18 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap } from 'lucide-react';
+import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface BookingsTableProps {
     bookings: any[];
+    isFiltered?: boolean;
 }
 
-export default function BookingsTable({ bookings: initialBookings }: BookingsTableProps) {
+type SortKey = 'date' | 'student' | 'status' | null;
+type SortDirection = 'asc' | 'desc';
+
+export default function BookingsTable({ bookings: initialBookings, isFiltered }: BookingsTableProps) {
     const [bookings, setBookings] = useState<any[]>(initialBookings);
+    
+    // Sync external props (e.g., from server-side filtering) to internal state
+    useEffect(() => {
+        setBookings(initialBookings);
+        // Clear bulk selections on filter change
+        setSelectedBookings(new Set());
+    }, [initialBookings]);
+
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     // confirmDelete holds the bookingId pending permanent deletion
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -21,8 +33,94 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
     const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    
+    // Sort and bulk select state
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
+    const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
+    const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+
     const router = useRouter();
     const { toast } = useToast();
+
+    // Sorting Handlers
+    const handleSort = (key: SortKey) => {
+        let direction: SortDirection = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    // Bulk Action Handlers
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedBookings(new Set(bookings.map(b => b.id)));
+        } else {
+            setSelectedBookings(new Set());
+        }
+    };
+
+    const handleSelectRow = (bookingId: string) => {
+        const newSet = new Set(selectedBookings);
+        if (newSet.has(bookingId)) {
+            newSet.delete(bookingId);
+        } else {
+            newSet.add(bookingId);
+        }
+        setSelectedBookings(newSet);
+    };
+
+    const handleBulkStatus = async (status: string) => {
+        const ids = Array.from(selectedBookings);
+        if (!ids.length) return;
+        setIsProcessingBulk(true);
+        try {
+            const response = await fetch('/api/bookings/bulk-update', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingIds: ids, status })
+            });
+            if (response.ok) {
+                setBookings(prev => prev.map(b => ids.includes(b.id) ? { ...b, status } : b));
+                const labels: Record<string, string> = {
+                    signed_up: 'Signed-up',
+                    completed: 'Attended',
+                };
+                toast(`Updated ${ids.length} bookings to "${labels[status] || status}".`, 'success');
+                setSelectedBookings(new Set());
+            } else {
+                toast('Failed to update bookings.', 'error');
+            }
+        } catch {
+            toast('An error occurred.', 'error');
+        } finally {
+            setIsProcessingBulk(false);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedBookings);
+        if (!ids.length) return;
+        setIsProcessingBulk(true);
+        try {
+            const response = await fetch('/api/bookings/bulk-delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingIds: ids })
+            });
+            if (response.ok) {
+                setBookings(prev => prev.filter(b => !ids.includes(b.id)));
+                toast(`Deleted ${ids.length} bookings successfully.`, 'success');
+                setSelectedBookings(new Set());
+            } else {
+                toast('Failed to delete bookings.', 'error');
+            }
+        } catch {
+            toast('An error occurred.', 'error');
+        } finally {
+            setIsProcessingBulk(false);
+        }
+    };
 
     const handleReschedule = (bookingId: string) => {
         router.push(`/dashboard/bookings/${bookingId}/reschedule`);
@@ -115,27 +213,6 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
             setActiveDropdown(null);
         }
     };
-
-    if (bookings.length === 0) {
-        return (
-            <div className="rounded-3xl border border-[#2a2a2a] bg-[#1a1a1a]/50 p-16 text-center backdrop-blur-md shadow-2xl">
-                <div className="w-20 h-20 bg-[#4F46E5]/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-[#4F46E5]/30">
-                    <CalendarIcon className="w-10 h-10 text-[#4F46E5]" />
-                </div>
-                <h3 className="text-2xl font-bold text-[#e5e2e1] mb-3">No bookings found</h3>
-                <p className="text-[#a19d9c] max-w-md mx-auto mb-8">
-                    Upcoming or past bookings will appear here once they are created.
-                    Try adjusting your filters or create a new assessment booking.
-                </p>
-                <Link
-                    href="/dashboard/bookings/new"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] hover:bg-[#4338ca] text-white rounded-2xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)]"
-                >
-                    + New Assessment
-                </Link>
-            </div>
-        );
-    }
 
     const getStatusBadge = (status: string) => {
         // DB enum: confirmed | cancelled | rescheduled | completed | pending | signed_up
@@ -237,6 +314,69 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
         return notes.map(n => n.content).join('\n\n');
     };
 
+    // Calculate Sorted Bookings
+    const sortedBookings = [...bookings].sort((a, b) => {
+        if (!sortConfig.key) return 0;
+        let aValue: any;
+        let bValue: any;
+        
+        if (sortConfig.key === 'date') {
+            aValue = new Date(a.startAt || 0).getTime();
+            bValue = new Date(b.startAt || 0).getTime();
+        } else if (sortConfig.key === 'student') {
+            aValue = getStudentNames(a).toLowerCase();
+            bValue = getStudentNames(b).toLowerCase();
+        } else if (sortConfig.key === 'status') {
+            aValue = a.status;
+            bValue = b.status;
+        }
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    if (bookings.length === 0) {
+        if (isFiltered) {
+            return (
+                <div className="rounded-3xl border border-[#2a2a2a] bg-[#1a1a1a]/50 p-16 text-center backdrop-blur-md shadow-2xl">
+                    <div className="w-20 h-20 bg-amber-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-amber-500/30">
+                        <SearchX className="w-10 h-10 text-amber-500" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#FFFFFF] mb-3">No results found</h3>
+                    <p className="text-slate-400 max-w-md mx-auto mb-8">
+                        We couldn't find any bookings matching your current filters. Try adjusting your search term, centre, or status.
+                    </p>
+                    <button
+                        onClick={() => router.push('/dashboard/bookings')}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#2a2d35] hover:bg-[#343843] text-white rounded-2xl text-sm font-bold transition-all border border-[#3a3f4b] shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                    >
+                        Clear All Filters
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="rounded-3xl border border-[#2a2a2a] bg-[#1a1a1a]/50 p-16 text-center backdrop-blur-md shadow-2xl">
+                <div className="w-20 h-20 bg-[#4F46E5]/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-[#4F46E5]/30">
+                    <CalendarIcon className="w-10 h-10 text-[#4F46E5]" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#e5e2e1] mb-3">No bookings found</h3>
+                <p className="text-[#a19d9c] max-w-md mx-auto mb-8">
+                    Upcoming or past bookings will appear here once they are created.
+                    Try adjusting your filters or create a new assessment booking.
+                </p>
+                <Link
+                    href="/dashboard/bookings/new"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] hover:bg-[#4338ca] text-white rounded-2xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)]"
+                >
+                    + New Assessment
+                </Link>
+            </div>
+        );
+    }
+
     return (
         <>
         {/* Cancel Confirmation Modal */}
@@ -300,26 +440,63 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
             </div>
         )}
 
-        <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl overflow-hidden">
+        <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl overflow-hidden relative">
             {/* Table for Desktop */}
             <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-[#2a2a2a]">
-                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
-                                Date & Time
+                            <th className="text-left px-5 py-4 w-12">
+                                <div className="flex items-center justify-center">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={bookings.length > 0 && selectedBookings.size === bookings.length}
+                                        onChange={handleSelectAll}
+                                        className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                    />
+                                </div>
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
-                                Student(s)
+                            <th 
+                                className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider cursor-pointer hover:bg-[#2a2d35] transition-colors group select-none relative"
+                                onClick={() => handleSort('date')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Date & Time
+                                    <div className={`flex flex-col ml-1 ${sortConfig.key === 'date' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
+                                        <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'date' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-[#888]'}`} />
+                                        <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'date' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-[#888]'}`} />
+                                    </div>
+                                </div>
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
+                            <th 
+                                className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider cursor-pointer hover:bg-[#2a2d35] transition-colors group select-none relative"
+                                onClick={() => handleSort('student')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Student(s)
+                                    <div className={`flex flex-col ml-1 ${sortConfig.key === 'student' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
+                                        <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'student' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-[#888]'}`} />
+                                        <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'student' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-[#888]'}`} />
+                                    </div>
+                                </div>
+                            </th>
+                            <th className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Assessment Type
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
+                            <th className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Centre
                             </th>
-                            <th className="text-left px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
-                                Status
+                            <th 
+                                className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider cursor-pointer hover:bg-[#2a2d35] transition-colors group select-none relative"
+                                onClick={() => handleSort('status')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Status
+                                    <div className={`flex flex-col ml-1 ${sortConfig.key === 'status' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
+                                        <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'status' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-[#888]'}`} />
+                                        <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'status' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-[#888]'}`} />
+                                    </div>
+                                </div>
                             </th>
                             <th className="text-right px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Actions
@@ -327,13 +504,23 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#2a2a2a]">
-                        {bookings.map((booking) => (
+                        {sortedBookings.map((booking) => (
                             <tr
                                 key={booking.id}
                                 onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                                className="cursor-pointer hover:bg-[#2a2d35] transition-colors group"
+                                className={`cursor-pointer hover:bg-[#2a2d35] transition-colors group ${selectedBookings.has(booking.id) ? 'bg-[#2a2d35]/50' : ''}`}
                             >
-                                <td className="px-6 py-4">
+                                <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center justify-center">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={selectedBookings.has(booking.id)}
+                                            onChange={() => handleSelectRow(booking.id)}
+                                            className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                        />
+                                    </div>
+                                </td>
+                                <td className="px-4 py-4">
                                     <div className="flex flex-col">
                                         <span className="text-sm font-bold text-[#FFFFFF]">
                                             {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d') : 'N/A'}
@@ -351,7 +538,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                         </span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-4 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm">
                                             {getStudentInitials(booking)}
@@ -387,18 +574,18 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-4 py-4">
                                     <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold">
                                         {booking.assessmentType || 'Initial Assessment'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-4 py-4">
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
                                         <MapPin className="w-4 h-4 text-slate-500" />
                                         {booking.centre?.name || 'Unknown'}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-4 py-4">
                                     {getStatusBadge(booking.status)}
                                 </td>
                                 <td className="px-6 py-4 text-right">
@@ -418,7 +605,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                             <>
                                                 <div
                                                     className="fixed inset-0 z-10"
-                                                    onClick={() => setActiveDropdown(null)}
+                                                    onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}
                                                 />
                                                 <div className="absolute right-0 top-full mt-2 w-52 bg-[#1a1d23] rounded-2xl shadow-xl border border-[#2a2a2a] py-2 z-20">
                                                     <Link
@@ -439,7 +626,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
                                                     <p className="px-4 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick Status</p>
                                                     <button
-                                                        onClick={() => handleQuickStatus(booking.id, 'confirmed')}
+                                                        onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
                                                         disabled={updatingStatus === booking.id}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-blue-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
@@ -447,7 +634,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         Mark as Booked
                                                     </button>
                                                     <button
-                                                        onClick={() => handleQuickStatus(booking.id, 'signed_up')}
+                                                        onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
                                                         disabled={updatingStatus === booking.id}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-emerald-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
@@ -455,7 +642,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                         Mark as Signed-up
                                                     </button>
                                                     <button
-                                                        onClick={() => handleQuickStatus(booking.id, 'completed')}
+                                                        onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
                                                         disabled={updatingStatus === booking.id}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-violet-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
@@ -464,7 +651,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     </button>
                                                     <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
                                                     <button
-                                                        onClick={() => openCancelModal(booking.id)}
+                                                        onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2b1f24] text-sm font-medium text-red-400 transition-colors w-full text-left"
                                                     >
                                                         <X className="w-4 h-4" />
@@ -472,7 +659,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                                                     </button>
                                                     <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
                                                     <button
-                                                        onClick={() => { setConfirmDelete(booking.id); setActiveDropdown(null); }}
+                                                        onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2b1f24] text-sm font-medium text-red-500 transition-colors w-full text-left"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -491,14 +678,34 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
 
             {/* Card View for Mobile */}
             <div className="lg:hidden divide-y divide-[#2a2a2a]">
-                {bookings.map((booking) => (
+                {/* Simplified Mobile Select All */}
+                <div className="p-4 bg-[#2a2d35]/30 flex items-center justify-between border-b border-[#2a2a2a]">
+                    <div className="flex items-center gap-3">
+                        <input 
+                            type="checkbox" 
+                            checked={bookings.length > 0 && selectedBookings.size === bookings.length}
+                            onChange={handleSelectAll}
+                            className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                        />
+                        <span className="text-sm font-bold text-[#FFFFFF]">Select All</span>
+                    </div>
+                </div>
+                {sortedBookings.map((booking) => (
                     <div 
                         key={booking.id} 
                         onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                        className="p-5 cursor-pointer hover:bg-[#2a2d35] transition-colors"
+                        className={`p-5 cursor-pointer hover:bg-[#2a2d35] transition-colors ${selectedBookings.has(booking.id) ? 'bg-[#2a2d35]/50' : ''}`}
                     >
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
+                                <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={selectedBookings.has(booking.id)}
+                                        onChange={() => handleSelectRow(booking.id)}
+                                        className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                    />
+                                </div>
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold">
                                     {getStudentInitials(booking)}
                                 </div>
@@ -540,7 +747,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                             {getStatusBadge(booking.status)}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="grid grid-cols-2 gap-3 mb-3 pl-8">
                             <div className="flex items-center gap-2 text-xs text-slate-600">
                                 <CalendarIcon className="w-4 h-4 text-slate-400" />
                                 {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
@@ -554,7 +761,7 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                             </div>
                         </div>
 
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-3 pl-8">
                             <Link
                                 href={`/dashboard/bookings/${booking.id}`}
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#2a2d35] hover:bg-[#343843] rounded-xl text-sm font-semibold text-[#FFFFFF] transition-all"
@@ -576,6 +783,48 @@ export default function BookingsTable({ bookings: initialBookings }: BookingsTab
                         </div>
                     </div>
                 ))}
+            </div>
+        </div>
+
+        {/* Floating Action Bar */}
+        <div 
+            className={`fixed bottom-0 left-0 right-0 z-[100] flex justify-center pb-6 transition-all duration-300 ${
+                selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+            }`}
+        >
+            <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-[0_20px_40px_rgba(0,0,0,0.5)] rounded-2xl p-2 px-3 flex items-center gap-4 mx-4">
+                <div className="pl-2 pr-4 py-2 border-r border-[#2a2a2a] flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/30">
+                        {selectedBookings.size}
+                    </div>
+                </div>
+                <div className="flex items-center gap-1.5 overflow-x-auto pr-1">
+                    <button
+                        onClick={() => handleBulkStatus('completed')}
+                        disabled={isProcessingBulk}
+                        className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                    >
+                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
+                        Mark as Attended
+                    </button>
+                    <button
+                        onClick={() => handleBulkStatus('signed_up')}
+                        disabled={isProcessingBulk}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                    >
+                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                        Mark Signed-up
+                    </button>
+                    <div className="w-px h-6 bg-[#2a2a2a] mx-1"></div>
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={isProcessingBulk}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                    >
+                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        Delete
+                    </button>
+                </div>
             </div>
         </div>
         </>

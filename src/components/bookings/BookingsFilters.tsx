@@ -6,9 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 interface BookingsFiltersProps {
     centres: { id: string; name: string }[];
+    resultsCount?: number;
 }
 
-export default function BookingsFilters({ centres }: BookingsFiltersProps) {
+export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -24,7 +25,7 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
         { value: 'cancelled', label: 'Cancelled' },
     ];
 
-    const hasActiveFilters = search || status !== 'all' || centreId !== 'all';
+    const hasActiveFilters = searchParams.get('search') || status !== 'all' || centreId !== 'all';
 
     const handleClearFilters = () => {
         setSearch('');
@@ -64,7 +65,13 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                         <input
                             type="text"
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setSearch(val);
+                                if (val === '') {
+                                    applyFilters({ newSearch: '' });
+                                }
+                            }}
                             placeholder="Search students, bookings..."
                             className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                             style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
@@ -133,19 +140,19 @@ export default function BookingsFilters({ centres }: BookingsFiltersProps) {
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Active Filters:
                     </span>
-                    {search && (
+                    {searchParams.get('search') && (
                         <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-                            Search: "{search}"
+                            Search: "{searchParams.get('search')}" ({resultsCount} results)
                         </span>
                     )}
                     {status !== 'all' && (
                         <span className="px-3 py-1 bg-accent-violet/10 text-accent-violet text-xs font-semibold rounded-full">
-                            Status: {statusOptions.find(s => s.value === status)?.label}
+                            Status: {statusOptions.find(s => s.value === status)?.label} ({resultsCount} results)
                         </span>
                     )}
                     {centreId !== 'all' && (
                         <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-semibold rounded-full">
-                            Centre: {centres.find(c => c.id === centreId)?.name}
+                            Centre: {centres.find(c => c.id === centreId)?.name} ({resultsCount} results)
                         </span>
                     )}
                 </div>

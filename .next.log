@@ -1,0 +1,47 @@
+
+> after-school-club-cms@0.1.0 dev
+> next dev
+
+⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+⚠ Invalid next.config.ts options detected: 
+⚠     Unrecognized key(s) in object: 'eslint'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/KWADW/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/KWADW/projects/after-school-club-cms/package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.229:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 1151ms
+ GET /dashboard/bookings 200 in 2.7s (compile: 1461ms, render: 1228ms)
+ GET /api/auth/session 200 in 2.2s (compile: 2.1s, render: 59ms)
+ GET /api/auth/session 200 in 28ms (compile: 12ms, render: 16ms)
+ GET /dashboard/centres 200 in 1004ms (compile: 485ms, render: 518ms)
+ GET /dashboard/bookings?centre=d5d40457-6488-4a83-bbbf-3bdadd681dfa 200 in 296ms (compile: 54ms, render: 242ms)
+ GET /dashboard/bookings 200 in 1023ms (compile: 117ms, render: 906ms)
+ GET /dashboard/centres 200 in 448ms (compile: 77ms, render: 371ms)
+ GET /dashboard/bookings?centre=57af9570-7763-4307-a136-aa09c8f30f46 200 in 603ms (compile: 105ms, render: 498ms)
+ GET /dashboard/bookings?centre=57af9570-7763-4307-a136-aa09c8f30f46 200 in 1370ms (compile: 53ms, render: 1318ms)
+ GET /api/auth/session 200 in 346ms (compile: 95ms, render: 251ms)
+ GET /api/auth/session 200 in 45ms (compile: 15ms, render: 30ms)
+ GET /dashboard/bookings 200 in 1445ms (compile: 79ms, render: 1366ms)
+ GET /dashboard/centres 200 in 535ms (compile: 49ms, render: 486ms)
+ GET /api/auth/session 200 in 278ms (compile: 32ms, render: 247ms)
+ GET /api/auth/session 200 in 82ms (compile: 45ms, render: 37ms)
+✓ Compiled in 424ms
+ GET /dashboard/centres 200 in 223ms (compile: 17ms, render: 206ms)
+✓ Compiled in 748ms
+ GET /dashboard/centres 200 in 362ms (compile: 24ms, render: 338ms)
+✓ Compiled in 229ms
+ GET /dashboard/centres 200 in 377ms (compile: 14ms, render: 364ms)
+✓ Compiled in 171ms
+ GET /dashboard/centres 200 in 374ms (compile: 64ms, render: 310ms)
+✓ Compiled in 1258ms
+ GET /dashboard 200 in 955ms (compile: 163ms, render: 792ms)

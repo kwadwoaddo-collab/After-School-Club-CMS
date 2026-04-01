@@ -87,3 +87,57 @@ Description: Implemented a Weekly/Monthly toggle and date navigation at the top 
 ## [ ] Task 55: Fix UI Real Estate
 - **Status:** Pending
 - **Action:** Now that Staff is gone, expand the Bookings and Registrations cards to fill the width (50/50 split) for a cleaner, wider look.
+[ ] Task 56: Fix Dynamic Centre Hours Display
+Status: Pending
+Location: Appointment Selection Step (Choose Appointment)
+Issue: The text "Centre hours: 10:00 - 19:00" is hardcoded and does not match the actual centre settings.
+Requirement:
+Logic: When a parent selects a date (e.g., Thursday, 16/04/2026), the app must determine the day of the week.
+Data Fetch: It must then retrieve the opening hours for that specific day for the selected centre (e.g., Thursday for Dagenham is 11:00 am – 6:00 pm).
+UI Update: Update the label below the time picker to show the correct hours: "Centre hours: [Opening Time] - [Closing Time]".
+Validation: Ensure the Time Picker's min and max constraints are also updated to match these hours immediately.
+Goal: Prevent parents from seeing incorrect operating hours and ensure they can only pick times when the centre is actually open.
+
+[x] Task 57: Fix Centre Filtering Logic in Bookings Table
+Status: Complete
+Location: Bookings Table / Backend API
+Issue: When a centre is selected from the dropdown, the "Active Filters" badge appears, but the table continues to show bookings from all centres.
+Requirement:
+Frontend: Ensure the centre_id or centre_name is being passed as a query parameter to the backend API when the filter is applied.
+Backend: Update the GET /api/bookings endpoint to include a conditional filter. If a centre is specified, the SQL/SQLAlchemy query must use a .filter() or WHERE clause to only return records matching that specific centre.
+UI Refresh: Ensure the table data refreshes immediately when the filter is changed or cleared.
+Goal: Ensure the table strictly displays only the bookings belonging to the selected centre.
+
+## [x] Task 58: Implement Sortable Table Headers
+- **Description:** Make "Date & Time", "Student", and "Status" headers clickable to sort the list (ASC/DESC). Add subtle arrow icons from Stitch.
+
+## [x] Task 59: Implement Bulk Actions (Checkboxes)
+- **Description:** Add a checkbox column to the left. Implement a "Bulk Action Bar" at the top to allow "Mass Delete" or "Mass Mark as Attended."
+
+## [x] Task 60: Professional Empty States
+- **Description:** Design and implement a "No Results Found" view for the table when filters or searches return zero data.
+
+## [ ] Task 61: "Quick Contact" Hover Actions
+- **Description:** On row hover, show small icons next to the student name to "Email Parent" or "Copy Phone Number" for instant communication.
+
+[x] Task 62: Add Result Counter to Filter Badges
+Status: Complete
+Location: Bookings Table / Filter Area
+Description:
+UI: Update the "Active Filters" badge to include the total number of results found for that filter.
+Format: Display it as: "Centre: [Centre Name] ([Count] results)" (e.g., "Centre: Dagenham (12 results)").
+Logic:
+The frontend must listen for the updated booking list length.[1]
+Every time the filter changes, the number inside the badge must update dynamically.[1]
+Goal: Provide immediate confirmation of how many records match the current view.
+[x] Task 63: Add Result Counter to Search Badge
+Status: Complete
+Location: Bookings Table / Search Area
+Description:
+UI: When a user performs a search (Global or Table-specific), a badge should appear in the "Active Filters" area.
+Format: Display it as: "Search: [Query] ([Count] results)" (e.g., "Search: Smith (3 results)").
+Logic:
+The counter must update in real-time as the user types in the search bar.
+If the search is cleared, the badge must disappear.
+Symmetry: This badge should sit next to the "Centre Filter" badge and use the same professional styling from the Stitch design.
+Goal: Provide instant feedback on search accuracy and result volume.
