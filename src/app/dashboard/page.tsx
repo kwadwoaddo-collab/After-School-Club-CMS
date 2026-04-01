@@ -81,22 +81,22 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     // ── Run all DB queries in parallel ────────────────────────────────────
     const [
-        [{ count: totalStudents }],
-        [{ count: totalBookingsAll }],
-        [{ count: bookingsThisMonth }],
-        [{ count: bookingsThisWeek }],
+        [{ count: totalStudentsRaw }],
+        [{ count: totalBookingsAllRaw }],
+        [{ count: bookingsThisMonthRaw }],
+        [{ count: bookingsThisWeekRaw }],
         recentBookings,
-        [{ count: totalRegistrations }],
-        [{ count: pendingRegistrations }],
-        [{ count: registrationsThisMonth }],
-        [{ count: registrationsThisWeek }],
+        [{ count: totalRegistrationsRaw }],
+        [{ count: pendingRegistrationsRaw }],
+        [{ count: registrationsThisMonthRaw }],
+        [{ count: registrationsThisWeekRaw }],
         recentRegistrations,
-        [{ count: studentsActivePeriod }],
-        [{ count: studentsPrevPeriod }],
-        [{ count: bookingsActivePeriod }],
-        [{ count: bookingsPrevPeriod }],
-        [{ count: registrationsActivePeriod }],
-        [{ count: registrationsPrevPeriod }],
+        [{ count: studentsActivePeriodRaw }],
+        [{ count: studentsPrevPeriodRaw }],
+        [{ count: bookingsActivePeriodRaw }],
+        [{ count: bookingsPrevPeriodRaw }],
+        [{ count: registrationsActivePeriodRaw }],
+        [{ count: registrationsPrevPeriodRaw }],
         centresList,
         centreOccupancyData,
         weeklyRegistrations,
@@ -156,19 +156,20 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     )
                 )
                 .orderBy(asc(bookings.startAt))
+                .limit(10)
             : Promise.resolve([]),
 
         // Total registrations
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(eq(registrations.organisationId, org.id)),
+        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(eq(registrations.organisationId, org.id)),
 
         // Pending registrations (for top header, kept as pending but we could remove it or rename if we wanted)
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), eq(registrations.status, 'awaiting_confirmation'))),
+        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), eq(registrations.status, 'awaiting_confirmation'))),
 
         // Registrations in target month (filtered by child startDate for consistency, or submittedAt if startDate is null)
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetMonthStart), lte(registrations.startDate, targetMonthEnd))),
+        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetMonthStart), lte(registrations.startDate, targetMonthEnd))),
 
         // Registrations in target week
-        db.select({ count: sql<number>`count(*)` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetWeekStart), lte(registrations.startDate, targetWeekEnd))),
+        db.select({ count: sql<number>`count(*)::int` }).from(registrations).where(and(eq(registrations.organisationId, org.id), gte(registrations.startDate, targetWeekStart), lte(registrations.startDate, targetWeekEnd))),
 
         // Recent registrations preview
         db.select({
@@ -188,10 +189,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     lte(registrations.startDate, activeEndDate)
                 )
             )
-            .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName)),
+            .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
+            .limit(10),
 
         // New Students active period
-        db.select({ count: sql<number>`count(distinct ${children.id})` })
+        db.select({ count: sql<number>`count(distinct ${children.id})::int` })
             .from(children)
             .innerJoin(parents, eq(children.parentId, parents.id))
             .where(and(eq(parents.organisationId, org.id), gte(children.createdAt, activeStartDate), lte(children.createdAt, activeEndDate))),
@@ -279,13 +281,29 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             : Promise.resolve([])
     ]);
 
+    // Safe conversion of counts to Number to prevent BigInt serialization issues in React
+    const totalStudents = Number(totalStudentsRaw || 0);
+    const totalBookingsAll = Number(totalBookingsAllRaw || 0);
+    const bookingsThisMonth = Number(bookingsThisMonthRaw || 0);
+    const bookingsThisWeek = Number(bookingsThisWeekRaw || 0);
+    const totalRegistrations = Number(totalRegistrationsRaw || 0);
+    const pendingRegistrations = Number(pendingRegistrationsRaw || 0);
+    const registrationsThisMonth = Number(registrationsThisMonthRaw || 0);
+    const registrationsThisWeek = Number(registrationsThisWeekRaw || 0);
+    const studentsActivePeriod = Number(studentsActivePeriodRaw || 0);
+    const studentsPrevPeriod = Number(studentsPrevPeriodRaw || 0);
+    const bookingsActivePeriod = Number(bookingsActivePeriodRaw || 0);
+    const bookingsPrevPeriod = Number(bookingsPrevPeriodRaw || 0);
+    const registrationsActivePeriod = Number(registrationsActivePeriodRaw || 0);
+    const registrationsPrevPeriod = Number(registrationsPrevPeriodRaw || 0);
+
     const recentBookingsChildIds = recentBookings.map(b => b.childId);
     
-    // Fetch medical and safeguarding notes
+    // Fetch medical and safeguarding notes with idiomatic Drizzle Relational API
     const safetyNotes = recentBookingsChildIds.length > 0 ? await db.query.studentNotes.findMany({
-        where: and(
-            inArray(studentNotes.childId, recentBookingsChildIds),
-            inArray(studentNotes.category, ['Medical', 'Safeguarding'])
+        where: (notes, { and, inArray }) => and(
+            inArray(notes.childId, recentBookingsChildIds),
+            inArray(notes.category, ['Medical', 'Safeguarding'])
         )
     }) : [];
 
@@ -294,8 +312,24 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === b.childId);
         const medNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
         const safeguardNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
+        
+        // Defensive handling of attendanceStats subquery result
+        let stats = { total: 0, completed: 0 };
+        try {
+            if (b.attendanceStats) {
+                const rawStats = typeof b.attendanceStats === 'string' ? JSON.parse(b.attendanceStats) : b.attendanceStats;
+                stats = {
+                    total: Number(rawStats?.total || 0),
+                    completed: Number(rawStats?.completed || 0)
+                };
+            }
+        } catch (e) {
+            console.error('Failed to parse attendanceStats for booking:', b.id, e);
+        }
+
         return {
             ...b,
+            attendanceStats: stats, // Pre-processed stats
             hasMedicalNote: medNotes.length > 0,
             medicalNotesContent: medNotes.map(n => n.content).join('\n\n'),
             hasSafeguardingNote: safeguardNotes.length > 0,
@@ -305,7 +339,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/register/${org.slug}`;
 
-    const calculateTrend = (current: number, previous: number) => {
+    const calculateTrend = (curr: any, prev: any) => {
+        const current = Number(curr || 0);
+        const previous = Number(prev || 0);
         if (current === 0 && previous === 0) return { diff: 0, text: "0%", type: 'neutral' };
         if (previous === 0) return { diff: current, text: `+${current}`, type: 'positive' };
         const perc = ((current - previous) / previous) * 100;
@@ -325,16 +361,16 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         const todayStats = stats.find((d: any) => isSameDay(new Date(d.day), now));
         return {
             ...centre,
-            todayCount: todayStats?.count || 0,
-            forecast: stats.map((d: any) => ({ day: new Date(d.day), count: d.count }))
+            todayCount: Number(todayStats?.count || 0),
+            forecast: stats.map((d: any) => ({ day: new Date(d.day), count: Number(d.count || 0) }))
         };
     });
 
     // Format Registration Pipeline
     const pipelineCounts = {
-        new: registrationPipelineData.find(d => d.status === 'awaiting_confirmation')?.count || 0,
+        new: Number(registrationPipelineData.find(d => d.status === 'awaiting_confirmation')?.count || 0),
         review: 0, 
-        approved: registrationPipelineData.find(d => d.status === 'signed_up')?.count || 0,
+        approved: Number(registrationPipelineData.find(d => d.status === 'signed_up')?.count || 0),
     };
 
     // Format Weekly Growth (last 8 weeks)
@@ -345,7 +381,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     
     const growthStats = weeks.map(w => {
         const match = weeklyRegistrations.find(d => isSameDay(new Date(d.weekStart), w));
-        return match?.count || 0;
+        return Number(match?.count || 0);
     });
 
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -522,10 +558,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                         >
                                             <div className="flex items-center gap-4">
                                                 <AttendanceRadial 
-                                                    percentage={(() => {
-                                                        const stats = typeof b.attendanceStats === 'string' ? JSON.parse(b.attendanceStats) : b.attendanceStats;
-                                                        return stats.total > 0 ? (stats.completed / (stats.total || 1)) * 100 : 0;
-                                                    })()}
+                                                    percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
                                                     size="sm"
                                                 >
                                                     <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">

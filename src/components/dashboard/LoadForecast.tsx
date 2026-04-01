@@ -12,12 +12,19 @@ interface LoadForecastProps {
 export function LoadForecast({ data, max = 20, className }: LoadForecastProps) {
     // Generate next 7 days for consistent display
     const today = new Date();
-    const next7Days = Array.from({ length: 7 }, (_, i) => {
-        const d = addDays(today, i);
-        const match = data.find(item => isSameDay(new Date(item.day), d));
+    const days = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+    
+    // Logic to match forecast data with generated days
+    const next7Days = days.map(d => {
+        const match = data.find(item => {
+            if (!item.day) return false;
+            const itemDate = new Date(item.day);
+            return isSameDay(itemDate, d);
+        });
+        
         return {
             date: d,
-            count: match?.count || 0
+            count: Number(match?.count || 0)
         };
     });
 

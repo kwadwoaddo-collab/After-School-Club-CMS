@@ -31,11 +31,13 @@ export default async function CentresPage() {
         .from(centres)
         .where(eq(centres.organisationId, org.id));
 
+    const centreIds = centresList.map(c => c.id);
+
     const now = new Date();
     const next7Days = addDays(now, 7);
 
-    // Fetch booking counts for the next 7 days across all centres
-    const bookingCounts = await db
+    // Fetch booking counts for the next 7 days ONLY for these centres (Data Isolation)
+    const bookingCounts = centreIds.length > 0 ? await db
         .select({
             centreId: bookings.centreId,
             day: sql<string>`date_trunc('day', ${bookings.startAt})`,
@@ -43,26 +45,28 @@ export default async function CentresPage() {
         })
         .from(bookings)
         .where(and(
+            inArray(bookings.centreId, centreIds),
             gte(bookings.startAt, startOfDay(now)),
             lt(bookings.startAt, endOfDay(next7Days)),
             eq(bookings.status, 'confirmed')
         ))
-        .groupBy(bookings.centreId, sql`day`);
+        .groupBy(bookings.centreId, sql`day`) : [];
 
     // Map counts to centres
     const centresWithStats = centresList.map(centre => {
         const centreStats = bookingCounts.filter(bc => bc.centreId === centre.id);
         const todayStats = centreStats.find(bc => {
+            if (!bc.day) return false;
             const d = new Date(bc.day);
-            return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
+            return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         });
         
         return {
             ...centre,
-            todayCount: todayStats?.count || 0,
+            todayCount: Number(todayStats?.count || 0),
             forecast: centreStats.map(bc => ({
-                day: new Date(bc.day),
-                count: bc.count
+                day: new Date(bc.day!),
+                count: Number(bc.count || 0)
             }))
         };
     });
