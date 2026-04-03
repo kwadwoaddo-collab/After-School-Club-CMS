@@ -258,10 +258,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     }
 
     // Assign variables back for the rest of the logic
-    const { totalStudents, studentsActivePeriod, studentsPrevPeriod } = dashboardData.students;
-    const { totalBookingsAll, bookingsThisMonth, bookingsThisWeek, bookingsActivePeriod, bookingsPrevPeriod } = dashboardData.bookings;
+    const { total: totalStudents, active: studentsActivePeriod, prev: studentsPrevPeriod } = dashboardData.students;
+    const { total: totalBookingsAll, month: bookingsThisMonth, week: bookingsThisWeek, active: bookingsActivePeriod, prev: bookingsPrevPeriod } = dashboardData.bookings;
     const { recentBookings, recentRegistrations, centresList, centreOccupancyData, weeklyRegistrations, registrationPipelineData, peakDayData } = dashboardData;
-    const { totalRegistrations, pendingRegistrations, registrationsThisMonth, registrationsThisWeek, registrationsActivePeriod, registrationsPrevPeriod } = dashboardData.registrations;
+    const { total: totalRegistrations, pending: pendingRegistrations, month: registrationsThisMonth, week: registrationsThisWeek, active: registrationsActivePeriod, prev: registrationsPrevPeriod } = dashboardData.registrations;
 
     const recentBookingsChildIds = (recentBookings as any[]).map(b => b.childId);
     
