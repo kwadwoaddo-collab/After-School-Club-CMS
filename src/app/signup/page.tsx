@@ -201,7 +201,7 @@ export default function SignupPage() {
             <div className="mb-6">
               <button
                 onClick={() => signIn('google', { callbackUrl: '/onboarding' })}
-                className="w-full py-3 px-4 rounded-lg bg-white text-gray-900 font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-lg bg-surface-container-low text-white border border-outline-variant/20 font-semibold hover:bg-surface-bright transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -229,7 +229,7 @@ export default function SignupPage() {
                       type="text"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Jane"
                       autoFocus
                     />
@@ -240,7 +240,7 @@ export default function SignupPage() {
                       type="text"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Smith"
                     />
                   </div>
@@ -252,7 +252,7 @@ export default function SignupPage() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="jane@yourcentre.com"
                   />
                 </div>
@@ -260,7 +260,7 @@ export default function SignupPage() {
                 <button
                   onClick={() => setCurrentStep(2)}
                   disabled={!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 px-4 bg-primary text-primary-foreground font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                 </button>
@@ -283,7 +283,7 @@ export default function SignupPage() {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Min. 8 characters"
                     autoFocus
                   />
@@ -295,7 +295,7 @@ export default function SignupPage() {
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="••••••••"
                   />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
@@ -334,7 +334,7 @@ export default function SignupPage() {
                       formData.password !== formData.confirmPassword ||
                       !formData.acceptedTerms
                     }
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 px-4 bg-primary text-primary-foreground font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Creating account...' : 'Create Account'}
                   </button>

@@ -1,0 +1,121 @@
+
+> after-school-club-cms@0.1.0 build
+> tsx src/scripts/force-create.ts && next build
+
+[dotenv@17.2.3] injecting env (20) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+Running quick DB fix...
+Error creating student_notes: 
+Done resolving DB schema for student_notes.
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/KWADW/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/KWADW/projects/after-school-club-cms/package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env.production
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 13.3s
+  Skipping validation of types
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/68) ...
+  Generating static pages using 7 workers (17/68) 
+  Generating static pages using 7 workers (34/68) 
+  Generating static pages using 7 workers (51/68) 
+✓ Generating static pages using 7 workers (68/68) in 883.5ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /accept-invite
+├ ƒ /api/admin/migrate-users
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/reset-password
+├ ƒ /api/auth/signup
+├ ƒ /api/availability
+├ ƒ /api/bookings
+├ ƒ /api/bookings/[bookingId]
+├ ƒ /api/bookings/[bookingId]/cancel
+├ ƒ /api/bookings/[bookingId]/reschedule
+├ ƒ /api/bookings/[bookingId]/status
+├ ƒ /api/bookings/bulk-delete
+├ ƒ /api/bookings/bulk-update
+├ ƒ /api/branding
+├ ƒ /api/centres
+├ ƒ /api/centres/[id]
+├ ƒ /api/debug-invites
+├ ƒ /api/debug-org
+├ ƒ /api/debug/check-user
+├ ƒ /api/diagnostic-staff-email
+├ ƒ /api/notifications
+├ ƒ /api/onboarding
+├ ƒ /api/organisations
+├ ƒ /api/organisations/[slug]/registration-info
+├ ƒ /api/portal/login
+├ ƒ /api/register
+├ ƒ /api/register/[id]/status
+├ ƒ /api/search
+├ ƒ /api/settings/organisation
+├ ƒ /api/settings/registration-terms
+├ ƒ /api/staff/accept-invite
+├ ƒ /api/staff/assign-centres
+├ ƒ /api/staff/invite
+├ ƒ /api/staff/invites/[id]
+├ ƒ /api/staff/invites/clear-expired
+├ ƒ /api/staff/magic-login
+├ ƒ /api/staff/remove
+├ ƒ /api/staff/request-magic-link
+├ ƒ /api/staff/validate-invite
+├ ƒ /api/students
+├ ƒ /api/super-diagnostic
+├ ƒ /api/test-email
+├ ƒ /api/upload/logo
+├ ○ /auth-test
+├ ƒ /book/[orgSlug]
+├ ƒ /book/[orgSlug]/[centreSlug]
+├ ƒ /careers/[slug]
+├ ƒ /dashboard
+├ ƒ /dashboard/availability
+├ ƒ /dashboard/availability/[centreId]
+├ ƒ /dashboard/booking-link
+├ ƒ /dashboard/bookings
+├ ƒ /dashboard/bookings/[bookingId]
+├ ƒ /dashboard/bookings/[bookingId]/reschedule
+├ ƒ /dashboard/bookings/new
+├ ƒ /dashboard/centres
+├ ƒ /dashboard/centres/add
+├ ƒ /dashboard/registration-link
+├ ƒ /dashboard/registrations
+├ ƒ /dashboard/registrations/[id]
+├ ƒ /dashboard/reports
+├ ƒ /dashboard/settings
+├ ƒ /dashboard/settings/branding
+├ ƒ /dashboard/settings/finance
+├ ƒ /dashboard/settings/hours
+├ ƒ /dashboard/settings/hours/[id]
+├ ƒ /dashboard/settings/registration
+├ ƒ /dashboard/staff
+├ ƒ /dashboard/staff/[userId]
+├ ƒ /dashboard/staff/invite
+├ ƒ /dashboard/students
+├ ƒ /dashboard/students/[id]
+├ ƒ /dashboard/students/add
+├ ○ /forgot-password
+├ ○ /login
+├ ƒ /onboarding
+├ ƒ /portal
+├ ○ /portal/login
+├ ƒ /portal/verify
+├ ○ /register-org
+├ ƒ /register/[orgSlug]
+├ ○ /reset-password
+├ ○ /signup
+└ ○ /staff-login
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

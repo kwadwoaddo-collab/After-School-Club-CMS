@@ -62,7 +62,8 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error('Onboarding error:', error);
 
-        if (error.code === '23505') {
+        const pgErrorCode = error?.code || error?.cause?.code;
+        if (pgErrorCode === '23505') {
             return NextResponse.json({
                 error: 'An organisation with this name already exists. Please choose a different name.'
             }, { status: 409 });

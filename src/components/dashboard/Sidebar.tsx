@@ -98,9 +98,14 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             {orgName.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
-                            <span className="text-base font-bold tracking-tight truncate leading-tight">
-                                {orgName}
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-base font-extrabold tracking-tight truncate leading-tight text-white">
+                                    {orgName}
+                                </span>
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">
+                                    Workspace
+                                </span>
+                            </div>
                         )}
                     </div>
 
@@ -126,7 +131,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         {allowedActions.includes('booking-link') && (
                                             <Link
                                                 href="/dashboard/booking-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[#c2c6d6] hover:text-[#adc6ff] hover:bg-[#2a2a2a] transition-all text-sm font-medium group"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-low transition-all text-sm font-medium group"
                                             >
                                                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                                                 Booking
@@ -135,7 +140,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         {allowedActions.includes('registration-link') && (
                                             <Link
                                                 href="/dashboard/registration-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[#c2c6d6] hover:text-[#adc6ff] hover:bg-[#2a2a2a] transition-all text-sm font-medium group"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-low transition-all text-sm font-medium group"
                                             >
                                                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                                                 Registration
@@ -168,8 +173,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         flex items-center gap-3 px-4 py-3 rounded-xl
                                         transition-all group relative
                                         ${isActive
-                                            ? 'text-[#adc6ff] bg-[#393939]'
-                                            : 'text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#2a2a2a]'
+                                            ? 'text-primary bg-primary/10 font-bold'
+                                            : 'text-on-surface-variant hover:text-white hover:bg-surface-container-low'
                                         }
                                         ${collapsed ? 'justify-center' : ''}
                                     `}

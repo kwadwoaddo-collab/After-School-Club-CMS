@@ -1,0 +1,10 @@
+next.config.ts(36,3): error TS2353: Object literal may only specify known properties, and 'eslint' does not exist in type 'NextConfig'.
+src/app/dashboard/page.tsx(277,56): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(325,50): error TS7006: Parameter 'centre' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(337,51): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(339,56): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(349,48): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(440,64): error TS7006: Parameter 'centre' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(519,66): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(631,63): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(631,66): error TS7006: Parameter 'i' implicitly has an 'any' type.

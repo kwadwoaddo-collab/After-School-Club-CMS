@@ -95,14 +95,14 @@ function LoginForm() {
       <div className="flex rounded-xl overflow-hidden border border-white/20 mb-6">
         <button
           onClick={() => switchMode('admin')}
-          className={`flex-1 py-2.5 text-sm font-semibold transition-all ${mode === 'admin' ? 'bg-blue-500 text-white' : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+          className={`flex-1 py-2.5 text-sm font-semibold transition-all ${mode === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-surface-container-low text-on-surface-variant hover:text-white hover:bg-surface-bright'
             }`}
         >
           Admin / Owner
         </button>
         <button
           onClick={() => switchMode('staff')}
-          className={`flex-1 py-2.5 text-sm font-semibold transition-all ${mode === 'staff' ? 'bg-blue-500 text-white' : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+          className={`flex-1 py-2.5 text-sm font-semibold transition-all ${mode === 'staff' ? 'bg-primary text-primary-foreground' : 'bg-surface-container-low text-on-surface-variant hover:text-white hover:bg-surface-bright'
             }`}
         >
           Staff Member
@@ -127,7 +127,7 @@ function LoginForm() {
                 }
               }}
               disabled={!mounted || googleLoading}
-              className="w-full py-3 px-4 mb-2 rounded-lg bg-white text-gray-900 font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 mb-2 rounded-lg bg-surface-container-low text-white border border-outline-variant/20 font-semibold hover:bg-surface-bright transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {googleLoading ? (
                 <>
@@ -174,7 +174,7 @@ function LoginForm() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-white border border-blue-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 rounded-lg bg-surface-container-lowest text-white border border-outline-variant/20 placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="you@yourcentre.com"
                   required
                 />
@@ -185,7 +185,7 @@ function LoginForm() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-white border border-blue-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 rounded-lg bg-surface-container-lowest text-white border border-outline-variant/20 placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="••••••••"
                   required
                 />
@@ -198,7 +198,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
@@ -257,7 +257,7 @@ function LoginForm() {
                       type="email"
                       value={staffEmail}
                       onChange={(e) => setStaffEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg bg-white border border-blue-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 rounded-lg bg-surface-container-lowest text-white border border-outline-variant/20 placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="you@yourcentre.com"
                       required
                       autoFocus
@@ -271,7 +271,7 @@ function LoginForm() {
                   <button
                     type="submit"
                     disabled={staffLoading || !staffEmail.trim()}
-                    className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {staffLoading ? (
                       <>

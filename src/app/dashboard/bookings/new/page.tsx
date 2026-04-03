@@ -9,7 +9,7 @@ export default async function NewBookingPage() {
     const session = await auth();
 
     if (!session?.user?.organisationId) {
-        redirect('/login');
+        redirect('/onboarding');
     }
 
     // Fetch centres for the current organisation

@@ -10,7 +10,7 @@ export default async function EditAvailabilityPage({ params }: { params: Promise
     const session = await auth();
 
     if (!session?.user?.organisationId) {
-        redirect('/login');
+        redirect('/onboarding');
     }
 
     const { centreId } = await params;

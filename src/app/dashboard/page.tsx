@@ -274,7 +274,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     }) : [];
 
     // Map to bookings
-    const recentBookingsWithNotes = recentBookings.map(b => {
+    const recentBookingsWithNotes = recentBookings.map((b: any) => {
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === b.childId);
         const medNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
         const safeguardNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
@@ -322,7 +322,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const bookingsTrend = calculateTrend(bookingsActivePeriod, bookingsPrevPeriod);
     const registrationsTrend = calculateTrend(registrationsActivePeriod, registrationsPrevPeriod);
 
-    const centresWithOccupancy = centresList.map(centre => {
+    const centresWithOccupancy = centresList.map((centre: any) => {
         const stats = centreOccupancyData.filter((d: any) => d.centreId === centre.id);
         const todayStats = stats.find((d: any) => isSameDay(new Date(d.day), now));
         return {
@@ -334,9 +334,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     // Format Registration Pipeline
     const pipelineCounts = {
-        new: Number(registrationPipelineData.find(d => d.status === 'awaiting_confirmation')?.count || 0),
+        new: Number(registrationPipelineData.find((d: any) => d.status === 'awaiting_confirmation')?.count || 0),
         review: 0, 
-        approved: Number(registrationPipelineData.find(d => d.status === 'signed_up')?.count || 0),
+        approved: Number(registrationPipelineData.find((d: any) => d.status === 'signed_up')?.count || 0),
     };
 
     // Format Weekly Growth (last 8 weeks)
@@ -346,7 +346,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     }, { weekStartsOn: 1 });
     
     const growthStats = weeks.map(w => {
-        const match = weeklyRegistrations.find(d => isSameDay(new Date(d.weekStart), w));
+        const match = weeklyRegistrations.find((d: any) => isSameDay(new Date(d.weekStart), w));
         return Number(match?.count || 0);
     });
 
@@ -437,7 +437,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 relative z-10">
-                        {centresWithOccupancy.slice(0, 3).map((centre) => (
+                        {centresWithOccupancy.slice(0, 3).map((centre: any) => (
                             <div key={centre.id} className="bg-surface-container-low/50 border border-outline-variant/5 rounded-2xl p-5 hover:border-primary/20 transition-all">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
@@ -516,7 +516,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
                             {recentBookingsWithNotes.length > 0 ? (
                                 <div className="space-y-2">
-                                    {recentBookingsWithNotes.map(b => (
+                                    {recentBookingsWithNotes.map((b: any) => (
                                         <Link
                                             key={b.id}
                                             href={`/dashboard/bookings/${b.id}`}
@@ -628,7 +628,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
                             {recentRegistrations.length > 0 ? (
                                 <div className="space-y-2">
-                                    {recentRegistrations.map((r, i) => (
+                                    {recentRegistrations.map((r: any, i: any) => (
                                         <Link
                                             key={`${r.registrationId}-${i}`}
                                             href={`/dashboard/registrations/${r.registrationId}`}

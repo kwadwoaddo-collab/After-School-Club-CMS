@@ -7,7 +7,7 @@ export default async function AddStudentPage() {
     const session = await auth();
 
     if (!session?.user?.organisationId) {
-        redirect('/login');
+        redirect('/onboarding');
     }
 
     return (

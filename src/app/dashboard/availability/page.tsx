@@ -13,7 +13,7 @@ export default async function AvailabilityPage() {
     const session = await auth();
 
     if (!session?.user?.organisationId) {
-        redirect('/login');
+        redirect('/onboarding');
     }
 
     const orgId = session.user.organisationId;

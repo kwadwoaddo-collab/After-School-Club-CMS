@@ -81,7 +81,7 @@ export default async function BookingPage({
   }
 
   // Fetch rescheduling data if needed
-  let bookingToReschedule = null;
+  const bookingToReschedule = null;
   const rId = (await searchParams).reschedule;
   if (rId) {
     // For now, skip the complex nested query - can be added back if needed

@@ -1,0 +1,307 @@
+
+> after-school-club-cms@0.1.0 dev
+> next dev
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/KWADW/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/KWADW/projects/after-school-club-cms/package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.229:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 1154ms
+ GET /centres 404 in 2.2s (compile: 1832ms, render: 415ms)
+ GET /registrations 404 in 2.3s (compile: 1881ms, render: 394ms)
+ GET /dashboard/registrations 200 in 4.1s (compile: 1582ms, render: 2.5s)
+ GET /api/auth/session 200 in 2.8s (compile: 2.8s, render: 41ms)
+ GET /api/auth/session 200 in 27ms (compile: 12ms, render: 15ms)
+ GET /api/auth/session 200 in 43ms (compile: 5ms, render: 38ms)
+ GET /api/auth/session 200 in 32ms (compile: 7ms, render: 25ms)
+ GET /api/auth/session 200 in 42ms (compile: 6ms, render: 36ms)
+ GET /api/auth/session 200 in 20ms (compile: 6ms, render: 14ms)
+ GET /api/auth/session 200 in 15ms (compile: 3ms, render: 12ms)
+ GET /api/auth/session 200 in 15ms (compile: 4ms, render: 11ms)
+ GET /api/auth/session 200 in 10ms (compile: 2ms, render: 8ms)
+ GET /api/auth/session 200 in 15ms (compile: 4ms, render: 11ms)
+ GET /api/auth/session 200 in 11ms (compile: 2ms, render: 9ms)
+ GET /api/auth/session 200 in 9ms (compile: 2ms, render: 7ms)
+ GET / 200 in 243ms (compile: 115ms, render: 128ms)
+ GET /api/auth/session 200 in 123ms (compile: 30ms, render: 93ms)
+ GET /api/auth/session 200 in 24ms (compile: 6ms, render: 18ms)
+ GET /api/auth/session 200 in 23ms (compile: 8ms, render: 15ms)
+ GET /api/auth/session 200 in 35ms (compile: 8ms, render: 28ms)
+ GET /api/auth/session 200 in 30ms (compile: 6ms, render: 24ms)
+ GET /login 200 in 1150ms (compile: 391ms, render: 759ms)
+ GET /api/auth/providers 200 in 183ms (compile: 64ms, render: 119ms)
+ GET /api/auth/csrf 200 in 21ms (compile: 9ms, render: 12ms)
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at Module.callback (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/b9bd6_@auth_core_4226f328._.js:4314:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AuthInternal (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/b9bd6_@auth_core_4226f328._.js:5148:24)
+    at async Auth (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/b9bd6_@auth_core_4226f328._.js:5370:34)
+    at async AppRouteRouteModule.do (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+    at async AppRouteRouteModule.handle (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:45156)
+    at async responseGenerator (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/29d21_next_4f616f5c._.js:17148:38)
+    at async AppRouteRouteModule.handleResponse (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:1:191938)
+    at async handleResponse (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/29d21_next_4f616f5c._.js:17211:32)
+    at async Module.handler (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/29d21_next_4f616f5c._.js:17264:13)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1442:9)
+    at async DevServer.renderPageComponent (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1494:24)
+    at async DevServer.renderToResponseImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1544:32)
+    at async DevServer.pipeImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1038:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/next-server.js:395:17)
+    at async DevServer.handleRequestImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:929:17)
+    at async /Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/dev/next-dev-server.js:387:20
+    at async Span.traceAsyncFn (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/dev/next-dev-server.js:383:24)
+    at async invokeRender (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/router-server.js:248:21)
+    at async handleRequest (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/router-server.js:447:24)
+    at async requestHandlerImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/router-server.js:496:13)
+    at async Server.requestListener (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/start-server.js:226:13)
+ POST /api/auth/callback/credentials? 200 in 523ms (compile: 6ms, render: 517ms)
+ GET /api/auth/session 200 in 31ms (compile: 6ms, render: 26ms)
+ GET /dashboard 307 in 1248ms (compile: 350ms, render: 898ms)
+○ Compiling /onboarding ...
+ GET /onboarding 200 in 10.2s (compile: 8.3s, render: 1938ms)
+ GET /api/auth/session 200 in 237ms (compile: 67ms, render: 170ms)
+ GET /api/auth/session 200 in 139ms (compile: 42ms, render: 97ms)
+ GET /api/auth/session 200 in 75ms (compile: 8ms, render: 67ms)
+ GET /api/auth/session 200 in 52ms (compile: 4ms, render: 48ms)
+ GET /api/auth/session 200 in 55ms (compile: 8ms, render: 47ms)
+○ Compiling /api/onboarding ...
+ POST /api/onboarding 200 in 4.0s (compile: 3.4s, render: 524ms)
+ GET /dashboard 200 in 902ms (compile: 31ms, render: 871ms)
+ GET /dashboard 200 in 692ms (compile: 26ms, render: 666ms)
+ GET /onboarding 200 in 487ms (compile: 77ms, render: 410ms)
+ GET /onboarding 200 in 320ms (compile: 61ms, render: 259ms)
+Onboarding error: Error: Failed query: insert into "organisations" ("id", "name", "slug", "logo_url", "contact_email", "contact_phone", "website", "privacy_policy_url", "address", "description", "brand_color", "stripe_customer_id", "subscription_status", "subscription_tier", "subscription_expires_at", "registration_terms", "session_slots", "registration_pricing", "created_at", "updated_at") values (default, $1, $2, $3, default, default, default, default, default, default, $4, default, default, default, default, default, default, default, default, default) returning "id", "name", "slug", "logo_url", "contact_email", "contact_phone", "website", "privacy_policy_url", "address", "description", "brand_color", "stripe_customer_id", "subscription_status", "subscription_tier", "subscription_expires_at", "registration_terms", "session_slots", "registration_pricing", "created_at", "updated_at"
+params: SprintScale Test Org,sprintscale-test-org-cinf,,#4F46E5
+    at async POST (src/app/api/onboarding/route.ts:42:23)
+  40 |
+  41 |         // 1. Create Organisation
+> 42 |         const [org] = await db.insert(organisations).values({
+     |                       ^
+  43 |             name: data.organisationName,
+  44 |             slug: orgSlug,
+  45 |             brandColor: data.brandColor, {
+  query: 'insert into "organisations" ("id", "name", "slug", "logo_url", "contact_email", "contact_phone", "website", "privacy_policy_url", "address", "description", "brand_color", "stripe_customer_id", "subscription_status", "subscription_tier", "subscription_expires_at", "registration_terms", "session_slots", "registration_pricing", "created_at", "updated_at") values (default, $1, $2, $3, default, default, default, default, default, default, $4, default, default, default, default, default, default, default, default, default) returning "id", "name", "slug", "logo_url", "contact_email", "contact_phone", "website", "privacy_policy_url", "address", "description", "brand_color", "stripe_customer_id", "subscription_status", "subscription_tier", "subscription_expires_at", "registration_terms", "session_slots", "registration_pricing", "created_at", "updated_at"',
+  params: [Array],
+  [cause]: Error [PostgresError]: duplicate key value violates unique constraint "organisations_name_unique"
+      at ignore-listed frames {
+    severity_local: 'ERROR',
+    severity: 'ERROR',
+    code: '23505',
+    detail: 'Key (name)=(SprintScale Test Org) already exists.',
+    schema_name: 'public',
+    table_name: 'organisations',
+    constraint_name: 'organisations_name_unique',
+    file: 'nbtinsert.c',
+    line: '667',
+    routine: '_bt_check_unique'
+  }
+}
+ POST /api/onboarding 500 in 1468ms (compile: 41ms, render: 1427ms)
+ GET /centres 404 in 224ms (compile: 36ms, render: 188ms)
+ GET /api/auth/session 200 in 48ms (compile: 20ms, render: 29ms)
+ GET /api/auth/session 200 in 21ms (compile: 5ms, render: 16ms)
+ GET /api/auth/session 200 in 31ms (compile: 3ms, render: 28ms)
+ GET /api/auth/session 200 in 28ms (compile: 5ms, render: 23ms)
+ GET /api/auth/session 200 in 36ms (compile: 9ms, render: 27ms)
+ GET /dashboard/bookings 307 in 779ms (compile: 249ms, render: 530ms)
+ GET /onboarding 200 in 177ms (compile: 11ms, render: 167ms)
+ GET /api/auth/session 200 in 199ms (compile: 38ms, render: 162ms)
+ GET /api/auth/session 200 in 66ms (compile: 21ms, render: 45ms)
+ GET /api/auth/session 200 in 31ms (compile: 7ms, render: 24ms)
+ GET /api/auth/session 200 in 17ms (compile: 6ms, render: 11ms)
+ GET /api/auth/session 200 in 26ms (compile: 4ms, render: 22ms)
+ GET /dashboard/registrations 200 in 330ms (compile: 51ms, render: 279ms)
+ GET /api/auth/session 200 in 32ms (compile: 13ms, render: 20ms)
+ GET /api/auth/session 200 in 102ms (compile: 8ms, render: 94ms)
+ GET /api/auth/session 200 in 27ms (compile: 6ms, render: 21ms)
+ GET /api/auth/session 200 in 86ms (compile: 6ms, render: 80ms)
+ GET /api/auth/session 200 in 27ms (compile: 13ms, render: 14ms)
+ GET /dashboard 307 in 387ms (compile: 45ms, render: 342ms)
+ GET /onboarding 200 in 182ms (compile: 8ms, render: 174ms)
+ GET /api/auth/session 200 in 47ms (compile: 9ms, render: 38ms)
+ GET /api/auth/session 200 in 27ms (compile: 7ms, render: 20ms)
+ GET /api/auth/session 200 in 67ms (compile: 9ms, render: 59ms)
+ GET /api/auth/session 200 in 80ms (compile: 9ms, render: 70ms)
+ GET /api/auth/session 200 in 342ms (compile: 147ms, render: 194ms)
+ GET /dashboard/centres 307 in 680ms (compile: 276ms, render: 404ms)
+ GET /onboarding 200 in 232ms (compile: 6ms, render: 226ms)
+ GET /api/auth/session 200 in 32ms (compile: 21ms, render: 11ms)
+ GET /api/auth/session 200 in 52ms (compile: 8ms, render: 44ms)
+ GET /api/auth/session 200 in 33ms (compile: 5ms, render: 29ms)
+ GET /api/auth/session 200 in 205ms (compile: 49ms, render: 155ms)
+ GET /api/auth/session 200 in 47ms (compile: 19ms, render: 28ms)
+ GET /dashboard/registrations 200 in 416ms (compile: 37ms, render: 380ms)
+ GET /api/auth/session 200 in 39ms (compile: 16ms, render: 23ms)
+ GET /api/auth/session 200 in 43ms (compile: 10ms, render: 32ms)
+ GET /api/auth/session 200 in 36ms (compile: 6ms, render: 30ms)
+ GET /api/auth/session 200 in 30ms (compile: 6ms, render: 24ms)
+ GET /api/auth/session 200 in 27ms (compile: 5ms, render: 22ms)
+ GET /dashboard/bookings 200 in 372ms (compile: 46ms, render: 325ms)
+ GET /onboarding 200 in 859ms (compile: 61ms, render: 798ms)
+ GET /onboarding 200 in 664ms (compile: 15ms, render: 649ms)
+ GET /dashboard/centres 307 in 525ms (compile: 50ms, render: 475ms)
+ GET /onboarding 200 in 173ms (compile: 16ms, render: 157ms)
+ GET /api/auth/session 200 in 42ms (compile: 28ms, render: 14ms)
+ GET /api/auth/session 200 in 84ms (compile: 7ms, render: 77ms)
+ GET /api/auth/session 200 in 11ms (compile: 3ms, render: 8ms)
+ GET /api/auth/session 200 in 9ms (compile: 2ms, render: 7ms)
+ GET /api/auth/session 200 in 52ms (compile: 3ms, render: 49ms)
+ GET /dashboard/bookings 307 in 423ms (compile: 53ms, render: 370ms)
+ GET /onboarding 200 in 218ms (compile: 7ms, render: 211ms)
+ GET /api/auth/session 200 in 83ms (compile: 13ms, render: 70ms)
+ GET /api/auth/session 200 in 40ms (compile: 5ms, render: 35ms)
+ GET /api/auth/session 200 in 268ms (compile: 11ms, render: 257ms)
+ GET /api/auth/session 200 in 54ms (compile: 12ms, render: 42ms)
+ GET /api/auth/session 200 in 40ms (compile: 7ms, render: 33ms)
+ GET /dashboard/registrations 200 in 418ms (compile: 52ms, render: 366ms)
+ GET /api/auth/session 200 in 133ms (compile: 55ms, render: 78ms)
+ GET /api/auth/session 200 in 37ms (compile: 7ms, render: 30ms)
+ GET /api/auth/session 200 in 42ms (compile: 14ms, render: 28ms)
+ GET /api/auth/session 200 in 53ms (compile: 5ms, render: 48ms)
+ GET /api/auth/session 200 in 21ms (compile: 4ms, render: 17ms)
+ GET /dashboard/students 200 in 1984ms (compile: 1633ms, render: 351ms)
+ GET /onboarding 200 in 377ms (compile: 45ms, render: 332ms)
+ GET /onboarding 200 in 291ms (compile: 12ms, render: 279ms)
+ GET /dashboard/staff 307 in 1264ms (compile: 324ms, render: 940ms)
+ GET /onboarding 200 in 175ms (compile: 15ms, render: 160ms)
+ GET /api/auth/session 200 in 340ms (compile: 61ms, render: 279ms)
+ GET /api/auth/session 200 in 92ms (compile: 37ms, render: 55ms)
+ GET /api/auth/session 200 in 58ms (compile: 18ms, render: 40ms)
+ GET /api/auth/session 200 in 33ms (compile: 12ms, render: 21ms)
+ GET /api/auth/session 200 in 26ms (compile: 7ms, render: 18ms)
+ GET / 200 in 309ms (compile: 77ms, render: 232ms)
+ GET /api/auth/session 200 in 239ms (compile: 47ms, render: 192ms)
+ GET /api/auth/session 200 in 79ms (compile: 20ms, render: 59ms)
+ GET /api/auth/session 200 in 87ms (compile: 15ms, render: 72ms)
+ GET /api/auth/session 200 in 79ms (compile: 24ms, render: 55ms)
+ GET /api/auth/session 200 in 45ms (compile: 4ms, render: 41ms)
+✓ Compiled in 671ms
+✓ Compiled in 969ms
+✓ Compiled in 390ms
+ GET / 200 in 2.6s (compile: 1146ms, render: 1427ms)
+ GET /centres 404 in 1298ms (compile: 266ms, render: 1031ms)
+ GET /registrations 404 in 1405ms (compile: 451ms, render: 955ms)
+ GET /centres 404 in 578ms (compile: 26ms, render: 552ms)
+ GET /registrations 404 in 583ms (compile: 137ms, render: 446ms)
+ GET /dashboard/registrations 200 in 3.7s (compile: 582ms, render: 3.1s)
+ GET /api/auth/session 200 in 1667ms (compile: 1004ms, render: 664ms)
+ GET /api/auth/session 200 in 161ms (compile: 73ms, render: 88ms)
+ GET /api/auth/session 200 in 32ms (compile: 8ms, render: 24ms)
+ GET /api/auth/session 200 in 26ms (compile: 6ms, render: 20ms)
+ GET /api/auth/session 200 in 48ms (compile: 6ms, render: 42ms)
+ GET /api/auth/session 200 in 17ms (compile: 5ms, render: 13ms)
+ GET /api/auth/session 200 in 13ms (compile: 3ms, render: 10ms)
+ GET /api/auth/session 200 in 12ms (compile: 3ms, render: 9ms)
+ GET /api/auth/session 200 in 14ms (compile: 3ms, render: 11ms)
+ GET /api/auth/session 200 in 25ms (compile: 2ms, render: 23ms)
+ GET / 200 in 385ms (compile: 109ms, render: 276ms)
+ GET /api/auth/session 200 in 1489ms (compile: 185ms, render: 1303ms)
+ GET /api/auth/session 200 in 77ms (compile: 29ms, render: 49ms)
+ GET /api/auth/session 200 in 50ms (compile: 13ms, render: 36ms)
+ GET /api/auth/session 200 in 35ms (compile: 7ms, render: 28ms)
+ GET /api/auth/session 200 in 28ms (compile: 7ms, render: 21ms)
+ GET /api/auth/session 200 in 71ms (compile: 14ms, render: 57ms)
+ GET /login 200 in 6.7s (compile: 4.2s, render: 2.4s)
+ GET / 200 in 1136ms (compile: 234ms, render: 903ms)
+ GET /login 200 in 1766ms (compile: 91ms, render: 1675ms)
+ GET /api/auth/session 200 in 540ms (compile: 66ms, render: 475ms)
+ GET /api/auth/session 200 in 202ms (compile: 36ms, render: 166ms)
+ GET /api/auth/session 200 in 89ms (compile: 24ms, render: 65ms)
+ GET /api/auth/session 200 in 40ms (compile: 8ms, render: 32ms)
+ GET /api/auth/session 200 in 288ms (compile: 39ms, render: 249ms)
+ GET /api/auth/session 200 in 99ms (compile: 11ms, render: 88ms)
+ GET /api/auth/providers 200 in 337ms (compile: 122ms, render: 215ms)
+ GET /api/auth/csrf 200 in 67ms (compile: 24ms, render: 43ms)
+[31m[auth][error][0m CredentialsSignin: Read more at https://errors.authjs.dev#credentialssignin
+    at Module.callback (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/b9bd6_@auth_core_4226f328._.js:4314:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AuthInternal (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/b9bd6_@auth_core_4226f328._.js:5148:24)
+    at async Auth (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/b9bd6_@auth_core_4226f328._.js:5370:34)
+    at async AppRouteRouteModule.do (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+    at async AppRouteRouteModule.handle (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:45156)
+    at async responseGenerator (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/29d21_next_4f616f5c._.js:17148:38)
+    at async AppRouteRouteModule.handleResponse (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:1:191938)
+    at async handleResponse (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/29d21_next_4f616f5c._.js:17211:32)
+    at async Module.handler (/Users/KWADW/projects/after-school-club-cms/.next/dev/server/chunks/29d21_next_4f616f5c._.js:17264:13)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1442:9)
+    at async DevServer.renderPageComponent (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1494:24)
+    at async DevServer.renderToResponseImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1544:32)
+    at async DevServer.pipeImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:1038:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/next-server.js:395:17)
+    at async DevServer.handleRequestImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/base-server.js:929:17)
+    at async /Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/dev/next-dev-server.js:387:20
+    at async Span.traceAsyncFn (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/dev/next-dev-server.js:383:24)
+    at async invokeRender (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/router-server.js:248:21)
+    at async handleRequest (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/router-server.js:447:24)
+    at async requestHandlerImpl (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/router-server.js:496:13)
+    at async Server.requestListener (/Users/KWADW/projects/after-school-club-cms/node_modules/next/dist/server/lib/start-server.js:226:13)
+ POST /api/auth/callback/credentials? 200 in 692ms (compile: 120ms, render: 572ms)
+ GET /api/auth/session 200 in 77ms (compile: 10ms, render: 67ms)
+○ Compiling /signup ...
+ GET /signup 200 in 9.2s (compile: 6.5s, render: 2.6s)
+ GET /api/auth/session 200 in 1934ms (compile: 156ms, render: 1778ms)
+ GET /api/auth/session 200 in 452ms (compile: 83ms, render: 369ms)
+ GET /api/auth/session 200 in 241ms (compile: 76ms, render: 165ms)
+ GET /api/auth/session 200 in 270ms (compile: 170ms, render: 100ms)
+ GET /api/auth/session 200 in 155ms (compile: 25ms, render: 129ms)
+ GET /api/auth/session 200 in 130ms (compile: 33ms, render: 97ms)
+ POST /api/auth/signup 201 in 4.7s (compile: 1701ms, render: 3.0s)
+ GET /api/auth/providers 200 in 191ms (compile: 147ms, render: 44ms)
+ GET /api/auth/csrf 200 in 78ms (compile: 21ms, render: 57ms)
+ POST /api/auth/callback/credentials? 200 in 636ms (compile: 24ms, render: 612ms)
+ GET /api/auth/session 200 in 151ms (compile: 20ms, render: 130ms)
+ GET /onboarding 200 in 18.2s (compile: 13.1s, render: 5.1s)
+ POST /api/onboarding 200 in 6.4s (compile: 5.3s, render: 1095ms)
+CRITICAL: Dashboard Fetch Failure Error: Failed query: select count(*)::int, count(*) filter (where "start_at" >= $1 and "start_at" <= $2)::int, count(*) filter (where "start_at" >= $3 and "start_at" <= $4)::int, count(*) filter (where "start_at" >= $5 and "start_at" <= $6)::int, count(*) filter (where "start_at" >= $7 and "start_at" <= $8)::int from "bookings" where "bookings"."centre_id" in ($9)
+params: Wed Apr 01 2026 00:00:00 GMT+0100 (British Summer Time),Thu Apr 30 2026 23:59:59 GMT+0100 (British Summer Time),Mon Mar 30 2026 00:00:00 GMT+0100 (British Summer Time),Sun Apr 05 2026 23:59:59 GMT+0100 (British Summer Time),Mon Mar 30 2026 00:00:00 GMT+0100 (British Summer Time),Sun Apr 05 2026 23:59:59 GMT+0100 (British Summer Time),Mon Mar 23 2026 00:00:00 GMT+0000 (Greenwich Mean Time),Sun Mar 29 2026 23:59:59 GMT+0100 (British Summer Time),1aad7d6a-1a75-4951-a995-aef9a9f972b6
+    at async DashboardPage (src/app/dashboard/page.tsx:97:13)
+   95 |             registrationPipelineData,
+   96 |             peakDayData,
+>  97 |         ] = await Promise.all([
+      |             ^
+   98 |             // consolidated Students
+   99 |             db.select({ 
+  100 |                 total: sql<number>`count(distinct ${children.id})::int`, {
+  query: 'select count(*)::int, count(*) filter (where "start_at" >= $1 and "start_at" <= $2)::int, count(*) filter (where "start_at" >= $3 and "start_at" <= $4)::int, count(*) filter (where "start_at" >= $5 and "start_at" <= $6)::int, count(*) filter (where "start_at" >= $7 and "start_at" <= $8)::int from "bookings" where "bookings"."centre_id" in ($9)',
+  params: [Array],
+  [cause]: TypeError: The "string" argument must be of type string or an instance of Buffer or ArrayBuffer. Received an instance of Date
+      at ignore-listed frames {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }
+}
+CRITICAL: Dashboard Fetch Failure Error: Failed query: select count(distinct "children"."id")::int, count(distinct "children"."id") filter (where "children"."created_at" >= $1 and "children"."created_at" <= $2)::int, count(distinct "children"."id") filter (where "children"."created_at" >= $3 and "children"."created_at" <= $4)::int from "children" inner join "parents" on "children"."parent_id" = "parents"."id" where "parents"."organisation_id" = $5
+params: Mon Mar 30 2026 00:00:00 GMT+0100 (British Summer Time),Sun Apr 05 2026 23:59:59 GMT+0100 (British Summer Time),Mon Mar 23 2026 00:00:00 GMT+0000 (Greenwich Mean Time),Sun Mar 29 2026 23:59:59 GMT+0100 (British Summer Time),fcc70db4-64d7-4cd0-8f95-1692f00e6643
+    at async DashboardPage (src/app/dashboard/page.tsx:97:13)
+   95 |             registrationPipelineData,
+   96 |             peakDayData,
+>  97 |         ] = await Promise.all([
+      |             ^
+   98 |             // consolidated Students
+   99 |             db.select({ 
+  100 |                 total: sql<number>`count(distinct ${children.id})::int`, {
+  query: 'select count(distinct "children"."id")::int, count(distinct "children"."id") filter (where "children"."created_at" >= $1 and "children"."created_at" <= $2)::int, count(distinct "children"."id") filter (where "children"."created_at" >= $3 and "children"."created_at" <= $4)::int from "children" inner join "parents" on "children"."parent_id" = "parents"."id" where "parents"."organisation_id" = $5',
+  params: [Array],
+  [cause]: TypeError: The "string" argument must be of type string or an instance of Buffer or ArrayBuffer. Received an instance of Date
+      at ignore-listed frames {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }
+}
+ GET /dashboard 200 in 5.8s (compile: 237ms, render: 5.6s)
+ GET /dashboard 200 in 17.1s (compile: 1194ms, render: 15.9s)
+ GET /dashboard/registrations 200 in 4.3s (compile: 926ms, render: 3.4s)
+○ Compiling /dashboard/bookings ...
+✓ Finished filesystem cache database compaction in 55s
+✓ Finished writing to filesystem cache in 16.6s
+ GET /dashboard/bookings 200 in 28.6s (compile: 22.1s, render: 6.5s)
+ GET /dashboard/bookings 200 in 1234ms (compile: 132ms, render: 1101ms)

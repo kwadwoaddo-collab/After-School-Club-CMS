@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
         const newName = name.trim();
 
         // Generate a base slug from the name
-        let baseSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const baseSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
         let newSlug = baseSlug;
         let suffix = 1;
 

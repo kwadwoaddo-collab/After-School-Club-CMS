@@ -97,10 +97,10 @@ export default function OnboardingForm() {
     };
 
     return (
-        <div className="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gray-50 px-8 py-6 border-b border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900">Let&apos;s get you set up</h2>
-                <p className="text-gray-500 mt-1">Create your organisation and first centre.</p>
+        <div className="w-full max-w-lg mx-auto bg-surface-container-high rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
+            <div className="bg-surface-container-low px-8 py-6 border-b border-outline-variant/10">
+                <h2 className="text-2xl font-bold text-white">Let&apos;s get you set up</h2>
+                <p className="text-on-surface-variant mt-1">Create your organisation and first centre.</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
@@ -112,13 +112,13 @@ export default function OnboardingForm() {
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Organisation Logo</label>
+                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Organisation Logo</label>
                         <div className="flex items-center gap-4">
                             {watchedLogo && (
                                 <img
                                     src={watchedLogo}
                                     alt="Logo preview"
-                                    className="w-12 h-12 rounded-lg object-contain bg-gray-50 border border-gray-200"
+                                    className="w-12 h-12 rounded-lg object-contain bg-surface-container-lowest border border-outline-variant/10"
                                 />
                             )}
                             <input
@@ -130,43 +130,43 @@ export default function OnboardingForm() {
                                     file:mr-4 file:py-2 file:px-4
                                     file:rounded-full file:border-0
                                     file:text-sm file:font-semibold
-                                    file:bg-indigo-50 file:text-indigo-700
-                                    hover:file:bg-indigo-100
+                                    file:bg-primary/10 file:text-primary
+                                    hover:file:bg-primary/20
                                     disabled:opacity-50"
                             />
                         </div>
-                        {isUploading && <p className="text-xs text-indigo-600 mt-1">Uploading...</p>}
-                        <p className="text-xs text-gray-500 mt-1">You can add this later.</p>
+                        {isUploading && <p className="text-xs text-primary mt-1">Uploading...</p>}
+                        <p className="text-xs text-on-surface-variant mt-1">You can add this later.</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Organisation Name</label>
+                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Organisation Name</label>
                         <input
                             {...register('organisationName')}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. Bright Stars Academy"
                         />
                         {errors.organisationName && <p className="text-red-600 text-sm mt-1">{errors.organisationName.message}</p>}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">First Centre Name</label>
+                        <label className="block text-sm font-medium text-on-surface-variant mb-1">First Centre Name</label>
                         <input
                             {...register('centreName')}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. London Campus"
                         />
-                        <p className="text-xs text-gray-500 mt-1">You can add more centres later.</p>
-                        {errors.centreName && <p className="text-red-600 text-sm mt-1">{errors.centreName.message}</p>}
+                        <p className="text-xs text-on-surface-variant mt-1">You can add more centres later.</p>
+                        {errors.centreName && <p className="text-red-400 text-sm mt-1">{errors.centreName.message}</p>}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Brand Color</label>
+                        <label className="block text-sm font-medium text-on-surface-variant mb-2">Brand Color</label>
                         <div className="flex items-center gap-4">
                             <input
                                 type="color"
                                 {...register('brandColor')}
-                                className="w-12 h-12 rounded-lg cursor-pointer border-0 p-1 bg-white shadow-sm"
+                                className="w-12 h-12 rounded-lg cursor-pointer border border-outline-variant/20 p-1 bg-surface-container-lowest shadow-sm"
                             />
                             <div className="flex-1">
                                 <div
@@ -177,8 +177,8 @@ export default function OnboardingForm() {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">This color will be used for buttons and highlights on your booking page.</p>
-                        {errors.brandColor && <p className="text-red-600 text-sm mt-1">{errors.brandColor.message}</p>}
+                        <p className="text-xs text-on-surface-variant mt-2">This color will be used for buttons and highlights on your booking page.</p>
+                        {errors.brandColor && <p className="text-red-400 text-sm mt-1">{errors.brandColor.message}</p>}
                     </div>
                 </div>
 
