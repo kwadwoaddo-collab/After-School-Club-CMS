@@ -98,8 +98,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             // consolidated Students
             db.select({ 
                 total: sql<number>`count(distinct ${children.id})::int`,
-                activePeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${activeStartDate} and ${children.createdAt} <= ${activeEndDate})::int`,
-                prevPeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${prevStartDate} and ${children.createdAt} <= ${prevEndDate})::int`
+                activePeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${activeStartDate.toISOString()} and ${children.createdAt} <= ${activeEndDate.toISOString()})::int`,
+                prevPeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${prevStartDate.toISOString()} and ${children.createdAt} <= ${prevEndDate.toISOString()})::int`
             })
                 .from(children)
                 .innerJoin(parents, eq(children.parentId, parents.id))
@@ -109,10 +109,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             hasCentres
                 ? db.select({ 
                     totalAll: sql<number>`count(*)::int`,
-                    thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart} and ${bookings.startAt} <= ${targetMonthEnd})::int`,
-                    thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart} and ${bookings.startAt} <= ${targetWeekEnd})::int`,
-                    activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate} and ${bookings.startAt} <= ${activeEndDate})::int`,
-                    prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate} and ${bookings.startAt} <= ${prevEndDate})::int`
+                    thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
+                    thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
+                    activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate.toISOString()} and ${bookings.startAt} <= ${activeEndDate.toISOString()})::int`,
+                    prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate.toISOString()} and ${bookings.startAt} <= ${prevEndDate.toISOString()})::int`
                 }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
                 : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
 
@@ -155,10 +155,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             db.select({ 
                 total: sql<number>`count(*)::int`,
                 pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
-                thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart} and ${registrations.startDate} <= ${targetMonthEnd})::int`,
-                thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart} and ${registrations.startDate} <= ${targetWeekEnd})::int`,
-                activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate} and ${registrations.createdAt} <= ${activeEndDate})::int`,
-                prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate} and ${registrations.createdAt} <= ${prevEndDate})::int`
+                thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart.toISOString()} and ${registrations.startDate} <= ${targetMonthEnd.toISOString()})::int`,
+                thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
+                activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
+                prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
             }).from(registrations).where(eq(registrations.organisationId, org.id)),
 
             // Recent registrations preview
