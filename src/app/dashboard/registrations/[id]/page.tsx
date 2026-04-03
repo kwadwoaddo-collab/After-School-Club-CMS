@@ -75,24 +75,38 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     <h2 className="text-white font-semibold mb-4">Children ({kids.length})</h2>
                     <div className="space-y-3">
                         {kids.map((k) => (
-                            <div key={k.id} className="flex items-center justify-between py-3 border-b border-outline-variant/10 last:border-0">
-                                <div>
-                                    <p className="text-white font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
-                                    <p className="text-on-surface-variant text-sm">{k.submittedSchoolYear}</p>
-                                    {k.submittedDateOfBirth && (
-                                        <p className="text-slate-400 text-xs mt-0.5">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
-                                    )}
+                            <div key={k.id} className="py-4 border-b border-outline-variant/10 last:border-0">
+                                <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                        <p className="text-white font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
+                                        <p className="text-on-surface-variant text-sm">{k.submittedSchoolYear}</p>
+                                        {k.submittedDateOfBirth && (
+                                            <p className="text-slate-400 text-xs mt-0.5">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
+                                        )}
+                                    </div>
+                                    <div className="text-right">
+                                        {k.wasMatched && (
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 block mb-2">Matched record</span>
+                                        )}
+                                        {k.childId && (
+                                            <Link href={`/dashboard/students/${k.childId}`} className="inline-block text-xs text-primary hover:text-blue-400 transition-colors">
+                                                View profile →
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    {k.wasMatched && (
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Matched record</span>
-                                    )}
-                                    {k.childId && (
-                                        <Link href={`/dashboard/students/${k.childId}`} className="block text-xs text-primary hover:text-blue-400 mt-2 transition-colors">
-                                            View profile →
-                                        </Link>
-                                    )}
-                                </div>
+                                {k.submittedSessions && k.submittedSessions.length > 0 && (
+                                    <div className="bg-surface-container/30 border border-outline-variant/5 rounded-lg p-3">
+                                        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Selected Sessions</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {k.submittedSessions.map((session, idx) => (
+                                                <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#3f434e] text-slate-200 border border-outline-variant/20">
+                                                    {session}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
