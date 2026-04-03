@@ -9,14 +9,8 @@ import {
     Clock,
     User,
     ChevronLeft,
-    MapPin,
-    FileText,
-    Upload,
-    X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useTransition, useEffect } from 'react';
-import { updateBookingStatus } from '@/features/bookings/actions';
 import { cn } from '@/components/ui/utils';
 import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
@@ -58,25 +52,11 @@ interface AssessmentProfileProps {
     }>;
 }
 
-export default function AssessmentProfile({ student, initialNotes }: AssessmentProfileProps) {
+export default function StudentProfile({ student, initialNotes }: AssessmentProfileProps) {
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
 
-    // For MVP, we usually focus on the most recent/upcoming assessment
-    const latestAssessment = student.bookings[0];
 
-    const [isPending, startTransition] = useTransition();
-
-    const handleStatusUpdate = (newStatus: 'completed' | 'cancelled' | 'confirmed') => {
-        if (!latestAssessment) return;
-        startTransition(async () => {
-            try {
-                await updateBookingStatus(latestAssessment.id, newStatus);
-            } catch (error) {
-                console.error('Failed to update status:', error);
-            }
-        });
-    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -89,20 +69,12 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                     <span className="text-sm font-bold">Back to Overview</span>
                 </Link>
                 <div className="flex gap-3">
-                    <button
-                        onClick={() => handleStatusUpdate('confirmed')}
-                        disabled={isPending || latestAssessment?.status === 'confirmed'}
-                        className="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    <Link
+                        href={`/dashboard/bookings/new?studentId=${student.id}`}
+                        className="px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all"
                     >
-                        Reschedule
-                    </button>
-                    <button
-                        onClick={() => handleStatusUpdate('completed')}
-                        disabled={isPending || latestAssessment?.status === 'completed'}
-                        className="px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all disabled:opacity-50"
-                    >
-                        {isPending ? 'Updating...' : latestAssessment?.status === 'completed' ? 'Attended ✓' : 'Mark as Attended'}
-                    </button>
+                        Create Booking
+                    </Link>
                 </div>
             </div>
 
@@ -123,7 +95,6 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                         <div className="text-center md:text-left space-y-2">
                             <div className="flex items-center justify-center md:justify-start gap-3">
                                 <h1 className="text-4xl font-black text-slate-900 tracking-tight">{fullName}</h1>
-                                <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-full">Pre-Registration</span>
                             </div>
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-slate-500">
                                 <span className="flex items-center gap-1.5 font-bold text-sm">
@@ -139,31 +110,24 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                         </div>
                     </div>
 
-                    {/* Booking Stats Bar */}
-                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 border-t border-slate-100/50">
+                    {/* General Stats Bar */}
+                    <div className="mt-12 grid grid-cols-1 md:grid-cols-2 border-t border-slate-100/50">
                         <div className="p-8 border-b md:border-b-0 md:border-r border-slate-100/50 flex flex-col gap-1 items-center md:items-start">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assessment Date</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Bookings</span>
                             <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-primary" />
                                 <span className="text-lg font-black text-slate-900">
-                                    {latestAssessment ? new Date(latestAssessment.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) : '-'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="p-8 border-b md:border-b-0 md:border-r border-slate-100/50 flex flex-col gap-1 items-center md:items-start">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Time Slot</span>
-                            <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-violet-500" />
-                                <span className="text-lg font-black text-slate-900">
-                                    {latestAssessment ? new Date(latestAssessment.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                    {student.bookings.length}
                                 </span>
                             </div>
                         </div>
                         <div className="p-8 flex flex-col gap-1 items-center md:items-start">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance Status</span>
                             <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-emerald-500" />
-                                <span className="text-lg font-black text-slate-900">{latestAssessment?.centreName || '-'}</span>
+                                <User className="w-4 h-4 text-emerald-500" />
+                                <span className="text-lg font-black text-slate-900">
+                                    {student.attendanceStats?.completed || 0} / {student.attendanceStats?.total || 0} Attended
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -181,7 +145,7 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                                     </div>
                                     <div>
                                         <p className="font-black text-slate-900">{parentFullName}</p>
-                                        <p className="text-xs font-bold text-primary italic">Assessment Point of Contact</p>
+                                        <p className="text-xs font-bold text-primary italic">Parent / Guardian Contact</p>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -226,25 +190,45 @@ export default function AssessmentProfile({ student, initialNotes }: AssessmentP
                             <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
                         </div>
 
-                        {latestAssessment && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-6 rounded-[32px] bg-slate-50 border border-slate-100">
-                                    <FileText className="w-6 h-6 text-slate-400 mb-3" />
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Latest Booking</p>
-                                    <p className="text-sm font-black text-slate-900">#BK-{latestAssessment.id.slice(0, 8).toUpperCase()}</p>
+                        {/* Recent Bookings List */}
+                        <div className="bg-white rounded-[32px] p-6 border border-slate-100">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Recent Bookings</h3>
+                            
+                            {student.bookings.length > 0 ? (
+                                <div className="space-y-3">
+                                    {student.bookings.slice(0, 3).map(booking => (
+                                        <div key={booking.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-black text-slate-900">
+                                                    {new Date(booking.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} 
+                                                </p>
+                                                <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} • {booking.centreName}
+                                                </p>
+                                            </div>
+                                            <span className={cn(
+                                                "text-[10px] font-black uppercase rounded-full px-3 py-1",
+                                                    booking.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                    booking.status === 'cancelled' ? 'bg-rose-100 text-rose-700' :
+                                                'bg-primary/10 text-primary'
+                                            )}>
+                                                {booking.status}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    {student.bookings.length > 3 && (
+                                        <div className="pt-2 text-center text-xs font-bold text-slate-400">
+                                            + {student.bookings.length - 3} more bookings
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="p-6 rounded-[32px] bg-slate-50 border border-slate-100">
-                                    <Clock className="w-6 h-6 text-slate-400 mb-3" />
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</p>
-                                    <p className={cn(
-                                        "text-sm font-black uppercase text-[10px] rounded-full px-2 py-0.5 inline-block",
-                                        latestAssessment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary/10 text-primary'
-                                    )}>
-                                        {latestAssessment.status || 'Active'}
-                                    </p>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <p className="text-sm text-slate-400">No bookings found for this student.</p>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

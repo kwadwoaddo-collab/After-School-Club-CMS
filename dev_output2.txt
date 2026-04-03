@@ -386,3 +386,26 @@ params: Mon Mar 30 2026 00:00:00 GMT+0100 (British Summer Time),Sun Apr 05 2026 
  GET /api/auth/session 200 in 24ms (compile: 5ms, render: 19ms)
  HEAD /r/after-school-club 200 in 807ms (compile: 633ms, render: 175ms)
  GET /r/after-school-club 200 in 285ms (compile: 61ms, render: 224ms)
+✓ Compiled in 1139ms
+✓ Compiled in 129ms
+ GET /dashboard 200 in 2.4s (compile: 339ms, render: 2.1s)
+ GET /api/auth/session 200 in 1230ms (compile: 106ms, render: 1124ms)
+ GET /api/auth/session 200 in 657ms (compile: 453ms, render: 204ms)
+ GET /api/auth/session 200 in 54ms (compile: 5ms, render: 49ms)
+ GET /api/auth/session 200 in 78ms (compile: 16ms, render: 62ms)
+ GET /api/auth/session 200 in 35ms (compile: 9ms, render: 26ms)
+ GET /dashboard/students 200 in 2.2s (compile: 1700ms, render: 507ms)
+ GET /dashboard/students 200 in 358ms (compile: 22ms, render: 335ms)
+ GET /api/auth/session 200 in 106ms (compile: 46ms, render: 60ms)
+ GET /api/auth/session 200 in 36ms (compile: 21ms, render: 15ms)
+ GET /api/auth/session 200 in 49ms (compile: 15ms, render: 34ms)
+ GET /api/auth/session 200 in 21ms (compile: 6ms, render: 14ms)
+ GET /api/auth/session 200 in 59ms (compile: 31ms, render: 28ms)
+○ Compiling /dashboard/students/add ...
+ GET /dashboard/students/add 200 in 9.3s (compile: 8.9s, render: 426ms)
+ POST /api/students 200 in 3.6s (compile: 2.7s, render: 864ms)
+ GET /dashboard 200 in 1779ms (compile: 33ms, render: 1747ms)
+ GET /dashboard 200 in 1528ms (compile: 16ms, render: 1511ms)
+ GET /dashboard/students 200 in 2.0s (compile: 336ms, render: 1709ms)
+ GET /dashboard/students/c463b4ed-c657-4d95-b6b4-cd58bb3b9fba 200 in 4.3s (compile: 3.8s, render: 506ms)
+✓ Compiled in 398ms
