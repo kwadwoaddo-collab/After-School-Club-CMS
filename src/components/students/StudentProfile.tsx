@@ -23,6 +23,7 @@ interface AssessmentProfileProps {
         dateOfBirth: Date | null;
         schoolYear: string;
         notes: string | null;
+        registeredSessions?: string[] | null;
         parent: {
             firstName: string;
             lastName: string;
@@ -165,6 +166,25 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                     </a>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Selected Sessions Card */}
+                        <div className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Calendar className="w-5 h-5 text-blue-500" />
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Selected Days</h3>
+                            </div>
+                            {student.registeredSessions && student.registeredSessions.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {student.registeredSessions.map((session, idx) => (
+                                        <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-xl text-sm font-bold">
+                                            {session}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-slate-400 font-medium">No preferred sessions recorded.</p>
+                            )}
                         </div>
 
                         {student.notes && (

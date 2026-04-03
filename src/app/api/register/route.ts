@@ -144,6 +144,7 @@ export async function POST(req: NextRequest) {
                         source: 'both',
                         isRegistered: true,
                         registeredAt: new Date(),
+                        registeredSessions: c.sessions?.length > 0 ? c.sessions : null,
                         updatedAt: new Date(),
                     }).where(eq(children.id, existing.id));
                 } else {
@@ -157,6 +158,7 @@ export async function POST(req: NextRequest) {
                         source: 'registration',
                         isRegistered: true,
                         registeredAt: new Date(),
+                        registeredSessions: c.sessions?.length > 0 ? c.sessions : null,
                     }).returning();
                     childId = newChild.id;
                 }
@@ -169,6 +171,7 @@ export async function POST(req: NextRequest) {
                 submittedLastName: c.lastName,
                 submittedDateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
                 submittedSchoolYear: c.schoolYear ?? null,
+                submittedSessions: c.sessions?.length > 0 ? c.sessions : null,
                 wasMatched: matched,
             });
 

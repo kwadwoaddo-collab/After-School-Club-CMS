@@ -26,6 +26,7 @@ export default async function StudentProfilePage(
             dateOfBirth: children.dateOfBirth,
             schoolYear: children.schoolYear,
             notes: children.notes,
+            registeredSessions: children.registeredSessions,
             parent: {
                 firstName: parents.firstName,
                 lastName: parents.lastName,

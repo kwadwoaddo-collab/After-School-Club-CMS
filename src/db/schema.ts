@@ -176,6 +176,7 @@ export const children = pgTable('children', {
   source: studentSourceEnum('source').default('assessment'),
   isRegistered: boolean('is_registered').default(false),
   registeredAt: timestamp('registered_at'),
+  registeredSessions: text('registered_sessions').array(),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -358,6 +359,7 @@ export const registrationChildren = pgTable('registration_children', {
   submittedLastName: varchar('submitted_last_name', { length: 100 }).notNull(),
   submittedDateOfBirth: timestamp('submitted_date_of_birth'),
   submittedSchoolYear: varchar('submitted_school_year', { length: 10 }),
+  submittedSessions: text('submitted_sessions').array(),
   wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing child
   createdAt: timestamp('created_at').defaultNow(),
 });
