@@ -143,38 +143,38 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     </dl>
                 </div>
 
-                {/* Selected Sessions (Stitch Designed) */}
+                {/* Selected Sessions */}
                 {kids.some(k => k.submittedSessions && k.submittedSessions.length > 0) && (
                     <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-white font-semibold">Selected Sessions</h2>
-                        </div>
-                        <div className="space-y-6">
+                        <h2 className="text-white font-semibold mb-4">Selected Sessions</h2>
+                        <div className="space-y-6 flex flex-col">
                             {kids.filter(k => k.submittedSessions && k.submittedSessions.length > 0).map(k => (
                                 <div key={`sessions-${k.id}`}>
                                     {kids.length > 1 && (
-                                        <p className="text-on-surface-variant text-[10px] font-bold mb-3 uppercase tracking-widest border-b border-outline-variant/10 pb-2">
+                                        <h3 className="text-white font-medium mb-3 pb-2 border-b border-outline-variant/10">
                                             {k.submittedFirstName}
-                                        </p>
+                                        </h3>
                                     )}
-                                    <div className="space-y-3">
+                                    <dl className="space-y-3 text-sm">
                                         {k.submittedSessions!.map((session, idx) => {
-                                            const [day, time] = session.split(' - ');
+                                            let day = session;
+                                            let time = '';
+                                            if (session.includes(' - ')) {
+                                                [day, time] = session.split(' - ');
+                                            } else if (session.includes(' ')) {
+                                                const firstSpace = session.indexOf(' ');
+                                                day = session.substring(0, firstSpace);
+                                                time = session.substring(firstSpace + 1);
+                                            }
+                                            
+                                            // Capitalize standard day names
+                                            day = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+
                                             return (
-                                                <div key={idx} className="group relative bg-[#0e0e0e] rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 border-l-4 border-primary shadow-lg hover:shadow-xl">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <p className="text-primary text-[10px] font-bold uppercase tracking-widest mb-0.5">{day || session}</p>
-                                                            {time && <p className="text-white font-medium text-sm">{time}</p>}
-                                                        </div>
-                                                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                                            <Check className="w-4 h-4 text-primary" />
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <DetailRow key={idx} label={day} value={time} />
                                             );
                                         })}
-                                    </div>
+                                    </dl>
                                 </div>
                             ))}
                         </div>
