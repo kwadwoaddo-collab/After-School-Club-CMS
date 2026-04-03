@@ -121,12 +121,12 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                 <div>
                     <label className="text-sm font-medium text-slate-300 mb-1 block">Booking URL</label>
                     <a
-                        href={`${baseUrl}/book/${org.slug}`}
+                        href={`${baseUrl}/b/${org.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-base text-primary hover:underline font-medium break-all"
                     >
-                        {baseUrl}/book/{org.slug}
+                        {baseUrl}/b/{org.slug}
                     </a>
                 </div>
             </div>

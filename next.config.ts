@@ -34,6 +34,19 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async rewrites() {
+    return [
+      {
+        source: '/r/:slug*',
+        destination: '/register/:slug*',
+      },
+      {
+        source: '/b/:slug*',
+        destination: '/book/:slug*',
+      },
+    ];
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },

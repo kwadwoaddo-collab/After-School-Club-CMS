@@ -303,7 +303,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         };
     });
 
-    const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/register/${org.slug}`;
+    const registrationLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''}/r/${org.slug}`;
 
     const calculateTrend = (curr: any, prev: any) => {
         const current = Number(curr || 0);

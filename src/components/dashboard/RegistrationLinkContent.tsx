@@ -20,7 +20,7 @@ export default function RegistrationLinkContent({ organisation }: { organisation
     const [showPreview, setShowPreview] = useState(false);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
-    const registrationLink = `${baseUrl}/register/${organisation.slug}`;
+    const registrationLink = `${baseUrl}/r/${organisation.slug}`;
 
     const getIframeHeight = () => {
         switch (embedSize) {

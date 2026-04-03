@@ -37,8 +37,8 @@ export default function BookingLinkContent({ organisation, centres }: Props) {
 
     // Generate booking link
     const bookingLink = selectedCentre
-        ? `${baseUrl}/book/${organisation.slug}/${selectedCentre}`
-        : `${baseUrl}/book/${organisation.slug}`;
+        ? `${baseUrl}/b/${organisation.slug}/${selectedCentre}`
+        : `${baseUrl}/b/${organisation.slug}`;
 
     // Get iframe height based on size
     const getIframeHeight = () => {
