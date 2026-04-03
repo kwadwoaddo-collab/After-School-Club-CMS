@@ -76,7 +76,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     <div className="space-y-3">
                         {kids.map((k) => (
                             <div key={k.id} className="py-4 border-b border-outline-variant/10 last:border-0">
-                                <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-start justify-between">
                                     <div>
                                         <p className="text-white font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
                                         <p className="text-on-surface-variant text-sm">{k.submittedSchoolYear}</p>
@@ -95,18 +95,6 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                         )}
                                     </div>
                                 </div>
-                                {k.submittedSessions && k.submittedSessions.length > 0 && (
-                                    <div className="bg-surface-container/30 border border-outline-variant/5 rounded-lg p-3">
-                                        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Selected Sessions</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {k.submittedSessions.map((session, idx) => (
-                                                <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#3f434e] text-slate-200 border border-outline-variant/20">
-                                                    {session}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>
@@ -154,6 +142,44 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                         <DetailRow label="T&Cs Agreed" value={reg.termsAgreed ? 'Yes ✓' : 'No'} />
                     </dl>
                 </div>
+
+                {/* Selected Sessions (Stitch Designed) */}
+                {kids.some(k => k.submittedSessions && k.submittedSessions.length > 0) && (
+                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-white font-semibold">Selected Sessions</h2>
+                        </div>
+                        <div className="space-y-6">
+                            {kids.filter(k => k.submittedSessions && k.submittedSessions.length > 0).map(k => (
+                                <div key={`sessions-${k.id}`}>
+                                    {kids.length > 1 && (
+                                        <p className="text-on-surface-variant text-[10px] font-bold mb-3 uppercase tracking-widest border-b border-outline-variant/10 pb-2">
+                                            {k.submittedFirstName}
+                                        </p>
+                                    )}
+                                    <div className="space-y-3">
+                                        {k.submittedSessions!.map((session, idx) => {
+                                            const [day, time] = session.split(' - ');
+                                            return (
+                                                <div key={idx} className="group relative bg-[#0e0e0e] rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 border-l-4 border-primary shadow-lg hover:shadow-xl">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <p className="text-primary text-[10px] font-bold uppercase tracking-widest mb-0.5">{day || session}</p>
+                                                            {time && <p className="text-white font-medium text-sm">{time}</p>}
+                                                        </div>
+                                                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                                                            <Check className="w-4 h-4 text-primary" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
