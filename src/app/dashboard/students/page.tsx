@@ -34,6 +34,8 @@ export default async function StudentsPage() {
             lastName: children.lastName,
             dateOfBirth: children.dateOfBirth,
             schoolYear: children.schoolYear,
+            isRegistered: children.isRegistered,
+            source: children.source,
             parentFirstName: parents.firstName,
             parentLastName: parents.lastName,
             parentEmail: parents.email,
@@ -165,6 +167,11 @@ export default async function StudentsPage() {
                                                             <p className="font-bold text-white group-hover:text-primary transition-colors">
                                                                 {student.firstName} {student.lastName}
                                                             </p>
+                                                            {student.isRegistered && (
+                                                                <span className="px-1.5 py-0.5 rounded-md bg-tertiary-container/10 border border-tertiary/20 text-[10px] font-bold text-tertiary uppercase tracking-wider uppercase ml-1" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
+                                                                    Registered
+                                                                </span>
+                                                            )}
                                                             {hasMedicalNote && (
                                                                 <div className="relative group/tooltip flex items-center outline-none">
                                                                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">

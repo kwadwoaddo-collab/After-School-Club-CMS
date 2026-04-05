@@ -440,12 +440,12 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
             </div>
         )}
 
-        <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl overflow-hidden relative">
+        <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden relative">
             {/* Table for Desktop */}
             <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="border-b border-[#2a2a2a]">
+                        <tr className="border-b border-outline-variant/10 bg-surface-container-low/50">
                             <th className="text-left px-5 py-4 w-12">
                                 <div className="flex items-center justify-center">
                                     <input 
@@ -544,9 +544,13 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                                             {getStudentInitials(booking)}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-[#FFFFFF] group-hover:text-primary transition-colors">
+                                            <Link
+                                                href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`} 
+                                                className="text-sm font-semibold text-[#FFFFFF] group-hover:text-primary transition-colors hover:underline"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
                                                 {getStudentNames(booking)}
-                                            </span>
+                                            </Link>
                                             {hasMedicalNote(booking) && (
                                                 <div className="relative group/tooltip flex items-center outline-none">
                                                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 border border-rose-100 cursor-help shadow-sm">
@@ -639,6 +643,17 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                                                         <Eye className="w-4 h-4" />
                                                         View Details
                                                     </Link>
+                                                    {(booking.attendees?.[0]?.child?.id || booking.child?.id) && (
+                                                        <Link
+                                                            href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-primary transition-colors"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                            View Student Profile
+                                                        </Link>
+                                                    )}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors w-full text-left"
@@ -735,9 +750,13 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h4 className="text-sm font-bold text-[#FFFFFF]">
+                                        <Link 
+                                            href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
+                                            className="text-sm font-bold text-[#FFFFFF] hover:text-primary hover:underline transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             {getStudentNames(booking)}
-                                        </h4>
+                                        </Link>
                                         {hasMedicalNote(booking) && (
                                             <div className="relative group/tooltip flex items-center">
                                                 <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-50 border border-rose-100">

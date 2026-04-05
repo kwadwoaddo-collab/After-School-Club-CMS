@@ -131,9 +131,26 @@ export default async function RegistrationsPage() {
                                                 {STATUS_LABEL[r.status] ?? r.status}
                                             </span>
                                         </div>
-                                        <p className="text-on-surface-variant text-sm truncate">
-                                            {r.kids.length} child{r.kids.length !== 1 ? 'ren' : ''}: {childNames}
-                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-on-surface-variant text-sm truncate">
+                                                {r.kids.length} child{r.kids.length !== 1 ? 'ren' : ''}: {childNames}
+                                            </p>
+                                            {r.kids.some((k: any) => k.childId) && (
+                                                <div className="flex flex-wrap items-center gap-1.5 ml-2">
+                                                    {r.kids.filter((k: any) => k.childId).map((k: any) => (
+                                                        <Link
+                                                            key={k.childId}
+                                                            href={`/dashboard/students/${k.childId}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="inline-flex items-center px-2 py-0.5 rounded border border-primary/20 bg-primary/10 text-[10px] font-bold text-primary hover:bg-primary/20 hover:border-primary/30 transition-colors cursor-pointer relative z-10"
+                                                            title={`View ${k.submittedFirstName}'s Profile`}
+                                                        >
+                                                            View {k.submittedFirstName} ↘
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                         {primary?.submittedEmail && (
                                             <p className="text-on-surface-variant opacity-80 text-xs mt-1">{primary.submittedEmail}</p>
                                         )}

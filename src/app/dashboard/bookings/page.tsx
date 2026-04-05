@@ -55,7 +55,7 @@ export default async function BookingsPage(props: {
                     </div>
                 </div>
 
-                <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-[32px] p-12 text-center">
+                <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Calendar className="w-8 h-8 text-primary" />
                     </div>
@@ -161,7 +161,7 @@ export default async function BookingsPage(props: {
             </div>
 
             {/* Filters and View Toggle */}
-            <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl p-6">
+            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
                 <BookingsFilters centres={orgCentres} resultsCount={bookingsData.length} />
             </div>
 
@@ -169,7 +169,7 @@ export default async function BookingsPage(props: {
             <BookingsTable bookings={bookingsData as any} isFiltered={isFiltered} />
 
             {/* Stats Footer */}
-            <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-xl rounded-3xl p-6">
+            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="text-center">
                         <p className="text-2xl font-bold text-[#FFFFFF]">{bookingsData.length}</p>

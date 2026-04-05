@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#424754",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "surface-container-lowest": "#0e0e0e",
+                    "on-secondary": "#3c0091",
+                    "inverse-surface": "#e5e2e1",
+                    "surface-container-highest": "#353535",
+                    "on-primary-fixed": "#001a42",
+                    "on-tertiary": "#5a1c00",
+                    "inverse-on-surface": "#313030",
+                    "tertiary-fixed": "#ffdbce",
+                    "surface-container": "#20201f",
+                    "primary-container": "#4d8eff",
+                    "error": "#ffb4ab",
+                    "surface-bright": "#393939",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-primary-container": "#00285d",
+                    "on-surface": "#e5e2e1",
+                    "surface-tint": "#adc6ff",
+                    "on-primary": "#002e6a",
+                    "on-error": "#690005",
+                    "error-container": "#93000a",
+                    "secondary-fixed": "#e9ddff",
+                    "primary-fixed-dim": "#adc6ff",
+                    "tertiary": "#ffb599",
+                    "primary-fixed": "#d8e2ff",
+                    "on-tertiary-fixed": "#370e00",
+                    "tertiary-fixed-dim": "#ffb599",
+                    "primary": "#adc6ff",
+                    "surface-container-high": "#2a2a2a",
+                    "on-tertiary-fixed-variant": "#7f2b00",
+                    "outline": "#8c909f",
+                    "surface-container-low": "#1c1b1b",
+                    "on-primary-fixed-variant": "#004395",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-container": "#c4abff",
+                    "secondary": "#d0bcff",
+                    "on-background": "#e5e2e1",
+                    "background": "#131313",
+                    "inverse-primary": "#005ac2",
+                    "surface-dim": "#131313",
+                    "surface": "#131313",
+                    "secondary-container": "#571bc1",
+                    "on-tertiary-container": "#4f1700",
+                    "on-secondary-fixed": "#23005c",
+                    "surface-variant": "#353535",
+                    "tertiary-container": "#f66018",
+                    "on-surface-variant": "#c2c6d6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "2xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #131313; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .ghost-border { border: 1px solid rgba(66, 71, 84, 0.15); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col md:flex-row">
+<!-- NavigationDrawer (Sidebar for Desktop) -->
+<aside class="hidden md:flex flex-col h-full w-64 fixed left-0 top-0 bg-[#131313] py-8 z-40">
+<div class="px-8 mb-10 flex flex-col gap-2">
+<h1 class="text-white font-black tracking-tighter text-xl">Academic Curator</h1>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a professional man with glasses in a dark suit with moody lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSS3-1dAAdwbn3fA1-wp9XHvZqXTqp5ye8P4Bi60M-ulsg5gibl_-GMtuDjfh_ZPmeQBSWQeoENMefboBCqJjXdmF1l-uA-yEe-Svz9JmO4hS0C2dNjm0eLb3pWPF5U7pWMemLIM1GJrdiIgV-YLGtNLcbMoG5adNx1AMI_Wlmb468WHBT_GnNj8NWja4iFYGIuUeYum-j7ABxMCSmZdvs3BVw8ol04cri9BYl-IiQk_K-2DOFZqViGgD-H0GQxjMtYxOzFc2-k-oT"/>
+</div>
+<div>
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] text-white">Academic Curator</p>
+<p class="font-['Inter'] text-[10px] text-slate-500">Premium Admin</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col flex-grow">
+<a class="px-8 py-4 flex items-center gap-4 text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-['Inter'] uppercase tracking-widest text-[10px]">Dashboard</span>
+</a>
+<a class="px-8 py-4 flex items-center gap-4 text-blue-400 bg-blue-400/10 border-r-2 border-blue-400 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-['Inter'] uppercase tracking-widest text-[10px]">Sessions</span>
+</a>
+<a class="px-8 py-4 flex items-center gap-4 text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-['Inter'] uppercase tracking-widest text-[10px]">Tutors</span>
+</a>
+<a class="px-8 py-4 flex items-center gap-4 text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] uppercase tracking-widest text-[10px]">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#131313]/60 backdrop-blur-xl flex items-center justify-between px-6 h-16 w-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] md:pl-72">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-400">calendar_today</span>
+<h2 class="font-['Inter'] tracking-tight font-semibold text-white">Selected Sessions</h2>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden ghost-border">
+<img class="w-full h-full object-cover" data-alt="User profile avatar of an academic administrator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4j6RUWcQg7oTUM_tGq6Icg6WgMXVMVCIuGRU_fr4xzhXoFyvmpRV0DzmUUy6gcLDF-RZ8cfLH_xqyYnv6FHBWAfdq1F_SvUycbpqOgLF6hV--vCFe34WEMsMpCTKpLQGBfHcSVnr3F2wTdnT9ZIYSMdHqnqj_iF2XRms92bbHfFc3tUNaHNlCrQwR4wpc_sQ9vsjoI7t3c_LcYCV0jAJW1YJAJb9sJonAXK4QGxXCN_3o8RicI_UwdWn_m7bjP-NPzHVWM2CxezXi"/>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow pt-24 pb-32 px-6 md:pl-72 md:pr-12 max-w-7xl mx-auto w-full">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Hero Selection Panel -->
+<div class="lg:col-span-8 flex flex-col gap-8">
+<!-- Bento Content (Secondary Context) -->
+<section class="bg-surface-container-low rounded-2xl p-8 ghost-border relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+<div class="relative z-10">
+<span class="text-[10px] uppercase tracking-widest font-bold text-primary mb-4 block">Academic Roster</span>
+<h1 class="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-6">
+                            Coordinate your <br/><span class="text-primary">Learning Architecture.</span>
+</h1>
+<p class="text-on-surface-variant max-w-md mb-8 leading-relaxed">
+                            A distilled perspective on your instructional workflow. Each slot represents a commitment to academic excellence.
+                        </p>
+</div>
+</section>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-surface-container-highest/30 p-6 rounded-2xl ghost-border">
+<span class="material-symbols-outlined text-secondary text-3xl mb-4">analytics</span>
+<h3 class="text-white font-semibold mb-2">Efficiency Rating</h3>
+<p class="text-on-surface-variant text-sm">Session density is optimized at 84% for the current quarter.</p>
+</div>
+<div class="bg-surface-container-highest/30 p-6 rounded-2xl ghost-border">
+<span class="material-symbols-outlined text-tertiary text-3xl mb-4">hub</span>
+<h3 class="text-white font-semibold mb-2">Global Sync</h3>
+<p class="text-on-surface-variant text-sm">All selected sessions are synchronized with the primary ledger.</p>
+</div>
+</div>
+</div>
+<!-- The Task: Selected Sessions Card -->
+<div class="lg:col-span-4">
+<div class="bg-surface-container-high rounded-2xl p-6 ghost-border sticky top-24 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-xl font-semibold tracking-tight text-white">Selected Sessions</h2>
+<span class="text-[10px] px-2 py-1 bg-primary/10 text-primary rounded-full font-bold tracking-widest uppercase">3 Selected</span>
+</div>
+<div class="space-y-4">
+<!-- Monday Session -->
+<div class="group relative bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:translate-x-1 border-l-4 border-primary shadow-lg">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-primary text-[10px] font-bold uppercase tracking-widest mb-1">Monday</p>
+<p class="text-white font-medium">Morning Block</p>
+<p class="text-on-surface-variant text-[11px] mt-1">09:00 AM — 12:00 PM</p>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Wednesday Session -->
+<div class="group relative bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:translate-x-1 border-l-4 border-primary shadow-lg">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-primary text-[10px] font-bold uppercase tracking-widest mb-1">Wednesday</p>
+<p class="text-white font-medium">Afternoon Session</p>
+<p class="text-on-surface-variant text-[11px] mt-1">02:30 PM — 05:00 PM</p>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Friday Session -->
+<div class="group relative bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 hover:translate-x-1 border-l-4 border-primary shadow-lg">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-primary text-[10px] font-bold uppercase tracking-widest mb-1">Friday</p>
+<p class="text-white font-medium">Evening Review</p>
+<p class="text-on-surface-variant text-[11px] mt-1">06:00 PM — 08:30 PM</p>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Add Button (Ghost State) -->
+<button class="w-full mt-6 py-4 rounded-xl border border-dashed border-outline-variant/30 text-on-surface-variant text-xs uppercase tracking-widest font-bold hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                            Add session slot
+                        </button>
+</div>
+<div class="mt-10">
+<button class="w-full py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-full shadow-[0_0_20px_rgba(77,142,255,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
+                            Confirm Schedule
+                        </button>
+<p class="text-[10px] text-center text-on-surface-variant mt-4 uppercase tracking-[0.1em]">Total Commitment: 8.5 Hours</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#131313]/80 backdrop-blur-lg shadow-[0_-10px_40px_rgba(0,0,0,0.4)] rounded-t-3xl">
+<a class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-blue-500/20 text-blue-300 rounded-2xl px-5 py-2 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">event_available</span>
+<span class="font-['Inter'] text-[10px] font-medium">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Inter'] text-[10px] font-medium">Roster</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:bg-white/5 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Inter'] text-[10px] font-medium">Account</span>
+</a>
+</nav>
+</body></html>
