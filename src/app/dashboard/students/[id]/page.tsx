@@ -84,7 +84,7 @@ export default async function StudentProfilePage(
         .where(eq(bookingAttendees.childId, student.id));
 
     return (
-        <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <StudentProfile
                 student={{
                     ...student,

@@ -4,10 +4,11 @@ import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, centres } from '@/db/schema';
 import { eq, desc, sql, min, inArray, and } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Users, Calendar, Mail, Phone, ArrowRight, AlertTriangle, Shield } from 'lucide-react';
+import { Plus, Users, Calendar, Mail, Phone, AlertTriangle, Shield } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
+import StudentActions from '@/components/students/StudentActions';
 
 export default async function StudentsPage() {
     const session = await auth();
@@ -254,12 +255,10 @@ export default async function StudentsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Link
-                                                    href={`/dashboard/students/${student.id}`}
-                                                    className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg inline-flex items-center gap-2 transition-all"
-                                                >
-                                                    Manage <ArrowRight className="w-3 h-3" />
-                                                </Link>
+                                                <StudentActions
+                                                    studentId={student.id}
+                                                    studentName={`${student.firstName} ${student.lastName}`}
+                                                />
                                             </td>
                                         </tr>
                                     );
