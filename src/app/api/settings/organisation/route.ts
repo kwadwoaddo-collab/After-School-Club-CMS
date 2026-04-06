@@ -21,40 +21,66 @@ export async function PATCH(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name } = body;
+        const { name, slug: customSlug } = body;
 
-        if (!name || typeof name !== 'string' || name.trim() === '') {
-            return NextResponse.json({ error: 'Organisation name is required' }, { status: 400 });
+        const updateData: any = {};
+
+        if (name && typeof name === 'string' && name.trim() !== '') {
+            updateData.name = name.trim();
         }
 
-        const newName = name.trim();
+        if (customSlug && typeof customSlug === 'string' && customSlug.trim() !== '') {
+            // Validate slug format
+            const sanitizedSlug = customSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            if (sanitizedSlug !== customSlug) {
+                return NextResponse.json({ error: 'Slug must be lowercase alphanumeric with hyphens' }, { status: 400 });
+            }
 
-        // Generate a base slug from the name
-        const baseSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        let newSlug = baseSlug;
-        let suffix = 1;
-
-        // Ensure the generated slug is unique across other organisations
-        while (true) {
+            // Check uniqueness
             const existingOrg = await db.query.organisations.findFirst({
                 where: (org, { and, eq, not }) => and(
-                    eq(org.slug, newSlug),
+                    eq(org.slug, sanitizedSlug),
                     not(eq(org.id, organisationId))
                 )
             });
 
-            if (!existingOrg) {
-                break; // Slug is unique
+            if (existingOrg) {
+                return NextResponse.json({ error: 'Slug is already taken' }, { status: 400 });
             }
-            // If conflict, append a number
-            newSlug = `${baseSlug}-${suffix}`;
-            suffix++;
+
+            updateData.slug = sanitizedSlug;
+        } else if (updateData.name && !customSlug) {
+            // Only generate new slug from name if the user didn't provide a custom one
+            // and we are updating the name.
+            const baseSlug = updateData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            let newSlug = baseSlug;
+            let suffix = 1;
+
+            while (true) {
+                const existingOrg = await db.query.organisations.findFirst({
+                    where: (org, { and, eq, not }) => and(
+                        eq(org.slug, newSlug),
+                        not(eq(org.id, organisationId))
+                    )
+                });
+
+                if (!existingOrg) {
+                    break;
+                }
+                newSlug = `${baseSlug}-${suffix}`;
+                suffix++;
+            }
+            updateData.slug = newSlug;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ error: 'No valid data provided' }, { status: 400 });
         }
 
         // Update organisation
         const [updatedOrg] = await db
             .update(organisations)
-            .set({ name: newName, slug: newSlug })
+            .set(updateData)
             .where(eq(organisations.id, organisationId))
             .returning();
 

@@ -34,7 +34,8 @@ export default async function RegistrationsPage() {
         .limit(1);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
-    const registrationUrl = org ? `${baseUrl}/register/${org.slug}` : null;
+    const registrationUrl = org ? `${baseUrl.replace(/^https?:\/\//, '')}/r/${org.slug}` : null;
+    const fullRegistrationUrl = org ? `${baseUrl}/r/${org.slug}` : null;
 
     // Use relational query to fetch all registration data in ONE trip
     const rows = await db.query.registrations.findMany({
@@ -54,9 +55,9 @@ export default async function RegistrationsPage() {
                     <h1 className="text-2xl font-bold text-white">Registrations</h1>
                     <p className="text-on-surface-variant text-sm mt-1">{rows.length} total submission{rows.length !== 1 ? 's' : ''}</p>
                 </div>
-                {registrationUrl && (
+                {fullRegistrationUrl && (
                     <Link
-                        href={registrationUrl}
+                        href={fullRegistrationUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
@@ -70,7 +71,7 @@ export default async function RegistrationsPage() {
             </div>
 
             {/* Registration link card */}
-            {registrationUrl && (
+            {fullRegistrationUrl && registrationUrl && (
                 <div className="mb-6 bg-surface-container-low border border-outline-variant/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Your Registration Link</p>
@@ -78,7 +79,7 @@ export default async function RegistrationsPage() {
                         <p className="text-xs text-on-surface-variant mt-1">Share this link with parents to let them register their children.</p>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                        <CopyRegistrationLink url={registrationUrl} />
+                        <CopyRegistrationLink url={fullRegistrationUrl} />
                         <Link
                             href="/dashboard/settings/registration"
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-bright text-sm font-medium rounded-xl transition-colors"
@@ -101,9 +102,9 @@ export default async function RegistrationsPage() {
                     <p className="text-on-surface-variant text-sm max-w-sm mb-5">
                         Share your registration link with parents to start receiving submissions.
                     </p>
-                    {registrationUrl && (
+                    {fullRegistrationUrl && (
                         <Link
-                            href={registrationUrl}
+                            href={fullRegistrationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
