@@ -36,11 +36,15 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
     const reg = await db.query.registrations.findFirst({
         where: and(eq(registrations.id, id), eq(registrations.organisationId, orgId)),
+        with: {
+            registrationChildren: true,
+            registrationParents: true,
+        },
     });
     if (!reg) notFound();
 
-    const kids = await db.select().from(registrationChildren).where(eq(registrationChildren.registrationId, id));
-    const pars = await db.select().from(registrationParents).where(eq(registrationParents.registrationId, id));
+    const kids = reg.registrationChildren;
+    const pars = reg.registrationParents;
     const primary = pars.find(p => p.isPrimary) ?? pars[0];
 
     return (

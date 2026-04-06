@@ -1,10 +1,11 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, organisations } from '@/db/schema';
+import { registrations, organisations } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import Link from 'next/link';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
+import RegistrationItem from '@/components/dashboard/RegistrationItem';
 
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-error-container/10 text-error border border-error/20',
@@ -35,17 +36,15 @@ export default async function RegistrationsPage() {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
     const registrationUrl = org ? `${baseUrl}/register/${org.slug}` : null;
 
-    const rows = await db
-        .select()
-        .from(registrations)
-        .where(eq(registrations.organisationId, orgId))
-        .orderBy(desc(registrations.createdAt));
-
-    const enriched = await Promise.all(rows.map(async r => {
-        const kids = await db.select().from(registrationChildren).where(eq(registrationChildren.registrationId, r.id));
-        const pars = await db.select().from(registrationParents).where(eq(registrationParents.registrationId, r.id));
-        return { ...r, kids, pars };
-    }));
+    // Use relational query to fetch all registration data in ONE trip
+    const rows = await db.query.registrations.findMany({
+        where: eq(registrations.organisationId, orgId),
+        with: {
+            registrationChildren: true,
+            registrationParents: true,
+        },
+        orderBy: [desc(registrations.createdAt)],
+    });
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
@@ -95,7 +94,7 @@ export default async function RegistrationsPage() {
             )}
 
             {/* Empty state */}
-            {enriched.length === 0 ? (
+            {rows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/20">
                     <div className="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4 text-3xl">📋</div>
                     <h3 className="text-white font-semibold mb-2">No registrations yet</h3>
@@ -115,60 +114,14 @@ export default async function RegistrationsPage() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {enriched.map(r => {
-                        const primary = r.pars.find((p: any) => p.isPrimary) ?? r.pars[0];
-                        const childNames = r.kids.map((k: any) => `${k.submittedFirstName} ${k.submittedLastName}`).join(', ');
-                        return (
-                            <Link key={r.id} href={`/dashboard/registrations/${r.id}`}
-                                className="block bg-surface-container-high border border-outline-variant/10 rounded-2xl p-5 hover:border-primary/30 hover:bg-surface-bright transition-all">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <p className="text-white font-medium truncate">
-                                                {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
-                                            </p>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[r.status] || ''}`}>
-                                                {STATUS_LABEL[r.status] ?? r.status}
-                                            </span>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <p className="text-on-surface-variant text-sm truncate">
-                                                {r.kids.length} child{r.kids.length !== 1 ? 'ren' : ''}: {childNames}
-                                            </p>
-                                            {r.kids.some((k: any) => k.childId) && (
-                                                <div className="flex flex-wrap items-center gap-1.5 ml-2">
-                                                    {r.kids.filter((k: any) => k.childId).map((k: any) => (
-                                                        <Link
-                                                            key={k.childId}
-                                                            href={`/dashboard/students/${k.childId}`}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="inline-flex items-center px-2 py-0.5 rounded border border-primary/20 bg-primary/10 text-[10px] font-bold text-primary hover:bg-primary/20 hover:border-primary/30 transition-colors cursor-pointer relative z-10"
-                                                            title={`View ${k.submittedFirstName}'s Profile`}
-                                                        >
-                                                            View {k.submittedFirstName} ↘
-                                                        </Link>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        {primary?.submittedEmail && (
-                                            <p className="text-on-surface-variant opacity-80 text-xs mt-1">{primary.submittedEmail}</p>
-                                        )}
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-on-surface-variant text-xs">
-                                            {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        </p>
-                                        {r.startDate && (
-                                            <p className="text-on-surface-variant text-xs mt-1">
-                                                Start: {new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                    {rows.map(r => (
+                        <RegistrationItem 
+                            key={r.id} 
+                            registration={r as any} 
+                            statusBadge={STATUS_BADGE} 
+                            statusLabel={STATUS_LABEL} 
+                        />
+                    ))}
                 </div>
             )}
         </div>
