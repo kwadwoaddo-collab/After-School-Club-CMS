@@ -35,8 +35,32 @@ export async function PATCH(
         }
 
         // Validate and update fields
-        // Validate and update fields
-        const { sessionSlots, operatingHours, feeSelfFinance, feeAssistedFinance } = body;
+        const { 
+            sessionSlots, 
+            operatingHours, 
+            feeSelfFinance, 
+            feeAssistedFinance,
+            bankName,
+            sortCode,
+            accountNo,
+            ofstedId,
+            managerName,
+            signatureUrl
+        } = body;
+
+        // Strict RBAC: Only ORG_OWNER can update billing details
+        const isUpdatingBilling = bankName !== undefined || 
+                                 sortCode !== undefined || 
+                                 accountNo !== undefined || 
+                                 ofstedId !== undefined || 
+                                 managerName !== undefined || 
+                                 signatureUrl !== undefined ||
+                                 feeSelfFinance !== undefined ||
+                                 feeAssistedFinance !== undefined;
+
+        if (isUpdatingBilling && userRole !== 'ORG_OWNER') {
+            return NextResponse.json({ error: 'Only organisation owners can update billing settings' }, { status: 403 });
+        }
 
         const updateData: any = {};
         if (sessionSlots !== undefined) {
@@ -51,6 +75,12 @@ export async function PATCH(
         if (feeAssistedFinance !== undefined) {
             updateData.feeAssistedFinance = feeAssistedFinance === '' ? null : feeAssistedFinance;
         }
+        if (bankName !== undefined) updateData.bankName = bankName;
+        if (sortCode !== undefined) updateData.sortCode = sortCode;
+        if (accountNo !== undefined) updateData.accountNo = accountNo;
+        if (ofstedId !== undefined) updateData.ofstedId = ofstedId;
+        if (managerName !== undefined) updateData.managerName = managerName;
+        if (signatureUrl !== undefined) updateData.signatureUrl = signatureUrl;
 
         const [updatedCentre] = await db
             .update(centres)

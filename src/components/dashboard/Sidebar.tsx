@@ -17,6 +17,7 @@ import {
     ExternalLink,
     BarChart,
     X,
+    Wallet,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -27,7 +28,7 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Reports', 'Team', 'Settings'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
     MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Reports'],
     FRONT_DESK: ['Dashboard', 'Students', 'Bookings'],
     TUTOR: ['Dashboard'],
@@ -56,6 +57,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
+        { name: 'Finance', icon: Wallet, href: '/dashboard/finance' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
     ].filter(item => allowedNav.includes(item.name));
 

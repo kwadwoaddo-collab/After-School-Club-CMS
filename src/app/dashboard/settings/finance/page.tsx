@@ -17,23 +17,29 @@ export default async function FinanceSettingsPage() {
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
     
-    // Check role access
+    // Check role access - Strictly ORG_OWNER
     const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+    if (userRole !== 'ORG_OWNER') {
         return redirect('/dashboard');
     }
-
+ 
     const orgCentres = await db
         .select({
             id: centres.id,
             name: centres.name,
             feeSelfFinance: centres.feeSelfFinance,
             feeAssistedFinance: centres.feeAssistedFinance,
+            bankName: centres.bankName,
+            sortCode: centres.sortCode,
+            accountNo: centres.accountNo,
+            ofstedId: centres.ofstedId,
+            managerName: centres.managerName,
+            signatureUrl: centres.signatureUrl,
         })
         .from(centres)
         .where(eq(centres.organisationId, session.user.organisationId))
         .orderBy(centres.name);
-
+ 
     // Convert numeric strings to numbers for the client component
     const formattedCentres = orgCentres.map(c => ({
         ...c,

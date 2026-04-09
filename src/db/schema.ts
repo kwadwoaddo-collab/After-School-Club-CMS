@@ -15,6 +15,8 @@ export const registrationStatusEnum2 = pgEnum('registration_status_v2', ['awaiti
 export const fundingTypeEnum = pgEnum('funding_type', ['tax_free_childcare', 'childcare_vouchers', 'student_finance', 'self_funded', 'other']);
 export const studentSourceEnum = pgEnum('student_source', ['assessment', 'registration', 'both']);
 export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
+export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'partially_paid', 'paid', 'void']);
+export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfer', 'stripe', 'voucher', 'other']);
 
 // ==================== ORGANISATIONS & CENTRES ====================
 export const organisations = pgTable('organisations', {
@@ -58,6 +60,15 @@ export const centres = pgTable('centres', {
   sessionSlots: text('session_slots'), // JSON-encoded string[] of session time options for this specific centre
   feeSelfFinance: numeric('fee_self_finance', { precision: 10, scale: 2 }),
   feeAssistedFinance: numeric('fee_assisted_finance', { precision: 10, scale: 2 }),
+
+  // Bank & Info (Billing Infrastructure)
+  bankName: varchar('bank_name', { length: 255 }),
+  sortCode: varchar('sort_code', { length: 20 }),
+  accountNo: varchar('account_no', { length: 20 }),
+  ofstedId: varchar('ofsted_id', { length: 50 }),
+  managerName: varchar('manager_name', { length: 255 }),
+  signatureUrl: varchar('signature_url', { length: 500 }),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -380,6 +391,40 @@ export const registrationParents = pgTable('registration_parents', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// ==================== FINANCE (BILLING INFRASTRUCTURE) ====================
+export const invoices = pgTable('invoices', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  
+  invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(),
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  status: invoiceStatusEnum('status').default('draft').notNull(),
+  invoiceDate: timestamp('invoice_date').notNull(),
+  dueDate: timestamp('due_date').notNull(),
+  billingPeriodStart: timestamp('billing_period_start'),
+  billingPeriodEnd: timestamp('billing_period_end'),
+  
+  notes: text('notes'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const payments = pgTable('payments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }).notNull(),
+  
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  method: paymentMethodEnum('method').notNull(),
+  transactionReference: varchar('transaction_reference', { length: 255 }),
+  recordedAt: timestamp('recorded_at').defaultNow().notNull(),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // ==================== AUDIT LOGS ====================
 export const auditEvents = pgTable('audit_events', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -568,5 +613,28 @@ export const centreMembershipsRelations = relations(centreMemberships, ({ one })
   user: one(users, {
     fields: [centreMemberships.userId],
     references: [users.id],
+  }),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  organisation: one(organisations, {
+    fields: [invoices.organisationId],
+    references: [organisations.id],
+  }),
+  centre: one(centres, {
+    fields: [invoices.centreId],
+    references: [centres.id],
+  }),
+  child: one(children, {
+    fields: [invoices.childId],
+    references: [children.id],
+  }),
+  payments: many(payments),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
   }),
 }));

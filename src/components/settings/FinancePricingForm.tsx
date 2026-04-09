@@ -9,6 +9,12 @@ interface Centre {
     name: string;
     feeSelfFinance: number | null;
     feeAssistedFinance: number | null;
+    bankName: string | null;
+    sortCode: string | null;
+    accountNo: string | null;
+    ofstedId: string | null;
+    managerName: string | null;
+    signatureUrl: string | null;
 }
 
 interface FinancePricingFormProps {
@@ -25,6 +31,14 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
     const [feeSelfFinance, setFeeSelfFinance] = useState<string>(selectedCentre?.feeSelfFinance?.toString() || '');
     const [feeAssistedFinance, setFeeAssistedFinance] = useState<string>(selectedCentre?.feeAssistedFinance?.toString() || '');
     
+    // Billing Details
+    const [bankName, setBankName] = useState<string>(selectedCentre?.bankName || '');
+    const [sortCode, setSortCode] = useState<string>(selectedCentre?.sortCode || '');
+    const [accountNo, setAccountNo] = useState<string>(selectedCentre?.accountNo || '');
+    const [ofstedId, setOfstedId] = useState<string>(selectedCentre?.ofstedId || '');
+    const [managerName, setManagerName] = useState<string>(selectedCentre?.managerName || '');
+    const [signatureUrl, setSignatureUrl] = useState<string>(selectedCentre?.signatureUrl || '');
+    
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<boolean>(false);
@@ -35,6 +49,12 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
         if (centre) {
             setFeeSelfFinance(centre.feeSelfFinance?.toString() || '');
             setFeeAssistedFinance(centre.feeAssistedFinance?.toString() || '');
+            setBankName(centre.bankName || '');
+            setSortCode(centre.sortCode || '');
+            setAccountNo(centre.accountNo || '');
+            setOfstedId(centre.ofstedId || '');
+            setManagerName(centre.managerName || '');
+            setSignatureUrl(centre.signatureUrl || '');
         }
     }, [centres, selectedCentreId]);
 
@@ -44,6 +64,12 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
         const centre = centres.find(c => c.id === id);
         setFeeSelfFinance(centre?.feeSelfFinance?.toString() || '');
         setFeeAssistedFinance(centre?.feeAssistedFinance?.toString() || '');
+        setBankName(centre?.bankName || '');
+        setSortCode(centre?.sortCode || '');
+        setAccountNo(centre?.accountNo || '');
+        setOfstedId(centre?.ofstedId || '');
+        setManagerName(centre?.managerName || '');
+        setSignatureUrl(centre?.signatureUrl || '');
         setError(null);
         setSuccess(false);
     };
@@ -61,7 +87,13 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     feeSelfFinance: feeSelfFinance === '' ? null : parseFloat(feeSelfFinance), 
-                    feeAssistedFinance: feeAssistedFinance === '' ? null : parseFloat(feeAssistedFinance)
+                    feeAssistedFinance: feeAssistedFinance === '' ? null : parseFloat(feeAssistedFinance),
+                    bankName,
+                    sortCode,
+                    accountNo,
+                    ofstedId,
+                    managerName,
+                    signatureUrl
                 }),
             });
 
@@ -162,6 +194,91 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                             />
                         </div>
                         <p className="text-xs text-slate-400 mt-2">The rate applied when using Tax-Free Childcare, Vouchers, etc.</p>
+                    </div>
+                </div>
+
+                <div className="h-px bg-[#2a2d35] my-6" />
+
+                <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-white">Bank Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-sm font-bold text-white mb-2 block">Bank Name</label>
+                            <input
+                                type="text"
+                                value={bankName}
+                                onChange={(e) => setBankName(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                placeholder="Lloyds Bank"
+                                disabled={saving}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-bold text-white mb-2 block">Sort Code</label>
+                                <input
+                                    type="text"
+                                    value={sortCode}
+                                    onChange={(e) => setSortCode(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                    placeholder="00-00-00"
+                                    disabled={saving}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-white mb-2 block">Account No</label>
+                                <input
+                                    type="text"
+                                    value={accountNo}
+                                    onChange={(e) => setAccountNo(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                    placeholder="12345678"
+                                    disabled={saving}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="h-px bg-[#2a2d35] my-6" />
+
+                <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-white">Management & Regulatory</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-sm font-bold text-white mb-2 block">Manager Name</label>
+                            <input
+                                type="text"
+                                value={managerName}
+                                onChange={(e) => setManagerName(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                placeholder="Full Name"
+                                disabled={saving}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm font-bold text-white mb-2 block">Ofsted ID</label>
+                            <input
+                                type="text"
+                                value={ofstedId}
+                                onChange={(e) => setOfstedId(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                placeholder="EY123456"
+                                disabled={saving}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-white mb-2 block">Signature URL (Image)</label>
+                        <input
+                            type="text"
+                            value={signatureUrl}
+                            onChange={(e) => setSignatureUrl(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                            placeholder="https://example.com/signature.png"
+                            disabled={saving}
+                        />
+                        <p className="text-xs text-slate-400 mt-2">This signature will appear on generated invoices.</p>
                     </div>
                 </div>
 

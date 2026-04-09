@@ -141,3 +141,43 @@ The counter must update in real-time as the user types in the search bar.
 If the search is cleared, the badge must disappear.
 Symmetry: This badge should sit next to the "Centre Filter" badge and use the same professional styling from the Stitch design.
 Goal: Provide instant feedback on search accuracy and result volume.
+
+[x] Task 68: Flexible Invoice Creation Logic
+Status: Complete
+Location: /dashboard/finance
+Description: Implemented a manual invoice generation system allowing selection of student, billing period, and manual amount.
+
+[x] Task 69: Payment Reconciliation & Ledger
+Status: Complete
+Location: /dashboard/finance/invoices/[id]
+Description: Built a real-time reconciliation tool for recording partial payments. Automated balance calculation and created a detailed payment history audit trail.
+
+
+[x] Task 65: Expand Centre & Database Schema for Billing
+Status: Complete
+Description: Added bank and Ofsted fields to centres table; created invoices and payments tables.
+
+[x] Task 66: Admin-Only Finance Permissions
+Status: Complete
+Description: Restricted finance routes and actions to ORG_OWNER role.
+
+## [ ] Task 67: Finance Settings UI (Centre Customization)
+- **Status:** Pending
+- **Location:** Settings -> Finance & Pricing
+- **Description:** Build a management card that allows the Admin to input the specific bank and Ofsted details for each centre (Sydenham vs. Dagenham). This data must populate the PDF templates automatically.
+
+[x] Task 68: Flexible "Period-Based" Invoice Generator
+Status: Complete
+
+[x] Task 69: Manual Payment Reconciliation (Cash/Bank)
+Status: Complete
+
+## [ ] Task 70: HASC-Style PDF Generation (Invoice & Receipt)
+- **Status:** Pending
+- **Template:** Recreate the provided screenshots exactly.
+- **Design:** Include the Blue Footer bar (logo/phone/address), the "CHILD CARE INVOICE" header, the period description, and the diagonal "HEATHWAY" watermark.
+- **Receipt:** Ensure the Receipt (Image 2) displays the specific "Date of Payment" and "Amount Paid" in the table.
+
+## [ ] Task 71: Financial Dashboard (Owed Balances)
+- **Status:** Pending
+- **UI:** Add an "Account Balance" badge to student profiles and the main table. If a student has an outstanding invoice, show the owed amount in red.
