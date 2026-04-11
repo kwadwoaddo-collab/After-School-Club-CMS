@@ -396,7 +396,8 @@ export const invoices = pgTable('invoices', {
   id: uuid('id').defaultRandom().primaryKey(),
   organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
   centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
-  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'cascade' }).notNull(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }), // Now nullable for multi-child family invoices
   
   invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(),
   amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
@@ -624,6 +625,10 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   centre: one(centres, {
     fields: [invoices.centreId],
     references: [centres.id],
+  }),
+  parent: one(parents, {
+    fields: [invoices.parentId],
+    references: [parents.id],
   }),
   child: one(children, {
     fields: [invoices.childId],

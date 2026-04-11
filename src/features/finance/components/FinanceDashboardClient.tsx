@@ -8,16 +8,23 @@ import { useRouter } from 'next/navigation';
 interface FinanceDashboardClientProps {
     students: any[];
     recentInvoices: any[];
+    centres: any[];
 }
 
-export default function FinanceDashboardClient({ students, recentInvoices }: FinanceDashboardClientProps) {
+export default function FinanceDashboardClient({ students, recentInvoices = [], centres }: FinanceDashboardClientProps) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
 
+    const filteredInvoices = (recentInvoices || []).filter(invoice => 
+        invoice.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        `${invoice.parent?.firstName} ${invoice.parent?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
-        <>
+        <div className="flex flex-col gap-8">
             {/* Header Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 self-end">
                 <button className="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-outline-variant/10 rounded-xl text-sm font-bold text-white hover:bg-surface-container-highest transition-all">
                     <Filter className="w-4 h-4" /> Filter
                 </button>
@@ -32,23 +39,18 @@ export default function FinanceDashboardClient({ students, recentInvoices }: Fin
             {/* Modal */}
             {isCreateModalOpen && (
                 <CreateInvoiceModal 
-                    students={students} 
+                    centres={centres}
                     onClose={() => setIsCreateModalOpen(false)}
-                    onSuccess={() => {
-                        // Refresh will happen via revalidatePath in the action, 
-                        // but we can also use router.refresh() for safety
-                        router.refresh();
-                    }}
                 />
             )}
-        </>
+        </div>
     );
 }
 
-export function InvoiceTable({ invoices }: { invoices: any[] }) {
+export function InvoiceTable({ invoices = [] }: { invoices?: any[] }) {
     const router = useRouter();
     
-    if (invoices.length === 0) {
+    if (!invoices || invoices.length === 0) {
         return (
             <div className="py-12 flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 bg-slate-500/5 rounded-full flex items-center justify-center mb-4 border border-slate-500/10">
@@ -85,8 +87,11 @@ export function InvoiceTable({ invoices }: { invoices: any[] }) {
                             </td>
                             <td className="py-4 px-4">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-white">{invoice.child.firstName} {invoice.child.lastName}</span>
-                                    <span className="text-xs text-on-surface-variant">{invoice.centre.name}</span>
+                                    <span className="text-sm font-bold text-white">
+                                        {invoice.child?.firstName} {invoice.child?.lastName}
+                                        {!invoice.child && invoice.parent && `${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
+                                    </span>
+                                    <span className="text-xs text-on-surface-variant">{invoice.centre?.name}</span>
                                 </div>
                             </td>
                             <td className="py-4 px-4">

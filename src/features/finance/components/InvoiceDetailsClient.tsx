@@ -249,7 +249,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 onClose={() => setPreviewType(null)}
                 title={previewType === 'invoice' ? 'Invoice Preview' : 'Receipt Preview'}
                 fileName={previewType === 'invoice' ? `Invoice-${invoice.invoiceNumber}.pdf` : `Receipt-${invoice.invoiceNumber}.pdf`}
-                document={
+                pdfContent={
                     previewType === 'invoice' ? (
                         <InvoiceTemplate invoice={invoice} organisationName={organisationName} />
                     ) : (

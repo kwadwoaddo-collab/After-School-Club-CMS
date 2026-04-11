@@ -41,6 +41,7 @@ export default async function StudentsPage() {
             parentLastName: parents.lastName,
             parentEmail: parents.email,
             parentPhone: parents.phone,
+            parentId: parents.id,
         })
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
@@ -212,9 +213,12 @@ export default async function StudentsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="space-y-1">
-                                                    <p className="font-semibold text-sm text-white">
+                                                    <Link 
+                                                        href={`/dashboard/parents/${student.parentId}`}
+                                                        className="font-semibold text-sm text-white hover:text-primary transition-colors hover:underline underline-offset-4 decoration-primary/30"
+                                                    >
                                                         {student.parentFirstName} {student.parentLastName}
-                                                    </p>
+                                                    </Link>
                                                     {student.parentEmail && (
                                                         <p className="text-xs text-on-surface-variant opacity-80 flex items-center gap-1.5">
                                                             <Mail className="w-3 h-3 opacity-70" />

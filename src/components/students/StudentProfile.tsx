@@ -25,6 +25,7 @@ interface AssessmentProfileProps {
         notes: string | null;
         registeredSessions?: string[] | null;
         parent: {
+            id: string;
             firstName: string;
             lastName: string;
             phone: string | null;
@@ -165,6 +166,12 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                         <ChevronLeft className="w-4 h-4 text-outline-variant rotate-180" />
                                     </a>
                                 </div>
+                                <Link 
+                                    href={`/dashboard/parents/${student.parent.id}`}
+                                    className="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-primary/20 rounded-2xl text-primary font-black uppercase tracking-widest text-[10px] hover:bg-primary/10 hover:border-primary/40 transition-all"
+                                >
+                                    View Family Account & Ledger →
+                                </Link>
                             </div>
                         </div>
 

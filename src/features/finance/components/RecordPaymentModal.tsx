@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, CreditCard, Calendar, Check, Loader2, Landmark, Ticket } from 'lucide-react';
-import { recordManualPayment } from '../actions';
+import { recordPayment } from '../actions';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface RecordPaymentModalProps {
@@ -40,7 +40,7 @@ export default function RecordPaymentModal({
 
         setIsSubmitting(true);
         try {
-            await recordManualPayment({
+            await recordPayment({
                 invoiceId,
                 amount,
                 method: formData.method,

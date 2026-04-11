@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 60,
-        backgroundColor: '#cb242d', // HASC Red
+        backgroundColor: '#1e40af', // HASC Blue
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fafc',
         borderRadius: 4,
         borderLeft: 3,
-        borderLeftColor: '#cb242d', // HASC Red
+        borderLeftColor: '#1e40af', // HASC Blue
     },
 });
 
@@ -161,8 +161,9 @@ interface InvoiceTemplateProps {
 }
 
 export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplateProps) => {
-    const { child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes } = invoice;
-    const parent = child.parent;
+    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes } = invoice;
+    // Fallback to child.parent if parent relation is missing (legacy support)
+    const activeParent = parent || (child && (child as any).parent);
 
     return (
         <Document title={`Invoice-${invoiceNumber}`}>
@@ -197,16 +198,17 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 <View style={styles.section}>
                     <View style={styles.billedTo}>
                         <Text style={styles.sectionTitle}>Billed To</Text>
-                        <Text style={{ fontWeight: 'bold' }}>{parent?.firstName} {parent?.lastName}</Text>
-                        <Text>{parent?.addressLine1}</Text>
-                        {parent?.addressLine2 && <Text>{parent?.addressLine2}</Text>}
-                        <Text>{parent?.city}, {parent?.postcode}</Text>
+                        <Text style={{ fontWeight: 'bold' }}>{activeParent?.firstName} {activeParent?.lastName}</Text>
+                        {activeParent?.addressLine1 && <Text>{activeParent?.addressLine1}</Text>}
+                        {activeParent?.addressLine2 && <Text>{activeParent?.addressLine2}</Text>}
+                        {activeParent?.city && <Text>{activeParent?.city}, {activeParent?.postcode}</Text>}
+                        {!activeParent?.addressLine1 && <Text>Contact: {activeParent?.email || activeParent?.phone || 'N/A'}</Text>}
                     </View>
                     <View style={styles.period}>
                         <Text style={styles.sectionTitle}>Period Description</Text>
-                        <Text style={{ fontWeight: 'bold' }}>Child: {child.firstName} {child.lastName}</Text>
+                        <Text style={{ fontWeight: 'bold' }}>Reference: {invoiceNumber}</Text>
                         <Text>Period: {billingPeriodStart ? format(new Date(billingPeriodStart), 'MMM d') : '-'} to {billingPeriodEnd ? format(new Date(billingPeriodEnd), 'MMM d, yyyy') : '-'}</Text>
-                        <Text>Centre: {centre?.name}</Text>
+                        <Text>Centre: {centre?.name || 'HASC Centre'}</Text>
                     </View>
                 </View>
 
@@ -218,10 +220,21 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={styles.col3}>Total</Text>
                     </View>
                     <View style={styles.tableRow}>
-                        <Text style={styles.col1}>After School Club Childcare Services ({child.firstName} {child.lastName})</Text>
+                        <Text style={styles.col1}>
+                            {notes ? notes.split('\n')[0] : 'After School Club Childcare Services'}
+                        </Text>
                         <Text style={styles.col2}>£{Number(amount).toFixed(2)}</Text>
                         <Text style={styles.col3}>£{Number(amount).toFixed(2)}</Text>
                     </View>
+                    {notes && notes.includes('\n') && (
+                        <View style={styles.tableRow}>
+                            <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>
+                                {notes.split('\n').slice(1).join('\n')}
+                            </Text>
+                            <Text style={styles.col2}></Text>
+                            <Text style={styles.col3}></Text>
+                        </View>
+                    )}
                     {notes && (
                         <View style={styles.tableRow}>
                             <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>Note: {notes}</Text>

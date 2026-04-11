@@ -28,6 +28,7 @@ export default async function StudentProfilePage(
             notes: children.notes,
             registeredSessions: children.registeredSessions,
             parent: {
+                id: parents.id,
                 firstName: parents.firstName,
                 lastName: parents.lastName,
                 phone: parents.phone,

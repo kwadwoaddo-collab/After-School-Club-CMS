@@ -57,35 +57,37 @@ Description: Added the `createdAt` timestamp underneath the appointment time in 
 [x] Tasks 51 & 52: Dynamic Dashboard Filtering
 Status: Complete
 Location: /dashboard/page.tsx, /dashboard/DashboardFilter.tsx
-Description: Implemented a Weekly/Monthly toggle and date navigation at the top of the dashboard. Both the Assessments and Registrations cards have been expanded to a 50/50 split and now display dynamically calculated 'Total', 'Month', and 'Week' statistics based on the specifically selected active timeframe. Lists correctly filter against the `startAt` (Assessments) and `startDate` (Registrations) columns, and display an intuitive empty state when no activity is configured for the active period.## [ ] Task 50: Separate Staff Management Page
-- **Status:** Pending
+Description: Implemented a Weekly/Monthly toggle and date navigation at the top of the dashboard. Both the Assessments and Registrations cards have been expanded to a 50/50 split and now display dynamically calculated 'Total', 'Month', and 'Week' statistics based on the specifically selected active timeframe. Lists correctly filter against the `startAt` (Assessments) and `startDate` (Registrations) columns, and display an intuitive empty state when no activity is configured for the active period.
+
+## [x] Task 50: Separate Staff Management Page
+- **Status:** Complete
 - **Action:** Remove the "Staff" card from the Dashboard. Move all Staff/Team management (Shifts, Payroll) to the dedicated "Team" page in the sidebar.
 
-## [ ] Task 51: Dynamic Dashboard Stats (Weekly/Monthly)
-- **Status:** Pending
+## [x] Task 51: Dynamic Dashboard Stats (Weekly/Monthly)
+- **Status:** Complete
 - **Bookings Summary:** Show "Total Bookings", "This Month", and "This Week".
 - **Registrations Summary:** Show "Total Submitted", "Awaiting Review", "New This Week", and "New This Month".
 
-## [ ] Task 52: Implement Dashboard View Toggle & Date Picker
-- **Status:** Pending
+## [x] Task 52: Implement Dashboard View Toggle & Date Picker
+- **Status:** Complete
 - **UI:** Add a toggle switch at the top of the Dashboard to swap between "Weekly" and "Monthly" views.
 - **Picker:** Add a navigation element (e.g., "< March 23 - 29 >") to jump between weeks or months. 
 - **Logic:** Default to the current week/month on load.
 
-## [ ] Task 53: Weekly Filter for Assessments (Mon-Sun)
-- **Status:** Pending
+## [x] Task 53: Weekly Filter for Assessments (Mon-Sun)
+- **Status:** Complete
 - **Location:** "Recent Bookings" Card
 - **Logic:** Filter the list to show only assessments for the selected week (Monday to Sunday).
 - **Sorting:** Sort by Assessment Date (Nearest first).
 
-## [ ] Task 54: Weekly Filter for Registrations (Start Date)
-- **Status:** Pending
+## [x] Task 54: Weekly Filter for Registrations (Start Date)
+- **Status:** Complete
 - **Location:** "Recent Registrations" Card
 - **Logic:** Filter the list based on the **Child's Requested Start Date** for the selected week.
 - **Goal:** See which new students are actually starting their sessions this week.
 
-## [ ] Task 55: Fix UI Real Estate
-- **Status:** Pending
+## [x] Task 55: Fix UI Real Estate
+- **Status:** Complete
 - **Action:** Now that Staff is gone, expand the Bookings and Registrations cards to fill the width (50/50 split) for a cleaner, wider look.
 [ ] Task 56: Fix Dynamic Centre Hours Display
 Status: Pending
@@ -142,15 +144,15 @@ If the search is cleared, the badge must disappear.
 Symmetry: This badge should sit next to the "Centre Filter" badge and use the same professional styling from the Stitch design.
 Goal: Provide instant feedback on search accuracy and result volume.
 
-[x] Task 68: Flexible Invoice Creation Logic
+[x] Task 68: Flexible Invoice Creation & Legacy Onboarding
 Status: Complete
 Location: /dashboard/finance
-Description: Implemented a manual invoice generation system allowing selection of student, billing period, and manual amount.
+Description: Implemented a manual invoice generation system with a "Quick-Add" feature to create invoices for existing students OR instantly onboard legacy students (Parent/Child records created automatically).
 
 [x] Task 69: Payment Reconciliation & Ledger
 Status: Complete
 Location: /dashboard/finance/invoices/[id]
-Description: Built a real-time reconciliation tool for recording partial payments. Automated balance calculation and created a detailed payment history audit trail.
+Description: Built a real-time reconciliation tool for recording payments (Cash/Bank) and maintaining a detailed payment history audit trail on the invoice itself.
 
 
 [x] Task 65: Expand Centre & Database Schema for Billing
@@ -161,8 +163,8 @@ Description: Added bank and Ofsted fields to centres table; created invoices and
 Status: Complete
 Description: Restricted finance routes and actions to ORG_OWNER role.
 
-## [ ] Task 67: Finance Settings UI (Centre Customization)
-- **Status:** Pending
+## [x] Task 67: Finance Settings UI (Centre Customization)
+- **Status:** Complete
 - **Location:** Settings -> Finance & Pricing
 - **Description:** Build a management card that allows the Admin to input the specific bank and Ofsted details for each centre (Sydenham vs. Dagenham). This data must populate the PDF templates automatically.
 
@@ -172,12 +174,21 @@ Status: Complete
 [x] Task 69: Manual Payment Reconciliation (Cash/Bank)
 Status: Complete
 
-## [ ] Task 70: HASC-Style PDF Generation (Invoice & Receipt)
-- **Status:** Pending
+## [x] Task 70: HASC-Style PDF Generation (Invoice & Receipt)
+- **Status:** Complete
 - **Template:** Recreate the provided screenshots exactly.
 - **Design:** Include the Blue Footer bar (logo/phone/address), the "CHILD CARE INVOICE" header, the period description, and the diagonal "HEATHWAY" watermark.
 - **Receipt:** Ensure the Receipt (Image 2) displays the specific "Date of Payment" and "Amount Paid" in the table.
 
-## [ ] Task 71: Financial Dashboard (Owed Balances)
-- **Status:** Pending
-- **UI:** Add an "Account Balance" badge to student profiles and the main table. If a student has an outstanding invoice, show the owed amount in red.
+[x] Task 71: Family-Centric Invoicing
+Status: Complete
+Description: Refactored the invoice generator to a Parent-First model. Added a searchable parent dropdown and automatic sibling detection with multi-select checkboxes for combined invoices.
+
+[x] Task 72: Legacy Onboarding Flow
+Status: Complete
+Description: Added a "Create New Family" flow within the invoice modal that instantly creates Parent and Children records in the database simultaneously with an invoice.
+
+[x] Task 73: Family Ledger (Parent Profile)
+Status: Complete
+Location: /dashboard/parents/[id]
+Description: Added a new Parent Profile page featuring a "Finance / Ledger" tab that displays consolidated family totals (Total Owed, Total Paid) and a unified transaction history. Added links to this profile from the Students list and Student profiles.

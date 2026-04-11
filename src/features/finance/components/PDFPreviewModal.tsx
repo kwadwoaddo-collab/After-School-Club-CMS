@@ -6,31 +6,31 @@ import { useEffect, useState } from 'react';
 interface PDFPreviewModalProps {
     isOpen: boolean;
     onClose: () => void;
-    document: React.ReactElement;
+    pdfContent: React.ReactElement;
     title: string;
     fileName: string;
 }
 
-export default function PDFPreviewModal({ isOpen, onClose, document, title, fileName }: PDFPreviewModalProps) {
+export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fileName }: PDFPreviewModalProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        if (typeof document !== 'undefined' && document.body) {
+        if (typeof window !== 'undefined' && window.document.body) {
             if (isOpen) {
-                document.body.style.overflow = 'hidden';
+                window.document.body.style.overflow = 'hidden';
             } else {
-                document.body.style.overflow = 'unset';
+                window.document.body.style.overflow = 'unset';
             }
         }
         return () => { 
-            if (typeof document !== 'undefined' && document.body) {
-                document.body.style.overflow = 'unset'; 
+            if (typeof window !== 'undefined' && window.document.body) {
+                window.document.body.style.overflow = 'unset'; 
             }
         };
     }, [isOpen]);
 
-    if (!isOpen || !mounted || typeof document === 'undefined' || !document.body) return null;
+    if (!isOpen || !mounted || typeof window === 'undefined' || !window.document.body) return null;
 
     return ReactDom.createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -49,7 +49,7 @@ export default function PDFPreviewModal({ isOpen, onClose, document, title, file
                     
                     <div className="flex items-center gap-2">
                         <PDFDownloadLink
-                            document={document}
+                            document={pdfContent}
                             fileName={fileName}
                             className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-lg text-xs font-bold text-on-primary hover:bg-primary/90 transition-all"
                         >
@@ -73,11 +73,11 @@ export default function PDFPreviewModal({ isOpen, onClose, document, title, file
                 {/* PDF Content */}
                 <div className="flex-1 bg-slate-800 p-2 sm:p-4">
                     <PDFViewer width="100%" height="100%" showToolbar={false} style={{ borderRadius: '8px', border: 'none' }}>
-                        {document}
+                        {pdfContent}
                     </PDFViewer>
                 </div>
             </div>
         </div>,
-        document.body
+        window.document.body
     );
 }

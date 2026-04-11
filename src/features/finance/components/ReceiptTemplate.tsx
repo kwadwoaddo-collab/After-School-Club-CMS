@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 60,
-        backgroundColor: '#cb242d', // HASC Red
+        backgroundColor: '#1e40af', // HASC Blue
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',

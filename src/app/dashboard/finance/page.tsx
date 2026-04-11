@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { invoices, payments, centres, children } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { invoices, centres, children } from '@/db/schema';
+import { eq, desc, and } from 'drizzle-orm';
 import { 
     TrendingUp, 
     CreditCard, 
@@ -26,6 +26,11 @@ export default async function FinancePage() {
         return redirect('/dashboard');
     }
 
+    // Fetch centres for the modal
+    const orgCentres = await db.query.centres.findMany({
+        where: eq(centres.organisationId, session.user.organisationId)
+    });
+
     // Fetch summary data
     const recentInvoices = await db.query.invoices.findMany({
         where: eq(invoices.organisationId, session.user.organisationId),
@@ -33,7 +38,8 @@ export default async function FinancePage() {
         orderBy: [desc(invoices.createdAt)],
         with: {
             centre: true,
-            child: true
+            child: true,
+            parent: true
         }
     });
 
@@ -42,8 +48,6 @@ export default async function FinancePage() {
         with: {
             parent: true
         },
-        // Filter by org via parent
-        // Note: In a larger app, this should be a more efficient query
     });
     
     const orgStudents = students.filter(s => s.parent?.organisationId === session.user.organisationId);
@@ -79,13 +83,17 @@ export default async function FinancePage() {
                         Manage invoices, payments, and financial health
                     </p>
                 </div>
-                <FinanceDashboardClient students={orgStudents} recentInvoices={recentInvoices} />
+                <FinanceDashboardClient 
+                    students={orgStudents} 
+                    recentInvoices={recentInvoices} 
+                    centres={orgCentres}
+                />
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {stats.map((stat) => (
-                    <div key={stat.name} className="bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6 relative overflow-hidden group">
+                    <div key={stat.name} className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6 relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform">
                                 <stat.icon className="w-6 h-6 text-primary" />
@@ -110,8 +118,8 @@ export default async function FinancePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Invoices */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+                        <div className="flex items-center justify-between mb-6 px-2">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                 <FileText className="w-5 h-5 text-primary" />
                                 Recent Invoices
@@ -128,36 +136,32 @@ export default async function FinancePage() {
                 {/* Sidebar Cards */}
                 <div className="space-y-6">
                     {/* Bank & Payment Info */}
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6 bg-gradient-to-br from-primary/5 to-transparent">
+                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 bg-gradient-to-br from-primary/5 to-transparent">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                             <CreditCard className="w-5 h-5 text-primary" />
                             Billing Settings
                         </h3>
-                        <p className="text-sm text-on-surface-variant mb-6">
-                            Configure your bank details and pricing for each centre.
+                        <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
+                            Configure your bank details and fee structures to ensure professional invoice generation.
                         </p>
                         <Link 
                             href="/dashboard/settings/finance"
-                            className="block w-full text-center py-3 bg-white/5 border border-outline-variant/20 rounded-2xl text-sm font-bold text-white hover:bg-white/10 transition-all"
+                            className="block w-full text-center py-4 bg-white/5 border border-outline-variant/20 rounded-2xl text-sm font-bold text-white hover:bg-white/10 transition-all"
                         >
                             Configure Billing
                         </Link>
                     </div>
 
                     {/* Quick Tools */}
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">Quick Tools</h3>
+                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+                        <h3 className="text-lg font-bold text-white mb-4 px-2">Quick Tools</h3>
                         <div className="space-y-2">
-                            <button className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
                                 <span>Export Ledger (CSV)</span>
                                 <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
                             </button>
-                            <button className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
                                 <span>Tax Summary Report</span>
-                                <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
-                            </button>
-                            <button className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
-                                <span>Fee Structure Audit</span>
                                 <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
                             </button>
                         </div>
