@@ -58,6 +58,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Add Student error:', error);
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({
+                error: 'Validation failed',
+                details: error.errors
+            }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Failed to add student' }, { status: 500 });
     }
 }

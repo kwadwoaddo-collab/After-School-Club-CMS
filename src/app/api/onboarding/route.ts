@@ -6,9 +6,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const schema = z.object({
-    organisationName: z.string().min(2),
-    centreName: z.string().min(2),
-    brandColor: z.string().regex(/^#[0-9A-F]{6}$/i),
+    organisationName: z.string().min(2, "Organisation name must be at least 2 characters"),
+    centreName: z.string().min(2, "Centre name must be at least 2 characters"),
+    brandColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid hex color"),
     logoUrl: z.string().optional(),
 });
 
@@ -61,6 +61,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, orgId: org.id });
     } catch (error: any) {
         console.error('Onboarding error:', error);
+
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({
+                error: 'Validation failed',
+                details: error.errors
+            }, { status: 400 });
+        }
 
         const pgErrorCode = error?.code || error?.cause?.code;
         if (pgErrorCode === '23505') {
