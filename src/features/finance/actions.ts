@@ -294,3 +294,32 @@ export async function recordPayment(data: {
     revalidatePath('/dashboard/finance');
     return result;
 }
+
+export async function deleteInvoice(invoiceId: string) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owner can delete invoices');
+
+    const result = await db.transaction(async (tx) => {
+        const invoice = await tx.query.invoices.findFirst({
+            where: eq(invoices.id, invoiceId),
+            with: { payments: true }
+        });
+
+        if (!invoice) throw new Error('Invoice not found');
+
+        if (invoice.payments && invoice.payments.length > 0) {
+            throw new Error('Please delete associated payments before deleting the invoice.');
+        }
+
+        await tx.delete(invoices).where(eq(invoices.id, invoiceId));
+        return invoice;
+    });
+
+    revalidatePath('/dashboard/finance');
+    if (result.parentId) {
+        revalidatePath(`/dashboard/parents/${result.parentId}`);
+    }
+    
+    return { success: true };
+}

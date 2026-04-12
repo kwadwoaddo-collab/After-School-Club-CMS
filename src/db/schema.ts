@@ -67,6 +67,8 @@ export const centres = pgTable('centres', {
   accountNo: varchar('account_no', { length: 20 }),
   ofstedId: varchar('ofsted_id', { length: 50 }),
   managerName: varchar('manager_name', { length: 255 }),
+  billingPhone: varchar('billing_phone', { length: 20 }),
+  billingEmail: varchar('billing_email', { length: 255 }),
   signatureUrl: varchar('signature_url', { length: 500 }),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),

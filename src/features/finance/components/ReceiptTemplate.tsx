@@ -253,12 +253,12 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold' }}>{organisationName || 'HASC CENTRE'}</Text>
-                        <Text>{centre?.address || 'N/A'}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>{organisationName || 'HASC CENTRE'}</Text>
+                        <Text style={{ color: '#ffffff' }}>{centre?.address || 'N/A'}</Text>
                     </View>
                     <View style={styles.footerRight}>
-                        <Text>Phone: {centre?.contactPhone || '—'}</Text>
-                        <Text>Email: {centre?.contactEmail || '—'}</Text>
+                        <Text style={{ color: '#ffffff' }}>Phone: {centre?.billingPhone || '—'}</Text>
+                        <Text style={{ color: '#ffffff' }}>Email: {centre?.billingEmail || '—'}</Text>
                     </View>
                 </View>
             </Page>

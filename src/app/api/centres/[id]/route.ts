@@ -45,6 +45,8 @@ export async function PATCH(
             accountNo,
             ofstedId,
             managerName,
+            billingPhone,
+            billingEmail,
             signatureUrl
         } = body;
 
@@ -54,6 +56,8 @@ export async function PATCH(
                                  accountNo !== undefined || 
                                  ofstedId !== undefined || 
                                  managerName !== undefined || 
+                                 billingPhone !== undefined ||
+                                 billingEmail !== undefined ||
                                  signatureUrl !== undefined ||
                                  feeSelfFinance !== undefined ||
                                  feeAssistedFinance !== undefined;
@@ -80,6 +84,8 @@ export async function PATCH(
         if (accountNo !== undefined) updateData.accountNo = accountNo;
         if (ofstedId !== undefined) updateData.ofstedId = ofstedId;
         if (managerName !== undefined) updateData.managerName = managerName;
+        if (billingPhone !== undefined) updateData.billingPhone = billingPhone;
+        if (billingEmail !== undefined) updateData.billingEmail = billingEmail;
         if (signatureUrl !== undefined) updateData.signatureUrl = signatureUrl;
 
         const [updatedCentre] = await db

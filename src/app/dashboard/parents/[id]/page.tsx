@@ -87,6 +87,7 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
                     totalPaid,
                     outstanding: totalOwed - totalPaid
                 }}
+                isOwner={(session.user as any).role === 'ORG_OWNER'}
             />
         </div>
     );

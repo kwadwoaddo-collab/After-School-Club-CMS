@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -13,6 +13,7 @@ import { ReceiptTemplate } from './ReceiptTemplate';
 import { useEffect } from 'react';
 import PDFPreviewModal from './PDFPreviewModal';
 import { Eye } from 'lucide-react';
+import { deleteInvoice } from '../actions';
 
 interface InvoiceDetailsClientProps {
     invoice: any;
@@ -24,6 +25,23 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
     const router = useRouter();
+
+    const handleDelete = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("handleDelete initiated for invoice:", invoice.id);
+        if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return;
+        
+        try {
+            console.log("Calling deleteInvoice action...");
+            await deleteInvoice(invoice.id);
+            console.log("Success! Redirecting...");
+            router.push('/dashboard/finance');
+        } catch (error: any) {
+            console.error("Delete invoice error:", error);
+            alert(error.message || 'An error occurred while deleting the invoice.');
+        }
+    };
 
     useEffect(() => {
         setIsClient(true);
@@ -120,6 +138,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             <CreditCard className="w-4 h-4" /> Record Payment
                         </button>
                     )}
+                    <button 
+                        type="button"
+                        onClick={handleDelete}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all shadow-lg shadow-error/10 cursor-pointer z-50 relative"
+                    >
+                        <Trash2 className="w-4 h-4" /> Delete Invoice
+                    </button>
                 </div>
             </div>
 

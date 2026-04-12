@@ -87,6 +87,7 @@ export default async function FinancePage() {
                     students={orgStudents} 
                     recentInvoices={recentInvoices} 
                     centres={orgCentres}
+                    isOwner={userRole === 'ORG_OWNER'}
                 />
             </div>
 
@@ -129,7 +130,7 @@ export default async function FinancePage() {
                             </Link>
                         </div>
 
-                        <InvoiceTable invoices={recentInvoices} />
+                        <InvoiceTable invoices={recentInvoices} isOwner={userRole === 'ORG_OWNER'} />
                     </div>
                 </div>
 

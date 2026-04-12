@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Filter, FileText } from 'lucide-react';
+import { Plus, Filter, FileText, Trash2 } from 'lucide-react';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import { useRouter } from 'next/navigation';
+import { deleteInvoice } from '../actions';
 
 interface FinanceDashboardClientProps {
     students: any[];
     recentInvoices: any[];
     centres: any[];
+    isOwner?: boolean;
 }
 
-export default function FinanceDashboardClient({ students, recentInvoices = [], centres }: FinanceDashboardClientProps) {
+export default function FinanceDashboardClient({ students, recentInvoices = [], centres, isOwner }: FinanceDashboardClientProps) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
@@ -47,7 +49,7 @@ export default function FinanceDashboardClient({ students, recentInvoices = [], 
     );
 }
 
-export function InvoiceTable({ invoices = [] }: { invoices?: any[] }) {
+export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: any[], isOwner?: boolean }) {
     const router = useRouter();
     
     if (!invoices || invoices.length === 0) {
@@ -73,6 +75,7 @@ export function InvoiceTable({ invoices = [] }: { invoices?: any[] }) {
                         <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Student</th>
                         <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Status</th>
                         <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Amount</th>
+                        {isOwner && <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Actions</th>}
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">
@@ -106,6 +109,31 @@ export function InvoiceTable({ invoices = [] }: { invoices?: any[] }) {
                             <td className="py-4 text-right px-4">
                                 <span className="text-sm font-black text-white">£{Number(invoice.amount).toFixed(2)}</span>
                             </td>
+                            {isOwner && (
+                                <td className="py-4 text-right px-4" onClick={(e) => e.stopPropagation()}>
+                                    <button 
+                                        type="button"
+                                        onClick={async (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            console.log("Delete button clicked for invoice:", invoice.id);
+                                            if (window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+                                                try {
+                                                    await deleteInvoice(invoice.id);
+                                                    alert('Invoice deleted successfully.');
+                                                } catch (error: any) {
+                                                    console.error(error);
+                                                    alert(error.message || 'Error deleting invoice');
+                                                }
+                                            }
+                                        }}
+                                        className="p-2 bg-error/10 text-error hover:bg-error/20 rounded-lg transition-colors border border-error/20 z-50 relative cursor-pointer"
+                                        title="Delete Invoice"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </tbody>

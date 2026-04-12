@@ -390,10 +390,9 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                                     className="w-full p-3 bg-surface-container-high border border-outline-variant/5 rounded-xl text-white font-bold"
                                                 >
                                                     <option value="">Select...</option>
-                                                    <option value="Nur">Nur</option>
-                                                    <option value="Rec">Rec</option>
-                                                    {Array.from({length: 6}, (_, i) => (
-                                                        <option key={i+1} value={(i+1).toString()}>Year {i+1}</option>
+                                                    <option value="Reception">Reception</option>
+                                                    {Array.from({length: 13}, (_, i) => (
+                                                        <option key={i+1} value={`Y${i+1}`}>Y{i+1}</option>
                                                     ))}
                                                 </select>
                                             </div>

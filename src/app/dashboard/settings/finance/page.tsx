@@ -34,6 +34,8 @@ export default async function FinanceSettingsPage() {
             accountNo: centres.accountNo,
             ofstedId: centres.ofstedId,
             managerName: centres.managerName,
+            billingPhone: centres.billingPhone,
+            billingEmail: centres.billingEmail,
             signatureUrl: centres.signatureUrl,
         })
         .from(centres)

@@ -14,6 +14,8 @@ interface Centre {
     accountNo: string | null;
     ofstedId: string | null;
     managerName: string | null;
+    billingPhone: string | null;
+    billingEmail: string | null;
     signatureUrl: string | null;
 }
 
@@ -37,6 +39,8 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
     const [accountNo, setAccountNo] = useState<string>(selectedCentre?.accountNo || '');
     const [ofstedId, setOfstedId] = useState<string>(selectedCentre?.ofstedId || '');
     const [managerName, setManagerName] = useState<string>(selectedCentre?.managerName || '');
+    const [billingPhone, setBillingPhone] = useState<string>(selectedCentre?.billingPhone || '');
+    const [billingEmail, setBillingEmail] = useState<string>(selectedCentre?.billingEmail || '');
     const [signatureUrl, setSignatureUrl] = useState<string>(selectedCentre?.signatureUrl || '');
     
     const [saving, setSaving] = useState(false);
@@ -54,6 +58,8 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
             setAccountNo(centre.accountNo || '');
             setOfstedId(centre.ofstedId || '');
             setManagerName(centre.managerName || '');
+            setBillingPhone(centre.billingPhone || '');
+            setBillingEmail(centre.billingEmail || '');
             setSignatureUrl(centre.signatureUrl || '');
         }
     }, [centres, selectedCentreId]);
@@ -69,6 +75,8 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
         setAccountNo(centre?.accountNo || '');
         setOfstedId(centre?.ofstedId || '');
         setManagerName(centre?.managerName || '');
+        setBillingPhone(centre?.billingPhone || '');
+        setBillingEmail(centre?.billingEmail || '');
         setSignatureUrl(centre?.signatureUrl || '');
         setError(null);
         setSuccess(false);
@@ -93,6 +101,8 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                     accountNo,
                     ofstedId,
                     managerName,
+                    billingPhone,
+                    billingEmail,
                     signatureUrl
                 }),
             });
@@ -264,6 +274,30 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                                 onChange={(e) => setOfstedId(e.target.value)}
                                 className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
                                 placeholder="EY123456"
+                                disabled={saving}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-sm font-bold text-white mb-2 block">Billing Phone</label>
+                            <input
+                                type="tel"
+                                value={billingPhone}
+                                onChange={(e) => setBillingPhone(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                placeholder="020 1234 5678"
+                                disabled={saving}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm font-bold text-white mb-2 block">Billing Email</label>
+                            <input
+                                type="email"
+                                value={billingEmail}
+                                onChange={(e) => setBillingEmail(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                                placeholder="info@sydenhamclub.com"
                                 disabled={saving}
                             />
                         </div>

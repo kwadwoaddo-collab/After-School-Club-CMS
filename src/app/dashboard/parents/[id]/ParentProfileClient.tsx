@@ -25,9 +25,10 @@ interface ParentProfileClientProps {
         totalPaid: number;
         outstanding: number;
     };
+    isOwner?: boolean;
 }
 
-export default function ParentProfileClient({ parent, invoices, stats }: ParentProfileClientProps) {
+export default function ParentProfileClient({ parent, invoices, stats, isOwner }: ParentProfileClientProps) {
     const [activeTab, setActiveTab] = useState<'overview' | 'finance'>('finance'); // Default to finance as per Task 73
 
     return (
@@ -182,7 +183,7 @@ export default function ParentProfileClient({ parent, invoices, stats }: ParentP
                             <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Transaction History</h3>
                             <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mt-1">Consolidated family invoices and payments</p>
                         </div>
-                        <InvoiceTable invoices={invoices} />
+                        <InvoiceTable invoices={invoices} isOwner={isOwner} />
                     </div>
                 </div>
             )}

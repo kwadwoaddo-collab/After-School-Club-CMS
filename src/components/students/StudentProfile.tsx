@@ -86,7 +86,7 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                 <div className="bg-gradient-to-r from-primary/10 via-violet-500/10 to-transparent p-12 pb-0">
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         <AttendanceRadial 
-                            percentage={student.attendanceStats ? (student.attendanceStats.completed / (student.attendanceStats.total || 1)) * 100 : 0} 
+                            percentage={student.attendanceStats ? (Number(student.attendanceStats.completed) / (Number(student.attendanceStats.total) || 1)) * 100 : 0} 
                             size="lg"
                         >
                             <div className="w-full h-full bg-surface-container-low flex items-center justify-center relative group">
