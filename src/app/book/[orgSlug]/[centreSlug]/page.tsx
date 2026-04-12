@@ -111,7 +111,7 @@ export default async function BookingPage({
           <div className="mb-8">
             <div className="flex items-center gap-4">
               {org.logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
+                 
                 <img src={org.logoUrl} alt="Logo" className="h-12 w-auto object-contain" />
               )}
               <div>

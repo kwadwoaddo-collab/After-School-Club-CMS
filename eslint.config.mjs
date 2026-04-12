@@ -9,9 +9,11 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    "**/.*/**", // Ignore all dot folders like another .next
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "**/*.js", // Ignore raw JS scripts
   ]),
   {
     rules: {

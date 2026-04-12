@@ -59,7 +59,7 @@ export default async function OrgBookingPage({
         <div className="min-h-screen sidebar-gradient flex flex-col items-center justify-center p-4">
             <div className="max-w-md w-full glass-card !bg-[#1a1c23]/80 !border-[#2a2d35] rounded-[32px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
                 {org.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                     
                     <img
                         src={org.logoUrl}
                         alt={org.name}
@@ -100,9 +100,9 @@ export default async function OrgBookingPage({
                 </div>
 
                 <div className="mt-8 text-center">
-                    <a href="/" className="text-sm text-slate-500 hover:text-white transition-colors">
+                    <Link href="/" className="text-sm text-slate-500 hover:text-white transition-colors">
                         ← Back to Home
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>

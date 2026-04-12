@@ -65,7 +65,7 @@ export async function getChildrenByParent(parentId: string) {
 
     // Also fetch registration child links just in case
     const childIds = results.map(c => c.id);
-    let regChildrenMap: Record<string, string> = {};
+    const regChildrenMap: Record<string, string> = {};
     if (childIds.length > 0) {
         const regLinks = await db
             .select({

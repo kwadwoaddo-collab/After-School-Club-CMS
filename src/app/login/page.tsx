@@ -40,15 +40,19 @@ function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      const result = await signIn('credentials', { email, password, redirect: false });
+      const result = await signIn('credentials', { 
+        email, 
+        password, 
+        redirect: true,
+        callbackUrl: '/dashboard'
+      });
+      // We will only hit this if redirect is true but an error occurred
       if (result?.error) {
         setError('Invalid email or password');
-      } else {
-        router.push('/dashboard');
+        setLoading(false);
       }
     } catch {
       setError('Something went wrong');
-    } finally {
       setLoading(false);
     }
   };

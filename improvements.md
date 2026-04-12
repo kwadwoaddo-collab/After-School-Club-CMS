@@ -223,3 +223,13 @@ Description: Added a new Parent Profile page featuring a "Finance / Ledger" tab 
   - Replace "Email: —" with the dynamic `billing_email`.
   - Ensure **Ofsted No**, **Bank Details**, and **Manager Name** are correctly pulling from the database (currently showing N/A in the screenshot).
 - **Goal:** Zero blank fields or "N/A" markers on generated documents.
+
+## [x] Task 78: Full System Regression & Robustness Test
+- **Status:** Complete
+- **Date:** April 2026
+- **Description:** Conducted an end-to-end traversal of the app (Dashboard, Registrations, Finance, Bookings, Settings). Verified component mounting, data toggles, and form interactions using an AI browser subagent.
+- **Fixes Applied:**
+  - Resolved false-positive 'Invalid email or password' flash during successful credentials login by offloading redirect tracking to NextAuth.
+  - Resolved strict Next.js routing violation (`<a>` vs `<Link>`) inside the Organisation booking flow.
+  - Addressed ESLint configuration to correctly ignore `.next` build artifacts and `.js` environment utility scripts, securing future CI pipeline stability.
+- **Goal:** Ensure system stability and production-readiness before the git push.
