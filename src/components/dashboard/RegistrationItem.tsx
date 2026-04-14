@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { assignRegistrationCentre } from '@/app/dashboard/registrations/actions';
 
 interface RegistrationItemProps {
     registration: {
@@ -9,6 +11,7 @@ interface RegistrationItemProps {
         status: string;
         createdAt: Date;
         startDate: Date | null;
+        centreId: string | null;
         registrationChildren: {
               childId: string | null;
               submittedFirstName: string;
@@ -23,10 +26,23 @@ interface RegistrationItemProps {
     };
     statusBadge: Record<string, string>;
     statusLabel: Record<string, string>;
+    centres: { id: string; name: string }[];
 }
 
-export default function RegistrationItem({ registration: r, statusBadge, statusLabel }: RegistrationItemProps) {
+export default function RegistrationItem({ registration: r, statusBadge, statusLabel, centres }: RegistrationItemProps) {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
+
+    const handleCentreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value === 'null' ? null : e.target.value;
+        startTransition(async () => {
+            try {
+                await assignRegistrationCentre(r.id, value);
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    };
 
     const primary = r.registrationParents.find((p) => p.isPrimary) ?? r.registrationParents[0];
     const childNames = r.registrationChildren.map((k) => `${k.submittedFirstName} ${k.submittedLastName}`).join(', ');
@@ -79,10 +95,27 @@ export default function RegistrationItem({ registration: r, statusBadge, statusL
                         {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
                     {r.startDate && (
-                        <p className="text-on-surface-variant text-xs mt-1">
+                        <p className="text-on-surface-variant text-xs mt-1 mb-2">
                             Start: {new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                     )}
+                    <div onClick={(e) => e.preventDefault()} className="mt-2">
+                        <select
+                            value={r.centreId || 'null'}
+                            onChange={handleCentreChange}
+                            disabled={isPending}
+                            className={`text-xs border rounded py-1 px-2 disabled:opacity-50 transition-colors w-32 ${
+                                r.centreId 
+                                    ? 'bg-primary/10 border-primary/20 text-primary font-medium' 
+                                    : 'bg-surface-container border-outline-variant/30 text-on-surface-variant'
+                            }`}
+                        >
+                            <option value="null">No Centre Assigned</option>
+                            {centres.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
         </Link>

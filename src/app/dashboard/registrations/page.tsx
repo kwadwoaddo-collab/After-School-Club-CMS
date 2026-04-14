@@ -147,6 +147,7 @@ export default async function RegistrationsPage(props: {
                             registration={r as any} 
                             statusBadge={STATUS_BADGE} 
                             statusLabel={STATUS_LABEL} 
+                            centres={orgCentres}
                         />
                     ))}
                 </div>
