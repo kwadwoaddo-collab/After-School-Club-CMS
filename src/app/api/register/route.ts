@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const {
             orgSlug,
+            centreId,
             startDate,
             children: submittedChildren,
             parents: submittedParents,
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
         // ── 2. Create the top-level registration record ──────────────────
         const [registration] = await db.insert(registrations).values({
             organisationId: org.id,
+            centreId: centreId ?? null,
             status: 'awaiting_confirmation',
             startDate: startDate ? new Date(startDate) : null,
             fundingTypes: funding?.types ?? [],
