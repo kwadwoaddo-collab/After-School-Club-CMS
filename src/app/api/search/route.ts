@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
         type: 'parent',
         title: `${p.firstName} ${p.lastName}`,
         subtitle: p.email || 'Parent',
-        url: `/dashboard/families/${p.id}` // Assuming families or parents route
+        url: `/dashboard/parents/${p.id}`
       })),
       ...bookingResults.map(b => {
         const date = new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
