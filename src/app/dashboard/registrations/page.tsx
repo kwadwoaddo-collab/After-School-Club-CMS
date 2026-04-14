@@ -2,10 +2,12 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { registrations, organisations } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import Link from 'next/link';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 import RegistrationItem from '@/components/dashboard/RegistrationItem';
+import RegistrationsFilters from '@/components/registration/RegistrationsFilters';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-error-container/10 text-error border border-error/20',
@@ -19,7 +21,12 @@ const STATUS_LABEL: Record<string, string> = {
     not_interested: 'Not Interested',
 };
 
-export default async function RegistrationsPage() {
+export default async function RegistrationsPage(props: {
+    searchParams: Promise<{
+        centre?: string;
+    }>
+}) {
+    const searchParams = await props.searchParams;
     const session = await auth();
     if (!session?.user) redirect('/login');
 
@@ -37,9 +44,23 @@ export default async function RegistrationsPage() {
     const registrationUrl = org ? `${baseUrl.replace(/^https?:\/\//, '')}/r/${org.slug}` : null;
     const fullRegistrationUrl = org ? `${baseUrl}/r/${org.slug}` : null;
 
+    // Get accessible centres
+    const orgCentres = await getUserAccessibleCentres(session.user.id);
+    const centreIds = orgCentres.map(c => c.id);
+
+    const conditions = [eq(registrations.organisationId, orgId)];
+
+    if (searchParams.centre && searchParams.centre !== 'all') {
+        if (centreIds.includes(searchParams.centre as string)) {
+            conditions.push(eq(registrations.centreId, searchParams.centre as string));
+        } else {
+            conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
+        }
+    }
+
     // Use relational query to fetch all registration data in ONE trip
     const rows = await db.query.registrations.findMany({
-        where: eq(registrations.organisationId, orgId),
+        where: and(...conditions),
         with: {
             registrationChildren: true,
             registrationParents: true,
@@ -68,6 +89,11 @@ export default async function RegistrationsPage() {
                         Open Registration Form
                     </Link>
                 )}
+            </div>
+
+            {/* Filters */}
+            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6 mb-6">
+                <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
             </div>
 
             {/* Registration link card */}
