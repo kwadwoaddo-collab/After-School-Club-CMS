@@ -166,7 +166,7 @@ export default async function BookingsPage(props: {
             </div>
 
             {/* Bookings Table */}
-            <BookingsTable bookings={bookingsData as any} isFiltered={isFiltered} />
+            <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />
 
             {/* Stats Footer */}
             <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">

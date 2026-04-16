@@ -10,6 +10,8 @@ import MarkAttendedButton from '@/components/bookings/MarkAttendedButton';
 import StudentNotesPanel from '@/components/students/StudentNotesPanel';
 import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
+import { getUserAccessibleCentres } from '@/lib/permissions';
+import ReassignCentreButton from '@/components/bookings/ReassignCentreButton';
 
 interface BookingPageProps {
     params: Promise<{ bookingId: string }>;
@@ -61,6 +63,8 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     if (!booking.centre || booking.centre.organisationId !== session.user.organisationId) {
         return notFound();
     }
+
+    const orgCentres = await getUserAccessibleCentres(session.user.id);
 
     // Task 32: colour/label map aligned with BookingsTable (DB enum: confirmed | cancelled | rescheduled | completed | pending)
     const getStatusBadge = (status: string) => {
@@ -200,8 +204,13 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                                 Location
                             </p>
-                            <p className="text-lg font-bold text-white">
+                            <p className="text-lg font-bold text-white flex items-center">
                                 {booking.centre.name}
+                                <ReassignCentreButton 
+                                    bookingId={booking.id} 
+                                    currentCentreId={booking.centreId || ''} 
+                                    centres={orgCentres} 
+                                />
                             </p>
                         </div>
                     </div>

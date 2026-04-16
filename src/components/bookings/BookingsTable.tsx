@@ -7,15 +7,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
 
+import ReassignCentreModal from './ReassignCentreModal';
+
 interface BookingsTableProps {
     bookings: any[];
+    centres?: { id: string; name: string }[];
     isFiltered?: boolean;
 }
 
 type SortKey = 'date' | 'student' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
 
-export default function BookingsTable({ bookings: initialBookings, isFiltered }: BookingsTableProps) {
+export default function BookingsTable({ bookings: initialBookings, centres = [], isFiltered }: BookingsTableProps) {
     const [bookings, setBookings] = useState<any[]>(initialBookings);
     
     // Sync external props (e.g., from server-side filtering) to internal state
@@ -33,6 +36,7 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
     const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    const [reassignTarget, setReassignTarget] = useState<string | null>(null);
     
     // Sort and bulk select state
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
@@ -439,6 +443,20 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                 </div>
             </div>
         )}
+        
+        {/* Reassign Centre Modal */}
+        {reassignTarget && (
+            <ReassignCentreModal
+                bookingId={reassignTarget}
+                currentCentreId={bookings.find(b => b.id === reassignTarget)?.centreId || ''}
+                centres={centres}
+                onClose={() => setReassignTarget(null)}
+                onSuccess={(newCentreId) => {
+                    // Update the booking optimistically or force refresh
+                    router.refresh();
+                }}
+            />
+        )}
 
         <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden relative">
             {/* Table for Desktop */}
@@ -661,6 +679,15 @@ export default function BookingsTable({ bookings: initialBookings, isFiltered }:
                                                         <CalendarIcon className="w-4 h-4" />
                                                         Reschedule
                                                     </button>
+                                                    {centres.length > 1 && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors w-full text-left"
+                                                        >
+                                                            <MapPin className="w-4 h-4 text-indigo-400" />
+                                                            Reassign Centre
+                                                        </button>
+                                                    )}
                                                     {/* Task 33: Quick status updates */}
                                                     <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
                                                     <p className="px-4 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick Status</p>
