@@ -20,12 +20,18 @@ export default async function RegistrationLinkPage() {
 
     const user = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
-        with: { organisation: true },
+        with: {
+            organisation: {
+                with: {
+                    centres: true
+                }
+            }
+        },
     });
 
     if (!user?.organisation) {
         redirect('/dashboard');
     }
 
-    return <RegistrationLinkContent organisation={user.organisation} />;
+    return <RegistrationLinkContent organisation={user.organisation} centres={user.organisation.centres || []} />;
 }

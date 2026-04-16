@@ -68,7 +68,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function RegisterPage() {
-    const { orgSlug } = useParams<{ orgSlug: string }>();
+    const params = useParams<{ slug: string[] }>();
+    const orgSlug = params?.slug?.[0] || '';
+    const centreSlugFromUrl = params?.slug?.[1];
     const [orgInfo, setOrgInfo] = useState<{
         name: string; logoUrl?: string; registrationTerms?: string; sessionSlots?: string[] | null; pricing?: { selfFinanceRate: number; taxCreditRate: number },
         centres?: { id: string; name: string; address: string | null; slug: string; operatingHours: string | null; sessionSlots: string | null; feeSelfFinance: string | null; feeAssistedFinance: string | null }[]
@@ -104,14 +106,17 @@ export default function RegisterPage() {
             .then(data => {
                 if (data) {
                     setOrgInfo(data);
-                    if (data.centres && data.centres.length === 1) {
+                    if (data.centres && centreSlugFromUrl) {
+                        const preselected = data.centres.find((c: any) => c.slug === centreSlugFromUrl);
+                        if (preselected) setSelectedCentreId(preselected.id);
+                    } else if (data.centres && data.centres.length === 1) {
                         setSelectedCentreId(data.centres[0].id);
                     }
                 }
             })
             .catch(() => { setOrgNotFound(true); })
             .finally(() => setOrgLoading(false));
-    }, [orgSlug]);
+    }, [orgSlug, centreSlugFromUrl]);
 
     // ── Child helpers ──────────────────────────────────────────────
     const updateChild = (i: number, field: keyof ChildEntry, v: string | string[]) =>

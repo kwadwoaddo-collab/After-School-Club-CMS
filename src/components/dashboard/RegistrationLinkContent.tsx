@@ -10,17 +10,28 @@ interface Organisation {
     brandColor?: string | null;
 }
 
+interface Centre {
+    id: string;
+    name: string;
+    slug: string;
+}
+
 type EmbedSize = 'small' | 'medium' | 'large' | 'custom';
 
-export default function RegistrationLinkContent({ organisation }: { organisation: Organisation }) {
+export default function RegistrationLinkContent({ organisation, centres }: { organisation: Organisation, centres: Centre[] }) {
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedEmbed, setCopiedEmbed] = useState(false);
+    const [selectedCentre, setSelectedCentre] = useState<string>(
+        centres?.length === 1 ? centres[0].slug : ''
+    );
     const [embedSize, setEmbedSize] = useState<EmbedSize>('large');
     const [customHeight, setCustomHeight] = useState('1100');
     const [showPreview, setShowPreview] = useState(false);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
-    const registrationLink = `${baseUrl}/r/${organisation.slug}`;
+    const registrationLink = selectedCentre 
+        ? `${baseUrl}/r/${organisation.slug}/${selectedCentre}` 
+        : `${baseUrl}/r/${organisation.slug}`;
 
     const getIframeHeight = () => {
         switch (embedSize) {
@@ -87,6 +98,42 @@ export default function RegistrationLinkContent({ organisation }: { organisation
                     </p>
                 </div>
             </div>
+
+            {/* Centre Selection */}
+            {centres?.length > 1 && (
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Select Centre</h2>
+                    <div className="space-y-2">
+                        <label className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="centre"
+                                value=""
+                                checked={selectedCentre === ''}
+                                onChange={(e) => setSelectedCentre(e.target.value)}
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-slate-700">All Centres (Show centre selector)</span>
+                        </label>
+                        {centres.map((centre) => (
+                            <label
+                                key={centre.id}
+                                className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    name="centre"
+                                    value={centre.slug}
+                                    checked={selectedCentre === centre.slug}
+                                    onChange={(e) => setSelectedCentre(e.target.value)}
+                                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                                />
+                                <span className="text-slate-700">{centre.name}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Direct Link */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
