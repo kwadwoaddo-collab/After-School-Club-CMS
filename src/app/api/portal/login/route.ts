@@ -30,15 +30,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, message: 'If an account exists with this email, a login link has been sent.' });
         }
 
-        const token = crypto.randomUUID();
+        const rawToken = crypto.randomUUID();
+        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
         await db.update(parents)
-            .set({ magicLinkToken: token, magicLinkExpiresAt: expiresAt })
+            .set({ magicLinkToken: hashedToken, magicLinkExpiresAt: expiresAt })
             .where(eq(parents.id, parent.id));
 
         // TODO: Replace console.log with actual email sending
-        const magicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/portal/verify?token=${token}`;
+        const magicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/portal/verify?token=${rawToken}`;
         console.log('[PortalLogin] Magic link generated for:', email);
 
         // Only expose the link in development (never in production)
