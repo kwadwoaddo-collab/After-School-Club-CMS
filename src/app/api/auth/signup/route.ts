@@ -3,9 +3,20 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        // Rate limit: 10 signup attempts per minute per IP
+        const ip = getClientIP(request);
+        const { success: allowed } = await checkRateLimit(authRateLimit, `signup:${ip}`);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many signup attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const body = await request.json();
         const { firstName, lastName, email, password } = body;
 

@@ -59,15 +59,10 @@ export class AvailabilityService {
             }
         }
 
-        console.log('[Debug] Date:', date);
-        console.log('[Debug] Day:', jsDayOfWeek);
-        console.log('[Debug] DB Day:', dbDayOfWeek);
-        console.log('[Debug] Rule found in DB?', !!rule);
 
         // Use default hours if no rules found
         if (!rule) {
             rule = DEFAULT_HOURS[jsDayOfWeek];
-            console.log('[Debug] Using default rule:', rule);
         }
 
 

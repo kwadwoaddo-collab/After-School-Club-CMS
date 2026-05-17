@@ -1,11 +1,22 @@
 import { db } from '@/db';
 import { parents } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
+import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
+        // Rate limit: 5 login attempts per minute per IP
+        const ip = getClientIP(req);
+        const { success: allowed } = await checkRateLimit(strictRateLimit, `portal:${ip}`);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many login attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const { email } = await req.json();
         if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
 
@@ -15,31 +26,32 @@ export async function POST(req: Request) {
         });
 
         if (!parent) {
-            // Security: Don't reveal existence. 
-            // But for MVP/Debugging, returning a hint might be useful if needed, but sticking to standard.
+            // Security: Don't reveal existence.
             return NextResponse.json({ success: true, message: 'If an account exists with this email, a login link has been sent.' });
         }
 
-        const token = crypto.randomUUID();
+        const rawToken = generateMagicLinkToken();
+        const hashedToken = hashToken(rawToken);
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
         await db.update(parents)
-            .set({ magicLinkToken: token, magicLinkExpiresAt: expiresAt })
+            .set({ magicLinkToken: hashedToken, magicLinkExpiresAt: expiresAt })
             .where(eq(parents.id, parent.id));
 
-        // Mock Email Sending
-        const magicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/portal/verify?token=${token}`;
-        console.log('=============================================');
-        console.log('MAGIC LINK FOR:', email);
-        console.log(magicLink);
-        console.log('=============================================');
+        // TODO: Replace console.log with actual email sending
+        const magicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/portal/verify?token=${rawToken}`;
+        console.log('[PortalLogin] Magic link generated for:', email);
 
-        return NextResponse.json({
+        // Only expose the link in development (never in production)
+        const response: Record<string, any> = {
             success: true,
             message: 'Check your email for the login link.',
-            // Including link in response for easier testing in preview
-            debugLink: magicLink
-        });
+        };
+        if (process.env.NODE_ENV === 'development') {
+            response.debugLink = magicLink;
+        }
+
+        return NextResponse.json(response);
     } catch (error) {
         console.error('Portal login error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

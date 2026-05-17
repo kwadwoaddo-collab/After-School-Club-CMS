@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   async headers() {
+    const allowedFrameAncestors = process.env.ALLOWED_FRAME_ANCESTORS
+      ? process.env.ALLOWED_FRAME_ANCESTORS.split(',').map(domain => domain.trim()).join(' ')
+      : '';
+    const cspFrameAncestors = `frame-ancestors 'self' ${allowedFrameAncestors}`.trim();
+
     return [
       {
         // Allow booking pages to be embedded in iframes
@@ -9,11 +15,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'ALLOWALL', // Allow embedding on any domain
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors *", // Allow all domains to embed
+            value: cspFrameAncestors,
           },
         ],
       },
@@ -23,11 +29,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'ALLOWALL',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors *",
+            value: cspFrameAncestors,
           },
         ],
       },
@@ -52,4 +58,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});

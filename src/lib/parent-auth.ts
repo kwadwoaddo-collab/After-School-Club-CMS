@@ -3,11 +3,43 @@ import { db } from '@/db';
 import { parents } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cache } from 'react';
+import { SignJWT, jwtVerify } from 'jose';
+
+// Use PARENT_SESSION_SECRET or AUTH_SECRET for signing, with a fallback for local dev if missing
+const JWT_SECRET = new TextEncoder().encode(
+    process.env.PARENT_SESSION_SECRET || process.env.AUTH_SECRET || 'default-dev-secret-do-not-use-in-prod'
+);
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function signParentToken(parentId: string): Promise<string> {
+    return new SignJWT({ parentId })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('30d')
+        .sign(JWT_SECRET);
+}
+
+export async function verifyParentToken(token: string): Promise<string | null> {
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        return payload.parentId as string;
+    } catch (error) {
+        // Fallback for raw UUID cookies to prevent breaking existing active sessions
+        if (UUID_REGEX.test(token)) {
+            return token;
+        }
+        return null; // Invalid or expired token
+    }
+}
 
 export const getCurrentParent = cache(async () => {
     const cookieStore = await cookies();
-    const parentId = cookieStore.get('parent_session')?.value;
+    const token = cookieStore.get('parent_session')?.value;
 
+    if (!token) return null;
+
+    const parentId = await verifyParentToken(token);
     if (!parentId) return null;
 
     try {

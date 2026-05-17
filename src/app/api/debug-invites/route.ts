@@ -7,6 +7,9 @@ import { desc } from 'drizzle-orm';
  * Debug endpoint to check recent staff invitations in the database
  */
 export async function GET(request: NextRequest) {
+    if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
     try {
         // Get the last 5 staff invitations
         const recentInvites = await db

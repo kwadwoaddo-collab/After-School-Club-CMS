@@ -69,3 +69,18 @@ Description: Added a new Parent Profile page featuring a "Finance / Ledger" tab 
 - **Security:** Ensure only the 'Owner' role can perform this action.
 - **Goal:** Allow admins to correct mistakes or remove accidental duplicate invoices.
 
+## [ ] Task 80: Add Centre Filtering to Registrations Page
+- **Status:** Pending
+- **Location:** /dashboard/registrations (Image 1)
+- **UI (Stitch):** Add a filter bar to the top of the Registrations page, identical in style to the Bookings page.
+- **Logic:** 
+  - Add a dropdown to select a specific Centre (Sydenham, Dagenham, etc.).
+  - When a centre is selected, the list of registrations must update to show ONLY that centre's submissions.
+  - The "13 total submissions" counter must update to reflect the filtered count.
+
+## [ ] Task 81: Synchronize Centre Filtering on Bookings Page
+- **Status:** Pending
+- **Location:** /dashboard/bookings (Image 2)
+- **Logic:** Ensure the existing "All Centres" filter is fully functional. 
+- **Requirement:** Selecting a centre must filter the table results on the backend and update the "Result Counter" (Task 62) immediately.
+- **Persistence:** If I switch from Bookings to Registrations, consider "remembering" the selected centre so I don't have to filter again.

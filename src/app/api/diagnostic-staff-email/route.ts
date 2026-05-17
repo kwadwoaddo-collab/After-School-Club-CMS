@@ -6,6 +6,9 @@ import { emailService } from '@/lib/services/email';
  * This simulates what the staff invite route does
  */
 export async function GET(request: NextRequest) {
+    if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
     try {
         console.log('[Diagnostic] Starting staff invitation test...');
 
