@@ -28,7 +28,7 @@ import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, fo
 import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { normalizeString, normalizeDate } from '@/lib/search-params';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/ui/utils';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
