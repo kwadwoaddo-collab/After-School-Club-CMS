@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * This bypasses authentication to test email sending
  */
 export async function GET(request: NextRequest) {
+    if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
     try {
         console.log('[Super Diagnostic] Testing staff invite email flow...');
 

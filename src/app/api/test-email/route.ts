@@ -6,6 +6,9 @@ import { emailService } from '@/lib/services/email';
  * DELETE THIS FILE after testing!
  */
 export async function GET(request: NextRequest) {
+    if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
     try {
         // Test email sending
         const result = await emailService.sendStaffInvitation({

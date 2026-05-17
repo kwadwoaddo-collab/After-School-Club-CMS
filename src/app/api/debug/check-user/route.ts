@@ -4,7 +4,17 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
+const DEV_GUARD = (req: NextRequest) => {
+    if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    return null;
+};
+
 export async function GET(request: NextRequest) {
+    const blocked = DEV_GUARD(request);
+    if (blocked) return blocked;
+
     const email = request.nextUrl.searchParams.get('email');
 
     if (!email) {
@@ -31,6 +41,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+    const blocked = DEV_GUARD(request);
+    if (blocked) return blocked;
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
