@@ -183,6 +183,7 @@ export async function getExportData() {
             centreName: centres.name,
             feedbackStatus: bookingAttendees.feedbackStatus,
             feedbackScore: bookingAttendees.feedbackScore,
+            attendanceStatus: bookingAttendees.attendanceStatus,
         })
         .from(bookings)
         .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))

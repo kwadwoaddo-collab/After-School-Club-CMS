@@ -5,6 +5,8 @@ import { Download, FileSpreadsheet, Loader2, Calendar, FileText, Users } from 'l
 import { getExportData } from '@/features/bookings/actions';
 import { getStudentExportData } from '@/features/students/actions';
 import { cn } from '@/components/ui/utils';
+import { resolveAttendanceStatus } from '@/lib/attendance';
+import type { AttendanceStatus } from '@/lib/attendance';
 
 type FilterType = 'all' | 'month' | 'week' | 'custom';
 
@@ -66,7 +68,7 @@ export default function ReportsClient() {
             const rows = filteredData.map(item => [
                 item.bookingId,
                 new Date(item.startAt).toLocaleString('en-GB'),
-                item.status,
+                resolveAttendanceStatus((item.attendanceStatus as AttendanceStatus | null) ?? null, item.status).label,
                 `${item.childFirstName} ${item.childLastName}`,
                 item.parentEmail,
                 item.centreName,

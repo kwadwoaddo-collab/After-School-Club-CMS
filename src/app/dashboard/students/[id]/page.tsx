@@ -64,6 +64,7 @@ export default async function StudentProfilePage(
             feedbackAttachmentBase64: bookingAttendees.feedbackAttachmentBase64,
             feedbackAttachmentMime: bookingAttendees.feedbackAttachmentMime,
             feedbackSentAt: bookingAttendees.feedbackSentAt,
+            attendanceStatus: bookingAttendees.attendanceStatus,
         })
         .from(bookings)
         .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
@@ -78,7 +79,9 @@ export default async function StudentProfilePage(
     const [attendanceResults] = await db
         .select({
             total: sql<number>`count(*)`,
-            completed: sql<number>`count(*) filter (where ${bookings.status} = 'completed')`
+            completed: sql<number>`count(*) filter (where
+                COALESCE(${bookingAttendees.attendanceStatus}::text, CASE WHEN ${bookings.status} = 'completed' THEN 'present' ELSE NULL END) = 'present'
+            )`
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))

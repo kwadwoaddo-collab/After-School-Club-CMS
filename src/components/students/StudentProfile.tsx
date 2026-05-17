@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
 import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
+import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendance';
+import type { AttendanceStatus } from '@/lib/attendance';
 
 interface AssessmentProfileProps {
     student: {
@@ -43,6 +45,7 @@ interface AssessmentProfileProps {
             feedbackAttachmentBase64: string | null;
             feedbackAttachmentMime: string | null;
             feedbackSentAt: Date | null;
+            attendanceStatus: string | null;
         }>;
         attendanceStats?: { total: number; completed: number };
     };
@@ -131,7 +134,7 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                     {student.attendanceStats?.completed || 0} / {student.attendanceStats?.total || 0} Completed
                                 </span>
                             </div>
-                            <span className="text-[10px] text-on-surface-variant/60 font-medium mt-0.5">Based on booking status · Per-child tracking coming soon</span>
+                            <span className="text-[10px] text-on-surface-variant/60 font-medium mt-0.5">Attendance rate · per-child granularity available</span>
                         </div>
                     </div>
                 </div>
@@ -235,18 +238,20 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                                     {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} • {booking.centreName}
                                                 </p>
                                             </div>
-                                            <span className={cn(
-                                                "text-[10px] font-black uppercase rounded-full px-3 py-1",
-                                                    booking.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
-                                                    booking.status === 'cancelled' ? 'bg-error/20 text-error' :
-                                                'bg-primary/10 text-primary'
-                                            )}>
-                                                {booking.status === 'completed' ? 'Completed' :
-                                                 booking.status === 'cancelled' ? 'Cancelled' :
-                                                 booking.status === 'confirmed' ? 'Booked' :
-                                                 booking.status === 'signed_up' ? 'Signed Up' :
-                                                 booking.status.replace(/_/g, ' ')}
-                                            </span>
+                                            {(() => {
+                                                const resolved = resolveAttendanceStatus(
+                                                    (booking.attendanceStatus as AttendanceStatus | null) ?? null,
+                                                    booking.status
+                                                );
+                                                return (
+                                                    <span className={cn(
+                                                        "text-[10px] font-black uppercase rounded-full px-3 py-1",
+                                                        getAttendanceColorClass(resolved.status)
+                                                    )}>
+                                                        {resolved.label}
+                                                    </span>
+                                                );
+                                            })()}
                                         </div>
                                     ))}
                                     {student.bookings.length > 3 && (

@@ -22,8 +22,9 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
-import { DashboardFilter } from '@/components/dashboard/DashboardFilter';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, format, subWeeks, subMonths } from 'date-fns';
+import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendance';
+import type { AttendanceStatus } from '@/lib/attendance';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -127,10 +128,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     childFirst: children.firstName,
                     childLast: children.lastName,
                     childId: children.id,
+                    attendanceStatus: bookingAttendees.attendanceStatus,
                     attendanceStats: sql<string>`(
                         SELECT json_build_object(
                             'total', count(*)::int,
-                            'completed', (count(*) filter (where status = 'completed'))::int
+                            'completed', (count(*) filter (where COALESCE(ba.attendance_status::text, CASE WHEN b2.status = 'completed' THEN 'present' ELSE NULL END) = 'present'))::int
                         )
                         FROM booking_attendees ba
                         JOIN bookings b2 ON ba.booking_id = b2.id
@@ -510,14 +512,21 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                            b.status === 'confirmed' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
-                                                            b.status === 'completed' ? 'bg-secondary-container/10 text-secondary border border-secondary/20' :
-                                                            b.status === 'cancelled' ? 'bg-error-container/10 text-error border border-error/20' :
-                                                            'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                                        }`}>
-                                                            {b.status === 'completed' ? 'Attended' : b.status}
-                                                        </span>
+                                                        {(() => {
+                                                            const resolved = resolveAttendanceStatus(
+                                                                (b.attendanceStatus as AttendanceStatus | null) ?? null,
+                                                                b.status
+                                                            );
+                                                            return (
+                                                                <span className={cn(
+                                                                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                                                    getAttendanceColorClass(resolved.status),
+                                                                    resolved.status === 'pending' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'border-current/20'
+                                                                )}>
+                                                                    {resolved.label}
+                                                                </span>
+                                                            );
+                                                        })()}
                                                         {b.hasMedicalNote && (
                                                             <div className="relative group/tooltip flex items-center outline-none">
                                                                 <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
