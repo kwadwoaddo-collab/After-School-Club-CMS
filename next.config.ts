@@ -9,11 +9,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'ALLOWALL', // Allow embedding on any domain
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors *", // Allow all domains to embed
+            value: "frame-ancestors 'self'", // Restrict to same origin — add specific domains if needed
           },
         ],
       },
@@ -23,11 +23,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'ALLOWALL',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors *",
+            value: "frame-ancestors 'self'",
           },
         ],
       },

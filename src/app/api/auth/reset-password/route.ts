@@ -4,6 +4,7 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
+import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/reset-password
@@ -11,6 +12,16 @@ import { emailService } from '@/lib/services/email';
  */
 export async function POST(request: NextRequest) {
     try {
+        // Rate limit: 5 reset attempts per minute per IP
+        const ip = getClientIP(request);
+        const { success: allowed } = await checkRateLimit(strictRateLimit, `reset:${ip}`);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many reset attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const { email } = await request.json();
 
         if (!email) {
