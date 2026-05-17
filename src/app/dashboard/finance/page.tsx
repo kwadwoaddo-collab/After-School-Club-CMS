@@ -14,8 +14,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
+import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 
-export default async function FinancePage() {
+export default async function FinancePage(props: {
+    searchParams: Promise<{
+        centre?: string;
+    }>
+}) {
+    const searchParams = await props.searchParams;
     const session = await auth();
 
     if (!session?.user) return redirect('/login');
@@ -32,9 +38,19 @@ export default async function FinancePage() {
         where: eq(centres.organisationId, session.user.organisationId)
     });
 
+    // Extract centre filter and validate
+    let centreId = typeof searchParams?.centre === 'string' ? searchParams.centre : 'all';
+    if (centreId !== 'all' && !orgCentres.some(c => c.id === centreId)) {
+        centreId = 'all';
+    }
+    const centreFilter = centreId !== 'all' ? eq(invoices.centreId, centreId) : undefined;
+
     // Fetch summary data
     const recentInvoices = await db.query.invoices.findMany({
-        where: eq(invoices.organisationId, session.user.organisationId),
+        where: and(
+            eq(invoices.organisationId, session.user.organisationId),
+            centreFilter
+        ),
         limit: 10,
         orderBy: [desc(invoices.createdAt)],
         with: {
@@ -59,21 +75,28 @@ export default async function FinancePage() {
     const [totalBilledResult] = await db
         .select({ total: sum(invoices.amount) })
         .from(invoices)
-        .where(eq(invoices.organisationId, orgId));
+        .where(and(
+            eq(invoices.organisationId, orgId),
+            centreFilter
+        ));
     
     const [pendingInvoicesResult] = await db
         .select({ count: count() })
         .from(invoices)
         .where(and(
             eq(invoices.organisationId, orgId),
-            ne(invoices.status, 'paid')
+            ne(invoices.status, 'paid'),
+            centreFilter
         ));
         
     const [collectionsResult] = await db
         .select({ total: sum(payments.amount) })
         .from(payments)
         .innerJoin(invoices, eq(payments.invoiceId, invoices.id))
-        .where(eq(invoices.organisationId, orgId));
+        .where(and(
+            eq(invoices.organisationId, orgId),
+            centreFilter
+        ));
 
     const totalRevenue = Number(totalBilledResult?.total || 0);
     const pendingInvoices = Number(pendingInvoicesResult?.count || 0);
@@ -88,7 +111,8 @@ export default async function FinancePage() {
             eq(invoices.organisationId, orgId),
             ne(invoices.status, 'paid'),
             ne(invoices.status, 'void'),
-            lt(invoices.dueDate, today)
+            lt(invoices.dueDate, today),
+            centreFilter
         ));
         
     const overdueInvoices = await db.query.invoices.findMany({
@@ -96,7 +120,8 @@ export default async function FinancePage() {
             eq(invoices.organisationId, orgId),
             ne(invoices.status, 'paid'),
             ne(invoices.status, 'void'),
-            lt(invoices.dueDate, today)
+            lt(invoices.dueDate, today),
+            centreFilter
         ),
         limit: 10,
         orderBy: [desc(invoices.dueDate)],
@@ -116,7 +141,8 @@ export default async function FinancePage() {
         .where(and(
             eq(invoices.organisationId, orgId),
             ne(invoices.status, 'paid'),
-            ne(invoices.status, 'void')
+            ne(invoices.status, 'void'),
+            centreFilter
         ));
         
     const [outstandingPaymentsResult] = await db
@@ -126,7 +152,8 @@ export default async function FinancePage() {
         .where(and(
             eq(invoices.organisationId, orgId),
             ne(invoices.status, 'paid'),
-            ne(invoices.status, 'void')
+            ne(invoices.status, 'void'),
+            centreFilter
         ));
 
     const totalOutstandingInvoices = Number(outstandingInvoicesResult?.total || 0);
@@ -152,6 +179,7 @@ export default async function FinancePage() {
             WHERE i.organisation_id = ${orgId}
               AND i.status != 'paid'
               AND i.status != 'void'
+              ${centreId !== 'all' ? sql`AND i.centre_id = ${centreId}` : sql``}
         )
         SELECT
             COUNT(*) FILTER (WHERE days_overdue <= 0) as current_count,
@@ -201,6 +229,7 @@ export default async function FinancePage() {
             WHERE i.organisation_id = ${orgId}
               AND i.status != 'paid'
               AND i.status != 'void'
+              ${centreId !== 'all' ? sql`AND i.centre_id = ${centreId}` : sql``}
             GROUP BY p.id, p.first_name, p.last_name, p.email
         )
         SELECT * FROM ParentBalances
@@ -227,12 +256,15 @@ export default async function FinancePage() {
                         Manage invoices, payments, and financial health
                     </p>
                 </div>
-                <FinanceDashboardClient 
-                    students={orgStudents} 
-                    recentInvoices={recentInvoices} 
-                    centres={orgCentres}
-                    isOwner={userRole === 'ORG_OWNER'}
-                />
+                <div className="flex items-center gap-4 flex-wrap">
+                    <FinanceDashboardFilters centres={orgCentres} />
+                    <FinanceDashboardClient 
+                        students={orgStudents} 
+                        recentInvoices={recentInvoices} 
+                        centres={orgCentres}
+                        isOwner={userRole === 'ORG_OWNER'}
+                    />
+                </div>
             </div>
 
             {/* Stats Grid */}
