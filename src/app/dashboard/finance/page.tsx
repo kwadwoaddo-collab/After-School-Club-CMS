@@ -12,6 +12,7 @@ import {
     ArrowDownRight,
     AlertCircle,
 } from 'lucide-react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
@@ -257,7 +258,9 @@ export default async function FinancePage(props: {
                     </p>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
-                    <FinanceDashboardFilters centres={orgCentres} />
+                    <Suspense fallback={<div className="w-[180px] h-[44px] bg-[#14161b] rounded-2xl animate-pulse" />}>
+                        <FinanceDashboardFilters centres={orgCentres} />
+                    </Suspense>
                     <FinanceDashboardClient 
                         students={orgStudents} 
                         recentInvoices={recentInvoices} 
