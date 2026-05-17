@@ -247,6 +247,15 @@ export const bookingAttendees = pgTable('booking_attendees', {
   bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }).notNull(),
   childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
 
+  // TODO: Per-child attendance tracking (Phase 2B roadmap)
+  // Currently, attendance is inferred from bookings.status = 'completed' which
+  // applies to the entire booking, not individual attendees. Future columns:
+  //   attendanceStatus: attendanceStatusEnum('attendance_status'),   // present | absent | late | no_show | excused
+  //   attendanceNote:   text('attendance_note'),                     // free-text context
+  //   markedAt:         timestamp('marked_at'),                      // when staff recorded it
+  //   markedBy:         uuid('marked_by').references(() => users.id) // who recorded it
+  // See: docs/ATTENDANCE_ROADMAP.md
+
   // Assessment / Feedback Fields
   feedbackNotes: text('feedback_notes'),
   feedbackScore: varchar('feedback_score', { length: 50 }),

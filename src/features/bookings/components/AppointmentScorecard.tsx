@@ -302,8 +302,14 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                         </div>
                                     </div>
 
-                                    <div className="text-[10px] text-slate-500 mt-2">
-                                        Last updated: {booking.updatedAt ? new Date(booking.updatedAt).toLocaleDateString() : 'N/A'}
+                                    {booking.attendees.length > 1 && (
+                                        <div className="text-[10px] text-amber-400/80 mt-2 flex items-center gap-1">
+                                            <span>⚠</span>
+                                            <span>Applies to all {booking.attendees.length} children in this booking</span>
+                                        </div>
+                                    )}
+                                    <div className="text-[10px] text-slate-500 mt-1">
+                                        Booking-level status · Last updated: {booking.updatedAt ? new Date(booking.updatedAt).toLocaleDateString() : 'N/A'}
                                     </div>
                                 </div>
                             </div>

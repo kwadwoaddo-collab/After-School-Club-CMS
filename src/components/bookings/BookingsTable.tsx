@@ -710,6 +710,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
                                                         disabled={updatingStatus === booking.id}
+                                                        title="Marks entire booking as attended (applies to all children)"
                                                         className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-violet-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <GraduationCap className="w-4 h-4" />
@@ -894,6 +895,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <button
                         onClick={() => handleBulkStatus('completed')}
                         disabled={isProcessingBulk}
+                        title="Marks selected bookings as attended (applies to all children in each booking)"
                         className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
                     >
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}

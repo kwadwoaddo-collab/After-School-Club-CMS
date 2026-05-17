@@ -124,13 +124,14 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                             </div>
                         </div>
                         <div className="p-8 flex flex-col gap-1 items-center md:items-start">
-                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Attendance Status</span>
+                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Sessions Completed</span>
                             <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-emerald-400" />
                                 <span className="text-lg font-black text-white">
-                                    {student.attendanceStats?.completed || 0} / {student.attendanceStats?.total || 0} Attended
+                                    {student.attendanceStats?.completed || 0} / {student.attendanceStats?.total || 0} Completed
                                 </span>
                             </div>
+                            <span className="text-[10px] text-on-surface-variant/60 font-medium mt-0.5">Based on booking status · Per-child tracking coming soon</span>
                         </div>
                     </div>
                 </div>
@@ -240,7 +241,11 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                                     booking.status === 'cancelled' ? 'bg-error/20 text-error' :
                                                 'bg-primary/10 text-primary'
                                             )}>
-                                                {booking.status}
+                                                {booking.status === 'completed' ? 'Completed' :
+                                                 booking.status === 'cancelled' ? 'Cancelled' :
+                                                 booking.status === 'confirmed' ? 'Booked' :
+                                                 booking.status === 'signed_up' ? 'Signed Up' :
+                                                 booking.status.replace(/_/g, ' ')}
                                             </span>
                                         </div>
                                     ))}
