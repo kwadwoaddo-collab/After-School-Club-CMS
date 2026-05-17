@@ -1,0 +1,48 @@
+name: CI Workflow
+
+on:
+  push:
+    branches: [ "main", "staging" ]
+  pull_request:
+    branches: [ "main", "staging" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Recommend using LTS
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Build application
+      run: npm run build
+      env:
+        # Dummy variables to allow the Next.js build to succeed safely in CI
+        DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+        NEXT_PUBLIC_BASE_URL: http://localhost:3000
+        JWT_SECRET: dummy-secret
+        NEXTAUTH_SECRET: dummy-secret
+        AUTH_SECRET: dummy-secret
+        NEXTAUTH_URL: http://localhost:3000
+        STRIPE_SECRET_KEY: sk_test_dummy
+        STRIPE_PUBLISHABLE_KEY: pk_test_dummy
+        STRIPE_WEBHOOK_SECRET: whsec_dummy
+        STRIPE_FREE_PRICE_ID: price_dummy
+        AUTH_GOOGLE_ID: dummy
+        AUTH_GOOGLE_SECRET: dummy
+        RESEND_API_KEY: dummy
+        TWILIO_ACCOUNT_SID: dummy
+        TWILIO_AUTH_TOKEN: dummy
+        GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH: ./dummy.json
