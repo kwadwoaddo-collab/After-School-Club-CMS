@@ -17,6 +17,7 @@ export const studentSourceEnum = pgEnum('student_source', ['assessment', 'regist
 export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'partially_paid', 'paid', 'void']);
 export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfer', 'stripe', 'voucher', 'other']);
+export const attendanceStatusEnum = pgEnum('attendance_status', ['present', 'absent', 'late', 'no_show', 'excused']);
 
 // ==================== ORGANISATIONS & CENTRES ====================
 export const organisations = pgTable('organisations', {
@@ -247,14 +248,11 @@ export const bookingAttendees = pgTable('booking_attendees', {
   bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }).notNull(),
   childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
 
-  // TODO: Per-child attendance tracking (Phase 2B roadmap)
-  // Currently, attendance is inferred from bookings.status = 'completed' which
-  // applies to the entire booking, not individual attendees. Future columns:
-  //   attendanceStatus: attendanceStatusEnum('attendance_status'),   // present | absent | late | no_show | excused
-  //   attendanceNote:   text('attendance_note'),                     // free-text context
-  //   markedAt:         timestamp('marked_at'),                      // when staff recorded it
-  //   markedBy:         uuid('marked_by').references(() => users.id) // who recorded it
-  // See: docs/ATTENDANCE_ROADMAP.md
+  // Per-child attendance tracking (Phase A: schema only — no UI writes yet)
+  attendanceStatus: attendanceStatusEnum('attendance_status'),        // present | absent | late | no_show | excused
+  attendanceNote: text('attendance_note'),                            // free-text context
+  attendanceMarkedAt: timestamp('attendance_marked_at'),              // when staff recorded it
+  attendanceMarkedBy: uuid('attendance_marked_by').references(() => users.id, { onDelete: 'set null' }), // who recorded it
 
   // Assessment / Feedback Fields
   feedbackNotes: text('feedback_notes'),
@@ -569,6 +567,10 @@ export const bookingAttendeesRelations = relations(bookingAttendees, ({ one }) =
   child: one(children, {
     fields: [bookingAttendees.childId],
     references: [children.id],
+  }),
+  markedByUser: one(users, {
+    fields: [bookingAttendees.attendanceMarkedBy],
+    references: [users.id],
   }),
 }));
 
