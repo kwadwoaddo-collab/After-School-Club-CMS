@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import {
@@ -374,41 +375,16 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             </div>
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                    { label: 'Total Students', value: totalStudents, icon: Users, colorClass: 'text-primary bg-primary/10', trend: studentsTrend, sparkline: growthStats },
-                    { label: 'All-time Bookings', value: totalBookingsAll, icon: CalendarCheck, colorClass: 'text-secondary bg-secondary/10', trend: bookingsTrend },
-                    { label: 'Registrations', value: totalRegistrations, icon: ClipboardList, colorClass: 'text-tertiary bg-tertiary/10', trend: registrationsTrend, sparkline: growthStats },
-                    { label: 'Pending Approval', value: pendingRegistrations, icon: ClipboardList, colorClass: 'text-error bg-error/10' },
-                ].map(stat => (
-                    <div key={stat.label} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 group hover:bg-surface-bright transition-all relative">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className={`p-2.5 rounded-lg ${stat.colorClass}`}>
-                                <stat.icon className="w-5 h-5" />
-                            </div>
-                            {stat.sparkline && (
-                                <div className="absolute right-6 top-6 opacity-40 group-hover:opacity-100 transition-opacity">
-                                    <GrowthSparkline data={stat.sparkline} width={60} height={20} />
-                                </div>
-                            )}
-                            {!stat.sparkline && stat.trend && (
-                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold tracking-wider ${
-                                    stat.trend.type === 'positive' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-                                    stat.trend.type === 'negative' ? 'bg-error-container/20 text-error border border-error/20' : 
-                                    'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20'
-                                }`}>
-                                    {stat.trend.type === 'positive' && <ArrowUpRight className="w-3 h-3" />}
-                                    {stat.trend.type === 'negative' && <ArrowDownRight className="w-3 h-3" />}
-                                    {stat.trend.type === 'neutral' && <Minus className="w-3 h-3" />}
-                                    {stat.trend.text}
-                                </div>
-                            )}
-                        </div>
-                        <p className="text-on-surface-variant text-sm font-medium">{stat.label}</p>
-                        <h3 className="text-3xl font-bold text-white mt-1">{stat.value ?? 0}</h3>
-                    </div>
-                ))}
-            </div>
+            <KpiGrid
+                totalStudents={totalStudents}
+                totalBookings={totalBookingsAll}
+                totalRegistrations={totalRegistrations}
+                pendingRegistrations={pendingRegistrations}
+                studentsTrend={studentsTrend}
+                bookingsTrend={bookingsTrend}
+                registrationsTrend={registrationsTrend}
+                growthStats={growthStats}
+            />
 
             {/* ── Centre Capacity Overview ────────────────────────────────── */}
             {hasCentres && (
