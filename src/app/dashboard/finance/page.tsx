@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { invoices, centres, children } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { invoices, centres, children, payments } from '@/db/schema';
+import { eq, desc, and, sum, count, ne } from 'drizzle-orm';
 import { 
     TrendingUp, 
     CreditCard, 
@@ -52,20 +52,31 @@ export default async function FinancePage() {
     
     const orgStudents = students.filter(s => s.parent?.organisationId === session.user.organisationId);
 
-    // Calculate real stats
-    const allInvoices = await db.query.invoices.findMany({
-        where: eq(invoices.organisationId, session.user.organisationId),
-        with: {
-            payments: true
-        }
-    });
+    // Calculate real stats with database-level aggregations
+    const orgId = session.user.organisationId;
 
-    const totalRevenue = allInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
-    const pendingInvoices = allInvoices.filter(inv => inv.status !== 'paid').length;
-    const collections = allInvoices.reduce((sum, inv) => {
-        const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0);
-        return sum + paid;
-    }, 0);
+    const [totalBilledResult] = await db
+        .select({ total: sum(invoices.amount) })
+        .from(invoices)
+        .where(eq(invoices.organisationId, orgId));
+    
+    const [pendingInvoicesResult] = await db
+        .select({ count: count() })
+        .from(invoices)
+        .where(and(
+            eq(invoices.organisationId, orgId),
+            ne(invoices.status, 'paid')
+        ));
+        
+    const [collectionsResult] = await db
+        .select({ total: sum(payments.amount) })
+        .from(payments)
+        .innerJoin(invoices, eq(payments.invoiceId, invoices.id))
+        .where(eq(invoices.organisationId, orgId));
+
+    const totalRevenue = Number(totalBilledResult?.total || 0);
+    const pendingInvoices = Number(pendingInvoicesResult?.count || 0);
+    const collections = Number(collectionsResult?.total || 0);
 
     const stats = [
         { name: 'Total Billed', value: `£${totalRevenue.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: TrendingUp },
