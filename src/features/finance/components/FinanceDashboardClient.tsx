@@ -250,3 +250,49 @@ export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
         </div>
     );
 }
+
+export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
+    if (!balances || balances.length === 0) return null;
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full">
+                <thead>
+                    <tr className="text-left border-b border-outline-variant/10">
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Parent</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center px-4">Unpaid Invoices</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Total Invoiced</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Total Paid</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Balance</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/5">
+                    {balances.map((row: any) => (
+                        <tr key={row.parent_id} className="group hover:bg-white/5 transition-colors">
+                            <td className="py-4 px-4">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-white">
+                                        {row.first_name} {row.last_name}
+                                    </span>
+                                    {row.email ? <span className="text-xs text-on-surface-variant">{row.email}</span> : null}
+                                </div>
+                            </td>
+                            <td className="py-4 text-center px-4">
+                                <span className="text-sm font-bold text-white">{row.unpaid_invoice_count}</span>
+                            </td>
+                            <td className="py-4 text-right px-4">
+                                <span className="text-sm font-medium text-white">£{Number(row.total_invoiced).toFixed(2)}</span>
+                            </td>
+                            <td className="py-4 text-right px-4">
+                                <span className="text-sm font-medium text-emerald-400">£{Number(row.total_paid).toFixed(2)}</span>
+                            </td>
+                            <td className="py-4 text-right px-4">
+                                <span className="text-sm font-black text-error">£{Number(row.balance).toFixed(2)}</span>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}

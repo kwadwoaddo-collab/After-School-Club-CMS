@@ -13,7 +13,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary } from '@/features/finance/components/FinanceDashboardClient';
+import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
 
 export default async function FinancePage() {
     const session = await auth();
@@ -179,6 +179,36 @@ export default async function FinancePage() {
         days_60_plus: { count: Number(agingResult?.days_60_plus_count || 0), amount: Number(agingResult?.days_60_plus_amount || 0) },
     };
 
+    const parentBalancesResult = await db.execute(sql`
+        WITH InvoicePayments AS (
+            SELECT invoice_id, SUM(amount) as paid_amount
+            FROM payments
+            GROUP BY invoice_id
+        ),
+        ParentBalances AS (
+            SELECT 
+                p.id as parent_id,
+                COALESCE(p.first_name, '') as first_name,
+                COALESCE(p.last_name, '') as last_name,
+                COALESCE(p.email, '') as email,
+                COUNT(i.id) as unpaid_invoice_count,
+                SUM(i.amount) as total_invoiced,
+                SUM(COALESCE(ip.paid_amount, 0)) as total_paid,
+                GREATEST(0, SUM(i.amount) - SUM(COALESCE(ip.paid_amount, 0))) as balance
+            FROM invoices i
+            INNER JOIN parents p ON i.parent_id = p.id
+            LEFT JOIN InvoicePayments ip ON i.id = ip.invoice_id
+            WHERE i.organisation_id = ${orgId}
+              AND i.status != 'paid'
+              AND i.status != 'void'
+            GROUP BY p.id, p.first_name, p.last_name, p.email
+        )
+        SELECT * FROM ParentBalances
+        WHERE balance > 0
+        ORDER BY balance DESC
+        LIMIT 10
+    `);
+
     const stats = [
         { name: 'Total Billed', value: `£${totalRevenue.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: TrendingUp },
         { name: 'Collections', value: `£${collections.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: CreditCard },
@@ -234,6 +264,18 @@ export default async function FinancePage() {
                 {/* Recent Invoices */}
                 <div className="lg:col-span-2 space-y-6">
                     <InvoiceAgingSummary buckets={agingBuckets} />
+
+                    {parentBalancesResult.length > 0 && (
+                        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+                            <div className="flex items-center justify-between mb-6 px-2">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-primary" />
+                                    Parent Balances
+                                </h3>
+                            </div>
+                            <ParentBalanceTable balances={parentBalancesResult} />
+                        </div>
+                    )}
 
                     {overdueCount > 0 && (
                         <div className="bg-error/5 border border-error/20 rounded-[32px] p-6 relative overflow-hidden">
