@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { registrations, organisations } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 import RegistrationItem from '@/components/dashboard/RegistrationItem';
 import RegistrationsFilters from '@/components/registration/RegistrationsFilters';
@@ -93,7 +94,9 @@ export default async function RegistrationsPage(props: {
 
             {/* Filters */}
             <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6 mb-6">
-                <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
+                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
+                    <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
+                </Suspense>
             </div>
 
             {/* Registration link card */}
