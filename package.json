@@ -14,7 +14,9 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:cleanup": "tsx src/scripts/cleanup-test-email.ts",
     "db:reset": "tsx src/scripts/reset-db.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "npx playwright test",
+    "test:all": "vitest run && npx playwright test"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
