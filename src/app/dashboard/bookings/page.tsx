@@ -5,6 +5,7 @@ import { organisations, bookings, centres } from '@/db/schema';
 import { eq, desc, and, gte, lte, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
+import { Suspense } from 'react';
 import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
@@ -162,7 +163,9 @@ export default async function BookingsPage(props: {
 
             {/* Filters and View Toggle */}
             <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
-                <BookingsFilters centres={orgCentres} resultsCount={bookingsData.length} />
+                <Suspense fallback={<div className="h-20 animate-pulse bg-slate-800/50 rounded-2xl w-full"></div>}>
+                    <BookingsFilters centres={orgCentres} resultsCount={bookingsData.length} />
+                </Suspense>
             </div>
 
             {/* Bookings Table */}
