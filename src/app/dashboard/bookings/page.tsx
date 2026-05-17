@@ -88,6 +88,13 @@ export default async function BookingsPage(props: {
         );
     }
 
+    // Log filtering logic for debugging zero records issue
+    console.log('[Bookings Page] Filter variables:', {
+        orgId,
+        centreIdsCount: centreIds.length,
+        searchParams
+    });
+
     // Fetch bookings with filters
     let bookingsData: any[] = [];
     try {
@@ -106,12 +113,14 @@ export default async function BookingsPage(props: {
 
                 // Filter by status if provided
                 if (searchParams.status && searchParams.status !== 'all') {
-                    const statusParam = normalizeEnum(searchParams.status, VALID_BOOKING_STATUSES, 'all');
-                    if (statusParam !== 'all') {
-                        conds.push(op.eq(b.status, statusParam));
+                    // Fast and safe inline validation to match prior behavior without early skips
+                    const val = searchParams.status as string;
+                    if (VALID_BOOKING_STATUSES.includes(val as any)) {
+                        conds.push(op.eq(b.status, val as any));
                     }
                 }
 
+                console.log('[Bookings Page] Condition count:', conds.length);
                 return conds.length === 1 ? conds[0] : op.and(...conds);
             },
             orderBy: [desc(bookings.startAt)],
@@ -119,6 +128,18 @@ export default async function BookingsPage(props: {
                 centre: true,
                 parent: true,
                 attendees: {
+                    columns: {
+                        id: true,
+                        bookingId: true,
+                        childId: true,
+                        feedbackNotes: true,
+                        feedbackScore: true,
+                        feedbackAttachmentBase64: true,
+                        feedbackAttachmentMime: true,
+                        feedbackStatus: true,
+                        feedbackSentAt: true,
+                        updatedAt: true
+                    },
                     with: {
                         child: {
                             with: {
