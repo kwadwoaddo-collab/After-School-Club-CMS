@@ -20,8 +20,18 @@ export default async function BookingsPage(props: {
         to?: string;
     }>
 }) {
-    const searchParams = await props.searchParams;
+    const rawSearchParams = await props.searchParams;
     const session = await auth();
+
+    // Normalize searchParams to ensure they are strings (Next.js can return arrays if multiple same-name params exist)
+    const searchParams = {
+        view: Array.isArray(rawSearchParams.view) ? rawSearchParams.view[0] : rawSearchParams.view,
+        status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
+        centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
+        search: Array.isArray(rawSearchParams.search) ? rawSearchParams.search[0] : rawSearchParams.search,
+        from: Array.isArray(rawSearchParams.from) ? rawSearchParams.from[0] : rawSearchParams.from,
+        to: Array.isArray(rawSearchParams.to) ? rawSearchParams.to[0] : rawSearchParams.to,
+    };
 
     if (!session?.user?.organisationId) {
         redirect('/onboarding');
@@ -76,47 +86,54 @@ export default async function BookingsPage(props: {
     }
 
     // Fetch bookings with filters
-    let bookingsData = await db.query.bookings.findMany({
-        where: (b, op) => {
-            const conds = [op.inArray(b.centreId, centreIds)];
-            
-            // Filter by specific centre if provided
-            if (searchParams.centre && searchParams.centre !== 'all') {
-                if (centreIds.includes(searchParams.centre as string)) {
-                    conds.push(op.eq(b.centreId, searchParams.centre as string));
-                } else {
-                    conds.push(op.eq(b.centreId, 'unauthorized_centre_id'));
-                }
-            }
-
-            // Filter by status if provided
-            if (searchParams.status && searchParams.status !== 'all') {
-                conds.push(op.eq(b.status, searchParams.status as any));
-            }
-
-            return conds.length === 1 ? conds[0] : op.and(...conds);
-        },
-        orderBy: [desc(bookings.startAt)],
-        with: {
-            centre: true,
-            parent: true,
-            attendees: {
-                with: {
-                    child: {
-                        with: {
-                            notes: true
-                        }
+    let bookingsData: any[] = [];
+    try {
+        bookingsData = await db.query.bookings.findMany({
+            where: (b, op) => {
+                const conds = [op.inArray(b.centreId, centreIds)];
+                
+                // Filter by specific centre if provided
+                if (searchParams.centre && searchParams.centre !== 'all') {
+                    if (centreIds.includes(searchParams.centre as string)) {
+                        conds.push(op.eq(b.centreId, searchParams.centre as string));
+                    } else {
+                        conds.push(op.eq(b.centreId, 'unauthorized_centre_id'));
                     }
                 }
+
+                // Filter by status if provided
+                if (searchParams.status && searchParams.status !== 'all') {
+                    conds.push(op.eq(b.status, searchParams.status as any));
+                }
+
+                return conds.length === 1 ? conds[0] : op.and(...conds);
             },
-            tutor: true,
-            child: {
-                with: {
-                    notes: true
+            orderBy: [desc(bookings.startAt)],
+            with: {
+                centre: true,
+                parent: true,
+                attendees: {
+                    with: {
+                        child: {
+                            with: {
+                                notes: true
+                            }
+                        }
+                    }
+                },
+                tutor: true,
+                child: {
+                    with: {
+                        notes: true
+                    }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Failed to fetch bookings data:', error);
+        // Fallback to empty array to prevent 500 crashes
+        bookingsData = [];
+    }
 
     // Filter by search string
     if (searchParams.search) {
