@@ -2,8 +2,8 @@ import { db } from '@/db';
 import { parents } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
 
 export async function POST(req: NextRequest) {
     try {
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, message: 'If an account exists with this email, a login link has been sent.' });
         }
 
-        const rawToken = crypto.randomUUID();
-        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const rawToken = generateMagicLinkToken();
+        const hashedToken = hashToken(rawToken);
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
         await db.update(parents)

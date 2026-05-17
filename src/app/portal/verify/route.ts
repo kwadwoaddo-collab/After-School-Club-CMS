@@ -1,10 +1,10 @@
 import { db } from '@/db';
 import { parents } from '@/db/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, or } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { signParentToken } from '@/lib/parent-auth';
-import crypto from 'crypto';
+import { hashToken } from '@/lib/magic-link';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -14,11 +14,14 @@ export async function GET(request: Request) {
         redirect('/portal/login?error=InvalidToken');
     }
 
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const hashedToken = hashToken(token);
 
     const parent = await db.query.parents.findFirst({
         where: and(
-            eq(parents.magicLinkToken, hashedToken),
+            or(
+                eq(parents.magicLinkToken, hashedToken),
+                eq(parents.magicLinkToken, token) // Backwards compatibility for raw tokens
+            ),
             gt(parents.magicLinkExpiresAt, new Date())
         )
     });

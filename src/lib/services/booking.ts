@@ -3,10 +3,10 @@ import { bookings, bookingAttendees, parents, children, childSubjects, centres, 
 import { BookingInput } from '@/lib/validations/booking';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import crypto from 'crypto';
 import { googleCalendarService, buildBookingEventDetails } from './google-calendar';
 import { notificationService } from './notifications';
 import { stripeService } from './stripe';
+import { generateMagicLinkToken, hashToken } from '../magic-link';
 
 interface BookingResult {
   bookingId: string;
@@ -60,10 +60,11 @@ export class BookingService {
 
     // Generate confirmation code and magic link token
     const confirmationCode = nanoid(10).toUpperCase();
-    const magicLinkToken = crypto.randomBytes(32).toString('hex');
+    const rawMagicLinkToken = generateMagicLinkToken();
+    const hashedMagicLinkToken = hashToken(rawMagicLinkToken);
     const magicLinkExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${magicLinkToken}`;
+    const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawMagicLinkToken}`;
     // If this is a reschedule, mark the old one as cancelled
     if (input.rescheduleId) {
       try {
@@ -88,7 +89,7 @@ export class BookingService {
     // Update parent with the magic link token so they can log in
     await db.update(parents)
       .set({
-        magicLinkToken,
+        magicLinkToken: hashedMagicLinkToken,
         magicLinkExpiresAt
       })
       .where(eq(parents.id, parent.id));
@@ -103,7 +104,7 @@ export class BookingService {
       modality: input.appointment.modality as any,
       status: 'confirmed' as any,
       confirmationCode,
-      magicLinkToken, // We'll keep this on the booking for now too
+      magicLinkToken: hashedMagicLinkToken, // We'll keep this on the booking for now too
       communicationsConsent: input.consent.communications,
     } as any).returning();
 
@@ -270,7 +271,7 @@ export class BookingService {
       },
     });
 
-    if (!booking || booking.magicLinkToken !== token) {
+    if (!booking || (booking.magicLinkToken !== token && booking.magicLinkToken !== hashToken(token))) {
       return false;
     }
 
