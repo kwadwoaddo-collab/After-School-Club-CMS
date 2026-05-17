@@ -13,7 +13,8 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seed.ts",
     "db:cleanup": "tsx src/scripts/cleanup-test-email.ts",
-    "db:reset": "tsx src/scripts/reset-db.ts"
+    "db:reset": "tsx src/scripts/reset-db.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -55,6 +56,7 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.6"
   }
 }
