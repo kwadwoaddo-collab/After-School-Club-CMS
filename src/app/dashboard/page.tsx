@@ -28,6 +28,7 @@ import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, fo
 import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { normalizeString, normalizeDate } from '@/lib/search-params';
+import { cn } from '@/lib/utils';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -131,11 +132,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     childFirst: children.firstName,
                     childLast: children.lastName,
                     childId: children.id,
-                    attendanceStatus: bookingAttendees.attendanceStatus,
                     attendanceStats: sql<string>`(
                         SELECT json_build_object(
                             'total', count(*)::int,
-                            'completed', (count(*) filter (where COALESCE(ba.attendance_status::text, CASE WHEN b2.status = 'completed' THEN 'present' ELSE NULL END) = 'present'))::int
+                            'completed', (count(*) filter (where b2.status = 'completed'))::int
                         )
                         FROM booking_attendees ba
                         JOIN bookings b2 ON ba.booking_id = b2.id
