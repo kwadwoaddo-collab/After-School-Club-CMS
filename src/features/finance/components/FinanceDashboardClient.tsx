@@ -141,3 +141,72 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
         </div>
     );
 }
+
+export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
+    const router = useRouter();
+    
+    if (!invoices || invoices.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full">
+                <thead>
+                    <tr className="text-left border-b border-outline-variant/10">
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Invoice #</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Parent</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Amount</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Paid</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Balance</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Due Date</th>
+                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/5">
+                    {invoices.map((invoice: any) => {
+                        const paid = invoice.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+                        const balance = Number(invoice.amount) - paid;
+                        
+                        return (
+                            <tr 
+                                key={invoice.id} 
+                                onClick={() => router.push(`/dashboard/finance/invoices/${invoice.id}`)}
+                                className="group hover:bg-white/5 transition-colors cursor-pointer"
+                            >
+                                <td className="py-4 px-4">
+                                    <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
+                                </td>
+                                <td className="py-4 px-4">
+                                    <span className="text-sm font-bold text-white">
+                                        {invoice.parent?.firstName} {invoice.parent?.lastName}
+                                    </span>
+                                </td>
+                                <td className="py-4 text-right px-4">
+                                    <span className="text-sm font-medium text-white">£{Number(invoice.amount).toFixed(2)}</span>
+                                </td>
+                                <td className="py-4 text-right px-4">
+                                    <span className="text-sm font-medium text-emerald-400">£{paid.toFixed(2)}</span>
+                                </td>
+                                <td className="py-4 text-right px-4">
+                                    <span className="text-sm font-black text-error">£{balance.toFixed(2)}</span>
+                                </td>
+                                <td className="py-4 px-4">
+                                    <span className="text-sm text-error font-medium">{new Date(invoice.dueDate).toLocaleDateString('en-GB')}</span>
+                                </td>
+                                <td className="py-4 px-4">
+                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                                        invoice.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-400' :
+                                        invoice.status === 'sent' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-500/10 text-slate-400'
+                                    }`}>
+                                        {invoice.status.replace('_', ' ')}
+                                    </span>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
