@@ -157,10 +157,10 @@ export default async function FinancePage() {
                     <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
                         <h3 className="text-lg font-bold text-white mb-4 px-2">Quick Tools</h3>
                         <div className="space-y-2">
-                            <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <a href="/api/finance/export" target="_blank" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
                                 <span>Export Ledger (CSV)</span>
                                 <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
-                            </button>
+                            </a>
                             <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
                                 <span>Tax Summary Report</span>
                                 <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />

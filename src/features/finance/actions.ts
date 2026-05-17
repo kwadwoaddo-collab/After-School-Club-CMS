@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { children, parents, invoices, bookings, bookingAttendees, registrationChildren, registrations } from '@/db/schema';
+import { children, parents, invoices, bookings, bookingAttendees, registrationChildren, registrations, auditEvents } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
@@ -139,6 +139,13 @@ export async function createInvoice(data: {
         notes: description,
     }).returning();
 
+    await db.insert(auditEvents).values({
+        organisationId: session.user.organisationId,
+        userId: session.user.id,
+        eventType: 'invoice_created',
+        eventData: JSON.stringify({ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amount: newInvoice.amount })
+    });
+
     revalidatePath('/dashboard/finance');
     return newInvoice;
 }
@@ -212,6 +219,13 @@ export async function createLegacyFamilyAndInvoice(data: {
             billingPeriodEnd: data.invoice.billingPeriodEnd,
             notes: description,
         }).returning();
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId!,
+            userId: session.user.id,
+            eventType: 'invoice_created',
+            eventData: JSON.stringify({ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amount: newInvoice.amount })
+        });
 
         return { parent: newParent, children: createdChildren, invoice: newInvoice };
     });
@@ -287,6 +301,13 @@ export async function recordPayment(data: {
             }).where(eq(invoices.id, data.invoiceId));
         }
 
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId,
+            userId: session.user.id,
+            eventType: 'payment_recorded',
+            eventData: JSON.stringify({ invoiceId: data.invoiceId, paymentId: newPayment.id, amount: data.amount, method: data.method })
+        });
+
         return newPayment;
     });
 
@@ -343,6 +364,13 @@ export async function voidInvoice(invoiceId: string) {
         .update(invoices)
         .set({ status: 'void', updatedAt: new Date() })
         .where(eq(invoices.id, invoiceId));
+
+    await db.insert(auditEvents).values({
+        organisationId: session.user.organisationId,
+        userId: session.user.id,
+        eventType: 'invoice_voided',
+        eventData: JSON.stringify({ invoiceId })
+    });
 
     revalidatePath('/dashboard/finance');
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
