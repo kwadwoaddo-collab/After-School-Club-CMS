@@ -26,6 +26,9 @@ export const FLAGS = {
 
   /** Phase 5: Slot hold mechanism (capacity limits) */
   SLOT_HOLDS: process.env.FF_SLOT_HOLDS === 'true',
+
+  /** Phase C: Granular per-child attendance marking */
+  GRANULAR_ATTENDANCE: process.env.FF_GRANULAR_ATTENDANCE === 'true',
 } as const;
 
 /** Type-safe flag name */

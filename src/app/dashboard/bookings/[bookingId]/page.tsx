@@ -12,6 +12,9 @@ import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import ReassignCentreButton from '@/components/bookings/ReassignCentreButton';
+import { isFeatureEnabled } from '@/lib/feature-flags';
+import AttendanceDropdown from './AttendanceDropdown';
+import type { AttendanceStatus } from '@/lib/attendance';
 
 interface BookingPageProps {
     params: Promise<{ bookingId: string }>;
@@ -139,30 +142,49 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     <MarkAttendedButton bookingId={bookingId} initialStatus={booking.status} />
                 </div>
             </div>
-
-            {/* Student Info Card */}
-            <div className="glass-card rounded-[32px] p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
-                <div className="flex items-start justify-between mb-8">
-                    <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                            {student.initials}
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">{student.name}</h2>
-                            <div className="flex items-center gap-4">
-                                <span className="px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold uppercase">
-                                    {student.grade || 'Grade N/A'}
-                                </span>
-                                {student.dob && (
-                                    <span className="text-sm text-slate-500 font-medium">
-                                        Born: {format(new Date(student.dob), 'MMM d, yyyy')}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                    {getStatusBadge(booking.status)}
-                </div>
+            {/* Attendees List */}
+            <div className="space-y-6">
+                {booking.attendees && booking.attendees.length > 0 ? (
+                    booking.attendees.map(attendee => {
+                        const child = attendee.child;
+                        const initials = `${child.firstName[0]}${child.lastName[0]}`.toUpperCase();
+                        
+                        return (
+                            <div key={attendee.id} className="glass-card rounded-[32px] p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+                                <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6">
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                            {initials}
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white mb-2">{child.firstName} {child.lastName}</h2>
+                                            <div className="flex flex-wrap items-center gap-4">
+                                                <span className="px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold uppercase">
+                                                    {child.schoolYear || 'Grade N/A'}
+                                                </span>
+                                                {child.dateOfBirth && (
+                                                    <span className="text-sm text-slate-500 font-medium">
+                                                        Born: {format(new Date(child.dateOfBirth), 'MMM d, yyyy')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-4 min-w-[250px]">
+                                        {getStatusBadge(booking.status)}
+                                        {isFeatureEnabled('GRANULAR_ATTENDANCE') && (
+                                            <div className="w-full">
+                                                <AttendanceDropdown 
+                                                    bookingId={bookingId}
+                                                    attendeeId={attendee.id}
+                                                    currentAttendanceStatus={attendee.attendanceStatus as AttendanceStatus | null}
+                                                    currentBookingStatus={booking.status}
+                                                    currentNote={attendee.attendanceNote}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                 {/* Booking Details Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200">
@@ -215,6 +237,14 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         </div>
                     </div>
                 </div>
+                            </div>
+                        );
+                    })
+                ) : (
+                    <div className="glass-card rounded-[32px] p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+                        <p className="text-white text-center">No attendees found for this booking.</p>
+                    </div>
+                )}
             </div>
 
             {/* Parent Information */}

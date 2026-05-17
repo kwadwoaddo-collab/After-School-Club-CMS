@@ -5,6 +5,7 @@ import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calenda
 import { eq, and, gt, gte, lte, or, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
+import type { AttendanceStatus } from '@/lib/attendance';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await auth();
@@ -161,6 +162,55 @@ export async function sendAssessmentFeedback(attendeeId: string) {
         .where(eq(bookingAttendees.id, attendeeId));
 
     revalidatePath(`/dashboard/bookings/${attendee.bookingId}`);
+}
+
+export async function markAttendeeAttendance(params: {
+    bookingId: string;
+    attendeeId: string;
+    status: AttendanceStatus | null;
+    note?: string;
+}) {
+    const session = await auth();
+    if (!session?.user?.id || !session.user.organisationId) {
+        throw new Error('Unauthorized');
+    }
+
+    const { bookingId, attendeeId, status, note } = params;
+
+    // Verify booking belongs to user's organisation
+    const booking = await db.query.bookings.findFirst({
+        where: eq(bookings.id, bookingId),
+        with: {
+            centre: true,
+            attendees: true
+        }
+    });
+
+    if (!booking || !booking.centre || booking.centre.organisationId !== session.user.organisationId) {
+        throw new Error('Unauthorized access to this booking');
+    }
+
+    const attendeeExists = booking.attendees.some(a => a.id === attendeeId);
+    if (!attendeeExists) {
+        throw new Error('Attendee not found in this booking');
+    }
+
+    // 1. Update the per-child attendance record with audit trail
+    await db.update(bookingAttendees)
+        .set({
+            attendanceStatus: status,
+            attendanceNote: note || null,
+            attendanceMarkedAt: new Date(),
+            attendanceMarkedBy: session.user.id,
+            updatedAt: new Date()
+        })
+        .where(eq(bookingAttendees.id, attendeeId));
+    // Per user instructions: Do not update legacy booking.status automatically yet.
+    // Keep legacy booking.status unchanged for backwards compatibility.
+
+    revalidatePath(`/dashboard/bookings/${bookingId}`);
+    revalidatePath('/dashboard/bookings');
+    revalidatePath('/dashboard');
 }
 
 export async function getExportData() {
