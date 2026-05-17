@@ -12,6 +12,8 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import { CapacityIndicator } from '@/components/ui/CapacityIndicator';
 import { LoadForecast } from '@/components/dashboard/LoadForecast';
+import { DashboardFilter } from '@/components/dashboard/DashboardFilter';
+import { Suspense } from 'react';
 import { startOfDay, endOfDay, addDays, isSameDay, subDays, eachWeekOfInterval } from 'date-fns';
 import { RegistrationFunnel } from '@/components/dashboard/RegistrationFunnel';
 import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
@@ -369,11 +371,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         Welcome back{firstName ? `, ${firstName}` : ''}! 
                     </p>
                 </div>
-                <DashboardFilter 
-                    currentView={currentView}
-                    currentDateIso={targetDate.toISOString()}
-                    dateLabel={dateLabel}
-                />
+                <Suspense fallback={<div className="w-[180px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" />}>
+                    <DashboardFilter 
+                        currentView={currentView}
+                        currentDateIso={targetDate.toISOString()}
+                        dateLabel={dateLabel}
+                    />
+                </Suspense>
             </div>
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
