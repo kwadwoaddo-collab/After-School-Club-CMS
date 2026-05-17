@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async headers() {
+    const allowedFrameAncestors = process.env.ALLOWED_FRAME_ANCESTORS
+      ? process.env.ALLOWED_FRAME_ANCESTORS.split(',').map(domain => domain.trim()).join(' ')
+      : '';
+    const cspFrameAncestors = `frame-ancestors 'self' ${allowedFrameAncestors}`.trim();
+
     return [
       {
         // Allow booking pages to be embedded in iframes
@@ -13,7 +18,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self'", // Restrict to same origin — add specific domains if needed
+            value: cspFrameAncestors,
           },
         ],
       },
@@ -27,7 +32,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self'",
+            value: cspFrameAncestors,
           },
         ],
       },
