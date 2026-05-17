@@ -210,3 +210,43 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
         </div>
     );
 }
+
+export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
+    if (!buckets) return null;
+    
+    const items = [
+        { label: 'Current', data: buckets.current, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+        { label: '1-7 Days', data: buckets.days_1_7, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+        { label: '8-30 Days', data: buckets.days_8_30, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+        { label: '31-60 Days', data: buckets.days_31_60, color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+        { label: '60+ Days', data: buckets.days_60_plus, color: 'bg-rose-600/10 text-rose-500 border-rose-600/20' },
+    ];
+
+    const totalOverdueAmount = items.slice(1).reduce((acc, curr) => acc + curr.data.amount, 0);
+
+    return (
+        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+            <div className="flex items-center justify-between mb-6 px-2">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    Accounts Receivable Aging
+                </h3>
+                {totalOverdueAmount > 0 && (
+                    <span className="text-sm font-bold text-error bg-error/10 px-3 py-1 rounded-lg">
+                        £{totalOverdueAmount.toFixed(2)} Overdue
+                    </span>
+                )}
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {items.map((item, index) => (
+                    <div key={index} className={`border rounded-2xl p-4 flex flex-col items-center justify-center text-center ${item.color}`}>
+                        <span className="text-xs font-bold uppercase tracking-wider mb-2">{item.label}</span>
+                        <span className="text-xl font-black mb-1">£{item.data.amount.toFixed(2)}</span>
+                        <span className="text-xs font-medium opacity-80">{item.data.count} invoice{item.data.count !== 1 ? 's' : ''}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

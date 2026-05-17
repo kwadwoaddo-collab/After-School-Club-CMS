@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices, centres, children, payments } from '@/db/schema';
-import { eq, desc, and, sum, count, ne, lt } from 'drizzle-orm';
+import { eq, desc, and, sum, count, ne, lt, sql } from 'drizzle-orm';
 import { 
     TrendingUp, 
     CreditCard, 
@@ -13,7 +13,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable } from '@/features/finance/components/FinanceDashboardClient';
+import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary } from '@/features/finance/components/FinanceDashboardClient';
 
 export default async function FinancePage() {
     const session = await auth();
@@ -133,6 +133,52 @@ export default async function FinancePage() {
     const totalOutstandingPayments = Number(outstandingPaymentsResult?.total || 0);
     const outstandingBalance = totalOutstandingInvoices - totalOutstandingPayments;
 
+    // Database-level query for invoice aging buckets
+    const [agingResult] = await db.execute(sql`
+        WITH InvoicePayments AS (
+            SELECT invoice_id, SUM(amount) as paid_amount
+            FROM payments
+            GROUP BY invoice_id
+        ),
+        InvoiceStats AS (
+            SELECT 
+                i.id,
+                i.amount,
+                COALESCE(p.paid_amount, 0) as paid_amount,
+                i.amount - COALESCE(p.paid_amount, 0) as outstanding_balance,
+                CURRENT_DATE - i.due_date::date as days_overdue
+            FROM invoices i
+            LEFT JOIN InvoicePayments p ON i.id = p.invoice_id
+            WHERE i.organisation_id = ${orgId}
+              AND i.status != 'paid'
+              AND i.status != 'void'
+        )
+        SELECT
+            COUNT(*) FILTER (WHERE days_overdue <= 0) as current_count,
+            COALESCE(SUM(outstanding_balance) FILTER (WHERE days_overdue <= 0), 0) as current_amount,
+            
+            COUNT(*) FILTER (WHERE days_overdue >= 1 AND days_overdue <= 7) as days_1_7_count,
+            COALESCE(SUM(outstanding_balance) FILTER (WHERE days_overdue >= 1 AND days_overdue <= 7), 0) as days_1_7_amount,
+            
+            COUNT(*) FILTER (WHERE days_overdue >= 8 AND days_overdue <= 30) as days_8_30_count,
+            COALESCE(SUM(outstanding_balance) FILTER (WHERE days_overdue >= 8 AND days_overdue <= 30), 0) as days_8_30_amount,
+            
+            COUNT(*) FILTER (WHERE days_overdue >= 31 AND days_overdue <= 60) as days_31_60_count,
+            COALESCE(SUM(outstanding_balance) FILTER (WHERE days_overdue >= 31 AND days_overdue <= 60), 0) as days_31_60_amount,
+            
+            COUNT(*) FILTER (WHERE days_overdue > 60) as days_60_plus_count,
+            COALESCE(SUM(outstanding_balance) FILTER (WHERE days_overdue > 60), 0) as days_60_plus_amount
+        FROM InvoiceStats
+    `);
+
+    const agingBuckets = {
+        current: { count: Number(agingResult?.current_count || 0), amount: Number(agingResult?.current_amount || 0) },
+        days_1_7: { count: Number(agingResult?.days_1_7_count || 0), amount: Number(agingResult?.days_1_7_amount || 0) },
+        days_8_30: { count: Number(agingResult?.days_8_30_count || 0), amount: Number(agingResult?.days_8_30_amount || 0) },
+        days_31_60: { count: Number(agingResult?.days_31_60_count || 0), amount: Number(agingResult?.days_31_60_amount || 0) },
+        days_60_plus: { count: Number(agingResult?.days_60_plus_count || 0), amount: Number(agingResult?.days_60_plus_amount || 0) },
+    };
+
     const stats = [
         { name: 'Total Billed', value: `£${totalRevenue.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: TrendingUp },
         { name: 'Collections', value: `£${collections.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: CreditCard },
@@ -187,6 +233,8 @@ export default async function FinancePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Invoices */}
                 <div className="lg:col-span-2 space-y-6">
+                    <InvoiceAgingSummary buckets={agingBuckets} />
+
                     {overdueCount > 0 && (
                         <div className="bg-error/5 border border-error/20 rounded-[32px] p-6 relative overflow-hidden">
                             <div className="absolute -right-12 -top-12 w-40 h-40 bg-error/10 rounded-full blur-3xl" />
