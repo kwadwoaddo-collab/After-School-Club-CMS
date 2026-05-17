@@ -3,6 +3,7 @@ import { parents } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { signParentToken } from '@/lib/parent-auth';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -28,10 +29,11 @@ export async function GET(request: Request) {
         .set({ magicLinkToken: null, magicLinkExpiresAt: null })
         .where(eq(parents.id, parent.id));
 
-    // Set Session Cookie
-    // TODO: In production, sign this cookie or use a proper session store
+    // Set Session Cookie (Signed JWT)
     const cookieStore = await cookies();
-    cookieStore.set('parent_session', parent.id, {
+    const sessionToken = await signParentToken(parent.id);
+    
+    cookieStore.set('parent_session', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
