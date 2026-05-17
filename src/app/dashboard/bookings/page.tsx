@@ -9,6 +9,9 @@ import { Suspense } from 'react';
 import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { normalizeEnum } from '@/lib/search-params';
+
+const VALID_BOOKING_STATUSES = ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up'] as const;
 
 export default async function BookingsPage(props: {
     searchParams: Promise<{
@@ -103,7 +106,10 @@ export default async function BookingsPage(props: {
 
                 // Filter by status if provided
                 if (searchParams.status && searchParams.status !== 'all') {
-                    conds.push(op.eq(b.status, searchParams.status as any));
+                    const statusParam = normalizeEnum(searchParams.status, VALID_BOOKING_STATUSES, 'all');
+                    if (statusParam !== 'all') {
+                        conds.push(op.eq(b.status, statusParam));
+                    }
                 }
 
                 return conds.length === 1 ? conds[0] : op.and(...conds);

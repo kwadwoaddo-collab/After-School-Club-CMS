@@ -27,6 +27,7 @@ import { studentNotes } from '@/db/schema';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, format, subWeeks, subMonths } from 'date-fns';
 import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
+import { normalizeString, normalizeDate } from '@/lib/search-params';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -53,9 +54,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const firstName = session.user.name?.split(' ')[0] || '';
 
     const now = new Date();
-    const targetDateStr = searchParams.date as string | undefined;
-    const targetDate = targetDateStr && isValid(parseISO(targetDateStr)) ? parseISO(targetDateStr) : now;
-    const currentView = searchParams.view === 'monthly' ? 'monthly' : 'weekly';
+    const targetDateStr = normalizeDate(searchParams.date);
+    const targetDate = targetDateStr ? parseISO(targetDateStr) : now;
+    const currentView = normalizeString(searchParams.view) === 'monthly' ? 'monthly' : 'weekly';
 
     const activeStartDate = currentView === 'weekly' 
         ? startOfWeek(targetDate, { weekStartsOn: 1 }) 

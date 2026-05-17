@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { centres, organisations, bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { type Metadata } from 'next';
+import { normalizeString } from '@/lib/search-params';
 
 export async function generateMetadata({
   params,
@@ -38,8 +39,7 @@ export default async function BookingPage({
   searchParams: Promise<{ reschedule?: string }>;
 }) {
   const { orgSlug, centreSlug } = await params;
-  const { rescheduleId } = (await searchParams) as any; // Allow for different param names if needed
-
+  const rawSearchParams = await searchParams;
   // Fetch organisation
   const [org] = await db
     .select()
@@ -82,7 +82,7 @@ export default async function BookingPage({
 
   // Fetch rescheduling data if needed
   const bookingToReschedule = null;
-  const rId = (await searchParams).reschedule;
+  const rId = normalizeString(rawSearchParams.reschedule);
   if (rId) {
     // For now, skip the complex nested query - can be added back if needed
     // This simplification helps avoid connection pool issues

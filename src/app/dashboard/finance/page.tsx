@@ -16,6 +16,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
+import { normalizeString } from '@/lib/search-params';
 
 export default async function FinancePage(props: {
     searchParams: Promise<{
@@ -40,7 +41,7 @@ export default async function FinancePage(props: {
     });
 
     // Extract centre filter and validate
-    let centreId = typeof searchParams?.centre === 'string' ? searchParams.centre : 'all';
+    let centreId = normalizeString(searchParams?.centre, 'all');
     if (centreId !== 'all' && !orgCentres.some(c => c.id === centreId)) {
         centreId = 'all';
     }

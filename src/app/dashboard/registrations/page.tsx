@@ -9,6 +9,7 @@ import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 import RegistrationItem from '@/components/dashboard/RegistrationItem';
 import RegistrationsFilters from '@/components/registration/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { normalizeString } from '@/lib/search-params';
 
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-error-container/10 text-error border border-error/20',
@@ -51,9 +52,11 @@ export default async function RegistrationsPage(props: {
 
     const conditions = [eq(registrations.organisationId, orgId)];
 
-    if (searchParams.centre && searchParams.centre !== 'all') {
-        if (centreIds.includes(searchParams.centre as string)) {
-            conditions.push(eq(registrations.centreId, searchParams.centre as string));
+    const centreParam = normalizeString(searchParams.centre, 'all');
+
+    if (centreParam !== 'all') {
+        if (centreIds.includes(centreParam)) {
+            conditions.push(eq(registrations.centreId, centreParam));
         } else {
             conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
         }
