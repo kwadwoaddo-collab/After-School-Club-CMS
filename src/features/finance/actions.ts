@@ -323,3 +323,33 @@ export async function deleteInvoice(invoiceId: string) {
     
     return { success: true };
 }
+
+export async function voidInvoice(invoiceId: string) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owner can void invoices');
+
+    const invoice = await db.query.invoices.findFirst({
+        where: and(
+            eq(invoices.id, invoiceId),
+            eq(invoices.organisationId, session.user.organisationId),
+        ),
+    });
+
+    if (!invoice) throw new Error('Invoice not found');
+    if (invoice.status === 'void') throw new Error('Invoice is already voided');
+
+    await db
+        .update(invoices)
+        .set({ status: 'void', updatedAt: new Date() })
+        .where(eq(invoices.id, invoiceId));
+
+    revalidatePath('/dashboard/finance');
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    if (invoice.parentId) {
+        revalidatePath(`/dashboard/parents/${invoice.parentId}`);
+    }
+
+    return { success: true };
+}
+

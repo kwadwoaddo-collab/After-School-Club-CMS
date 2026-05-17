@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -13,7 +13,7 @@ import { ReceiptTemplate } from './ReceiptTemplate';
 import { useEffect } from 'react';
 import PDFPreviewModal from './PDFPreviewModal';
 import { Eye } from 'lucide-react';
-import { deleteInvoice } from '../actions';
+import { deleteInvoice, voidInvoice } from '../actions';
 
 interface InvoiceDetailsClientProps {
     invoice: any;
@@ -29,17 +29,26 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
     const handleDelete = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log("handleDelete initiated for invoice:", invoice.id);
         if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return;
         
         try {
-            console.log("Calling deleteInvoice action...");
             await deleteInvoice(invoice.id);
-            console.log("Success! Redirecting...");
             router.push('/dashboard/finance');
         } catch (error: any) {
-            console.error("Delete invoice error:", error);
             alert(error.message || 'An error occurred while deleting the invoice.');
+        }
+    };
+
+    const handleVoid = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!window.confirm('Void this invoice? The invoice and its payment records will be preserved for audit purposes, but it will be excluded from revenue reports.')) return;
+        
+        try {
+            await voidInvoice(invoice.id);
+            router.refresh();
+        } catch (error: any) {
+            alert(error.message || 'An error occurred while voiding the invoice.');
         }
     };
 
@@ -58,6 +67,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-bold ring-1 ring-amber-500/20"><Clock className="w-3.5 h-3.5" /> PARTIALLY PAID</span>;
             case 'sent':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold ring-1 ring-blue-500/20"><Send className="w-3.5 h-3.5" /> SENT</span>;
+            case 'void':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-neutral-500/10 text-neutral-400 rounded-full text-xs font-bold ring-1 ring-neutral-500/20 line-through"><Ban className="w-3.5 h-3.5" /> VOID</span>;
             default:
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-400 rounded-full text-xs font-bold ring-1 ring-slate-500/20"><AlertCircle className="w-3.5 h-3.5" /> {status.toUpperCase()}</span>;
         }
@@ -138,13 +149,24 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             <CreditCard className="w-4 h-4" /> Record Payment
                         </button>
                     )}
-                    <button 
-                        type="button"
-                        onClick={handleDelete}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all shadow-lg shadow-error/10 cursor-pointer z-50 relative"
-                    >
-                        <Trash2 className="w-4 h-4" /> Delete Invoice
-                    </button>
+                    {invoice.status !== 'void' && (
+                        <button 
+                            type="button"
+                            onClick={handleVoid}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
+                        >
+                            <Ban className="w-4 h-4" /> Void
+                        </button>
+                    )}
+                    {invoice.status !== 'paid' && invoice.payments?.length === 0 && (
+                        <button 
+                            type="button"
+                            onClick={handleDelete}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all cursor-pointer"
+                        >
+                            <Trash2 className="w-4 h-4" /> Delete
+                        </button>
+                    )}
                 </div>
             </div>
 
