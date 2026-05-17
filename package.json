@@ -21,6 +21,7 @@
     "@google-cloud/local-auth": "^3.0.1",
     "@hookform/resolvers": "^3.10.0",
     "@react-pdf/renderer": "^4.4.0",
+    "@sentry/nextjs": "^10.53.1",
     "@stripe/stripe-js": "^8.7.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
