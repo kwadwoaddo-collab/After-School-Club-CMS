@@ -6,7 +6,7 @@ import { eq, desc, sql, min, inArray, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
-import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { getUserAccessibleCentreIds, getVisibleChildIds } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
 
@@ -24,10 +24,40 @@ export default async function StudentsPage() {
 
     if (!org) return redirect('/onboarding');
 
-    // Get centres accessible to this user (ORG_OWNER sees all, others see assigned centres)
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    // ── Centre-scoped student visibility ────────────────────────────────────
+    // ORG_OWNER: null → no restriction, sees all org students.
+    // Other roles: array of childIds visible via their accessible centres.
+    //              If the array is empty (no centre access / no bookings),
+    //              we short-circuit and return an empty page.
+    const visibleChildIds = await getVisibleChildIds(session.user.id, org.id);
 
-    // Fetch all students with their parent info
+    // Short-circuit: non-owner with zero accessible students
+    if (visibleChildIds !== null && visibleChildIds.length === 0) {
+        return (
+            <div className="space-y-8 animate-in fade-in duration-700">
+                <div className="flex items-end justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
+                        <p className="text-on-surface-variant font-medium mt-1">
+                            View all registered students and their details
+                        </p>
+                    </div>
+                    <Link
+                        href="/dashboard/students/add"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    >
+                        <Plus className="w-4 h-4" /> Add Student
+                    </Link>
+                </div>
+                <StudentsTable students={[]} />
+            </div>
+        );
+    }
+
+    // ── Main student query ───────────────────────────────────────────────────
+    // Base scope: all children whose parent belongs to this org.
+    // For non-owners: further restrict to visibleChildIds derived from
+    // bookingAttendees in their accessible centres (DB-level, not in-memory).
     const studentsList = await db
         .select({
             id: children.id,
@@ -45,10 +75,22 @@ export default async function StudentsPage() {
         })
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(eq(parents.organisationId, org.id))
+        .where(
+            visibleChildIds === null
+                // ORG_OWNER: all children in the org
+                ? eq(parents.organisationId, org.id)
+                // Non-owner: children whose IDs are in the visible set
+                : and(
+                    eq(parents.organisationId, org.id),
+                    inArray(children.id, visibleChildIds)
+                )
+        )
         .orderBy(desc(children.createdAt));
 
-    // Get booking counts and next assessment date for each student (filtered by accessible centres)
+    // Get booking counts and next assessment date for each student,
+    // filtered by accessible centres (unchanged from before).
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+
     const bookingData = await db
         .select({
             childId: bookingAttendees.childId,

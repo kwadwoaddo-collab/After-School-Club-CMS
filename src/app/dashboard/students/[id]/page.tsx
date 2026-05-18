@@ -2,9 +2,10 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, inArray } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
+import { getVisibleChildIds } from '@/lib/permissions';
 
 export default async function StudentProfilePage(
     props: {
@@ -45,8 +46,26 @@ export default async function StudentProfilePage(
 
     const student = studentData[0];
 
-    // Security check: Ensure student belongs to the same organisation
+    // ── Org-level check (unchanged) ──────────────────────────────────────────
+    // Ensure the student's parent belongs to the same organisation as the
+    // logged-in user. This prevents cross-org URL enumeration.
     if (student.parent.organisationId !== session.user.organisationId) {
+        return notFound();
+    }
+
+    // ── Centre-level check for non-ORG_OWNER users ───────────────────────────
+    // ORG_OWNER (null) can view any student in their org — skip the check.
+    // For other roles, the student must appear in at least one booking
+    // connected to a centre the user can access. This prevents URL tampering
+    // to reach students from other centres.
+    const visibleChildIds = await getVisibleChildIds(
+        session.user.id,
+        session.user.organisationId
+    );
+
+    if (visibleChildIds !== null && !visibleChildIds.includes(student.id)) {
+        // Return notFound rather than 403 — avoids leaking that the student
+        // exists, consistent with how we handle org-level mismatches above.
         return notFound();
     }
 

@@ -9,7 +9,7 @@
  */
 
 import { db } from '@/db';
-import { users, centres, centreMemberships } from '@/db/schema';
+import { users, centres, centreMemberships, bookings, bookingAttendees } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 
 /**
@@ -235,4 +235,41 @@ export async function getCentreUsers(centreId: string) {
     );
 
     return uniqueUsers;
+}
+
+/**
+ * Get the set of child IDs visible to a user, scoped to their accessible centres.
+ *
+ * Returns `null` for ORG_OWNER, which callers should treat as "no restriction".
+ * Returns a (possibly empty) string[] for all other roles, derived from
+ * `bookingAttendees` rows whose corresponding `booking.centreId` is in the
+ * user's accessible centre set.
+ *
+ * This is the single source of truth for centre-scoped student visibility.
+ */
+export async function getVisibleChildIds(
+    userId: string,
+    orgId: string
+): Promise<string[] | null> {
+    // Avoid an extra DB call for ORG_OWNER — they see all children in the org.
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: { role: true },
+    });
+
+    if (!user) return [];
+    if (user.role === 'ORG_OWNER') return null; // null ≡ "no restriction"
+
+    const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
+    if (accessibleCentreIds.length === 0) return [];
+
+    // Join bookingAttendees → bookings filtered to accessible centres.
+    // This is the correct join path: children don't have a direct centreId.
+    const rows = await db
+        .selectDistinct({ childId: bookingAttendees.childId })
+        .from(bookingAttendees)
+        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
+        .where(inArray(bookings.centreId, accessibleCentreIds));
+
+    return rows.map((r) => r.childId).filter(Boolean) as string[];
 }
