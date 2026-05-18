@@ -88,39 +88,36 @@ export default async function BookingsPage(props: {
         );
     }
 
-    // Log filtering logic for debugging zero records issue
-    console.log('[Bookings Page] Filter variables:', {
-        orgId,
-        centreIdsCount: centreIds.length,
-        searchParams
-    });
-
     // Fetch bookings with filters
     let bookingsData: any[] = [];
     try {
         bookingsData = await db.query.bookings.findMany({
             where: (b, op) => {
                 const conds = [op.inArray(b.centreId, centreIds)];
-                
-                // Filter by specific centre if provided
+
+                // Filter by specific centre if provided.
+                // Guard: only apply the extra eq() if the value is in the
+                // user's accessible set — prevents query param tampering from
+                // leaking bookings from other centres.
                 if (searchParams.centre && searchParams.centre !== 'all') {
                     if (centreIds.includes(searchParams.centre as string)) {
                         conds.push(op.eq(b.centreId, searchParams.centre as string));
-                    } else {
-                        conds.push(op.eq(b.centreId, 'unauthorized_centre_id'));
                     }
+                    // If centreId is not in the accessible set, we intentionally
+                    // skip the extra filter — the base inArray already ensures
+                    // no out-of-scope data is returned.
                 }
 
-                // Filter by status if provided
+                // Filter by status if provided — validated against allowlist.
                 if (searchParams.status && searchParams.status !== 'all') {
-                    // Fast and safe inline validation to match prior behavior without early skips
                     const val = searchParams.status as string;
                     if (VALID_BOOKING_STATUSES.includes(val as any)) {
                         conds.push(op.eq(b.status, val as any));
                     }
+                    // Unknown status values are silently ignored; the base
+                    // centreId filter already scopes results safely.
                 }
 
-                console.log('[Bookings Page] Condition count:', conds.length);
                 return conds.length === 1 ? conds[0] : op.and(...conds);
             },
             orderBy: [desc(bookings.startAt)],
