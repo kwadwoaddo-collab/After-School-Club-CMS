@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import {
-    organisations, parents, children,
+    organisations, parents, children, centres,
     registrations, registrationChildren, registrationParents,
     studentNotes,
 } from '@/db/schema';
-import { eq, and, ilike } from 'drizzle-orm';
+import { eq, and, ilike, inArray } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
     try {
@@ -31,10 +33,31 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
         }
 
-        // ── 2. Create the top-level registration record ──────────────────
+        // ── 2. Validate centreId belongs to the resolved org (if supplied) ──
+        // This prevents cross-org data poisoning where a malicious caller
+        // could POST orgSlug=org-a with centreId=<uuid-from-org-b>.
+        let validatedCentreId: string | null = null;
+        if (centreId) {
+            const centre = await db.query.centres.findFirst({
+                where: and(
+                    eq(centres.id, centreId),
+                    eq(centres.organisationId, org.id)
+                ),
+                columns: { id: true },
+            });
+            if (!centre) {
+                return NextResponse.json(
+                    { error: 'Invalid centre: does not belong to this organisation' },
+                    { status: 400 }
+                );
+            }
+            validatedCentreId = centre.id;
+        }
+
+        // ── 3. Create the top-level registration record ──────────────────
         const [registration] = await db.insert(registrations).values({
             organisationId: org.id,
-            centreId: centreId ?? null,
+            centreId: validatedCentreId,
             status: 'awaiting_confirmation',
             startDate: startDate ? new Date(startDate) : null,
             fundingTypes: funding?.types ?? [],
@@ -213,24 +236,62 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const orgId = searchParams.get('orgId');
-    const status = searchParams.get('status');
-
-    if (!orgId) {
-        return NextResponse.json({ error: 'orgId required' }, { status: 400 });
+    // ── 1. Authentication — stop trusting the orgId query param ────────────
+    // Previously any caller who knew an orgId could enumerate all registrations.
+    // Now we derive the org from the authenticated session exclusively.
+    const session = await auth();
+    if (!session?.user?.organisationId) {
+        return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
 
-    const results = await db.query.registrations.findMany({
-        where: status
-            ? and(eq(registrations.organisationId, orgId), eq(registrations.status, status as any))
-            : eq(registrations.organisationId, orgId),
-        with: {
-            registrationChildren: true,
-            registrationParents: true,
-        },
-        orderBy: (r, { desc }) => [desc(r.createdAt)],
-    });
+    const orgId = session.user.organisationId;
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+
+    // ── 2. Centre-level restriction for non-ORG_OWNER users ─────────────────
+    // ORG_OWNER sees all registrations for their org.
+    // MANAGER / FRONT_DESK / TUTOR see only registrations for their centres.
+    const userRole = (session.user as any).role as string | undefined;
+
+    let results;
+    if (userRole === 'ORG_OWNER') {
+        results = await db.query.registrations.findMany({
+            where: status
+                ? and(eq(registrations.organisationId, orgId), eq(registrations.status, status as any))
+                : eq(registrations.organisationId, orgId),
+            with: {
+                registrationChildren: true,
+                registrationParents: true,
+            },
+            orderBy: (r, { desc }) => [desc(r.createdAt)],
+        });
+    } else {
+        // Non-owners: restrict to registrations whose centreId is in their
+        // accessible set. Registrations with centreId = null are excluded
+        // because no centre membership can cover them.
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (accessibleCentreIds.length === 0) {
+            return NextResponse.json([]);
+        }
+        const centreCondition = inArray(registrations.centreId, accessibleCentreIds);
+        results = await db.query.registrations.findMany({
+            where: status
+                ? and(
+                    eq(registrations.organisationId, orgId),
+                    centreCondition,
+                    eq(registrations.status, status as any)
+                  )
+                : and(
+                    eq(registrations.organisationId, orgId),
+                    centreCondition
+                  ),
+            with: {
+                registrationChildren: true,
+                registrationParents: true,
+            },
+            orderBy: (r, { desc }) => [desc(r.createdAt)],
+        });
+    }
 
     return NextResponse.json(results);
 }

@@ -1,0 +1,45 @@
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { db } from '@/db';
+import { organisations, bookings, centres } from '@/db/schema';
+import { eq, desc, and, gte, lte, inArray } from 'drizzle-orm';
+import Link from 'next/link';
+import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
+import { Suspense } from 'react';
+import BookingsTable from '@/components/bookings/BookingsTable';
+import BookingsFilters from '@/components/bookings/BookingsFilters';
+import { getUserAccessibleCentres } from '@/lib/permissions';
+
+export default async function BookingsPage(props: {
+    searchParams: Promise<{
+        view?: string;
+        status?: string;
+        centre?: string;
+        search?: string;
+        from?: string;
+        to?: string;
+    }>
+}) {
+    const rawSearchParams = await props.searchParams;
+    const session = await auth();
+
+    // Normalize searchParams to ensure they are strings (Next.js can return arrays if multiple same-name params exist)
+    const searchParams = {
+        view: Array.isArray(rawSearchParams.view) ? rawSearchParams.view[0] : rawSearchParams.view,
+        status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
+        centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
+        search: Array.isArray(rawSearchParams.search) ? rawSearchParams.search[0] : rawSearchParams.search,
+        from: Array.isArray(rawSearchParams.from) ? rawSearchParams.from[0] : rawSearchParams.from,
+        to: Array.isArray(rawSearchParams.to) ? rawSearchParams.to[0] : rawSearchParams.to,
+    };
+
+    if (!session?.user?.organisationId) {
+        redirect('/onboarding');
+    }
+
+    const orgId = session.user.organisationId;
+
+    // Get organisation
+    const [org] = await db
+        .select()
+        .from(organisations)
