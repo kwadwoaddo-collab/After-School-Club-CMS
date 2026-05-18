@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const bulkDeleteSchema = z.object({
     bookingIds: z.array(z.string().uuid()),
@@ -34,9 +35,23 @@ export async function DELETE(request: NextRequest) {
             with: { centre: true },
         });
 
-        const validBookingIds = bookingsToDelete
+        // ── Step 1: Filter to bookings that belong to this organisation ──────────
+        let validBookingIds = bookingsToDelete
             .filter(b => b.centre?.organisationId === session.user.organisationId)
             .map(b => b.id);
+
+        // ── Step 2: Further restrict to accessible centres for non-ORG_OWNER ──────
+        // ORG_OWNER has implicit access to all centres in their org.
+        // MANAGER / FRONT_DESK / TUTOR must be explicitly assigned to the
+        // booking's centre; guessing booking IDs is not sufficient to delete.
+        const userRole = (session.user as any).role as string | undefined;
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            validBookingIds = validBookingIds.filter(id => {
+                const booking = bookingsToDelete.find(b => b.id === id);
+                return booking?.centreId != null && accessibleCentreIds.includes(booking.centreId);
+            });
+        }
 
         if (validBookingIds.length === 0) {
             return NextResponse.json({ error: 'No valid bookings found to delete' }, { status: 403 });

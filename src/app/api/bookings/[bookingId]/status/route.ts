@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { bookings, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 // Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up
 const statusSchema = z.object({
@@ -49,6 +50,18 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
         if (booking.centre.organisationId !== session.user.organisationId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // ── Centre membership check for non-ORG_OWNER users ─────────────────
+        // ORG_OWNER has implicit access to all centres within their org.
+        // MANAGER / FRONT_DESK / TUTOR must have an explicit centreMembership
+        // for the booking's centre — knowing a bookingId is not sufficient.
+        const userRole = (session.user as any).role as string | undefined;
+        if (userRole !== 'ORG_OWNER' && booking.centreId) {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(booking.centreId)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
         }
 
         // Perform the update
