@@ -3,9 +3,13 @@
  *
  * Tests for `getVisibleChildIds` in @/lib/permissions:
  *   - ORG_OWNER → null (no restriction)
- *   - Non-owner with accessible centres → child IDs from bookingAttendees
+ *   - Non-owner with accessible centres → child IDs from children.centreId
  *   - Non-owner with no centre access → empty array
  *   - Unknown user → empty array
+ *
+ * After the Phase 1-4 migration, getVisibleChildIds uses children.centreId
+ * directly (db.select → .from(children).where(...)) instead of the old
+ * bookingAttendees join. Tests mock db.select accordingly.
  *
  * All tests mock at the module boundary; no DB or network calls are made.
  */
@@ -38,7 +42,7 @@ vi.mock('@/db/schema', () => ({
     bookings:           {},
     bookingAttendees:   {},
     organisations:      {},
-    children:           {},
+    children:           { id: 'id', organisationId: 'organisationId', centreId: 'centreId' },
     parents:            {},
 }));
 
@@ -63,6 +67,18 @@ const CHILD_1_ID  = 'child-111';
 const CHILD_2_ID  = 'child-222';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper: build the mock chain for db.select → .from() → .where()
+// This matches the new direct-column query in getVisibleChildIds.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function mockSelectChain(db: any, returnRows: { id: string }[]) {
+    const mockWhere = vi.fn().mockResolvedValueOnce(returnRows);
+    const mockFrom  = vi.fn().mockReturnValue({ where: mockWhere });
+    (db.select as any).mockReturnValue({ from: mockFrom });
+    return { mockFrom, mockWhere };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -85,8 +101,8 @@ describe('getVisibleChildIds', () => {
         const result = await fn(USER_ID, ORG_ID);
         expect(result).toBeNull();
 
-        // selectDistinct must NOT be called — no DB query needed for ORG_OWNER
-        expect(db.selectDistinct).not.toHaveBeenCalled();
+        // db.select must NOT be called — no DB query needed for ORG_OWNER
+        expect(db.select).not.toHaveBeenCalled();
     });
 
     it('returns empty array when user is not found', async () => {
@@ -100,50 +116,38 @@ describe('getVisibleChildIds', () => {
 
     it('returns empty array when non-owner has no centre memberships', async () => {
         const { db } = await import('@/db');
-        // User exists, non-owner role
         (db.query.users.findFirst as any)
-            .mockResolvedValueOnce({ role: 'MANAGER' })       // getVisibleChildIds user lookup
-            .mockResolvedValueOnce({ role: 'MANAGER', organisationId: ORG_ID, memberships: [] }); // getUserAccessibleCentres user lookup
-
-        // getUserAccessibleCentres → getUserAccessibleCentreIds returns []
-        // (memberships is empty, so no centres)
+            .mockResolvedValueOnce({ role: 'MANAGER' })
+            .mockResolvedValueOnce({ role: 'MANAGER', organisationId: ORG_ID, memberships: [] });
 
         const fn = await getHelper();
         const result = await fn(USER_ID, ORG_ID);
         expect(result).toEqual([]);
 
-        // selectDistinct must NOT be called when accessibleCentreIds is empty
-        expect(db.selectDistinct).not.toHaveBeenCalled();
+        // db.select must NOT be called when accessibleCentreIds is empty
+        expect(db.select).not.toHaveBeenCalled();
     });
 
-    it('returns child IDs from bookingAttendees for non-owner with centre access', async () => {
+    it('returns child IDs from children.centreId for non-owner with centre access', async () => {
         const { db } = await import('@/db');
 
-        // getVisibleChildIds: user lookup → MANAGER
         (db.query.users.findFirst as any)
             .mockResolvedValueOnce({ role: 'MANAGER' })
-            // getUserAccessibleCentres: user lookup with memberships
             .mockResolvedValueOnce({
                 role: 'MANAGER',
                 organisationId: ORG_ID,
                 memberships: [{ centre: { id: CENTRE_A_ID } }],
             });
 
-        // selectDistinct chain: .from().innerJoin().where() → rows
-        const mockWhere = vi.fn().mockResolvedValueOnce([
-            { childId: CHILD_1_ID },
-            { childId: CHILD_2_ID },
-        ]);
-        const mockInnerJoin = vi.fn().mockReturnValue({ where: mockWhere });
-        const mockFrom = vi.fn().mockReturnValue({ innerJoin: mockInnerJoin });
-        (db.selectDistinct as any).mockReturnValue({ from: mockFrom });
+        // New query shape: db.select({ id }).from(children).where(...)
+        mockSelectChain(db, [{ id: CHILD_1_ID }, { id: CHILD_2_ID }]);
 
         const fn = await getHelper();
         const result = await fn(USER_ID, ORG_ID);
         expect(result).toEqual([CHILD_1_ID, CHILD_2_ID]);
     });
 
-    it('returns empty array when non-owner has centre access but no bookings there', async () => {
+    it('returns empty array when non-owner has centre access but no students there', async () => {
         const { db } = await import('@/db');
 
         (db.query.users.findFirst as any)
@@ -154,18 +158,15 @@ describe('getVisibleChildIds', () => {
                 memberships: [{ centre: { id: CENTRE_A_ID } }],
             });
 
-        // selectDistinct returns empty rows — no bookings in that centre
-        const mockWhere = vi.fn().mockResolvedValueOnce([]);
-        const mockInnerJoin = vi.fn().mockReturnValue({ where: mockWhere });
-        const mockFrom = vi.fn().mockReturnValue({ innerJoin: mockInnerJoin });
-        (db.selectDistinct as any).mockReturnValue({ from: mockFrom });
+        // No students at this centre
+        mockSelectChain(db, []);
 
         const fn = await getHelper();
         const result = await fn(USER_ID, ORG_ID);
         expect(result).toEqual([]);
     });
 
-    it('deduplicates child IDs (child in multiple bookings appears once)', async () => {
+    it('returns all matching child IDs including multiple students', async () => {
         const { db } = await import('@/db');
 
         (db.query.users.findFirst as any)
@@ -176,20 +177,13 @@ describe('getVisibleChildIds', () => {
                 memberships: [{ centre: { id: CENTRE_A_ID } }],
             });
 
-        // selectDistinct at DB level handles dedup — but even if rows repeat,
-        // the filter(Boolean) map should return them as-is
-        const mockWhere = vi.fn().mockResolvedValueOnce([
-            { childId: CHILD_1_ID },
-            { childId: CHILD_1_ID }, // duplicate simulating DB without DISTINCT
-        ]);
-        const mockInnerJoin = vi.fn().mockReturnValue({ where: mockWhere });
-        const mockFrom = vi.fn().mockReturnValue({ innerJoin: mockInnerJoin });
-        (db.selectDistinct as any).mockReturnValue({ from: mockFrom });
+        // Two distinct students at this centre
+        mockSelectChain(db, [{ id: CHILD_1_ID }, { id: CHILD_2_ID }]);
 
         const fn = await getHelper();
         const result = await fn(USER_ID, ORG_ID);
-        // selectDistinct at DB level is the primary dedup mechanism
-        // — result reflects what the DB returned
         expect(result).toContain(CHILD_1_ID);
+        expect(result).toContain(CHILD_2_ID);
+        expect(result).toHaveLength(2);
     });
 });

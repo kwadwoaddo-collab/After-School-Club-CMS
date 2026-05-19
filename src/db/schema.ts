@@ -180,6 +180,15 @@ export const parents = pgTable('parents', {
 export const children = pgTable('children', {
   id: uuid('id').defaultRandom().primaryKey(),
   parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'cascade' }).notNull(),
+
+  // Denormalised for fast scoping — always equal to parent.organisationId.
+  // Eliminates a join in every student visibility query.
+  organisationId: uuid('organisation_id').references(() => organisations.id),
+
+  // Primary/home centre of the student.
+  // Nullable: staff-added students may not yet be assigned to a centre.
+  centreId: uuid('centre_id').references(() => centres.id),
+
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   dateOfBirth: timestamp('date_of_birth'),
@@ -521,7 +530,15 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
     fields: [children.parentId],
     references: [parents.id],
   }),
-  bookings: many(bookings), // This might refer to legacy bookings or via attendees if we want deep relation, but simplistic 'bookings' on children is fine for now
+  organisation: one(organisations, {
+    fields: [children.organisationId],
+    references: [organisations.id],
+  }),
+  centre: one(centres, {
+    fields: [children.centreId],
+    references: [centres.id],
+  }),
+  bookings: many(bookings),
   subjects: many(childSubjects),
   attendances: many(bookingAttendees),
   notes: many(studentNotes),

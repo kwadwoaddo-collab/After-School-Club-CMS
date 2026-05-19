@@ -108,6 +108,8 @@ async function seed() {
     // Create Child
     const [child] = await db.insert(children).values({
       parentId: parent.id,
+      organisationId: orgId,
+      centreId: centreId,
       firstName: data.firstName,
       lastName: data.lastName,
       schoolYear: data.year,

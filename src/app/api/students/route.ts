@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { parents, children } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { parents, children, centres } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -14,6 +14,9 @@ const schema = z.object({
     parentLastName: z.string().min(2),
     parentEmail: z.string().email(),
     parentPhone: z.string().min(10),
+    // centreId is now required for staff-added students.
+    // It must belong to the session user's organisation.
+    centreId: z.string().uuid(),
 });
 
 export async function POST(req: Request) {
@@ -26,10 +29,31 @@ export async function POST(req: Request) {
         const body = await req.json();
         const data = schema.parse(body);
 
-        // Check if parent exists by email
-        let parentId;
+        // ── Validate centreId belongs to the session user's org ──────────
+        // Prevents a staff member assigning a student to a centre from
+        // another organisation by forging the POST body.
+        const centre = await db.query.centres.findFirst({
+            where: and(
+                eq(centres.id, data.centreId),
+                eq(centres.organisationId, session.user.organisationId)
+            ),
+            columns: { id: true },
+        });
+
+        if (!centre) {
+            return NextResponse.json(
+                { error: 'Invalid centre: does not belong to your organisation' },
+                { status: 400 }
+            );
+        }
+
+        // Check if parent exists by email within this org
+        let parentId: string;
         const existingParent = await db.query.parents.findFirst({
-            where: eq(parents.email, data.parentEmail)
+            where: and(
+                eq(parents.email, data.parentEmail),
+                eq(parents.organisationId, session.user.organisationId)
+            ),
         });
 
         if (existingParent) {
@@ -40,15 +64,17 @@ export async function POST(req: Request) {
                 lastName: data.parentLastName,
                 email: data.parentEmail,
                 phone: data.parentPhone,
-                organisationId: session.user.organisationId, // Link to Org
+                organisationId: session.user.organisationId,
                 preferredContact: 'email',
             }).returning();
             parentId = newParent.id;
         }
 
-        // Create Child
+        // Create Child — with direct organisationId and centreId
         await db.insert(children).values({
-            parentId: parentId,
+            parentId,
+            organisationId: session.user.organisationId,
+            centreId: data.centreId,
             firstName: data.firstName,
             lastName: data.lastName,
             dateOfBirth: new Date(data.dateOfBirth),

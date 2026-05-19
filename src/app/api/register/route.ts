@@ -175,6 +175,8 @@ export async function POST(req: NextRequest) {
                 } else {
                     const [newChild] = await db.insert(children).values({
                         parentId: primaryParentId,
+                        organisationId: org.id,
+                        centreId: validatedCentreId,
                         firstName: c.firstName,
                         lastName: c.lastName,
                         dateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,

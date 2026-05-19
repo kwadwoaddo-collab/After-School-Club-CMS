@@ -3,10 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function StudentForm() {
+interface Centre {
+    id: string;
+    name: string;
+}
+
+interface StudentFormProps {
+    accessibleCentres: Centre[];
+}
+
+export default function StudentForm({ accessibleCentres }: StudentFormProps) {
     const router = useRouter();
 
-    // 1. Manual State for everything
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -16,13 +24,13 @@ export default function StudentForm() {
         parentLastName: '',
         parentEmail: '',
         parentPhone: '',
+        centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
 
-    // 2. Clearer validation logic
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
@@ -32,6 +40,7 @@ export default function StudentForm() {
         if (!formData.schoolYear.trim()) newErrors.schoolYear = 'School year is required';
         if (!formData.parentFirstName.trim()) newErrors.parentFirstName = 'Parent first name is required';
         if (!formData.parentLastName.trim()) newErrors.parentLastName = 'Parent last name is required';
+        if (!formData.centreId) newErrors.centreId = 'Please assign the student to a centre';
 
         if (!formData.parentEmail.trim()) {
             newErrors.parentEmail = 'Email is required';
@@ -49,11 +58,10 @@ export default function StudentForm() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // Remove error message as user types
         if (errors[name]) {
             setErrors(prev => {
                 const next = { ...prev };
@@ -67,9 +75,7 @@ export default function StudentForm() {
         e.preventDefault();
         setServerError(null);
 
-        // Run validation
         if (!validate()) {
-            console.log("Validation Failed in Production:", errors);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -87,7 +93,7 @@ export default function StudentForm() {
                 throw new Error(errorData.error || 'Failed to add student');
             }
 
-            router.push('/dashboard');
+            router.push('/dashboard/students');
             router.refresh();
         } catch (err) {
             setServerError(err instanceof Error ? err.message : 'Something went wrong');
@@ -96,6 +102,13 @@ export default function StudentForm() {
             setIsSubmitting(false);
         }
     };
+
+    const inputClass = (field: string) =>
+        `w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
+            errors[field]
+                ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error'
+                : 'border-[#2a2d35] focus:border-primary'
+        }`;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -112,57 +125,66 @@ export default function StudentForm() {
                         <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
-                        Missing Required Statistics
+                        Missing Required Fields
                     </div>
                     <p className="font-semibold text-sm text-amber-300">Please check the {Object.keys(errors).length} fields marked in red below.</p>
                 </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Student Details */}
+                {/* Centre Assignment */}
                 <div className="md:col-span-2">
+                    <h3 className="text-lg font-bold text-white mb-4">Centre Assignment</h3>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-300 mb-1">
+                            Assign to Centre <span className="text-error">*</span>
+                        </label>
+                        {accessibleCentres.length === 0 ? (
+                            <p className="text-on-surface-variant text-sm p-3 bg-surface-container-low rounded-xl border border-outline-variant/10">
+                                You have no accessible centres. Contact your organisation owner.
+                            </p>
+                        ) : (
+                            <select
+                                name="centreId"
+                                id="centreId"
+                                value={formData.centreId}
+                                onChange={handleChange}
+                                className={inputClass('centreId')}
+                            >
+                                {accessibleCentres.length > 1 && (
+                                    <option value="">— Select a centre —</option>
+                                )}
+                                {accessibleCentres.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        )}
+                        {errors.centreId && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.centreId}</p>}
+                    </div>
+                </div>
+
+                {/* Student Details */}
+                <div className="md:col-span-2 border-t border-outline-variant/10 pt-6">
                     <h3 className="text-lg font-bold text-white mb-4">Student Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
-                            <input
-                                name="firstName"
-                                value={formData.firstName}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.firstName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} className={inputClass('firstName')} />
                             {errors.firstName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.firstName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
-                            <input
-                                name="lastName"
-                                value={formData.lastName}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.lastName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input name="lastName" id="lastName" value={formData.lastName} onChange={handleChange} className={inputClass('lastName')} />
                             {errors.lastName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.lastName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Date of Birth</label>
-                            <input
-                                type="date"
-                                name="dateOfBirth"
-                                value={formData.dateOfBirth}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.dateOfBirth ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input type="date" name="dateOfBirth" id="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={inputClass('dateOfBirth')} />
                             {errors.dateOfBirth && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.dateOfBirth}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">School Year</label>
-                            <input
-                                name="schoolYear"
-                                value={formData.schoolYear}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.schoolYear ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                                placeholder="e.g. Year 5"
-                            />
+                            <input name="schoolYear" id="schoolYear" value={formData.schoolYear} onChange={handleChange} className={inputClass('schoolYear')} placeholder="e.g. Year 5" />
                             {errors.schoolYear && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.schoolYear}</p>}
                         </div>
                     </div>
@@ -174,44 +196,22 @@ export default function StudentForm() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
-                            <input
-                                name="parentFirstName"
-                                value={formData.parentFirstName}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentFirstName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input name="parentFirstName" id="parentFirstName" value={formData.parentFirstName} onChange={handleChange} className={inputClass('parentFirstName')} />
                             {errors.parentFirstName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentFirstName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
-                            <input
-                                name="parentLastName"
-                                value={formData.parentLastName}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentLastName ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input name="parentLastName" id="parentLastName" value={formData.parentLastName} onChange={handleChange} className={inputClass('parentLastName')} />
                             {errors.parentLastName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentLastName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Email</label>
-                            <input
-                                type="email"
-                                name="parentEmail"
-                                value={formData.parentEmail}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentEmail ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input type="email" name="parentEmail" id="parentEmail" value={formData.parentEmail} onChange={handleChange} className={inputClass('parentEmail')} />
                             {errors.parentEmail && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentEmail}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Phone</label>
-                            <input
-                                type="tel"
-                                name="parentPhone"
-                                value={formData.parentPhone}
-                                onChange={handleChange}
-                                className={`w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.parentPhone ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error' : 'border-[#2a2d35] focus:border-primary'}`}
-                            />
+                            <input type="tel" name="parentPhone" id="parentPhone" value={formData.parentPhone} onChange={handleChange} className={inputClass('parentPhone')} />
                             {errors.parentPhone && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentPhone}</p>}
                         </div>
                     </div>
@@ -221,7 +221,7 @@ export default function StudentForm() {
             <div className="flex justify-end pt-6">
                 <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || accessibleCentres.length === 0}
                     className="px-10 py-4 bg-primary text-white font-bold text-lg rounded-2xl hover:bg-blue-600 shadow-xl shadow-primary/30 glow-btn active:scale-95 transition-all disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? 'Saving...' : 'Add Student'}

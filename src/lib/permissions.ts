@@ -9,7 +9,7 @@
  */
 
 import { db } from '@/db';
-import { users, centres, centreMemberships, bookings, bookingAttendees } from '@/db/schema';
+import { users, centres, centreMemberships } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 
 /**
@@ -240,10 +240,11 @@ export async function getCentreUsers(centreId: string) {
 /**
  * Get the set of child IDs visible to a user, scoped to their accessible centres.
  *
- * Returns `null` for ORG_OWNER, which callers should treat as "no restriction".
- * Returns a (possibly empty) string[] for all other roles, derived from
- * `bookingAttendees` rows whose corresponding `booking.centreId` is in the
- * user's accessible centre set.
+ * Returns `null` for ORG_OWNER — callers interpret this as "no restriction".
+ * Returns a (possibly empty) string[] for all other roles.
+ *
+ * After the Phase 1-4 migration, children.centreId is populated directly,
+ * so this is now a simple WHERE children.centre_id IN (...) query with no joins.
  *
  * This is the single source of truth for centre-scoped student visibility.
  */
@@ -258,18 +259,27 @@ export async function getVisibleChildIds(
     });
 
     if (!user) return [];
-    if (user.role === 'ORG_OWNER') return null; // null ≡ "no restriction"
+    if (user.role === 'ORG_OWNER') return null; // null = "no restriction"
 
     const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
     if (accessibleCentreIds.length === 0) return [];
 
-    // Join bookingAttendees → bookings filtered to accessible centres.
-    // This is the correct join path: children don't have a direct centreId.
-    const rows = await db
-        .selectDistinct({ childId: bookingAttendees.childId })
-        .from(bookingAttendees)
-        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(inArray(bookings.centreId, accessibleCentreIds));
+    // Direct column query — no join required after the migration backfill.
+    // children.centreId is populated by all write paths from Phase 5 onward,
+    // and backfilled for historical records by the Phase 2-4 SQL scripts.
+    const { children } = await import('@/db/schema');
 
-    return rows.map((r) => r.childId).filter(Boolean) as string[];
+    const rows = await db
+        .select({ id: children.id })
+        .from(children)
+        .where(
+            and(
+                eq(children.organisationId, orgId),
+                inArray(children.centreId, accessibleCentreIds)
+            )
+        );
+
+    return rows.map((r) => r.id);
 }
+
+

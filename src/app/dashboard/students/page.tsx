@@ -1,12 +1,11 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations, children, parents, bookings, bookingAttendees, centres } from '@/db/schema';
-import { eq, desc, sql, min, inArray, and } from 'drizzle-orm';
+import { organisations, children, parents, bookings, bookingAttendees, studentNotes } from '@/db/schema';
+import { eq, desc, sql, inArray, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import { studentNotes } from '@/db/schema';
-import { getUserAccessibleCentreIds, getVisibleChildIds } from '@/lib/permissions';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
 
@@ -24,40 +23,45 @@ export default async function StudentsPage() {
 
     if (!org) return redirect('/onboarding');
 
-    // ── Centre-scoped student visibility ────────────────────────────────────
-    // ORG_OWNER: null → no restriction, sees all org students.
-    // Other roles: array of childIds visible via their accessible centres.
-    //              If the array is empty (no centre access / no bookings),
-    //              we short-circuit and return an empty page.
-    const visibleChildIds = await getVisibleChildIds(session.user.id, org.id);
+    const userRole = (session.user as any).role as string | undefined;
+    const isOwner = userRole === 'ORG_OWNER';
 
-    // Short-circuit: non-owner with zero accessible students
-    if (visibleChildIds !== null && visibleChildIds.length === 0) {
-        return (
-            <div className="space-y-8 animate-in fade-in duration-700">
-                <div className="flex items-end justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
-                        <p className="text-on-surface-variant font-medium mt-1">
-                            View all registered students and their details
-                        </p>
+    // ── Centre-scoped student visibility ────────────────────────────────────
+    // ORG_OWNER: all students in the org via children.organisationId (direct column).
+    // Non-owners: only students whose children.centreId is in their accessible set.
+    //   • Both paths use DB-level filtering — no in-memory JS filtering.
+    //   • Short-circuit if no accessible centres (non-owners only).
+
+    let accessibleCentreIds: string[] = [];
+
+    if (!isOwner) {
+        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+
+        if (accessibleCentreIds.length === 0) {
+            // Non-owner with zero accessible centres — short-circuit with empty page
+            return (
+                <div className="space-y-8 animate-in fade-in duration-700">
+                    <div className="flex items-end justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
+                            <p className="text-on-surface-variant font-medium mt-1">
+                                View all registered students and their details
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard/students/add"
+                            className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        >
+                            <Plus className="w-4 h-4" /> Add Student
+                        </Link>
                     </div>
-                    <Link
-                        href="/dashboard/students/add"
-                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
-                    >
-                        <Plus className="w-4 h-4" /> Add Student
-                    </Link>
+                    <StudentsTable students={[]} />
                 </div>
-                <StudentsTable students={[]} />
-            </div>
-        );
+            );
+        }
     }
 
-    // ── Main student query ───────────────────────────────────────────────────
-    // Base scope: all children whose parent belongs to this org.
-    // For non-owners: further restrict to visibleChildIds derived from
-    // bookingAttendees in their accessible centres (DB-level, not in-memory).
+    // ── Main student query — direct centreId column, no join ─────────────────
     const studentsList = await db
         .select({
             id: children.id,
@@ -76,21 +80,18 @@ export default async function StudentsPage() {
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(
-            visibleChildIds === null
-                // ORG_OWNER: all children in the org
-                ? eq(parents.organisationId, org.id)
-                // Non-owner: children whose IDs are in the visible set
+            isOwner
+                // ORG_OWNER: direct org scoping via children.organisationId
+                ? eq(children.organisationId, org.id)
+                // Non-owner: students whose home centre is in their accessible set
                 : and(
-                    eq(parents.organisationId, org.id),
-                    inArray(children.id, visibleChildIds)
+                    eq(children.organisationId, org.id),
+                    inArray(children.centreId, accessibleCentreIds)
                 )
         )
         .orderBy(desc(children.createdAt));
 
-    // Get booking counts and next assessment date for each student,
-    // filtered by accessible centres (unchanged from before).
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-
+    // ── Booking stats for visible students ──────────────────────────────────
     const bookingData = await db
         .select({
             childId: bookingAttendees.childId,
@@ -100,14 +101,19 @@ export default async function StudentsPage() {
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(inArray(bookings.centreId, accessibleCentreIds))
+        // Non-owners: restrict booking stats to their centres too
+        .where(
+            isOwner
+                ? undefined as any
+                : inArray(bookings.centreId, accessibleCentreIds)
+        )
         .groupBy(bookingAttendees.childId);
 
     const bookingDataMap = new Map(
-        bookingData.map((bd) => [bd.childId, { 
-            totalCount: bd.totalCount, 
+        bookingData.map((bd) => [bd.childId, {
+            totalCount: bd.totalCount,
             completedCount: bd.completedCount,
-            nextAssessment: bd.nextAssessment 
+            nextAssessment: bd.nextAssessment,
         }])
     );
 
@@ -119,11 +125,10 @@ export default async function StudentsPage() {
         )
     }) : [];
 
-    // Enrich rows with booking & safety note data for the table component
     const enrichedStudents: StudentRow[] = studentsList.map((student) => {
         const bookingInfo = bookingDataMap.get(student.id);
-        const bookingCount = bookingInfo?.totalCount || 0;
-        const completedCount = bookingInfo?.completedCount || 0;
+        const bookingCount = Number(bookingInfo?.totalCount ?? 0);
+        const completedCount = Number(bookingInfo?.completedCount ?? 0);
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === student.id);
 
         return {
@@ -150,7 +155,6 @@ export default async function StudentsPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Page Header */}
             <div className="flex items-end justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
@@ -166,7 +170,6 @@ export default async function StudentsPage() {
                 </Link>
             </div>
 
-            {/* Students Table – powered by shared DataTable */}
             <StudentsTable students={enrichedStudents} />
         </div>
     );

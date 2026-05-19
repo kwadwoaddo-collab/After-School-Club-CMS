@@ -115,6 +115,8 @@ export class BookingService {
       // Create child
       const [child] = await db.insert(children).values({
         parentId: parent.id,
+        organisationId: centre.organisationId,
+        centreId: input.appointment.centreId as string,
         firstName: childInput.firstName,
         lastName: childInput.lastName,
         schoolYear: childInput.schoolYear,
