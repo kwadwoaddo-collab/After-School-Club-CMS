@@ -1,18 +1,22 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations, children, parents, bookings, bookingAttendees, studentNotes } from '@/db/schema';
-import { eq, desc, sql, inArray, and } from 'drizzle-orm';
+import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
+import { eq, desc, sql, inArray, and, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
-import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { Plus, Users, GraduationCap, Sparkles } from 'lucide-react';
+import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import StudentsFilters from '@/components/students/StudentsFilters';
 
 export default async function StudentsPage(props: {
     searchParams: Promise<{
         centre?: string;
+        search?: string;
+        year?: string;
+        status?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -55,8 +59,42 @@ export default async function StudentsPage(props: {
     }
 
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
+    const accessibleCentres = await getUserAccessibleCentres(session.user.id);
 
-    // ── Main student query — direct centreId column, no join ─────────────────
+    const conditions = [
+        eq(children.organisationId, org.id)
+    ];
+
+    if (activeCentreId !== 'all') {
+        conditions.push(eq(children.centreId, activeCentreId));
+    } else {
+        conditions.push(inArray(children.centreId, accessibleCentreIds));
+    }
+
+    if (searchParams.search) {
+        const searchPattern = `%${searchParams.search}%`;
+        const searchCondition = or(
+            ilike(children.firstName, searchPattern),
+            ilike(children.lastName, searchPattern),
+            ilike(parents.firstName, searchPattern),
+            ilike(parents.lastName, searchPattern),
+            ilike(parents.email, searchPattern),
+            ilike(parents.phone, searchPattern)
+        );
+        if (searchCondition) {
+            conditions.push(searchCondition);
+        }
+    }
+
+    if (searchParams.year && searchParams.year !== 'all') {
+        conditions.push(eq(children.schoolYear, searchParams.year));
+    }
+
+    if (searchParams.status && searchParams.status !== 'all') {
+        conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
+    }
+
+    // ── Main student query ─────────────────
     const studentsList = await db
         .select({
             id: children.id,
@@ -74,14 +112,7 @@ export default async function StudentsPage(props: {
         })
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(
-            and(
-                eq(children.organisationId, org.id),
-                activeCentreId !== 'all'
-                    ? eq(children.centreId, activeCentreId)
-                    : inArray(children.centreId, accessibleCentreIds)
-            )
-        )
+        .where(and(...conditions))
         .orderBy(desc(children.createdAt));
 
     // ── Booking stats for visible students ──────────────────────────────────
@@ -145,6 +176,10 @@ export default async function StudentsPage(props: {
         };
     });
 
+    const totalCount = enrichedStudents.length;
+    const registeredCount = enrichedStudents.filter(s => s.isRegistered).length;
+    const leadCount = enrichedStudents.filter(s => !s.isRegistered).length;
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             <div className="flex items-end justify-between">
@@ -161,6 +196,51 @@ export default async function StudentsPage(props: {
                     <Plus className="w-4 h-4" /> Add Student
                 </Link>
             </div>
+
+            {/* KPI Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Total Students */}
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0">
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{totalCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Total Students</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Registered Students */}
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-emerald-400 flex-shrink-0">
+                            <GraduationCap className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{registeredCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Registered</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Lead / Unregistered Students */}
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-amber-400 flex-shrink-0">
+                            <Sparkles className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{leadCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Leads / Unregistered</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <StudentsFilters centres={accessibleCentres} resultsCount={enrichedStudents.length} />
 
             <StudentsTable students={enrichedStudents} />
         </div>
