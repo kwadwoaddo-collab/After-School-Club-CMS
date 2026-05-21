@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
 const styles = StyleSheet.create({
@@ -135,6 +135,20 @@ const styles = StyleSheet.create({
         color: '#92400e',
         lineHeight: 1.3,
     },
+    signatureBox: {
+        border: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 6,
+        padding: 10,
+        marginTop: 6,
+        backgroundColor: '#f8fafc',
+        height: 70,
+        justifyContent: 'flex-end',
+    },
+    signatureImage: {
+        maxHeight: 55,
+        objectFit: 'contain',
+    },
     footer: {
         position: 'absolute',
         bottom: 25,
@@ -197,6 +211,7 @@ export interface RegistrationTemplateProps {
     funding: FundingData;
     specialNeeds: SpecialNeedsData;
     submittedAt?: Date | string;
+    parentSignature?: string | null;
 }
 
 const fundingLabelMap: Record<string, string> = {
@@ -218,6 +233,7 @@ export const RegistrationTemplate = ({
     funding,
     specialNeeds,
     submittedAt = new Date(),
+    parentSignature,
 }: RegistrationTemplateProps) => {
     const formattedStartDate = startDate
         ? format(new Date(startDate), 'dd MMMM yyyy')
@@ -388,6 +404,31 @@ export const RegistrationTemplate = ({
                             ) : (
                                 <Text style={styles.value}>No special needs or medical requirements specified.</Text>
                             )}
+                        </View>
+                    </View>
+                </View>
+
+                {/* Signature */}
+                <View style={[styles.section, { marginBottom: 60 }]}>
+                    <Text style={styles.sectionTitle}>Parent / Carer Signature</Text>
+                    <View style={styles.grid}>
+                        <View style={[styles.col, { width: '60%' }]}>
+                            <Text style={styles.label}>Signature</Text>
+                            {parentSignature ? (
+                                <View style={styles.signatureBox}>
+                                    <Image src={parentSignature} style={styles.signatureImage} />
+                                </View>
+                            ) : (
+                                <View style={[styles.signatureBox, { justifyContent: 'center', alignItems: 'center' }]}>
+                                    <Text style={{ color: '#94a3b8', fontSize: 8, fontStyle: 'italic' }}>No signature captured</Text>
+                                </View>
+                            )}
+                        </View>
+                        <View style={[styles.col, { width: '40%', paddingLeft: 20 }]}>
+                            <Text style={styles.label}>Date</Text>
+                            <Text style={styles.value}>{formattedSubmittedDate}</Text>
+                            <Text style={[styles.label, { marginTop: 10 }]}>Full Name</Text>
+                            <Text style={styles.value}>{parents[0]?.firstName} {parents[0]?.lastName}</Text>
                         </View>
                     </View>
                 </View>

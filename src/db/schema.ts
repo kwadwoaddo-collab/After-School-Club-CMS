@@ -373,6 +373,9 @@ export const registrations = pgTable('registrations', {
   // Consent
   termsAgreed: boolean('terms_agreed').default(false).notNull(),
 
+  // Digital signature (base64-encoded PNG data URL captured from the signature pad)
+  parentSignature: text('parent_signature'),
+
   submittedAt: timestamp('submitted_at').defaultNow(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

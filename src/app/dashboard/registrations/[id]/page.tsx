@@ -134,6 +134,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                             has: reg.hasSpecialNeeds ?? false,
                             details: reg.specialNeedsDetails || undefined,
                         }}
+                        parentSignature={reg.parentSignature ?? null}
                     />
                     <EditRegistrationForm
                         reg={{
@@ -260,6 +261,22 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                         <DetailRow label="T&Cs Agreed" value={reg.termsAgreed ? 'Yes ✓' : 'No'} />
                     </dl>
                 </div>
+
+                {/* Signature */}
+                {reg.parentSignature && (
+                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
+                        <h2 className="text-white font-semibold mb-4">Parent Signature</h2>
+                        <div className="bg-white rounded-xl p-4 border border-outline-variant/10">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={reg.parentSignature}
+                                alt="Parent signature"
+                                className="max-h-24 max-w-xs object-contain"
+                            />
+                        </div>
+                        <p className="text-on-surface-variant text-xs mt-2">Signed on {new Date(reg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                )}
 
             </div>
         </div>

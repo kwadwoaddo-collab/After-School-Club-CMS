@@ -786,6 +786,7 @@ export class EmailService {
       has: boolean;
       details?: string;
     };
+    parentSignature?: string | null;
   }): Promise<EmailResult> {
     if (!resend) {
       return { success: false, error: 'Email service not configured' };
@@ -877,6 +878,7 @@ export class EmailService {
         funding: data.funding,
         specialNeeds: data.specialNeeds,
         submittedAt: new Date(),
+        parentSignature: data.parentSignature,
       });
 
       const pdfBuffer = await renderToBuffer(doc as React.ReactElement<any>);

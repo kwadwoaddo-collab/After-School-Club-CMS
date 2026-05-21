@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
             funding,
             specialNeeds,
             termsAgreed,
+            parentSignature,
         } = body;
 
         // ── 1. Resolve organisation ──────────────────────────────────────
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
             emergencyContactPhone: emergencyContact?.phone ?? null,
             emergencyContactRelationship: emergencyContact?.relationship ?? null,
             termsAgreed: termsAgreed ?? false,
+            parentSignature: parentSignature ?? null,
         }).returning();
 
         // ── 3. Process each parent — match or create ─────────────────────
@@ -253,6 +255,7 @@ export async function POST(req: NextRequest) {
                     has: specialNeeds?.has ?? false,
                     details: specialNeeds?.details ?? undefined,
                 },
+                parentSignature: parentSignature ?? null,
             });
         }
 

@@ -1,10 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
+import dynamic from 'next/dynamic';
+import type { SignaturePadHandle } from '@/features/registration/components/SignaturePadWidget';
+
+const SignaturePadWidget = dynamic(
+    () => import('@/features/registration/components/SignaturePadWidget'),
+    { ssr: false },
+);
 
 // ── Types ──────────────────────────────────────────────────────────
 interface ChildEntry {
@@ -99,6 +106,8 @@ export default function RegisterPage() {
     const [funding, setFunding] = useState<Funding>({ type: '', other: '' });
     const [specialNeeds, setSpecialNeeds] = useState<SpecialNeeds>({ has: false, details: '' });
     const [termsAgreed, setTermsAgreed] = useState(false);
+    const [signature, setSignature] = useState<string | null>(null);
+    const signaturePadRef = useRef<SignaturePadHandle>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
@@ -216,6 +225,17 @@ export default function RegisterPage() {
             }
         }
 
+        if (s === 6) {
+            if (!signature || signaturePadRef.current?.isEmpty()) {
+                invalid.add('signature-pad');
+                errorMsg = 'Please sign the form before submitting.';
+            }
+            if (!termsAgreed) {
+                invalid.add('terms-agree');
+                if (!errorMsg) errorMsg = 'You must agree to the Terms and Conditions.';
+            }
+        }
+
         setInvalidFields(invalid);
         setStepError(errorMsg);
         return invalid.size === 0;
@@ -231,7 +251,7 @@ export default function RegisterPage() {
 
     // ── Submit ─────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        if (!termsAgreed) { setError('You must agree to the Terms and Conditions.'); return; }
+        if (!validateStep(6)) return;
         setSubmitting(true); setError('');
         try {
             const res = await fetch('/api/register', {
@@ -248,6 +268,7 @@ export default function RegisterPage() {
                     funding: { types: funding.type ? [funding.type] : [], other: funding.other },
                     specialNeeds,
                     termsAgreed,
+                    parentSignature: signature,
                 }),
             });
             if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Submission failed'); }
@@ -819,17 +840,37 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        <label className="flex items-start gap-3 p-4 rounded-xl bg-white/5 border border-white/10 cursor-pointer mb-5 hover:border-white/20 transition-colors">
-                            <input id="terms-agree" type="checkbox" checked={termsAgreed} onChange={e => setTermsAgreed(e.target.checked)} className="w-4 h-4 mt-0.5 rounded flex-shrink-0" />
+                        <label className={`flex items-start gap-3 p-4 rounded-xl bg-white/5 border cursor-pointer mb-5 hover:border-white/20 transition-colors ${invalidFields.has('terms-agree') ? 'border-red-400/50' : 'border-white/10'}`}>
+                            <input
+                                id="terms-agree"
+                                type="checkbox"
+                                checked={termsAgreed}
+                                onChange={e => { setTermsAgreed(e.target.checked); setInvalidFields(f => { const n = new Set(f); n.delete('terms-agree'); return n; }); }}
+                                className="w-4 h-4 mt-0.5 rounded flex-shrink-0"
+                            />
                             <span className="text-white/70 text-sm">I confirm that I have read and agree to the Terms and Conditions above, and that the information provided is accurate.</span>
                         </label>
+
+                        {/* Signature */}
+                        <div className="mb-5">
+                            <p className="text-white font-medium text-sm mb-1">Parent / Carer Signature <span className="text-red-400">*</span></p>
+                            <p className="text-white/40 text-xs mb-3">By signing below you confirm that all information provided is accurate and that you agree to the terms above.</p>
+                            <SignaturePadWidget
+                                ref={signaturePadRef}
+                                onChange={val => { setSignature(val); setInvalidFields(f => { const n = new Set(f); n.delete('signature-pad'); return n; }); }}
+                                invalid={invalidFields.has('signature-pad')}
+                            />
+                            {invalidFields.has('signature-pad') && (
+                                <p className="text-red-400 text-xs mt-1.5">A signature is required to submit the form.</p>
+                            )}
+                        </div>
 
                         {error && <div className="p-3 bg-red-500/20 border border-red-400/30 rounded-lg text-red-200 text-sm mb-4">{error}</div>}
 
                         <button
                             id="submit-registration"
                             onClick={handleSubmit}
-                            disabled={submitting || !termsAgreed}
+                            disabled={submitting}
                             className="w-full py-4 rounded-xl bg-primary glow-btn text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {submitting ? (

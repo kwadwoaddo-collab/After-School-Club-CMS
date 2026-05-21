@@ -41,6 +41,7 @@ interface DownloadButtonProps {
         has: boolean;
         details?: string;
     };
+    parentSignature?: string | null;
 }
 
 export default function DownloadButton(props: DownloadButtonProps) {
@@ -80,6 +81,7 @@ export default function DownloadButton(props: DownloadButtonProps) {
                     emergencyContact={props.emergencyContact}
                     funding={props.funding}
                     specialNeeds={props.specialNeeds}
+                    parentSignature={props.parentSignature}
                 />
             }
             fileName={fileName}
