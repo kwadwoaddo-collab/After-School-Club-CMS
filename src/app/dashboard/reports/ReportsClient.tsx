@@ -180,7 +180,7 @@ export default function ReportsClient() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Booking Export Card */}
-            <div className="bg-[#20201f] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#adc6ff]/20 transition-all duration-300">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
                         <FileText className="w-6 h-6 text-[#adc6ff]" />
@@ -231,7 +231,7 @@ export default function ReportsClient() {
                         <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 animate-in fade-in zoom-in-95 duration-200">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-xs font-bold text-[#8c909f] uppercase tracking-wider">Custom Range</h4>
-                                <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-bold text-[#adc6ff] hover:underline">Cancel</button>
+                                <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-bold text-[#adc6ff] hover:text-[#8facff] hover:underline transition-colors">Cancel</button>
                             </div>
                             <div className="space-y-4">
                                 <div>
@@ -240,7 +240,7 @@ export default function ReportsClient() {
                                         type="date"
                                         value={startDateBooking}
                                         onChange={(e) => setStartDateBooking(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#131313] border border-[#424754]/30 rounded-xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 transition-colors"
+                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
                                     />
                                 </div>
                                 <div>
@@ -249,13 +249,13 @@ export default function ReportsClient() {
                                         type="date"
                                         value={endDateBooking}
                                         onChange={(e) => setEndDateBooking(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#131313] border border-[#424754]/30 rounded-xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 transition-colors"
+                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
                                     />
                                 </div>
                                 <button
                                     onClick={() => handleExportBookings('custom')}
                                     disabled={isExportingBookings}
-                                    className="w-full py-3 mt-2 bg-[#adc6ff] hover:bg-[#8facff] text-[#131313] font-bold rounded-xl text-sm transition-all flex justify-center items-center gap-2 shadow-[0_4px_16px_rgba(173,198,255,0.2)] disabled:opacity-50"
+                                    className="w-full py-3 mt-2 bg-[#adc6ff] hover:bg-[#8facff] text-[#131313] font-bold rounded-2xl text-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex justify-center items-center gap-2 shadow-[0_4px_16px_rgba(173,198,255,0.2)] disabled:opacity-50"
                                 >
                                     {isExportingBookings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                     Export Selection
@@ -272,7 +272,7 @@ export default function ReportsClient() {
             </div>
 
             {/* Student Export Card */}
-            <div className="bg-[#20201f] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#d0bcff]/20 transition-all duration-300">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
                         <Users className="w-6 h-6 text-[#d0bcff]" />
@@ -323,7 +323,7 @@ export default function ReportsClient() {
                         <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 animate-in fade-in zoom-in-95 duration-200">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-xs font-bold text-[#8c909f] uppercase tracking-wider">Custom Range</h4>
-                                <button onClick={() => setShowCustomRangeStudent(false)} className="text-xs font-bold text-[#d0bcff] hover:underline">Cancel</button>
+                                <button onClick={() => setShowCustomRangeStudent(false)} className="text-xs font-bold text-[#d0bcff] hover:text-[#bd9eff] hover:underline transition-colors">Cancel</button>
                             </div>
                             <div className="space-y-4">
                                 <div>
@@ -332,7 +332,7 @@ export default function ReportsClient() {
                                         type="date"
                                         value={startDateStudent}
                                         onChange={(e) => setStartDateStudent(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#131313] border border-[#424754]/30 rounded-xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#d0bcff]/50 transition-colors"
+                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#d0bcff]/50 focus:ring-2 focus:ring-[#d0bcff]/20 transition-all"
                                     />
                                 </div>
                                 <div>
@@ -341,13 +341,13 @@ export default function ReportsClient() {
                                         type="date"
                                         value={endDateStudent}
                                         onChange={(e) => setEndDateStudent(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#131313] border border-[#424754]/30 rounded-xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#d0bcff]/50 transition-colors"
+                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#d0bcff]/50 focus:ring-2 focus:ring-[#d0bcff]/20 transition-all"
                                     />
                                 </div>
                                 <button
                                     onClick={() => handleExportStudents('custom')}
                                     disabled={isExportingStudents}
-                                    className="w-full py-3 mt-2 bg-[#d0bcff] hover:bg-[#bd9eff] text-[#131313] font-bold rounded-xl text-sm transition-all flex justify-center items-center gap-2 shadow-[0_4px_16px_rgba(208,188,255,0.2)] disabled:opacity-50"
+                                    className="w-full py-3 mt-2 bg-[#d0bcff] hover:bg-[#bd9eff] text-[#131313] font-bold rounded-2xl text-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex justify-center items-center gap-2 shadow-[0_4px_16px_rgba(208,188,255,0.2)] disabled:opacity-50"
                                 >
                                     {isExportingStudents ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                     Export Selection
