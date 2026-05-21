@@ -6,6 +6,7 @@ import {
     organisations, centres, parents, children,
     bookings, bookingAttendees, registrations, registrationChildren,
 } from '@/db/schema';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { eq, desc, asc, sql, and, gte, lt, lte, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -53,6 +54,20 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const userRole = (session.user as any).role as string;
     const hasCentres = accessibleCentreIds.length > 0;
     const firstName = session.user.name?.split(' ')[0] || '';
+
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
+
+    const childrenCentreCondition = activeCentreId !== 'all'
+        ? eq(children.centreId, activeCentreId)
+        : (hasCentres ? inArray(children.centreId, accessibleCentreIds) : sql`false`);
+
+    const bookingsCentreCondition = activeCentreId !== 'all'
+        ? eq(bookings.centreId, activeCentreId)
+        : (hasCentres ? inArray(bookings.centreId, accessibleCentreIds) : sql`false`);
+
+    const registrationsCentreCondition = activeCentreId !== 'all'
+        ? eq(registrations.centreId, activeCentreId)
+        : (hasCentres ? inArray(registrations.centreId, accessibleCentreIds) : sql`false`);
 
     const now = new Date();
     const targetDateStr = normalizeDate(searchParams.date);
@@ -109,7 +124,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             })
                 .from(children)
                 .innerJoin(parents, eq(children.parentId, parents.id))
-                .where(eq(parents.organisationId, org.id)),
+                .where(
+                    and(
+                        eq(parents.organisationId, org.id),
+                        childrenCentreCondition
+                    )
+                ),
 
             // consolidated bookings
             hasCentres
@@ -119,7 +139,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
                     activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate.toISOString()} and ${bookings.startAt} <= ${activeEndDate.toISOString()})::int`,
                     prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate.toISOString()} and ${bookings.startAt} <= ${prevEndDate.toISOString()})::int`
-                }).from(bookings).where(inArray(bookings.centreId, accessibleCentreIds))
+                }).from(bookings).where(bookingsCentreCondition)
                 : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
 
             // Recent bookings preview
@@ -148,7 +168,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     .innerJoin(centres, eq(bookings.centreId, centres.id))
                     .where(
                         and(
-                            inArray(bookings.centreId, accessibleCentreIds),
+                            bookingsCentreCondition,
                             gte(bookings.startAt, activeStartDate),
                             lte(bookings.startAt, activeEndDate)
                         )
@@ -165,7 +185,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
                 activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
                 prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
-            }).from(registrations).where(eq(registrations.organisationId, org.id)),
+            }).from(registrations).where(
+                and(
+                    eq(registrations.organisationId, org.id),
+                    registrationsCentreCondition
+                )
+            ),
 
             // Recent registrations preview
             db.select({
@@ -181,6 +206,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 .where(
                     and(
                         eq(registrations.organisationId, org.id),
+                        registrationsCentreCondition,
                         gte(registrations.startDate, activeStartDate),
                         lte(registrations.startDate, activeEndDate)
                     )
@@ -202,7 +228,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 .from(bookings)
                 .innerJoin(centres, eq(bookings.centreId, centres.id))
                 .where(and(
-                    inArray(bookings.centreId, accessibleCentreIds),
+                    bookingsCentreCondition,
                     gte(bookings.startAt, startOfDay(now)),
                     lt(bookings.startAt, endOfDay(addDays(now, 7))),
                     eq(bookings.status, 'confirmed')
@@ -215,12 +241,23 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
                 count: sql<number>`count(*)::int`
             }).from(registrations)
-            .where(and(eq(registrations.organisationId, org.id), gte(registrations.createdAt, subDays(now, 56))))
+            .where(
+                and(
+                    eq(registrations.organisationId, org.id),
+                    registrationsCentreCondition,
+                    gte(registrations.createdAt, subDays(now, 56))
+                )
+            )
             .groupBy(sql`date_trunc('week', ${registrations.createdAt})`).orderBy(asc(sql`date_trunc('week', ${registrations.createdAt})`)),
 
             // Status pipeline
             db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
-            .from(registrations).where(eq(registrations.organisationId, org.id)).groupBy(registrations.status),
+            .from(registrations).where(
+                and(
+                    eq(registrations.organisationId, org.id),
+                    registrationsCentreCondition
+                )
+            ).groupBy(registrations.status),
 
             // Peak Day
             hasCentres
@@ -229,7 +266,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     count: sql<number>`count(*)::int`
                 })
                 .from(bookings)
-                .where(and(inArray(bookings.centreId, accessibleCentreIds), gte(bookings.startAt, subDays(now, 30))))
+                .where(
+                    and(
+                        bookingsCentreCondition,
+                        gte(bookings.startAt, subDays(now, 30))
+                    )
+                )
                 .groupBy(sql`EXTRACT(DOW FROM ${bookings.startAt})`).orderBy(desc(sql`count`)).limit(1)
                 : Promise.resolve([])
         ]);
@@ -269,7 +311,16 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const { recentBookings, recentRegistrations, centresList, centreOccupancyData, weeklyRegistrations, registrationPipelineData, peakDayData } = dashboardData;
     const { total: totalRegistrations, pending: pendingRegistrations, month: registrationsThisMonth, week: registrationsThisWeek, active: registrationsActivePeriod, prev: registrationsPrevPeriod } = dashboardData.registrations;
 
-    const recentBookingsChildIds = (recentBookings as any[]).map(b => b.childId);
+    // Deduplicate by booking ID — the query JOINs bookingAttendees so one booking
+    // appears once per child attendee; we keep the first occurrence per booking.id
+    const seenBookingIds = new Set<string>();
+    const uniqueRecentBookings = (recentBookings as any[]).filter(b => {
+        if (seenBookingIds.has(b.id)) return false;
+        seenBookingIds.add(b.id);
+        return true;
+    });
+
+    const recentBookingsChildIds = uniqueRecentBookings.map(b => b.childId);
     
     // Fetch medical and safeguarding notes with idiomatic Drizzle Relational API
     const safetyNotes = recentBookingsChildIds.length > 0 ? await db.query.studentNotes.findMany({
@@ -280,7 +331,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     }) : [];
 
     // Map to bookings
-    const recentBookingsWithNotes = recentBookings.map((b: any) => {
+    const recentBookingsWithNotes = uniqueRecentBookings.map((b: any) => {
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === b.childId);
         const medNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
         const safeguardNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
@@ -314,13 +365,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const calculateTrend = (curr: any, prev: any) => {
         const current = Number(curr || 0);
         const previous = Number(prev || 0);
-        if (current === 0 && previous === 0) return { diff: 0, text: "0%", type: 'neutral' };
-        if (previous === 0) return { diff: current, text: `+${current}`, type: 'positive' };
+        if (current === 0 && previous === 0) return { diff: 0, text: "0%", type: 'neutral' as const };
+        if (previous === 0) return { diff: current, text: `+${current}`, type: 'positive' as const };
         const perc = ((current - previous) / previous) * 100;
+        const trendType: 'positive' | 'negative' | 'neutral' = perc > 0 ? 'positive' : perc < 0 ? 'negative' : 'neutral';
         return {
             diff: current - previous,
             text: perc > 0 ? `+${perc.toFixed(0)}%` : `${perc.toFixed(0)}%`,
-            type: perc > 0 ? 'positive' : perc < 0 ? 'negative' : 'neutral'
+            type: trendType
         };
     };
 
@@ -328,15 +380,17 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const bookingsTrend = calculateTrend(bookingsActivePeriod, bookingsPrevPeriod);
     const registrationsTrend = calculateTrend(registrationsActivePeriod, registrationsPrevPeriod);
 
-    const centresWithOccupancy = centresList.map((centre: any) => {
-        const stats = centreOccupancyData.filter((d: any) => d.centreId === centre.id);
-        const todayStats = stats.find((d: any) => isSameDay(new Date(d.day), now));
-        return {
-            ...centre,
-            todayCount: Number(todayStats?.count || 0),
-            forecast: stats.map((d: any) => ({ day: new Date(d.day), count: Number(d.count || 0) }))
-        };
-    });
+    const centresWithOccupancy = centresList
+        .filter((c: any) => activeCentreId === 'all' || c.id === activeCentreId)
+        .map((centre: any) => {
+            const stats = centreOccupancyData.filter((d: any) => d.centreId === centre.id);
+            const todayStats = stats.find((d: any) => isSameDay(new Date(d.day), now));
+            return {
+                ...centre,
+                todayCount: Number(todayStats?.count || 0),
+                forecast: stats.map((d: any) => ({ day: new Date(d.day), count: Number(d.count || 0) }))
+            };
+        });
 
     // Format Registration Pipeline
     const pipelineCounts = {
@@ -383,9 +437,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
             <KpiGrid
-                totalStudents={totalStudents}
-                totalBookings={totalBookingsAll}
-                totalRegistrations={totalRegistrations}
+                studentsActive={studentsActivePeriod}
+                studentsTotal={totalStudents}
+                bookingsActive={bookingsActivePeriod}
+                bookingsTotal={totalBookingsAll}
+                registrationsActive={registrationsActivePeriod}
+                registrationsTotal={totalRegistrations}
                 pendingRegistrations={pendingRegistrations}
                 studentsTrend={studentsTrend}
                 bookingsTrend={bookingsTrend}

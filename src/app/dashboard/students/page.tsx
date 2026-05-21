@@ -8,8 +8,14 @@ import { Plus } from 'lucide-react';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 
-export default async function StudentsPage() {
+export default async function StudentsPage(props: {
+    searchParams: Promise<{
+        centre?: string;
+    }>
+}) {
+    const searchParams = await props.searchParams;
     const session = await auth();
 
     if (!session?.user) return redirect('/login');
@@ -23,43 +29,32 @@ export default async function StudentsPage() {
 
     if (!org) return redirect('/onboarding');
 
-    const userRole = (session.user as any).role as string | undefined;
-    const isOwner = userRole === 'ORG_OWNER';
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
 
-    // ── Centre-scoped student visibility ────────────────────────────────────
-    // ORG_OWNER: all students in the org via children.organisationId (direct column).
-    // Non-owners: only students whose children.centreId is in their accessible set.
-    //   • Both paths use DB-level filtering — no in-memory JS filtering.
-    //   • Short-circuit if no accessible centres (non-owners only).
-
-    let accessibleCentreIds: string[] = [];
-
-    if (!isOwner) {
-        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-
-        if (accessibleCentreIds.length === 0) {
-            // Non-owner with zero accessible centres — short-circuit with empty page
-            return (
-                <div className="space-y-8 animate-in fade-in duration-700">
-                    <div className="flex items-end justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
-                            <p className="text-on-surface-variant font-medium mt-1">
-                                View all registered students and their details
-                            </p>
-                        </div>
-                        <Link
-                            href="/dashboard/students/add"
-                            className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
-                        >
-                            <Plus className="w-4 h-4" /> Add Student
-                        </Link>
+    if (accessibleCentreIds.length === 0) {
+        // Zero accessible centres — short-circuit with empty page
+        return (
+            <div className="space-y-8 animate-in fade-in duration-700">
+                <div className="flex items-end justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
+                        <p className="text-on-surface-variant font-medium mt-1">
+                            View all registered students and their details
+                        </p>
                     </div>
-                    <StudentsTable students={[]} />
+                    <Link
+                        href="/dashboard/students/add"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    >
+                        <Plus className="w-4 h-4" /> Add Student
+                    </Link>
                 </div>
-            );
-        }
+                <StudentsTable students={[]} />
+            </div>
+        );
     }
+
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
 
     // ── Main student query — direct centreId column, no join ─────────────────
     const studentsList = await db
@@ -80,14 +75,12 @@ export default async function StudentsPage() {
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(
-            isOwner
-                // ORG_OWNER: direct org scoping via children.organisationId
-                ? eq(children.organisationId, org.id)
-                // Non-owner: students whose home centre is in their accessible set
-                : and(
-                    eq(children.organisationId, org.id),
-                    inArray(children.centreId, accessibleCentreIds)
-                )
+            and(
+                eq(children.organisationId, org.id),
+                activeCentreId !== 'all'
+                    ? eq(children.centreId, activeCentreId)
+                    : inArray(children.centreId, accessibleCentreIds)
+            )
         )
         .orderBy(desc(children.createdAt));
 
@@ -101,10 +94,9 @@ export default async function StudentsPage() {
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        // Non-owners: restrict booking stats to their centres too
         .where(
-            isOwner
-                ? undefined as any
+            activeCentreId !== 'all'
+                ? eq(bookings.centreId, activeCentreId)
                 : inArray(bookings.centreId, accessibleCentreIds)
         )
         .groupBy(bookingAttendees.childId);
@@ -135,9 +127,9 @@ export default async function StudentsPage() {
             id: student.id,
             firstName: student.firstName,
             lastName: student.lastName,
-            dateOfBirth: student.dateOfBirth,
-            schoolYear: student.schoolYear,
-            isRegistered: student.isRegistered,
+            dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
+            schoolYear: student.schoolYear ? Number(student.schoolYear) : null,
+            isRegistered: !!student.isRegistered,
             source: student.source,
             parentId: student.parentId,
             parentFirstName: student.parentFirstName,

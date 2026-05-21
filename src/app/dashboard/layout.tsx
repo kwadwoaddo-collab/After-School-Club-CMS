@@ -9,6 +9,9 @@ import { ToastProvider } from '@/components/ui/ToastProvider';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getUserAccessibleCentres } from '@/lib/permissions';
+import { CentreFilterProvider } from '@/components/dashboard/CentreFilterContext';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 
 // Which roles can access which route prefixes
 const ROUTE_PERMISSIONS: Record<string, string[]> = {
@@ -64,33 +67,41 @@ export default async function DashboardLayout({
         // Non-critical — fall back to default
     }
 
+    // Resolve user's accessible centres and selected centre
+    const orgCentres = await getUserAccessibleCentres(session.user.id);
+    const validCentreIds = orgCentres.map(c => c.id);
+    const selectedCentreId = await resolveActiveCentreId(undefined, validCentreIds);
+
     return (
         <ToastProvider>
             <SidebarProvider>
-                <div className="flex min-h-screen bg-surface text-on-surface">
-                    {/* Collapsible Sidebar */}
-                    <Sidebar
-                        userName={session.user?.name || undefined}
-                        userRole={userRole}
-                        orgName={orgName}
-                    />
-
-
-                    {/* Main Content Area - Responsive margin */}
-                    <DashboardContent>
-                        {/* Header with Search and Notifications */}
-                        <Header
+                <CentreFilterProvider centres={orgCentres} defaultCentreId={selectedCentreId}>
+                    <div className="flex min-h-screen bg-surface text-on-surface">
+                        {/* Collapsible Sidebar */}
+                        <Sidebar
                             userName={session.user?.name || undefined}
-                            userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
                             userRole={userRole}
+                            orgName={orgName}
+                            centres={orgCentres}
                         />
 
-                        {/* Dynamic Page Content */}
-                        <main className="p-4 sm:p-8 flex-1">
-                            {children}
-                        </main>
-                    </DashboardContent>
-                </div>
+
+                        {/* Main Content Area - Responsive margin */}
+                        <DashboardContent>
+                            {/* Header with Search and Notifications */}
+                            <Header
+                                userName={session.user?.name || undefined}
+                                userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
+                                userRole={userRole}
+                            />
+
+                            {/* Dynamic Page Content */}
+                            <main className="p-4 sm:p-8 flex-1">
+                                {children}
+                            </main>
+                        </DashboardContent>
+                    </div>
+                </CentreFilterProvider>
             </SidebarProvider>
         </ToastProvider>
     );

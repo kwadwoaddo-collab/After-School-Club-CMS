@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { Calendar, X } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
 interface RegistrationsFiltersProps {
     centres: { id: string; name: string }[];
@@ -10,26 +9,12 @@ interface RegistrationsFiltersProps {
 }
 
 export default function RegistrationsFilters({ centres, resultsCount = 0 }: RegistrationsFiltersProps) {
-    const router = useRouter();
-    const searchParams = useSearchParams();
+    const { selectedCentreId, setSelectedCentreId } = useCentreFilter();
 
-    const [centreId, setCentreId] = useState(searchParams.get('centre') || 'all');
-
-    const hasActiveFilters = centreId !== 'all';
+    const hasActiveFilters = selectedCentreId !== 'all';
 
     const handleClearFilters = () => {
-        setCentreId('all');
-        router.push('/dashboard/registrations');
-    };
-
-    const applyFilters = (overrides?: { newCentre?: string }) => {
-        const params = new URLSearchParams();
-        
-        const currentCentre = overrides?.newCentre !== undefined ? overrides.newCentre : centreId;
-        if (currentCentre !== 'all') params.set('centre', currentCentre);
-
-        const queryString = params.toString();
-        router.push(`/dashboard/registrations${queryString ? `?${queryString}` : ''}`);
+        setSelectedCentreId('all');
     };
 
     return (
@@ -38,11 +23,9 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                 {/* Centre Filter */}
                 <div className="relative min-w-[180px]">
                     <select
-                        value={centreId}
+                        value={selectedCentreId}
                         onChange={(e) => {
-                            const val = e.target.value;
-                            setCentreId(val);
-                            applyFilters({ newCentre: val });
+                            setSelectedCentreId(e.target.value);
                         }}
                         className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
                         style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
@@ -75,9 +58,9 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Active Filters:
                     </span>
-                    {centreId !== 'all' && (
+                    {selectedCentreId !== 'all' && (
                         <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-semibold rounded-full">
-                            Centre: {centres.find(c => c.id === centreId)?.name} ({resultsCount} results)
+                            Centre: {centres.find(c => c.id === selectedCentreId)?.name} ({resultsCount} results)
                         </span>
                     )}
                 </div>

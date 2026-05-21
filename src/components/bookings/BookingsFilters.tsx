@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
 interface BookingsFiltersProps {
     centres: { id: string; name: string }[];
@@ -12,10 +13,10 @@ interface BookingsFiltersProps {
 export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { selectedCentreId, setSelectedCentreId } = useCentreFilter();
 
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
-    const [centreId, setCentreId] = useState(searchParams.get('centre') || 'all');
 
     const statusOptions = [
         { value: 'all', label: 'All Statuses' },
@@ -25,12 +26,12 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         { value: 'cancelled', label: 'Cancelled' },
     ];
 
-    const hasActiveFilters = searchParams.get('search') || status !== 'all' || centreId !== 'all';
+    const hasActiveFilters = !!(searchParams.get('search') || status !== 'all' || selectedCentreId !== 'all');
 
     const handleClearFilters = () => {
         setSearch('');
         setStatus('all');
-        setCentreId('all');
+        setSelectedCentreId('all');
         router.push('/dashboard/bookings');
     };
 
@@ -39,7 +40,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         applyFilters();
     };
 
-    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string; newCentre?: string }) => {
+    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string }) => {
         const params = new URLSearchParams();
         
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
@@ -47,9 +48,6 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         
         const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
         if (currentStatus !== 'all') params.set('status', currentStatus);
-        
-        const currentCentre = overrides?.newCentre !== undefined ? overrides.newCentre : centreId;
-        if (currentCentre !== 'all') params.set('centre', currentCentre);
 
         const queryString = params.toString();
         router.push(`/dashboard/bookings${queryString ? `?${queryString}` : ''}`);
@@ -67,7 +65,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                             value={search}
                             onChange={(e) => {
                                 const val = e.target.value;
-                                setSearch(val);
+                                  setSearch(val);
                                 if (val === '') {
                                     applyFilters({ newSearch: '' });
                                 }
@@ -103,11 +101,9 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                 {/* Centre Filter */}
                 <div className="relative min-w-[180px]">
                     <select
-                        value={centreId}
+                        value={selectedCentreId}
                         onChange={(e) => {
-                            const val = e.target.value;
-                            setCentreId(val);
-                            applyFilters({ newCentre: val });
+                            setSelectedCentreId(e.target.value);
                         }}
                         className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
                         style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
@@ -150,9 +146,9 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                             Status: {statusOptions.find(s => s.value === status)?.label} ({resultsCount} results)
                         </span>
                     )}
-                    {centreId !== 'all' && (
+                    {selectedCentreId !== 'all' && (
                         <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-semibold rounded-full">
-                            Centre: {centres.find(c => c.id === centreId)?.name} ({resultsCount} results)
+                            Centre: {centres.find(c => c.id === selectedCentreId)?.name} ({resultsCount} results)
                         </span>
                     )}
                 </div>

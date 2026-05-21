@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { registrations, organisations } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
@@ -10,6 +10,7 @@ import RegistrationItem from '@/components/dashboard/RegistrationItem';
 import RegistrationsFilters from '@/components/registration/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeString } from '@/lib/search-params';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-error-container/10 text-error border border-error/20',
@@ -50,16 +51,16 @@ export default async function RegistrationsPage(props: {
     const orgCentres = await getUserAccessibleCentres(session.user.id);
     const centreIds = orgCentres.map(c => c.id);
 
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
+
     const conditions = [eq(registrations.organisationId, orgId)];
 
-    const centreParam = normalizeString(searchParams.centre, 'all');
-
-    if (centreParam !== 'all') {
-        if (centreIds.includes(centreParam)) {
-            conditions.push(eq(registrations.centreId, centreParam));
-        } else {
-            conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
-        }
+    if (activeCentreId !== 'all') {
+        conditions.push(eq(registrations.centreId, activeCentreId));
+    } else if (centreIds.length > 0) {
+        conditions.push(inArray(registrations.centreId, centreIds));
+    } else {
+        conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
     }
 
     // Use relational query to fetch all registration data in ONE trip

@@ -10,6 +10,7 @@ import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeEnum } from '@/lib/search-params';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 
 const VALID_BOOKING_STATUSES = ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up'] as const;
 
@@ -88,24 +89,19 @@ export default async function BookingsPage(props: {
         );
     }
 
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
+
     // Fetch bookings with filters
     let bookingsData: any[] = [];
     try {
         bookingsData = await db.query.bookings.findMany({
             where: (b, op) => {
-                const conds = [op.inArray(b.centreId, centreIds)];
+                const conds = [];
 
-                // Filter by specific centre if provided.
-                // Guard: only apply the extra eq() if the value is in the
-                // user's accessible set — prevents query param tampering from
-                // leaking bookings from other centres.
-                if (searchParams.centre && searchParams.centre !== 'all') {
-                    if (centreIds.includes(searchParams.centre as string)) {
-                        conds.push(op.eq(b.centreId, searchParams.centre as string));
-                    }
-                    // If centreId is not in the accessible set, we intentionally
-                    // skip the extra filter — the base inArray already ensures
-                    // no out-of-scope data is returned.
+                if (activeCentreId !== 'all') {
+                    conds.push(op.eq(b.centreId, activeCentreId));
+                } else {
+                    conds.push(op.inArray(b.centreId, centreIds));
                 }
 
                 // Filter by status if provided — validated against allowlist.
@@ -114,8 +110,6 @@ export default async function BookingsPage(props: {
                     if (VALID_BOOKING_STATUSES.includes(val as any)) {
                         conds.push(op.eq(b.status, val as any));
                     }
-                    // Unknown status values are silently ignored; the base
-                    // centreId filter already scopes results safely.
                 }
 
                 return conds.length === 1 ? conds[0] : op.and(...conds);
@@ -172,7 +166,7 @@ export default async function BookingsPage(props: {
         });
     }
 
-    const isFiltered = !!(searchParams.search || (searchParams.status && searchParams.status !== 'all') || (searchParams.centre && searchParams.centre !== 'all'));
+    const isFiltered = !!(searchParams.search || (searchParams.status && searchParams.status !== 'all') || activeCentreId !== 'all');
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">

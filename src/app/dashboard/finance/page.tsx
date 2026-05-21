@@ -12,6 +12,7 @@ import {
     ArrowDownRight,
     AlertCircle,
 } from 'lucide-react';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
@@ -40,12 +41,10 @@ export default async function FinancePage(props: {
         where: eq(centres.organisationId, session.user.organisationId)
     });
 
-    // Extract centre filter and validate
-    let centreId = normalizeString(searchParams?.centre, 'all');
-    if (centreId !== 'all' && !orgCentres.some(c => c.id === centreId)) {
-        centreId = 'all';
-    }
-    const centreFilter = centreId !== 'all' ? eq(invoices.centreId, centreId) : undefined;
+    const validCentreIds = orgCentres.map(c => c.id);
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
+
+    const centreFilter = activeCentreId !== 'all' ? eq(invoices.centreId, activeCentreId) : undefined;
 
     // Fetch summary data
     const recentInvoices = await db.query.invoices.findMany({
@@ -181,7 +180,7 @@ export default async function FinancePage(props: {
             WHERE i.organisation_id = ${orgId}
               AND i.status != 'paid'
               AND i.status != 'void'
-              ${centreId !== 'all' ? sql`AND i.centre_id = ${centreId}` : sql``}
+              ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
         )
         SELECT
             COUNT(*) FILTER (WHERE days_overdue <= 0) as current_count,
@@ -231,7 +230,7 @@ export default async function FinancePage(props: {
             WHERE i.organisation_id = ${orgId}
               AND i.status != 'paid'
               AND i.status != 'void'
-              ${centreId !== 'all' ? sql`AND i.centre_id = ${centreId}` : sql``}
+              ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
             GROUP BY p.id, p.first_name, p.last_name, p.email
         )
         SELECT * FROM ParentBalances
