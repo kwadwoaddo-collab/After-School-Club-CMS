@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface ChildEntry {
@@ -81,6 +83,11 @@ export default function RegisterPage() {
     const [showFeesIntro, setShowFeesIntro] = useState(true);
     const [step, setStep] = useState(1);
     const TOTAL_STEPS = 6;
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Form state
     const [startDate, setStartDate] = useState('');
@@ -391,8 +398,59 @@ export default function RegisterPage() {
                         </svg>
                     </div>
                     <h2 className="text-3xl font-bold text-white mb-3">Registration Submitted!</h2>
-                    <p className="text-white/60 mb-2">Thank you for registering with <strong className="text-white">{orgInfo?.name}</strong>.</p>
-                    <p className="text-white/40 text-sm">A confirmation copy has been sent to your email. The team will be in touch to confirm your place.</p>
+                    <p className="text-white/60 mb-4">Thank you for registering with <strong className="text-white">{orgInfo?.name}</strong>.</p>
+                    <p className="text-white/40 text-sm mb-6">A confirmation copy has been sent to your email. The team will be in touch to confirm your place.</p>
+                    {isClient && (
+                        <div className="flex flex-col gap-3">
+                            <PDFDownloadLink
+                                document={
+                                    <RegistrationTemplate
+                                        orgName={orgInfo?.name || 'SprintScale'}
+                                        centreName={orgInfo?.centres?.find(c => c.id === selectedCentreId)?.name || null}
+                                        startDate={startDate}
+                                        parents={parentList.map(p => ({
+                                            firstName: p.firstName,
+                                            lastName: p.lastName,
+                                            relationship: p.relationship || 'Parent',
+                                            phone: p.phone,
+                                            email: p.email,
+                                            addressLine1: p.addressLine1,
+                                            addressLine2: p.addressLine2,
+                                            city: p.city,
+                                            postcode: p.postcode,
+                                        }))}
+                                        children={childList.map(c => ({
+                                            firstName: c.firstName,
+                                            lastName: c.lastName,
+                                            dateOfBirth: c.dateOfBirth,
+                                            schoolYear: c.schoolYear,
+                                            sessions: c.sessions,
+                                        }))}
+                                        emergencyContact={emergency}
+                                        funding={funding}
+                                        specialNeeds={specialNeeds}
+                                    />
+                                }
+                                fileName={`registration-${parentList[0]?.lastName.toLowerCase()}-${parentList[0]?.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-')}
+                                className="w-full py-4 bg-primary hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/30 glow-btn"
+                            >
+                                {({ loading }) => (
+                                    <>
+                                        <svg className="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        {loading ? 'Preparing PDF...' : 'Download PDF Copy'}
+                                    </>
+                                )}
+                            </PDFDownloadLink>
+                            <button
+                                onClick={resetToStart}
+                                className="w-full py-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl transition-all border border-white/10 text-sm font-medium"
+                            >
+                                Register Another Child
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         );

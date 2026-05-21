@@ -5,6 +5,9 @@
  */
 
 import { Resend } from 'resend';
+import React from 'react';
+import { renderToBuffer } from '@react-pdf/renderer';
+import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
 
 // Initialize Resend client only if API key is allowed
 const resendApiKey = process.env.RESEND_API_KEY;
@@ -749,28 +752,69 @@ export class EmailService {
    * Send registration confirmation copy to parent
    */
   async sendRegistrationConfirmation(data: {
-    parentName: string;
-    parentEmail: string;
     orgName: string;
-    children: { firstName: string; lastName: string; schoolYear: string }[];
+    centreName?: string | null;
     startDate: Date | null;
-    fundingTypes: string[];
+    parents: {
+      firstName: string;
+      lastName: string;
+      relationship: string;
+      phone: string;
+      email?: string;
+      addressLine1?: string;
+      addressLine2?: string;
+      city?: string;
+      postcode?: string;
+    }[];
+    children: {
+      firstName: string;
+      lastName: string;
+      dateOfBirth: string | Date;
+      schoolYear: string;
+      sessions: string[];
+    }[];
+    emergencyContact: {
+      name: string;
+      relationship: string;
+      phone: string;
+    };
+    funding: {
+      type: string;
+      other?: string;
+    };
+    specialNeeds: {
+      has: boolean;
+      details?: string;
+    };
   }): Promise<EmailResult> {
     if (!resend) {
       return { success: false, error: 'Email service not configured' };
+    }
+
+    const primaryParent = data.parents[0];
+    if (!primaryParent || !primaryParent.email) {
+      return { success: false, error: 'No primary parent email provided' };
     }
 
     const formattedDate = data.startDate
       ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(data.startDate)
       : 'To be confirmed';
 
-    const fundingLabel = (t: string) => ({
+    const fundingLabelMap: Record<string, string> = {
       tax_free_childcare: 'Tax-Free Childcare',
       childcare_vouchers: 'Childcare Vouchers',
+      universal_credit: 'Universal Credit',
       student_finance: 'Student Finance (CCG)',
       self_funded: 'Self-Funded',
       other: 'Other',
-    }[t] ?? t);
+    };
+
+    const getFundingLabel = (type: string, other?: string) => {
+      if (type === 'other') {
+        return `Other (${other || 'Not specified'})`;
+      }
+      return fundingLabelMap[type] || type || 'Not specified';
+    };
 
     const childrenRows = data.children.map(c =>
       `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${c.firstName} ${c.lastName}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${c.schoolYear}</td></tr>`
@@ -786,8 +830,8 @@ export class EmailService {
       <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:15px;">${data.orgName}</p>
     </div>
     <div style="padding:40px 32px;">
-      <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentName},</p>
-      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">Thank you for submitting your registration. Below is a summary of what we received. A text copy is also attached to this email.</p>
+      <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${primaryParent.firstName},</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">Thank you for submitting your registration. Below is a summary of what we received. A PDF copy of your registration is attached to this email.</p>
 
       <div style="margin-bottom:24px;">
         <p style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Requested Start Date</p>
@@ -807,7 +851,7 @@ export class EmailService {
 
       <div style="margin-bottom:28px;">
         <p style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Funding Method</p>
-        <p style="font-size:15px;color:#111827;margin:0;">${data.fundingTypes.map(fundingLabel).join(', ') || 'Not specified'}</p>
+        <p style="font-size:15px;color:#111827;margin:0;">${getFundingLabel(data.funding.type, data.funding.other)}</p>
       </div>
 
       <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:6px;">
@@ -822,44 +866,32 @@ export class EmailService {
 </html>`;
 
     try {
-      // Build plain-text attachment content
-      const childrenText = data.children
-        .map((c, i) => `  ${i + 1}. ${c.firstName} ${c.lastName} — Year ${c.schoolYear}`)
-        .join('\n');
+      // Generate PDF buffer dynamically
+      const doc = React.createElement(RegistrationTemplate, {
+        orgName: data.orgName,
+        centreName: data.centreName,
+        startDate: data.startDate,
+        parents: data.parents,
+        children: data.children,
+        emergencyContact: data.emergencyContact,
+        funding: data.funding,
+        specialNeeds: data.specialNeeds,
+        submittedAt: new Date(),
+      });
 
-      const attachmentText = [
-        `REGISTRATION CONFIRMATION`,
-        `Organisation: ${data.orgName}`,
-        `Date Submitted: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-        ``,
-        `PARENT / GUARDIAN`,
-        `Name: ${data.parentName}`,
-        `Email: ${data.parentEmail}`,
-        ``,
-        `REQUESTED START DATE`,
-        formattedDate,
-        ``,
-        `CHILDREN REGISTERED`,
-        childrenText,
-        ``,
-        `FUNDING METHOD`,
-        data.fundingTypes.map(fundingLabel).join(', ') || 'Not specified',
-        ``,
-        `---`,
-        `The team at ${data.orgName} will review your registration and be in touch to confirm your place and provide next steps.`,
-        ``,
-        `Powered by SprintScale | support@sprintscaleit.co.uk`,
-      ].join('\n');
+      const pdfBuffer = await renderToBuffer(doc as React.ReactElement<any>);
+
+      const filename = `registration-${primaryParent.lastName.toLowerCase()}-${primaryParent.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-');
 
       const { data: result, error } = await resend.emails.send({
         from: `${data.orgName} via SprintScale <${FROM_EMAIL}>`,
-        to: data.parentEmail,
+        to: primaryParent.email,
         subject: `Registration received — ${data.orgName}`,
         html,
         attachments: [
           {
-            filename: `registration-${data.parentName.toLowerCase().replace(/\s+/g, '-')}.txt`,
-            content: Buffer.from(attachmentText, 'utf-8'),
+            filename,
+            content: pdfBuffer,
           },
         ],
       });

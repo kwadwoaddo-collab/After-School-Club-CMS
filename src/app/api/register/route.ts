@@ -37,13 +37,14 @@ export async function POST(req: NextRequest) {
         // This prevents cross-org data poisoning where a malicious caller
         // could POST orgSlug=org-a with centreId=<uuid-from-org-b>.
         let validatedCentreId: string | null = null;
+        let centreName: string | null = null;
         if (centreId) {
             const centre = await db.query.centres.findFirst({
                 where: and(
                     eq(centres.id, centreId),
                     eq(centres.organisationId, org.id)
                 ),
-                columns: { id: true },
+                columns: { id: true, name: true },
             });
             if (!centre) {
                 return NextResponse.json(
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
                 );
             }
             validatedCentreId = centre.id;
+            centreName = centre.name;
         }
 
         // ── 3. Create the top-level registration record ──────────────────
@@ -217,16 +219,40 @@ export async function POST(req: NextRequest) {
         const primaryParent = submittedParents[0];
         if (primaryParent?.email) {
             await emailService.sendRegistrationConfirmation({
-                parentName: primaryParent.firstName,
-                parentEmail: primaryParent.email,
                 orgName: org.name,
+                centreName,
+                startDate: startDate ? new Date(startDate) : null,
+                parents: submittedParents.map((p: any) => ({
+                    firstName: p.firstName,
+                    lastName: p.lastName,
+                    relationship: p.relationship ?? 'Parent',
+                    phone: p.phone,
+                    email: p.email ?? undefined,
+                    addressLine1: p.addressLine1 ?? undefined,
+                    addressLine2: p.addressLine2 ?? undefined,
+                    city: p.city ?? undefined,
+                    postcode: p.postcode ?? undefined,
+                })),
                 children: submittedChildren.map((c: any) => ({
                     firstName: c.firstName,
                     lastName: c.lastName,
+                    dateOfBirth: c.dateOfBirth,
                     schoolYear: c.schoolYear,
+                    sessions: c.sessions ?? [],
                 })),
-                startDate: startDate ? new Date(startDate) : null,
-                fundingTypes: funding?.types ?? [],
+                emergencyContact: {
+                    name: emergencyContact?.name ?? 'Not specified',
+                    relationship: emergencyContact?.relationship ?? 'Not specified',
+                    phone: emergencyContact?.phone ?? 'Not specified',
+                },
+                funding: {
+                    type: funding?.types?.[0] ?? 'self_funded',
+                    other: funding?.other ?? undefined,
+                },
+                specialNeeds: {
+                    has: specialNeeds?.has ?? false,
+                    details: specialNeeds?.details ?? undefined,
+                },
             });
         }
 
