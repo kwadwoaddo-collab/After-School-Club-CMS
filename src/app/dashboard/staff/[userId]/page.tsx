@@ -54,12 +54,23 @@ export default async function EditStaffPage({ params }: PageProps) {
     // Get current centre assignments
     const currentAssignments = staffMember.memberships.map((m) => m.centreId);
 
+    // Helper to get role badge style
+    const getRoleStyle = (role: string) => {
+        const styles = {
+            ORG_OWNER: 'bg-[#d0bcff]/10 text-[#d0bcff] border-[#d0bcff]/20',
+            MANAGER: 'bg-[#adc6ff]/10 text-[#adc6ff] border-[#adc6ff]/20',
+            FRONT_DESK: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            TUTOR: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        };
+        return styles[role as keyof typeof styles] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    };
+
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Back Button */}
             <Link
                 href="/dashboard/staff"
-                className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                className="inline-flex items-center gap-2 text-[#8c909f] hover:text-white font-medium transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Team
@@ -67,37 +78,37 @@ export default async function EditStaffPage({ params }: PageProps) {
 
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-3xl font-bold text-[#e5e2e1] tracking-tight">
                     Manage Centre Access
                 </h1>
-                <p className="text-slate-600 font-medium mt-1">
-                    Assign <span className="font-bold">{staffMember.name || staffMember.email}</span> to
+                <p className="text-[#8c909f] font-medium mt-1">
+                    Assign <span className="font-bold text-white">{staffMember.name || staffMember.email}</span> to
                     specific centres
                 </p>
             </div>
 
             {/* Role Badge */}
             <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-600 font-medium">Current Role:</span>
-                <span className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-semibold">
+                <span className="text-sm text-[#8c909f] font-medium">Current Role:</span>
+                <span className={`px-4 py-2 border rounded-xl font-bold uppercase tracking-wider text-xs ${getRoleStyle(staffMember.role)}`}>
                     {staffMember.role.replace('_', ' ')}
                 </span>
             </div>
 
             {/* Info Card */}
             {staffMember.role === 'ORG_OWNER' ? (
-                <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6">
-                    <h3 className="font-bold text-purple-900 mb-2">Organization Owner Access</h3>
-                    <p className="text-sm text-purple-700">
+                <div className="bg-[#d0bcff]/10 border border-[#d0bcff]/20 rounded-2xl p-6">
+                    <h3 className="font-bold text-[#d0bcff] mb-2">Organization Owner Access</h3>
+                    <p className="text-sm text-[#d0bcff]/80 leading-relaxed">
                         ORG_OWNER users automatically have full access to all centres. Centre assignments are
                         not needed.
                     </p>
                 </div>
             ) : (
                 <>
-                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-                        <h3 className="font-bold text-blue-900 mb-2">Centre-Level Access Control</h3>
-                        <p className="text-sm text-blue-700 leading-relaxed">
+                    <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6">
+                        <h3 className="font-bold text-primary mb-2">Centre-Level Access Control</h3>
+                        <p className="text-sm text-primary/80 leading-relaxed">
                             This staff member will only see bookings, students, and data from the centres you
                             assign below. Select all centres they should have access to.
                         </p>

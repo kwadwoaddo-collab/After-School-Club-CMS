@@ -99,23 +99,23 @@ export default function StaffCentreAssignment({
     };
 
     return (
-        <div className="glass-card rounded-[32px] overflow-hidden border border-slate-200">
-            <div className="px-8 py-6 border-b border-slate-200">
+        <div className="bg-[#1a1d23] rounded-[32px] overflow-hidden border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] animate-in fade-in duration-500">
+            <div className="px-8 py-6 border-b border-[#424754]/15">
                 <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-slate-600" />
-                    <h2 className="text-lg font-bold text-slate-900">Centre Assignments</h2>
+                    <MapPin className="w-5 h-5 text-[#8c909f]" />
+                    <h2 className="text-lg font-bold text-[#e5e2e1]">Centre Assignments</h2>
                 </div>
             </div>
 
             <div className="p-8">
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <div className="mb-6 p-4 bg-error-container/10 border border-error/20 rounded-xl text-error font-bold text-sm">
                         {error}
                     </div>
                 )}
 
                 {success && (
-                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 font-bold text-sm flex items-center gap-2">
                         <Check className="w-5 h-5" />
                         Centre assignments updated successfully! Redirecting...
                     </div>
@@ -123,9 +123,9 @@ export default function StaffCentreAssignment({
 
                 {allCentres.length === 0 ? (
                     <div className="text-center py-12">
-                        <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-900 mb-2">No centres available</h3>
-                        <p className="text-slate-600">Create centres first to assign staff members.</p>
+                        <MapPin className="w-12 h-12 text-[#424754] mx-auto mb-4" />
+                        <h3 className="text-lg font-bold text-[#e5e2e1] mb-2">No centres available</h3>
+                        <p className="text-sm text-[#8c909f]">Create centres first to assign staff members.</p>
                     </div>
                 ) : (
                     <>
@@ -136,22 +136,22 @@ export default function StaffCentreAssignment({
                                     <label
                                         key={centre.id}
                                         className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                                            ? 'border-primary bg-primary/10'
+                                            : 'border-[#2a2d35] hover:border-[#353535] bg-[#13151a]'
                                             }`}
                                     >
                                         <input
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={() => handleToggleCentre(centre.id)}
-                                            className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                            className="w-5 h-5 rounded focus:ring-2 focus:ring-primary/20 accent-primary"
                                         />
                                         <div className="flex-1">
-                                            <div className="font-semibold text-slate-900">{centre.name}</div>
-                                            <div className="text-sm text-slate-600">{centre.slug}</div>
+                                            <div className="font-bold text-white">{centre.name}</div>
+                                            <div className="text-sm text-[#8c909f]">{centre.slug}</div>
                                         </div>
                                         {isSelected && (
-                                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                                                 <Check className="w-4 h-4 text-white" />
                                             </div>
                                         )}
@@ -161,10 +161,10 @@ export default function StaffCentreAssignment({
                         </div>
 
                         {/* Summary */}
-                        <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                            <div className="text-sm">
-                                <span className="font-semibold text-slate-700">Selected: </span>
-                                <span className="text-slate-600">
+                        <div className="mb-6 p-4 bg-[#13151a] rounded-xl border border-[#2a2d35]">
+                            <div className="text-sm font-medium">
+                                <span className="font-bold text-[#e5e2e1]">Selected: </span>
+                                <span className="text-[#8c909f]">
                                     {selectedCentres.length === 0
                                         ? 'No centres selected - user will have no access'
                                         : selectedCentres.length === 1
@@ -176,9 +176,9 @@ export default function StaffCentreAssignment({
 
                         {/* Warning for no selection */}
                         {selectedCentres.length === 0 && (
-                            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                <p className="text-sm text-amber-700">
-                                    ⚠️ <span className="font-semibold">{staffName}</span> won't be able to access
+                            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                                <p className="text-sm text-amber-500 font-medium leading-relaxed">
+                                    ⚠️ <span className="font-bold">{staffName}</span> won't be able to access
                                     any bookings or students without at least one centre assignment.
                                 </p>
                             </div>
@@ -188,22 +188,22 @@ export default function StaffCentreAssignment({
             </div>
 
             {/* Remove Staff Member */}
-            <div className="px-8 py-6 border-t border-slate-200">
+            <div className="px-8 py-6 border-t border-[#424754]/15">
                 {!showRemoveConfirm ? (
                     <button
                         onClick={() => setShowRemoveConfirm(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-red-500 hover:text-red-700 transition-colors"
+                        className="flex items-center gap-2 text-sm font-bold text-error hover:text-red-400 transition-colors cursor-pointer"
                     >
                         <Trash2 className="w-4 h-4" />
                         Remove {staffName} from organisation
                     </button>
                 ) : (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="p-5 bg-error-container/10 border border-error/20 rounded-2xl">
                         <div className="flex items-start gap-3 mb-4">
-                            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <AlertTriangle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="font-bold text-red-900 text-sm">Remove {staffName}?</p>
-                                <p className="text-sm text-red-700 mt-1">
+                                <p className="font-bold text-white text-sm">Remove {staffName}?</p>
+                                <p className="text-sm text-[#8c909f] mt-1 leading-relaxed">
                                     They will immediately lose access to the dashboard on their next page load. Their account is not deleted — they just lose access to this organisation.
                                 </p>
                             </div>
@@ -212,7 +212,7 @@ export default function StaffCentreAssignment({
                             <button
                                 onClick={handleRemoveStaff}
                                 disabled={removing}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                className="flex items-center gap-2 px-4 py-2 bg-error text-white text-sm font-bold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
                             >
                                 {removing ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -224,7 +224,7 @@ export default function StaffCentreAssignment({
                             <button
                                 onClick={() => setShowRemoveConfirm(false)}
                                 disabled={removing}
-                                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                                className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -235,10 +235,10 @@ export default function StaffCentreAssignment({
 
             {/* Save / Cancel Buttons */}
             {allCentres.length > 0 && (
-                <div className="px-8 py-6 border-t border-slate-200 flex items-center justify-between">
+                <div className="px-8 py-6 border-t border-[#424754]/15 flex items-center justify-between">
                     <button
                         onClick={() => router.push('/dashboard/staff')}
-                        className="px-6 py-3 text-slate-600 hover:text-slate-900 font-semibold transition-colors"
+                        className="px-6 py-3 text-slate-400 hover:text-white font-bold transition-colors cursor-pointer"
                         disabled={loading}
                     >
                         Cancel
@@ -246,7 +246,7 @@ export default function StaffCentreAssignment({
                     <button
                         onClick={handleSave}
                         disabled={!hasChanges || loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-[#3b82f6] transition-colors disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none shadow-lg shadow-primary/30 glow-btn cursor-pointer"
                     >
                         {loading ? (
                             <>
