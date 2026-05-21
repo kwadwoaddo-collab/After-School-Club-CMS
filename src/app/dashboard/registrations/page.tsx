@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { registrations, organisations } from '@/db/schema';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { registrations, organisations, registrationParents, registrationChildren } from '@/db/schema';
+import { eq, desc, and, inArray, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
@@ -27,9 +27,17 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function RegistrationsPage(props: {
     searchParams: Promise<{
         centre?: string;
+        search?: string;
+        status?: string;
     }>
 }) {
-    const searchParams = await props.searchParams;
+    const rawSearchParams = await props.searchParams;
+    const searchParams = {
+        centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
+        search: Array.isArray(rawSearchParams.search) ? rawSearchParams.search[0] : rawSearchParams.search,
+        status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
+    };
+
     const session = await auth();
     if (!session?.user) redirect('/login');
 
@@ -53,25 +61,84 @@ export default async function RegistrationsPage(props: {
 
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
 
-    const conditions = [eq(registrations.organisationId, orgId)];
+    let rows: any[] = [];
+    let searchActiveAndNoResults = false;
+    let matchingIds: string[] = [];
 
-    if (activeCentreId !== 'all') {
-        conditions.push(eq(registrations.centreId, activeCentreId));
-    } else if (centreIds.length > 0) {
-        conditions.push(inArray(registrations.centreId, centreIds));
-    } else {
-        conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
+    if (searchParams.search) {
+        const searchPattern = `%${searchParams.search}%`;
+        try {
+            const matchingRegistrations = await db
+                .select({ id: registrations.id })
+                .from(registrations)
+                .leftJoin(registrationParents, eq(registrations.id, registrationParents.registrationId))
+                .leftJoin(registrationChildren, eq(registrations.id, registrationChildren.registrationId))
+                .where(
+                    and(
+                        eq(registrations.organisationId, orgId),
+                        activeCentreId !== 'all'
+                            ? eq(registrations.centreId, activeCentreId)
+                            : centreIds.length > 0
+                                ? inArray(registrations.centreId, centreIds)
+                                : eq(registrations.centreId, 'unauthorized_centre_id'),
+                        or(
+                            ilike(registrationParents.submittedFirstName, searchPattern),
+                            ilike(registrationParents.submittedLastName, searchPattern),
+                            ilike(registrationParents.submittedEmail, searchPattern),
+                            ilike(registrationParents.submittedPhone, searchPattern),
+                            ilike(registrationChildren.submittedFirstName, searchPattern),
+                            ilike(registrationChildren.submittedLastName, searchPattern)
+                        )
+                    )
+                );
+            matchingIds = matchingRegistrations.map(mr => mr.id);
+            if (matchingIds.length === 0) {
+                searchActiveAndNoResults = true;
+            }
+        } catch (error) {
+            console.error('Failed to search registrations:', error);
+            searchActiveAndNoResults = true;
+        }
     }
 
-    // Use relational query to fetch all registration data in ONE trip
-    const rows = await db.query.registrations.findMany({
-        where: and(...conditions),
-        with: {
-            registrationChildren: true,
-            registrationParents: true,
-        },
-        orderBy: [desc(registrations.createdAt)],
-    });
+    if (!searchActiveAndNoResults) {
+        const conditions = [eq(registrations.organisationId, orgId)];
+
+        if (activeCentreId !== 'all') {
+            conditions.push(eq(registrations.centreId, activeCentreId));
+        } else if (centreIds.length > 0) {
+            conditions.push(inArray(registrations.centreId, centreIds));
+        } else {
+            conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
+        }
+
+        if (searchParams.status && searchParams.status !== 'all') {
+            conditions.push(eq(registrations.status, searchParams.status as any));
+        }
+
+        if (searchParams.search) {
+            if (matchingIds.length > 0) {
+                conditions.push(inArray(registrations.id, matchingIds));
+            } else {
+                conditions.push(eq(registrations.id, '00000000-0000-0000-0000-000000000000'));
+            }
+        }
+
+        // Use relational query to fetch all registration data in ONE trip
+        rows = await db.query.registrations.findMany({
+            where: and(...conditions),
+            with: {
+                registrationChildren: true,
+                registrationParents: true,
+            },
+            orderBy: [desc(registrations.createdAt)],
+        });
+    }
+    const isFiltered = !!(
+        searchParams.search ||
+        (searchParams.status && searchParams.status !== 'all') ||
+        activeCentreId !== 'all'
+    );
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
@@ -129,13 +196,17 @@ export default async function RegistrationsPage(props: {
 
             {/* Empty state */}
             {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/20">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/20 animate-in fade-in duration-300">
                     <div className="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4 text-3xl">📋</div>
-                    <h3 className="text-white font-semibold mb-2">No registrations yet</h3>
+                    <h3 className="text-white font-semibold mb-2">
+                        {isFiltered ? 'No matching registrations' : 'No registrations yet'}
+                    </h3>
                     <p className="text-on-surface-variant text-sm max-w-sm mb-5">
-                        Share your registration link with parents to start receiving submissions.
+                        {isFiltered 
+                            ? 'Try adjusting or clearing your filters to find what you are looking for.' 
+                            : 'Share your registration link with parents to start receiving submissions.'}
                     </p>
-                    {fullRegistrationUrl && (
+                    {!isFiltered && fullRegistrationUrl && (
                         <Link
                             href={fullRegistrationUrl}
                             target="_blank"

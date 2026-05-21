@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { users, organisations, centres, staffInvites } from '@/db/schema';
+import { users, organisations, staffInvites } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { UserPlus, Users, Shield, Mail, MapPin, DollarSign, Calendar } from 'lucide-react';
 import Link from 'next/link';
@@ -51,12 +51,6 @@ export default async function StaffPage(props: {
         if (activeCentreId === 'all') return true;
         if (member.role === 'ORG_OWNER') return true; // Owners have implicit access to all centres
         return member.memberships.some(m => m.centreId === activeCentreId);
-    });
-
-    // Fetch all centres for the organisation
-    const allCentres = await db.query.centres.findMany({
-        where: eq(centres.organisationId, org.id),
-        orderBy: (centres, { asc }) => [asc(centres.name)],
     });
 
     // Fetch all invitations
@@ -235,49 +229,8 @@ export default async function StaffPage(props: {
                 </div>
             </div>
 
-            {/* Invitations & Overview Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <div className="h-full">
-                    <InvitationsList invitations={filteredInvitations} />
-                </div>
-
-                {allCentres.length > 0 && (
-                    <div className="bg-[#1a1d23] rounded-[32px] overflow-hidden border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full flex flex-col">
-                        <div className="px-8 py-6 border-b border-[#424754]/15 flex items-center gap-3">
-                            <h2 className="text-lg font-bold text-[#e5e2e1]">Your Centres</h2>
-                        </div>
-                        <div className="p-6 flex-1">
-                            <div className="flex flex-col gap-3">
-                                {allCentres.map((centre) => {
-                                    const isActive = centre.id === activeCentreId;
-                                    return (
-                                        <div
-                                            key={centre.id}
-                                            className={`p-5 bg-[#2a2a2a] rounded-2xl border transition-colors flex items-center justify-between group ${
-                                                isActive
-                                                    ? 'border-primary'
-                                                    : 'border-[#424754]/15 hover:border-[#adc6ff]/30'
-                                            }`}
-                                        >
-                                            <div>
-                                                <h3 className={`font-bold text-sm transition-colors ${
-                                                    isActive ? 'text-primary' : 'text-[#e5e2e1] group-hover:text-[#adc6ff]'
-                                                }`}>{centre.name}</h3>
-                                                <p className="text-xs text-[#8c909f] mt-1 pr-4">{centre.slug}</p>
-                                            </div>
-                                            <div className="w-8 h-8 rounded-lg bg-[#353535] flex items-center justify-center">
-                                                <MapPin className={`w-4 h-4 transition-colors ${
-                                                    isActive ? 'text-primary' : 'text-[#8c909f] group-hover:text-[#adc6ff]'
-                                                }`} />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+            {/* Invitations */}
+            <InvitationsList invitations={filteredInvitations} />
         </div>
     );
 }
