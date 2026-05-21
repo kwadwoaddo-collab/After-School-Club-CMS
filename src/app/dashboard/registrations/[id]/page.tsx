@@ -1,11 +1,12 @@
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents } from '@/db/schema';
+import { registrations, registrationChildren, registrationParents, organisations, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import RegistrationStatusUpdater from './StatusUpdater';
+import DownloadButton from './DownloadButton';
 
 const FUNDING_LABELS: Record<string, string> = {
     tax_free_childcare: 'Tax-Free Childcare',
@@ -34,14 +35,35 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     const orgId = (session.user as any).organisationId;
     if (!orgId) redirect('/onboarding');
 
+    const org = await db.query.organisations.findFirst({
+        where: eq(organisations.id, orgId),
+        columns: { name: true },
+    });
+    const orgName = org?.name || 'SprintScale';
+
     const reg = await db.query.registrations.findFirst({
         where: and(eq(registrations.id, id), eq(registrations.organisationId, orgId)),
         with: {
             registrationChildren: true,
-            registrationParents: true,
+            registrationParents: {
+                with: {
+                    parent: true,
+                }
+            },
         },
     });
     if (!reg) notFound();
+
+    let centreName: string | null = null;
+    if (reg.centreId) {
+        const centre = await db.query.centres.findFirst({
+            where: eq(centres.id, reg.centreId),
+            columns: { name: true },
+        });
+        if (centre) {
+            centreName = centre.name;
+        }
+    }
 
     const kids = reg.registrationChildren;
     const pars = reg.registrationParents;
@@ -69,6 +91,43 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                         {STATUS_LABEL[reg.status] ?? reg.status}
                     </span>
                     <RegistrationStatusUpdater registrationId={id} currentStatus={reg.status as any} />
+                    <DownloadButton
+                        orgName={orgName}
+                        centreName={centreName}
+                        startDate={reg.startDate}
+                        submittedAt={reg.submittedAt || reg.createdAt}
+                        parents={pars.map(p => ({
+                            firstName: p.submittedFirstName,
+                            lastName: p.submittedLastName,
+                            relationship: p.submittedRelationship || 'Parent',
+                            phone: p.submittedPhone || '',
+                            email: p.submittedEmail || undefined,
+                            addressLine1: p.parent?.addressLine1 || undefined,
+                            addressLine2: p.parent?.addressLine2 || undefined,
+                            city: p.parent?.city || undefined,
+                            postcode: p.parent?.postcode || undefined,
+                        }))}
+                        children={kids.map(k => ({
+                            firstName: k.submittedFirstName,
+                            lastName: k.submittedLastName,
+                            dateOfBirth: k.submittedDateOfBirth || '',
+                            schoolYear: k.submittedSchoolYear || '',
+                            sessions: k.submittedSessions || [],
+                        }))}
+                        emergencyContact={{
+                            name: reg.emergencyContactName || 'Not specified',
+                            relationship: reg.emergencyContactRelationship || 'Not specified',
+                            phone: reg.emergencyContactPhone || 'Not specified',
+                        }}
+                        funding={{
+                            type: reg.fundingTypes?.[0] || 'self_funded',
+                            other: reg.fundingOther || undefined,
+                        }}
+                        specialNeeds={{
+                            has: reg.hasSpecialNeeds ?? false,
+                            details: reg.specialNeedsDetails || undefined,
+                        }}
+                    />
                 </div>
             </div>
 
