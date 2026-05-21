@@ -1,0 +1,292 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { CheckCircle2, XCircle, Download, Loader2, X } from 'lucide-react';
+import { assignRegistrationCentre } from '@/app/dashboard/registrations/actions';
+
+type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
+
+interface RegistrationRow {
+    id: string;
+    status: string;
+    createdAt: Date;
+    startDate: Date | null;
+    centreId: string | null;
+    fundingTypes: string[] | null;
+    emergencyContactName: string | null;
+    registrationChildren: {
+        childId: string | null;
+        submittedFirstName: string;
+        submittedLastName: string;
+        submittedSchoolYear: string | null;
+        submittedSessions: string[] | null;
+    }[];
+    registrationParents: {
+        isPrimary: boolean | null;
+        submittedFirstName: string;
+        submittedLastName: string;
+        submittedEmail: string | null;
+        submittedPhone: string | null;
+    }[];
+}
+
+interface Props {
+    rows: RegistrationRow[];
+    statusBadge: Record<string, string>;
+    statusLabel: Record<string, string>;
+    centres: { id: string; name: string }[];
+}
+
+const FUNDING_LABELS: Record<string, string> = {
+    tax_free_childcare: 'Tax-Free Childcare',
+    childcare_vouchers: 'Childcare Vouchers',
+    universal_credit: 'Universal Credit',
+    student_finance: 'Student Finance (CCG)',
+    self_funded: 'Self-Funded',
+    other: 'Other',
+};
+
+export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres }: Props) {
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [bulkLoading, setBulkLoading] = useState(false);
+    const [bulkMessage, setBulkMessage] = useState('');
+    const [isPending, startTransition] = useTransition();
+    const router = useRouter();
+
+    const allIds = rows.map(r => r.id);
+    const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
+    const someSelected = selected.size > 0;
+
+    const toggleAll = () => {
+        if (allSelected) {
+            setSelected(new Set());
+        } else {
+            setSelected(new Set(allIds));
+        }
+    };
+
+    const toggleOne = (id: string) => {
+        setSelected(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const bulkUpdateStatus = async (status: Status) => {
+        if (selected.size === 0) return;
+        setBulkLoading(true);
+        setBulkMessage('');
+        try {
+            const ids = Array.from(selected);
+            await Promise.all(
+                ids.map(id =>
+                    fetch(`/api/register/${id}/status`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status }),
+                    })
+                )
+            );
+            setBulkMessage(`✓ Updated ${ids.length} registration${ids.length !== 1 ? 's' : ''}`);
+            setSelected(new Set());
+            router.refresh();
+        } catch {
+            setBulkMessage('Something went wrong. Please try again.');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const exportCSV = () => {
+        const selectedRows = rows.filter(r => selected.has(r.id));
+        const header = [
+            'ID', 'Status', 'Submitted', 'Start Date',
+            'Primary Parent', 'Email', 'Phone',
+            'Children', 'Centre', 'Funding',
+        ].join(',');
+
+        const csvRows = selectedRows.map(r => {
+            const primary = r.registrationParents.find(p => p.isPrimary) ?? r.registrationParents[0];
+            const children = r.registrationChildren.map(c => `${c.submittedFirstName} ${c.submittedLastName}`).join('; ');
+            const centre = centres.find(c => c.id === r.centreId)?.name ?? '';
+            const funding = (r.fundingTypes ?? []).map(t => FUNDING_LABELS[t] ?? t).join('; ');
+
+            const escape = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+
+            return [
+                escape(r.id),
+                escape(statusLabel[r.status] ?? r.status),
+                escape(new Date(r.createdAt).toLocaleDateString('en-GB')),
+                escape(r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB') : ''),
+                escape(primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : ''),
+                escape(primary?.submittedEmail ?? ''),
+                escape(primary?.submittedPhone ?? ''),
+                escape(children),
+                escape(centre),
+                escape(funding),
+            ].join(',');
+        });
+
+        const csv = [header, ...csvRows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `registrations-export-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleCentreChange = (id: string, e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value === 'null' ? null : e.target.value;
+        startTransition(async () => {
+            try { await assignRegistrationCentre(id, value); } catch { /* ignore */ }
+        });
+    };
+
+    return (
+        <div>
+            {/* Select-all header row */}
+            <div className="flex items-center gap-3 mb-3 px-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none group">
+                    <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleAll}
+                        className="w-4 h-4 rounded accent-[#adc6ff] cursor-pointer"
+                    />
+                    <span className="text-[#8c909f] text-xs font-semibold group-hover:text-[#e5e2e1] transition-colors">
+                        {allSelected ? 'Deselect all' : `Select all (${rows.length})`}
+                    </span>
+                </label>
+                {someSelected && (
+                    <span className="text-[#adc6ff] text-xs font-bold ml-auto">
+                        {selected.size} selected
+                    </span>
+                )}
+            </div>
+
+            {/* Bulk action bar */}
+            {someSelected && (
+                <div className="flex flex-wrap items-center gap-3 mb-4 p-4 bg-[#1a1d23] border border-[#adc6ff]/20 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] animate-in slide-in-from-top-2 duration-200">
+                    <span className="text-[#adc6ff] text-sm font-bold">{selected.size} selected</span>
+                    <div className="h-4 w-px bg-[#424754]/40 mx-1" />
+
+                    <button
+                        onClick={() => bulkUpdateStatus('signed_up')}
+                        disabled={bulkLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                    >
+                        {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        Confirm all
+                    </button>
+
+                    <button
+                        onClick={() => bulkUpdateStatus('not_interested')}
+                        disabled={bulkLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                    >
+                        {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        Mark not interested
+                    </button>
+
+                    <button
+                        onClick={exportCSV}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] border border-[#424754]/30 text-[#e5e2e1] hover:bg-[#353535] rounded-xl text-sm font-semibold transition-all"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        Export CSV
+                    </button>
+
+                    <button
+                        onClick={() => setSelected(new Set())}
+                        className="ml-auto p-1.5 text-[#8c909f] hover:text-white transition-colors"
+                        title="Clear selection"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+
+                    {bulkMessage && (
+                        <p className={`text-xs font-semibold w-full mt-1 ${bulkMessage.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {bulkMessage}
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* Registration rows */}
+            <div className="space-y-4">
+                {rows.map(r => {
+                    const primary = r.registrationParents.find(p => p.isPrimary) ?? r.registrationParents[0];
+                    const childNames = r.registrationChildren.map(k => `${k.submittedFirstName} ${k.submittedLastName}`).join(', ');
+                    const isChecked = selected.has(r.id);
+
+                    return (
+                        <div key={r.id} className={`flex items-start gap-3 group ${isChecked ? 'opacity-100' : ''}`}>
+                            {/* Checkbox */}
+                            <div className="pt-6 pl-2 flex-shrink-0">
+                                <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => toggleOne(r.id)}
+                                    className="w-4 h-4 rounded accent-[#adc6ff] cursor-pointer"
+                                    onClick={e => e.stopPropagation()}
+                                />
+                            </div>
+
+                            {/* Card */}
+                            <Link
+                                href={`/dashboard/registrations/${r.id}`}
+                                className={`flex-1 block bg-[#1a1d23] border rounded-[24px] p-6 hover:border-[#adc6ff]/30 hover:bg-[#202228] transition-all shadow-[0_4px_24px_rgba(0,0,0,0.15)] ${isChecked ? 'border-[#adc6ff]/30 bg-[#202228]' : 'border-[#424754]/15'}`}
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <p className="text-[#e5e2e1] font-bold text-base truncate group-hover:text-[#adc6ff] transition-colors">
+                                                {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
+                                            </p>
+                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusBadge[r.status] || ''}`}>
+                                                {statusLabel[r.status] ?? r.status}
+                                            </span>
+                                        </div>
+                                        <p className="text-[#8c909f] text-sm font-medium truncate">
+                                            {r.registrationChildren.length} child{r.registrationChildren.length !== 1 ? 'ren' : ''}: <span className="text-[#c2c6d6] font-semibold">{childNames}</span>
+                                        </p>
+                                        {primary?.submittedEmail && (
+                                            <p className="text-[#8c909f] text-xs font-semibold mt-1.5">{primary.submittedEmail}</p>
+                                        )}
+                                    </div>
+                                    <div className="text-right flex-shrink-0 flex flex-col items-end justify-between self-stretch">
+                                        <p className="text-[#8c909f] text-xs font-bold uppercase tracking-wider">
+                                            {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </p>
+                                        <div onClick={e => e.preventDefault()} className="mt-4">
+                                            <select
+                                                value={r.centreId || 'null'}
+                                                onChange={e => handleCentreChange(r.id, e)}
+                                                disabled={isPending}
+                                                className={`text-xs border rounded-xl py-1.5 px-3.5 disabled:opacity-50 transition-all w-44 cursor-pointer outline-none font-bold ${r.centreId
+                                                    ? 'bg-[#adc6ff]/10 border-[#adc6ff]/20 text-[#adc6ff] hover:bg-[#adc6ff]/15'
+                                                    : 'bg-[#2a2a2a] border-[#424754]/30 text-[#8c909f] hover:border-[#424754]/60'
+                                                    }`}
+                                            >
+                                                <option value="null" className="bg-[#1a1d23] text-[#8c909f]">No Centre Assigned</option>
+                                                {centres.map(c => (
+                                                    <option key={c.id} value={c.id} className="bg-[#1a1d23] text-[#e5e2e1]">{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

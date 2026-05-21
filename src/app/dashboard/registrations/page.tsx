@@ -6,7 +6,7 @@ import { eq, desc, and, inArray, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
-import RegistrationItem from '@/components/dashboard/RegistrationItem';
+import RegistrationsBulkClient from '@/components/dashboard/RegistrationsBulkClient';
 import RegistrationsFilters from '@/components/registration/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeString } from '@/lib/search-params';
@@ -279,17 +279,12 @@ export default async function RegistrationsPage(props: {
                     )}
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {rows.map(r => (
-                        <RegistrationItem 
-                            key={r.id} 
-                            registration={r as any} 
-                            statusBadge={STATUS_BADGE} 
-                            statusLabel={STATUS_LABEL} 
-                            centres={orgCentres}
-                        />
-                    ))}
-                </div>
+                <RegistrationsBulkClient
+                    rows={rows as any}
+                    statusBadge={STATUS_BADGE}
+                    statusLabel={STATUS_LABEL}
+                    centres={orgCentres}
+                />
             )}
         </div>
     );

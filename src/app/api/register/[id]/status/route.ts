@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { registrations } from '@/db/schema';
+import { registrations, registrationParents, registrationChildren, organisations, centres } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { emailService } from '@/lib/services/email';
 
 const VALID_STATUSES = ['awaiting_confirmation', 'signed_up', 'not_interested'] as const;
 type RegistrationStatus = typeof VALID_STATUSES[number];
@@ -34,23 +35,22 @@ export async function PATCH(
     }
 
     // ── 3. Ownership check — fetch reg scoped to this user's org ───────────
-    // This single query prevents cross-org access: if the registration belongs
-    // to a different org, findFirst returns null and we return 403.
     const reg = await db.query.registrations.findFirst({
         where: and(
             eq(registrations.id, id),
             eq(registrations.organisationId, session.user.organisationId)
         ),
+        with: {
+            registrationParents: true,
+            registrationChildren: true,
+        },
     });
 
     if (!reg) {
-        // Return 404 rather than 403 to avoid leaking existence of the record
         return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
     }
 
     // ── 4. Centre-level access check for non-ORG_OWNER users ───────────────
-    // ORG_OWNER has implicit access to all centres; other roles must be
-    // explicitly assigned to the registration's centre.
     const userRole = (session.user as any).role as string | undefined;
     if (userRole !== 'ORG_OWNER' && reg.centreId) {
         const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
@@ -64,6 +64,43 @@ export async function PATCH(
         .update(registrations)
         .set({ status: status as RegistrationStatus, updatedAt: new Date() })
         .where(eq(registrations.id, id));
+
+    // ── 6. Fire status change email (non-blocking) ──────────────────────────
+    // Only send if status actually changed
+    if (status !== reg.status) {
+        (async () => {
+            try {
+                const primaryParent = reg.registrationParents.find(p => p.isPrimary) ?? reg.registrationParents[0];
+                if (!primaryParent?.submittedEmail) return;
+
+                const [org, centre] = await Promise.all([
+                    db.query.organisations.findFirst({
+                        where: eq(organisations.id, session.user!.organisationId!),
+                        columns: { name: true },
+                    }),
+                    reg.centreId ? db.query.centres.findFirst({
+                        where: eq(centres.id, reg.centreId),
+                        columns: { name: true },
+                    }) : Promise.resolve(null),
+                ]);
+
+                const childNames = reg.registrationChildren.map(
+                    c => `${c.submittedFirstName} ${c.submittedLastName}`
+                );
+
+                await emailService.sendRegistrationStatusUpdate({
+                    orgName: org?.name || 'After School Club',
+                    centreName: centre?.name ?? null,
+                    parentFirstName: primaryParent.submittedFirstName,
+                    parentEmail: primaryParent.submittedEmail,
+                    childNames,
+                    newStatus: status as RegistrationStatus,
+                });
+            } catch (err) {
+                console.error('[Status Email] Failed to send status update email:', err);
+            }
+        })();
+    }
 
     return NextResponse.json({ success: true });
 }
