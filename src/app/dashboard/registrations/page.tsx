@@ -11,11 +11,12 @@ import RegistrationsFilters from '@/components/registration/RegistrationsFilters
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeString } from '@/lib/search-params';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { FileText, Clock, CheckCircle2, AlertTriangle, Settings } from 'lucide-react';
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-error-container/10 text-error border border-error/20',
-    signed_up: 'bg-tertiary-container/10 text-tertiary border border-tertiary/20',
-    not_interested: 'bg-neutral-800 text-neutral-400 border border-neutral-700',
+    awaiting_confirmation: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+    signed_up: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+    not_interested: 'bg-red-500/10 text-red-400 border border-red-500/20',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -60,6 +61,27 @@ export default async function RegistrationsPage(props: {
     const centreIds = orgCentres.map(c => c.id);
 
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
+
+    // Fetch all registrations in the active centre to calculate counts
+    const allActiveCentreRegistrations = await db.query.registrations.findMany({
+        where: and(
+            eq(registrations.organisationId, orgId),
+            activeCentreId !== 'all'
+                ? eq(registrations.centreId, activeCentreId)
+                : centreIds.length > 0
+                    ? inArray(registrations.centreId, centreIds)
+                    : eq(registrations.centreId, 'unauthorized_centre_id')
+        ),
+        columns: {
+            id: true,
+            status: true,
+        }
+    });
+
+    const totalCount = allActiveCentreRegistrations.length;
+    const awaitingConfirmationCount = allActiveCentreRegistrations.filter(r => r.status === 'awaiting_confirmation').length;
+    const signedUpCount = allActiveCentreRegistrations.filter(r => r.status === 'signed_up').length;
+    const notInterestedCount = allActiveCentreRegistrations.filter(r => r.status === 'not_interested').length;
 
     let rows: any[] = [];
     let searchActiveAndNoResults = false;
@@ -141,21 +163,23 @@ export default async function RegistrationsPage(props: {
     );
 
     return (
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="space-y-8 animate-in fade-in duration-700">
             {/* Header */}
-            <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Registrations</h1>
-                    <p className="text-on-surface-variant text-sm mt-1">{rows.length} total submission{rows.length !== 1 ? 's' : ''}</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">Registrations</h1>
+                    <p className="text-[#8c909f] font-medium mt-1">
+                        {rows.length} total submission{rows.length !== 1 ? 's' : ''} {isFiltered ? 'matching filters' : ''}
+                    </p>
                 </div>
                 {fullRegistrationUrl && (
                     <Link
                         href={fullRegistrationUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] rounded-2xl text-sm font-bold text-[#e5e2e1] hover:bg-[#353535] transition-all border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#adc6ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                         Open Registration Form
@@ -163,45 +187,82 @@ export default async function RegistrationsPage(props: {
                 )}
             </div>
 
-            {/* Filters */}
-            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6 mb-6">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
-                    <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
-                </Suspense>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0">
+                        <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{totalCount}</p>
+                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Total Submissions</p>
+                    </div>
+                </div>
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-amber-400 flex-shrink-0">
+                        <Clock className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{awaitingConfirmationCount}</p>
+                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Awaiting Conf.</p>
+                    </div>
+                </div>
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-emerald-400 flex-shrink-0">
+                        <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{signedUpCount}</p>
+                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Signed Up</p>
+                    </div>
+                </div>
+                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-red-400 flex-shrink-0">
+                        <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{notInterestedCount}</p>
+                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Not Interested</p>
+                    </div>
+                </div>
             </div>
 
             {/* Registration link card */}
             {fullRegistrationUrl && registrationUrl && (
-                <div className="mb-6 bg-surface-container-low border border-outline-variant/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="bg-[#1a1d23] border border-[#424754]/15 rounded-[24px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Your Registration Link</p>
-                        <p className="text-sm text-white font-mono truncate">{registrationUrl}</p>
-                        <p className="text-xs text-on-surface-variant mt-1">Share this link with parents to let them register their children.</p>
+                        <p className="text-xs font-bold text-[#adc6ff] uppercase tracking-wider mb-1">Your Registration Link</p>
+                        <p className="text-sm text-[#e5e2e1] font-mono truncate">{registrationUrl}</p>
+                        <p className="text-xs text-[#8c909f] mt-1 font-medium">Share this link with parents to let them register their children.</p>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-3 flex-shrink-0">
                         <CopyRegistrationLink url={fullRegistrationUrl} />
                         <Link
                             href="/dashboard/settings/registration"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-bright text-sm font-medium rounded-xl transition-colors"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2a2a2a] border border-[#424754]/15 text-[#e5e2e1] hover:bg-[#353535] text-sm font-bold rounded-2xl transition-all shadow-sm"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Edit T&amp;Cs
+                            <Settings className="w-4 h-4 text-[#adc6ff]" />
+                            Edit Settings
                         </Link>
                     </div>
                 </div>
             )}
 
-            {/* Empty state */}
+            {/* Filters */}
+            <div className="bg-[#1a1d23] border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] rounded-3xl p-6">
+                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
+                    <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
+                </Suspense>
+            </div>
+
+            {/* Empty state or list */}
             {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-surface-container-low rounded-2xl border border-dashed border-outline-variant/20 animate-in fade-in duration-300">
-                    <div className="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-4 text-3xl">📋</div>
-                    <h3 className="text-white font-semibold mb-2">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-[#1a1d23] rounded-2xl border border-dashed border-[#424754]/30 animate-in fade-in duration-300">
+                    <div className="w-16 h-16 rounded-2xl bg-[#2a2a2a] flex items-center justify-center mb-4 text-3xl">📋</div>
+                    <h3 className="text-[#e5e2e1] font-bold mb-2">
                         {isFiltered ? 'No matching registrations' : 'No registrations yet'}
                     </h3>
-                    <p className="text-on-surface-variant text-sm max-w-sm mb-5">
+                    <p className="text-[#8c909f] text-sm max-w-sm mb-5">
                         {isFiltered 
                             ? 'Try adjusting or clearing your filters to find what you are looking for.' 
                             : 'Share your registration link with parents to start receiving submissions.'}
@@ -211,14 +272,14 @@ export default async function RegistrationsPage(props: {
                             href={fullRegistrationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] text-[#adc6ff] hover:bg-[#353535] text-sm font-bold rounded-2xl transition-all border border-[#424754]/15"
                         >
                             Open Registration Form ↗
                         </Link>
                     )}
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {rows.map(r => (
                         <RegistrationItem 
                             key={r.id} 
