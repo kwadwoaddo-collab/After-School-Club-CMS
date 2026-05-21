@@ -17,6 +17,8 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
 
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
+    const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
+    const [toDate, setToDate] = useState(searchParams.get('to') || '');
 
     const statusOptions = [
         { value: 'all', label: 'All Statuses' },
@@ -26,11 +28,19 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         { value: 'cancelled', label: 'Cancelled' },
     ];
 
-    const hasActiveFilters = !!(searchParams.get('search') || status !== 'all' || selectedCentreId !== 'all');
+    const hasActiveFilters = !!(
+        searchParams.get('search') ||
+        status !== 'all' ||
+        fromDate ||
+        toDate ||
+        selectedCentreId !== 'all'
+    );
 
     const handleClearFilters = () => {
         setSearch('');
         setStatus('all');
+        setFromDate('');
+        setToDate('');
         setSelectedCentreId('all');
         router.push('/dashboard/bookings');
     };
@@ -40,7 +50,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         applyFilters();
     };
 
-    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string }) => {
+    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string; newFrom?: string; newTo?: string }) => {
         const params = new URLSearchParams();
         
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
@@ -48,6 +58,12 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         
         const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
         if (currentStatus !== 'all') params.set('status', currentStatus);
+
+        const currentFrom = overrides?.newFrom !== undefined ? overrides.newFrom : fromDate;
+        if (currentFrom) params.set('from', currentFrom);
+
+        const currentTo = overrides?.newTo !== undefined ? overrides.newTo : toDate;
+        if (currentTo) params.set('to', currentTo);
 
         const queryString = params.toString();
         router.push(`/dashboard/bookings${queryString ? `?${queryString}` : ''}`);
@@ -65,7 +81,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                             value={search}
                             onChange={(e) => {
                                 const val = e.target.value;
-                                  setSearch(val);
+                                setSearch(val);
                                 if (val === '') {
                                     applyFilters({ newSearch: '' });
                                 }
@@ -86,7 +102,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                             setStatus(val);
                             applyFilters({ newStatus: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
+                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
                         style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
                     >
                         {statusOptions.map(opt => (
@@ -98,31 +114,43 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                     <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
 
-                {/* Centre Filter */}
-                <div className="relative min-w-[180px]">
-                    <select
-                        value={selectedCentreId}
+                {/* From Date Filter */}
+                <div className="relative min-w-[160px] flex items-center">
+                    <span className="absolute left-4 text-xs font-bold text-slate-500 uppercase pointer-events-none">From</span>
+                    <input
+                        type="date"
+                        value={fromDate}
                         onChange={(e) => {
-                            setSelectedCentreId(e.target.value);
+                            const val = e.target.value;
+                            setFromDate(val);
+                            applyFilters({ newFrom: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer"
+                        className="w-full pl-16 pr-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer"
                         style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
-                    >
-                        <option value="all">All Centres</option>
-                        {centres.map(centre => (
-                            <option key={centre.id} value={centre.id}>
-                                {centre.name}
-                            </option>
-                        ))}
-                    </select>
-                    <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    />
+                </div>
+
+                {/* To Date Filter */}
+                <div className="relative min-w-[140px] flex items-center">
+                    <span className="absolute left-4 text-xs font-bold text-slate-500 uppercase pointer-events-none">To</span>
+                    <input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setToDate(val);
+                            applyFilters({ newTo: val });
+                        }}
+                        className="w-full pl-12 pr-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer"
+                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                    />
                 </div>
 
                 {/* Clear Filters */}
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all cursor-pointer border border-[#424754]/10"
                     >
                         <X className="w-4 h-4" />
                         Clear
@@ -137,18 +165,40 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                         Active Filters:
                     </span>
                     {searchParams.get('search') && (
-                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
+                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/15">
                             Search: "{searchParams.get('search')}" ({resultsCount} results)
                         </span>
                     )}
                     {status !== 'all' && (
-                        <span className="px-3 py-1 bg-accent-violet/10 text-accent-violet text-xs font-semibold rounded-full">
-                            Status: {statusOptions.find(s => s.value === status)?.label} ({resultsCount} results)
+                        <span className="px-3 py-1 bg-accent-violet/10 text-accent-violet text-xs font-semibold rounded-full border border-accent-violet/15">
+                            Status: {statusOptions.find(s => s.value === status)?.label}
+                        </span>
+                    )}
+                    {fromDate && (
+                        <span className="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-full border border-amber-500/15 flex items-center gap-1.5">
+                            From: {fromDate}
+                            <button 
+                                onClick={() => { setFromDate(''); applyFilters({ newFrom: '' }); }} 
+                                className="hover:text-white ml-0.5 text-slate-400 transition-colors"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </span>
+                    )}
+                    {toDate && (
+                        <span className="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-full border border-amber-500/15 flex items-center gap-1.5">
+                            To: {toDate}
+                            <button 
+                                onClick={() => { setToDate(''); applyFilters({ newTo: '' }); }} 
+                                className="hover:text-white ml-0.5 text-slate-400 transition-colors"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
                         </span>
                     )}
                     {selectedCentreId !== 'all' && (
-                        <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-semibold rounded-full">
-                            Centre: {centres.find(c => c.id === selectedCentreId)?.name} ({resultsCount} results)
+                        <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-semibold rounded-full border border-accent-cyan/15">
+                            Centre: {centres.find(c => c.id === selectedCentreId)?.name || 'Selected'}
                         </span>
                     )}
                 </div>
@@ -156,3 +206,4 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
         </div>
     );
 }
+

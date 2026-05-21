@@ -1,8 +1,9 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { organisations, bookings, centres } from '@/db/schema';
-import { eq, desc, and, gte, lte, inArray } from 'drizzle-orm';
+import { organisations, bookings, centres, bookingAttendees, parents, children } from '@/db/schema';
+import { alias } from 'drizzle-orm/pg-core';
+import { eq, desc, and, gte, lte, inArray, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
 import { Suspense } from 'react';
@@ -93,80 +94,138 @@ export default async function BookingsPage(props: {
 
     // Fetch bookings with filters
     let bookingsData: any[] = [];
-    try {
-        bookingsData = await db.query.bookings.findMany({
-            where: (b, op) => {
-                const conds = [];
+    let searchActiveAndNoResults = false;
+    let matchingIds: string[] = [];
 
-                if (activeCentreId !== 'all') {
-                    conds.push(op.eq(b.centreId, activeCentreId));
-                } else {
-                    conds.push(op.inArray(b.centreId, centreIds));
-                }
+    if (searchParams.search) {
+        const searchPattern = `%${searchParams.search}%`;
+        const attendeeChildren = alias(children, 'attendee_children');
+        
+        try {
+            const matchingBookings = await db
+                .select({ id: bookings.id })
+                .from(bookings)
+                .leftJoin(parents, eq(bookings.parentId, parents.id))
+                .leftJoin(children, eq(bookings.childId, children.id))
+                .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
+                .leftJoin(attendeeChildren, eq(bookingAttendees.childId, attendeeChildren.id))
+                .where(
+                    and(
+                        activeCentreId !== 'all'
+                            ? eq(bookings.centreId, activeCentreId)
+                            : inArray(bookings.centreId, centreIds),
+                        or(
+                            ilike(parents.firstName, searchPattern),
+                            ilike(parents.lastName, searchPattern),
+                            ilike(parents.email, searchPattern),
+                            ilike(parents.phone, searchPattern),
+                            ilike(children.firstName, searchPattern),
+                            ilike(children.lastName, searchPattern),
+                            ilike(attendeeChildren.firstName, searchPattern),
+                            ilike(attendeeChildren.lastName, searchPattern)
+                        )
+                    )
+                );
+            matchingIds = matchingBookings.map(mb => mb.id);
+            if (matchingIds.length === 0) {
+                searchActiveAndNoResults = true;
+            }
+        } catch (error) {
+            console.error('Failed to search bookings:', error);
+            searchActiveAndNoResults = true;
+        }
+    }
 
-                // Filter by status if provided — validated against allowlist.
-                if (searchParams.status && searchParams.status !== 'all') {
-                    const val = searchParams.status as string;
-                    if (VALID_BOOKING_STATUSES.includes(val as any)) {
-                        conds.push(op.eq(b.status, val as any));
+    if (!searchActiveAndNoResults) {
+        try {
+            bookingsData = await db.query.bookings.findMany({
+                where: (b, op) => {
+                    const conds = [];
+
+                    if (activeCentreId !== 'all') {
+                        conds.push(op.eq(b.centreId, activeCentreId));
+                    } else {
+                        conds.push(op.inArray(b.centreId, centreIds));
                     }
-                }
 
-                return conds.length === 1 ? conds[0] : op.and(...conds);
-            },
-            orderBy: [desc(bookings.startAt)],
-            with: {
-                centre: true,
-                parent: true,
-                attendees: {
-                    columns: {
-                        id: true,
-                        bookingId: true,
-                        childId: true,
-                        feedbackNotes: true,
-                        feedbackScore: true,
-                        feedbackAttachmentBase64: true,
-                        feedbackAttachmentMime: true,
-                        feedbackStatus: true,
-                        feedbackSentAt: true,
-                        updatedAt: true
-                    },
-                    with: {
-                        child: {
-                            with: {
-                                notes: true
-                            }
+                    // Filter by status if provided — validated against allowlist.
+                    if (searchParams.status && searchParams.status !== 'all') {
+                        const val = searchParams.status as string;
+                        if (VALID_BOOKING_STATUSES.includes(val as any)) {
+                            conds.push(op.eq(b.status, val as any));
                         }
                     }
+
+                    // Filter by date range if provided
+                    if (searchParams.from) {
+                        const fromDate = new Date(searchParams.from);
+                        if (!isNaN(fromDate.getTime())) {
+                            conds.push(op.gte(b.startAt, fromDate));
+                        }
+                    }
+                    if (searchParams.to) {
+                        const toDate = new Date(searchParams.to);
+                        if (!isNaN(toDate.getTime())) {
+                            const toDateEnd = new Date(searchParams.to);
+                            toDateEnd.setHours(23, 59, 59, 999);
+                            conds.push(op.lte(b.startAt, toDateEnd));
+                        }
+                    }
+
+                    // Filter by search matching IDs if search was performed
+                    if (searchParams.search) {
+                        conds.push(op.inArray(b.id, matchingIds));
+                    }
+
+                    return conds.length === 1 ? conds[0] : op.and(...conds);
                 },
-                tutor: true,
-                child: {
-                    with: {
-                        notes: true
+                orderBy: [desc(bookings.startAt)],
+                with: {
+                    centre: true,
+                    parent: true,
+                    attendees: {
+                        columns: {
+                            id: true,
+                            bookingId: true,
+                            childId: true,
+                            feedbackNotes: true,
+                            feedbackScore: true,
+                            feedbackAttachmentBase64: true,
+                            feedbackAttachmentMime: true,
+                            feedbackStatus: true,
+                            feedbackSentAt: true,
+                            updatedAt: true
+                        },
+                        with: {
+                            child: {
+                                with: {
+                                    notes: true
+                                }
+                            }
+                        }
+                    },
+                    tutor: true,
+                    child: {
+                        with: {
+                            notes: true
+                        }
                     }
                 }
-            }
-        });
-    } catch (error) {
-        console.error('Failed to fetch bookings data:', error);
-        // Fallback to empty array to prevent 500 crashes
-        bookingsData = [];
+            });
+        } catch (error) {
+            console.error('Failed to fetch bookings data:', error);
+            // Fallback to empty array to prevent 500 crashes
+            bookingsData = [];
+        }
     }
 
-    // Filter by search string
-    if (searchParams.search) {
-        const searchTerm = searchParams.search.toLowerCase();
-        bookingsData = bookingsData.filter((b: any) => {
-            const childName = `${b.child?.firstName || ''} ${b.child?.lastName || ''}`.toLowerCase();
-            const parentName = `${b.parent?.firstName || ''} ${b.parent?.lastName || ''}`.toLowerCase();
-            const attendeeName = b.attendees?.some((a: any) => 
-                `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.toLowerCase().includes(searchTerm)
-            );
-            return childName.includes(searchTerm) || parentName.includes(searchTerm) || attendeeName;
-        });
-    }
-
-    const isFiltered = !!(searchParams.search || (searchParams.status && searchParams.status !== 'all') || activeCentreId !== 'all');
+    const isFiltered = !!(
+        searchParams.search ||
+        (searchParams.status && searchParams.status !== 'all') ||
+        searchParams.from ||
+        searchParams.to ||
+        activeCentreId !== 'all'
+    );
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
