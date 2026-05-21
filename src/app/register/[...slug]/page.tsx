@@ -48,6 +48,7 @@ const emptyParent = (): ParentEntry => ({
 
 // ── Shared input styles ────────────────────────────────────────────
 const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm';
+const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white border border-red-400 ring-2 ring-red-400/40 text-slate-900 placeholder-slate-400 focus:outline-none text-sm';
 const labelCls = 'block text-sm font-medium text-white/70 mb-1';
 const sectionTitle = 'text-white font-semibold text-lg mb-4';
 
@@ -101,6 +102,8 @@ export default function RegisterPage() {
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
+    const [stepError, setStepError] = useState('');
+    const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         setOrgLoading(true);
@@ -151,6 +154,79 @@ export default function RegisterPage() {
         setParentList([emptyParent()]);
         setStartDate('');
         setError('');
+    };
+
+    // ── Step Validation ────────────────────────────────────────────
+    const validateStep = (s: number): boolean => {
+        const invalid = new Set<string>();
+        let errorMsg = '';
+
+        if (s === 1) {
+            childList.forEach((c, i) => {
+                if (!c.firstName.trim()) invalid.add(`child-fn-${i}`);
+                if (!c.lastName.trim()) invalid.add(`child-ln-${i}`);
+                if (!c.dateOfBirth) invalid.add(`child-dob-${i}`);
+                if (!c.schoolYear) invalid.add(`child-yr-${i}`);
+            });
+            if (invalid.size > 0) errorMsg = 'Please fill in all required child details (name, date of birth, and year group).';
+        }
+
+        if (s === 2) {
+            // Only primary parent (index 0) is fully required
+            const p = parentList[0];
+            if (!p.firstName.trim()) invalid.add('p-fn-0');
+            if (!p.lastName.trim()) invalid.add('p-ln-0');
+            if (!p.relationship) invalid.add('p-rel-0');
+            if (!p.phone.trim()) invalid.add('p-ph-0');
+            if (!p.email.trim()) invalid.add('p-em-0');
+            if (!p.addressLine1.trim()) invalid.add('p-a1-0');
+            if (!p.city.trim()) invalid.add('p-city-0');
+            if (!p.postcode.trim()) invalid.add('p-pc-0');
+            // Second parent — only name and phone required if added
+            if (parentList.length > 1) {
+                const p2 = parentList[1];
+                if (!p2.firstName.trim()) invalid.add('p-fn-1');
+                if (!p2.lastName.trim()) invalid.add('p-ln-1');
+                if (!p2.phone.trim()) invalid.add('p-ph-1');
+            }
+            if (invalid.size > 0) errorMsg = 'Please complete all required parent / carer details.';
+        }
+
+        if (s === 3) {
+            if (!emergency.name.trim()) invalid.add('ec-name');
+            if (!emergency.relationship.trim()) invalid.add('ec-rel');
+            if (!emergency.phone.trim()) invalid.add('ec-phone');
+            if (invalid.size > 0) errorMsg = 'Please provide emergency contact name, relationship, and phone number.';
+        }
+
+        if (s === 4) {
+            if (!funding.type) {
+                invalid.add('funding-group');
+                errorMsg = 'Please select a funding method.';
+            } else if (funding.type === 'other' && !funding.other.trim()) {
+                invalid.add('fund-other');
+                errorMsg = 'Please describe your funding method.';
+            }
+        }
+
+        if (s === 5) {
+            if (specialNeeds.has && !specialNeeds.details.trim()) {
+                invalid.add('sn-details');
+                errorMsg = 'Please provide details about your child\'s special educational needs.';
+            }
+        }
+
+        setInvalidFields(invalid);
+        setStepError(errorMsg);
+        return invalid.size === 0;
+    };
+
+    const handleContinue = () => {
+        if (validateStep(step)) {
+            setStepError('');
+            setInvalidFields(new Set());
+            setStep(s => s + 1);
+        }
     };
 
     // ── Submit ─────────────────────────────────────────────────────
@@ -493,18 +569,18 @@ export default function RegisterPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <Field label="First Name *">
-                                        <input id={`child-fn-${i}`} type="text" value={c.firstName} onChange={e => updateChild(i, 'firstName', e.target.value)} className={inputCls} placeholder="First name" required />
+                                        <input id={`child-fn-${i}`} type="text" value={c.firstName} onChange={e => { updateChild(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-fn-${i}`); return n; }); }} className={invalidFields.has(`child-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
                                     </Field>
                                     <Field label="Last Name *">
-                                        <input id={`child-ln-${i}`} type="text" value={c.lastName} onChange={e => updateChild(i, 'lastName', e.target.value)} className={inputCls} placeholder="Last name" required />
+                                        <input id={`child-ln-${i}`} type="text" value={c.lastName} onChange={e => { updateChild(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-ln-${i}`); return n; }); }} className={invalidFields.has(`child-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
                                     </Field>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-5">
                                     <Field label="Date of Birth *">
-                                        <input id={`child-dob-${i}`} type="date" value={c.dateOfBirth} onChange={e => updateChild(i, 'dateOfBirth', e.target.value)} className={inputCls} required />
+                                        <input id={`child-dob-${i}`} type="date" value={c.dateOfBirth} onChange={e => { updateChild(i, 'dateOfBirth', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-dob-${i}`); return n; }); }} className={invalidFields.has(`child-dob-${i}`) ? inputErrCls : inputCls} />
                                     </Field>
                                     <Field label="Year Group *">
-                                        <select id={`child-yr-${i}`} value={c.schoolYear} onChange={e => updateChild(i, 'schoolYear', e.target.value)} className={inputCls} required>
+                                        <select id={`child-yr-${i}`} value={c.schoolYear} onChange={e => { updateChild(i, 'schoolYear', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-yr-${i}`); return n; }); }} className={invalidFields.has(`child-yr-${i}`) ? inputErrCls : inputCls}>
                                             <option value="">Select year</option>
                                             {YEAR_GROUPS.map(y => <option key={y} value={y}>{y}</option>)}
                                         </select>
@@ -565,31 +641,31 @@ export default function RegisterPage() {
                                 <h3 className="text-white font-medium mb-4">Parent / Carer {i + 1}{i === 0 ? ' (Primary)' : ''}</h3>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <Field label="First Name *">
-                                        <input id={`p-fn-${i}`} type="text" value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} className={inputCls} placeholder="First name" />
+                                        <input id={`p-fn-${i}`} type="text" value={p.firstName} onChange={e => { updateParent(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-fn-${i}`); return n; }); }} className={invalidFields.has(`p-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
                                     </Field>
                                     <Field label="Last Name *">
-                                        <input id={`p-ln-${i}`} type="text" value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} className={inputCls} placeholder="Last name" />
+                                        <input id={`p-ln-${i}`} type="text" value={p.lastName} onChange={e => { updateParent(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ln-${i}`); return n; }); }} className={invalidFields.has(`p-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
                                     </Field>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <Field label="Relationship *">
-                                        <select id={`p-rel-${i}`} value={p.relationship} onChange={e => updateParent(i, 'relationship', e.target.value)} className={inputCls}>
+                                        <select id={`p-rel-${i}`} value={p.relationship} onChange={e => { updateParent(i, 'relationship', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-rel-${i}`); return n; }); }} className={invalidFields.has(`p-rel-${i}`) ? inputErrCls : inputCls}>
                                             <option value="">Select</option>
                                             {RELATIONSHIPS.map(r => <option key={r} value={r.toLowerCase()}>{r}</option>)}
                                         </select>
                                     </Field>
                                     <Field label="Phone Number *">
-                                        <input id={`p-ph-${i}`} type="tel" value={p.phone} onChange={e => updateParent(i, 'phone', e.target.value)} className={inputCls} placeholder="07xxx xxxxxx" />
+                                        <input id={`p-ph-${i}`} type="tel" value={p.phone} onChange={e => { updateParent(i, 'phone', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ph-${i}`); return n; }); }} className={invalidFields.has(`p-ph-${i}`) ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
                                     </Field>
                                 </div>
                                 <div className="mb-4">
                                     <Field label="Email Address *">
-                                        <input id={`p-em-${i}`} type="email" value={p.email} onChange={e => updateParent(i, 'email', e.target.value)} className={inputCls} placeholder="email@example.com" />
+                                        <input id={`p-em-${i}`} type="email" value={p.email} onChange={e => { updateParent(i, 'email', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-em-${i}`); return n; }); }} className={invalidFields.has(`p-em-${i}`) ? inputErrCls : inputCls} placeholder="email@example.com" />
                                     </Field>
                                 </div>
                                 <div className="mb-4">
                                     <Field label="Address Line 1 *">
-                                        <input id={`p-a1-${i}`} type="text" value={p.addressLine1} onChange={e => updateParent(i, 'addressLine1', e.target.value)} className={inputCls} placeholder="Street address" />
+                                        <input id={`p-a1-${i}`} type="text" value={p.addressLine1} onChange={e => { updateParent(i, 'addressLine1', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-a1-${i}`); return n; }); }} className={invalidFields.has(`p-a1-${i}`) ? inputErrCls : inputCls} placeholder="Street address" />
                                     </Field>
                                 </div>
                                 <div className="mb-4">
@@ -599,10 +675,10 @@ export default function RegisterPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <Field label="City *">
-                                        <input id={`p-city-${i}`} type="text" value={p.city} onChange={e => updateParent(i, 'city', e.target.value)} className={inputCls} placeholder="London" />
+                                        <input id={`p-city-${i}`} type="text" value={p.city} onChange={e => { updateParent(i, 'city', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-city-${i}`); return n; }); }} className={invalidFields.has(`p-city-${i}`) ? inputErrCls : inputCls} placeholder="London" />
                                     </Field>
                                     <Field label="Postcode *">
-                                        <input id={`p-pc-${i}`} type="text" value={p.postcode} onChange={e => updateParent(i, 'postcode', e.target.value)} className={inputCls} placeholder="SE26 4AA" />
+                                        <input id={`p-pc-${i}`} type="text" value={p.postcode} onChange={e => { updateParent(i, 'postcode', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-pc-${i}`); return n; }); }} className={invalidFields.has(`p-pc-${i}`) ? inputErrCls : inputCls} placeholder="SE26 4AA" />
                                     </Field>
                                 </div>
                             </div>
@@ -621,13 +697,13 @@ export default function RegisterPage() {
                         <p className="text-white/40 text-sm mb-6">This should be someone other than the parents listed above who we can contact in an emergency.</p>
                         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
                             <Field label="Full Name *">
-                                <input id="ec-name" type="text" value={emergency.name} onChange={e => setEmergency(v => ({ ...v, name: e.target.value }))} className={inputCls} placeholder="Full name" />
+                                <input id="ec-name" type="text" value={emergency.name} onChange={e => { setEmergency(v => ({ ...v, name: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-name'); return n; }); }} className={invalidFields.has('ec-name') ? inputErrCls : inputCls} placeholder="Full name" />
                             </Field>
                             <Field label="Relationship to Child *">
-                                <input id="ec-rel" type="text" value={emergency.relationship} onChange={e => setEmergency(v => ({ ...v, relationship: e.target.value }))} className={inputCls} placeholder="e.g. Grandparent, Aunt" />
+                                <input id="ec-rel" type="text" value={emergency.relationship} onChange={e => { setEmergency(v => ({ ...v, relationship: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-rel'); return n; }); }} className={invalidFields.has('ec-rel') ? inputErrCls : inputCls} placeholder="e.g. Grandparent, Aunt" />
                             </Field>
                             <Field label="Contact Number *">
-                                <input id="ec-phone" type="tel" value={emergency.phone} onChange={e => setEmergency(v => ({ ...v, phone: e.target.value }))} className={inputCls} placeholder="07xxx xxxxxx" />
+                                <input id="ec-phone" type="tel" value={emergency.phone} onChange={e => { setEmergency(v => ({ ...v, phone: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-phone'); return n; }); }} className={invalidFields.has('ec-phone') ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
                             </Field>
                         </div>
                     </div>
@@ -665,8 +741,8 @@ export default function RegisterPage() {
                                             id="fund-other"
                                             type="text"
                                             value={funding.other}
-                                            onChange={e => setFunding(f => ({ ...f, other: e.target.value }))}
-                                            className={inputCls}
+                                            onChange={e => { setFunding(f => ({ ...f, other: e.target.value })); setInvalidFields(flds => { const n = new Set(flds); n.delete('fund-other'); return n; }); }}
+                                            className={invalidFields.has('fund-other') ? inputErrCls : inputCls}
                                             placeholder="Describe your funding method"
                                         />
                                     </Field>
@@ -696,8 +772,8 @@ export default function RegisterPage() {
                                     <textarea
                                         id="sn-details"
                                         value={specialNeeds.details}
-                                        onChange={e => setSpecialNeeds(s => ({ ...s, details: e.target.value }))}
-                                        className={`${inputCls} min-h-[120px] resize-none`}
+                                        onChange={e => { setSpecialNeeds(s => ({ ...s, details: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('sn-details'); return n; }); }}
+                                        className={`${invalidFields.has('sn-details') ? inputErrCls : inputCls} min-h-[120px] resize-none`}
                                         placeholder="Describe any relevant conditions, allergies, medications, or support needs..."
                                     />
                                 </Field>
@@ -777,11 +853,19 @@ export default function RegisterPage() {
                         </button>
                     )}
                     {step < TOTAL_STEPS && (
-                        <button onClick={() => setStep(s => s + 1)} className="px-6 py-3 rounded-xl bg-primary glow-btn text-white font-medium transition-colors text-sm">
+                        <button onClick={handleContinue} className="px-6 py-3 rounded-xl bg-primary glow-btn text-white font-medium transition-colors text-sm">
                             Continue →
                         </button>
                     )}
                 </div>
+
+                {/* Step-level error message */}
+                {stepError && (
+                    <div className="mt-4 p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-red-300 text-sm flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        {stepError}
+                    </div>
+                )}
             </div>
         </div>
     );

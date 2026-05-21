@@ -7,10 +7,12 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 import RegistrationStatusUpdater from './StatusUpdater';
 import DownloadButton from './DownloadButton';
+import EditRegistrationForm from './EditRegistrationForm';
 
 const FUNDING_LABELS: Record<string, string> = {
     tax_free_childcare: 'Tax-Free Childcare',
     childcare_vouchers: 'Childcare Vouchers',
+    universal_credit: 'Universal Credit',
     student_finance: 'Student Finance (CCG)',
     self_funded: 'Self-Funded',
     other: 'Other',
@@ -55,13 +57,17 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     if (!reg) notFound();
 
     let centreName: string | null = null;
+    let centreSessionSlots: string[] | undefined;
     if (reg.centreId) {
         const centre = await db.query.centres.findFirst({
             where: eq(centres.id, reg.centreId),
-            columns: { name: true },
+            columns: { name: true, sessionSlots: true },
         });
         if (centre) {
             centreName = centre.name;
+            if (centre.sessionSlots) {
+                try { centreSessionSlots = JSON.parse(centre.sessionSlots); } catch { /* ignore */ }
+            }
         }
     }
 
@@ -84,9 +90,10 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     </h1>
                     <p className="text-on-surface-variant text-sm mt-1">
                         Submitted {new Date(reg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {centreName && <span className="ml-2 text-white/30">· {centreName}</span>}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_BADGE[reg.status] || ''}`}>
                         {STATUS_LABEL[reg.status] ?? reg.status}
                     </span>
@@ -128,9 +135,49 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                             details: reg.specialNeedsDetails || undefined,
                         }}
                     />
+                    <EditRegistrationForm
+                        reg={{
+                            id: reg.id,
+                            startDate: reg.startDate,
+                            fundingTypes: reg.fundingTypes,
+                            fundingOther: reg.fundingOther,
+                            emergencyContactName: reg.emergencyContactName,
+                            emergencyContactRelationship: reg.emergencyContactRelationship,
+                            emergencyContactPhone: reg.emergencyContactPhone,
+                            hasSpecialNeeds: reg.hasSpecialNeeds,
+                            specialNeedsDetails: reg.specialNeedsDetails,
+                        }}
+                        pars={pars.map(p => ({
+                            id: p.id,
+                            parentId: p.parentId,
+                            isPrimary: p.isPrimary,
+                            submittedFirstName: p.submittedFirstName,
+                            submittedLastName: p.submittedLastName,
+                            submittedRelationship: p.submittedRelationship,
+                            submittedPhone: p.submittedPhone,
+                            submittedEmail: p.submittedEmail,
+                            parent: p.parent ? {
+                                addressLine1: p.parent.addressLine1,
+                                addressLine2: p.parent.addressLine2,
+                                city: p.parent.city,
+                                postcode: p.parent.postcode,
+                            } : null,
+                        }))}
+                        kids={kids.map(k => ({
+                            id: k.id,
+                            childId: k.childId,
+                            submittedFirstName: k.submittedFirstName,
+                            submittedLastName: k.submittedLastName,
+                            submittedDateOfBirth: k.submittedDateOfBirth,
+                            submittedSchoolYear: k.submittedSchoolYear,
+                            submittedSessions: k.submittedSessions,
+                        }))}
+                        centreSessionSlots={centreSessionSlots}
+                    />
                 </div>
             </div>
 
+            {/* Read-only detail cards — shown always for quick reference */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 {/* Children */}
@@ -145,6 +192,13 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                         <p className="text-on-surface-variant text-sm">{k.submittedSchoolYear}</p>
                                         {k.submittedDateOfBirth && (
                                             <p className="text-slate-400 text-xs mt-0.5">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
+                                        )}
+                                        {k.submittedSessions && k.submittedSessions.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                {k.submittedSessions.map(s => (
+                                                    <span key={s} className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">{s}</span>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                     <div className="text-right">
@@ -172,6 +226,9 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                             <DetailRow label="Relationship" value={p.submittedRelationship ?? '—'} />
                             <DetailRow label="Email" value={p.submittedEmail ?? '—'} />
                             <DetailRow label="Phone" value={p.submittedPhone ?? '—'} />
+                            {p.parent?.addressLine1 && (
+                                <DetailRow label="Address" value={[p.parent.addressLine1, p.parent.addressLine2, p.parent.city, p.parent.postcode].filter(Boolean).join(', ')} />
+                            )}
                             {p.wasMatched && (
                                 <p className="text-xs text-primary bg-primary/5 border border-primary/20 rounded px-2 py-1 mt-2 flex items-center gap-1">
                                     <Check className="w-3 h-3" /> Matched to existing parent record
@@ -182,16 +239,14 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 ))}
 
                 {/* Emergency Contact */}
-                {reg.emergencyContactName && (
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                        <h2 className="text-white font-semibold mb-4">Emergency Contact</h2>
-                        <dl className="space-y-3 text-sm">
-                            <DetailRow label="Name" value={reg.emergencyContactName} />
-                            <DetailRow label="Relationship" value={reg.emergencyContactRelationship ?? '—'} />
-                            <DetailRow label="Phone" value={reg.emergencyContactPhone ?? '—'} />
-                        </dl>
-                    </div>
-                )}
+                <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
+                    <h2 className="text-white font-semibold mb-4">Emergency Contact</h2>
+                    <dl className="space-y-3 text-sm">
+                        <DetailRow label="Name" value={reg.emergencyContactName ?? '—'} />
+                        <DetailRow label="Relationship" value={reg.emergencyContactRelationship ?? '—'} />
+                        <DetailRow label="Phone" value={reg.emergencyContactPhone ?? '—'} />
+                    </dl>
+                </div>
 
                 {/* Funding & Details */}
                 <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
@@ -206,43 +261,6 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     </dl>
                 </div>
 
-                {/* Selected Sessions */}
-                {kids.some(k => k.submittedSessions && k.submittedSessions.length > 0) && (
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                        <h2 className="text-white font-semibold mb-4">Selected Sessions</h2>
-                        <div className="space-y-6 flex flex-col">
-                            {kids.filter(k => k.submittedSessions && k.submittedSessions.length > 0).map(k => (
-                                <div key={`sessions-${k.id}`}>
-                                    {kids.length > 1 && (
-                                        <h3 className="text-white font-medium mb-3 pb-2 border-b border-outline-variant/10">
-                                            {k.submittedFirstName}
-                                        </h3>
-                                    )}
-                                    <dl className="space-y-3 text-sm">
-                                        {k.submittedSessions!.map((session, idx) => {
-                                            let day = session;
-                                            let time = '';
-                                            if (session.includes(' - ')) {
-                                                [day, time] = session.split(' - ');
-                                            } else if (session.includes(' ')) {
-                                                const firstSpace = session.indexOf(' ');
-                                                day = session.substring(0, firstSpace);
-                                                time = session.substring(firstSpace + 1);
-                                            }
-                                            
-                                            // Capitalize standard day names
-                                            day = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
-
-                                            return (
-                                                <DetailRow key={idx} label={day} value={time} />
-                                            );
-                                        })}
-                                    </dl>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
