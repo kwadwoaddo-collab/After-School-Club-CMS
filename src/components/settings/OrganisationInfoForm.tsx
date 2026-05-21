@@ -120,7 +120,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="flex-1 px-3 py-2 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                    className="flex-1 px-4 py-2.5 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                     placeholder="Enter organisation name"
                                     autoFocus
                                     disabled={saving}
@@ -128,7 +128,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 <button
                                     onClick={handleSaveName}
                                     disabled={saving}
-                                    className="p-2 text-white bg-primary hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50"
+                                    className="p-2.5 text-white bg-primary hover:bg-blue-600 rounded-2xl transition-all hover:scale-[1.05] active:scale-[0.95] disabled:opacity-50"
                                     aria-label="Save"
                                 >
                                     <Check className="w-4 h-4" />
@@ -140,7 +140,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                         setError(null);
                                     }}
                                     disabled={saving}
-                                    className="p-2 text-slate-400 hover:bg-surface-bright rounded-lg transition-colors disabled:opacity-50"
+                                    className="p-2.5 text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#2a2a2a] rounded-2xl transition-all disabled:opacity-50"
                                     aria-label="Cancel"
                                 >
                                     <X className="w-4 h-4" />
@@ -151,7 +151,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 <p className="text-base font-bold text-white">{org.name}</p>
                                 <button
                                     onClick={() => setIsEditingName(true)}
-                                    className="p-1.5 text-slate-500 hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                                    className="p-1.5 text-slate-500 hover:text-primary hover:bg-primary/5 rounded-xl opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
                                     aria-label="Edit name"
                                 >
                                     <Pencil className="w-4 h-4" />
@@ -171,7 +171,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                     type="text"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                                    className="flex-1 px-3 py-2 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm text-white font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                    className="flex-1 px-4 py-2.5 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-white font-mono focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                     placeholder="e.g. sydenham"
                                     autoFocus
                                     disabled={saving}
@@ -179,7 +179,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 <button
                                     onClick={handleSaveSlug}
                                     disabled={saving}
-                                    className="p-2 text-white bg-primary hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50"
+                                    className="p-2.5 text-white bg-primary hover:bg-blue-600 rounded-2xl transition-all hover:scale-[1.05] active:scale-[0.95] disabled:opacity-50"
                                     aria-label="Save"
                                 >
                                     <Check className="w-4 h-4" />
@@ -191,7 +191,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                         setError(null);
                                     }}
                                     disabled={saving}
-                                    className="p-2 text-slate-400 hover:bg-surface-bright rounded-lg transition-colors disabled:opacity-50"
+                                    className="p-2.5 text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#2a2a2a] rounded-2xl transition-all disabled:opacity-50"
                                     aria-label="Cancel"
                                 >
                                     <X className="w-4 h-4" />
@@ -202,7 +202,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 <p className="text-base font-mono text-white font-bold">{org.slug}</p>
                                 <button
                                     onClick={() => setIsEditingSlug(true)}
-                                    className="p-1.5 text-slate-500 hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                                    className="p-1.5 text-slate-500 hover:text-primary hover:bg-primary/5 rounded-xl opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
                                     aria-label="Edit slug"
                                 >
                                     <Pencil className="w-4 h-4" />

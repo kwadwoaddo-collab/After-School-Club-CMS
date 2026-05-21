@@ -74,22 +74,22 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard/settings"
-                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                    className="p-2 hover:bg-[#2a2a2a] rounded-2xl transition-all text-[#8c909f] hover:text-white"
                 >
-                    <ArrowLeft className="w-5 h-5 text-slate-600" />
+                    <ArrowLeft className="w-5 h-5" />
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-white tracking-tight">
                         Branding & Customisation
                     </h1>
-                    <p className="text-slate-300 font-medium mt-1">
+                    <p className="text-[#8c909f] font-medium mt-1">
                         Customise your organisation's logo and brand colours
                     </p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saveSuccess ? (
                         <>
@@ -106,10 +106,10 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             </div>
 
             {saveSuccess && (
-                <div className="glass-card rounded-2xl p-4 bg-emerald-50 border border-emerald-200">
+                <div className="glass-card rounded-2xl p-4 bg-emerald-500/10 border border-emerald-500/20">
                     <div className="flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        <p className="text-sm font-semibold text-emerald-900">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                        <p className="text-sm font-semibold text-emerald-400">
                             Brand color saved successfully!
                         </p>
                     </div>
@@ -117,15 +117,15 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             )}
 
             {saveError && (
-                <div className="glass-card rounded-2xl p-4 bg-red-50 border border-red-200">
-                    <p className="text-sm font-semibold text-red-700">{saveError}</p>
+                <div className="glass-card rounded-2xl p-4 bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm font-semibold text-red-400">{saveError}</p>
                 </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Logo Upload Section */}
-                <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
-                    <div className="flex items-center gap-3 mb-6">
+                <div className="bg-[#1a1d23] border border-[#424754]/15 rounded-[32px] p-8 flex flex-col gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-accent-cyan/10 rounded-2xl flex items-center justify-center">
                             <Upload className="w-5 h-5 text-accent-cyan" />
                         </div>
@@ -134,7 +134,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
 
                     <div className="space-y-4">
                         {/* Logo Preview */}
-                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center">
+                        <div className="border-2 border-dashed border-[#2a2a2a] rounded-2xl p-8 text-center bg-[#14161b]/30">
                             {logoPreview ? (
                                 <div className="space-y-4">
                                     <img
@@ -142,12 +142,12 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                                         alt="Logo preview"
                                         className="max-w-xs mx-auto max-h-32 object-contain"
                                     />
-                                    <p className="text-sm text-slate-500">Preview</p>
+                                    <p className="text-sm text-[#8c909f]">Preview</p>
                                 </div>
                             ) : (
                                 <div className="text-center py-8">
-                                    <Upload className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                    <p className="text-sm text-slate-600 font-medium">
+                                    <Upload className="w-12 h-12 text-[#8c909f]/30 mx-auto mb-3" />
+                                    <p className="text-sm text-[#8c909f] font-medium">
                                         No logo uploaded yet
                                     </p>
                                 </div>
@@ -155,19 +155,19 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                         </div>
 
                         {/* Upload Button - Disabled */}
-                        <div className="w-full px-6 py-3 bg-slate-200 rounded-2xl text-sm font-bold text-slate-400 text-center cursor-not-allowed">
+                        <div className="w-full px-6 py-3 bg-[#14161b] text-slate-500 border border-[#2a2a2a]/40 rounded-2xl text-sm font-bold text-center cursor-not-allowed">
                             Coming Soon
                         </div>
 
-                        <p className="text-xs text-slate-500 text-center">
+                        <p className="text-xs text-[#8c909f]/70 text-center">
                             Logo upload feature launching soon
                         </p>
                     </div>
                 </div>
 
                 {/* Brand Colours Section */}
-                <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
-                    <div className="flex items-center gap-3 mb-6">
+                <div className="bg-[#1a1d23] border border-[#424754]/15 rounded-[32px] p-8 flex flex-col gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-accent-amber/10 rounded-2xl flex items-center justify-center">
                             <Palette className="w-5 h-5 text-accent-amber" />
                         </div>
@@ -177,7 +177,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                     <div className="space-y-6">
                         {/* Current Color */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-300 mb-3">
+                            <label className="block text-sm font-semibold text-[#e5e2e1] mb-3">
                                 Primary Colour
                             </label>
                             <div className="flex items-center gap-4">
@@ -185,14 +185,14 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                                     type="color"
                                     value={primaryColor}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
-                                    className="w-16 h-16 rounded-xl cursor-pointer border-2 border-slate-200"
+                                    className="w-16 h-16 rounded-2xl cursor-pointer border-2 border-[#2a2a2a] bg-[#14161b]"
                                 />
                                 <div className="flex-1">
                                     <input
                                         type="text"
                                         value={primaryColor}
                                         onChange={(e) => setPrimaryColor(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl font-mono text-sm text-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                                     />
                                 </div>
                             </div>
@@ -200,7 +200,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
 
                         {/* Preset Colours */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-300 mb-3">
+                            <label className="block text-sm font-semibold text-[#e5e2e1] mb-3">
                                 Preset Colours
                             </label>
                             <div className="grid grid-cols-3 gap-3">
@@ -208,16 +208,16 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                                     <button
                                         key={color.value}
                                         onClick={() => setPrimaryColor(color.value)}
-                                        className={`p-4 rounded-xl border-2 transition-all ${primaryColor === color.value
-                                            ? 'border-slate-900 shadow-lg'
-                                            : 'border-slate-200 hover:border-slate-300'
+                                        className={`p-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98] ${primaryColor === color.value
+                                            ? 'border-[#adc6ff] bg-[#14161b] shadow-lg shadow-black/40'
+                                            : 'border-[#2a2a2a] hover:border-[#424754]/30 bg-[#14161b]/30 text-slate-400'
                                             }`}
                                     >
                                         <div
                                             className="w-full h-8 rounded-lg mb-2"
                                             style={{ backgroundColor: color.value }}
                                         />
-                                        <p className="text-xs font-semibold text-slate-400">
+                                        <p className="text-xs font-semibold text-[#8c909f]">
                                             {color.name}
                                         </p>
                                     </button>
@@ -226,11 +226,11 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                         </div>
 
                         {/* Preview */}
-                        <div className="mt-8 p-6 rounded-2xl bg-slate-900/50 border border-slate-700">
-                            <p className="text-sm font-semibold text-slate-300 mb-4">Preview</p>
+                        <div className="mt-8 p-6 rounded-2xl bg-[#14161b] border border-[#2a2a2a]">
+                            <p className="text-sm font-semibold text-[#e5e2e1] mb-4">Preview</p>
                             <div className="space-y-3">
                                 <button
-                                    className="w-full px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all"
+                                    className="w-full px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.01] active:scale-[0.99]"
                                     style={{ backgroundColor: primaryColor }}
                                 >
                                     Primary Button

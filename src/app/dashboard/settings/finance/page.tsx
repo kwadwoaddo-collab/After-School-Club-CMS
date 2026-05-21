@@ -55,13 +55,13 @@ export default async function FinanceSettingsPage() {
             <div>
                 <Link 
                     href="/dashboard/settings" 
-                    className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-primary transition-colors mb-4"
+                    className="inline-flex items-center text-sm font-medium text-[#8c909f] hover:text-white transition-colors mb-4"
                 >
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Back to Settings
                 </Link>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Finance & Pricing</h1>
-                <p className="text-slate-500 font-medium mt-1">
+                <h1 className="text-3xl font-bold text-white tracking-tight">Finance & Pricing</h1>
+                <p className="text-[#8c909f] font-medium mt-1">
                     Manage standard and assisted pricing across your assessment centres
                 </p>
             </div>

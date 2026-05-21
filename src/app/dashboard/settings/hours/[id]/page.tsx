@@ -39,15 +39,15 @@ export default async function EditCentreHoursPage({
                     <div className="flex items-center gap-3 mb-2">
                         <Link
                             href="/dashboard/settings/hours"
-                            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                            className="p-2 hover:bg-[#2a2a2a] rounded-2xl transition-all text-[#8c909f] hover:text-white"
                         >
-                            <ArrowLeft className="w-5 h-5 text-slate-600" />
+                            <ArrowLeft className="w-5 h-5" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-3xl font-bold text-white tracking-tight">
                             Edit Hours
                         </h1>
                     </div>
-                    <p className="text-slate-700 font-medium ml-14">
+                    <p className="text-[#8c909f] font-medium ml-14">
                         Customising schedule for <strong>{centre.name}</strong>
                     </p>
                 </div>
