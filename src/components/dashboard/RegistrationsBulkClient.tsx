@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, XCircle, Download, Loader2, X } from 'lucide-react';
-import { assignRegistrationCentre } from '@/app/dashboard/registrations/actions';
+import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle } from 'lucide-react';
+import { assignRegistrationCentre, deleteRegistrations } from '@/app/dashboard/registrations/actions';
 
 type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
@@ -52,6 +52,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
     const [bulkMessage, setBulkMessage] = useState('');
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
@@ -80,6 +81,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
         if (selected.size === 0) return;
         setBulkLoading(true);
         setBulkMessage('');
+        setConfirmingDelete(false);
         try {
             const ids = Array.from(selected);
             await Promise.all(
@@ -96,6 +98,24 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
             router.refresh();
         } catch {
             setBulkMessage('Something went wrong. Please try again.');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const bulkDelete = async () => {
+        if (selected.size === 0) return;
+        setBulkLoading(true);
+        setBulkMessage('');
+        setConfirmingDelete(false);
+        try {
+            const ids = Array.from(selected);
+            const result = await deleteRegistrations(ids);
+            setBulkMessage(`✓ Deleted ${result.deleted} registration${result.deleted !== 1 ? 's' : ''}`);
+            setSelected(new Set());
+            router.refresh();
+        } catch (err: any) {
+            setBulkMessage(err.message || 'Failed to delete. Please try again.');
         } finally {
             setBulkLoading(false);
         }
@@ -202,8 +222,43 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         Export CSV
                     </button>
 
+                    {/* Delete — two-step confirm */}
+                    <div className="flex items-center gap-2">
+                        {confirmingDelete ? (
+                            <>
+                                <span className="flex items-center gap-1.5 text-xs font-bold text-red-400">
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    Delete {selected.size}?
+                                </span>
+                                <button
+                                    onClick={bulkDelete}
+                                    disabled={bulkLoading}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                                >
+                                    {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Yes, delete'}
+                                </button>
+                                <button
+                                    onClick={() => setConfirmingDelete(false)}
+                                    disabled={bulkLoading}
+                                    className="px-3 py-2 text-[#8c909f] hover:text-white text-sm font-semibold transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => setConfirmingDelete(true)}
+                                disabled={bulkLoading}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete
+                            </button>
+                        )}
+                    </div>
+
                     <button
-                        onClick={() => setSelected(new Set())}
+                        onClick={() => { setSelected(new Set()); setConfirmingDelete(false); }}
                         className="ml-auto p-1.5 text-[#8c909f] hover:text-white transition-colors"
                         title="Clear selection"
                     >

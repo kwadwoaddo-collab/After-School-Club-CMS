@@ -3,8 +3,33 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, parents, children, organisations } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+
+export async function deleteRegistrations(ids: string[]) {
+    const session = await auth();
+    if (!session?.user) throw new Error('Unauthorized');
+    if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owners can delete registrations');
+
+    const orgId = (session.user as any).organisationId as string | undefined;
+    if (!orgId) throw new Error('No organisation found');
+    if (ids.length === 0) return { deleted: 0 };
+
+    // Verify all registrations belong to this org before deleting
+    const owned = await db
+        .select({ id: registrations.id })
+        .from(registrations)
+        .where(and(inArray(registrations.id, ids), eq(registrations.organisationId, orgId)));
+
+    const ownedIds = owned.map(r => r.id);
+    if (ownedIds.length === 0) throw new Error('No matching registrations found');
+
+    await db.delete(registrations).where(inArray(registrations.id, ownedIds));
+
+    revalidatePath('/dashboard/registrations');
+    return { deleted: ownedIds.length };
+}
+
 
 export async function assignRegistrationCentre(registrationId: string, centreId: string | null) {
     const session = await auth();
