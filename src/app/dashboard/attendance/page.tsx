@@ -1,0 +1,168 @@
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { db } from '@/db';
+import { bookings, bookingAttendees } from '@/db/schema';
+import { eq, and, gte, lte, inArray } from 'drizzle-orm';
+import { getUserAccessibleCentres } from '@/lib/permissions';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { startOfDay, endOfDay, addDays, subDays, format } from 'date-fns';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Users, CheckCircle2 } from 'lucide-react';
+import AttendanceRollCall from './AttendanceRollCall';
+
+export default async function AttendancePage(props: {
+    searchParams: Promise<{ date?: string; centre?: string }>;
+}) {
+    const rawParams = await props.searchParams;
+    const session = await auth();
+    if (!session?.user?.organisationId) redirect('/login');
+
+    const orgCentres = await getUserAccessibleCentres(session.user.id);
+    const centreIds = orgCentres.map(c => c.id);
+    const activeCentreId = await resolveActiveCentreId(rawParams.centre, centreIds);
+
+    // Resolve target date
+    const targetDate = rawParams.date ? new Date(rawParams.date) : new Date();
+    const dayStart = startOfDay(targetDate);
+    const dayEnd = endOfDay(targetDate);
+    const prevDay = format(subDays(targetDate, 1), 'yyyy-MM-dd');
+    const nextDay = format(addDays(targetDate, 1), 'yyyy-MM-dd');
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const targetStr = format(targetDate, 'yyyy-MM-dd');
+
+    // Build centre filter
+    const centreFilter = activeCentreId !== 'all'
+        ? eq(bookings.centreId, activeCentreId)
+        : centreIds.length > 0
+            ? inArray(bookings.centreId, centreIds)
+            : eq(bookings.centreId, 'no-centre');
+
+    // Fetch bookings for the day
+    const dayBookings = await db.query.bookings.findMany({
+        where: and(
+            centreFilter,
+            gte(bookings.startAt, dayStart),
+            lte(bookings.startAt, dayEnd)
+        ),
+        with: {
+            parent: true,
+            centre: true,
+            attendees: {
+                with: { child: true },
+            },
+        },
+        orderBy: (b, { asc }) => [asc(b.startAt)],
+    });
+
+    // Count stats
+    const totalStudents = dayBookings.reduce((acc, b) => acc + b.attendees.length, 0);
+    const marked = dayBookings.reduce((acc, b) =>
+        acc + b.attendees.filter(a => a.attendanceStatus !== null).length, 0
+    );
+    const present = dayBookings.reduce((acc, b) =>
+        acc + b.attendees.filter(a => a.attendanceStatus === 'present').length, 0
+    );
+    const absent = dayBookings.reduce((acc, b) =>
+        acc + b.attendees.filter(a =>
+            a.attendanceStatus === 'absent' || a.attendanceStatus === 'no_show'
+        ).length, 0
+    );
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-700">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">Attendance Roll-Call</h1>
+                    <p className="text-[#8c909f] font-medium mt-1">
+                        Mark attendance for today&apos;s sessions
+                    </p>
+                </div>
+
+                {/* Date nav */}
+                <div className="flex items-center gap-2">
+                    <Link
+                        href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
+                        className="p-2 rounded-xl bg-[#1a1d23] border border-[#424754]/15 text-[#8c909f] hover:text-white hover:border-[#adc6ff]/30 transition-all"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </Link>
+                    <div className="px-4 py-2 rounded-xl bg-[#1a1d23] border border-[#424754]/15">
+                        <p className="text-white font-bold text-sm">
+                            {format(targetDate, 'EEEE, d MMM yyyy')}
+                            {targetStr === todayStr && <span className="ml-2 text-[#adc6ff] text-xs font-bold uppercase tracking-wider">Today</span>}
+                        </p>
+                    </div>
+                    <Link
+                        href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
+                        className="p-2 rounded-xl bg-[#1a1d23] border border-[#424754]/15 text-[#8c909f] hover:text-white hover:border-[#adc6ff]/30 transition-all"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </Link>
+                </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                    { label: 'Sessions', value: dayBookings.length, color: 'text-[#adc6ff]', icon: '📋' },
+                    { label: 'Students', value: totalStudents, color: 'text-white', icon: '👤' },
+                    { label: 'Present', value: present, color: 'text-emerald-400', icon: '✅' },
+                    { label: 'Absent', value: absent, color: 'text-red-400', icon: '❌' },
+                ].map(stat => (
+                    <div key={stat.label} className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">{stat.icon}</span>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8c909f]">{stat.label}</p>
+                        </div>
+                        <p className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Progress bar */}
+            {totalStudents > 0 && (
+                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-[#8c909f]">Register completion</p>
+                        <p className="text-sm font-bold text-white">{marked}/{totalStudents} marked</p>
+                    </div>
+                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-gradient-to-r from-[#adc6ff] to-[#4d8eff] rounded-full transition-all duration-700"
+                            style={{ width: `${Math.round((marked / totalStudents) * 100)}%` }}
+                        />
+                    </div>
+                    {marked === totalStudents && (
+                        <p className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold mt-2">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Register complete for this day
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* Empty state */}
+            {dayBookings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-[#1a1d23] rounded-2xl border border-dashed border-[#424754]/30">
+                    <div className="w-16 h-16 rounded-2xl bg-[#2a2a2a] flex items-center justify-center mb-4">
+                        <Users className="w-7 h-7 text-[#424754]" />
+                    </div>
+                    <h3 className="text-[#e5e2e1] font-bold mb-2">No sessions scheduled</h3>
+                    <p className="text-[#8c909f] text-sm max-w-xs">
+                        There are no bookings for {format(targetDate, 'EEEE, d MMMM')}.
+                        Use the arrows above to navigate to a different day.
+                    </p>
+                    <Link
+                        href="/dashboard/bookings/new"
+                        className="mt-5 inline-flex items-center gap-2 px-6 py-2.5 bg-[#adc6ff]/10 border border-[#adc6ff]/20 text-[#adc6ff] rounded-xl text-sm font-bold hover:bg-[#adc6ff]/20 transition-all"
+                    >
+                        Create a booking
+                    </Link>
+                </div>
+            ) : (
+                <AttendanceRollCall bookings={dayBookings as any} />
+            )}
+        </div>
+    );
+}

@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Building2, Palette, Image, Mail, Clock, FileText, Wallet } from 'lucide-react';
 import OrganisationInfoForm from '@/components/settings/OrganisationInfoForm';
+import GdprExportButton from './GdprExportButton';
 
 export default async function SettingsPage() {
     const session = await auth();
@@ -143,6 +144,12 @@ export default async function SettingsPage() {
                         );
                     })}
                 </div>
+            </div>
+
+            {/* Data & Privacy */}
+            <div>
+                <h2 className="text-lg font-bold text-white mb-4">Data &amp; Privacy</h2>
+                <GdprExportButton />
             </div>
 
             {/* Support Section */}

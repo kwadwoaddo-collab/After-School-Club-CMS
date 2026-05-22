@@ -54,8 +54,8 @@ const emptyParent = (): ParentEntry => ({
 });
 
 // ── Shared input styles ────────────────────────────────────────────
-const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm';
-const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white border border-red-400 ring-2 ring-red-400/40 text-slate-900 placeholder-slate-400 focus:outline-none text-sm';
+const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white/8 border border-white/15 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400/50 text-sm transition-colors';
+const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-lg bg-white/8 border border-red-400/70 ring-2 ring-red-400/30 text-white placeholder-white/30 focus:outline-none text-sm';
 const labelCls = 'block text-sm font-medium text-white/70 mb-1';
 const sectionTitle = 'text-white font-semibold text-lg mb-4';
 
@@ -271,6 +271,12 @@ export default function RegisterPage() {
                     parentSignature: signature,
                 }),
             });
+            if (res.status === 409) {
+                const d = await res.json();
+                setError(d.error || 'A registration already exists for this child. Please contact the centre.');
+                setSubmitting(false);
+                return;
+            }
             if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Submission failed'); }
             setSubmitted(true);
         } catch (e: any) {
@@ -279,6 +285,7 @@ export default function RegisterPage() {
             setSubmitting(false);
         }
     };
+
 
     // ── Loading screen ─────────────────────────────────────────────
     if (orgLoading) {

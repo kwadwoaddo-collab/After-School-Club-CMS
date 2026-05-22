@@ -13,6 +13,7 @@ import {
     ChevronDown,
     UserCircle2,
     ClipboardList,
+    ClipboardCheck,
     CalendarDays,
     ExternalLink,
     BarChart,
@@ -32,10 +33,10 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Registrations', 'Reports'],
-    FRONT_DESK: ['Dashboard', 'Students', 'Bookings'],
-    TUTOR: ['Dashboard'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Registrations', 'Reports'],
+    FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance'],
+    TUTOR: ['Dashboard', 'Attendance'],
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -70,6 +71,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
+        { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
         { name: 'Finance', icon: Wallet, href: '/dashboard/finance' },

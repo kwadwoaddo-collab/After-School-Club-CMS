@@ -18,6 +18,7 @@ import { Suspense } from 'react';
 import { startOfDay, endOfDay, addDays, isSameDay, subDays, eachWeekOfInterval } from 'date-fns';
 import { RegistrationFunnel } from '@/components/dashboard/RegistrationFunnel';
 import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
+import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import {
     Users, CalendarCheck, ClipboardList, UserCircle2,
     ArrowRight, ChevronRight, AlertTriangle, Shield,
@@ -413,6 +414,46 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const peakDayName = peakDayData[0] ? daysOfWeek[Math.round(Number(peakDayData[0].dow))] : null;
 
+    // ── Onboarding checklist steps ────────────────────────────────────────────
+    const onboardingSteps = [
+        {
+            id: 'org-info',
+            label: 'Complete your organisation profile',
+            description: 'Add your contact email, phone, and address in Settings.',
+            href: '/dashboard/settings',
+            done: !!(org.contactEmail && org.contactPhone),
+        },
+        {
+            id: 'first-centre',
+            label: 'Add your first centre',
+            description: 'Set up a centre so you can receive registrations and bookings.',
+            href: '/dashboard/centres/add',
+            done: centresList.length > 0,
+        },
+        {
+            id: 'registration-terms',
+            label: 'Write your registration T&Cs',
+            description: 'Parents will see these before signing the registration form.',
+            href: '/dashboard/settings/registration',
+            done: !!(org.registrationTerms),
+        },
+        {
+            id: 'share-form',
+            label: 'Share your registration link',
+            description: 'Send the link to parents so they can register their children.',
+            href: `/r/${org.slug}`,
+            done: totalRegistrations > 0,
+        },
+        {
+            id: 'first-booking',
+            label: 'Create your first booking',
+            description: 'Schedule an assessment or session for a student.',
+            href: '/dashboard/bookings/new',
+            done: totalBookingsAll > 0,
+        },
+    ];
+    const onboardingAllDone = onboardingSteps.every(s => s.done);
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
 
@@ -434,6 +475,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     />
                 </Suspense>
             </div>
+
+            {/* ── Onboarding checklist ─────────────────────────────────────── */}
+            {!onboardingAllDone && (
+                <OnboardingChecklist steps={onboardingSteps} />
+            )}
 
             {/* ── Top-level stats row ──────────────────────────────────── */}
             <KpiGrid
