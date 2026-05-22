@@ -220,21 +220,10 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={styles.col3}>Total</Text>
                     </View>
                     <View style={styles.tableRow}>
-                        <Text style={styles.col1}>
-                            {notes ? notes.split('\n')[0] : 'After School Club Childcare Services'}
-                        </Text>
+                        <Text style={styles.col1}>After School Club Childcare Services</Text>
                         <Text style={styles.col2}>£{Number(amount).toFixed(2)}</Text>
                         <Text style={styles.col3}>£{Number(amount).toFixed(2)}</Text>
                     </View>
-                    {notes && notes.includes('\n') && (
-                        <View style={styles.tableRow}>
-                            <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>
-                                {notes.split('\n').slice(1).join('\n')}
-                            </Text>
-                            <Text style={styles.col2}></Text>
-                            <Text style={styles.col3}></Text>
-                        </View>
-                    )}
                     {notes && (
                         <View style={styles.tableRow}>
                             <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>Note: {notes}</Text>
@@ -243,6 +232,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         </View>
                     )}
                 </View>
+
 
                 {/* Grand Total */}
                 <View style={styles.totals}>

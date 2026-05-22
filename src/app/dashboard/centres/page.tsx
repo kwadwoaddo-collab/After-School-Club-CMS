@@ -150,12 +150,20 @@ export default async function CentresPage() {
                                         <span>{centre.todayCount} today</span>
                                     </div>
                                 </div>
-                                <Link
-                                    href={`/dashboard/bookings?centre=${centre.id}`}
-                                    className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-blue-600 flex items-center gap-2 transition-all shadow-md shadow-primary/20"
-                                >
-                                    Manage <ArrowRight className="w-3.5 h-3.5" />
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        href={`/dashboard/centres/${centre.id}/billing`}
+                                        className="px-3 py-2 bg-white/5 border border-white/10 text-on-surface-variant text-xs font-bold rounded-xl hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all"
+                                    >
+                                        Billing
+                                    </Link>
+                                    <Link
+                                        href={`/dashboard/bookings?centre=${centre.id}`}
+                                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-blue-600 flex items-center gap-2 transition-all shadow-md shadow-primary/20"
+                                    >
+                                        Manage <ArrowRight className="w-3.5 h-3.5" />
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     ))}
