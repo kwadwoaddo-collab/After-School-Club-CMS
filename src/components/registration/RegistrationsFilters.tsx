@@ -84,6 +84,26 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                     </div>
                 </form>
 
+                {/* Centre Filter — only visible when there are multiple centres */}
+                {centres.length > 1 && (
+                    <div className="relative min-w-[180px]">
+                        <select
+                            value={selectedCentreId}
+                            onChange={(e) => {
+                                setSelectedCentreId(e.target.value);
+                            }}
+                            className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
+                            style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                        >
+                            <option value="all">All Centres</option>
+                            {centres.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                )}
+
                 {/* Status Filter */}
                 <div className="relative min-w-[180px]">
                     <select
@@ -116,6 +136,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                     </button>
                 )}
             </div>
+
 
             {/* Active Filters Display */}
             {hasActiveFilters && (

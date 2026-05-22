@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Filter, FileText, Trash2 } from 'lucide-react';
+import { Plus, Filter, FileText, Trash2, Ban } from 'lucide-react';
 import CreateInvoiceModal from './CreateInvoiceModal';
+import ConfirmActionModal from './ConfirmActionModal';
 import { useRouter } from 'next/navigation';
-import { deleteInvoice } from '../actions';
+import { deleteInvoice, voidInvoice } from '../actions';
 
 interface FinanceDashboardClientProps {
     students: any[];
@@ -51,6 +52,7 @@ export default function FinanceDashboardClient({ students, recentInvoices = [], 
 
 export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: any[], isOwner?: boolean }) {
     const router = useRouter();
+    const [confirmTarget, setConfirmTarget] = useState<{ id: string; invoiceNumber: string; hasPayments: boolean; action: 'delete' | 'void' } | null>(null);
     
     if (!invoices || invoices.length === 0) {
         return (
@@ -67,78 +69,102 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead>
-                    <tr className="text-left border-b border-outline-variant/10">
-                        <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Invoice #</th>
-                        <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Student</th>
-                        <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Status</th>
-                        <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Amount</th>
-                        {isOwner && <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Actions</th>}
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant/5">
-                    {invoices.map((invoice: any) => (
-                        <tr 
-                            key={invoice.id} 
-                            onClick={() => router.push(`/dashboard/finance/invoices/${invoice.id}`)}
-                            className="group hover:bg-white/5 transition-colors cursor-pointer"
-                        >
-                            <td className="py-4 px-4">
-                                <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
-                            </td>
-                            <td className="py-4 px-4">
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-white">
-                                        {invoice.child?.firstName} {invoice.child?.lastName}
-                                        {!invoice.child && invoice.parent && `${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
-                                    </span>
-                                    <span className="text-xs text-on-surface-variant">{invoice.centre?.name}</span>
-                                </div>
-                            </td>
-                            <td className="py-4 px-4">
-                                <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                    invoice.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400' : 
-                                    invoice.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-400' :
-                                    invoice.status === 'sent' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-500/10 text-slate-400'
-                                }`}>
-                                    {invoice.status.replace('_', ' ')}
-                                </span>
-                            </td>
-                            <td className="py-4 text-right px-4">
-                                <span className="text-sm font-black text-white">£{Number(invoice.amount).toFixed(2)}</span>
-                            </td>
-                            {isOwner && (
-                                <td className="py-4 text-right px-4" onClick={(e) => e.stopPropagation()}>
-                                    <button 
-                                        type="button"
-                                        onClick={async (e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            console.log("Delete button clicked for invoice:", invoice.id);
-                                            if (window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
-                                                try {
-                                                    await deleteInvoice(invoice.id);
-                                                    alert('Invoice deleted successfully.');
-                                                } catch (error: any) {
-                                                    console.error(error);
-                                                    alert(error.message || 'Error deleting invoice');
-                                                }
-                                            }
-                                        }}
-                                        className="p-2 bg-error/10 text-error hover:bg-error/20 rounded-lg transition-colors border border-error/20 z-50 relative cursor-pointer"
-                                        title="Delete Invoice"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </td>
-                            )}
+        <>
+            <div className="overflow-x-auto">
+                <table className="w-full">
+                    <thead>
+                        <tr className="text-left border-b border-outline-variant/10">
+                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Invoice #</th>
+                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Student</th>
+                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Status</th>
+                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Amount</th>
+                            {isOwner && <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Actions</th>}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/5">
+                        {invoices.map((invoice: any) => {
+                            const hasPayments = (invoice.payments?.length ?? 0) > 0;
+                            return (
+                                <tr 
+                                    key={invoice.id} 
+                                    onClick={() => router.push(`/dashboard/finance/invoices/${invoice.id}`)}
+                                    className="group hover:bg-white/5 transition-colors cursor-pointer"
+                                >
+                                    <td className="py-4 px-4">
+                                        <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-white">
+                                                {invoice.child?.firstName} {invoice.child?.lastName}
+                                                {!invoice.child && invoice.parent && `${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
+                                            </span>
+                                            <span className="text-xs text-on-surface-variant">{invoice.centre?.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                                            invoice.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400' : 
+                                            invoice.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-400' :
+                                            invoice.status === 'sent' ? 'bg-blue-500/10 text-blue-400' :
+                                            invoice.status === 'void' ? 'bg-neutral-500/10 text-neutral-400 line-through' : 'bg-slate-500/10 text-slate-400'
+                                        }`}>
+                                            {invoice.status.replace('_', ' ')}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 text-right px-4">
+                                        <span className="text-sm font-black text-white">£{Number(invoice.amount).toFixed(2)}</span>
+                                    </td>
+                                    {isOwner && (
+                                        <td className="py-4 text-right px-4" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-end gap-2">
+                                                {invoice.status !== 'void' && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'void' })}
+                                                        className="p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 cursor-pointer"
+                                                        title="Void Invoice"
+                                                    >
+                                                        <Ban className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {invoice.status !== 'paid' && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'delete' })}
+                                                        className="p-2 bg-error/10 text-error hover:bg-error/20 rounded-lg transition-colors border border-error/20 cursor-pointer"
+                                                        title="Delete Invoice"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            <ConfirmActionModal
+                isOpen={confirmTarget !== null}
+                onClose={() => setConfirmTarget(null)}
+                variant={confirmTarget?.action ?? 'delete'}
+                invoiceNumber={confirmTarget?.invoiceNumber ?? ''}
+                hasPayments={confirmTarget?.hasPayments ?? false}
+                onConfirm={async () => {
+                    if (!confirmTarget) return;
+                    if (confirmTarget.action === 'delete') {
+                        await deleteInvoice(confirmTarget.id);
+                    } else {
+                        await voidInvoice(confirmTarget.id);
+                    }
+                    router.refresh();
+                }}
+            />
+        </>
     );
 }
 

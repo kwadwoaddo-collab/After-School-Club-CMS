@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -10,9 +10,8 @@ import { useRouter } from 'next/navigation';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { InvoiceTemplate } from './InvoiceTemplate';
 import { ReceiptTemplate } from './ReceiptTemplate';
-import { useEffect } from 'react';
 import PDFPreviewModal from './PDFPreviewModal';
-import { Eye } from 'lucide-react';
+import ConfirmActionModal from './ConfirmActionModal';
 import { deleteInvoice, voidInvoice } from '../actions';
 
 interface InvoiceDetailsClientProps {
@@ -24,37 +23,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<'delete' | 'void' | null>(null);
     const router = useRouter();
-
-    const handleDelete = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return;
-        
-        try {
-            await deleteInvoice(invoice.id);
-            router.push('/dashboard/finance');
-        } catch (error: any) {
-            alert(error.message || 'An error occurred while deleting the invoice.');
-        }
-    };
-
-    const handleVoid = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!window.confirm('Void this invoice? The invoice and its payment records will be preserved for audit purposes, but it will be excluded from revenue reports.')) return;
-        
-        try {
-            await voidInvoice(invoice.id);
-            router.refresh();
-        } catch (error: any) {
-            alert(error.message || 'An error occurred while voiding the invoice.');
-        }
-    };
 
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    const hasPayments = invoice.payments?.length > 0;
 
     const totalPaid = invoice.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     const remainingBalance = Number(invoice.amount) - totalPaid;
@@ -152,16 +128,16 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {invoice.status !== 'void' && (
                         <button 
                             type="button"
-                            onClick={handleVoid}
+                            onClick={() => setConfirmAction('void')}
                             className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
                         >
                             <Ban className="w-4 h-4" /> Void
                         </button>
                     )}
-                    {invoice.status !== 'paid' && invoice.payments?.length === 0 && (
+                    {invoice.status !== 'paid' && (
                         <button 
                             type="button"
-                            onClick={handleDelete}
+                            onClick={() => setConfirmAction('delete')}
                             className="flex items-center gap-2 px-5 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all cursor-pointer"
                         >
                             <Trash2 className="w-4 h-4" /> Delete
@@ -290,6 +266,23 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     }}
                 />
             )}
+
+            <ConfirmActionModal
+                isOpen={confirmAction !== null}
+                onClose={() => setConfirmAction(null)}
+                variant={confirmAction ?? 'delete'}
+                invoiceNumber={invoice.invoiceNumber}
+                hasPayments={hasPayments}
+                onConfirm={async () => {
+                    if (confirmAction === 'delete') {
+                        await deleteInvoice(invoice.id);
+                        router.push('/dashboard/finance');
+                    } else {
+                        await voidInvoice(invoice.id);
+                        router.refresh();
+                    }
+                }}
+            />
 
             <PDFPreviewModal
                 isOpen={previewType !== null}

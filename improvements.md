@@ -50,37 +50,27 @@ Description: Added a new Parent Profile page featuring a "Finance / Ledger" tab 
   - Ensure **Ofsted No**, **Bank Details**, and **Manager Name** are correctly pulling from the database (currently showing N/A in the screenshot).
 - **Goal:** Zero blank fields or "N/A" markers on generated documents.
 
-## [ ] Task 78: Sync "Year Group" Dropdown with Existing App Pattern
-- **Status:** Pending
+## [x] Task 78: Sync "Year Group" Dropdown with Existing App Pattern
+- **Status:** Complete
 - **Location:** Invoice Creator -> Legacy Onboarding Form (Children section)
-- **Fix:** Update the "Year" dropdown to match the existing registration pattern exactly.
-- **Labels:** 
-  - Select year...
-  - Reception
-  - Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11, Y12, Y13
-- **Goal:** Zero discrepancies between manual entry and automated registration data.
-## [ ] Task 79: Implement Invoice Deletion & Voiding
-- **Status:** Pending
-- **Location:** Invoice Details Page / Finance List
-- **Feature:** Add a "Delete" or "Void" action to existing invoices.
-- **Safety Logic:** 
-  - **Unpaid Invoices:** Can be permanently deleted from the database.
-  - **Paid/Partially Paid Invoices:** If payments are attached, the system should ask to "Delete Payments first" or allow you to "Void" the invoice (status change only) to keep the financial history.
-- **Security:** Ensure only the 'Owner' role can perform this action.
-- **Goal:** Allow admins to correct mistakes or remove accidental duplicate invoices.
+- **Fix:** Updated the "Year" dropdown placeholder from "Select..." to "Select year..." to match the existing pattern in BookingForm, register page, and EditRegistrationForm. Values (Reception, Y1–Y13) were already correct.
+## [x] Task 79: Implement Invoice Deletion & Voiding
+- **Status:** Complete
+- **Location:** Invoice Details Page + Finance List
+- **What was built:**
+  - Created `ConfirmActionModal.tsx` — a polished, reusable confirmation modal with delete (red) and void (amber) variants, error display, and loading state
+  - **Detail page** (`InvoiceDetailsClient.tsx`): replaced raw `window.confirm`/`alert` with `ConfirmActionModal`; Delete button now shows for all non-paid invoices (explains payment blocker in modal); Void button shows for all non-void invoices
+  - **Finance list** (`FinanceDashboardClient.tsx`): added Void (amber) + Delete (red) icon buttons per row for Owners; wired to `ConfirmActionModal` with `router.refresh()` on success; also fixed void status badge display (`line-through` style)
+- **Safety Logic:** Delete blocked (informational message) when payments exist; Void always allowed (preserves audit trail); both actions Owner-only (enforced server-side)
 
-## [ ] Task 80: Add Centre Filtering to Registrations Page
-- **Status:** Pending
-- **Location:** /dashboard/registrations (Image 1)
-- **UI (Stitch):** Add a filter bar to the top of the Registrations page, identical in style to the Bookings page.
-- **Logic:** 
-  - Add a dropdown to select a specific Centre (Sydenham, Dagenham, etc.).
-  - When a centre is selected, the list of registrations must update to show ONLY that centre's submissions.
-  - The "13 total submissions" counter must update to reflect the filtered count.
+## [x] Task 80: Add Centre Filtering to Registrations Page
+- **Status:** Complete
+- **Location:** /dashboard/registrations
+- **What was done:** The backend filtering was already fully implemented (server page reads `activeCentreId` via `resolveActiveCentreId`, which checks URL param then cookie; `RegistrationsFilters` already used `useCentreFilter` and included the centre in URL params; the stats counters already respected the filter). Added the missing **inline Centre dropdown** to `RegistrationsFilters.tsx`, matching the style of the Status filter — only shown when multiple centres exist. Selecting a centre updates `CentreFilterContext`, writes to cookie for persistence, and triggers `router.refresh()` so the server page re-renders with filtered results and an updated counter.
 
-## [ ] Task 81: Synchronize Centre Filtering on Bookings Page
-- **Status:** Pending
-- **Location:** /dashboard/bookings (Image 2)
-- **Logic:** Ensure the existing "All Centres" filter is fully functional. 
-- **Requirement:** Selecting a centre must filter the table results on the backend and update the "Result Counter" (Task 62) immediately.
-- **Persistence:** If I switch from Bookings to Registrations, consider "remembering" the selected centre so I don't have to filter again.
+## [x] Task 81: Synchronize Centre Filtering on Bookings Page
+- **Status:** Complete
+- **Location:** /dashboard/bookings
+- **Root cause:** `BookingsFilters` consumed `selectedCentreId` from `CentreFilterContext` and included it in `hasActiveFilters`/clear logic, but never rendered a centre `<select>` dropdown — so there was no in-page UI to switch centre.
+- **Fix:** Added inline "All Centres / [Centre Name]" dropdown to `BookingsFilters.tsx` (between Search and Status), shown only when `centres.length > 1`. Selecting triggers `setSelectedCentreId` → writes `selected_centre_id` cookie → `router.refresh()` → server re-renders with `resolveActiveCentreId` picking up the new cookie → filtered table + updated counters.
+- **Persistence:** Cookie-based via `CentreFilterContext`; switching from Bookings → Registrations and back retains the selected centre automatically.
