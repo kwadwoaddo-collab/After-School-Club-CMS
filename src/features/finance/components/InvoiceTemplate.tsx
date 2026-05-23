@@ -161,9 +161,13 @@ interface InvoiceTemplateProps {
 }
 
 export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplateProps) => {
-    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes } = invoice;
+    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, childDisplayName } = invoice;
     // Fallback to child.parent if parent relation is missing (legacy support)
     const activeParent = parent || (child && (child as any).parent);
+    // Show child name from record or from the ad-hoc free-text field
+    const displayChildName = child
+        ? `${child.firstName} ${child.lastName}`
+        : (childDisplayName || null);
 
     return (
         <Document title={`Invoice-${invoiceNumber}`}>
@@ -207,6 +211,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     <View style={styles.period}>
                         <Text style={styles.sectionTitle}>Period Description</Text>
                         <Text style={{ fontWeight: 'bold' }}>Reference: {invoiceNumber}</Text>
+                        {displayChildName && <Text>Child: {displayChildName}</Text>}
                         <Text>Period: {billingPeriodStart ? format(new Date(billingPeriodStart), 'MMM d') : '-'} to {billingPeriodEnd ? format(new Date(billingPeriodEnd), 'MMM d, yyyy') : '-'}</Text>
                         <Text>Centre: {centre?.name || 'HASC Centre'}</Text>
                     </View>

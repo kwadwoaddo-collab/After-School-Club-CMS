@@ -17,7 +17,7 @@ import {
     Loader2,
     Clock
 } from 'lucide-react';
-import { getParents, getChildrenByParent, createInvoice, createLegacyFamilyAndInvoice } from '../actions';
+import { getParents, getChildrenByParent, createInvoice, createLegacyFamilyAndInvoice, createAdHocInvoice } from '../actions';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
@@ -26,7 +26,7 @@ interface CreateInvoiceModalProps {
     onClose: () => void;
 }
 
-type Step = 'select-parent' | 'legacy-onboarding' | 'invoice-details';
+type Step = 'select-parent' | 'legacy-onboarding' | 'adhoc-invoice' | 'invoice-details';
 
 export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceModalProps) {
     const router = useRouter();
@@ -53,6 +53,14 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
         { firstName: '', lastName: '', schoolYear: '' }
     ]);
 
+    // Ad-Hoc Invoice State
+    const [adhocChildName, setAdhocChildName] = useState('');
+    const [adhocUseExistingParent, setAdhocUseExistingParent] = useState(true);
+    const [adhocParentSearch, setAdhocParentSearch] = useState('');
+    const [adhocParentResults, setAdhocParentResults] = useState<any[]>([]);
+    const [adhocSelectedParent, setAdhocSelectedParent] = useState<any>(null);
+    const [adhocNewParent, setAdhocNewParent] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+
     // Invoice Details State
     const [invoiceData, setInvoiceData] = useState({
         amount: '',
@@ -64,7 +72,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
         centreId: centres[0]?.id || ''
     });
 
-    // Search parents effect
+    // Search parents effect (main select-parent step)
     useEffect(() => {
         if (parentSearch.length < 2) {
             setSearchResults([]);
@@ -85,6 +93,21 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
 
         return () => clearTimeout(debounce);
     }, [parentSearch]);
+
+    // Search parents effect (ad-hoc step)
+    useEffect(() => {
+        if (adhocParentSearch.length < 2) {
+            setAdhocParentResults([]);
+            return;
+        }
+        const debounce = setTimeout(async () => {
+            try {
+                const res = await getParents(adhocParentSearch);
+                setAdhocParentResults(res);
+            } catch { /* ignore */ }
+        }, 300);
+        return () => clearTimeout(debounce);
+    }, [adhocParentSearch]);
 
     // Selected Parent change effect
     useEffect(() => {
@@ -166,6 +189,21 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                     }
                 });
                 toast.success('Family onboarded and invoice created');
+            } else if (step === 'adhoc-invoice' || (step === 'invoice-details' && !selectedParent && adhocChildName)) {
+                // Ad-Hoc Invoice — child not in system
+                await createAdHocInvoice({
+                    parentId: adhocUseExistingParent ? adhocSelectedParent?.id : undefined,
+                    newParent: !adhocUseExistingParent ? adhocNewParent : undefined,
+                    childName: adhocChildName,
+                    amount: invoiceData.amount,
+                    invoiceDate: new Date(invoiceData.invoiceDate),
+                    dueDate: new Date(invoiceData.dueDate),
+                    billingPeriodStart: invoiceData.billingPeriodStart ? new Date(invoiceData.billingPeriodStart) : undefined,
+                    billingPeriodEnd: invoiceData.billingPeriodEnd ? new Date(invoiceData.billingPeriodEnd) : undefined,
+                    notes: invoiceData.notes,
+                    centreId: invoiceData.centreId
+                });
+                toast.success('Ad-hoc invoice created');
             }
             router.refresh();
             onClose();
@@ -197,6 +235,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                             <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">
                                 {step === 'select-parent' && 'Step 1: Parent Selection'}
                                 {step === 'legacy-onboarding' && 'Legacy Onboarding'}
+                                {step === 'adhoc-invoice' && 'Ad-Hoc Invoice'}
                                 {step === 'invoice-details' && 'Step 2: Billing Details'}
                             </p>
                         </div>
@@ -270,12 +309,18 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                 )}
                             </div>
 
-                            <div className="pt-4 border-t border-outline-variant/5">
+                            <div className="pt-4 border-t border-outline-variant/5 space-y-3">
                                 <button 
                                     onClick={() => setStep('legacy-onboarding')}
                                     className="w-full flex items-center justify-center gap-2 py-4 bg-surface-container-low border border-primary/20 rounded-2xl text-primary font-black uppercase tracking-widest text-xs hover:bg-primary/5 transition-all"
                                 >
                                     <UserPlus className="w-4 h-4" /> Create New Family
+                                </button>
+                                <button 
+                                    onClick={() => setStep('adhoc-invoice')}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-surface-container-low border border-outline-variant/20 rounded-2xl text-on-surface-variant font-black uppercase tracking-widest text-xs hover:bg-white/5 hover:text-white transition-all"
+                                >
+                                    <Baby className="w-4 h-4" /> Ad-Hoc Invoice (child not in system)
                                 </button>
                             </div>
                         </div>
@@ -414,9 +459,147 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                         </div>
                     )}
 
+                    {step === 'adhoc-invoice' && (
+                        <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                            <button onClick={() => setStep('select-parent')} className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest hover:translate-x-1 transition-transform">
+                                <ArrowLeft className="w-4 h-4" /> Back
+                            </button>
+
+                            {/* Info banner */}
+                            <div className="flex items-start gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+                                <Baby className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-300 font-semibold leading-relaxed">
+                                    The child's name will be printed on the invoice PDF but <strong>no record will be created</strong> in the children table. Use this for trial sessions, one-offs, or children not yet registered.
+                                </p>
+                            </div>
+
+                            {/* Child Name */}
+                            <div className="bg-white/5 rounded-3xl p-6 border border-outline-variant/5 space-y-4">
+                                <h3 className="flex items-center gap-2 text-xs font-black text-on-surface-variant uppercase tracking-[0.2em]">
+                                    <Baby className="w-4 h-4" /> Child Details
+                                </h3>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest px-1">Child's Full Name</label>
+                                    <input
+                                        type="text"
+                                        value={adhocChildName}
+                                        onChange={(e) => setAdhocChildName(e.target.value)}
+                                        placeholder="e.g. Jamie Smith"
+                                        className="w-full p-3 bg-surface-container-low border border-outline-variant/10 rounded-xl text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Parent Section */}
+                            <div className="bg-white/5 rounded-3xl p-6 border border-outline-variant/5 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="flex items-center gap-2 text-xs font-black text-on-surface-variant uppercase tracking-[0.2em]">
+                                        <Contact className="w-4 h-4" /> Parent / Guardian
+                                    </h3>
+                                    <div className="flex items-center gap-1 bg-surface-container-high rounded-xl p-1">
+                                        <button
+                                            onClick={() => { setAdhocUseExistingParent(true); setAdhocSelectedParent(null); }}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                                                adhocUseExistingParent ? 'bg-primary text-white' : 'text-on-surface-variant'
+                                            }`}
+                                        >
+                                            Search Existing
+                                        </button>
+                                        <button
+                                            onClick={() => setAdhocUseExistingParent(false)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                                                !adhocUseExistingParent ? 'bg-primary text-white' : 'text-on-surface-variant'
+                                            }`}
+                                        >
+                                            New Parent
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {adhocUseExistingParent ? (
+                                    <div className="space-y-3">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search parent name or email..."
+                                                value={adhocParentSearch}
+                                                onChange={(e) => { setAdhocParentSearch(e.target.value); setAdhocSelectedParent(null); }}
+                                                className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                            />
+                                        </div>
+                                        {adhocSelectedParent ? (
+                                            <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-xl">
+                                                <div>
+                                                    <p className="font-bold text-white text-sm">{adhocSelectedParent.firstName} {adhocSelectedParent.lastName}</p>
+                                                    <p className="text-xs text-on-surface-variant">{adhocSelectedParent.email || 'No email'}</p>
+                                                </div>
+                                                <button onClick={() => { setAdhocSelectedParent(null); setAdhocParentSearch(''); }} className="text-on-surface-variant hover:text-white">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ) : adhocParentResults.length > 0 && (
+                                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                                                {adhocParentResults.map((p: any) => (
+                                                    <button
+                                                        key={p.id}
+                                                        onClick={() => { setAdhocSelectedParent(p); setAdhocParentSearch(''); setAdhocParentResults([]); }}
+                                                        className="w-full flex items-center gap-3 p-3 bg-surface-container-low border border-outline-variant/10 rounded-xl hover:bg-primary/10 hover:border-primary/30 transition-all text-left"
+                                                    >
+                                                        <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">
+                                                            {p.firstName[0]}{p.lastName[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-white text-sm">{p.firstName} {p.lastName}</p>
+                                                            <p className="text-xs text-on-surface-variant">{p.email || 'No email'}</p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest px-1">First Name *</label>
+                                            <input type="text" value={adhocNewParent.firstName} onChange={(e) => setAdhocNewParent({...adhocNewParent, firstName: e.target.value})} className="w-full p-3 bg-surface-container-low border border-outline-variant/10 rounded-xl text-white font-bold" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest px-1">Last Name</label>
+                                            <input type="text" value={adhocNewParent.lastName} onChange={(e) => setAdhocNewParent({...adhocNewParent, lastName: e.target.value})} className="w-full p-3 bg-surface-container-low border border-outline-variant/10 rounded-xl text-white font-bold" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest px-1">Email</label>
+                                            <input type="email" value={adhocNewParent.email} onChange={(e) => setAdhocNewParent({...adhocNewParent, email: e.target.value})} className="w-full p-3 bg-surface-container-low border border-outline-variant/10 rounded-xl text-white font-bold" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest px-1">Phone</label>
+                                            <input type="tel" value={adhocNewParent.phone} onChange={(e) => setAdhocNewParent({...adhocNewParent, phone: e.target.value})} className="w-full p-3 bg-surface-container-low border border-outline-variant/10 rounded-xl text-white font-bold" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-4 border-t border-outline-variant/10">
+                                <button
+                                    onClick={() => setStep('invoice-details')}
+                                    disabled={
+                                        !adhocChildName.trim() ||
+                                        (adhocUseExistingParent && !adhocSelectedParent) ||
+                                        (!adhocUseExistingParent && !adhocNewParent.firstName.trim())
+                                    }
+                                    className="w-full py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-all shadow-xl shadow-primary/20"
+                                >
+                                    Proceed to Billing
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {step === 'invoice-details' && (
                         <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-                            <button onClick={() => setStep(selectedParent ? 'select-parent' : 'legacy-onboarding')} className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest hover:translate-x-1 transition-transform">
+                            <button onClick={() => setStep(selectedParent ? 'select-parent' : adhocChildName ? 'adhoc-invoice' : 'legacy-onboarding')} className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest hover:translate-x-1 transition-transform">
                                 <ArrowLeft className="w-4 h-4" /> Back
                             </button>
 

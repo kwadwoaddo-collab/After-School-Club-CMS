@@ -231,6 +231,85 @@ export async function createLegacyFamilyAndInvoice(data: {
     });
 }
 
+export async function createAdHocInvoice(data: {
+    // Existing parent OR new parent details
+    parentId?: string;
+    newParent?: {
+        firstName: string;
+        lastName: string;
+        email?: string;
+        phone?: string;
+    };
+    // Free-text child name — stored in notes, printed on PDF, no DB record created
+    childName: string;
+    amount: string;
+    invoiceDate: Date;
+    dueDate: Date;
+    billingPeriodStart?: Date;
+    billingPeriodEnd?: Date;
+    notes?: string;
+    centreId: string;
+}) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+
+    return await db.transaction(async (tx) => {
+        // 1. Resolve parent — either existing or create a minimal new one
+        let parentId = data.parentId;
+        if (!parentId) {
+            if (!data.newParent?.firstName) throw new Error('Parent name is required for ad-hoc invoices');
+            const [newParent] = await tx.insert(parents).values({
+                organisationId: session.user.organisationId!,
+                firstName: data.newParent.firstName,
+                lastName: data.newParent.lastName || '',
+                email: data.newParent.email || null,
+                phone: data.newParent.phone || null,
+                preferredContact: 'email',
+            }).returning();
+            parentId = newParent.id;
+        }
+
+        // 2. Build description — child name stored in notes so it prints on PDF
+        const childLabel = data.childName.trim();
+        const baseDescription = data.notes
+            ? `${data.notes}\nChild: ${childLabel}`
+            : `After School Club Childcare Services\nChild: ${childLabel}`;
+
+        // 3. Create invoice with childId: null
+        const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+        const [newInvoice] = await tx.insert(invoices).values({
+            organisationId: session.user.organisationId!,
+            centreId: data.centreId,
+            parentId,
+            childId: null,
+            invoiceNumber,
+            amount: data.amount,
+            status: 'draft',
+            invoiceDate: data.invoiceDate,
+            dueDate: data.dueDate,
+            billingPeriodStart: data.billingPeriodStart,
+            billingPeriodEnd: data.billingPeriodEnd,
+            notes: baseDescription,
+        }).returning();
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId!,
+            userId: session.user.id,
+            eventType: 'invoice_created',
+            eventData: JSON.stringify({
+                invoiceId: newInvoice.id,
+                invoiceNumber: newInvoice.invoiceNumber,
+                amount: newInvoice.amount,
+                adhoc: true,
+                childName: childLabel,
+            })
+        });
+
+        revalidatePath('/dashboard/finance');
+        return newInvoice;
+    });
+}
+
 export async function getInvoiceDetails(invoiceId: string) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
@@ -250,7 +329,19 @@ export async function getInvoiceDetails(invoiceId: string) {
         }
     });
 
-    return result;
+    if (!result) return null;
+
+    // Derive childDisplayName: from child record if linked, otherwise parse from notes
+    let childDisplayName: string | null = null;
+    if (result.child) {
+        childDisplayName = `${result.child.firstName} ${result.child.lastName}`.trim();
+    } else if (result.notes) {
+        // Ad-hoc invoices store "Child: [name]" in notes
+        const match = result.notes.match(/Child:\s*(.+)/);
+        if (match) childDisplayName = match[1].trim();
+    }
+
+    return { ...result, childDisplayName };
 }
 
 export async function recordPayment(data: {
