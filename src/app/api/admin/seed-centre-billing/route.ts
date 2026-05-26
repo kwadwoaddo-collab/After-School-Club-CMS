@@ -50,9 +50,10 @@ export async function GET() {
                 bankName: 'SYDENHAM AFTER SCHOOL CLUB LTD trading as Heathway After School Club',
                 sortCode: '04-00-03',
                 accountNo: '06114414',
+                address: '11 The Mall\nHeathway\nDagenham\nRM10 8RE',
                 updatedAt: new Date(),
             }).where(eq(centres.id, c.id));
-            results.push({ centre: c.name, matched: 'Heathway/Dagenham', fields: 'ofstedId=2854826, phone=07456 480797, bank set' });
+            results.push({ centre: c.name, matched: 'Heathway/Dagenham', fields: 'ofstedId=2854826, phone=07456 480797, bank set, address fixed' });
         }
     }
 
