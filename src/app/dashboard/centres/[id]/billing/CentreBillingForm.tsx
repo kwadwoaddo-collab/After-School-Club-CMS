@@ -22,7 +22,7 @@ interface CentreBillingFormProps {
         billingPhone: string | null;
         billingEmail: string | null;
         address: string | null;
-        approvalDate: string | null;
+        // approvalDate: string | null; // Restore after running migration 0007
     };
 }
 
@@ -41,7 +41,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
         billingPhone: centre.billingPhone ?? '',
         billingEmail: centre.billingEmail ?? '',
         address: centre.address ?? '',
-        approvalDate: centre.approvalDate ?? '',
+        // approvalDate: centre.approvalDate ?? '', // Restore after running migration 0007
     });
 
     const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -211,6 +211,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                                 className={inputClass}
                             />
                         </div>
+                        {/* Approval Date field — restore after running migration 0007:
                         <div>
                             <label className={labelClass}>
                                 <CalendarDays className="w-3.5 h-3.5" /> Approval Date
@@ -222,8 +223,8 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                                 placeholder="e.g. 3 September 2025"
                                 className={inputClass}
                             />
-                            <p className="text-xs text-on-surface-variant mt-1.5 px-1">Leave blank for Dagenham — only Sydenham has an approval date.</p>
                         </div>
+                        */}
                         <div>
                             <label className={labelClass}>
                                 <User className="w-3.5 h-3.5" /> Manager Name

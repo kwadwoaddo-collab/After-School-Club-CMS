@@ -29,7 +29,6 @@ export default async function CentreBillingPage(props: { params: Promise<{ id: s
             billingPhone: true,
             billingEmail: true,
             address: true,
-            approvalDate: true,
         }
     });
 

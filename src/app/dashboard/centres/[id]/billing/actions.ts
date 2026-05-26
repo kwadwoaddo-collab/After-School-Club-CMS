@@ -16,7 +16,7 @@ export interface CentreBillingPayload {
     billingPhone: string;
     billingEmail: string;
     address: string;
-    approvalDate: string;
+    // approvalDate: string; // Restore after running migration 0007
 }
 
 export async function updateCentreBilling(payload: CentreBillingPayload) {
@@ -47,7 +47,7 @@ export async function updateCentreBilling(payload: CentreBillingPayload) {
             billingPhone: payload.billingPhone || null,
             billingEmail: payload.billingEmail || null,
             address: payload.address || null,
-            approvalDate: payload.approvalDate || null,
+            // approvalDate: payload.approvalDate || null, // Restore after running migration 0007
             updatedAt: new Date(),
         })
         .where(eq(centres.id, payload.centreId));
