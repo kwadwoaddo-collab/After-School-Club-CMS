@@ -126,12 +126,13 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        height: 60,
+        minHeight: 75,
         backgroundColor: '#1e40af', // HASC Blue
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 40,
+        paddingVertical: 12,
         color: 'white',
         fontSize: 8,
     },
@@ -180,15 +181,9 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     <View>
                         <Text style={styles.subtitle}>Payment Confirmation</Text>
                         <Text style={styles.title}>RECEIPT</Text>
-                        {addressLines.map((line: string, i: number) => (
-                            <Text key={i} style={{ fontSize: 8, color: '#1e293b', marginTop: i === 0 ? 4 : 1 }}>{line}</Text>
-                        ))}
-                        {centre?.ofstedId && (
-                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>Ofsted / Ref No: {centre.ofstedId}</Text>
-                        )}
-                        {centre?.approvalDate && (
-                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 1 }}>Approval Date: {centre.approvalDate}</Text>
-                        )}
+                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>
+                            Ofsted / Ref No: {centre?.ofstedId || 'N/A'}
+                        </Text>
                     </View>
                     <View style={styles.invoiceInfo}>
                         <View style={styles.infoRow}>
@@ -277,14 +272,14 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>{organisationName || centre?.name || 'CENTRE'}</Text>
-                        {addressLines.slice(1).map((line: string, i: number) => (
-                            <Text key={i} style={{ color: '#ffffff', fontSize: 7 }}>{line}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{organisationName || centre?.name || 'CENTRE'}</Text>
+                        {addressLines.map((line: string, i: number) => (
+                            <Text key={i} style={{ color: '#ffffff', fontSize: 7, marginTop: 1 }}>{line}</Text>
                         ))}
                     </View>
                     <View style={styles.footerRight}>
-                        <Text style={{ color: '#ffffff' }}>Tel: {centre?.billingPhone || '—'}</Text>
-                        <Text style={{ color: '#ffffff' }}>{centre?.billingEmail || ''}</Text>
+                        <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>Tel: {centre?.billingPhone || '—'}</Text>
+                        {centre?.billingEmail ? <Text style={{ color: '#ffffff', marginTop: 2 }}>{centre.billingEmail}</Text> : null}
                     </View>
                 </View>
             </Page>

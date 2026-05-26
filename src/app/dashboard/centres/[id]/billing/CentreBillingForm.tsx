@@ -147,13 +147,13 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label className={labelClass}>
-                                <Building2 className="w-3.5 h-3.5" /> Bank Name
+                                <Building2 className="w-3.5 h-3.5" /> Account Name
                             </label>
                             <input
                                 type="text"
                                 value={form.bankName}
                                 onChange={set('bankName')}
-                                placeholder="e.g. Barclays"
+                                placeholder="e.g. SYDENHAM AFTER SCHOOL CLUB LTD"
                                 className={inputClass}
                             />
                         </div>
