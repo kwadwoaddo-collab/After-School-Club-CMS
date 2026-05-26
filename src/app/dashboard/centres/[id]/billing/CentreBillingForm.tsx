@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { updateCentreBilling } from './actions';
 import {
     Building2, CreditCard, Phone, Mail, User, Hash,
-    Save, Loader2, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck
+    Save, Loader2, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck,
+    MapPin, CalendarDays
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,6 +21,8 @@ interface CentreBillingFormProps {
         managerName: string | null;
         billingPhone: string | null;
         billingEmail: string | null;
+        address: string | null;
+        approvalDate: string | null;
     };
 }
 
@@ -37,9 +40,11 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
         managerName: centre.managerName ?? '',
         billingPhone: centre.billingPhone ?? '',
         billingEmail: centre.billingEmail ?? '',
+        address: centre.address ?? '',
+        approvalDate: centre.approvalDate ?? '',
     });
 
-    const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm(prev => ({ ...prev, [field]: e.target.value }));
         setSaved(false);
         setError(null);
@@ -94,12 +99,39 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                 <div>
                     <p className="text-sm font-bold text-white">These details appear on all invoices and receipts</p>
                     <p className="text-xs text-on-surface-variant mt-1">
-                        Bank details, OFSTED number, manager name, and contact info are printed on every PDF generated for this centre. Fill them in to produce complete, professional documents.
+                        Address, bank details, Ofsted/reference number, approval date, manager name, and contact info are printed on every PDF generated for this centre.
                     </p>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Centre Address */}
+                <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-violet-500/10 rounded-2xl flex items-center justify-center">
+                            <MapPin className="w-5 h-5 text-violet-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-black text-white">Centre Address</h2>
+                            <p className="text-xs text-on-surface-variant">Printed in the invoice footer and header</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className={labelClass}>
+                            <MapPin className="w-3.5 h-3.5" /> Full Address
+                        </label>
+                        <textarea
+                            value={form.address}
+                            onChange={set('address')}
+                            placeholder={`e.g. Sydenham After School Club\n105 Sydenham Road\nLondon\nSE26 5UA`}
+                            rows={4}
+                            className={inputClass + ' resize-none'}
+                        />
+                        <p className="text-xs text-on-surface-variant mt-1.5 px-1">Enter each line on a new line — name, street, city, postcode.</p>
+                    </div>
+                </div>
+
                 {/* Bank Details */}
                 <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
                     <div className="flex items-center gap-3 mb-6">
@@ -169,15 +201,28 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className={labelClass}>
-                                <Hash className="w-3.5 h-3.5" /> Ofsted ID / Registration No.
+                                <Hash className="w-3.5 h-3.5" /> Ofsted / Setting Reference No.
                             </label>
                             <input
                                 type="text"
                                 value={form.ofstedId}
                                 onChange={set('ofstedId')}
-                                placeholder="e.g. EY123456"
+                                placeholder="e.g. 2854827"
                                 className={inputClass}
                             />
+                        </div>
+                        <div>
+                            <label className={labelClass}>
+                                <CalendarDays className="w-3.5 h-3.5" /> Approval Date
+                            </label>
+                            <input
+                                type="text"
+                                value={form.approvalDate}
+                                onChange={set('approvalDate')}
+                                placeholder="e.g. 3 September 2025"
+                                className={inputClass}
+                            />
+                            <p className="text-xs text-on-surface-variant mt-1.5 px-1">Leave blank for Dagenham — only Sydenham has an approval date.</p>
                         </div>
                         <div>
                             <label className={labelClass}>
@@ -215,7 +260,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                                 type="tel"
                                 value={form.billingPhone}
                                 onChange={set('billingPhone')}
-                                placeholder="e.g. 020 7946 0958"
+                                placeholder="e.g. 07931 173699"
                                 className={inputClass}
                             />
                         </div>

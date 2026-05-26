@@ -15,6 +15,8 @@ export interface CentreBillingPayload {
     managerName: string;
     billingPhone: string;
     billingEmail: string;
+    address: string;
+    approvalDate: string;
 }
 
 export async function updateCentreBilling(payload: CentreBillingPayload) {
@@ -44,6 +46,8 @@ export async function updateCentreBilling(payload: CentreBillingPayload) {
             managerName: payload.managerName || null,
             billingPhone: payload.billingPhone || null,
             billingEmail: payload.billingEmail || null,
+            address: payload.address || null,
+            approvalDate: payload.approvalDate || null,
             updatedAt: new Date(),
         })
         .where(eq(centres.id, payload.centreId));

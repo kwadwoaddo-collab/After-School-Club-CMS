@@ -157,6 +157,8 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
     const { child, centre, invoiceNumber, payments } = invoice;
     // parent is a top-level relation on the invoice, not nested under child
     const parent = invoice.parent || (child as any)?.parent || null;
+    // Parse address into lines for multi-line display
+    const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
     
     // Sort payments by date desc (latest first)
     const sortedPayments = [...(payments ?? [])].sort((a: any, b: any) => 
@@ -178,7 +180,15 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     <View>
                         <Text style={styles.subtitle}>Payment Confirmation</Text>
                         <Text style={styles.title}>RECEIPT</Text>
-                        <Text style={{ fontSize: 8, color: '#64748b' }}>OFSTED NO: {centre?.ofstedId || 'N/A'}</Text>
+                        {addressLines.map((line: string, i: number) => (
+                            <Text key={i} style={{ fontSize: 8, color: '#1e293b', marginTop: i === 0 ? 4 : 1 }}>{line}</Text>
+                        ))}
+                        {centre?.ofstedId && (
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>Ofsted / Ref No: {centre.ofstedId}</Text>
+                        )}
+                        {centre?.approvalDate && (
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 1 }}>Approval Date: {centre.approvalDate}</Text>
+                        )}
                     </View>
                     <View style={styles.invoiceInfo}>
                         <View style={styles.infoRow}>
@@ -268,11 +278,13 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
                         <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>{organisationName || centre?.name || 'CENTRE'}</Text>
-                        <Text style={{ color: '#ffffff' }}>{centre?.address || ''}</Text>
+                        {addressLines.slice(1).map((line: string, i: number) => (
+                            <Text key={i} style={{ color: '#ffffff', fontSize: 7 }}>{line}</Text>
+                        ))}
                     </View>
                     <View style={styles.footerRight}>
-                        <Text style={{ color: '#ffffff' }}>Phone: {centre?.billingPhone || '—'}</Text>
-                        <Text style={{ color: '#ffffff' }}>Email: {centre?.billingEmail || '—'}</Text>
+                        <Text style={{ color: '#ffffff' }}>Tel: {centre?.billingPhone || '—'}</Text>
+                        <Text style={{ color: '#ffffff' }}>{centre?.billingEmail || ''}</Text>
                     </View>
                 </View>
             </Page>

@@ -71,6 +71,7 @@ export const centres = pgTable('centres', {
   billingPhone: varchar('billing_phone', { length: 20 }),
   billingEmail: varchar('billing_email', { length: 255 }),
   signatureUrl: varchar('signature_url', { length: 500 }),
+  approvalDate: varchar('approval_date', { length: 100 }),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

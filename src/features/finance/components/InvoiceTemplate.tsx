@@ -162,6 +162,8 @@ interface InvoiceTemplateProps {
 
 export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplateProps) => {
     const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, childDisplayName } = invoice;
+    // Parse address into lines for multi-line display
+    const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
     // Fallback to child.parent if parent relation is missing (legacy support)
     const activeParent = parent || (child && (child as any).parent);
     // Show child name from record or from the ad-hoc free-text field
@@ -180,7 +182,15 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     <View>
                         <Text style={styles.subtitle}>Child care services</Text>
                         <Text style={styles.title}>INVOICE</Text>
-                        <Text style={{ fontSize: 8, color: '#64748b' }}>OFSTED NO: {centre?.ofstedId || 'N/A'}</Text>
+                        {addressLines.map((line: string, i: number) => (
+                            <Text key={i} style={{ fontSize: 8, color: '#1e293b', marginTop: i === 0 ? 4 : 1 }}>{line}</Text>
+                        ))}
+                        {centre?.ofstedId && (
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>Ofsted / Ref No: {centre.ofstedId}</Text>
+                        )}
+                        {centre?.approvalDate && (
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 1 }}>Approval Date: {centre.approvalDate}</Text>
+                        )}
                     </View>
                     <View style={styles.invoiceInfo}>
                         <View style={styles.infoRow}>
@@ -277,12 +287,14 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>{organisationName || 'HASC CENTRE'}</Text>
-                        <Text style={{ color: '#ffffff' }}>{centre?.address || 'N/A'}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>{organisationName || centre?.name || 'HASC CENTRE'}</Text>
+                        {addressLines.slice(1).map((line: string, i: number) => (
+                            <Text key={i} style={{ color: '#ffffff', fontSize: 7 }}>{line}</Text>
+                        ))}
                     </View>
                     <View style={styles.footerRight}>
-                        <Text style={{ color: '#ffffff' }}>Phone: {centre?.billingPhone || '—'}</Text>
-                        <Text style={{ color: '#ffffff' }}>Email: {centre?.billingEmail || '—'}</Text>
+                        <Text style={{ color: '#ffffff' }}>Tel: {centre?.billingPhone || '—'}</Text>
+                        <Text style={{ color: '#ffffff' }}>{centre?.billingEmail || ''}</Text>
                     </View>
                 </View>
             </Page>

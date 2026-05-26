@@ -28,6 +28,8 @@ export default async function CentreBillingPage(props: { params: Promise<{ id: s
             managerName: true,
             billingPhone: true,
             billingEmail: true,
+            address: true,
+            approvalDate: true,
         }
     });
 
