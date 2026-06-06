@@ -505,91 +505,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 growthStats={growthStats}
             />
 
-            {/* ── Today at a Glance ───────────────────────────────────── */}
-            {hasCentres && (
-                <Suspense fallback={<div className="h-24 bg-surface-container-high rounded-2xl animate-pulse" />}>
-                    <TodaysSnapshot accessibleCentreIds={accessibleCentreIds} activeCentreId={activeCentreId} />
-                </Suspense>
-            )}
 
-            {/* ── Revenue & Heatmap Row ────────────────────────────────── */}
-            {hasCentres && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <Suspense fallback={<div className="h-36 bg-surface-container-high rounded-2xl animate-pulse" />}>
-                        <RevenueWidget organisationId={session.user.organisationId!} />
-                    </Suspense>
-                    <Suspense fallback={<div className="h-36 bg-surface-container-high rounded-2xl animate-pulse" />}>
-                        <AttendanceHeatmap accessibleCentreIds={accessibleCentreIds} activeCentreId={activeCentreId} />
-                    </Suspense>
-                </div>
-            )}
-
-
-            {/* ── Finance Overview ─────────────────────────────────────── */}
-            <RevenueWidget organisationId={org.id} />
-
-            {/* ── Attendance Heatmap ───────────────────────────────────── */}
-            {hasCentres && (
-                <div className="bg-surface-container-high p-6 rounded-2xl border border-outline-variant/10">
-                    <AttendanceHeatmap
-                        activeCentreId={activeCentreId}
-                        accessibleCentreIds={accessibleCentreIds}
-                    />
-                </div>
-            )}
-
-            {/* ── Centre Capacity Overview ────────────────────────────────── */}
-            {hasCentres && (
-                <div className="bg-surface-container-high p-8 rounded-[32px] border border-outline-variant/10 shadow-xl overflow-hidden relative group">
-                    <div className="absolute -right-24 -top-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-                    
-                    <div className="flex items-center justify-between mb-8 relative z-10">
-                        <div>
-                            <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5 text-primary" />
-                                Centre Capacity Overview
-                            </h2>
-                            <p className="text-sm text-on-surface-variant font-medium mt-1">Real-time occupancy and 7-day load forecast</p>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            {peakDayName && (
-                                <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-full border border-outline-variant/10">
-                                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(142,171,255,0.4)]" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Peak Day: {peakDayName}</span>
-                                </div>
-                            )}
-                            <Link href="/dashboard/centres" className="text-xs font-bold text-primary hover:text-blue-500 transition-colors uppercase tracking-widest flex items-center gap-2">
-                               All Centres <ArrowRight className="w-4 h-4" />
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 relative z-10">
-                        {centresWithOccupancy.slice(0, 3).map((centre: any) => (
-                            <div key={centre.id} className="bg-surface-container-low/50 border border-outline-variant/5 rounded-2xl p-5 hover:border-primary/20 transition-all">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                                            <MapPin className="w-5 h-5 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-sm tracking-tight">{centre.name}</h3>
-                                            <p className="text-[10px] text-on-surface-variant font-medium">{centre.todayCount} bookings today</p>
-                                        </div>
-                                    </div>
-                                    <CapacityIndicator current={centre.todayCount} max={10} size="sm" />
-                                </div>
-                                <LoadForecast data={centre.forecast} max={10} className="mt-4" />
-                            </div>
-                        ))}
-                        {centresWithOccupancy.length === 0 && (
-                            <div className="col-span-full py-8 text-center text-on-surface-variant/50 font-medium italic">
-                                No centre activity tracked for this period.
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
 
             {/* ── Feature Module Cards ─────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -817,38 +733,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         </Link>
                     </div>
 
-
-            </div>
-
-            {/* ── Student Ecosystem row ─────────────────────────────────── */}
-            <div className="bg-surface-container-low rounded-2xl p-6 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-outline-variant/10 group hover:border-primary/30 transition-all relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"></div>
-                <div className="flex items-center gap-5 relative z-10">
-                    <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Users className="w-7 h-7 text-primary" />
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-white text-xl">Student Ecosystem</h2>
-                        <p className="text-sm text-on-surface-variant font-medium mt-1">{totalStudents} student{totalStudents !== 1 ? 's' : ''} registered across all centres</p>
-                    </div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto justify-between sm:justify-end mt-2 sm:mt-0 relative z-10">
-                    {/* Real total count badge */}
-                    {totalStudents > 0 && (
-                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-surface-container-high rounded-xl border border-outline-variant/10">
-                            <Users className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-bold text-white">{totalStudents}</span>
-                            <span className="text-xs text-on-surface-variant">student{totalStudents !== 1 ? 's' : ''}</span>
-                        </div>
-                    )}
-                    <Link
-                        href="/dashboard/students"
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl border border-outline-variant/10 bg-surface-container-high text-primary text-sm font-bold hover:bg-surface-bright transition-colors whitespace-nowrap shadow-sm"
-                    >
-                        View Students <ArrowRight className="w-4 h-4" />
-                    </Link>
-                </div>
 
             </div>
         </div>

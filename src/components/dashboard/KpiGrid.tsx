@@ -138,11 +138,11 @@ export function KpiGrid({
         <div
           key={stat.label}
           className={cn(
-            'relative group overflow-hidden rounded-2xl border transition-all duration-300 cursor-default',
+            'relative group overflow-hidden rounded-xl border transition-all duration-300 cursor-default',
             'bg-surface-container-high',
             'hover:shadow-[0_8px_32px_rgba(0,0,0,0.25)] hover:scale-[1.015] hover:-translate-y-0.5',
             stat.borderColor,
-            'min-h-[156px] p-6 flex flex-col justify-between'
+            'min-h-[116px] p-4 flex flex-col justify-between'
           )}
         >
           {/* Background gradient wash */}
@@ -155,11 +155,11 @@ export function KpiGrid({
 
           {/* Sparkline watermark */}
           {stat.sparkline && (
-            <div className="absolute right-4 bottom-12 opacity-[0.15] group-hover:opacity-[0.35] transition-opacity duration-300 pointer-events-none">
+            <div className="absolute right-3 bottom-10 opacity-[0.15] group-hover:opacity-[0.35] transition-opacity duration-300 pointer-events-none">
               <GrowthSparkline
                 data={stat.sparkline}
-                width={72}
-                height={28}
+                width={64}
+                height={22}
                 strokeColor={stat.sparklineColor}
               />
             </div>
@@ -167,9 +167,9 @@ export function KpiGrid({
 
           <div className="relative z-10">
             {/* Header row: icon + trend */}
-            <div className="flex items-start justify-between mb-4">
-              <div className={cn('p-2.5 rounded-xl', stat.iconBg)}>
-                <stat.icon className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-2">
+              <div className={cn('p-2 rounded-lg', stat.iconBg)}>
+                <stat.icon className="w-4 h-4" />
               </div>
 
               {stat.trend ? (
@@ -178,18 +178,18 @@ export function KpiGrid({
             </div>
 
             {/* Label */}
-            <p className="text-on-surface-variant text-xs font-semibold uppercase tracking-wider mb-1">
+            <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mb-0.5">
               {stat.label}
             </p>
 
             {/* Large metric number */}
-            <h3 className={cn('text-4xl font-black tracking-tight tabular-nums', stat.colorClass)}>
+            <h3 className={cn('text-2xl font-black tracking-tight tabular-nums', stat.colorClass)}>
               {formatNumber(stat.value ?? 0)}
             </h3>
           </div>
 
           {/* Footer */}
-          <div className="relative z-10 pt-3 border-t border-outline-variant/10 text-xs text-on-surface-variant/60 font-medium">
+          <div className="relative z-10 pt-2 border-t border-outline-variant/10 text-[10px] text-on-surface-variant/60 font-medium">
             {stat.subtext}
           </div>
         </div>
