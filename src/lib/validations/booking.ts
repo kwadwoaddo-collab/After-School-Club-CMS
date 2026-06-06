@@ -3,6 +3,7 @@ import { z } from 'zod';
 const SCHOOL_YEARS = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'] as const;
 
 export const childSchema = z.object({
+  id: z.string().uuid().optional(),
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
   dateOfBirth: z.string().optional(),

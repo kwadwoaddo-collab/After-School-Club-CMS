@@ -112,25 +112,58 @@ export class BookingService {
 
     // Process each child
     for (const childInput of input.children) {
-      // Create child
-      const [child] = await db.insert(children).values({
-        parentId: parent.id,
-        organisationId: centre.organisationId,
-        centreId: input.appointment.centreId as string,
-        firstName: childInput.firstName,
-        lastName: childInput.lastName,
-        schoolYear: childInput.schoolYear,
-        dateOfBirth: childInput.dateOfBirth ? new Date(childInput.dateOfBirth) : undefined,
-        notes: childInput.notes || undefined,
-      }).returning();
+      let child;
 
-      // Add child subjects
-      for (const subject of childInput.subjects) {
-        await db.insert(childSubjects).values({
-          childId: child.id,
-          subject,
-          customSubject: subject === 'Other' ? childInput.customSubject : undefined,
+      // If child already exists, resolve it!
+      if (childInput.id) {
+        child = await db.query.children.findFirst({
+          where: and(
+            eq(children.id, childInput.id),
+            eq(children.parentId, parent.id)
+          )
         });
+
+        if (child) {
+          // Update child's centreId if it has changed to match the booking centre
+          await db.update(children)
+            .set({ 
+              centreId: input.appointment.centreId as string,
+              updatedAt: new Date()
+            })
+            .where(eq(children.id, child.id));
+        }
+      }
+
+      // If not existing, create a new child!
+      if (!child) {
+        const [insertedChild] = await db.insert(children).values({
+          parentId: parent.id,
+          organisationId: centre.organisationId,
+          centreId: input.appointment.centreId as string,
+          firstName: childInput.firstName,
+          lastName: childInput.lastName,
+          schoolYear: childInput.schoolYear,
+          dateOfBirth: childInput.dateOfBirth ? new Date(childInput.dateOfBirth) : undefined,
+          notes: childInput.notes || undefined,
+        }).returning();
+        child = insertedChild;
+      }
+
+      // Add child subjects (only if the relation doesn't exist yet to prevent duplicates)
+      for (const subject of childInput.subjects) {
+        const existingSubject = await db.query.childSubjects.findFirst({
+          where: and(
+            eq(childSubjects.childId, child.id),
+            eq(childSubjects.subject, subject)
+          ),
+        });
+        if (!existingSubject) {
+          await db.insert(childSubjects).values({
+            childId: child.id,
+            subject,
+            customSubject: subject === 'Other' ? childInput.customSubject : undefined,
+          });
+        }
       }
 
       // Link to booking

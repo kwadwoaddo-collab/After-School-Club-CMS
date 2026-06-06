@@ -81,6 +81,104 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [daySchedule, setDaySchedule] = useState<{ start: string; end: string; open: boolean } | null>(null);
 
+    // Existing student booking states
+    const [bookingMode, setBookingMode] = useState<'new' | 'existing'>('new');
+    const [parentSearchQuery, setParentSearchQuery] = useState('');
+    const [parentSearchResults, setParentSearchResults] = useState<any[]>([]);
+    const [searchingParents, setSearchingParents] = useState(false);
+    const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+    const [parentChildrenList, setParentChildrenList] = useState<any[]>([]);
+    const [selectedChildrenStatus, setSelectedChildrenStatus] = useState<Record<string, boolean>>({});
+
+    const handleParentSearch = async (query: string) => {
+        setParentSearchQuery(query);
+        if (query.trim().length < 2) {
+            setParentSearchResults([]);
+            return;
+        }
+        setSearchingParents(true);
+        try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            if (res.ok) {
+                const data = await res.json();
+                // Filter only parents
+                const parentsOnly = (data.results || []).filter((r: any) => r.type === 'parent');
+                setParentSearchResults(parentsOnly);
+            }
+        } catch (err) {
+            console.error('Failed to search parents:', err);
+        } finally {
+            setSearchingParents(false);
+        }
+    };
+
+    const handleSelectParent = async (parentId: string) => {
+        setSelectedParentId(parentId);
+        setParentSearchResults([]);
+        setParentSearchQuery('');
+        
+        const fetchToast = toast.loading('Fetching parent and child details...');
+        try {
+            const res = await fetch(`/api/parents/${parentId}`);
+            if (res.ok) {
+                const data = await res.json();
+                toast.success('Parent details loaded!', { id: fetchToast });
+                
+                // Auto-fill parent contact info
+                setValue('parent.firstName', data.parent.firstName);
+                setValue('parent.lastName', data.parent.lastName);
+                setValue('parent.email', data.parent.email || '');
+                setValue('parent.phone', data.parent.phone || '');
+                setValue('parent.preferredContact', data.parent.preferredContact || 'email');
+                
+                setParentChildrenList(data.children || []);
+                
+                // Clear existing children fields array
+                setValue('children', []);
+                
+                // Reset child status map
+                const statusMap: Record<string, boolean> = {};
+                (data.children || []).forEach((c: any) => {
+                    statusMap[c.id] = false;
+                });
+                setSelectedChildrenStatus(statusMap);
+            } else {
+                toast.error('Failed to load parent details.', { id: fetchToast });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Error loading parent details.', { id: fetchToast });
+        }
+    };
+
+    const toggleChildSelection = (child: any) => {
+        const isCurrentlySelected = !!selectedChildrenStatus[child.id];
+        const updatedStatus = { ...selectedChildrenStatus, [child.id]: !isCurrentlySelected };
+        setSelectedChildrenStatus(updatedStatus);
+
+        const currentChildren = getValues('children') || [];
+        if (!isCurrentlySelected) {
+            // Check if not already added to prevent duplicates
+            if (!currentChildren.some(c => c.id === child.id)) {
+                append({
+                    id: child.id,
+                    firstName: child.firstName,
+                    lastName: child.lastName,
+                    schoolYear: child.schoolYear,
+                    dateOfBirth: child.dateOfBirth ? new Date(child.dateOfBirth).toISOString().split('T')[0] : '',
+                    subjects: [],
+                    notes: '',
+                });
+            }
+        } else {
+            // Find index and remove
+            const idx = currentChildren.findIndex(c => c.id === child.id);
+            if (idx !== -1) {
+                remove(idx);
+            }
+        }
+    };
+
     // Calculate day schedule when date changes
     useEffect(() => {
         if (!selectedDate) {
@@ -463,7 +561,86 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 1: Parent Details */}
                 {step === 1 && (
                     <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
-                        <h2 className="text-xl font-semibold text-gray-900">Parent Details</h2>
+                        {/* Toggle for New / Existing Family */}
+                        <div className="flex gap-4 mb-6">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBookingMode('new');
+                                    setValue('parent', {
+                                        firstName: '',
+                                        lastName: '',
+                                        email: '',
+                                        phone: '',
+                                        preferredContact: 'email',
+                                    });
+                                    setSelectedParentId(null);
+                                    setParentChildrenList([]);
+                                    setValue('children', []);
+                                }}
+                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-[#adc6ff]/20 border-[#adc6ff]/50 text-[#adc6ff]' : 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'}`}
+                            >
+                                New Family
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBookingMode('existing');
+                                    setValue('parent', {
+                                        firstName: '',
+                                        lastName: '',
+                                        email: '',
+                                        phone: '',
+                                        preferredContact: 'email',
+                                    });
+                                    setSelectedParentId(null);
+                                    setParentChildrenList([]);
+                                    setValue('children', []);
+                                }}
+                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-[#adc6ff]/20 border-[#adc6ff]/50 text-[#adc6ff]' : 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'}`}
+                            >
+                                Existing Family
+                            </button>
+                        </div>
+
+                        {bookingMode === 'existing' && (
+                            <div className="relative mb-6">
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Search Parent *</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Type parent name, email or phone..."
+                                        value={parentSearchQuery}
+                                        onChange={(e) => handleParentSearch(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 brand-ring focus:border-transparent text-gray-900 pr-10"
+                                    />
+                                    {searchingParents && (
+                                        <div className="absolute right-3 top-3.5">
+                                            <Spinner size="sm" />
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Dropdown search results */}
+                                {parentSearchResults.length > 0 && (
+                                    <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {parentSearchResults.map((result: any) => (
+                                            <button
+                                                key={result.id}
+                                                type="button"
+                                                onClick={() => handleSelectParent(result.id)}
+                                                className="w-full px-4 py-3 text-left hover:bg-gray-50 flex flex-col border-b last:border-b-0"
+                                            >
+                                                <span className="font-semibold text-gray-900">{result.title}</span>
+                                                <span className="text-xs text-gray-505" style={{ color: '#666' }}>{result.subtitle}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <h2 className="text-xl font-semibold text-gray-900">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">✓ Linked</span>}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
@@ -507,92 +684,175 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 2: Children Details */}
                 {step === 2 && (
                     <div className="space-y-6 animate-fadeIn">
-                        {fields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-6 rounded-lg space-y-6 relative border border-gray-200 shadow-sm">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-lg font-semibold text-gray-800">Child {index + 1}</h3>
-                                    {fields.length > 1 && (
-                                        <button type="button" onClick={() => remove(index)} className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center">Remove</button>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
-                                        <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's first name" />
-                                        {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
-                                        <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's last name" />
-                                        {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
-                                    </div>
-                                    <div className="hidden">
-                                        <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>
-                                        <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
-                                        {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-800 mb-1">School Year *</label>
-                                        <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900">
-                                            <option value="">Select year...</option>
-                                            {SCHOOL_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
-                                        </select>
-                                        {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-800 mb-2">Subjects for Assessment *</label>
-                                        <Controller
-                                            name={`children.${index}.subjects`}
-                                            control={control}
-                                            render={({ field }) => (
-                                                <div className="flex flex-wrap gap-3">
-                                                    {SUBJECTS.map((subject) => {
-                                                        const isSelected = field.value?.includes(subject);
-                                                        return (
-                                                            <button
-                                                                key={subject}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const newValue = isSelected ? field.value?.filter((s) => s !== subject) : [...(field.value || []), subject];
-                                                                    field.onChange(newValue);
-                                                                }}
-                                                                className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-white' : 'bg-white border-gray-300 text-slate-800 hover:border-gray-400'}`}
-                                                            >
-                                                                {isSelected && '✓ '}{subject}
-                                                            </button>
-                                                        );
-                                                    })}
+                        {bookingMode === 'existing' ? (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-bold text-gray-900 mb-2">Select Registered Children</h3>
+                                {parentChildrenList.length === 0 ? (
+                                    <p className="text-sm text-gray-500 bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                                        No registered children found for this parent. Please toggle back to Step 1 and add them manually under "New Family" mode.
+                                    </p>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {parentChildrenList.map((child) => {
+                                            const isSelected = !!selectedChildrenStatus[child.id];
+                                            const currentChildren = getValues('children') || [];
+                                            const childFormIndex = currentChildren.findIndex(c => c.id === child.id);
+
+                                            return (
+                                                <div key={child.id} className="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                                                    <label className="flex items-center gap-3 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => toggleChildSelection(child)}
+                                                            className="w-5 h-5 brand-checkbox rounded focus:ring-0"
+                                                        />
+                                                        <div className="text-left">
+                                                            <p className="font-bold text-gray-900">{child.firstName} {child.lastName}</p>
+                                                            <p className="text-xs text-gray-500 font-medium">Year Group: {child.schoolYear}</p>
+                                                        </div>
+                                                    </label>
+
+                                                    {isSelected && childFormIndex !== -1 && (
+                                                        <div className="pt-4 border-t border-gray-200/65 space-y-4 animate-fadeIn">
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-slate-800 mb-2">Subjects for Assessment *</label>
+                                                                <Controller
+                                                                    name={`children.${childFormIndex}.subjects`}
+                                                                    control={control}
+                                                                    render={({ field: selectField }) => (
+                                                                        <div className="flex flex-wrap gap-2">
+                                                                            {SUBJECTS.map((subject) => {
+                                                                                const isSubSelected = selectField.value?.includes(subject);
+                                                                                return (
+                                                                                    <button
+                                                                                        key={subject}
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            const newValue = isSubSelected 
+                                                                                                ? selectField.value?.filter((s) => s !== subject) 
+                                                                                                : [...(selectField.value || []), subject];
+                                                                                            selectField.onChange(newValue);
+                                                                                        }}
+                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-white' : 'bg-white border-gray-300 text-slate-700 hover:border-gray-400'}`}
+                                                                                    >
+                                                                                        {isSubSelected && '✓ '}{subject}
+                                                                                    </button>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    )}
+                                                                />
+                                                                {errors.children?.[childFormIndex]?.subjects && (
+                                                                    <p className="text-red-600 text-sm mt-1">{errors.children[childFormIndex]?.subjects?.message}</p>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-slate-800 mb-1">Additional Notes (Optional)</label>
+                                                                <textarea
+                                                                    {...register(`children.${childFormIndex}.notes`)}
+                                                                    rows={2}
+                                                                    placeholder="Any specific goals or information..."
+                                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        />
-                                        {watchedChildren[index]?.subjects?.includes('Other') && (
-                                            <div className="mt-2 animate-fadeIn">
-                                                <input
-                                                    {...register(`children.${index}.customSubject`)}
-                                                    placeholder="Please specify subject..."
-                                                    className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50 text-gray-900"
-                                                />
-                                            </div>
-                                        )}
-                                        {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
+                                            );
+                                        })}
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-800 mb-1">Additional Notes (Optional)</label>
-                                        <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
-                                    </div>
-                                </div>
+                                )}
                             </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={() => append({ firstName: '', lastName: '', subjects: [], schoolYear: 'Y1', dateOfBirth: '' })}
-                            className="w-full py-3 border-2 border-dashed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 brand-btn-outline"
-                        >
-                            + Add Another Child
-                        </button>
+                        ) : (
+                            <>
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="bg-gray-50 p-6 rounded-lg space-y-6 relative border border-gray-200 shadow-sm">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className="text-lg font-semibold text-gray-800">Child {index + 1}</h3>
+                                            {fields.length > 1 && (
+                                                <button type="button" onClick={() => remove(index)} className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center">Remove</button>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
+                                                <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's first name" />
+                                                {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
+                                                <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" placeholder="Child's last name" />
+                                                {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
+                                            </div>
+                                            <div className="hidden">
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>
+                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
+                                                {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">School Year *</label>
+                                                <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900">
+                                                    <option value="">Select year...</option>
+                                                    {SCHOOL_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
+                                                </select>
+                                                {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-slate-800 mb-2">Subjects for Assessment *</label>
+                                                <Controller
+                                                    name={`children.${index}.subjects`}
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <div className="flex flex-wrap gap-3">
+                                                            {SUBJECTS.map((subject) => {
+                                                                const isSelected = field.value?.includes(subject);
+                                                                return (
+                                                                    <button
+                                                                        key={subject}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newValue = isSelected ? field.value?.filter((s) => s !== subject) : [...(field.value || []), subject];
+                                                                            field.onChange(newValue);
+                                                                        }}
+                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-white' : 'bg-white border-gray-300 text-slate-800 hover:border-gray-400'}`}
+                                                                    >
+                                                                        {isSelected && '✓ '}{subject}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                />
+                                                {watchedChildren[index]?.subjects?.includes('Other') && (
+                                                    <div className="mt-2 animate-fadeIn">
+                                                        <input
+                                                            {...register(`children.${index}.customSubject`)}
+                                                            placeholder="Please specify subject..."
+                                                            className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50 text-gray-900"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Additional Notes (Optional)</label>
+                                                <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => append({ firstName: '', lastName: '', subjects: [], schoolYear: 'Y1', dateOfBirth: '' })}
+                                    className="w-full py-3 border-2 border-dashed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 brand-btn-outline"
+                                >
+                                    + Add Another Child
+                                </button>
+                            </>
+                        )}
                     </div>
-                )
-                }
+                )}
 
                 {/* Step 3: Appointment */}
                 {
