@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { signInWithGoogle } from '@/app/actions/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -203,21 +204,13 @@ export default function SignupPage() {
 
             {/* Google Sign Up */}
             <div className="mb-6">
-              <button
-                onClick={async () => {
-                  if (googleLoading) return;
-                  setGoogleLoading(true);
-                  setGoogleError('');
-                  try {
-                    await signIn('google', { callbackUrl: '/onboarding' });
-                  } catch {
-                    setGoogleError('Could not open Google sign-in. Please try again.');
-                    setGoogleLoading(false);
-                  }
-                }}
-                disabled={googleLoading}
-                className="w-full py-3 px-4 rounded-lg bg-surface-container-low text-white border border-outline-variant/20 font-semibold hover:bg-surface-bright transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
+              <form action={() => signInWithGoogle('/onboarding')} className="w-full">
+                <button
+                  type="submit"
+                  onClick={() => setGoogleLoading(true)}
+                  disabled={googleLoading}
+                  className="w-full py-3 px-4 rounded-lg bg-surface-container-low text-white border border-outline-variant/20 font-semibold hover:bg-surface-bright transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
                 {googleLoading ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -237,7 +230,8 @@ export default function SignupPage() {
                     Continue with Google
                   </>
                 )}
-              </button>
+                </button>
+              </form>
               {googleError && (
                 <p className="text-red-300 text-xs text-center mt-2">{googleError}</p>
               )}
