@@ -30,19 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     updateAge: 24 * 60 * 60,   // re-issue token once per day max
   },
 
-  // Explicit cookie config prevents stale-cookie conflicts when switching
-  // between regular and incognito Chrome sessions.
-  cookies: {
-    sessionToken: {
-      name: 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-  },
+
 
   pages: {
     signIn: '/login',
