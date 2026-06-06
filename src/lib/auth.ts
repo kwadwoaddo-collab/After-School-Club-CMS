@@ -46,7 +46,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   pages: {
     signIn: '/login',
-    newUser: '/dashboard',
+    // New Google OAuth users have no organisationId yet — send them to
+    // onboarding directly. Sending to /dashboard causes the layout to
+    // immediately redirect them back to /onboarding (double redirect).
+    newUser: '/onboarding',
     error: '/login',
   },
 

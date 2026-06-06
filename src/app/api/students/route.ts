@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         }
 
         // Create Child — with direct organisationId and centreId
-        await db.insert(children).values({
+        const [newChild] = await db.insert(children).values({
             parentId,
             organisationId: session.user.organisationId,
             centreId: data.centreId,
@@ -79,15 +79,15 @@ export async function POST(req: Request) {
             lastName: data.lastName,
             dateOfBirth: new Date(data.dateOfBirth),
             schoolYear: data.schoolYear,
-        });
+        }).returning({ id: children.id });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, id: newChild.id });
     } catch (error) {
         console.error('Add Student error:', error);
         if (error instanceof z.ZodError) {
             return NextResponse.json({
                 error: 'Validation failed',
-                details: error.errors
+                details: error.issues
             }, { status: 400 });
         }
         return NextResponse.json({ error: 'Failed to add student' }, { status: 500 });

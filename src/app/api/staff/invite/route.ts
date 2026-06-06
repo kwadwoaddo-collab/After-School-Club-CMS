@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { users, staffInvites, organisations, centres, centreMemberships } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
+import { z } from 'zod';
+import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+
+const inviteSchema = z.object({
+    email: z.string().email().max(255),
+    role: z.enum(['MANAGER', 'FRONT_DESK', 'TUTOR']),
+    firstName: z.string().min(1).max(100),
+    lastName: z.string().min(1).max(100),
+    centreId: z.string().uuid().optional(),
+});
 
 export async function POST(request: NextRequest) {
     try {
@@ -12,6 +22,16 @@ export async function POST(request: NextRequest) {
 
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate limit: 5 invites per minute per IP to prevent invite spam
+        const ip = getClientIP(request);
+        const { success: allowed } = await checkRateLimit(strictRateLimit, `staff-invite:${ip}`);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many invite requests. Please try again later.' },
+                { status: 429 }
+            );
         }
 
         // Check if user is ORG_OWNER
@@ -28,20 +48,23 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const body = await request.json();
-        const { email, role, firstName, lastName, centreId } = body;
+        let rawBody: unknown;
+        try {
+            rawBody = await request.json();
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
 
-        // Validate input
-        if (!email || !role || !firstName || !lastName) {
+        const parsed = inviteSchema.safeParse(rawBody);
+        if (!parsed.success) {
             return NextResponse.json(
-                { error: 'Email, role, first name and last name are required' },
+                { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
                 { status: 400 }
             );
         }
 
-        if (!['MANAGER', 'FRONT_DESK', 'TUTOR'].includes(role)) {
-            return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-        }
+        const { email, role, firstName, lastName, centreId } = parsed.data;
+
 
         // Check if user already exists
         const existingUser = await db.query.users.findFirst({
@@ -53,6 +76,23 @@ export async function POST(request: NextRequest) {
                 { error: 'A user with this email already exists' },
                 { status: 409 }
             );
+        }
+
+        // Validate centreId belongs to this org before any writes (prevents cross-org injection)
+        if (centreId) {
+            const centre = await db.query.centres.findFirst({
+                where: and(
+                    eq(centres.id, centreId),
+                    eq(centres.organisationId, session.user.organisationId)
+                ),
+                columns: { id: true },
+            });
+            if (!centre) {
+                return NextResponse.json(
+                    { error: 'Invalid centre: does not belong to your organisation' },
+                    { status: 400 }
+                );
+            }
         }
 
         // Create the user account immediately (no password - magic link only)

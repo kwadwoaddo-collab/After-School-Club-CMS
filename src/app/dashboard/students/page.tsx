@@ -4,12 +4,13 @@ import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
 import { eq, desc, sql, inArray, and, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Users, GraduationCap, Sparkles } from 'lucide-react';
+import { Plus, Users, GraduationCap, Sparkles, AlertTriangle } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import StudentsFilters from '@/components/students/StudentsFilters';
+import StudentsGrid from '@/components/students/StudentsGrid';
 
 export default async function StudentsPage(props: {
     searchParams: Promise<{
@@ -17,6 +18,7 @@ export default async function StudentsPage(props: {
         search?: string;
         year?: string;
         status?: string;
+        view?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -179,6 +181,7 @@ export default async function StudentsPage(props: {
     const totalCount = enrichedStudents.length;
     const registeredCount = enrichedStudents.filter(s => s.isRegistered).length;
     const leadCount = enrichedStudents.filter(s => !s.isRegistered).length;
+    const medicalAlertCount = enrichedStudents.filter(s => s.medicalNotes.length > 0 || s.safeguardingNotes.length > 0).length;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -198,51 +201,72 @@ export default async function StudentsPage(props: {
             </div>
 
             {/* KPI Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Total Students */}
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0">
-                            <Users className="w-6 h-6" />
+                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0">
+                            <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{totalCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Total Students</p>
+                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{totalCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Total Students</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Registered Students */}
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-emerald-400 flex-shrink-0">
-                            <GraduationCap className="w-6 h-6" />
+                {/* Registered */}
+                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-emerald-400 flex-shrink-0">
+                            <GraduationCap className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{registeredCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Registered</p>
+                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{registeredCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Registered</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Lead / Unregistered Students */}
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-amber-400 flex-shrink-0">
-                            <Sparkles className="w-6 h-6" />
+                {/* Leads */}
+                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-amber-400 flex-shrink-0">
+                            <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{leadCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Leads / Unregistered</p>
+                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{leadCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Leads</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Medical Alerts */}
+                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-error/10 text-error flex-shrink-0">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{medicalAlertCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Medical Alerts</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <StudentsFilters centres={accessibleCentres} resultsCount={enrichedStudents.length} />
+            <StudentsFilters
+                centres={accessibleCentres}
+                resultsCount={enrichedStudents.length}
+                currentView={searchParams.view === 'grid' ? 'grid' : 'table'}
+            />
 
-            <StudentsTable students={enrichedStudents} />
+            {searchParams.view === 'grid' ? (
+                <StudentsGrid students={enrichedStudents} />
+            ) : (
+                <StudentsTable students={enrichedStudents} />
+            )}
         </div>
     );
 }

@@ -42,10 +42,10 @@ export default function RecordPaymentModal({
         try {
             await recordPayment({
                 invoiceId,
-                amount,
+                amount: formData.amount, // action expects string
                 method: formData.method,
                 recordedAt: new Date(formData.recordedAt),
-                reference: formData.reference
+                transactionReference: formData.reference || undefined,
             });
             toast('Payment recorded successfully', 'success');
             onSuccess();

@@ -22,9 +22,15 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@sprintscaleit.co.uk';
  */
 export async function POST(req: NextRequest) {
     // ── 1. Authenticate cron caller ─────────────────────────────────────────
+    // Fail-CLOSED: if CRON_SECRET is not configured the endpoint is locked.
+    // This prevents accidental exposure in development or misconfigured envs.
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret) {
+        console.error('[Reminder] CRON_SECRET is not set — endpoint locked.');
+        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+    }
+    if (authHeader !== `Bearer ${cronSecret}`) {
         return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
 
@@ -33,21 +39,27 @@ export async function POST(req: NextRequest) {
     const tomorrowEnd = endOfDay(tomorrow);
 
     // ── 2. Fetch tomorrow's confirmed bookings with parent + child data ──────
-    const upcomingBookings = await db.query.bookings.findMany({
-        where: and(
-            gte(bookings.startAt, tomorrowStart),
-            lte(bookings.startAt, tomorrowEnd)
-        ),
-        with: {
-            parent: true,
-            centre: {
-                with: { organisation: true },
+    let upcomingBookings: any[];
+    try {
+        upcomingBookings = await db.query.bookings.findMany({
+            where: and(
+                gte(bookings.startAt, tomorrowStart),
+                lte(bookings.startAt, tomorrowEnd)
+            ),
+            with: {
+                parent: true,
+                centre: {
+                    with: { organisation: true },
+                },
+                attendees: {
+                    with: { child: true },
+                },
             },
-            attendees: {
-                with: { child: true },
-            },
-        },
-    });
+        });
+    } catch (dbError) {
+        console.error('[Reminder] Failed to query bookings:', dbError);
+        return NextResponse.json({ error: 'Failed to query bookings' }, { status: 500 });
+    }
 
     if (upcomingBookings.length === 0) {
         return NextResponse.json({ sent: 0, message: 'No bookings tomorrow' });
@@ -57,11 +69,11 @@ export async function POST(req: NextRequest) {
     let errors = 0;
 
     for (const booking of upcomingBookings) {
-        if (!booking.parent.email) continue;
+        if (!booking.parent?.email) continue;
         if (booking.status === 'cancelled') continue;
 
-        const orgName = (booking.centre as any)?.organisation?.name || 'After School Club';
-        const centreName = (booking.centre as any)?.name || '';
+        const orgName = booking.centre?.organisation?.name || 'After School Club';
+        const centreName = booking.centre?.name || '';
         const parentName = booking.parent.firstName;
         const sessionTime = booking.startAt.toLocaleTimeString('en-GB', {
             hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London'
@@ -69,7 +81,7 @@ export async function POST(req: NextRequest) {
         const sessionDate = booking.startAt.toLocaleDateString('en-GB', {
             weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/London'
         });
-        const childNames = booking.attendees.map(a => a.child.firstName).join(', ');
+        const childNames = (booking.attendees ?? []).map((a: any) => a.child?.firstName).filter(Boolean).join(', ');
 
         const html = `<!DOCTYPE html>
 <html>

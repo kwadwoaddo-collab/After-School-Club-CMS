@@ -6,26 +6,31 @@ import { and, eq, isNull, lt } from 'drizzle-orm';
 
 // DELETE /api/staff/invites/clear-expired - removes all expired+unused invites for the org
 export async function DELETE(request: NextRequest) {
-    const session = await auth();
+    try {
+        const session = await auth();
 
-    if (!session?.user?.organisationId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+        if (!session?.user?.organisationId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
-    if ((session.user as any).role !== 'ORG_OWNER') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+        if ((session.user as any).role !== 'ORG_OWNER') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
-    const deleted = await db
-        .delete(staffInvites)
-        .where(
-            and(
-                eq(staffInvites.organisationId, session.user.organisationId),
-                isNull(staffInvites.usedAt),
-                lt(staffInvites.expiresAt, new Date())
+        const deleted = await db
+            .delete(staffInvites)
+            .where(
+                and(
+                    eq(staffInvites.organisationId, session.user.organisationId),
+                    isNull(staffInvites.usedAt),
+                    lt(staffInvites.expiresAt, new Date())
+                )
             )
-        )
-        .returning({ id: staffInvites.id });
+            .returning({ id: staffInvites.id });
 
-    return NextResponse.json({ success: true, count: deleted.length });
+        return NextResponse.json({ success: true, count: deleted.length });
+    } catch (error) {
+        console.error('[DELETE /api/staff/invites/clear-expired]', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 }

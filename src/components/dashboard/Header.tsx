@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Menu, LogOut, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Bell, Menu, LogOut, ChevronDown, Loader2, Sun, Cloud, Moon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useSidebar } from './SidebarContext';
+
 interface HeaderProps {
     userName?: string;
     userInitial?: string;
@@ -28,6 +29,13 @@ const ROLE_LABELS: Record<string, string> = {
     STAFF: 'Staff',
 };
 
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return { text: 'Good morning', emoji: '☀️' };
+    if (hour < 17) return { text: 'Good afternoon', emoji: '🌤️' };
+    return { text: 'Good evening', emoji: '🌙' };
+}
+
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
@@ -43,11 +51,24 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const userMenuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
+    // Scroll-based blur backdrop
+    const [isScrolled, setIsScrolled] = useState(false);
+    useEffect(() => {
+        const handleScroll = () => setIsScrolled(window.scrollY > 10);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Greeting - computed once on client
+    const [greeting, setGreeting] = useState({ text: 'Welcome', emoji: '✨' });
+    useEffect(() => {
+        setGreeting(getGreeting());
+    }, []);
+
     // Fetch real notifications from API
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
 
-    // Fetch notifications on mount and when notifications panel opens
     useEffect(() => {
         if (showNotifications && notifications.length === 0) {
             fetchNotifications();
@@ -70,7 +91,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     const handleNotificationClick = async (notification: Notification) => {
-        // Mark as read if unread
         if (!notification.read) {
             try {
                 await fetch('/api/notifications', {
@@ -78,8 +98,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ notificationId: notification.id }),
                 });
-
-                // Update local state
                 setNotifications(notifications.map(n =>
                     n.id === notification.id ? { ...n, read: true } : n
                 ));
@@ -96,8 +114,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ markAllAsRead: true }),
             });
-
-            // Update local state
             setNotifications(notifications.map(n => ({ ...n, read: true })));
         } catch (error) {
             console.error('Failed to mark all as read:', error);
@@ -147,7 +163,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Close notifications and search when clicking outside
+    // Close panels on outside click
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -160,7 +176,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 setShowSearchResults(false);
             }
         }
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -168,14 +183,17 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            // Navigate to search results or filter current page
             router.push(`/dashboard/bookings?search=${encodeURIComponent(searchQuery)}`);
         }
     };
 
     return (
-        <header className={`h-16 sm:h-20 bg-surface/80 backdrop-blur-xl fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-outline-variant/10 transition-all duration-300 ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'
-            }`}>
+        <header className={`h-16 sm:h-20 fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b transition-all duration-300 ${
+            isScrolled
+                ? 'bg-[#0d1117]/95 backdrop-blur-2xl border-white/8 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'
+                : 'bg-[#0d1117]/70 backdrop-blur-xl border-white/5'
+        } ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
+
             {/* Hamburger — mobile only */}
             <button
                 suppressHydrationWarning
@@ -186,11 +204,21 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <Menu className="w-5 h-5" />
             </button>
 
-            {/* Search Bar — hidden on mobile */}
+            {/* Greeting — hidden on mobile, hidden when search is focused */}
+            {!hideSearch && (
+                <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-1">
+                    <span className="text-lg leading-none">{greeting.emoji}</span>
+                    <span className="text-sm font-semibold text-[#c2c6d6]">
+                        {greeting.text}{userName ? `, ${userName.split(' ')[0]}` : ''}
+                    </span>
+                </div>
+            )}
+
+            {/* Search Bar */}
             {!hideSearch && (
                 <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
                     <form onSubmit={handleSearch} className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant group-focus-within:text-primary transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
                         <input
                             suppressHydrationWarning
                             ref={searchInputRef}
@@ -203,17 +231,16 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             onFocus={() => {
                                 if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                             }}
-                            placeholder="Search students, bookings (Cmd + K)"
-                            className="w-full pl-11 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/10 rounded-xl text-sm text-white placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary/30 transition-all outline-none"
+                            placeholder="Search students, bookings… (⌘K)"
+                            className="w-full pl-11 pr-16 py-2.5 bg-[#1a1d23] border border-[#424754]/15 rounded-xl text-sm text-white placeholder:text-[#8c909f]/60 focus:ring-2 focus:ring-[#adc6ff]/25 focus:border-[#adc6ff]/30 transition-all outline-none hover:border-[#424754]/25"
                         />
                         {isSearching && (
-                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant animate-spin" />
+                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] animate-spin" />
                         )}
-                        {/* Keyboard shortcut hint overlay for inactive state */}
                         {!searchQuery && !isSearching && (
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
-                                <span className="text-xs bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/10 text-on-surface-variant">⌘</span>
-                                <span className="text-xs bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/10 text-on-surface-variant">K</span>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-40">
+                                <span className="text-[10px] bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#424754]/20 text-[#8c909f] font-mono">⌘</span>
+                                <span className="text-[10px] bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#424754]/20 text-[#8c909f] font-mono">K</span>
                             </div>
                         )}
                     </form>
@@ -222,8 +249,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     {showSearchResults && searchQuery.trim().length >= 2 && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             {searchResults.length === 0 && !isSearching ? (
-                                <div className="p-4 text-center text-sm text-[#8c909f]">
-                                    No results found for "{searchQuery}"
+                                <div className="p-6 text-center">
+                                    <p className="text-2xl mb-2">🔍</p>
+                                    <p className="text-sm text-[#8c909f]">No results for &ldquo;<span className="text-white">{searchQuery}</span>&rdquo;</p>
                                 </div>
                             ) : (
                                 <div className="max-h-96 overflow-y-auto">
@@ -257,42 +285,49 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 </div>
             )}
 
-            {/* Right Section: Notifications & User */}
-            <div className="flex items-center gap-4">
+            {/* Right Section */}
+            <div className="flex items-center gap-3">
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowNotifications(!showNotifications)}
-                        className="p-2.5 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] relative transition-colors"
+                        className="p-2.5 rounded-xl hover:bg-[#1a1d23] text-[#8c909f] hover:text-[#c2c6d6] relative transition-all duration-200"
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-[#f66018] rounded-full border-2 border-[#0f1115]">
-                            </span>
+                            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#f66018] rounded-full border-2 border-[#0d1117] badge-pulse" />
                         )}
                     </button>
 
-                    {/* Notifications Dropdown */}
                     {showNotifications && (
                         <div className="absolute right-0 mt-2 w-80 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="p-4 border-b border-[#424754]/15">
-                                <h3 className="font-bold text-[#e5e2e1]">Notifications</h3>
+                            <div className="p-4 border-b border-[#424754]/15 flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-bold text-[#e5e2e1]">Notifications</h3>
+                                    {unreadCount > 0 && (
+                                        <p className="text-xs text-[#8c909f] mt-0.5">
+                                            {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
+                                        </p>
+                                    )}
+                                </div>
                                 {unreadCount > 0 && (
-                                    <p className="text-xs text-[#8c909f] mt-1">
-                                        You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-                                    </p>
+                                    <span className="text-xs font-bold bg-[#f66018]/15 text-[#f66018] px-2 py-0.5 rounded-full border border-[#f66018]/20">
+                                        {unreadCount} new
+                                    </span>
                                 )}
                             </div>
                             <div className="max-h-96 overflow-y-auto">
                                 {isLoadingNotifications ? (
                                     <div className="p-8 text-center">
-                                        <p className="text-sm text-[#8c909f]">Loading notifications...</p>
+                                        <Loader2 className="w-6 h-6 animate-spin text-[#8c909f] mx-auto mb-2" />
+                                        <p className="text-sm text-[#8c909f]">Loading…</p>
                                     </div>
                                 ) : notifications.length === 0 ? (
                                     <div className="p-8 text-center">
-                                        <Bell className="w-12 h-12 text-[#424754] mx-auto mb-2" />
+                                        <div className="text-3xl mb-3">🔔</div>
+                                        <p className="font-semibold text-[#e5e2e1] mb-1">All caught up!</p>
                                         <p className="text-sm text-[#8c909f]">No notifications yet</p>
                                     </div>
                                 ) : (
@@ -300,8 +335,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                         <div
                                             key={notification.id}
                                             onClick={() => handleNotificationClick(notification)}
-                                            className={`p-4 border-b border-[#424754]/15 hover:bg-[#353535] cursor-pointer transition-colors ${!notification.read ? 'bg-[#adc6ff]/10' : ''
-                                                }`}
+                                            className={`p-4 border-b border-[#424754]/15 hover:bg-[#353535] cursor-pointer transition-colors ${!notification.read ? 'bg-[#adc6ff]/5' : ''}`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 {!notification.read && (
@@ -327,7 +361,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 <button
                                     suppressHydrationWarning
                                     onClick={handleMarkAllAsRead}
-                                    className="text-xs font-semibold text-[#adc6ff] hover:text-[#4d8eff] w-full text-center"
+                                    className="text-xs font-semibold text-[#adc6ff] hover:text-[#4d8eff] w-full text-center transition-colors"
                                 >
                                     Mark all as read
                                 </button>
@@ -337,14 +371,14 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 </div>
 
                 {/* Divider */}
-                <div className="h-8 w-[1px] bg-[#424754]/30 mx-2" />
+                <div className="h-8 w-px bg-[#424754]/30" />
 
                 {/* User Profile Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-3 pl-2 rounded-xl hover:bg-[#20201f] pr-2 py-1.5 transition-colors"
+                        className="flex items-center gap-3 pl-2 rounded-xl hover:bg-[#1a1d23] pr-2 py-1.5 transition-all duration-200"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block">
@@ -353,18 +387,17 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             </p>
                             <p className="text-xs font-medium text-[#8c909f] mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                         </div>
-                        <div className="w-10 h-10 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 flex items-center justify-center text-[#adc6ff] font-bold flex-shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#adc6ff]/20 to-[#6366f1]/20 border border-[#adc6ff]/25 flex items-center justify-center text-[#adc6ff] font-bold flex-shrink-0 text-sm shadow-[0_0_12px_rgba(173,198,255,0.12)]">
                             {userInitial || 'A'}
                         </div>
                         <ChevronDown className={`w-3.5 h-3.5 text-[#8c909f] transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {/* User Dropdown */}
                     {showUserMenu && (
-                        <div className="absolute right-0 mt-2 w-56 bg-[#2a2a2a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute right-0 mt-2 w-56 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="p-4 border-b border-[#424754]/15">
                                 <p className="font-bold text-[#e5e2e1] text-sm truncate">{userName || 'Admin User'}</p>
-                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#adc6ff]/10 text-[#adc6ff]">
+                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#adc6ff]/10 text-[#adc6ff] border border-[#adc6ff]/20">
                                     {userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}
                                 </span>
                             </div>
@@ -372,9 +405,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 <button
                                     suppressHydrationWarning
                                     onClick={() => signOut({ callbackUrl: '/login' })}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#ffb4ab] hover:bg-[#93000a]/20 transition-colors text-sm font-semibold"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#ffb4ab] hover:bg-[#93000a]/20 transition-colors text-sm font-semibold group"
                                 >
-                                    <LogOut className="w-4 h-4" />
+                                    <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                     Sign Out
                                 </button>
                             </div>

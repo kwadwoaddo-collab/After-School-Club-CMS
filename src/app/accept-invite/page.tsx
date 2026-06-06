@@ -56,8 +56,9 @@ function AcceptInviteContent() {
             }
 
             setStep('success');
+            // Use full page reload to ensure the new session is properly initialized
             setTimeout(() => {
-                router.push('/dashboard');
+                window.location.href = '/dashboard';
             }, 1500);
         } catch (err: any) {
             setError(err.message);
@@ -156,7 +157,7 @@ function AcceptInviteContent() {
                     </button>
 
                     <p className="text-white/30 text-xs mt-6">
-                        This link is single-use and expires in 7 days.
+                        This link is single-use and expires in 15 minutes.
                         For future logins, use the staff login page.
                     </p>
                 </div>

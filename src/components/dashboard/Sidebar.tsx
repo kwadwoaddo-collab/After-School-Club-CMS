@@ -83,27 +83,30 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             {/* Mobile Overlay */}
             {!collapsed && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
                     onClick={() => setCollapsed(true)}
                 />
             )}
-
 
             {/* Sidebar */}
             <aside
                 className={`
                     fixed inset-y-0 left-0 z-50
-                    bg-[#1c1b1b] text-[#e5e2e1] flex flex-col
+                    bg-[#0f1117] text-[#e5e2e1] flex flex-col
                     transition-all duration-300 ease-in-out
                     w-64
                     ${collapsed ? '-translate-x-full md:translate-x-0 md:w-20' : 'translate-x-0'}
-                    shadow-2xl
+                    border-r border-white/5
                 `}
+                style={{
+                    background: 'linear-gradient(195deg, #0d1117 0%, #13192a 100%)',
+                    boxShadow: '4px 0 32px rgba(0,0,0,0.4)',
+                }}
             >
-                {/* Header */}
+                {/* Header / Logo area */}
                 <div className="p-6 relative">
                     {!collapsed && (
-                        <button 
+                        <button
                             suppressHydrationWarning
                             className="absolute top-6 right-6 md:hidden p-1.5 rounded-lg text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
@@ -112,8 +115,14 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             <X className="w-5 h-5" />
                         </button>
                     )}
+
+                    {/* Logo */}
                     <div className={`flex items-center gap-3 mb-8 overflow-hidden ${collapsed ? 'justify-center mt-0' : 'mt-2'}`}>
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-primary/20 flex-shrink-0">
+                        <div className={`
+                            w-9 h-9 rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#6366f1] flex items-center justify-center font-bold text-white text-xs flex-shrink-0
+                            shadow-[0_0_20px_rgba(99,102,241,0.4)] ring-1 ring-white/10
+                            transition-all duration-300 hover:shadow-[0_0_28px_rgba(99,102,241,0.6)]
+                        `}>
                             {orgName.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
@@ -121,7 +130,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 <span className="text-base font-extrabold tracking-tight truncate leading-tight text-white">
                                     {orgName}
                                 </span>
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-[#8c909f]">
                                     Workspace
                                 </span>
                             </div>
@@ -133,7 +142,6 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         <>
                             {(allowedActions.includes('booking-link') || allowedActions.includes('registration-link')) && (
                                 <div className="mb-6">
-                                    {/* Collapsible header */}
                                     <button
                                         suppressHydrationWarning
                                         onClick={() => setQuickActionsOpen(o => !o)}
@@ -141,7 +149,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     >
                                         <p className="text-[10px] font-bold text-[#8c909f] uppercase tracking-widest group-hover:text-[#c2c6d6] transition-colors">
                                             Quick Links
-                                         </p>
+                                        </p>
                                         <ChevronDown
                                             className={`w-3.5 h-3.5 text-[#8c909f] group-hover:text-[#c2c6d6] transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
                                         />
@@ -150,19 +158,19 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         {allowedActions.includes('booking-link') && (
                                             <Link
                                                 href="/dashboard/booking-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-low transition-all text-sm font-medium group"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#adc6ff]/8 transition-all text-sm font-semibold group"
                                             >
-                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
-                                                Booking
+                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                Booking Link
                                             </Link>
                                         )}
                                         {allowedActions.includes('registration-link') && (
                                             <Link
                                                 href="/dashboard/registration-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-white hover:bg-surface-container-low transition-all text-sm font-medium group"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#adc6ff]/8 transition-all text-sm font-semibold group"
                                             >
-                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
-                                                Registration
+                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                Registration Link
                                             </Link>
                                         )}
                                     </div>
@@ -170,15 +178,15 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             )}
 
                             {/* Divider */}
-                            <div className="h-px bg-[#424754]/15 mb-6" />
+                            <div className="h-px bg-white/5 mb-6" />
                         </>
                     )}
 
                     {/* Navigation */}
-                    <nav className="space-y-1">
+                    <nav className="space-y-0.5">
                         {navItems.map((item) => {
                             const isCentresPageActive = pathname.startsWith('/dashboard/centres');
-                            
+
                             // Special Dropdown rendering for Centres if multiple centres exist
                             if (item.name === 'Centres' && centres && centres.length > 1) {
                                 return (
@@ -188,19 +196,19 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                 <button
                                                     onClick={() => setDropdownOpen(o => !o)}
                                                     className={`
-                                                        flex items-center justify-between w-full px-4 py-3 rounded-xl
-                                                        transition-all group text-left
+                                                        flex items-center justify-between w-full px-3 py-2.5 rounded-xl
+                                                        transition-all group text-left relative overflow-hidden
                                                         ${isCentresPageActive
-                                                            ? 'text-primary bg-primary/10 font-bold'
-                                                            : 'text-on-surface-variant hover:text-white hover:bg-surface-container-low'
+                                                            ? 'text-[#adc6ff] bg-gradient-to-r from-[#adc6ff]/15 to-[#6366f1]/8 font-bold'
+                                                            : 'text-[#8c909f] hover:text-[#c2c6d6] hover:bg-white/4'
                                                         }
                                                     `}
                                                 >
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         {selectedCentreId === 'all' ? (
-                                                            <Layers className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                            <Layers className="w-5 h-5 text-[#adc6ff] flex-shrink-0 group-hover:scale-105 transition-transform" />
                                                         ) : (
-                                                            <MapPin className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                                            <MapPin className="w-5 h-5 text-[#adc6ff] flex-shrink-0 group-hover:scale-105 transition-transform" />
                                                         )}
                                                         <div className="flex flex-col min-w-0">
                                                             <span className="text-[9px] text-[#8c909f] font-bold uppercase tracking-wider leading-none mb-0.5">Active Centre</span>
@@ -212,31 +220,33 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                         </div>
                                                     </div>
                                                     <ChevronDown className={`w-4 h-4 text-[#8c909f] transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
+                                                    {/* Active indicator */}
+                                                    {isCentresPageActive && (
+                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-[#adc6ff] to-[#6366f1] rounded-r-full" />
+                                                    )}
                                                 </button>
 
                                                 {dropdownOpen && (
                                                     <>
                                                         <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                                                        <div className="absolute left-0 right-0 mt-1 bg-[#1c1b1b] border border-[#424754]/25 rounded-xl shadow-2xl z-50 py-1 overflow-hidden backdrop-blur-md bg-opacity-95">
-                                                            {/* Combined View Option */}
+                                                        <div className="absolute left-0 right-0 mt-1 bg-[#15192a] border border-[#424754]/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50 py-1 overflow-hidden">
                                                             <button
                                                                 onClick={() => selectCentre('all')}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#2c2c2c] transition-colors ${
-                                                                    selectedCentreId === 'all' ? 'text-primary bg-primary/10' : 'text-[#8c909f] hover:text-white'
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
+                                                                    selectedCentreId === 'all' ? 'text-[#adc6ff] bg-[#adc6ff]/8' : 'text-[#8c909f] hover:text-white'
                                                                 }`}
                                                             >
                                                                 <Layers className="w-4 h-4 flex-shrink-0" />
                                                                 Combined View
                                                             </button>
-                                                            <div className="h-px bg-[#424754]/15 my-1" />
-                                                            {/* Individual Centres */}
+                                                            <div className="h-px bg-white/5 my-1" />
                                                             <div className="max-h-48 overflow-y-auto">
                                                                 {centres.map(centre => (
                                                                     <button
                                                                         key={centre.id}
                                                                         onClick={() => selectCentre(centre.id)}
-                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#2c2c2c] transition-colors ${
-                                                                            selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-[#8c909f] hover:text-white'
+                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
+                                                                            selectedCentreId === centre.id ? 'text-[#adc6ff] bg-[#adc6ff]/8 font-bold' : 'text-[#8c909f] hover:text-white'
                                                                         }`}
                                                                     >
                                                                         <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -244,8 +254,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                                     </button>
                                                                 ))}
                                                             </div>
-                                                            <div className="h-px bg-[#424754]/15 my-1" />
-                                                            {/* Manage Centres Link */}
+                                                            <div className="h-px bg-white/5 my-1" />
                                                             <Link
                                                                 href="/dashboard/centres"
                                                                 onClick={() => {
@@ -254,8 +263,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                                         setCollapsed(true);
                                                                     }
                                                                 }}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#2c2c2c] text-primary hover:text-blue-400 transition-colors ${
-                                                                    isCentresPageActive ? 'bg-primary/5 font-bold' : ''
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] text-[#adc6ff] hover:text-[#6b9dff] transition-colors ${
+                                                                    isCentresPageActive ? 'bg-[#adc6ff]/5 font-bold' : ''
                                                                 }`}
                                                             >
                                                                 <School className="w-4 h-4 flex-shrink-0" />
@@ -270,11 +279,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                 <button
                                                     onClick={() => setDropdownOpen(o => !o)}
                                                     className={`
-                                                        flex items-center justify-center w-full px-4 py-3 rounded-xl
+                                                        flex items-center justify-center w-full px-4 py-2.5 rounded-xl
                                                         transition-all group relative
                                                         ${isCentresPageActive
-                                                            ? 'text-primary bg-primary/10'
-                                                            : 'text-on-surface-variant hover:text-white hover:bg-surface-container-low'
+                                                            ? 'text-[#adc6ff] bg-[#adc6ff]/10'
+                                                            : 'text-[#8c909f] hover:text-[#c2c6d6] hover:bg-white/4'
                                                         }
                                                     `}
                                                     title={selectedCentreId === 'all'
@@ -282,36 +291,36 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                         : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
                                                 >
                                                     {selectedCentreId === 'all' ? (
-                                                        <Layers className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                                                        <Layers className="w-5 h-5 text-[#adc6ff] group-hover:scale-110 transition-transform" />
                                                     ) : (
-                                                        <MapPin className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                                                        <MapPin className="w-5 h-5 text-[#adc6ff] group-hover:scale-110 transition-transform" />
                                                     )}
                                                     {isCentresPageActive && (
-                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-[#adc6ff] to-[#6366f1] rounded-r-full" />
                                                     )}
                                                 </button>
 
                                                 {dropdownOpen && (
                                                     <>
                                                         <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                                                        <div className="absolute left-16 top-0 w-52 bg-[#1c1b1b] border border-[#424754]/25 rounded-xl shadow-2xl z-50 py-1 overflow-hidden backdrop-blur-md bg-opacity-95">
+                                                        <div className="absolute left-16 top-0 w-52 bg-[#15192a] border border-[#424754]/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50 py-1 overflow-hidden">
                                                             <button
                                                                 onClick={() => selectCentre('all')}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#2c2c2c] transition-colors ${
-                                                                    selectedCentreId === 'all' ? 'text-primary bg-primary/10' : 'text-[#8c909f] hover:text-white'
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
+                                                                    selectedCentreId === 'all' ? 'text-[#adc6ff] bg-[#adc6ff]/8' : 'text-[#8c909f] hover:text-white'
                                                                 }`}
                                                             >
                                                                 <Layers className="w-4 h-4 flex-shrink-0" />
                                                                 Combined View
                                                             </button>
-                                                            <div className="h-px bg-[#424754]/15 my-1" />
+                                                            <div className="h-px bg-white/5 my-1" />
                                                             <div className="max-h-48 overflow-y-auto">
                                                                 {centres.map(centre => (
                                                                     <button
                                                                         key={centre.id}
                                                                         onClick={() => selectCentre(centre.id)}
-                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#2c2c2c] transition-colors ${
-                                                                            selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-[#8c909f] hover:text-white'
+                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
+                                                                            selectedCentreId === centre.id ? 'text-[#adc6ff] bg-[#adc6ff]/8 font-bold' : 'text-[#8c909f] hover:text-white'
                                                                         }`}
                                                                     >
                                                                         <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -319,14 +328,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                                     </button>
                                                                 ))}
                                                             </div>
-                                                            <div className="h-px bg-[#424754]/15 my-1" />
+                                                            <div className="h-px bg-white/5 my-1" />
                                                             <Link
                                                                 href="/dashboard/centres"
-                                                                onClick={() => {
-                                                                    setDropdownOpen(false);
-                                                                }}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#2c2c2c] text-primary hover:text-blue-400 transition-colors ${
-                                                                    isCentresPageActive ? 'bg-primary/5 font-bold' : ''
+                                                                onClick={() => setDropdownOpen(false)}
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] text-[#adc6ff] hover:text-[#6b9dff] transition-colors ${
+                                                                    isCentresPageActive ? 'bg-[#adc6ff]/5 font-bold' : ''
                                                                 }`}
                                                             >
                                                                 <School className="w-4 h-4 flex-shrink-0" />
@@ -347,28 +354,30 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     key={item.name}
                                     href={item.href}
                                     onClick={() => {
-                                        // Collapse on mobile after clicking
                                         if (window.innerWidth < 768) {
                                             setCollapsed(true);
                                         }
                                     }}
                                     className={`
-                                        flex items-center gap-3 px-4 py-3 rounded-xl
-                                        transition-all group relative
+                                        flex items-center gap-3 px-3 py-2.5 rounded-xl
+                                        transition-all duration-200 group relative overflow-hidden
                                         ${isActive
-                                            ? 'text-primary bg-primary/10 font-bold'
-                                            : 'text-on-surface-variant hover:text-white hover:bg-surface-container-low'
+                                            ? 'text-[#adc6ff] bg-gradient-to-r from-[#adc6ff]/15 to-[#6366f1]/8 font-bold'
+                                            : 'text-[#8c909f] hover:text-[#c2c6d6] hover:bg-white/4'
                                         }
                                         ${collapsed ? 'justify-center' : ''}
                                     `}
                                     title={collapsed ? item.name : undefined}
                                 >
-                                    <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
-                                    {!collapsed && (
-                                        <span className="font-medium">{item.name}</span>
-                                    )}
+                                    {/* Active left indicator */}
                                     {isActive && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-[#adc6ff] to-[#6366f1] rounded-r-full" />
+                                    )}
+                                    <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-200 ${
+                                        isActive ? 'scale-110' : 'group-hover:scale-105 group-hover:text-[#adc6ff]'
+                                    }`} />
+                                    {!collapsed && (
+                                        <span className="font-semibold text-sm">{item.name}</span>
                                     )}
                                 </Link>
                             );
@@ -378,18 +387,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                 {/* Quick Support Section */}
                 <div className={`mt-auto p-6 ${collapsed ? 'hidden' : ''}`}>
-                    <div className="p-4 rounded-2xl bg-[#2a2a2a] border border-[#424754]/15">
-                        <p className="text-xs text-[#8c909f] font-medium mb-2 uppercase tracking-wider">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-[#adc6ff]/8 to-[#6366f1]/5 border border-[#adc6ff]/10">
+                        <p className="text-[10px] text-[#8c909f] font-bold mb-2 uppercase tracking-wider">
                             Quick Support
                         </p>
-                        <p className="text-sm text-[#c2c6d6]">
+                        <p className="text-sm text-[#c2c6d6] leading-relaxed">
                             Need help with bookings or payments?
                         </p>
                         <a
                             href="mailto:support@afterschool.com"
-                            className="mt-3 text-xs font-bold text-primary hover:text-blue-400 transition-colors inline-block"
+                            className="mt-3 text-xs font-bold text-[#adc6ff] hover:text-[#6b9dff] transition-colors inline-flex items-center gap-1"
                         >
-                            CONTACT SUPPORT →
+                            CONTACT SUPPORT <span aria-hidden>→</span>
                         </a>
                     </div>
                 </div>
@@ -400,18 +409,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     onClick={() => setCollapsed(!collapsed)}
                     className={`
                         absolute -right-3 top-20
-                        w-6 h-6 bg-[#20201f] rounded-full
+                        w-6 h-6 bg-[#15192a] rounded-full
                         flex items-center justify-center
-                        shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15
-                        hover:bg-[#353535] transition-all
-                        group z-50
+                        shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-white/10
+                        hover:bg-[#1e2436] hover:border-[#adc6ff]/20 hover:shadow-[0_0_12px_rgba(173,198,255,0.2)] transition-all duration-200
+                        group z-50 hidden md:flex
                     `}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
                     {collapsed ? (
-                        <ChevronRight className="w-4 h-4 text-[#e5e2e1]" />
+                        <ChevronRight className="w-3.5 h-3.5 text-[#8c909f] group-hover:text-[#adc6ff] transition-colors" />
                     ) : (
-                        <ChevronLeft className="w-4 h-4 text-[#e5e2e1]" />
+                        <ChevronLeft className="w-3.5 h-3.5 text-[#8c909f] group-hover:text-[#adc6ff] transition-colors" />
                     )}
                 </button>
             </aside>

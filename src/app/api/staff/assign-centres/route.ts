@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { users, centreMemberships } from '@/db/schema';
+import { users, centreMemberships, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+
+const assignSchema = z.object({
+    userId: z.string().uuid(),
+    centreIds: z.array(z.string().uuid()).max(50), // cap to prevent DoS
+});
 
 export async function POST(request: NextRequest) {
     try {
@@ -26,12 +32,22 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const body = await request.json();
-        const { userId, centreIds } = body as { userId: string; centreIds: string[] };
-
-        if (!userId) {
-            return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        let rawBody: unknown;
+        try {
+            rawBody = await request.json();
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
         }
+
+        const parsed = assignSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+                { status: 400 }
+            );
+        }
+
+        const { userId, centreIds } = parsed.data;
 
         // Verify the user belongs to the same organisation
         const [targetUser] = await db
@@ -49,6 +65,27 @@ export async function POST(request: NextRequest) {
                 { error: 'ORG_OWNER users have automatic access to all centres' },
                 { status: 400 }
             );
+        }
+
+        // Validate that all requested centreIds belong to the org
+        if (centreIds.length > 0) {
+            const orgCentres = await db
+                .select({ id: centres.id })
+                .from(centres)
+                .where(
+                    and(
+                        eq(centres.organisationId, session.user.organisationId),
+                        inArray(centres.id, centreIds)
+                    )
+                );
+            const validIds = new Set(orgCentres.map((c) => c.id));
+            const invalidIds = centreIds.filter((id) => !validIds.has(id));
+            if (invalidIds.length > 0) {
+                return NextResponse.json(
+                    { error: 'One or more centre IDs do not belong to your organisation' },
+                    { status: 400 }
+                );
+            }
         }
 
         // Remove all existing centre assignments for this user

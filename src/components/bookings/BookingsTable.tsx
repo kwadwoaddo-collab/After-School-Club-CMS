@@ -42,6 +42,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
     const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
     const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
     const router = useRouter();
     const { toast } = useToast();
@@ -105,6 +106,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     const handleBulkDelete = async () => {
         const ids = Array.from(selectedBookings);
         if (!ids.length) return;
+        setConfirmBulkDelete(false);
         setIsProcessingBulk(true);
         try {
             const response = await fetch('/api/bookings/bulk-delete', {
@@ -385,20 +387,25 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         <>
         {/* Cancel Confirmation Modal */}
         {confirmCancel && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                        <X className="w-7 h-7 text-amber-600" />
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cancel-dialog-title"
+            >
+                <div className="bg-[#1a1d23] border border-[#2a2a2a] rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                    <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-amber-500/30">
+                        <X className="w-7 h-7 text-amber-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Cancel Booking?</h3>
-                    <p className="text-sm text-slate-500 text-center mb-6">
-                        The booking will be marked as <strong>cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
+                    <h3 id="cancel-dialog-title" className="text-lg font-bold text-white text-center mb-2">Cancel Booking?</h3>
+                    <p className="text-sm text-slate-400 text-center mb-6">
+                        The booking will be marked as <strong className="text-white">cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
                     </p>
                     <div className="flex gap-3">
                         <button
                             onClick={() => setConfirmCancel(null)}
                             disabled={isCancelling}
-                            className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all"
+                            className="flex-1 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-white transition-all border border-[#3a3f4b]"
                         >
                             Keep Booking
                         </button>
@@ -413,22 +420,28 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 </div>
             </div>
         )}
+
         {/* Task 6: Confirmation dialog */}
         {confirmDelete && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                        <Trash2 className="w-7 h-7 text-red-600" />
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-dialog-title"
+            >
+                <div className="bg-[#1a1d23] border border-[#2a2a2a] rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                    <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-red-500/30">
+                        <Trash2 className="w-7 h-7 text-red-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Delete Booking?</h3>
-                    <p className="text-sm text-slate-500 text-center mb-6">
-                        This will permanently remove the booking record. This action <strong>cannot be undone</strong>.
+                    <h3 id="delete-dialog-title" className="text-lg font-bold text-white text-center mb-2">Delete Booking?</h3>
+                    <p className="text-sm text-slate-400 text-center mb-6">
+                        This will permanently remove the booking record. This action <strong className="text-white">cannot be undone</strong>.
                     </p>
                     <div className="flex gap-3">
                         <button
                             onClick={() => setConfirmDelete(null)}
                             disabled={isDeleting}
-                            className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all"
+                            className="flex-1 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-white transition-all border border-[#3a3f4b]"
                         >
                             Cancel
                         </button>
@@ -911,7 +924,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     </button>
                     <div className="w-px h-6 bg-[#2a2a2a] mx-1"></div>
                     <button
-                        onClick={handleBulkDelete}
+                        onClick={() => setConfirmBulkDelete(true)}
                         disabled={isProcessingBulk}
                         className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
                     >
@@ -921,6 +934,42 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 </div>
             </div>
         </div>
+
+        {/* Bulk Delete Confirmation Modal */}
+        {confirmBulkDelete && (
+            <div
+                className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bulk-delete-dialog-title"
+            >
+                <div className="bg-[#1a1d23] border border-[#2a2a2a] rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                    <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-red-500/30">
+                        <Trash2 className="w-7 h-7 text-red-400" />
+                    </div>
+                    <h3 id="bulk-delete-dialog-title" className="text-lg font-bold text-white text-center mb-2">
+                        Delete {selectedBookings.size} Booking{selectedBookings.size !== 1 ? 's' : ''}?
+                    </h3>
+                    <p className="text-sm text-slate-400 text-center mb-6">
+                        This will permanently remove <strong className="text-white">{selectedBookings.size} booking{selectedBookings.size !== 1 ? 's' : ''}</strong>. This action <strong className="text-white">cannot be undone</strong>.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setConfirmBulkDelete(false)}
+                            className="flex-1 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-white transition-all border border-[#3a3f4b]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleBulkDelete}
+                            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="w-4 h-4" /> Delete All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         </>
     );
 }

@@ -31,6 +31,9 @@ import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendan
 import type { AttendanceStatus } from '@/lib/attendance';
 import { normalizeString, normalizeDate } from '@/lib/search-params';
 import { cn } from '@/components/ui/utils';
+import { TodaysSnapshot } from '@/components/dashboard/TodaysSnapshot';
+import { RevenueWidget } from '@/components/dashboard/RevenueWidget';
+import { AttendanceHeatmap } from '@/components/dashboard/AttendanceHeatmap';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -481,6 +484,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 <OnboardingChecklist steps={onboardingSteps} />
             )}
 
+            {/* ── Today's Snapshot ───────────────────────────────────── */}
+            <TodaysSnapshot
+                activeCentreId={activeCentreId}
+                accessibleCentreIds={accessibleCentreIds}
+            />
+
             {/* ── Top-level stats row ──────────────────────────────────── */}
             <KpiGrid
                 studentsActive={studentsActivePeriod}
@@ -495,6 +504,39 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 registrationsTrend={registrationsTrend}
                 growthStats={growthStats}
             />
+
+            {/* ── Today at a Glance ───────────────────────────────────── */}
+            {hasCentres && (
+                <Suspense fallback={<div className="h-24 bg-surface-container-high rounded-2xl animate-pulse" />}>
+                    <TodaysSnapshot accessibleCentreIds={accessibleCentreIds} activeCentreId={activeCentreId} />
+                </Suspense>
+            )}
+
+            {/* ── Revenue & Heatmap Row ────────────────────────────────── */}
+            {hasCentres && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <Suspense fallback={<div className="h-36 bg-surface-container-high rounded-2xl animate-pulse" />}>
+                        <RevenueWidget organisationId={session.user.organisationId!} />
+                    </Suspense>
+                    <Suspense fallback={<div className="h-36 bg-surface-container-high rounded-2xl animate-pulse" />}>
+                        <AttendanceHeatmap accessibleCentreIds={accessibleCentreIds} activeCentreId={activeCentreId} />
+                    </Suspense>
+                </div>
+            )}
+
+
+            {/* ── Finance Overview ─────────────────────────────────────── */}
+            <RevenueWidget organisationId={org.id} />
+
+            {/* ── Attendance Heatmap ───────────────────────────────────── */}
+            {hasCentres && (
+                <div className="bg-surface-container-high p-6 rounded-2xl border border-outline-variant/10">
+                    <AttendanceHeatmap
+                        activeCentreId={activeCentreId}
+                        accessibleCentreIds={accessibleCentreIds}
+                    />
+                </div>
+            )}
 
             {/* ── Centre Capacity Overview ────────────────────────────────── */}
             {hasCentres && (
@@ -792,21 +834,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto justify-between sm:justify-end mt-2 sm:mt-0 relative z-10">
-                    {/* Overlapping Avatars */}
-                    <div className="flex items-center gap-4 hidden sm:flex">
-                        <div className="flex -space-x-3">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="w-10 h-10 rounded-full border-2 border-surface-container-low bg-surface-container-high flex items-center justify-center text-on-surface-variant shadow-sm relative z-[1]">
-                                    <UserCircle2 className="w-6 h-6 opacity-60" />
-                                </div>
-                            ))}
-                            {totalStudents > 5 && (
-                                <div className="w-10 h-10 rounded-full bg-neutral-800 border-2 border-surface-container-low flex items-center justify-center text-[10px] font-bold text-neutral-400 relative z-[1]">
-                                    +{totalStudents - 5}
-                                </div>
-                            )}
+                    {/* Real total count badge */}
+                    {totalStudents > 0 && (
+                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-surface-container-high rounded-xl border border-outline-variant/10">
+                            <Users className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-bold text-white">{totalStudents}</span>
+                            <span className="text-xs text-on-surface-variant">student{totalStudents !== 1 ? 's' : ''}</span>
                         </div>
-                    </div>
+                    )}
                     <Link
                         href="/dashboard/students"
                         className="flex items-center gap-2 px-6 py-3 rounded-xl border border-outline-variant/10 bg-surface-container-high text-primary text-sm font-bold hover:bg-surface-bright transition-colors whitespace-nowrap shadow-sm"
@@ -814,6 +849,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         View Students <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
+
             </div>
         </div>
     );

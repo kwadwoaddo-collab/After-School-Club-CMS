@@ -76,6 +76,10 @@ export default async function DashboardLayout({
         <ToastProvider>
             <SidebarProvider>
                 <CentreFilterProvider centres={orgCentres} defaultCentreId={selectedCentreId}>
+                    {/* Skip to main content - keyboard/screen reader navigation */}
+                    <a href="#main-content" className="skip-to-content">
+                        Skip to main content
+                    </a>
                     <div className="flex min-h-screen bg-surface text-on-surface">
                         {/* Collapsible Sidebar */}
                         <Sidebar
@@ -96,7 +100,11 @@ export default async function DashboardLayout({
                             />
 
                             {/* Dynamic Page Content */}
-                            <main className="p-4 sm:p-8 flex-1">
+                            <main
+                                id="main-content"
+                                className="p-4 sm:p-8 flex-1 dashboard-main-content"
+                                tabIndex={-1}
+                            >
                                 {children}
                             </main>
                         </DashboardContent>
@@ -106,3 +114,4 @@ export default async function DashboardLayout({
         </ToastProvider>
     );
 }
+

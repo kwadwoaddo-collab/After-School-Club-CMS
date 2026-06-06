@@ -5,13 +5,14 @@ import { organisations, bookings, centres, bookingAttendees, parents, children }
 import { alias } from 'drizzle-orm/pg-core';
 import { eq, desc, and, gte, lte, inArray, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Download, Calendar, List, Filter, Search, ChevronLeft } from 'lucide-react';
+import { Plus, Download, Calendar, Filter, Search } from 'lucide-react';
 import { Suspense } from 'react';
 import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeEnum } from '@/lib/search-params';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { startOfDay, endOfDay, format } from 'date-fns';
 
 const VALID_BOOKING_STATUSES = ['confirmed', 'cancelled', 'rescheduled', 'completed', 'pending', 'signed_up'] as const;
 
@@ -23,66 +24,46 @@ export default async function BookingsPage(props: {
         search?: string;
         from?: string;
         to?: string;
+        today?: string;
     }>
 }) {
     const rawSearchParams = await props.searchParams;
     const session = await auth();
 
-    // Normalize searchParams to ensure they are strings (Next.js can return arrays if multiple same-name params exist)
     const searchParams = {
-        view: Array.isArray(rawSearchParams.view) ? rawSearchParams.view[0] : rawSearchParams.view,
+        view:   Array.isArray(rawSearchParams.view)   ? rawSearchParams.view[0]   : rawSearchParams.view,
         status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
         centre: Array.isArray(rawSearchParams.centre) ? rawSearchParams.centre[0] : rawSearchParams.centre,
         search: Array.isArray(rawSearchParams.search) ? rawSearchParams.search[0] : rawSearchParams.search,
-        from: Array.isArray(rawSearchParams.from) ? rawSearchParams.from[0] : rawSearchParams.from,
-        to: Array.isArray(rawSearchParams.to) ? rawSearchParams.to[0] : rawSearchParams.to,
+        from:   Array.isArray(rawSearchParams.from)   ? rawSearchParams.from[0]   : rawSearchParams.from,
+        to:     Array.isArray(rawSearchParams.to)     ? rawSearchParams.to[0]     : rawSearchParams.to,
+        today:  Array.isArray(rawSearchParams.today)  ? rawSearchParams.today[0]  : rawSearchParams.today,
     };
 
-    if (!session?.user?.organisationId) {
-        redirect('/onboarding');
-    }
+    if (!session?.user?.organisationId) redirect('/onboarding');
 
     const orgId = session.user.organisationId;
 
-    // Get organisation
-    const [org] = await db
-        .select()
-        .from(organisations)
-        .where(eq(organisations.id, orgId))
-        .limit(1);
-
+    const [org] = await db.select().from(organisations).where(eq(organisations.id, orgId)).limit(1);
     if (!org) redirect('/onboarding');
 
-    // Get centres accessible to this user (ORG_OWNER sees all, others see assigned centres)
     const orgCentres = await getUserAccessibleCentres(session.user.id);
-
     const centreIds = orgCentres.map(c => c.id);
 
     if (centreIds.length === 0) {
         return (
             <div className="space-y-8 animate-in fade-in duration-700">
-                <div className="flex items-center gap-4">
-
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
-                        <p className="text-slate-400 font-medium mt-1">
-                            Manage upcoming and past appointments
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
+                    <p className="text-slate-400 font-medium mt-1">Manage upcoming and past appointments</p>
                 </div>
-
                 <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Calendar className="w-8 h-8 text-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">No centres found</h3>
-                    <p className="text-slate-500 mb-6">
-                        Please set up a centre first before creating bookings
-                    </p>
-                    <Link
-                        href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all"
-                    >
+                    <p className="text-slate-500 mb-6">Please set up a centre first before creating bookings</p>
+                    <Link href="/dashboard/centres/add" className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all">
                         <Plus className="w-4 h-4" /> Add Centre
                     </Link>
                 </div>
@@ -92,7 +73,12 @@ export default async function BookingsPage(props: {
 
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
 
-    // Fetch bookings with filters
+    // Handle "today" quick filter
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const isToday = searchParams.today === 'true';
+    const effectiveFrom = isToday ? todayStr : searchParams.from;
+    const effectiveTo   = isToday ? todayStr : searchParams.to;
+
     let bookingsData: any[] = [];
     let searchActiveAndNoResults = false;
     let matchingIds: string[] = [];
@@ -100,7 +86,6 @@ export default async function BookingsPage(props: {
     if (searchParams.search) {
         const searchPattern = `%${searchParams.search}%`;
         const attendeeChildren = alias(children, 'attendee_children');
-        
         try {
             const matchingBookings = await db
                 .select({ id: bookings.id })
@@ -127,9 +112,7 @@ export default async function BookingsPage(props: {
                     )
                 );
             matchingIds = matchingBookings.map(mb => mb.id);
-            if (matchingIds.length === 0) {
-                searchActiveAndNoResults = true;
-            }
+            if (matchingIds.length === 0) searchActiveAndNoResults = true;
         } catch (error) {
             console.error('Failed to search bookings:', error);
             searchActiveAndNoResults = true;
@@ -148,7 +131,6 @@ export default async function BookingsPage(props: {
                         conds.push(op.inArray(b.centreId, centreIds));
                     }
 
-                    // Filter by status if provided — validated against allowlist.
                     if (searchParams.status && searchParams.status !== 'all') {
                         const val = searchParams.status as string;
                         if (VALID_BOOKING_STATUSES.includes(val as any)) {
@@ -156,26 +138,16 @@ export default async function BookingsPage(props: {
                         }
                     }
 
-                    // Filter by date range if provided
-                    if (searchParams.from) {
-                        const fromDate = new Date(searchParams.from);
-                        if (!isNaN(fromDate.getTime())) {
-                            conds.push(op.gte(b.startAt, fromDate));
-                        }
+                    if (effectiveFrom) {
+                        const fromDate = new Date(effectiveFrom);
+                        if (!isNaN(fromDate.getTime())) conds.push(op.gte(b.startAt, startOfDay(fromDate)));
                     }
-                    if (searchParams.to) {
-                        const toDate = new Date(searchParams.to);
-                        if (!isNaN(toDate.getTime())) {
-                            const toDateEnd = new Date(searchParams.to);
-                            toDateEnd.setHours(23, 59, 59, 999);
-                            conds.push(op.lte(b.startAt, toDateEnd));
-                        }
+                    if (effectiveTo) {
+                        const toDate = new Date(effectiveTo);
+                        if (!isNaN(toDate.getTime())) conds.push(op.lte(b.startAt, endOfDay(toDate)));
                     }
 
-                    // Filter by search matching IDs if search was performed
-                    if (searchParams.search) {
-                        conds.push(op.inArray(b.id, matchingIds));
-                    }
+                    if (searchParams.search) conds.push(op.inArray(b.id, matchingIds));
 
                     return conds.length === 1 ? conds[0] : op.and(...conds);
                 },
@@ -196,25 +168,14 @@ export default async function BookingsPage(props: {
                             feedbackSentAt: true,
                             updatedAt: true
                         },
-                        with: {
-                            child: {
-                                with: {
-                                    notes: true
-                                }
-                            }
-                        }
+                        with: { child: { with: { notes: true } } }
                     },
                     tutor: true,
-                    child: {
-                        with: {
-                            notes: true
-                        }
-                    }
+                    child: { with: { notes: true } }
                 }
             });
         } catch (error) {
             console.error('Failed to fetch bookings data:', error);
-            // Fallback to empty array to prevent 500 crashes
             bookingsData = [];
         }
     }
@@ -222,40 +183,71 @@ export default async function BookingsPage(props: {
     const isFiltered = !!(
         searchParams.search ||
         (searchParams.status && searchParams.status !== 'all') ||
-        searchParams.from ||
-        searchParams.to ||
+        effectiveFrom ||
+        effectiveTo ||
         activeCentreId !== 'all'
     );
+
+    // Status counts for colour-coded summary
+    const statusCounts = {
+        confirmed:   bookingsData.filter(b => b.status === 'confirmed').length,
+        pending:     bookingsData.filter(b => b.status === 'pending').length,
+        completed:   bookingsData.filter(b => b.status === 'completed').length,
+        cancelled:   bookingsData.filter(b => b.status === 'cancelled').length,
+        rescheduled: bookingsData.filter(b => b.status === 'rescheduled').length,
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-4">
-
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
-                        <p className="text-slate-400 font-medium mt-1">
-                            Manage upcoming and past appointments
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
+                    <p className="text-slate-400 font-medium mt-1">Manage upcoming and past appointments</p>
                 </div>
-
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] border border-[#3a3f4b] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all">
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Export</span>
-                    </button>
+                    {/* Today quick filter */}
                     <Link
-                        href="/dashboard/bookings/new"
-                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        href={isToday ? '/dashboard/bookings' : '/dashboard/bookings?today=true'}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold border transition-all ${
+                            isToday
+                                ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
+                                : 'bg-[#2a2d35] hover:bg-[#343843] border-[#3a3f4b] text-[#FFFFFF]'
+                        }`}
                     >
+                        <Calendar className="w-4 h-4" />
+                        <span className="hidden sm:inline">Today</span>
+                    </Link>
+                    <Link
+                        href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] border border-[#3a3f4b] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export CSV</span>
+                    </Link>
+                    <Link href="/dashboard/bookings/new" className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn">
                         <Plus className="w-4 h-4" /> New Assessment
                     </Link>
                 </div>
             </div>
 
-            {/* Filters and View Toggle */}
+            {/* Colour-coded status summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {[
+                    { label: 'Confirmed', count: statusCounts.confirmed,   colour: 'text-blue-400   bg-blue-500/10   border-blue-500/20'   },
+                    { label: 'Pending',   count: statusCounts.pending,     colour: 'text-amber-400  bg-amber-500/10  border-amber-500/20'  },
+                    { label: 'Attended',  count: statusCounts.completed,   colour: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+                    { label: 'Cancelled', count: statusCounts.cancelled,   colour: 'text-slate-400  bg-slate-500/10  border-slate-500/20'  },
+                    { label: 'Rescheduled', count: statusCounts.rescheduled, colour: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+                ].map(s => (
+                    <div key={s.label} className={`flex items-center justify-between p-3 rounded-2xl border ${s.colour}`}>
+                        <p className="text-xs font-bold uppercase tracking-wider opacity-80">{s.label}</p>
+                        <p className="text-xl font-black">{s.count}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Filters */}
             <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
                 <Suspense fallback={<div className="h-20 animate-pulse bg-slate-800/50 rounded-2xl w-full"></div>}>
                     <BookingsFilters centres={orgCentres} resultsCount={bookingsData.length} />
@@ -264,28 +256,6 @@ export default async function BookingsPage(props: {
 
             {/* Bookings Table */}
             <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />
-
-            {/* Stats Footer */}
-            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="text-center">
-                        <p className="text-2xl font-bold text-[#FFFFFF]">{bookingsData.length}</p>
-                        <p className="text-sm text-slate-400 font-medium">Total Bookings</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-500">
-                            {bookingsData.filter(b => b.status === 'confirmed').length}
-                        </p>
-                        <p className="text-sm text-slate-400 font-medium">Booked</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-2xl font-bold text-accent-violet">
-                            {bookingsData.filter(b => b.status === 'completed').length}
-                        </p>
-                        <p className="text-sm text-slate-400 font-medium">Attended</p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }

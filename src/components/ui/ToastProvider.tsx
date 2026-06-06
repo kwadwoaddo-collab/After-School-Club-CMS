@@ -45,8 +45,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return (
         <ToastContext.Provider value={{ toasts, toast }}>
             {children}
-            {/* Toast Container */}
-            <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+            {/* Toast Container — bottom-center on mobile (above bottom nav), top-right on desktop */}
+            <div
+                className="fixed bottom-20 left-4 right-4 sm:bottom-auto sm:top-4 sm:left-auto sm:right-4 z-[9999] flex flex-col gap-2 pointer-events-none items-center sm:items-end"
+                role="status"
+                aria-live="polite"
+                aria-atomic="false"
+            >
                 {toasts.map(t => (
                     <ToastItem key={t.id} toast={t} onDismiss={() => setToasts(prev => prev.filter(x => x.id !== t.id))} />
                 ))}

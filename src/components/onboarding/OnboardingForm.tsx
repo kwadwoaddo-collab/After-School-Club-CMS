@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -16,7 +15,6 @@ const onboardingSchema = z.object({
 type OnboardingInput = z.infer<typeof onboardingSchema>;
 
 export default function OnboardingForm() {
-    const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -87,11 +85,12 @@ export default function OnboardingForm() {
                 throw new Error(errorData.error || 'Setup failed');
             }
 
-            router.push('/dashboard');
-            router.refresh(); // Refresh to update session/cookies
+            // Force a full page reload so the JWT session is re-fetched with the
+            // new organisationId. Using router.push() alone leaves the stale JWT
+            // in place and can bounce the user back to /onboarding.
+            window.location.href = '/dashboard';
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
-        } finally {
             setIsSubmitting(false);
         }
     };
@@ -105,7 +104,11 @@ export default function OnboardingForm() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
                 {error && (
-                    <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100">
+                    <div
+                        role="alert"
+                        aria-live="polite"
+                        className="p-4 bg-red-500/15 text-red-300 rounded-lg text-sm border border-red-500/30"
+                    >
                         {error}
                     </div>
                 )}
@@ -146,7 +149,8 @@ export default function OnboardingForm() {
                             className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. Bright Stars Academy"
                         />
-                        {errors.organisationName && <p className="text-red-600 text-sm mt-1">{errors.organisationName.message}</p>}
+                        {errors.organisationName && <p className="text-red-400 text-sm mt-1" role="alert">{errors.organisationName.message}</p>}
+
                     </div>
 
                     <div>

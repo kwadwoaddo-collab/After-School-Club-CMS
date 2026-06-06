@@ -47,9 +47,9 @@ export async function getTypedSession(): Promise<TypedSession | null> {
       name: session.user.name ?? null,
       email: session.user.email ?? '',
       image: session.user.image,
-      role: ((session.user as Record<string, unknown>).role as UserRole) || 'TUTOR',
-      organisationId: ((session.user as Record<string, unknown>).organisationId as string) ?? null,
-      needsOnboarding: !!((session.user as Record<string, unknown>).needsOnboarding),
+      role: ((session.user as any).role as UserRole) || 'TUTOR',
+      organisationId: ((session.user as any).organisationId as string) ?? null,
+      needsOnboarding: !!((session.user as any).needsOnboarding),
     },
     expires: session.expires,
   };
@@ -65,6 +65,8 @@ export async function requireTypedSession(): Promise<TypedSession> {
     // Dynamic import to avoid circular dependency with next/navigation
     const { redirect } = await import('next/navigation');
     redirect('/login');
+    // TypeScript doesn't know redirect() throws — this satisfies the return type
+    return undefined as never;
   }
   return session;
 }

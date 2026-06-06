@@ -1,9 +1,12 @@
+'use client';
+
 import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
 import {
-  Users, CalendarCheck, ClipboardList,
+  Users, CalendarCheck, ClipboardList, Clock,
   ArrowUpRight, ArrowDownRight, Minus,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { cn } from '@/components/ui/utils';
 
 interface Trend {
   diff: number;
@@ -17,8 +20,12 @@ interface KpiStat {
   subtext: string;
   icon: LucideIcon;
   colorClass: string;
+  bgGradient: string;
+  borderColor: string;
+  iconBg: string;
   trend?: Trend;
   sparkline?: number[];
+  sparklineColor?: string;
 }
 
 interface KpiGridProps {
@@ -33,6 +40,32 @@ interface KpiGridProps {
   bookingsTrend: Trend;
   registrationsTrend: Trend;
   growthStats: number[];
+}
+
+function formatNumber(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toString();
+}
+
+function TrendBadge({ trend }: { trend: Trend }) {
+  const isPositive = trend.type === 'positive';
+  const isNegative = trend.type === 'negative';
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide border',
+        isPositive && 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        isNegative && 'bg-red-500/10 text-red-400 border-red-500/20',
+        !isPositive && !isNegative && 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/20'
+      )}
+    >
+      {isPositive && <ArrowUpRight className="w-3 h-3" />}
+      {isNegative && <ArrowDownRight className="w-3 h-3" />}
+      {!isPositive && !isNegative && <Minus className="w-3 h-3" />}
+      {trend.text}
+    </div>
+  );
 }
 
 export function KpiGrid({
@@ -52,69 +85,111 @@ export function KpiGrid({
     {
       label: 'New Students',
       value: studentsActive,
-      subtext: `${studentsTotal} total students`,
+      subtext: `${formatNumber(studentsTotal)} total enrolled`,
       icon: Users,
-      colorClass: 'text-primary bg-primary/10',
+      colorClass: 'text-primary',
+      bgGradient: 'from-blue-500/5 via-transparent to-transparent',
+      borderColor: 'border-primary/20 hover:border-primary/40',
+      iconBg: 'bg-primary/15 text-primary',
       trend: studentsTrend,
       sparkline: growthStats,
+      sparklineColor: 'stroke-primary',
     },
     {
       label: 'Bookings',
       value: bookingsActive,
-      subtext: `${bookingsTotal} total bookings`,
+      subtext: `${formatNumber(bookingsTotal)} total bookings`,
       icon: CalendarCheck,
-      colorClass: 'text-secondary bg-secondary/10',
+      colorClass: 'text-secondary',
+      bgGradient: 'from-purple-500/5 via-transparent to-transparent',
+      borderColor: 'border-secondary/20 hover:border-secondary/40',
+      iconBg: 'bg-secondary/15 text-secondary',
       trend: bookingsTrend,
+      sparklineColor: 'stroke-secondary',
     },
     {
       label: 'New Registrations',
       value: registrationsActive,
-      subtext: `${registrationsTotal} total registrations`,
+      subtext: `${formatNumber(registrationsTotal)} total registrations`,
       icon: ClipboardList,
-      colorClass: 'text-tertiary bg-tertiary/10',
+      colorClass: 'text-tertiary',
+      bgGradient: 'from-green-500/5 via-transparent to-transparent',
+      borderColor: 'border-tertiary/20 hover:border-tertiary/40',
+      iconBg: 'bg-tertiary/15 text-tertiary',
       trend: registrationsTrend,
       sparkline: growthStats,
+      sparklineColor: 'stroke-tertiary',
     },
     {
       label: 'Pending Approval',
       value: pendingRegistrations,
       subtext: 'Awaiting coordinator review',
-      icon: ClipboardList,
-      colorClass: 'text-error bg-error/10',
+      icon: Clock,
+      colorClass: 'text-amber-400',
+      bgGradient: 'from-amber-500/5 via-transparent to-transparent',
+      borderColor: 'border-amber-500/20 hover:border-amber-500/40',
+      iconBg: 'bg-amber-500/15 text-amber-400',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
       {stats.map(stat => (
-        <div key={stat.label} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 group hover:bg-surface-bright transition-all relative flex flex-col justify-between min-h-[148px]">
-          <div>
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-2.5 rounded-lg ${stat.colorClass}`}>
+        <div
+          key={stat.label}
+          className={cn(
+            'relative group overflow-hidden rounded-2xl border transition-all duration-300 cursor-default',
+            'bg-surface-container-high',
+            'hover:shadow-[0_8px_32px_rgba(0,0,0,0.25)] hover:scale-[1.015] hover:-translate-y-0.5',
+            stat.borderColor,
+            'min-h-[156px] p-6 flex flex-col justify-between'
+          )}
+        >
+          {/* Background gradient wash */}
+          <div
+            className={cn(
+              'absolute inset-0 bg-gradient-to-br opacity-70 pointer-events-none',
+              stat.bgGradient
+            )}
+          />
+
+          {/* Sparkline watermark */}
+          {stat.sparkline && (
+            <div className="absolute right-4 bottom-12 opacity-[0.15] group-hover:opacity-[0.35] transition-opacity duration-300 pointer-events-none">
+              <GrowthSparkline
+                data={stat.sparkline}
+                width={72}
+                height={28}
+                strokeColor={stat.sparklineColor}
+              />
+            </div>
+          )}
+
+          <div className="relative z-10">
+            {/* Header row: icon + trend */}
+            <div className="flex items-start justify-between mb-4">
+              <div className={cn('p-2.5 rounded-xl', stat.iconBg)}>
                 <stat.icon className="w-5 h-5" />
               </div>
-              {stat.sparkline && (
-                <div className="absolute right-6 top-6 opacity-40 group-hover:opacity-100 transition-opacity">
-                  <GrowthSparkline data={stat.sparkline} width={60} height={20} />
-                </div>
-              )}
-              {!stat.sparkline && stat.trend && (
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold tracking-wider ${
-                  stat.trend.type === 'positive' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                  stat.trend.type === 'negative' ? 'bg-error-container/20 text-error border border-error/20' :
-                  'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20'
-                }`}>
-                  {stat.trend.type === 'positive' && <ArrowUpRight className="w-3 h-3" />}
-                  {stat.trend.type === 'negative' && <ArrowDownRight className="w-3 h-3" />}
-                  {stat.trend.type === 'neutral' && <Minus className="w-3 h-3" />}
-                  {stat.trend.text}
-                </div>
-              )}
+
+              {stat.trend ? (
+                <TrendBadge trend={stat.trend} />
+              ) : null}
             </div>
-            <p className="text-on-surface-variant text-sm font-medium">{stat.label}</p>
-            <h3 className="text-3xl font-bold text-white mt-1">{stat.value ?? 0}</h3>
+
+            {/* Label */}
+            <p className="text-on-surface-variant text-xs font-semibold uppercase tracking-wider mb-1">
+              {stat.label}
+            </p>
+
+            {/* Large metric number */}
+            <h3 className={cn('text-4xl font-black tracking-tight tabular-nums', stat.colorClass)}>
+              {formatNumber(stat.value ?? 0)}
+            </h3>
           </div>
-          <div className="mt-4 pt-2 border-t border-outline-variant/5 text-xs text-on-surface-variant/70 font-medium">
+
+          {/* Footer */}
+          <div className="relative z-10 pt-3 border-t border-outline-variant/10 text-xs text-on-surface-variant/60 font-medium">
             {stat.subtext}
           </div>
         </div>

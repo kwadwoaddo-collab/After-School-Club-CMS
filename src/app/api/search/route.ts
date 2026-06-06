@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children, parents, bookings, centres } from '@/db/schema';
-import { ilike, or, eq, sql } from 'drizzle-orm';
+import { ilike, or, eq, sql, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session?.user?.organisationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const organisationId = (session.user as any).organisationId as string;
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     const searchPattern = `%${query.trim()}%`;
 
-    // 1. Search Students (Children)
+    // 1. Search Students (Children) — scoped to the user's organisation
     const students = await db
       .select({
         id: children.id,
@@ -30,15 +32,18 @@ export async function GET(request: NextRequest) {
       })
       .from(children)
       .where(
-        or(
-          ilike(children.firstName, searchPattern),
-          ilike(children.lastName, searchPattern),
-          ilike(sql`concat(${children.firstName}, ' ', ${children.lastName})`, searchPattern)
+        and(
+          eq(children.organisationId, organisationId),
+          or(
+            ilike(children.firstName, searchPattern),
+            ilike(children.lastName, searchPattern),
+            ilike(sql`concat(${children.firstName}, ' ', ${children.lastName})`, searchPattern)
+          )
         )
       )
       .limit(5);
 
-    // 2. Search Parents
+    // 2. Search Parents — scoped to the user's organisation
     const parentResults = await db
       .select({
         id: parents.id,
@@ -48,23 +53,31 @@ export async function GET(request: NextRequest) {
       })
       .from(parents)
       .where(
-        or(
-          ilike(parents.firstName, searchPattern),
-          ilike(parents.lastName, searchPattern),
-          ilike(parents.email, searchPattern),
-          ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern)
+        and(
+          eq(parents.organisationId, organisationId),
+          or(
+            ilike(parents.firstName, searchPattern),
+            ilike(parents.lastName, searchPattern),
+            ilike(parents.email, searchPattern),
+            ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern)
+          )
         )
       )
       .limit(5);
 
-    // 3. Search Centres
+    // 3. Search Centres — scoped to the user's organisation
     const centreResults = await db
       .select({
         id: centres.id,
         name: centres.name,
       })
       .from(centres)
-      .where(ilike(centres.name, searchPattern))
+      .where(
+        and(
+          eq(centres.organisationId, organisationId),
+          ilike(centres.name, searchPattern)
+        )
+      )
       .limit(3);
 
     // 4. Search Bookings (by parent or child name)

@@ -61,7 +61,16 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
 
-
+    // Profile completeness calculation
+    const completenessFields = [
+        student.firstName, student.lastName, student.dateOfBirth, student.schoolYear,
+        student.parent.phone, student.parent.email,
+        student.notes,
+        student.registeredSessions && student.registeredSessions.length > 0 ? 'yes' : '',
+    ];
+    const completenessScore = Math.round(
+        (completenessFields.filter(Boolean).length / completenessFields.length) * 100
+    );
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -97,7 +106,7 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                 <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         </AttendanceRadial>
-                        <div className="text-center md:text-left space-y-2">
+                        <div className="text-center md:text-left space-y-2 flex-1 w-full">
                             <div className="flex items-center justify-center md:justify-start gap-3">
                                 <h1 className="text-4xl font-black text-white tracking-tight">{fullName}</h1>
                             </div>
@@ -110,6 +119,18 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                                 <span className="flex items-center gap-1.5 font-bold text-sm">
                                     <Calendar className="w-4 h-4 text-violet-500" />
                                     Born: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'N/A'}
+                                </span>
+                            </div>
+                            {/* Profile Completeness */}
+                            <div className="mt-4 flex items-center gap-3 max-w-xs mx-auto md:mx-0">
+                                <div className="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden border border-outline-variant/10">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ${completenessScore >= 80 ? 'bg-emerald-400' : completenessScore >= 50 ? 'bg-amber-400' : 'bg-error'}`}
+                                        style={{ width: `${completenessScore}%` }}
+                                    />
+                                </div>
+                                <span className={`text-xs font-bold ${completenessScore >= 80 ? 'text-emerald-400' : completenessScore >= 50 ? 'text-amber-400' : 'text-error'}`}>
+                                    {completenessScore}% complete
                                 </span>
                             </div>
                         </div>

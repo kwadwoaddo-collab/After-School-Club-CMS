@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Centre {
     id: string;
@@ -30,6 +31,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
+    const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
 
     const validate = () => {
         const newErrors: Record<string, string> = {};
@@ -93,8 +95,13 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 throw new Error(errorData.error || 'Failed to add student');
             }
 
-            router.push('/dashboard/students');
-            router.refresh();
+            const data = await res.json();
+            if (data.id) {
+                setCreatedStudentId(data.id);
+            } else {
+                router.push('/dashboard/students');
+                router.refresh();
+            }
         } catch (err) {
             setServerError(err instanceof Error ? err.message : 'Something went wrong');
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -109,6 +116,49 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error'
                 : 'border-[#2a2d35] focus:border-primary'
         }`;
+
+    if (createdStudentId) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-6">
+                <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-400/20 rounded-3xl flex items-center justify-center">
+                    <svg className="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Student Added!</h3>
+                    <p className="text-on-surface-variant font-medium">The student has been successfully registered to your centre.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={`/dashboard/students/${createdStudentId}`}
+                        className="px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    >
+                        View Student Profile →
+                    </Link>
+                    <button
+                        onClick={() => {
+                            setCreatedStudentId(null);
+                            setFormData({
+                                firstName: '',
+                                lastName: '',
+                                dateOfBirth: '',
+                                schoolYear: '',
+                                parentFirstName: '',
+                                parentLastName: '',
+                                parentEmail: '',
+                                parentPhone: '',
+                                centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
+                            });
+                        }}
+                        className="px-6 py-3 bg-surface-container-high border border-outline-variant/10 text-white font-bold rounded-2xl hover:bg-surface-container transition-all"
+                    >
+                        Add Another
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">

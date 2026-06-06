@@ -9,10 +9,77 @@ import {
 import { eq, and, ilike, inArray } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { z } from 'zod';
+import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+
+// Validation schema for the public registration form
+const registerSchema = z.object({
+    orgSlug: z.string().min(1).max(100),
+    centreId: z.string().uuid().optional(),
+    startDate: z.string().datetime({ offset: true }).optional().nullable(),
+    termsAgreed: z.literal(true, { message: 'You must agree to the terms' }),
+    parentSignature: z.string().optional().nullable(),
+    children: z.array(z.object({
+        firstName: z.string().min(1).max(100),
+        lastName: z.string().min(1).max(100),
+        dateOfBirth: z.string().optional().nullable(),
+        schoolYear: z.string().max(10).optional(),
+        sessions: z.array(z.string()).optional(),
+    })).min(1),
+    parents: z.array(z.object({
+        firstName: z.string().min(1).max(100),
+        lastName: z.string().min(1).max(100),
+        email: z.string().email().max(255).optional().nullable(),
+        phone: z.string().max(20).optional().nullable(),
+        relationship: z.string().max(50).optional().nullable(),
+        addressLine1: z.string().max(255).optional().nullable(),
+        addressLine2: z.string().max(255).optional().nullable(),
+        city: z.string().max(100).optional().nullable(),
+        postcode: z.string().max(10).optional().nullable(),
+    })).min(1),
+    emergencyContact: z.object({
+        name: z.string().max(255).optional().nullable(),
+        phone: z.string().max(20).optional().nullable(),
+        relationship: z.string().max(50).optional().nullable(),
+    }).optional(),
+    funding: z.object({
+        types: z.array(z.string()).optional(),
+        other: z.string().max(500).optional().nullable(),
+    }).optional(),
+    specialNeeds: z.object({
+        has: z.boolean(),
+        details: z.string().max(5000).optional().nullable(),
+    }).optional(),
+});
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
+        // Rate limit: protect against bulk spam registrations
+        const ip = getClientIP(req);
+        const { success: allowed } = await checkRateLimit(apiRateLimit, `register:${ip}`);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many registration attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
+        let rawBody: unknown;
+        try {
+            rawBody = await req.json();
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+
+        const parsed = registerSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+                { status: 400 }
+            );
+        }
+
+        const body = parsed.data;
         const {
             orgSlug,
             centreId,
@@ -139,7 +206,7 @@ export async function POST(req: NextRequest) {
                     parentId = existing.id;
                     // Enrich existing record with new address/relationship info if missing
                     await db.update(parents).set({
-                        relationship: p.relationship ?? existing.relationship,
+                        relationship: (p.relationship ?? existing.relationship) as any,
                         addressLine1: p.addressLine1 ?? existing.addressLine1,
                         addressLine2: p.addressLine2 ?? existing.addressLine2,
                         city: p.city ?? existing.city,
@@ -154,7 +221,7 @@ export async function POST(req: NextRequest) {
                         phone: p.phone,
                         organisationId: org.id,
                         preferredContact: 'email',
-                        relationship: p.relationship ?? null,
+                        relationship: (p.relationship ?? null) as any,
                         addressLine1: p.addressLine1 ?? null,
                         addressLine2: p.addressLine2 ?? null,
                         city: p.city ?? null,
@@ -170,7 +237,7 @@ export async function POST(req: NextRequest) {
                     phone: p.phone,
                     organisationId: org.id,
                     preferredContact: 'phone',
-                    relationship: p.relationship ?? null,
+                    relationship: (p.relationship ?? null) as any,
                 }).returning();
                 parentId = newParent.id;
             }
@@ -218,7 +285,7 @@ export async function POST(req: NextRequest) {
                         source: 'both',
                         isRegistered: true,
                         registeredAt: new Date(),
-                        registeredSessions: c.sessions?.length > 0 ? c.sessions : null,
+                        registeredSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                         updatedAt: new Date(),
                     }).where(eq(children.id, existing.id));
                 } else {
@@ -234,7 +301,7 @@ export async function POST(req: NextRequest) {
                         source: 'registration',
                         isRegistered: true,
                         registeredAt: new Date(),
-                        registeredSessions: c.sessions?.length > 0 ? c.sessions : null,
+                        registeredSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                     }).returning();
                     childId = newChild.id;
                 }
@@ -247,7 +314,7 @@ export async function POST(req: NextRequest) {
                 submittedLastName: c.lastName,
                 submittedDateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
                 submittedSchoolYear: c.schoolYear ?? null,
-                submittedSessions: c.sessions?.length > 0 ? c.sessions : null,
+                submittedSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                 wasMatched: matched,
             });
 

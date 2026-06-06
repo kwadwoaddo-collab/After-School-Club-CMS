@@ -6,6 +6,7 @@ import { getExportData } from '@/features/bookings/actions';
 import { getStudentExportData } from '@/features/students/actions';
 import { cn } from '@/components/ui/utils';
 import { resolveAttendanceStatus } from '@/lib/attendance';
+import { DataExportSection } from '@/components/dashboard/DataExportSection';
 import type { AttendanceStatus } from '@/lib/attendance';
 
 type FilterType = 'all' | 'month' | 'week' | 'custom';
