@@ -165,7 +165,7 @@ export default function DataTable<T>({
   return (
     <div
       className={cn(
-        'bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden',
+        'bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden data-grid-optimized',
         className
       )}
     >

@@ -255,36 +255,45 @@ export default function SignupPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">First Name</label>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-white/80 mb-2">First Name</label>
                     <input
+                      id="firstName"
                       type="text"
+                      autoComplete="given-name"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                       className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Jane"
+                      required
                       autoFocus
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">Last Name</label>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-white/80 mb-2">Last Name</label>
                     <input
+                      id="lastName"
                       type="text"
+                      autoComplete="family-name"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                       className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Smith"
+                      required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">Work Email</label>
+                  <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">Work Email</label>
                   <input
+                    id="email"
                     type="email"
+                    autoComplete="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="jane@yourcentre.com"
+                    required
                   />
                 </div>
 
@@ -309,25 +318,31 @@ export default function SignupPage() {
             {currentStep === 2 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">Password</label>
+                  <label htmlFor="new-password" className="block text-sm font-medium text-white/80 mb-2">Password</label>
                   <input
+                    id="new-password"
                     type="password"
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Min. 8 characters"
+                    required
                     autoFocus
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">Confirm Password</label>
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-white/80 mb-2">Confirm Password</label>
                   <input
+                    id="confirm-password"
                     type="password"
+                    autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="••••••••"
+                    required
                   />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
                     <p className="text-red-400 text-xs mt-1">Passwords don't match</p>

@@ -164,6 +164,27 @@ select:disabled {
   cursor: not-allowed;
 }
 
+/* Modern Form Validation - Show errors only after user interaction */
+input:user-invalid,
+textarea:user-invalid,
+select:user-invalid {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+input:user-valid:not(:placeholder-shown),
+textarea:user-valid:not(:placeholder-shown),
+select:user-valid {
+  border-color: #10b981 !important;
+}
+
+/* Content Visibility for Data Grids (Performance Optimization) */
+.data-grid-optimized {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
 input[style*="background"],
 textarea[style*="background"] {
   background-color: inherit !important;

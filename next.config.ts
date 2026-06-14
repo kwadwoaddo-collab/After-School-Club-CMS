@@ -56,6 +56,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    viewTransition: true,
+  },
 };
 
 export default withSentryConfig(nextConfig, {
