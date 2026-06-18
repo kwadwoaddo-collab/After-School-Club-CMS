@@ -94,7 +94,7 @@ const columns: DataTableColumn<StudentRow>[] = [
                   </div>
                   <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-surface-container-high border border-outline-variant/50 text-white text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] leading-relaxed font-medium">
                     <div className="font-bold text-amber-400 mb-1 border-b border-amber-400/20 pb-1 flex items-center gap-1.5"><TrendingDown className="w-3 h-3"/>Low Attendance</div>
-                    {Math.round(student.attendanceRate)}% attendance rate — below 75% threshold
+                    {Math.round(student.attendanceRate)}% attendance rate — below 70% threshold
                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
                   </div>
                 </div>

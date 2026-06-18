@@ -155,7 +155,7 @@ export default async function StudentsPage(props: {
         )
     }) : [];
 
-    const LOW_ATTENDANCE_THRESHOLD = 75;
+    const LOW_ATTENDANCE_THRESHOLD = 70;
     const MIN_SESSIONS_FOR_ALERT = 3;
 
     const enrichedStudents: StudentRow[] = studentsList.map((student) => {

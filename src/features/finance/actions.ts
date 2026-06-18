@@ -393,7 +393,7 @@ export async function recordPayment(data: {
         }
 
         await tx.insert(auditEvents).values({
-            organisationId: session.user.organisationId,
+            organisationId: session.user.organisationId as string,
             userId: session.user.id,
             eventType: 'payment_recorded',
             eventData: JSON.stringify({ invoiceId: data.invoiceId, paymentId: newPayment.id, amount: data.amount, method: data.method })

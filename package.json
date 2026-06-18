@@ -21,10 +21,11 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
     "@google-cloud/local-auth": "^3.0.1",
-    "@hookform/resolvers": "^3.10.0",
+    "@hookform/resolvers": "^5.4.0",
     "@react-pdf/renderer": "^4.4.0",
     "@sentry/nextjs": "^10.53.1",
-    "@stripe/stripe-js": "^8.7.0",
+    "@stripe/stripe-js": "^9.8.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/react-signature-canvas": "^1.0.7",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
@@ -34,10 +35,11 @@
     "drizzle-orm": "^0.45.1",
     "googleapis": "^171.2.0",
     "jose": "^6.2.3",
-    "lucide-react": "^0.563.0",
+    "lucide-react": "^1.21.0",
     "nanoid": "^5.1.6",
     "next": "16.2.9",
     "next-auth": "^5.0.0-beta.30",
+    "nodemailer": "^7.0.13",
     "pg": "^8.18.0",
     "postgres": "^3.4.8",
     "react": "19.2.7",
@@ -47,7 +49,7 @@
     "react-signature-canvas": "^1.1.0-alpha.2",
     "resend": "^6.9.1",
     "stripe": "^20.3.1",
-    "twilio": "^5.12.1",
+    "twilio": "^6.0.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -58,11 +60,16 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.8",
-    "eslint": "^9",
+    "eslint": "^10.5.0",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.6"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0",
+    "postcss": "^8.5.10",
+    "uuid": "^11.1.1"
   }
 }

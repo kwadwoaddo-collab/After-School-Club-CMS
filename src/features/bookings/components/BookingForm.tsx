@@ -218,7 +218,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         reset,
         formState: { errors },
     } = useForm<BookingInput>({
-        resolver: zodResolver(bookingSchema),
+        resolver: zodResolver(bookingSchema) as any,
         defaultValues: {
             parent: {
                 firstName: '',
@@ -557,7 +557,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
             {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
                 {/* Step 1: Parent Details */}
                 {step === 1 && (
                     <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
