@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, Shield, Mail, Phone, Users, Plus } from 'lucide-react';
+import { AlertTriangle, Shield, Mail, Phone, Users, Plus, TrendingDown } from 'lucide-react';
 import DataTable, { DataTableColumn } from '@/components/ui/DataTable';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import StudentActions from '@/components/students/StudentActions';
@@ -26,6 +26,7 @@ export interface StudentRow {
   bookingCount: number;
   completedCount: number;
   attendanceRate: number;
+  lowAttendance: boolean;
   nextAssessment: Date | null;
   medicalNotes: string[];
   safeguardingNotes: string[];
@@ -82,6 +83,18 @@ const columns: DataTableColumn<StudentRow>[] = [
                   <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-white text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
                     <div className="font-bold text-primary mb-1 border-b border-primary/20 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
                     {safeguardingNotesContent}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                  </div>
+                </div>
+              )}
+              {student.lowAttendance && (
+                <div className="relative group/tooltip flex items-center outline-none">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/30 cursor-help shadow-[0_0_8px_rgba(251,191,36,0.2)]">
+                    <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
+                  </div>
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-surface-container-high border border-outline-variant/50 text-white text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] leading-relaxed font-medium">
+                    <div className="font-bold text-amber-400 mb-1 border-b border-amber-400/20 pb-1 flex items-center gap-1.5"><TrendingDown className="w-3 h-3"/>Low Attendance</div>
+                    {Math.round(student.attendanceRate)}% attendance rate — below 75% threshold
                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
                   </div>
                 </div>

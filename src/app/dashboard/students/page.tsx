@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
 import { eq, desc, sql, inArray, and, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Users, GraduationCap, Sparkles, AlertTriangle } from 'lucide-react';
+import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
@@ -92,7 +92,8 @@ export default async function StudentsPage(props: {
         conditions.push(eq(children.schoolYear, searchParams.year));
     }
 
-    if (searchParams.status && searchParams.status !== 'all') {
+    const showLowAttendance = searchParams.status === 'low-attendance';
+    if (searchParams.status && searchParams.status !== 'all' && !showLowAttendance) {
         conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
     }
 
@@ -122,8 +123,11 @@ export default async function StudentsPage(props: {
         .select({
             childId: bookingAttendees.childId,
             totalCount: sql<number>`count(*)`,
-            completedCount: sql<number>`count(*) filter (where ${bookings.status} = 'completed')`,
-            nextAssessment: sql<Date | null>`min(${bookings.startAt})`,
+            pastCount: sql<number>`count(*) filter (where ${bookings.startAt} <= now())`,
+            presentCount: sql<number>`count(*) filter (where ${bookings.startAt} <= now() AND
+                COALESCE(${bookingAttendees.attendanceStatus}::text, CASE WHEN ${bookings.status} = 'completed' THEN 'present' ELSE NULL END) = 'present'
+            )`,
+            nextAssessment: sql<Date | null>`min(${bookings.startAt}) filter (where ${bookings.startAt} > now())`,
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
@@ -137,7 +141,8 @@ export default async function StudentsPage(props: {
     const bookingDataMap = new Map(
         bookingData.map((bd) => [bd.childId, {
             totalCount: bd.totalCount,
-            completedCount: bd.completedCount,
+            pastCount: bd.pastCount,
+            presentCount: bd.presentCount,
             nextAssessment: bd.nextAssessment,
         }])
     );
@@ -150,11 +155,16 @@ export default async function StudentsPage(props: {
         )
     }) : [];
 
+    const LOW_ATTENDANCE_THRESHOLD = 75;
+    const MIN_SESSIONS_FOR_ALERT = 3;
+
     const enrichedStudents: StudentRow[] = studentsList.map((student) => {
         const bookingInfo = bookingDataMap.get(student.id);
         const bookingCount = Number(bookingInfo?.totalCount ?? 0);
-        const completedCount = Number(bookingInfo?.completedCount ?? 0);
+        const pastCount = Number(bookingInfo?.pastCount ?? 0);
+        const presentCount = Number(bookingInfo?.presentCount ?? 0);
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === student.id);
+        const attendanceRate = pastCount > 0 ? (presentCount / pastCount) * 100 : 0;
 
         return {
             id: student.id,
@@ -170,18 +180,24 @@ export default async function StudentsPage(props: {
             parentEmail: student.parentEmail,
             parentPhone: student.parentPhone,
             bookingCount,
-            completedCount,
-            attendanceRate: bookingCount > 0 ? (completedCount / bookingCount) * 100 : 0,
+            completedCount: presentCount,
+            attendanceRate,
+            lowAttendance: pastCount >= MIN_SESSIONS_FOR_ALERT && attendanceRate < LOW_ATTENDANCE_THRESHOLD,
             nextAssessment: bookingInfo?.nextAssessment ?? null,
             medicalNotes: studentSafetyNotes.filter(n => n.category === 'Medical').map(n => n.content),
             safeguardingNotes: studentSafetyNotes.filter(n => n.category === 'Safeguarding').map(n => n.content),
         };
     });
 
+    const visibleStudents = showLowAttendance
+        ? enrichedStudents.filter(s => s.lowAttendance)
+        : enrichedStudents;
+
     const totalCount = enrichedStudents.length;
     const registeredCount = enrichedStudents.filter(s => s.isRegistered).length;
     const leadCount = enrichedStudents.filter(s => !s.isRegistered).length;
     const medicalAlertCount = enrichedStudents.filter(s => s.medicalNotes.length > 0 || s.safeguardingNotes.length > 0).length;
+    const lowAttendanceCount = enrichedStudents.filter(s => s.lowAttendance).length;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -201,7 +217,7 @@ export default async function StudentsPage(props: {
             </div>
 
             {/* KPI Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {/* Total Students */}
                 <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-3">
@@ -253,19 +269,35 @@ export default async function StudentsPage(props: {
                         </div>
                     </div>
                 </div>
+
+                {/* Low Attendance */}
+                <Link
+                    href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'}
+                    className={`bg-[#1a1d23] rounded-2xl p-5 border shadow-[0_4px_24px_rgba(0,0,0,0.2)] transition-all hover:border-amber-500/30 ${showLowAttendance ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-[#424754]/15'}`}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 flex-shrink-0">
+                            <TrendingDown className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-amber-400' : 'text-[#e5e2e1]'}`}>{lowAttendanceCount}</p>
+                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
+                        </div>
+                    </div>
+                </Link>
             </div>
 
             {/* Filters */}
             <StudentsFilters
                 centres={accessibleCentres}
-                resultsCount={enrichedStudents.length}
+                resultsCount={visibleStudents.length}
                 currentView={searchParams.view === 'grid' ? 'grid' : 'table'}
             />
 
             {searchParams.view === 'grid' ? (
-                <StudentsGrid students={enrichedStudents} />
+                <StudentsGrid students={visibleStudents} />
             ) : (
-                <StudentsTable students={enrichedStudents} />
+                <StudentsTable students={visibleStudents} />
             )}
         </div>
     );

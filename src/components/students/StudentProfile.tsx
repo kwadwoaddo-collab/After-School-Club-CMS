@@ -9,12 +9,15 @@ import {
     Clock,
     User,
     ChevronLeft,
+    CheckCircle,
+    XCircle,
+    MinusCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
 import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
-import { resolveAttendanceStatus, getAttendanceColorClass } from '@/lib/attendance';
+import { resolveAttendanceStatus, getAttendanceColorClass, countAttendance } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
 
 interface AssessmentProfileProps {
@@ -46,6 +49,7 @@ interface AssessmentProfileProps {
             feedbackAttachmentMime: string | null;
             feedbackSentAt: Date | null;
             attendanceStatus: string | null;
+            attendanceNote: string | null;
         }>;
         attendanceStats?: { total: number; completed: number };
     };
@@ -60,6 +64,16 @@ interface AssessmentProfileProps {
 export default function StudentProfile({ student, initialNotes }: AssessmentProfileProps) {
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
+
+    const attendanceBreakdown = countAttendance(
+        student.bookings.map(b => ({
+            attendanceStatus: b.attendanceStatus as AttendanceStatus | null,
+            bookingStatus: b.status,
+        }))
+    );
+    const attendanceRate = attendanceBreakdown.total > 0
+        ? Math.round((attendanceBreakdown.attended / attendanceBreakdown.total) * 100)
+        : 0;
 
     // Profile completeness calculation
     const completenessFields = [
@@ -137,25 +151,61 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                     </div>
 
                     {/* General Stats Bar */}
-                    <div className="mt-12 grid grid-cols-1 md:grid-cols-2 border-t border-outline-variant/10">
+                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 border-t border-outline-variant/10">
                         <div className="p-8 border-b md:border-b-0 md:border-r border-outline-variant/10 flex flex-col gap-1 items-center md:items-start">
-                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Bookings</span>
+                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Sessions</span>
                             <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-primary" />
                                 <span className="text-lg font-black text-white">
-                                    {student.bookings.length}
+                                    {attendanceBreakdown.total}
                                 </span>
                             </div>
                         </div>
-                        <div className="p-8 flex flex-col gap-1 items-center md:items-start">
-                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Sessions Completed</span>
+                        <Link
+                            href={`/dashboard/students/${student.id}/attendance`}
+                            className="p-8 border-b md:border-b-0 md:border-r border-outline-variant/10 flex flex-col gap-1 items-center md:items-start hover:bg-white/5 transition-colors"
+                        >
+                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Attendance Rate</span>
                             <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-emerald-400" />
-                                <span className="text-lg font-black text-white">
-                                    {student.attendanceStats?.completed || 0} / {student.attendanceStats?.total || 0} Completed
+                                <span className={cn("text-lg font-black", attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 60 ? 'text-amber-400' : 'text-error')}>
+                                    {attendanceBreakdown.total > 0 ? `${attendanceRate}%` : 'N/A'}
                                 </span>
                             </div>
-                            <span className="text-[10px] text-on-surface-variant/60 font-medium mt-0.5">Attendance rate · per-child granularity available</span>
+                            <span className="text-[10px] text-on-surface-variant/60 font-medium mt-0.5">{attendanceBreakdown.attended} present of {attendanceBreakdown.total} sessions</span>
+                        </Link>
+                        <div className="p-8 flex flex-col gap-1 items-center md:items-start">
+                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Breakdown</span>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {attendanceBreakdown.attended > 0 && (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-400">
+                                        <CheckCircle className="w-3 h-3" />{attendanceBreakdown.attended}
+                                    </span>
+                                )}
+                                {attendanceBreakdown.absent > 0 && (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-error">
+                                        <XCircle className="w-3 h-3" />{attendanceBreakdown.absent} abs
+                                    </span>
+                                )}
+                                {attendanceBreakdown.late > 0 && (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-amber-400">
+                                        <Clock className="w-3 h-3" />{attendanceBreakdown.late} late
+                                    </span>
+                                )}
+                                {attendanceBreakdown.noShow > 0 && (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-error/70">
+                                        <MinusCircle className="w-3 h-3" />{attendanceBreakdown.noShow} no-show
+                                    </span>
+                                )}
+                                {attendanceBreakdown.pending > 0 && (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                                        <Clock className="w-3 h-3" />{attendanceBreakdown.pending} upcoming
+                                    </span>
+                                )}
+                                {attendanceBreakdown.total === 0 && (
+                                    <span className="text-xs text-on-surface-variant">No sessions yet</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -242,48 +292,54 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                             <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
                         </div>
 
-                        {/* Recent Bookings List */}
+                        {/* Attendance History */}
                         <div className="bg-surface-container-low rounded-[32px] p-6 border border-outline-variant/10">
-                            <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4">Recent Bookings</h3>
-                            
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em]">Attendance History</h3>
+                                <Link
+                                    href={`/dashboard/students/${student.id}/attendance`}
+                                    className="text-[10px] font-bold text-primary hover:text-blue-400 transition-colors"
+                                >
+                                    View full history →
+                                </Link>
+                            </div>
+
                             {student.bookings.length > 0 ? (
-                                <div className="space-y-3">
-                                    {student.bookings.slice(0, 3).map(booking => (
-                                        <div key={booking.id} className="p-4 rounded-2xl bg-surface-container-high border border-outline-variant/10 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-black text-white">
-                                                    {new Date(booking.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} 
-                                                </p>
-                                                <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
-                                                    <Clock className="w-3 h-3" />
-                                                    {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} • {booking.centreName}
-                                                </p>
+                                <div className="space-y-2 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
+                                    {student.bookings.map(booking => {
+                                        const resolved = resolveAttendanceStatus(
+                                            (booking.attendanceStatus as AttendanceStatus | null) ?? null,
+                                            booking.status
+                                        );
+                                        return (
+                                            <div key={booking.id} className="p-3 rounded-xl bg-surface-container-high border border-outline-variant/10 flex items-center justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-black text-white">
+                                                        {new Date(booking.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </p>
+                                                    <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5 truncate">
+                                                        <Clock className="w-3 h-3 flex-shrink-0" />
+                                                        {new Date(booking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {booking.centreName}
+                                                    </p>
+                                                    {booking.attendanceNote && (
+                                                        <p className="text-[11px] text-on-surface-variant/60 mt-1 italic truncate">
+                                                            {booking.attendanceNote}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className={cn(
+                                                    "text-[10px] font-black uppercase rounded-full px-2.5 py-1 flex-shrink-0",
+                                                    getAttendanceColorClass(resolved.status)
+                                                )}>
+                                                    {resolved.label}
+                                                </span>
                                             </div>
-                                            {(() => {
-                                                const resolved = resolveAttendanceStatus(
-                                                    (booking.attendanceStatus as AttendanceStatus | null) ?? null,
-                                                    booking.status
-                                                );
-                                                return (
-                                                    <span className={cn(
-                                                        "text-[10px] font-black uppercase rounded-full px-3 py-1",
-                                                        getAttendanceColorClass(resolved.status)
-                                                    )}>
-                                                        {resolved.label}
-                                                    </span>
-                                                );
-                                            })()}
-                                        </div>
-                                    ))}
-                                    {student.bookings.length > 3 && (
-                                        <div className="pt-2 text-center text-xs font-bold text-on-surface-variant">
-                                            + {student.bookings.length - 3} more bookings
-                                        </div>
-                                    )}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-center py-6">
-                                    <p className="text-sm text-on-surface-variant">No bookings found for this student.</p>
+                                    <p className="text-sm text-on-surface-variant">No sessions recorded for this student.</p>
                                 </div>
                             )}
                         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, Shield, Mail, Phone, Calendar, Users, Plus } from 'lucide-react';
+import { AlertTriangle, Shield, Mail, Phone, Calendar, Users, Plus, TrendingDown } from 'lucide-react';
 import type { StudentRow } from './StudentsTable';
 
 /* ------------------------------------------------------------------ */
@@ -147,6 +147,16 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                 <AlertTriangle className="w-3.5 h-3.5 text-error flex-shrink-0" />
                                 <p className="text-[11px] text-error font-semibold line-clamp-1">
                                     {student.medicalNotes[0]}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Low attendance alert strip */}
+                        {student.lowAttendance && (
+                            <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl px-3 py-2 flex items-center gap-2">
+                                <TrendingDown className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                                <p className="text-[11px] text-amber-400 font-semibold">
+                                    Low attendance · {Math.round(student.attendanceRate)}%
                                 </p>
                             </div>
                         )}
