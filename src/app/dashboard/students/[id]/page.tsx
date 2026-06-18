@@ -72,7 +72,7 @@ export default async function StudentProfilePage(
         }
     }
 
-    // 2. Fetch Recent Bookings for this student
+    // 2. Fetch All Bookings for this student (attendance history)
     const studentBookings = await db
         .select({
             id: bookings.id,
@@ -87,23 +87,27 @@ export default async function StudentProfilePage(
             feedbackAttachmentMime: bookingAttendees.feedbackAttachmentMime,
             feedbackSentAt: bookingAttendees.feedbackSentAt,
             attendanceStatus: bookingAttendees.attendanceStatus,
+            attendanceNote: bookingAttendees.attendanceNote,
         })
         .from(bookings)
         .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
         .innerJoin(centres, eq(bookings.centreId, centres.id))
         .where(eq(bookingAttendees.childId, student.id))
-        .orderBy(desc(bookings.startAt))
-        .limit(10);
+        .orderBy(desc(bookings.startAt));
 
     const initialNotes = await getStudentNotes(student.id);
 
-    // 3. Fetch Full Attendance Stats
+    // 3. Fetch Full Attendance Stats with per-status breakdown
     const [attendanceResults] = await db
         .select({
             total: sql<number>`count(*)`,
             completed: sql<number>`count(*) filter (where
                 COALESCE(${bookingAttendees.attendanceStatus}::text, CASE WHEN ${bookings.status} = 'completed' THEN 'present' ELSE NULL END) = 'present'
-            )`
+            )`,
+            absent: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'absent')`,
+            late: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'late')`,
+            noShow: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'no_show')`,
+            excused: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'excused')`,
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
