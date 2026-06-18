@@ -34,6 +34,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
         { value: 'all', label: 'All Statuses' },
         { value: 'registered', label: 'Registered' },
         { value: 'unregistered', label: 'Leads / Unregistered' },
+        { value: 'low-attendance', label: 'Low Attendance (<75%)' },
     ];
 
     const hasActiveFilters = !!(

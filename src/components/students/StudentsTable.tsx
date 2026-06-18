@@ -173,6 +173,30 @@ const columns: DataTableColumn<StudentRow>[] = [
     ),
   },
   {
+    key: 'attendance',
+    header: 'Attendance',
+    render: (student) => {
+      const rate = Math.round(student.attendanceRate);
+      const hasSessions = student.completedCount > 0 || student.bookingCount > 0;
+      if (!hasSessions) {
+        return <span className="text-xs text-on-surface-variant italic">No sessions</span>;
+      }
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-16 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${rate >= 80 ? 'bg-emerald-400' : rate >= 75 ? 'bg-amber-400' : 'bg-error'}`}
+              style={{ width: `${rate}%` }}
+            />
+          </div>
+          <span className={`text-xs font-bold tabular-nums ${rate >= 80 ? 'text-emerald-400' : rate >= 75 ? 'text-amber-400' : 'text-error'}`}>
+            {rate}%
+          </span>
+        </div>
+      );
+    },
+  },
+  {
     key: 'actions',
     header: 'Actions',
     headerAlign: 'right',
