@@ -70,7 +70,7 @@ export async function PATCH(
     if (status !== reg.status) {
         (async () => {
             try {
-                const primaryParent = reg.registrationParents.find(p => p.isPrimary) ?? reg.registrationParents[0];
+                const primaryParent = reg.registrationParents?.find(p => p.isPrimary) ?? reg.registrationParents?.[0];
                 if (!primaryParent?.submittedEmail) return;
 
                 const [org, centre] = await Promise.all([
@@ -84,7 +84,7 @@ export async function PATCH(
                     }) : Promise.resolve(null),
                 ]);
 
-                const childNames = reg.registrationChildren.map(
+                const childNames = (reg.registrationChildren ?? []).map(
                     c => `${c.submittedFirstName} ${c.submittedLastName}`
                 );
 
