@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { addStudentNote, deleteStudentNote, toggleStudentNotePin } from '@/features/students/notes.actions';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Clock, User, Pin, PinOff, AlertTriangle, Shield } from 'lucide-react';
+import ConfirmModal from '../ui/ConfirmModal';
 
 interface Note {
   id: string;
@@ -23,6 +24,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<'General' | 'Medical' | 'Safeguarding'>('General');
   const [isPending, startTransition] = useTransition();
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   const pinnedNotes = initialNotes.filter(n => n.pinnedAt);
   const standardNotes = initialNotes.filter(n => !n.pinnedAt);
@@ -38,11 +40,15 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
   };
 
   const handleDelete = (noteId: string) => {
-    if (confirm('Are you sure you want to delete this note?')) {
-      startTransition(async () => {
-        await deleteStudentNote(noteId);
-      });
-    }
+    setNoteToDelete(noteId);
+  };
+
+  const confirmDelete = () => {
+    if (!noteToDelete) return;
+    startTransition(async () => {
+      await deleteStudentNote(noteToDelete);
+      setNoteToDelete(null);
+    });
   };
 
   const handleTogglePin = (noteId: string, pinned: boolean) => {
@@ -52,6 +58,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
   };
 
   return (
+    <>
     <div className="space-y-6 animate-fadeIn">
       {/* Form Area */}
       <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
@@ -251,5 +258,16 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
         )}
       </div>
     </div>
+    <ConfirmModal
+        isOpen={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Note?"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+    />
+    </>
   );
 }

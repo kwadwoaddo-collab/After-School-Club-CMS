@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import AlertModal from '../ui/AlertModal';
 
 interface DeleteStudentButtonProps {
     studentId: string;
@@ -13,6 +14,7 @@ interface DeleteStudentButtonProps {
 export default function StudentActions({ studentId, studentName }: DeleteStudentButtonProps) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [alertError, setAlertError] = useState<string | null>(null);
     const router = useRouter();
 
     const handleDelete = async () => {
@@ -22,10 +24,10 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
             if (res.ok) {
                 router.refresh();
             } else {
-                alert('Failed to delete student. Please try again.');
+                setAlertError('Failed to delete student. Please try again.');
             }
         } catch {
-            alert('An error occurred. Please try again.');
+            setAlertError('An error occurred. Please try again.');
         } finally {
             setIsDeleting(false);
             setShowConfirm(false);
@@ -80,6 +82,13 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                     <Trash2 className="w-4 h-4" />
                 </button>
             </div>
+            <AlertModal
+                isOpen={!!alertError}
+                onClose={() => setAlertError(null)}
+                title="Error"
+                description={alertError}
+                variant="error"
+            />
         </>
     );
 }

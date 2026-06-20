@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Pencil, Check, X, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import ConfirmModal from '../ui/ConfirmModal';
 
 interface OrganisationInfoFormProps {
     org: {
@@ -20,6 +21,8 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
     const [slug, setSlug] = useState(org.slug);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showConfirmSlug, setShowConfirmSlug] = useState(false);
+    const [pendingSlug, setPendingSlug] = useState('');
 
     const handleSaveName = async () => {
         if (!name.trim()) {
@@ -70,10 +73,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             return;
         }
 
-        if (!confirm('Changing your slug will break any existing links you have shared with parents. Are you sure?')) {
-            return;
-        }
+        setPendingSlug(sanitizedSlug);
+        setShowConfirmSlug(true);
+    };
 
+    const confirmSaveSlug = async () => {
         setSaving(true);
         setError(null);
 
@@ -81,7 +85,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             const response = await fetch('/api/settings/organisation', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: sanitizedSlug }),
+                body: JSON.stringify({ slug: pendingSlug }),
             });
 
             if (!response.ok) {
@@ -96,10 +100,12 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             setError(err instanceof Error ? err.message : 'Failed to save changes');
         } finally {
             setSaving(false);
+            setShowConfirmSlug(false);
         }
     };
 
     return (
+        <>
         <div className="glass-card rounded-3xl p-6 !bg-[#1a1c23]/80 !border-[#2a2d35]">
             <h3 className="text-lg font-bold text-white mb-4">Organisation Information</h3>
 
@@ -245,5 +251,16 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                 </div>
             </div>
         </div>
+        <ConfirmModal 
+            isOpen={showConfirmSlug} 
+            onClose={() => setShowConfirmSlug(false)} 
+            onConfirm={confirmSaveSlug} 
+            title="Change Slug?" 
+            description="Changing your slug will break any existing links you have shared with parents. Are you sure?" 
+            confirmText="Change" 
+            cancelText="Cancel" 
+            variant="warning" 
+        />
+        </>
     );
 }

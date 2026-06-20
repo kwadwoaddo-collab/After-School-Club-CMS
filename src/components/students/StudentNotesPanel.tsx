@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { addStudentNote, deleteStudentNote } from '@/features/students/actions';
 import { format } from 'date-fns';
 import { Trash2, MessageSquare, Loader2 } from 'lucide-react';
+import ConfirmModal from '../ui/ConfirmModal';
 
 interface Note {
     id: string;
@@ -23,6 +24,7 @@ interface StudentNotesPanelProps {
 export default function StudentNotesPanel({ childId, childName, notes, currentUserId }: StudentNotesPanelProps) {
     const [newNote, setNewNote] = useState('');
     const [isPending, startTransition] = useTransition();
+    const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
     const handleAddNote = () => {
         if (!newNote.trim()) return;
@@ -33,13 +35,19 @@ export default function StudentNotesPanel({ childId, childName, notes, currentUs
     };
 
     const handleDelete = (noteId: string) => {
-        if (!confirm('Are you sure you want to delete this note?')) return;
+        setNoteToDelete(noteId);
+    };
+
+    const confirmDelete = () => {
+        if (!noteToDelete) return;
         startTransition(async () => {
-            await deleteStudentNote(noteId);
+            await deleteStudentNote(noteToDelete);
+            setNoteToDelete(null);
         });
     };
 
     return (
+        <>
         <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200">
             <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-slate-400" />
@@ -88,5 +96,16 @@ export default function StudentNotesPanel({ childId, childName, notes, currentUs
                 </button>
             </div>
         </div>
+        <ConfirmModal
+            isOpen={!!noteToDelete}
+            onClose={() => setNoteToDelete(null)}
+            onConfirm={confirmDelete}
+            title="Delete Note?"
+            description="Are you sure you want to delete this note? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            variant="danger"
+        />
+        </>
     );
 }
