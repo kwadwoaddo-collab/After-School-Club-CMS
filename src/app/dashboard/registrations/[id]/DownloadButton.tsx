@@ -21,7 +21,7 @@ interface DownloadButtonProps {
         city?: string;
         postcode?: string;
     }[];
-    children: {
+    registeredChildren: {
         firstName: string;
         lastName: string;
         dateOfBirth: string | Date;
@@ -77,7 +77,7 @@ export default function DownloadButton(props: DownloadButtonProps) {
                     startDate={props.startDate}
                     submittedAt={props.submittedAt}
                     parents={props.parents}
-                    children={props.children}
+                    registeredChildren={props.registeredChildren}
                     emergencyContact={props.emergencyContact}
                     funding={props.funding}
                     specialNeeds={props.specialNeeds}

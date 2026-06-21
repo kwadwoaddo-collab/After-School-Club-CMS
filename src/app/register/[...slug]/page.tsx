@@ -150,7 +150,7 @@ export default function RegisterPage() {
     useEffect(() => {
         if (secondParent && parentList.length < 2) setParentList(p => [...p, emptyParent()]);
         if (!secondParent && parentList.length > 1) setParentList(p => [p[0]]);
-    }, [secondParent]);
+    }, [secondParent, parentList.length]);
 
     // ── Reset to start ─────────────────────────────────────────────
     const resetToStart = () => {
@@ -523,7 +523,7 @@ export default function RegisterPage() {
                                             city: p.city,
                                             postcode: p.postcode,
                                         }))}
-                                        children={childList.map(c => ({
+                                        registeredChildren={childList.map(c => ({
                                             firstName: c.firstName,
                                             lastName: c.lastName,
                                             dateOfBirth: c.dateOfBirth,

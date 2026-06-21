@@ -286,7 +286,7 @@ describe('POST /api/register — centreId validation', () => {
 
     const validBody = {
         orgSlug: 'org-a',
-        centreId: 'centre-from-org-b',  // cross-org attack
+        centreId: '550e8400-e29b-41d4-a716-446655440000',  // cross-org attack
         children: [{ firstName: 'Alice', lastName: 'Smith', schoolYear: 'Y3' }],
         parents: [{ firstName: 'Bob', lastName: 'Smith', email: 'bob@example.com' }],
         termsAgreed: true,

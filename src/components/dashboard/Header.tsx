@@ -73,7 +73,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         if (showNotifications && notifications.length === 0) {
             fetchNotifications();
         }
-    }, [showNotifications]);
+    }, [showNotifications, notifications.length]);
 
     const fetchNotifications = async () => {
         setIsLoadingNotifications(true);

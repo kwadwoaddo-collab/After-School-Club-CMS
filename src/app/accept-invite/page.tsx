@@ -16,6 +16,23 @@ function AcceptInviteContent() {
     const [error, setError] = useState('');
 
     useEffect(() => {
+        const validateToken = async () => {
+            try {
+                const response = await fetch(`/api/staff/validate-invite?token=${token}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Invalid or expired invitation');
+                }
+
+                setInviteData(data);
+                setStep('ready');
+            } catch (err: any) {
+                setError(err.message);
+                setStep('error');
+            }
+        };
+
         if (!token) {
             setError('Invalid invitation link');
             setStep('error');
@@ -23,23 +40,6 @@ function AcceptInviteContent() {
         }
         validateToken();
     }, [token]);
-
-    const validateToken = async () => {
-        try {
-            const response = await fetch(`/api/staff/validate-invite?token=${token}`);
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Invalid or expired invitation');
-            }
-
-            setInviteData(data);
-            setStep('ready');
-        } catch (err: any) {
-            setError(err.message);
-            setStep('error');
-        }
-    };
 
     const handleEnter = async () => {
         if (!token) return;

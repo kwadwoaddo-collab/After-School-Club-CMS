@@ -31,7 +31,7 @@ async function run() {
             return fallback;
         }
 
-        let bookingsData = await db.query.bookings.findMany({
+        const bookingsData = await db.query.bookings.findMany({
             where: (b: any, op: any) => {
                 const conds = [op.inArray(b.centreId, centreIds)];
                 

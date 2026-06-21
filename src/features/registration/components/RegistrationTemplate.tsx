@@ -205,7 +205,7 @@ export interface RegistrationTemplateProps {
     orgName: string;
     centreName?: string | null;
     startDate?: string | Date | null;
-    children: ChildData[];
+    registeredChildren: ChildData[];
     parents: ParentData[];
     emergencyContact: EmergencyContactData;
     funding: FundingData;
@@ -227,7 +227,7 @@ export const RegistrationTemplate = ({
     orgName,
     centreName,
     startDate,
-    children,
+    registeredChildren,
     parents,
     emergencyContact,
     funding,
@@ -348,7 +348,7 @@ export const RegistrationTemplate = ({
                 {/* Children Details */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Registered Children</Text>
-                    {children.map((c, idx) => (
+                    {registeredChildren.map((c, idx) => (
                         <View key={idx} style={styles.childCard}>
                             <View style={styles.grid}>
                                 <View style={[styles.col, styles.col4]}>
@@ -416,7 +416,7 @@ export const RegistrationTemplate = ({
                             <Text style={styles.label}>Signature</Text>
                             {parentSignature ? (
                                 <View style={styles.signatureBox}>
-                                    <Image src={parentSignature} style={styles.signatureImage} />
+                                    <Image src={parentSignature} style={styles.signatureImage} alt="Parent signature" />
                                 </View>
                             ) : (
                                 <View style={[styles.signatureBox, { justifyContent: 'center', alignItems: 'center' }]}>

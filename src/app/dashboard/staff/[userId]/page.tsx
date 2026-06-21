@@ -57,11 +57,11 @@ export default async function EditStaffPage({ params }: PageProps) {
         return styles[role] || 'from-gray-500/40 to-gray-500/20 text-gray-400';
     };
 
-    const getRoleIcon = (role: string) => {
-        if (role === 'ORG_OWNER') return Crown;
-        if (role === 'MANAGER') return Briefcase;
-        if (role === 'FRONT_DESK') return MonitorSmartphone;
-        return GraduationCap;
+    const getRoleIcon = (role: string, className?: string) => {
+        if (role === 'ORG_OWNER') return <Crown className={className} />;
+        if (role === 'MANAGER') return <Briefcase className={className} />;
+        if (role === 'FRONT_DESK') return <MonitorSmartphone className={className} />;
+        return <GraduationCap className={className} />;
     };
 
     const getRolePermissions = (role: string): string[] => {
@@ -71,7 +71,7 @@ export default async function EditStaffPage({ params }: PageProps) {
         return ['View assigned sessions', 'Add assessment feedback', 'Mark attendance'];
     };
 
-    const RoleIcon = getRoleIcon(staffMember.role);
+
     const initials = staffMember.name
         ? staffMember.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
         : staffMember.email.charAt(0).toUpperCase();
@@ -98,7 +98,7 @@ export default async function EditStaffPage({ params }: PageProps) {
                         </h1>
                         <div className="flex flex-wrap items-center gap-3 mb-3">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border ${getRoleStyle(staffMember.role)}`}>
-                                <RoleIcon className="w-3.5 h-3.5" />
+                                {getRoleIcon(staffMember.role, "w-3.5 h-3.5")}
                                 {staffMember.role.replace(/_/g, ' ')}
                             </span>
                         </div>

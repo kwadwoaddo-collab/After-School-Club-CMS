@@ -114,7 +114,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                             city: p.parent?.city || undefined,
                             postcode: p.parent?.postcode || undefined,
                         }))}
-                        children={kids.map(k => ({
+                        registeredChildren={kids.map(k => ({
                             firstName: k.submittedFirstName,
                             lastName: k.submittedLastName,
                             dateOfBirth: k.submittedDateOfBirth || '',
@@ -267,7 +267,6 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
                         <h2 className="text-white font-semibold mb-4">Parent Signature</h2>
                         <div className="bg-white rounded-xl p-4 border border-outline-variant/10">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={reg.parentSignature}
                                 alt="Parent signature"

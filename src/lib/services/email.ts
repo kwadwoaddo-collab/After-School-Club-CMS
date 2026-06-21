@@ -961,7 +961,7 @@ export class EmailService {
         centreName: data.centreName,
         startDate: data.startDate,
         parents: data.parents,
-        children: data.children,
+        registeredChildren: data.children,
         emergencyContact: data.emergencyContact,
         funding: data.funding,
         specialNeeds: data.specialNeeds,

@@ -114,7 +114,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
         if (selectedParent) {
             fetchChildren(selectedParent.id, targetChildId);
         }
-    }, [selectedParent]);
+    }, [selectedParent, targetChildId]);
 
     const fetchChildren = async (parentId: string, targetId: string | null = null) => {
         setIsLoading(true);
