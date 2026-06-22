@@ -11,3 +11,9 @@ Next.js ESLint configuration (`react-hooks/static-components`) prevents creating
 
 ## 4. Effect Dependencies
 Next.js strictly enforces exhaustive dependencies in `useEffect`. When tracking array lengths, use `array.length` explicitly in the dependency array rather than the array itself to prevent unnecessary executions while satisfying linting rules without resorting to `eslint-disable`.
+
+## 5. Security & Ownership Verification
+When performing operations on resources associated with a specific centre (like updating availability rules), always verify that the user has the correct authorization to act on that centre. This can be done via the `canUserAccessCentre` helper from `@/lib/permissions`. Never assume ownership based solely on session validity, especially in APIs or Server Actions that modify settings.
+
+## 6. Email Service Integration
+The platform uses an `EmailService` wrapper around Resend for transactional emails (e.g., `sendMagicLink` for portal login). This centralized service is located in `src/lib/services/email.ts` and ensures emails are handled consistently across the application with proper error handling and templating.

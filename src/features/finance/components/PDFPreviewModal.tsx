@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 interface PDFPreviewModalProps {
     isOpen: boolean;
     onClose: () => void;
-    pdfContent: React.ReactElement;
+    pdfContent: any;
     title: string;
     fileName: string;
 }

@@ -416,7 +416,7 @@ export const RegistrationTemplate = ({
                             <Text style={styles.label}>Signature</Text>
                             {parentSignature ? (
                                 <View style={styles.signatureBox}>
-                                    <Image src={parentSignature} style={styles.signatureImage} alt="Parent signature" />
+                                    <Image src={parentSignature} style={styles.signatureImage} />
                                 </View>
                             ) : (
                                 <View style={[styles.signatureBox, { justifyContent: 'center', alignItems: 'center' }]}>

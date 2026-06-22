@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { centreAvailabilityRules } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { canUserAccessCentre } from '@/lib/permissions';
 
 export interface DayRule {
     dayOfWeek: number;
@@ -19,7 +20,10 @@ export async function updateAvailability(centreId: string, rules: DayRule[]) {
         throw new Error('Unauthorized');
     }
 
-    // TODO: Verify user owns the centre (omitted for brevity in this task, but critical for prod)
+    const hasAccess = await canUserAccessCentre(session.user.id, centreId);
+    if (!hasAccess) {
+        throw new Error('Unauthorized access to this centre');
+    }
 
     try {
         // Transaction: Delete all existing rules for this centre and re-insert active ones

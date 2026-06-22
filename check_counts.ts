@@ -1,5 +1,5 @@
-import { db } from './src/db/index.ts';
-import * as schema from './src/db/schema.ts';
+import { db } from './src/db/index';
+import * as schema from './src/db/schema';
 import { eq, isNull, inArray, count } from 'drizzle-orm';
 
 async function main() {

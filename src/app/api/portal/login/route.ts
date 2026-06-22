@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
+import { EmailService } from '@/lib/services/email';
 
 export async function POST(req: NextRequest) {
     try {
@@ -38,9 +39,14 @@ export async function POST(req: NextRequest) {
             .set({ magicLinkToken: hashedToken, magicLinkExpiresAt: expiresAt })
             .where(eq(parents.id, parent.id));
 
-        // TODO: Replace console.log with actual email sending
         const magicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/portal/verify?token=${rawToken}`;
-        console.log('[PortalLogin] Magic link generated for:', email);
+        
+        const emailService = new EmailService();
+        await emailService.sendMagicLink({
+            email,
+            name: parent.firstName,
+            magicLink,
+        });
 
         // Only expose the link in development (never in production)
         const response: Record<string, any> = {

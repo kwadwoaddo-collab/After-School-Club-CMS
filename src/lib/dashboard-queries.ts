@@ -5,7 +5,7 @@ import {
     bookings, bookingAttendees, registrations, registrationChildren, studentNotes
 } from '@/db/schema';
 import { eq, desc, asc, sql, and, gte, lt, lte, inArray } from 'drizzle-orm';
-import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, isSameDay } from 'date-fns';
+import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, isSameDay, subDays } from 'date-fns';
 
 export const getStudentKpis = cache(async (orgId: string, centreCondition: any, activeStart: string, activeEnd: string, prevStart: string, prevEnd: string) => {
     return db.select({ 
