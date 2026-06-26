@@ -14,18 +14,25 @@ export default async function DashboardKpisWidget({
     targetWeekStart, targetWeekEnd,
     now
 }: any) {
+    let data;
     try {
-        const [
-            [studentKpis],
-            [bookingKpis],
-            [registrationKpis],
-            weeklyRegistrations
-        ] = await Promise.all([
+        data = await Promise.all([
             getStudentKpis(orgId, childrenCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString()),
             getBookingKpis(hasCentres, bookingsCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString(), targetMonthStart.toISOString(), targetMonthEnd.toISOString(), targetWeekStart.toISOString(), targetWeekEnd.toISOString()),
             getRegistrationKpis(orgId, registrationsCentreCondition, activeStartDate.toISOString(), activeEndDate.toISOString(), prevStartDate.toISOString(), prevEndDate.toISOString(), targetMonthStart.toISOString(), targetMonthEnd.toISOString(), targetWeekStart.toISOString(), targetWeekEnd.toISOString()),
             getWeeklyRegistrations(orgId, registrationsCentreCondition, now)
         ]);
+    } catch (e) {
+        console.error('Failed to load KPIs:', e);
+        return <div className="text-red-400 p-4 bg-red-400/10 rounded-xl">Failed to load statistics</div>;
+    }
+
+    const [
+        [studentKpis],
+        [bookingKpis],
+        [registrationKpis],
+        weeklyRegistrations
+    ] = data;
 
         const calculateTrend = (curr: any, prev: any) => {
             const current = Number(curr || 0);
@@ -66,8 +73,4 @@ export default async function DashboardKpisWidget({
                 growthStats={growthStats}
             />
         );
-    } catch (e) {
-        console.error('Failed to load KPIs:', e);
-        return <div className="text-red-400 p-4 bg-red-400/10 rounded-xl">Failed to load statistics</div>;
-    }
 }

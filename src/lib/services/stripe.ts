@@ -13,7 +13,7 @@ let stripe: Stripe | null = null;
 
 if (stripeSecretKey && !stripeSecretKey.startsWith('sk_xxx')) {
   stripe = new Stripe(stripeSecretKey, {
-   apiVersion: '2026-01-28.clover',
+   apiVersion: '2026-02-25.clover',
   });
 }
 

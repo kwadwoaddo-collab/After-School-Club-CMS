@@ -69,12 +69,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
 
-    useEffect(() => {
-        if (showNotifications && notifications.length === 0) {
-            fetchNotifications();
-        }
-    }, [showNotifications, notifications.length]);
-
     const fetchNotifications = async () => {
         setIsLoadingNotifications(true);
         try {
@@ -89,6 +83,12 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             setIsLoadingNotifications(false);
         }
     };
+
+    useEffect(() => {
+        if (showNotifications && notifications.length === 0) {
+            fetchNotifications();
+        }
+    }, [showNotifications, notifications.length]);
 
     const handleNotificationClick = async (notification: Notification) => {
         if (!notification.read) {

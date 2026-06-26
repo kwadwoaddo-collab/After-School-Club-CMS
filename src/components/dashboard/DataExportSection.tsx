@@ -55,7 +55,7 @@ export function DataExportSection() {
       const blob = await res.blob();
       const contentDisposition = res.headers.get('Content-Disposition') ?? '';
       const match = contentDisposition.match(/filename="?([^"]+)"?/);
-      const filename = match?.[1] ?? `export-${Date.now()}.csv`;
+      const filename = match?.[1] ?? `export.csv`;
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

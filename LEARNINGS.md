@@ -17,3 +17,12 @@ When performing operations on resources associated with a specific centre (like 
 
 ## 6. Email Service Integration
 The platform uses an `EmailService` wrapper around Resend for transactional emails (e.g., `sendMagicLink` for portal login). This centralized service is located in `src/lib/services/email.ts` and ensures emails are handled consistently across the application with proper error handling and templating.
+
+## 7. React Compiler Strictness (Impure Functions and Try/Catch)
+The Next.js/React setup includes aggressive compiler linting. 
+- Avoid invoking impure functions like `Date.now()` directly within the render phase or even in initialization of state without lazy callbacks, as it violates idempotency and causes React Compiler warnings. Use `useState(() => Date.now())` or execute them in event handlers safely.
+- Do not construct and return JSX from inside a `try/catch` block. The compiler considers this an anti-pattern as errors thrown during render are not caught by the `try/catch`. Instead, handle data fetching inside the `try/catch` and return the JSX outside of it.
+
+## 8. TypeScript and Regex Flags
+When using regular expressions in TypeScript, avoid the `/s` (dotAll) flag if targeting older environments (e.g., `<es2018`). A safer, backwards-compatible equivalent is `[\s\S]*?` instead of `(.*?)` with the `/s` flag, ensuring the codebase complies universally.
+

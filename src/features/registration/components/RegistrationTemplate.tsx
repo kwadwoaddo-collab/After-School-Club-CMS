@@ -416,6 +416,7 @@ export const RegistrationTemplate = ({
                             <Text style={styles.label}>Signature</Text>
                             {parentSignature ? (
                                 <View style={styles.signatureBox}>
+                                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                                     <Image src={parentSignature} style={styles.signatureImage} />
                                 </View>
                             ) : (

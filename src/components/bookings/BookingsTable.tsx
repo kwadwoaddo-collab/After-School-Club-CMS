@@ -21,6 +21,8 @@ type SortDirection = 'asc' | 'desc';
 export default function BookingsTable({ bookings: initialBookings, centres = [], isFiltered }: BookingsTableProps) {
     const [bookings, setBookings] = useState<any[]>(initialBookings);
     
+    const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
+    
     // Sync external props (e.g., from server-side filtering) to internal state
     useEffect(() => {
         setBookings(initialBookings);
@@ -40,7 +42,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     
     // Sort and bulk select state
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
-    const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
     const [isProcessingBulk, setIsProcessingBulk] = useState(false);
     const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 

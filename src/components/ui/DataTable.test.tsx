@@ -72,7 +72,7 @@ describe('DataTable', () => {
     it('renders correct number of <tr> body rows', () => {
       const html = renderHTML();
       // tbody should contain 3 <tr> (one per row)
-      const bodyMatch = html.match(/<tbody[^>]*>(.*?)<\/tbody>/s);
+      const bodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/);
       expect(bodyMatch).toBeTruthy();
       const rowMatches = bodyMatch![1].match(/<tr/g);
       expect(rowMatches?.length).toBe(3);
@@ -99,7 +99,7 @@ describe('DataTable', () => {
     it('renders skeleton rows when isLoading is true', () => {
       const html = renderHTML({ isLoading: true });
       // Should render loadingRows (default 5) skeleton rows
-      const bodyMatch = html.match(/<tbody[^>]*>(.*?)<\/tbody>/s);
+      const bodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/);
       expect(bodyMatch).toBeTruthy();
       const skeletonRows = bodyMatch![1].match(/<tr/g);
       expect(skeletonRows?.length).toBe(5);
@@ -107,7 +107,7 @@ describe('DataTable', () => {
 
     it('respects custom loadingRows count', () => {
       const html = renderHTML({ isLoading: true, loadingRows: 3 });
-      const bodyMatch = html.match(/<tbody[^>]*>(.*?)<\/tbody>/s);
+      const bodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/);
       const skeletonRows = bodyMatch![1].match(/<tr/g);
       expect(skeletonRows?.length).toBe(3);
     });

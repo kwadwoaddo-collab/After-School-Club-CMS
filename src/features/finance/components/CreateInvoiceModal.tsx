@@ -62,7 +62,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
     const [adhocNewParent, setAdhocNewParent] = useState({ firstName: '', lastName: '', email: '', phone: '' });
 
     // Invoice Details State
-    const [invoiceData, setInvoiceData] = useState({
+    const [invoiceData, setInvoiceData] = useState(() => ({
         amount: '',
         invoiceDate: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -70,7 +70,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
         billingPeriodEnd: '',
         notes: '',
         centreId: centres[0]?.id || ''
-    });
+    }));
 
     // Search parents effect (main select-parent step)
     useEffect(() => {
@@ -109,13 +109,6 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
         return () => clearTimeout(debounce);
     }, [adhocParentSearch]);
 
-    // Selected Parent change effect
-    useEffect(() => {
-        if (selectedParent) {
-            fetchChildren(selectedParent.id, targetChildId);
-        }
-    }, [selectedParent, targetChildId]);
-
     const fetchChildren = async (parentId: string, targetId: string | null = null) => {
         setIsLoading(true);
         try {
@@ -140,6 +133,13 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
             setIsLoading(false);
         }
     };
+
+    // Selected Parent change effect
+    useEffect(() => {
+        if (selectedParent) {
+            fetchChildren(selectedParent.id, targetChildId);
+        }
+    }, [selectedParent, targetChildId]);
 
     const handleSelectParent = (parent: any, childId: string | null = null) => {
         setSelectedParent(parent);
