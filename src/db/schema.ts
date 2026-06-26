@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ==================== ENUMS ====================
@@ -97,7 +97,9 @@ export const users = pgTable('users', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgIdx: index('users_org_idx').on(table.organisationId),
+}));
 
 // NextAuth.js required tables
 export const accounts = pgTable('accounts', {
@@ -205,7 +207,11 @@ export const children = pgTable('children', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  parentIdx: index('children_parent_idx').on(table.parentId),
+  orgIdx: index('children_org_idx').on(table.organisationId),
+  centreIdx: index('children_centre_idx').on(table.centreId),
+}));
 
 export const studentNotes = pgTable('student_notes', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -252,6 +258,8 @@ export const bookings = pgTable('bookings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   uniqueTimeSlot: unique('unique_time_slot').on(table.centreId, table.modality, table.startAt),
+  centreIdx: index('bookings_centre_idx').on(table.centreId),
+  parentIdx: index('bookings_parent_idx').on(table.parentId),
 }));
 
 export const bookingAttendees = pgTable('booking_attendees', {

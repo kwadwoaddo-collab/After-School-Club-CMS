@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registrationSchema, type RegistrationInput } from '@/lib/validations/registration';
 
@@ -35,6 +35,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
         register,
         handleSubmit,
         watch,
+        control,
         setValue,
         trigger,
         formState: { errors },
@@ -52,9 +53,15 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
         },
     });
 
-    const watchSubjects = watch('child.subjects');
-    const watchDays = watch('preferences.preferredDays');
-    const watchLessonType = watch('preferences.lessonType');
+    const watchSubjects = useWatch({ control, name: 'child.subjects' });
+    const watchDays = useWatch({ control, name: 'preferences.preferredDays' });
+    const watchLessonType = useWatch({ control, name: 'preferences.lessonType' });
+
+    const watchedParentFirstName = useWatch({ control, name: 'parent.firstName' });
+    const watchedParentLastName = useWatch({ control, name: 'parent.lastName' });
+    const watchedParentEmail = useWatch({ control, name: 'parent.email' });
+    const watchedChildFirstName = useWatch({ control, name: 'child.firstName' });
+    const watchedChildSchoolYear = useWatch({ control, name: 'child.schoolYear' });
 
     const toggleSubject = (subject: string) => {
         const current = watchSubjects || [];
@@ -404,15 +411,15 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                         <div className="bg-gray-50 rounded-xl p-6 space-y-4 text-sm">
                             <div className="flex justify-between border-b border-gray-200 pb-2">
                                 <span className="text-gray-500">Parent</span>
-                                <span className="font-medium">{watch('parent.firstName')} {watch('parent.lastName')}</span>
+                                <span className="font-medium">{watchedParentFirstName} {watchedParentLastName}</span>
                             </div>
                             <div className="flex justify-between border-b border-gray-200 pb-2">
                                 <span className="text-gray-500">Contact</span>
-                                <span className="font-medium">{watch('parent.email')}</span>
+                                <span className="font-medium">{watchedParentEmail}</span>
                             </div>
                             <div className="flex justify-between border-b border-gray-200 pb-2">
                                 <span className="text-gray-500">Student</span>
-                                <span className="font-medium">{watch('child.firstName')} ({watch('child.schoolYear')})</span>
+                                <span className="font-medium">{watchedChildFirstName} ({watchedChildSchoolYear})</span>
                             </div>
                             <div className="flex justify-between border-b border-gray-200 pb-2">
                                 <span className="text-gray-500">Subjects</span>

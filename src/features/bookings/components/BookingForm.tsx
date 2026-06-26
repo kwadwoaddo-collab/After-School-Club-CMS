@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -247,6 +247,11 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             rescheduleId: rescheduleData?.id,
         },
     });
+    
+    const watchedPreferredContact = useWatch({ control, name: 'parent.preferredContact' });
+    const watchedStartAt = useWatch({ control, name: 'appointment.startAt' });
+    const watchedModality = useWatch({ control, name: 'appointment.modality' });
+    const watchedChildren = useWatch({ control, name: 'children' });
 
     // ... hooks ...
     const { fields, append, remove } = useFieldArray({
@@ -292,8 +297,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         }
     }, [rescheduleData, setValue]);
 
-    const modality = watch('appointment.modality');
-    const watchedChildren = watch('children');
+    const modality = watchedModality;
 
     // ... useEffect for fetchSlots ...
     useEffect(() => {
@@ -666,7 +670,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 <label className="block text-sm font-medium text-slate-800 mb-2">Preferred Contact Method</label>
                                 <div className="flex gap-4">
                                     {['email', 'phone'].map((method) => {
-                                        const isSelected = watch('parent.preferredContact') === method;
+                                        const isSelected = watchedPreferredContact === method;
                                         return (
                                             <label key={method} className={`flex-1 flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg border-2 transition-all ${isSelected ? 'border-gray-800 bg-gray-50 text-gray-900 font-semibold shadow-sm' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50'}`}>
                                                 <input type="radio" {...register('parent.preferredContact')} value={method} className="sr-only" />
@@ -972,8 +976,8 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         <button
                             type="button"
                             onClick={validateStep}
-                            disabled={step === 3 && (!selectedDate || !watch('appointment.startAt') || (() => {
-                                const timeVal = watch('appointment.startAt');
+                            disabled={step === 3 && (!selectedDate || !watchedStartAt || (() => {
+                                const timeVal = watchedStartAt;
                                 if (!timeVal || !daySchedule || !daySchedule.open) return true;
                                 const currentMinTime = daySchedule.start;
                                 const currentMaxTime = daySchedule.end;

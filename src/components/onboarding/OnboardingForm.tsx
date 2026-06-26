@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -23,6 +23,7 @@ export default function OnboardingForm() {
         register,
         handleSubmit,
         watch,
+        control,
         setValue,
         formState: { errors },
     } = useForm<OnboardingInput>({
@@ -35,8 +36,8 @@ export default function OnboardingForm() {
         },
     });
 
-    const watchedColor = watch('brandColor');
-    const watchedLogo = watch('logoUrl');
+    const watchedColor = useWatch({ control, name: 'brandColor' });
+    const watchedLogo = useWatch({ control, name: 'logoUrl' });
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -88,7 +89,7 @@ export default function OnboardingForm() {
             // Force a full page reload so the JWT session is re-fetched with the
             // new organisationId. Using router.push() alone leaves the stale JWT
             // in place and can bounce the user back to /onboarding.
-            window.location.href = '/dashboard';
+            window.location.assign('/dashboard');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
             setIsSubmitting(false);

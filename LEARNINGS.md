@@ -26,3 +26,8 @@ The Next.js/React setup includes aggressive compiler linting.
 ## 8. TypeScript and Regex Flags
 When using regular expressions in TypeScript, avoid the `/s` (dotAll) flag if targeting older environments (e.g., `<es2018`). A safer, backwards-compatible equivalent is `[\s\S]*?` instead of `(.*?)` with the `/s` flag, ensuring the codebase complies universally.
 
+## 9. React Hook Form Strictness with React Compiler
+When using `react-hook-form` in environments with React Compiler (React 19), avoid destructing and calling `watch()` within the render function. The compiler flags this as an incompatible library usage that breaks memoization. Instead, use the `useWatch` hook explicitly provided by `react-hook-form` to selectively subscribe to form state changes without violating compiler constraints.
+
+## 10. Database Indexing
+When defining Drizzle ORM schemas in PostgreSQL, foreign keys do not automatically create indexes. To optimize queries and enforce performant joins, explicitly define indexes on frequently queried relational columns (like `organisationId`, `centreId`, `parentId`) using the `index()` function in the Drizzle table configuration block.
