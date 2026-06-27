@@ -70,6 +70,16 @@ async function run() {
     await client`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS discount_amount numeric(10,2) DEFAULT 0;`;
     console.log('discount_amount column ready.');
   } catch (e: any) { console.log('discount_amount column:', e.message); }
+  // Migration 0008 — payment_status enum + payments.status column
+  try {
+    await client`CREATE TYPE IF NOT EXISTS "payment_status" AS ENUM('pending', 'verified', 'failed');`;
+    console.log('payment_status enum ready.');
+  } catch (e: any) { console.log('payment_status enum:', e.message); }
+
+  try {
+    await client`ALTER TABLE payments ADD COLUMN IF NOT EXISTS status "payment_status" DEFAULT 'verified' NOT NULL;`;
+    console.log('payments.status column ready.');
+  } catch (e: any) { console.log('payments.status column:', e.message); }
 
   console.log('Done resolving DB schema.');
   process.exit(0);
