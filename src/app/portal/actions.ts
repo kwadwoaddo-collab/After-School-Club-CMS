@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { emailService } from '@/lib/services/email';
 
 export async function cancelBookingByParent(bookingId: string) {
     try {
@@ -15,7 +16,10 @@ export async function cancelBookingByParent(bookingId: string) {
             where: and(
                 eq(bookings.id, bookingId),
                 eq(bookings.parentId, parent.id)
-            )
+            ),
+            with: {
+                attendees: { with: { child: true } }
+            }
         });
 
         if (!booking) {
@@ -37,6 +41,22 @@ export async function cancelBookingByParent(bookingId: string) {
         await db.update(bookings)
             .set({ status: 'cancelled', updatedAt: new Date() })
             .where(eq(bookings.id, bookingId));
+
+        // Send cancellation email (fire-and-forget)
+        if (parent.email) {
+            const childrenNames = (booking.attendees || [])
+                .map((a: any) => `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim())
+                .filter(Boolean)
+                .join(', ') || 'your child';
+
+            emailService.sendBookingCancellation({
+                parentFirstName: parent.firstName,
+                parentEmail: parent.email,
+                childrenNames,
+                startAt: bookingDate,
+                confirmationCode: booking.confirmationCode || bookingId.slice(0, 8).toUpperCase(),
+            }).catch(e => console.error('[Email] Failed to send cancellation email:', e));
+        }
 
         revalidatePath('/portal');
         return { success: true };

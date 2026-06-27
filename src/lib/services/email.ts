@@ -992,6 +992,212 @@ export class EmailService {
       return { success: false, error: errorMessage };
     }
   }
+  /**
+   * Send invoice created notification to parent
+   */
+  async sendInvoiceCreated(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    invoiceNumber: string;
+    amount: number;
+    dueDate: Date;
+    centreName: string;
+    portalUrl: string;
+  }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+
+    const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(data.dueDate);
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Invoice ${data.invoiceNumber}</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#4F46E5,#7c3aed);padding:40px 32px;text-align:center;">
+      <div style="font-size:36px;margin-bottom:8px;">🧾</div>
+      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">New Invoice</h1>
+      <p style="color:rgba(255,255,255,0.75);margin:6px 0 0;font-size:14px;">${data.centreName}</p>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentFirstName},</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">A new invoice has been issued for your account. Please review and arrange payment before the due date.</p>
+      <div style="background:#f8fafc;border-radius:12px;padding:24px;margin-bottom:28px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><span style="color:#64748b;font-size:14px;font-weight:600;">Invoice Number</span><span style="color:#1e293b;font-weight:700;">${data.invoiceNumber}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><span style="color:#64748b;font-size:14px;font-weight:600;">Amount Due</span><span style="color:#4F46E5;font-size:20px;font-weight:800;">£${data.amount.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:#64748b;font-size:14px;font-weight:600;">Due Date</span><span style="color:#ef4444;font-weight:700;">${formattedDue}</span></div>
+      </div>
+      <div style="text-align:center;">
+        <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#4F46E5,#7c3aed);color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">View Invoice & Pay →</a>
+      </div>
+      <p style="color:#94a3b8;font-size:13px;text-align:center;margin-top:28px;">You can log a Childcare Voucher reference via the Parent Portal.</p>
+    </div>
+    <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">Powered by SprintScale · support@sprintscaleit.co.uk</p>
+    </div>
+  </div>
+</body></html>`;
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `New Invoice ${data.invoiceNumber} — £${data.amount.toFixed(2)} due ${formattedDue}`,
+        html,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Send invoice due reminder to parent
+   */
+  async sendInvoiceDue(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    invoiceNumber: string;
+    amountDue: number;
+    dueDate: Date;
+    portalUrl: string;
+  }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+
+    const formattedDue = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(data.dueDate);
+    const isOverdue = data.dueDate < new Date();
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice Reminder</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#f59e0b,#ef4444);padding:40px 32px;text-align:center;">
+      <div style="font-size:36px;margin-bottom:8px;">${isOverdue ? '⚠️' : '🔔'}</div>
+      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">${isOverdue ? 'Invoice Overdue' : 'Payment Reminder'}</h1>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentFirstName},</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">${isOverdue ? `Invoice <strong>${data.invoiceNumber}</strong> was due on <strong>${formattedDue}</strong> and is now overdue. Please arrange payment as soon as possible.` : `This is a friendly reminder that invoice <strong>${data.invoiceNumber}</strong> is due on <strong>${formattedDue}</strong>.`}</p>
+      <div style="background:#fff7ed;border:2px solid #fed7aa;border-radius:12px;padding:24px;text-align:center;margin-bottom:28px;">
+        <p style="color:#9a3412;font-size:13px;font-weight:700;text-transform:uppercase;margin:0 0 8px;">Outstanding Balance</p>
+        <p style="color:#ea580c;font-size:36px;font-weight:800;margin:0;">£${data.amountDue.toFixed(2)}</p>
+      </div>
+      <div style="text-align:center;">
+        <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">Pay Now →</a>
+      </div>
+    </div>
+    <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">Powered by SprintScale · support@sprintscaleit.co.uk</p>
+    </div>
+  </div>
+</body></html>`;
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `${isOverdue ? '⚠️ Overdue' : '🔔 Reminder'}: Invoice ${data.invoiceNumber} — £${data.amountDue.toFixed(2)}`,
+        html,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Notify parent that their voucher payment has been verified
+   */
+  async sendVoucherPaymentVerified(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    invoiceNumber: string;
+    amount: number;
+    invoiceFullyPaid: boolean;
+    portalUrl: string;
+  }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payment Verified</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#10b981,#059669);padding:40px 32px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">✅</div>
+      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Voucher Payment Verified</h1>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentFirstName},</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">Great news! Your childcare voucher payment of <strong>£${data.amount.toFixed(2)}</strong> for invoice <strong>${data.invoiceNumber}</strong> has been verified by our team.${data.invoiceFullyPaid ? ' This invoice is now marked as <strong>fully paid</strong>. Thank you!' : ' Any remaining balance is still outstanding.'}</p>
+      <div style="text-align:center;">
+        <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">View Billing →</a>
+      </div>
+    </div>
+    <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">Powered by SprintScale · support@sprintscaleit.co.uk</p>
+    </div>
+  </div>
+</body></html>`;
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `✅ Voucher Payment Verified — Invoice ${data.invoiceNumber}`,
+        html,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Notify parent that their voucher payment has been rejected
+   */
+  async sendVoucherPaymentFailed(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    invoiceNumber: string;
+    amount: number;
+    portalUrl: string;
+  }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payment Could Not Be Verified</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#ef4444,#b91c1c);padding:40px 32px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">❌</div>
+      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Payment Could Not Be Verified</h1>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="color:#374151;font-size:16px;margin:0 0 8px;">Hi ${data.parentFirstName},</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">Unfortunately, we were unable to verify your childcare voucher payment of <strong>£${data.amount.toFixed(2)}</strong> for invoice <strong>${data.invoiceNumber}</strong>. This may be because the voucher reference could not be matched to a received payment.</p>
+      <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:16px 20px;border-radius:6px;margin-bottom:28px;">
+        <p style="color:#991b1b;font-size:14px;margin:0;">Please check your voucher reference and try again, or contact us directly if you believe this is a mistake.</p>
+      </div>
+      <div style="text-align:center;">
+        <a href="${data.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#4F46E5,#7c3aed);color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">Resubmit Payment →</a>
+      </div>
+    </div>
+    <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">Powered by SprintScale · support@sprintscaleit.co.uk</p>
+    </div>
+  </div>
+</body></html>`;
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `❌ Payment Not Verified — Invoice ${data.invoiceNumber}`,
+        html,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
 }
 
 // Export singleton instance

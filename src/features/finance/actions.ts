@@ -1,11 +1,12 @@
 'use server';
 
 import { db } from '@/db';
-import { children, parents, invoices, bookings, bookingAttendees, registrationChildren, registrations, auditEvents } from '@/db/schema';
+import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
+import { emailService } from '@/lib/services/email';
 
 export async function getParents(query: string) {
     const session = await auth();
@@ -145,6 +146,21 @@ export async function createInvoice(data: {
         eventType: 'invoice_created',
         eventData: JSON.stringify({ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amount: newInvoice.amount })
     });
+
+    // Send invoice email notification to parent (fire-and-forget)
+    const parent = await db.query.parents.findFirst({ where: eq(parents.id, data.parentId), columns: { firstName: true, email: true } });
+    const centre = await db.query.centres.findFirst({ where: eq(centres.id, data.centreId), columns: { name: true } });
+    if (parent?.email) {
+        emailService.sendInvoiceCreated({
+            parentFirstName: parent.firstName,
+            parentEmail: parent.email,
+            invoiceNumber: newInvoice.invoiceNumber,
+            amount: Number(newInvoice.amount),
+            dueDate: newInvoice.dueDate,
+            centreName: centre?.name || 'the centre',
+            portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+        }).catch(e => console.error('[Email] Failed to send invoice created email:', e));
+    }
 
     revalidatePath('/dashboard/finance');
     return newInvoice;
@@ -517,6 +533,20 @@ export async function verifyPayment(paymentId: string) {
             eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount })
         });
 
+        // Send email notification to parent (fire-and-forget)
+        const invoiceFullyPaid = totalVerified >= Number(payment.invoice.amount);
+        const parentRecord = await tx.query.parents.findFirst({ where: eq(parents.id, payment.invoice.parentId), columns: { firstName: true, email: true } });
+        if (parentRecord?.email) {
+            emailService.sendVoucherPaymentVerified({
+                parentFirstName: parentRecord.firstName,
+                parentEmail: parentRecord.email,
+                invoiceNumber: payment.invoice.invoiceNumber,
+                amount: Number(payment.amount),
+                invoiceFullyPaid,
+                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+            }).catch(e => console.error('[Email] Failed to send voucher verified email:', e));
+        }
+
         revalidatePath('/dashboard/finance');
         revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
         return { success: true };
@@ -545,6 +575,18 @@ export async function failPayment(paymentId: string) {
         eventType: 'payment_failed',
         eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount })
     });
+
+    // Send email notification to parent (fire-and-forget)
+    const parentRecord = await db.query.parents.findFirst({ where: eq(parents.id, payment.invoice.parentId), columns: { firstName: true, email: true } });
+    if (parentRecord?.email) {
+        emailService.sendVoucherPaymentFailed({
+            parentFirstName: parentRecord.firstName,
+            parentEmail: parentRecord.email,
+            invoiceNumber: payment.invoice.invoiceNumber,
+            amount: Number(payment.amount),
+            portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+        }).catch(e => console.error('[Email] Failed to send voucher failed email:', e));
+    }
 
     revalidatePath('/dashboard/finance');
     revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);

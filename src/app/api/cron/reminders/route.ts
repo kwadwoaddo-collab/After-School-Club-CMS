@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { bookings, organisations } from '@/db/schema';
-import { and, gte, lte } from 'drizzle-orm';
+import { bookings, invoices, payments } from '@/db/schema';
+import { and, gte, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
+import { emailService } from '@/lib/services/email';
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith('re_xxx')
@@ -13,17 +14,17 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@sprintscaleit.co.uk';
 
 /**
  * POST /api/cron/reminders
- * 
- * Sends "Session Tomorrow" reminder emails to parents with confirmed bookings tomorrow.
- * Secured by a CRON_SECRET header — set this in your environment and configure
- * your cron provider (e.g. Vercel Cron, GitHub Actions) to call this at 5pm daily.
- * 
+ *
+ * 1. Sends "Session Tomorrow" reminder emails to parents with confirmed bookings tomorrow.
+ * 2. Sends invoice due / overdue reminders for invoices due within 7 days.
+ *
+ * Secured by a CRON_SECRET header. Configure your cron provider (e.g. Vercel Cron, GitHub Actions)
+ * to call this at 5pm daily.
+ *
  * Environment variable required: CRON_SECRET=<random-secret>
  */
 export async function POST(req: NextRequest) {
     // ── 1. Authenticate cron caller ─────────────────────────────────────────
-    // Fail-CLOSED: if CRON_SECRET is not configured the endpoint is locked.
-    // This prevents accidental exposure in development or misconfigured envs.
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     const tomorrowStart = startOfDay(tomorrow);
     const tomorrowEnd = endOfDay(tomorrow);
 
-    // ── 2. Fetch tomorrow's confirmed bookings with parent + child data ──────
+    // ── 2. Fetch tomorrow's confirmed bookings ───────────────────────────────
     let upcomingBookings: any[];
     try {
         upcomingBookings = await db.query.bookings.findMany({
@@ -59,10 +60,6 @@ export async function POST(req: NextRequest) {
     } catch (dbError) {
         console.error('[Reminder] Failed to query bookings:', dbError);
         return NextResponse.json({ error: 'Failed to query bookings' }, { status: 500 });
-    }
-
-    if (upcomingBookings.length === 0) {
-        return NextResponse.json({ sent: 0, message: 'No bookings tomorrow' });
     }
 
     let sent = 0;
@@ -132,16 +129,55 @@ export async function POST(req: NextRequest) {
             });
             sent++;
         } catch (err) {
-
             console.error('[Reminder] Failed to send for booking', booking.id, err);
             errors++;
         }
+    }
+
+    // ── 3. Invoice due reminders ─────────────────────────────────────────────
+    // Send reminders for invoices due within 7 days or already overdue
+    let invoiceSent = 0;
+    try {
+        const sevenDaysFromNow = addDays(new Date(), 7);
+        const dueInvoices = await db.query.invoices.findMany({
+            where: and(
+                lte(invoices.dueDate, sevenDaysFromNow),
+                inArray(invoices.status, ['sent', 'partially_paid', 'draft'])
+            ),
+            with: {
+                parent: { columns: { firstName: true, email: true } },
+                payments: true,
+            }
+        });
+
+        for (const invoice of dueInvoices) {
+            if (!invoice.parent?.email) continue;
+
+            // Only count verified payments against the balance
+            const verifiedTotal = (invoice.payments || []).reduce((sum: number, p: any) =>
+                p.status === 'verified' ? sum + Number(p.amount) : sum, 0);
+            const amountDue = Number(invoice.amount) - verifiedTotal;
+            if (amountDue <= 0) continue; // Already paid, skip
+
+            await emailService.sendInvoiceDue({
+                parentFirstName: invoice.parent.firstName,
+                parentEmail: invoice.parent.email,
+                invoiceNumber: invoice.invoiceNumber,
+                amountDue,
+                dueDate: invoice.dueDate,
+                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+            });
+            invoiceSent++;
+        }
+    } catch (err) {
+        console.error('[Reminder] Failed to process invoice reminders:', err);
     }
 
     return NextResponse.json({
         sent,
         errors,
         total: upcomingBookings.length,
-        message: `Sent ${sent} reminder${sent !== 1 ? 's' : ''}`,
+        invoiceRemindersSent: invoiceSent,
+        message: `Sent ${sent} session reminder${sent !== 1 ? 's' : ''} and ${invoiceSent} invoice reminder${invoiceSent !== 1 ? 's' : ''}`,
     });
 }
