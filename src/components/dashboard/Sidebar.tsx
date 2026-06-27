@@ -21,6 +21,7 @@ import {
     Wallet,
     MapPin,
     Layers,
+    Monitor,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -33,10 +34,10 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Registrations', 'Reports'],
-    FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance'],
-    TUTOR: ['Dashboard', 'Attendance'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Reports'],
+    FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance', 'Kiosk'],
+    TUTOR: ['Dashboard', 'Attendance', 'Kiosk'],
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -72,6 +73,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
         { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance' },
+        { name: 'Kiosk', icon: Monitor, href: '/dashboard/kiosk' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
         { name: 'Finance', icon: Wallet, href: '/dashboard/finance' },
