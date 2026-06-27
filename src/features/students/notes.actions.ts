@@ -20,7 +20,16 @@ export async function getStudentNotes(childId: string) {
     return notes;
 }
 
-export async function addStudentNote(childId: string, content: string, category: string = 'General') {
+export async function addStudentNote(
+    childId: string,
+    content: string,
+    category: string = 'General',
+    options?: {
+        noteType?: 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'attendance_concern' | 'medical';
+        subject?: string;
+        rating?: 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
+    }
+) {
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
@@ -40,6 +49,9 @@ export async function addStudentNote(childId: string, content: string, category:
         content,
         authorName,
         category,
+        noteType: options?.noteType ?? 'general',
+        subject: options?.subject ?? null,
+        rating: options?.rating ?? null,
     });
 
     // Revalidate paths where this might be used
@@ -49,6 +61,7 @@ export async function addStudentNote(childId: string, content: string, category:
     
     return { success: true };
 }
+
 
 export async function deleteStudentNote(noteId: string) {
     const session = await auth();

@@ -16,6 +16,8 @@ import {
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
 import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
+import ProgressNoteForm from '@/components/students/ProgressNoteForm';
+import ProgressTimeline from '@/components/students/ProgressTimeline';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import { resolveAttendanceStatus, getAttendanceColorClass, countAttendance } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
@@ -57,11 +59,19 @@ interface AssessmentProfileProps {
         id: string;
         content: string;
         authorName: string;
+        userId: string | null;
+        category: string;
+        noteType: string | null;
+        subject: string | null;
+        rating: string | null;
+        pinnedAt: Date | null;
         createdAt: Date;
     }>;
+    currentUserId?: string;
+    currentUserRole?: string;
 }
 
-export default function StudentProfile({ student, initialNotes }: AssessmentProfileProps) {
+export default function StudentProfile({ student, initialNotes, currentUserId, currentUserRole }: AssessmentProfileProps) {
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
 
@@ -282,14 +292,21 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
                         )}
                     </div>
 
-                    {/* Right Panel: Internal Notes */}
+                    {/* Right Panel: Progress Notes + Attendance */}
                     <div className="space-y-8">
                         <div>
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em]">Internal Notes</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em]">Progress & Notes</h3>
                             </div>
 
-                            <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
+                            <div className="space-y-4">
+                                <ProgressNoteForm childId={student.id} childName={student.firstName} />
+                                <ProgressTimeline
+                                    notes={initialNotes as any}
+                                    currentUserId={currentUserId}
+                                    currentUserRole={currentUserRole}
+                                />
+                            </div>
                         </div>
 
                         {/* Attendance History */}
@@ -349,3 +366,4 @@ export default function StudentProfile({ student, initialNotes }: AssessmentProf
         </div>
     );
 }
+

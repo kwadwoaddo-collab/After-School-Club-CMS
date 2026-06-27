@@ -18,6 +18,8 @@ export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', '
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'partially_paid', 'paid', 'void']);
 export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfer', 'stripe', 'voucher', 'other']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'verified', 'failed']);
+export const progressRatingEnum = pgEnum('progress_rating', ['excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory']);
+export const noteTypeEnum = pgEnum('note_type', ['general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present', 'absent', 'late', 'no_show', 'excused']);
 
 // ==================== ORGANISATIONS & CENTRES ====================
@@ -221,6 +223,10 @@ export const studentNotes = pgTable('student_notes', {
   content: text('content').notNull(),
   authorName: varchar('author_name', { length: 255 }).notNull(),
   category: varchar('category', { length: 50 }).default('General').notNull(),
+  // Progress tracking fields
+  noteType: noteTypeEnum('note_type').default('general'),
+  subject: varchar('subject', { length: 100 }),   // e.g. 'Maths', 'English', 'Science'
+  rating: progressRatingEnum('rating'),            // structured progress rating
   pinnedAt: timestamp('pinned_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

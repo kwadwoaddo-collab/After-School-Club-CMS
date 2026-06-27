@@ -122,6 +122,8 @@ export default async function StudentProfilePage(
                     attendanceStats: attendanceResults
                 }}
                 initialNotes={initialNotes}
+                currentUserId={session.user.id}
+                currentUserRole={userRole}
             />
         </div>
     );
