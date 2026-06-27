@@ -384,6 +384,10 @@ export default async function FinancePage(props: {
                     <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
                         <h3 className="text-lg font-bold text-white mb-4 px-2">Quick Tools</h3>
                         <div className="space-y-2">
+                            <Link href="/dashboard/finance/receipt" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                                <span>Cash Receipt Tool</span>
+                                <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
+                            </Link>
                             <a href={`/api/export/finance?from=${monthStart}&to=${todayStr}`} download={`finance-${monthStart}-to-${todayStr}.csv`} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
                                 <span>Export Ledger (CSV)</span>
                                 <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
