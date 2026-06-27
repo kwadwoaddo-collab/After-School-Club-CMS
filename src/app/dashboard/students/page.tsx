@@ -148,12 +148,21 @@ export default async function StudentsPage(props: {
     );
 
     const studentIds = studentsList.map(s => s.id);
-    const safetyNotes = studentIds.length > 0 ? await db.query.studentNotes.findMany({
-        where: and(
-            inArray(studentNotes.childId, studentIds),
-            inArray(studentNotes.category, ['Medical', 'Safeguarding'])
-        )
-    }) : [];
+    let safetyNotes: { childId: string; content: string; category: string }[] = [];
+    if (studentIds.length > 0) {
+        try {
+            safetyNotes = await db.query.studentNotes.findMany({
+                where: and(
+                    inArray(studentNotes.childId, studentIds),
+                    inArray(studentNotes.category, ['Medical', 'Safeguarding'])
+                )
+            });
+        } catch {
+            // Migration may not have run yet — fail gracefully
+            safetyNotes = [];
+        }
+    }
+
 
     const LOW_ATTENDANCE_THRESHOLD = 75;
     const MIN_SESSIONS_FOR_ALERT = 3;
