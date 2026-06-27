@@ -38,11 +38,25 @@ async function run() {
     } catch (e: any) { console.log('User FK exists or error:', e.message); }
     // Migration 0009 — progress tracking columns on student_notes
     try {
-      await client`CREATE TYPE IF NOT EXISTS "progress_rating" AS ENUM ('excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory');`
+      await client`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'progress_rating') THEN
+            CREATE TYPE "progress_rating" AS ENUM ('excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory');
+          END IF;
+        END $$;
+      `;
     } catch (e: any) { console.log('progress_rating type:', e.message); }
 
     try {
-      await client`CREATE TYPE IF NOT EXISTS "note_type" AS ENUM ('general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical');`
+      await client`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'note_type') THEN
+            CREATE TYPE "note_type" AS ENUM ('general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical');
+          END IF;
+        END $$;
+      `;
     } catch (e: any) { console.log('note_type type:', e.message); }
 
     try {
@@ -72,7 +86,14 @@ async function run() {
   } catch (e: any) { console.log('discount_amount column:', e.message); }
   // Migration 0008 — payment_status enum + payments.status column
   try {
-    await client`CREATE TYPE IF NOT EXISTS "payment_status" AS ENUM('pending', 'verified', 'failed');`;
+    await client`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+          CREATE TYPE "payment_status" AS ENUM('pending', 'verified', 'failed');
+        END IF;
+      END $$;
+    `;
     console.log('payment_status enum ready.');
   } catch (e: any) { console.log('payment_status enum:', e.message); }
 
