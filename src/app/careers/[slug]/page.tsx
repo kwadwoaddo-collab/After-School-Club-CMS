@@ -12,9 +12,6 @@ interface Props {
 export default async function TeacherApplicationPage({ params }: Props) {
     const centre = await db.query.centres.findFirst({
         where: eq(centres.slug, params.slug),
-        with: {
-            organisation: true,
-        }
     });
 
     if (!centre) {

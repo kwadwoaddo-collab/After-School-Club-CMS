@@ -51,7 +51,12 @@ export const getCurrentParent = cache(async () => {
                     with: {
                         centre: {
                             with: {
-                                organisation: true
+                                organisation: {
+                                    columns: {
+                                        id: true,
+                                        slug: true,
+                                    }
+                                }
                             }
                         },
                     },

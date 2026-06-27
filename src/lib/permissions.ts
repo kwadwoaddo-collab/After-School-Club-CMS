@@ -22,7 +22,6 @@ export async function getUserAccessibleCentres(userId: string) {
     const user = await db.query.users.findFirst({
         where: eq(users.id, userId),
         with: {
-            organisation: true,
             memberships: {
                 with: {
                     centre: true,

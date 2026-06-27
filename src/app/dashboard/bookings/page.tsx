@@ -46,7 +46,7 @@ export default async function BookingsPage(props: {
 
     const orgId = session.user.organisationId;
 
-    const [org] = await db.select().from(organisations).where(eq(organisations.id, orgId)).limit(1);
+    const [org] = await db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, orgId)).limit(1);
     if (!org) redirect('/onboarding');
 
     const orgCentres = await getUserAccessibleCentres(session.user.id);

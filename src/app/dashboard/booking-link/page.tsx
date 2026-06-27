@@ -22,7 +22,14 @@ export default async function BookingLinkPage() {
     const user = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
         with: {
-            organisation: true,
+            organisation: {
+                columns: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    brandColor: true,
+                }
+            },
         },
     });
 

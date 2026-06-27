@@ -22,7 +22,7 @@ export default async function StaffPage(props: {
     if (!session.user.organisationId) return redirect('/onboarding');
     if ((session.user as any).role !== 'ORG_OWNER') return redirect('/dashboard');
 
-    const [org] = await db.select().from(organisations).where(eq(organisations.id, session.user.organisationId)).limit(1);
+    const [org] = await db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, session.user.organisationId)).limit(1);
     if (!org) return redirect('/onboarding');
 
     const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);

@@ -44,7 +44,15 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     let org: any;
     try {
         const orgs = await db
-            .select()
+            .select({
+                id: organisations.id,
+                slug: organisations.slug,
+                contactEmail: organisations.contactEmail,
+                contactPhone: organisations.contactPhone,
+                registrationTerms: organisations.registrationTerms,
+                brandColor: organisations.brandColor,
+                logoUrl: organisations.logoUrl,
+            })
             .from(organisations)
             .where(eq(organisations.id, session.user.organisationId))
             .limit(1);

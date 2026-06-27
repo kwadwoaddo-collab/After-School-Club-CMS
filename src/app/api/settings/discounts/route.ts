@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { organisations } from '@/db/schema';
 import type { DiscountRule } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 // GET /api/settings/discounts
 export async function GET() {
@@ -13,15 +12,14 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const org = await db.query.organisations.findFirst({
-            where: eq(organisations.id, session.user.organisationId),
-            columns: { discountRules: true },
-        });
-
-        return NextResponse.json({ discountRules: org?.discountRules ?? [] });
+        const result = await db.execute(
+            sql`SELECT discount_rules FROM organisations WHERE id = ${session.user.organisationId} LIMIT 1`
+        );
+        const row = (result as any)[0] ?? (result as any).rows?.[0];
+        return NextResponse.json({ discountRules: row?.discount_rules ?? [] });
     } catch (error) {
         console.error('[Discounts GET] error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ discountRules: [] });
     }
 }
 
@@ -43,17 +41,15 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: 'discountRules must be an array' }, { status: 400 });
         }
 
-        // Basic validation of each rule
         for (const rule of discountRules) {
             if (!rule.id || !rule.type || !rule.label || typeof rule.value !== 'number' || !rule.valueType) {
                 return NextResponse.json({ error: 'Invalid rule structure' }, { status: 400 });
             }
         }
 
-        await db
-            .update(organisations)
-            .set({ discountRules, updatedAt: new Date() })
-            .where(eq(organisations.id, session.user.organisationId));
+        await db.execute(
+            sql`UPDATE organisations SET discount_rules = ${JSON.stringify(discountRules)}::jsonb, updated_at = NOW() WHERE id = ${session.user.organisationId}`
+        );
 
         return NextResponse.json({ success: true, discountRules });
     } catch (error) {
