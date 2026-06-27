@@ -38,10 +38,15 @@ export default async function PortalDashboard() {
                             <p className="text-xs text-on-surface-variant">{parent.email}</p>
                         </div>
                     </div>
-                    <button className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-surface-bright">
-                        <LogOut className="w-4 h-4" />
-                        Sign Out
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <Link href="/portal/billing" className="text-sm font-bold text-primary hover:text-primary-dim transition-colors bg-primary/10 px-4 py-2 rounded-lg border border-primary/20 hover:border-primary/40">
+                            Billing & Vouchers
+                        </Link>
+                        <button className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-surface-bright">
+                            <LogOut className="w-4 h-4" />
+                            Sign Out
+                        </button>
+                    </div>
                 </div>
             </header>
 
