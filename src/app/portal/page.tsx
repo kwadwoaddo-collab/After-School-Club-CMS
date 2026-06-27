@@ -5,6 +5,7 @@ import {
     CalendarCheck, Users, ChevronRight, Clock,
     MapPin, Video, ArrowRight, LogOut
 } from 'lucide-react';
+import { CancelBookingButton } from '@/components/portal/CancelBookingButton';
 
 export default async function PortalDashboard() {
     const parent = await getCurrentParent();
@@ -53,15 +54,15 @@ export default async function PortalDashboard() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {parent.children.map(child => (
-                            <div key={child.id} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 flex items-center justify-between hover:border-primary/20 transition-all group">
+                            <Link key={child.id} href={`/portal/children/${child.id}`} className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 flex items-center justify-between hover:border-primary/20 transition-all group cursor-pointer block">
                                 <div>
-                                    <h3 className="font-bold text-white">{child.firstName} {child.lastName}</h3>
+                                    <h3 className="font-bold text-white group-hover:text-primary transition-colors">{child.firstName} {child.lastName}</h3>
                                     <p className="text-sm text-on-surface-variant">{child.schoolYear}</p>
                                 </div>
                                 <div className="w-10 h-10 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center font-bold border border-secondary/20">
-                                    {child.firstName[0]}{child.lastName[0]}
+                                    <ChevronRight className="w-5 h-5" />
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 </section>
@@ -122,12 +123,15 @@ export default async function PortalDashboard() {
 
                                             if (canReschedule && orgSlug && centreSlug) {
                                                 return (
-                                                    <Link
-                                                        href={`/book/${orgSlug}/${centreSlug}?reschedule=${booking.id}`}
-                                                        className="px-4 py-2 bg-surface-container-low border border-outline-variant/10 text-primary text-sm font-bold rounded-lg hover:bg-surface-bright transition-colors"
-                                                    >
-                                                        Reschedule
-                                                    </Link>
+                                                    <>
+                                                        <CancelBookingButton bookingId={booking.id} />
+                                                        <Link
+                                                            href={`/book/${orgSlug}/${centreSlug}?reschedule=${booking.id}`}
+                                                            className="px-4 py-2 bg-surface-container-low border border-outline-variant/10 text-primary text-sm font-bold rounded-lg hover:bg-surface-bright transition-colors flex items-center justify-center"
+                                                        >
+                                                            Reschedule
+                                                        </Link>
+                                                    </>
                                                 );
                                             }
                                             return null;
