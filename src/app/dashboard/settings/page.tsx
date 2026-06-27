@@ -85,7 +85,16 @@ export default async function SettingsPage() {
             </div>
 
             {/* Organisation Info Card */}
-            <OrganisationInfoForm org={org} baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ''} />
+            <OrganisationInfoForm
+                org={{
+                    name: org.name,
+                    slug: org.slug,
+                    contactEmail: org.contactEmail,
+                    contactPhone: org.contactPhone,
+                    address: org.address,
+                }}
+                baseUrl={process.env.NEXT_PUBLIC_BASE_URL || ''}
+            />
 
             {/* Settings Options Grid */}
             <div>

@@ -21,9 +21,14 @@ export async function PATCH(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name, slug: customSlug } = body;
+        const { name, slug: customSlug, contactEmail, contactPhone, address } = body;
 
         const updateData: any = {};
+
+        // Contact details — allow empty string to clear the field
+        if (contactEmail !== undefined) updateData.contactEmail = contactEmail.trim() || null;
+        if (contactPhone !== undefined) updateData.contactPhone = contactPhone.trim() || null;
+        if (address !== undefined) updateData.address = address.trim() || null;
 
         if (name && typeof name === 'string' && name.trim() !== '') {
             updateData.name = name.trim();
