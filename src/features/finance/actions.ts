@@ -111,6 +111,7 @@ export async function createInvoice(data: {
     billingPeriodEnd?: Date;
     notes?: string;
     centreId: string;
+    discountAmount?: string; // optional pre-calculated discount in £
 }) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
@@ -132,6 +133,7 @@ export async function createInvoice(data: {
         childId: data.childIds[0] || null, 
         invoiceNumber,
         amount: data.amount,
+        discountAmount: data.discountAmount ?? '0',
         status: 'draft',
         invoiceDate: data.invoiceDate,
         dueDate: data.dueDate,
