@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { eq, desc, sql, inArray } from 'drizzle-orm';
+import { eq, desc, sql, inArray, leftJoin } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -91,7 +91,7 @@ export default async function StudentProfilePage(
         })
         .from(bookings)
         .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
-        .innerJoin(centres, eq(bookings.centreId, centres.id))
+        .leftJoin(centres, eq(bookings.centreId, centres.id))
         .where(eq(bookingAttendees.childId, student.id))
         .orderBy(desc(bookings.startAt));
 
