@@ -2,7 +2,7 @@ import { getCurrentParent } from '@/lib/parent-auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
-    CalendarCheck, Users, ChevronRight, Clock,
+    CalendarCheck, CalendarPlus, Users, ChevronRight, Clock,
     MapPin, Video, ArrowRight, LogOut
 } from 'lucide-react';
 import { CancelBookingButton } from '@/components/portal/CancelBookingButton';
@@ -54,6 +54,23 @@ export default async function PortalDashboard() {
             </header>
 
             <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+                {/* Quick Actions */}
+                <section>
+                    <Link
+                        href="/portal/book"
+                        className="flex items-center gap-4 bg-primary/10 border border-primary/30 hover:border-primary/60 hover:bg-primary/20 transition-all p-5 rounded-2xl group"
+                    >
+                        <div className="w-12 h-12 bg-primary/20 text-primary rounded-xl flex items-center justify-center border border-primary/30 group-hover:bg-primary/30 transition-colors shrink-0">
+                            <CalendarPlus className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="font-bold text-white text-lg">Book a Session</h2>
+                            <p className="text-sm text-on-surface-variant">Reserve a new slot for your child — no payment needed now.</p>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </Link>
+                </section>
+
                 {/* Children Section */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">

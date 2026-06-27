@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
-import { Building2, Palette, Image, Mail, Clock, FileText, Wallet } from 'lucide-react';
+import { Building2, Palette, Image, Mail, Clock, FileText, Wallet, Tag } from 'lucide-react';
 import OrganisationInfoForm from '@/components/settings/OrganisationInfoForm';
 import GdprExportButton from './GdprExportButton';
 
@@ -64,6 +64,14 @@ export default async function SettingsPage() {
             color: 'blue',
             href: '/dashboard/settings/registration',
         },
+        {
+            id: 'discounts',
+            title: 'Discount Rules',
+            description: 'Sibling, pupil premium & custom',
+            icon: Tag,
+            color: 'rose',
+            href: '/dashboard/settings/discounts',
+        },
     ];
 
     const colorMap: Record<string, { bg: string; text: string; border: string }> = {
@@ -72,6 +80,7 @@ export default async function SettingsPage() {
         cyan:    { bg: 'bg-cyan-500/10',    text: 'text-cyan-400',    border: 'border-cyan-500/20'    },
         amber:   { bg: 'bg-amber-500/10',   text: 'text-amber-400',   border: 'border-amber-500/20'   },
         blue:    { bg: 'bg-primary/10',      text: 'text-primary',     border: 'border-primary/20'     },
+        rose:    { bg: 'bg-rose-500/10',    text: 'text-rose-400',    border: 'border-rose-500/20'    },
     };
 
     return (

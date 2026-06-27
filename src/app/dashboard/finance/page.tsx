@@ -11,6 +11,7 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     AlertCircle,
+    Download,
 } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { Suspense } from 'react';
@@ -104,6 +105,11 @@ export default async function FinancePage(props: {
     const collections = Number(collectionsResult?.total || 0);
 
     const today = new Date();
+    // For export button — current month range
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        .toISOString()
+        .split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
 
     const [overdueResult] = await db
         .select({ count: count() })
@@ -261,6 +267,16 @@ export default async function FinancePage(props: {
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-[#14161b] rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
+                    {/* Export current-month finance CSV — direct download, no JS required */}
+                    <a
+                        href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
+                        download={`finance-${monthStart}-to-${todayStr}.csv`}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold hover:bg-emerald-500/20 transition-all"
+                        title="Download finance CSV for current month"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export CSV
+                    </a>
                     <FinanceDashboardClient 
                         students={orgStudents} 
                         recentInvoices={recentInvoices} 
@@ -368,7 +384,7 @@ export default async function FinancePage(props: {
                     <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
                         <h3 className="text-lg font-bold text-white mb-4 px-2">Quick Tools</h3>
                         <div className="space-y-2">
-                            <a href="/api/finance/export" target="_blank" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <a href={`/api/export/finance?from=${monthStart}&to=${todayStr}`} download={`finance-${monthStart}-to-${todayStr}.csv`} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
                                 <span>Export Ledger (CSV)</span>
                                 <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
                             </a>

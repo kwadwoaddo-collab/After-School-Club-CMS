@@ -1,5 +1,15 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// ==================== DISCOUNT RULE TYPE ====================
+export type DiscountRule = {
+  id: string;
+  type: 'sibling' | 'pupil_premium' | 'percentage' | 'fixed';
+  label: string;
+  value: number;
+  valueType: 'percent' | 'fixed';
+  active: boolean;
+};
 
 // ==================== ENUMS ====================
 export const userRoleEnum = pgEnum('user_role', ['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR']);
@@ -48,6 +58,9 @@ export const organisations = pgTable('organisations', {
   registrationTerms: text('registration_terms'),
   sessionSlots: text('session_slots'),          // JSON-encoded string[] of session time options
   registrationPricing: text('registration_pricing'), // JSON: {selfFinanceRate: number, taxCreditRate: number}
+
+  // Discount Engine
+  discountRules: jsonb('discount_rules').$type<DiscountRule[]>().default([]),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -446,7 +459,8 @@ export const invoices = pgTable('invoices', {
   billingPeriodEnd: timestamp('billing_period_end'),
   
   notes: text('notes'),
-  
+  discountAmount: numeric('discount_amount', { precision: 10, scale: 2 }).default('0'),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

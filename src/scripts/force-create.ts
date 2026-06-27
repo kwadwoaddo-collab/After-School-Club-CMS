@@ -60,7 +60,18 @@ async function run() {
     console.log('Error creating student_notes:', e.message);
   }
 
-  console.log('Done resolving DB schema for student_notes.');
+  // Discount Engine columns (Feature 2)
+  try {
+    await client`ALTER TABLE organisations ADD COLUMN IF NOT EXISTS discount_rules jsonb DEFAULT '[]'::jsonb;`;
+    console.log('discount_rules column ready.');
+  } catch (e: any) { console.log('discount_rules column:', e.message); }
+
+  try {
+    await client`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS discount_amount numeric(10,2) DEFAULT 0;`;
+    console.log('discount_amount column ready.');
+  } catch (e: any) { console.log('discount_amount column:', e.message); }
+
+  console.log('Done resolving DB schema.');
   process.exit(0);
 }
 
