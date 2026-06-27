@@ -472,3 +472,81 @@ export async function voidInvoice(invoiceId: string) {
     return { success: true };
 }
 
+export async function verifyPayment(paymentId: string) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+
+    return await db.transaction(async (tx) => {
+        // 1. Fetch payment and its invoice
+        const payment = await tx.query.payments.findFirst({
+            where: eq(payments.id, paymentId),
+            with: { invoice: true }
+        });
+
+        if (!payment || !payment.invoice) throw new Error('Payment not found');
+        if (payment.status === 'verified') throw new Error('Payment is already verified');
+        if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
+
+        // 2. Mark payment as verified
+        await tx.update(payments)
+            .set({ status: 'verified', updatedAt: new Date() })
+            .where(eq(payments.id, paymentId));
+
+        // 3. Check if all verified payments sum up to the invoice amount
+        const allInvoicePayments = await tx.query.payments.findMany({
+            where: eq(payments.invoiceId, payment.invoiceId)
+        });
+
+        // Calculate total of verified payments (including the one we just verified)
+        const totalVerified = allInvoicePayments.reduce((sum, p) => {
+            const isVerified = p.id === paymentId ? true : p.status === 'verified';
+            return isVerified ? sum + Number(p.amount) : sum;
+        }, 0);
+
+        // 4. Update invoice status if fully paid
+        if (totalVerified >= Number(payment.invoice.amount)) {
+            await tx.update(invoices)
+                .set({ status: 'paid', updatedAt: new Date() })
+                .where(eq(invoices.id, payment.invoiceId));
+        }
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId,
+            userId: session.user.id,
+            eventType: 'payment_verified',
+            eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount })
+        });
+
+        revalidatePath('/dashboard/finance');
+        revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+        return { success: true };
+    });
+}
+
+export async function failPayment(paymentId: string) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+
+    const payment = await db.query.payments.findFirst({
+        where: eq(payments.id, paymentId),
+        with: { invoice: true }
+    });
+
+    if (!payment || !payment.invoice) throw new Error('Payment not found');
+    if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
+
+    await db.update(payments)
+        .set({ status: 'failed', updatedAt: new Date() })
+        .where(eq(payments.id, paymentId));
+
+    await db.insert(auditEvents).values({
+        organisationId: session.user.organisationId,
+        userId: session.user.id,
+        eventType: 'payment_failed',
+        eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount })
+    });
+
+    revalidatePath('/dashboard/finance');
+    revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+    return { success: true };
+}

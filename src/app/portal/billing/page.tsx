@@ -25,7 +25,7 @@ export default async function BillingDashboard() {
     const pastInvoices = parentInvoices.filter(inv => inv.status === 'paid' || inv.status === 'void');
 
     const totalOutstanding = outstandingInvoices.reduce((sum, inv) => {
-        const paidAmount = inv.payments?.reduce((acc, p) => acc + Number(p.amount), 0) || 0;
+        const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
         return sum + (Number(inv.amount) - paidAmount);
     }, 0);
 
@@ -71,7 +71,7 @@ export default async function BillingDashboard() {
                     ) : (
                         <div className="space-y-4">
                             {outstandingInvoices.map(inv => {
-                                const paidAmount = inv.payments?.reduce((acc, p) => acc + Number(p.amount), 0) || 0;
+                                const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
                                 const remaining = Number(inv.amount) - paidAmount;
 
                                 return (

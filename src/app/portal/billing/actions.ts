@@ -35,6 +35,7 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
                 invoiceId: invoice.id,
                 amount: amount.toString(),
                 method: 'voucher',
+                status: 'pending',
                 transactionReference: reference.trim()
             });
             // Update invoice status (Vouchers take time to clear, so we leave it as partially_paid or let staff mark as Paid)

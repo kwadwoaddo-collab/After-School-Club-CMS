@@ -17,6 +17,7 @@ export const studentSourceEnum = pgEnum('student_source', ['assessment', 'regist
 export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'partially_paid', 'paid', 'void']);
 export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfer', 'stripe', 'voucher', 'other']);
+export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'verified', 'failed']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present', 'absent', 'late', 'no_show', 'excused']);
 
 // ==================== ORGANISATIONS & CENTRES ====================
@@ -450,6 +451,7 @@ export const payments = pgTable('payments', {
   
   amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
   method: paymentMethodEnum('method').notNull(),
+  status: paymentStatusEnum('status').default('verified').notNull(),
   transactionReference: varchar('transaction_reference', { length: 255 }),
   recordedAt: timestamp('recorded_at').defaultNow().notNull(),
   

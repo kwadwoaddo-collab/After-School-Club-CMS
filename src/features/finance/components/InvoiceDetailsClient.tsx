@@ -32,7 +32,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
 
     const hasPayments = invoice.payments?.length > 0;
 
-    const totalPaid = invoice.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const totalPaid = invoice.payments.reduce((sum: number, p: any) => p.status === 'verified' ? sum + Number(p.amount) : sum, 0);
     const remainingBalance = Number(invoice.amount) - totalPaid;
 
     const getStatusBadge = (status: string) => {
