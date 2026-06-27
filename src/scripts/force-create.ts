@@ -36,6 +36,26 @@ async function run() {
     try {
       await client`ALTER TABLE "student_notes" ADD CONSTRAINT "student_notes_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;`;
     } catch (e: any) { console.log('User FK exists or error:', e.message); }
+    // Migration 0009 — progress tracking columns on student_notes
+    try {
+      await client`CREATE TYPE IF NOT EXISTS "progress_rating" AS ENUM ('excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory');`
+    } catch (e: any) { console.log('progress_rating type:', e.message); }
+
+    try {
+      await client`CREATE TYPE IF NOT EXISTS "note_type" AS ENUM ('general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical');`
+    } catch (e: any) { console.log('note_type type:', e.message); }
+
+    try {
+      await client`ALTER TABLE "student_notes" ADD COLUMN IF NOT EXISTS "note_type" "note_type" DEFAULT 'general';`
+    } catch (e: any) { console.log('note_type column:', e.message); }
+
+    try {
+      await client`ALTER TABLE "student_notes" ADD COLUMN IF NOT EXISTS "subject" varchar(100);`
+    } catch (e: any) { console.log('subject column:', e.message); }
+
+    try {
+      await client`ALTER TABLE "student_notes" ADD COLUMN IF NOT EXISTS "rating" "progress_rating";`
+    } catch (e: any) { console.log('rating column:', e.message); }
   } catch (e: any) {
     console.log('Error creating student_notes:', e.message);
   }
@@ -45,3 +65,4 @@ async function run() {
 }
 
 run();
+
