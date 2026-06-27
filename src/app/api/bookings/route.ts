@@ -4,11 +4,22 @@ import { BookingService } from '@/lib/services/booking';
 import { AvailabilityService } from '@/lib/services/availability';
 import { ZodError } from 'zod';
 import { db } from '@/db';
-import { centres, organisations } from '@/db/schema';
+import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: protect against public booking endpoint spam
+    const ip = getClientIP(request);
+    const { success: allowed } = await checkRateLimit(apiRateLimit, `booking:${ip}`);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many booking attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
 
     // Validate input shape via Zod
@@ -24,37 +35,21 @@ export async function POST(request: NextRequest) {
 
     const centreId = validated.appointment.centreId;
 
-    // ── Centre validation ───────────────────────────────────────────────────
-    // This is a public (unauthenticated) endpoint, but we must not blindly
-    // trust the centreId from the client body:
-    //
-    //   1. A non-existent UUID would cause a FK violation later in BookingService.
-    //   2. A valid centreId from a *different* org would cause BookingService to
-    //      create a booking under that org's namespace (cross-org injection).
-    //
-    // We resolve the centre and confirm its owning org exists. BookingService
-    // internally derives organisationId from centre.organisationId, so this
-    // check is the correct point of enforcement.
+    // ── Centre & Organisation validation ────────────────────────────────────
+    // This is a public (unauthenticated) endpoint. We fetch the centre and
+    // its associated organisation in a single relational query to ensure
+    // validity and prevent cross-org injection.
     const centre = await db.query.centres.findFirst({
       where: eq(centres.id, centreId),
       columns: { id: true, organisationId: true },
+      with: {
+        organisation: {
+          columns: { id: true }
+        }
+      }
     });
 
-    if (!centre) {
-      return NextResponse.json(
-        { error: 'Invalid centre ID' },
-        { status: 400 }
-      );
-    }
-
-    // Guard against orphan centres (should never occur with FK constraints, but
-    // a defence-in-depth check keeps this boundary explicit).
-    const org = await db.query.organisations.findFirst({
-      where: eq(organisations.id, centre.organisationId),
-      columns: { id: true },
-    });
-
-    if (!org) {
+    if (!centre || !centre.organisation) {
       return NextResponse.json(
         { error: 'Invalid centre ID' },
         { status: 400 }

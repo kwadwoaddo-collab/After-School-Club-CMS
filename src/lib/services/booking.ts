@@ -31,183 +31,170 @@ export class BookingService {
 
     const centre = await db.query.centres.findFirst({
       where: eq(centres.id, input.appointment.centreId),
-      columns: { organisationId: true },
+      columns: { organisationId: true, name: true, address: true },
     });
 
     if (!centre) {
       throw new Error('Centre not found');
     }
 
-    // 2. Find or create parent within this organisation
-    let parent = await db.query.parents.findFirst({
-      where: and(
-        eq(parents.email, input.parent.email || ''),
-        eq(parents.organisationId, centre.organisationId)
-      ),
-    });
+    // Wrap the entire database creation flow in a transaction to guarantee data integrity
+    const txResult = await db.transaction(async (tx) => {
+      // 2. Find or create parent within this organisation
+      let parent = await tx.query.parents.findFirst({
+        where: and(
+          eq(parents.email, input.parent.email || ''),
+          eq(parents.organisationId, centre.organisationId)
+        ),
+      });
 
-    if (!parent) {
-      [parent] = await db.insert(parents).values({
-        firstName: input.parent.firstName,
-        lastName: input.parent.lastName,
-        phone: input.parent.phone || undefined,
-        email: input.parent.email || undefined,
-        // Task 1: preferredContact is optional in Zod but notNull in DB — fall back to 'email'
-        preferredContact: input.parent.preferredContact ?? 'email',
-        organisationId: centre.organisationId,
-      }).returning();
-    }
-
-    // Generate confirmation code and magic link token
-    const confirmationCode = nanoid(10).toUpperCase();
-    const rawMagicLinkToken = generateMagicLinkToken();
-    const hashedMagicLinkToken = hashToken(rawMagicLinkToken);
-    const magicLinkExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawMagicLinkToken}`;
-    // If this is a reschedule, mark the old one as cancelled
-    if (input.rescheduleId) {
-      try {
-        const oldBooking = await db.query.bookings.findFirst({
-          where: eq(bookings.id, input.rescheduleId),
-        });
-
-        if (oldBooking?.googleCalendarEventId) {
-          await googleCalendarService.deleteCalendarEvent(oldBooking.googleCalendarEventId);
-        }
-
-        await db.update(bookings)
-          .set({ status: 'cancelled', updatedAt: new Date() })
-          .where(eq(bookings.id, input.rescheduleId));
-
-        console.log(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling`);
-      } catch (error) {
-        console.error('[BOOKING] Failed to cancel old booking for reschedule:', error);
-      }
-    }
-
-    // Update parent with the magic link token so they can log in
-    await db.update(parents)
-      .set({
-        magicLinkToken: hashedMagicLinkToken,
-        magicLinkExpiresAt
-      })
-      .where(eq(parents.id, parent.id));
-
-    // Create Booking first (we need ID for attendees)
-    const [booking] = await db.insert(bookings).values({
-      centreId: input.appointment.centreId as any,
-      parentId: parent.id,
-      childId: undefined as any, // Deprecated, using attendees
-      startAt: new Date(input.appointment.startAt),
-      duration: input.appointment.duration,
-      modality: input.appointment.modality as any,
-      status: 'confirmed' as any,
-      confirmationCode,
-      magicLinkToken: hashedMagicLinkToken, // We'll keep this on the booking for now too
-      communicationsConsent: input.consent.communications,
-    } as any).returning();
-
-    const createdChildren: { firstName: string; lastName: string; subjects: string[] }[] = [];
-
-    // Process each child
-    for (const childInput of input.children) {
-      let child;
-
-      // If child already exists, resolve it!
-      if (childInput.id) {
-        child = await db.query.children.findFirst({
-          where: and(
-            eq(children.id, childInput.id),
-            eq(children.parentId, parent.id)
-          )
-        });
-
-        if (child) {
-          // Update child's centreId if it has changed to match the booking centre
-          await db.update(children)
-            .set({ 
-              centreId: input.appointment.centreId as string,
-              updatedAt: new Date()
-            })
-            .where(eq(children.id, child.id));
-        }
-      }
-
-      // If not existing, create a new child!
-      if (!child) {
-        const [insertedChild] = await db.insert(children).values({
-          parentId: parent.id,
+      if (!parent) {
+        [parent] = await tx.insert(parents).values({
+          firstName: input.parent.firstName,
+          lastName: input.parent.lastName,
+          phone: input.parent.phone || undefined,
+          email: input.parent.email || undefined,
+          preferredContact: input.parent.preferredContact ?? 'email',
           organisationId: centre.organisationId,
-          centreId: input.appointment.centreId as string,
-          firstName: childInput.firstName,
-          lastName: childInput.lastName,
-          schoolYear: childInput.schoolYear,
-          dateOfBirth: childInput.dateOfBirth ? new Date(childInput.dateOfBirth) : undefined,
-          notes: childInput.notes || undefined,
         }).returning();
-        child = insertedChild;
       }
 
-      // Add child subjects (only if the relation doesn't exist yet to prevent duplicates)
-      for (const subject of childInput.subjects) {
-        const existingSubject = await db.query.childSubjects.findFirst({
-          where: and(
-            eq(childSubjects.childId, child.id),
-            eq(childSubjects.subject, subject)
-          ),
+      // Generate confirmation code and magic link token
+      const confirmationCode = nanoid(10).toUpperCase();
+      const rawMagicLinkToken = generateMagicLinkToken();
+      const hashedMagicLinkToken = hashToken(rawMagicLinkToken);
+      const magicLinkExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawMagicLinkToken}`;
+      
+      // If this is a reschedule, mark the old one as cancelled
+      if (input.rescheduleId) {
+        try {
+          const oldBooking = await tx.query.bookings.findFirst({
+            where: eq(bookings.id, input.rescheduleId),
+          });
+
+          if (oldBooking?.googleCalendarEventId) {
+            await googleCalendarService.deleteCalendarEvent(oldBooking.googleCalendarEventId).catch(console.error);
+          }
+
+          await tx.update(bookings)
+            .set({ status: 'cancelled', updatedAt: new Date() })
+            .where(eq(bookings.id, input.rescheduleId));
+
+          console.log(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling`);
+        } catch (error) {
+          console.error('[BOOKING] Failed to cancel old booking for reschedule:', error);
+        }
+      }
+
+      // Update parent with the magic link token so they can log in
+      await tx.update(parents)
+        .set({
+          magicLinkToken: hashedMagicLinkToken,
+          magicLinkExpiresAt
+        })
+        .where(eq(parents.id, parent.id));
+
+      // Create Booking first (we need ID for attendees)
+      const [booking] = await tx.insert(bookings).values({
+        centreId: input.appointment.centreId as any,
+        parentId: parent.id,
+        childId: undefined as any,
+        startAt: new Date(input.appointment.startAt),
+        duration: input.appointment.duration,
+        modality: input.appointment.modality as any,
+        status: 'confirmed' as any,
+        confirmationCode,
+        magicLinkToken: hashedMagicLinkToken,
+        communicationsConsent: input.consent.communications,
+      } as any).returning();
+
+      const createdChildren: { firstName: string; lastName: string; subjects: string[] }[] = [];
+
+      // Process each child
+      for (const childInput of input.children) {
+        let child;
+
+        // If child already exists, resolve it!
+        if (childInput.id) {
+          child = await tx.query.children.findFirst({
+            where: and(
+              eq(children.id, childInput.id),
+              eq(children.parentId, parent.id)
+            )
+          });
+
+          if (child) {
+            // Update child's centreId if it has changed to match the booking centre
+            await tx.update(children)
+              .set({ 
+                centreId: input.appointment.centreId as string,
+                updatedAt: new Date()
+              })
+              .where(eq(children.id, child.id));
+          }
+        }
+
+        // If not existing, create a new child!
+        if (!child) {
+          const [insertedChild] = await tx.insert(children).values({
+            parentId: parent.id,
+            organisationId: centre.organisationId,
+            centreId: input.appointment.centreId as string,
+            firstName: childInput.firstName,
+            lastName: childInput.lastName,
+            schoolYear: childInput.schoolYear,
+            dateOfBirth: childInput.dateOfBirth ? new Date(childInput.dateOfBirth) : undefined,
+            notes: childInput.notes || undefined,
+          }).returning();
+          child = insertedChild;
+        }
+
+        // Add child subjects (only if the relation doesn't exist yet to prevent duplicates)
+        for (const subject of childInput.subjects) {
+          const existingSubject = await tx.query.childSubjects.findFirst({
+            where: and(
+              eq(childSubjects.childId, child.id),
+              eq(childSubjects.subject, subject)
+            ),
+          });
+          if (!existingSubject) {
+            await tx.insert(childSubjects).values({
+              childId: child.id,
+              subject,
+              customSubject: subject === 'Other' ? childInput.customSubject : undefined,
+            });
+          }
+        }
+
+        // Link to booking
+        await tx.insert(bookingAttendees).values({
+          bookingId: booking.id,
+          childId: child.id,
         });
-        if (!existingSubject) {
-          await db.insert(childSubjects).values({
+
+        // If the parent provided notes during booking, create an initial 'System' internal note
+        if (childInput.notes) {
+          await tx.insert(studentNotes).values({
             childId: child.id,
-            subject,
-            customSubject: subject === 'Other' ? childInput.customSubject : undefined,
+            content: childInput.notes,
+            authorName: 'System',
+            category: 'General',
           });
         }
-      }
 
-      // Link to booking
-      await db.insert(bookingAttendees).values({
-        bookingId: booking.id,
-        childId: child.id,
-      });
-
-      // Task 31: If the parent provided notes during booking, create an initial 'System' internal note
-      if (childInput.notes) {
-        await db.insert(studentNotes).values({
-          childId: child.id,
-          content: childInput.notes,
-          authorName: 'System',
-          category: 'General',
+        createdChildren.push({
+          firstName: child.firstName,
+          lastName: child.lastName,
+          subjects: childInput.subjects,
         });
       }
+      
+      return { parent, booking, createdChildren, confirmationCode, magicLink, centreDetails: { name: centre.name, address: centre.address || '' } };
+    });
 
-      createdChildren.push({
-        firstName: child.firstName,
-        lastName: child.lastName,
-        subjects: childInput.subjects,
-      });
-    }
-
-    // Now update the booking with the first childId for backward compatibility (if needed by other systems)
-    // We already inserted `childId: null` which matches the schema update, so we can skip this if we are confident.
-    // But if we want to be safe for legacy queries:
-    /*
-    if (createdChildren.length > 0) {
-       // logic to update childId if strictly required
-    }
-    */
-
-    // Get centre details for calendar event
-    let centreDetails: { name: string; address: string } | null = null;
-    if (input.appointment.centreId) {
-      const centre = await db.query.centres.findFirst({
-        where: eq(centres.id, input.appointment.centreId),
-      });
-      if (centre) {
-        centreDetails = { name: centre.name, address: centre.address || '' };
-      }
-    }
+    const { parent, booking, createdChildren, confirmationCode, magicLink, centreDetails } = txResult;
 
     // Ensure Stripe Customer exists for parent
     if (input.parent.email && !parent.stripeCustomerId) {
@@ -222,15 +209,11 @@ export class BookingService {
           await db.update(parents)
             .set({ stripeCustomerId: stripeId })
             .where(eq(parents.id, parent.id));
-          parent.stripeCustomerId = stripeId;
         }
       } catch (error) {
         console.error('[BookingService] Failed to create Stripe customer:', error);
-        // Continue with booking even if Stripe fails
       }
     }
-
-
 
     // Create Google Calendar event
     let calendarEventId: string | null = null;

@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { parents, children } from '@/db/schema';
+import { parents } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
@@ -16,28 +16,25 @@ export async function GET(
 
         const { id } = await props.params;
 
-        // Fetch parent details scoped to this organisation
+        // Fetch parent details and their children in a single relational query
         const parent = await db.query.parents.findFirst({
             where: and(
                 eq(parents.id, id),
                 eq(parents.organisationId, session.user.organisationId)
             ),
+            with: {
+                children: true,
+            }
         });
 
         if (!parent) {
             return NextResponse.json({ error: 'Parent not found' }, { status: 404 });
         }
 
-        // Fetch children (students) linked to this parent
-        const parentChildren = await db.query.children.findMany({
-            where: and(
-                eq(children.parentId, id),
-                eq(children.organisationId, session.user.organisationId)
-            ),
-        });
+        const { children: parentChildren, ...parentData } = parent;
 
         return NextResponse.json({
-            parent,
+            parent: parentData,
             children: parentChildren
         });
     } catch (error) {

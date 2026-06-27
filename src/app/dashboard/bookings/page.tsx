@@ -3,14 +3,14 @@ import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, bookings, centres, bookingAttendees, parents, children } from '@/db/schema';
 import { alias } from 'drizzle-orm/pg-core';
-import { eq, desc, and, gte, lte, inArray, or, ilike } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, inArray, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Download, Calendar, Filter, Search } from 'lucide-react';
 import { Suspense } from 'react';
 import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
+import Pagination from '@/components/ui/Pagination';
 import { getUserAccessibleCentres } from '@/lib/permissions';
-import { normalizeEnum } from '@/lib/search-params';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, format } from 'date-fns';
 
@@ -25,6 +25,7 @@ export default async function BookingsPage(props: {
         from?: string;
         to?: string;
         today?: string;
+        page?: string;
     }>
 }) {
     const rawSearchParams = await props.searchParams;
@@ -38,6 +39,7 @@ export default async function BookingsPage(props: {
         from:   Array.isArray(rawSearchParams.from)   ? rawSearchParams.from[0]   : rawSearchParams.from,
         to:     Array.isArray(rawSearchParams.to)     ? rawSearchParams.to[0]     : rawSearchParams.to,
         today:  Array.isArray(rawSearchParams.today)  ? rawSearchParams.today[0]  : rawSearchParams.today,
+        page:   Array.isArray(rawSearchParams.page)   ? rawSearchParams.page[0]   : rawSearchParams.page,
     };
 
     if (!session?.user?.organisationId) redirect('/onboarding');
@@ -83,6 +85,11 @@ export default async function BookingsPage(props: {
     let searchActiveAndNoResults = false;
     let matchingIds: string[] = [];
 
+    // Pagination configuration
+    const PAGE_SIZE = 50;
+    const currentPage = parseInt(searchParams.page || '1', 10);
+    const offset = (currentPage - 1) * PAGE_SIZE;
+
     if (searchParams.search) {
         const searchPattern = `%${searchParams.search}%`;
         const attendeeChildren = alias(children, 'attendee_children');
@@ -119,39 +126,55 @@ export default async function BookingsPage(props: {
         }
     }
 
+    // Build exactly the same conditions for `.findMany()` and `.select({ count })`
+    const conds = [];
+    if (activeCentreId !== 'all') {
+        conds.push(eq(bookings.centreId, activeCentreId));
+    } else {
+        conds.push(inArray(bookings.centreId, centreIds));
+    }
+
+    if (searchParams.status && searchParams.status !== 'all') {
+        const val = searchParams.status as string;
+        if (VALID_BOOKING_STATUSES.includes(val as any)) {
+            conds.push(eq(bookings.status, val as any));
+        }
+    }
+
+    if (effectiveFrom) {
+        const fromDate = new Date(effectiveFrom);
+        if (!isNaN(fromDate.getTime())) conds.push(gte(bookings.startAt, startOfDay(fromDate)));
+    }
+    if (effectiveTo) {
+        const toDate = new Date(effectiveTo);
+        if (!isNaN(toDate.getTime())) conds.push(lte(bookings.startAt, endOfDay(toDate)));
+    }
+
+    if (searchParams.search) conds.push(inArray(bookings.id, matchingIds));
+
+    const finalWhere = conds.length === 1 ? conds[0] : and(...conds);
+
+    let totalRecords = 0;
+    let statusCountsAgg: any[] = [];
+
     if (!searchActiveAndNoResults) {
         try {
+            // Retrieve aggregations for accurate top-level bubbles
+            statusCountsAgg = await db.select({
+                status: bookings.status,
+                count: sql<number>`count(*)::int`
+            })
+            .from(bookings)
+            .where(finalWhere)
+            .groupBy(bookings.status);
+
+            totalRecords = statusCountsAgg.reduce((sum, item) => sum + item.count, 0);
+
             bookingsData = await db.query.bookings.findMany({
-                where: (b, op) => {
-                    const conds = [];
-
-                    if (activeCentreId !== 'all') {
-                        conds.push(op.eq(b.centreId, activeCentreId));
-                    } else {
-                        conds.push(op.inArray(b.centreId, centreIds));
-                    }
-
-                    if (searchParams.status && searchParams.status !== 'all') {
-                        const val = searchParams.status as string;
-                        if (VALID_BOOKING_STATUSES.includes(val as any)) {
-                            conds.push(op.eq(b.status, val as any));
-                        }
-                    }
-
-                    if (effectiveFrom) {
-                        const fromDate = new Date(effectiveFrom);
-                        if (!isNaN(fromDate.getTime())) conds.push(op.gte(b.startAt, startOfDay(fromDate)));
-                    }
-                    if (effectiveTo) {
-                        const toDate = new Date(effectiveTo);
-                        if (!isNaN(toDate.getTime())) conds.push(op.lte(b.startAt, endOfDay(toDate)));
-                    }
-
-                    if (searchParams.search) conds.push(op.inArray(b.id, matchingIds));
-
-                    return conds.length === 1 ? conds[0] : op.and(...conds);
-                },
+                where: finalWhere,
                 orderBy: [desc(bookings.startAt)],
+                limit: PAGE_SIZE,
+                offset: offset,
                 with: {
                     centre: true,
                     parent: true,
@@ -190,12 +213,14 @@ export default async function BookingsPage(props: {
 
     // Status counts for colour-coded summary
     const statusCounts = {
-        confirmed:   bookingsData.filter(b => b.status === 'confirmed').length,
-        pending:     bookingsData.filter(b => b.status === 'pending').length,
-        completed:   bookingsData.filter(b => b.status === 'completed').length,
-        cancelled:   bookingsData.filter(b => b.status === 'cancelled').length,
-        rescheduled: bookingsData.filter(b => b.status === 'rescheduled').length,
+        confirmed:   statusCountsAgg.find(s => s.status === 'confirmed')?.count || 0,
+        pending:     statusCountsAgg.find(s => s.status === 'pending')?.count || 0,
+        completed:   statusCountsAgg.find(s => s.status === 'completed')?.count || 0,
+        cancelled:   statusCountsAgg.find(s => s.status === 'cancelled')?.count || 0,
+        rescheduled: statusCountsAgg.find(s => s.status === 'rescheduled')?.count || 0,
     };
+
+    const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -250,12 +275,17 @@ export default async function BookingsPage(props: {
             {/* Filters */}
             <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
                 <Suspense fallback={<div className="h-20 animate-pulse bg-slate-800/50 rounded-2xl w-full"></div>}>
-                    <BookingsFilters centres={orgCentres} resultsCount={bookingsData.length} />
+                    <BookingsFilters centres={orgCentres} resultsCount={totalRecords} />
                 </Suspense>
             </div>
 
             {/* Bookings Table */}
             <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />
+
+            {/* Server-Side Pagination Controls */}
+            {totalPages > 1 && (
+                <Pagination totalPages={totalPages} currentPage={currentPage} />
+            )}
         </div>
     );
 }
