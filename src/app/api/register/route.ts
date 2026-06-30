@@ -21,7 +21,14 @@ const registerSchema = z.object({
     // Allow null (no centre selected) as well as undefined
     centreId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
     startDate: z.preprocess(
-        emptyToNull,
+        (v) => {
+            if (!v || v === '') return null;
+            // date picker gives YYYY-MM-DD — convert to full ISO datetime
+            if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+                return v + 'T00:00:00.000Z';
+            }
+            return v;
+        },
         z.string().datetime({ offset: true }).optional().nullable()
     ),
     termsAgreed: z.literal(true, { message: 'You must agree to the terms' }),

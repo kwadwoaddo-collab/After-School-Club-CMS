@@ -260,7 +260,7 @@ export default function RegisterPage() {
                 body: JSON.stringify({
                     orgSlug,
                     centreId: selectedCentreId,
-                    startDate: startDate ? startDate : null,
+                    startDate: startDate ? new Date(startDate).toISOString() : null,
                     children: childList,
                     parents: parentList,
                     emergencyContact: emergency,
