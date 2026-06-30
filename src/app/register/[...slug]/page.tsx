@@ -277,7 +277,17 @@ export default function RegisterPage() {
                 setSubmitting(false);
                 return;
             }
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Submission failed'); }
+            if (!res.ok) {
+                const d = await res.json();
+                // If validation failed, surface the specific field errors to help debug
+                if (d.details) {
+                    const fieldList = Object.entries(d.details)
+                        .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`)
+                        .join(' | ');
+                    throw new Error(`${d.error}: ${fieldList}`);
+                }
+                throw new Error(d.error || 'Submission failed');
+            }
             setSubmitted(true);
         } catch (e: any) {
             setError(e.message);

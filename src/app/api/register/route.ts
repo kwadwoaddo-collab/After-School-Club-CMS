@@ -12,46 +12,52 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { z } from 'zod';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
+// Helper: treat empty strings as null so optional/nullable fields don't fail
+const emptyToNull = (v: unknown) => (v === '' ? null : v);
+
 // Validation schema for the public registration form
 const registerSchema = z.object({
     orgSlug: z.string().min(1).max(100),
-    centreId: z.string().uuid().optional(),
+    // Allow null (no centre selected) as well as undefined
+    centreId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
     startDate: z.preprocess(
-        (v) => (v === '' ? null : v),
+        emptyToNull,
         z.string().datetime({ offset: true }).optional().nullable()
     ),
     termsAgreed: z.literal(true, { message: 'You must agree to the terms' }),
-    parentSignature: z.string().optional().nullable(),
+    parentSignature: z.preprocess(emptyToNull, z.string().optional().nullable()),
     children: z.array(z.object({
         firstName: z.string().min(1).max(100),
         lastName: z.string().min(1).max(100),
-        dateOfBirth: z.string().optional().nullable(),
-        schoolYear: z.string().max(10).optional(),
+        dateOfBirth: z.preprocess(emptyToNull, z.string().optional().nullable()),
+        schoolYear: z.preprocess(emptyToNull, z.string().max(10).optional().nullable()),
         sessions: z.array(z.string()).optional(),
     })).min(1),
     parents: z.array(z.object({
         firstName: z.string().min(1).max(100),
         lastName: z.string().min(1).max(100),
-        email: z.string().email().max(255).optional().nullable(),
-        phone: z.string().max(20).optional().nullable(),
-        relationship: z.string().max(50).optional().nullable(),
-        addressLine1: z.string().max(255).optional().nullable(),
-        addressLine2: z.string().max(255).optional().nullable(),
-        city: z.string().max(100).optional().nullable(),
-        postcode: z.string().max(10).optional().nullable(),
+        // Email: empty string -> null (avoids .email() failing on "")
+        email: z.preprocess(emptyToNull, z.string().email().max(255).optional().nullable()),
+        // Phone max bumped to 30 to accommodate country codes like +44
+        phone: z.preprocess(emptyToNull, z.string().max(30).optional().nullable()),
+        relationship: z.preprocess(emptyToNull, z.string().max(50).optional().nullable()),
+        addressLine1: z.preprocess(emptyToNull, z.string().max(255).optional().nullable()),
+        addressLine2: z.preprocess(emptyToNull, z.string().max(255).optional().nullable()),
+        city: z.preprocess(emptyToNull, z.string().max(100).optional().nullable()),
+        postcode: z.preprocess(emptyToNull, z.string().max(20).optional().nullable()),
     })).min(1),
     emergencyContact: z.object({
-        name: z.string().max(255).optional().nullable(),
-        phone: z.string().max(20).optional().nullable(),
-        relationship: z.string().max(50).optional().nullable(),
+        name: z.preprocess(emptyToNull, z.string().max(255).optional().nullable()),
+        phone: z.preprocess(emptyToNull, z.string().max(30).optional().nullable()),
+        relationship: z.preprocess(emptyToNull, z.string().max(50).optional().nullable()),
     }).optional(),
     funding: z.object({
         types: z.array(z.string()).optional(),
-        other: z.string().max(500).optional().nullable(),
+        other: z.preprocess(emptyToNull, z.string().max(500).optional().nullable()),
     }).optional(),
     specialNeeds: z.object({
         has: z.boolean(),
-        details: z.string().max(5000).optional().nullable(),
+        details: z.preprocess(emptyToNull, z.string().max(5000).optional().nullable()),
     }).optional(),
 });
 
@@ -76,8 +82,10 @@ export async function POST(req: NextRequest) {
 
         const parsed = registerSchema.safeParse(rawBody);
         if (!parsed.success) {
+            const fieldErrors = parsed.error.flatten().fieldErrors;
+            console.error('[Registration] Validation errors:', JSON.stringify(fieldErrors, null, 2));
             return NextResponse.json(
-                { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+                { error: 'Validation failed', details: fieldErrors },
                 { status: 400 }
             );
         }
