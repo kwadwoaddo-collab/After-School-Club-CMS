@@ -16,7 +16,10 @@ import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 const registerSchema = z.object({
     orgSlug: z.string().min(1).max(100),
     centreId: z.string().uuid().optional(),
-    startDate: z.string().datetime({ offset: true }).optional().nullable(),
+    startDate: z.preprocess(
+        (v) => (v === '' ? null : v),
+        z.string().datetime({ offset: true }).optional().nullable()
+    ),
     termsAgreed: z.literal(true, { message: 'You must agree to the terms' }),
     parentSignature: z.string().optional().nullable(),
     children: z.array(z.object({
