@@ -31,3 +31,13 @@ When using `react-hook-form` in environments with React Compiler (React 19), avo
 
 ## 10. Database Indexing
 When defining Drizzle ORM schemas in PostgreSQL, foreign keys do not automatically create indexes. To optimize queries and enforce performant joins, explicitly define indexes on frequently queried relational columns (like `organisationId`, `centreId`, `parentId`) using the `index()` function in the Drizzle table configuration block.
+
+## 11. React Compiler Purity Requirements
+React Compiler enforces strict purity rules. Direct calls to impure functions like `Date.now()` or `new Date()` within the render lifecycle (or inside raw prop definitions of JSX nodes) can cause compilation/linting failures. Instead:
+- Initialize them via lazy `useState` initializers: `const [today] = useState(() => new Date())`.
+- Compute values inside callback hooks, `useMemo` with empty dependency arrays, or standard event handlers where appropriate.
+
+## 12. Multi-Centre Sibling Invoice Validation
+In parent-billing platforms with multiple centres, combined sibling invoicing requires checking for mismatched centre contexts. If sibling students attend different centres:
+- Automatically notify or prompt the administrator to choose which centre's invoice template, bank details, and Ofsted registration should apply to the final combined invoice PDF, rather than arbitrarily picking a default centre context.
+- Implement inline warnings below the centre selection elements when multi-centre sibling contexts are detected.

@@ -648,6 +648,18 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                     >
                                         {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
+                                    {(() => {
+                                        const selectedChildren = availableChildren.filter(c => selectedChildIds.includes(c.id));
+                                        const selectedCentres = Array.from(new Set(selectedChildren.map(c => c.centreId).filter(Boolean)));
+                                        if (selectedCentres.length > 1) {
+                                            return (
+                                                <p className="text-xs font-semibold text-amber-500 mt-1">
+                                                    ⚠️ Selected children attend different centres. Please select which centre's invoice template/bank details to use for the combined bill.
+                                                </p>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                                 <div className="col-span-2 md:col-span-1 space-y-2">
                                     <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest px-1">Amount (£)</label>

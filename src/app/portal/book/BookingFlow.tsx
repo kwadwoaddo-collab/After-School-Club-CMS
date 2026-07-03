@@ -19,7 +19,7 @@ interface Centre {
 }
 
 interface BookingFlowProps {
-    children: Child[];
+    registeredChildren: Child[];
     centres: Centre[];
 }
 
@@ -60,7 +60,7 @@ function buildStartAt(date: Date, timeSlot: string): string {
     return dt.toISOString();
 }
 
-export function BookingFlow({ children: childList, centres }: BookingFlowProps) {
+export function BookingFlow({ registeredChildren: childList, centres }: BookingFlowProps) {
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [selectedChild, setSelectedChild] = useState<Child | null>(null);
     const [selectedCentre, setSelectedCentre] = useState<Centre | null>(centres.length === 1 ? centres[0] : null);

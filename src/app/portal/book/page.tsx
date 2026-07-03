@@ -89,7 +89,7 @@ export default async function PortalBookPage() {
                     </div>
                 ) : (
                     <BookingFlow
-                        children={childList}
+                        registeredChildren={childList}
                         centres={parentCentres}
                     />
                 )}

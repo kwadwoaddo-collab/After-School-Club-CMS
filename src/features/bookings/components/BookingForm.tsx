@@ -414,8 +414,8 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         }
     };
 
-    const today = new Date().toISOString().split('T')[0];
-    const maxDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const [today] = useState(() => new Date().toISOString().split('T')[0]);
+    const [maxDate] = useState(() => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
     // Dynamic brand styles
     const brandStyles = (
@@ -469,7 +469,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     <div className="border-b border-gray-100 pb-4">
                         <p className="text-sm font-medium text-gray-500 mb-1">Date & Time</p>
                         <p className="text-lg font-semibold text-gray-900">
-                            {watch('appointment.startAt') ? new Date(watch('appointment.startAt').includes('T') ? watch('appointment.startAt') : `${selectedDate}T${watch('appointment.startAt')}:00`).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}
+                            {watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}
                         </p>
                     </div>
                     <div>
@@ -791,7 +791,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             </div>
                                             <div className="hidden">
                                                 <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>
-                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
+                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-gray-900" />
                                                 {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                             </div>
                                             <div>
@@ -939,7 +939,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
                                 <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Centre</span><span className="font-medium text-gray-900">{centreName}</span></div>
                                 <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Session Type</span><span className="font-medium text-gray-900">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-medium text-gray-900">{watch('appointment.startAt') ? new Date(watch('appointment.startAt').includes('T') ? watch('appointment.startAt') : `${selectedDate}T${watch('appointment.startAt')}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-medium text-gray-900">{watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
 
                                 {watchedChildren.map((child, i) => (
                                     <div key={i} className="px-4 py-3">

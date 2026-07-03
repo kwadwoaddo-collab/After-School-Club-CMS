@@ -20,7 +20,7 @@ Location: /dashboard/parents/[id]
 Description: Added a new Parent Profile page featuring a "Finance / Ledger" tab that displays consolidated family totals (Total Owed, Total Paid) and a unified transaction history. Added links to this profile from the Students list and Student profiles.
 
 ## [x] Task 74: Smart "Child-to-Parent" Search Logic
-- **Status:** Pending
+- **Status:** Complete
 - **Location:** Finance -> Create Invoice
 - **Feature:** Enhance the searchable dropdown to index both Student names and Parent names.
 - **Logic:** 
@@ -29,17 +29,17 @@ Description: Added a new Parent Profile page featuring a "Finance / Ledger" tab 
 - **Goal:** Allow admins to find the correct billing account using only the child's name.
 
 ## [x] Task 75: Automatic Centre-Context Binding
-- **Status:** Pending
+- **Status:** Complete
 - **Logic:** When a child (or family) is selected for an invoice, the system must retrieve the **Centre ID** associated with that child's registration.
 - **Automation:** The invoice must automatically assign the branding, Ofsted registration, and Bank Details of **that specific centre** (Sydenham vs. Dagenham) to the generated PDF.
 - **Goal:** Eliminate manual errors where a parent might be billed with the wrong centre's bank details.
 
 ## [x] Task 76: Multi-Centre Sibling Validation
-- **Status:** Pending
+- **Status:** Complete
 - **Logic:** In the rare case that siblings are selected who attend different centres, the UI should prompt the Admin to select which Centre's invoice template/bank details should be used for the combined bill.
 
 ## [x] Task 77: Complete Centre Billing & Contact Details
-- **Status:** Pending
+- **Status:** Complete
 - **Database:** Add `billing_phone` and `billing_email` fields to the `Centre` model.
 - **Settings UI:** Update the 'Finance & Pricing' card to include input fields for:
   - Centre Billing Phone Number
