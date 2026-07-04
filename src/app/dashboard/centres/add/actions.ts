@@ -10,6 +10,11 @@ export async function createCentre(prevState: any, formData: FormData) {
     if (!session?.user?.organisationId) {
         return { message: 'Unauthorized' };
     }
+ 
+    const userRole = (session.user as any).role;
+    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        return { message: 'Forbidden: Insufficient privileges.' };
+    }
 
     const name = formData.get('name') as string;
     const address = formData.get('address') as string;

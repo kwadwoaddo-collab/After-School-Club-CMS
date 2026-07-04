@@ -32,10 +32,21 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default async function RegistrationDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
+ 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+        notFound();
+    }
+ 
     const session = await auth();
     if (!session?.user) redirect('/login');
     const orgId = (session.user as any).organisationId;
     if (!orgId) redirect('/onboarding');
+ 
+    const userRole = (session.user as any).role || 'TUTOR';
+    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        redirect('/dashboard');
+    }
 
     const org = await db.query.organisations.findFirst({
         where: eq(organisations.id, orgId),

@@ -7,13 +7,17 @@ import { DayRule } from './actions';
 import AvailabilityForm from './AvailabilityForm';
 
 export default async function EditAvailabilityPage({ params }: { params: Promise<{ centreId: string }> }) {
+    const { centreId } = await params;
+ 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(centreId)) {
+        notFound();
+    }
+ 
     const session = await auth();
-
     if (!session?.user?.organisationId) {
         redirect('/onboarding');
     }
-
-    const { centreId } = await params;
 
     const [centre] = await db
         .select()

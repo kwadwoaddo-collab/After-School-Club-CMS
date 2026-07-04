@@ -29,8 +29,11 @@ export async function exportOrganisationData(): Promise<{
     if ((session.user as any).role !== 'ORG_OWNER') return { ok: false, error: 'Forbidden' };
 
     const orgId = session.user.organisationId;
-
+ 
     try {
+        const userCentres = await getUserAccessibleCentres(session.user.id);
+        const userCentreIds = userCentres.map(c => c.id);
+
         // Fetch everything
         const [org, orgParents, orgChildren, orgRegistrations, orgBookings] = await Promise.all([
             db.query.organisations.findFirst({
@@ -64,21 +67,20 @@ export async function exportOrganisationData(): Promise<{
                     emergencyContactRelationship: true, submittedAt: true,
                 },
             }),
-            db.query.bookings.findMany({
-                where: inArray(
-                    bookings.centreId,
-                    (await getUserAccessibleCentres(session.user.id)).map(c => c.id)
-                ),
-                with: {
-                    attendees: {
-                        with: { child: { columns: { firstName: true, lastName: true } } },
+            userCentreIds.length > 0
+                ? db.query.bookings.findMany({
+                    where: inArray(bookings.centreId, userCentreIds),
+                    with: {
+                        attendees: {
+                            with: { child: { columns: { firstName: true, lastName: true } } },
+                        },
                     },
-                },
-                columns: {
-                    id: true, startAt: true, duration: true, status: true,
-                    modality: true, assessmentType: true, createdAt: true,
-                },
-            }),
+                    columns: {
+                        id: true, startAt: true, duration: true, status: true,
+                        modality: true, assessmentType: true, createdAt: true,
+                    },
+                })
+                : Promise.resolve([]),
         ]);
 
         const payload = {

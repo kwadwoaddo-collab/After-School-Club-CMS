@@ -1,20 +1,23 @@
 'use client';
-
+ 
 import { useState } from 'react';
 import { exportOrganisationData } from './gdpr.actions';
 import { Download, Loader2, ShieldCheck } from 'lucide-react';
-
+import { toast } from 'react-hot-toast';
+ 
 export default function GdprExportButton() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
+ 
     const handleExport = async () => {
         setLoading(true);
         setError('');
         try {
             const result = await exportOrganisationData();
             if (!result.ok || !result.json) {
-                setError(result.error || 'Export failed.');
+                const errMsg = result.error || 'Export failed.';
+                setError(errMsg);
+                toast.error(errMsg);
                 return;
             }
             const blob = new Blob([result.json], { type: 'application/json' });
@@ -24,8 +27,11 @@ export default function GdprExportButton() {
             a.download = `data-export-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
+            toast.success('GDPR data export downloaded successfully!');
         } catch {
-            setError('Something went wrong. Please try again.');
+            const errMsg = 'Something went wrong. Please try again.';
+            setError(errMsg);
+            toast.error(errMsg);
         } finally {
             setLoading(false);
         }

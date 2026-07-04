@@ -13,9 +13,14 @@ export default async function EditCentreHoursPage({
     params: Promise<{ id: string }>;
 }) {
     const session = await auth();
-
+ 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
+ 
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        return redirect('/dashboard');
+    }
 
     const { id } = await params;
 

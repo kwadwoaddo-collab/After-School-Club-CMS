@@ -21,13 +21,13 @@ export async function createPortalBooking({
     try {
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
-
+ 
         // Verify child belongs to this parent
         const child = await db.query.children.findFirst({
             where: and(eq(children.id, childId), eq(children.parentId, parent.id)),
         });
         if (!child) return { success: false, error: 'Child not found' };
-
+ 
         // Verify centre exists and belongs to the same org as the parent
         const centre = await db.query.centres.findFirst({
             where: and(
@@ -36,64 +36,73 @@ export async function createPortalBooking({
             ),
         });
         if (!centre) return { success: false, error: 'Centre not found' };
-
+ 
         const startDate = new Date(startAt);
         if (isNaN(startDate.getTime())) return { success: false, error: 'Invalid date' };
-
-        // Check for duplicate booking (same child, same startAt)
-        const existingAttendee = await db.query.bookingAttendees.findFirst({
-            where: eq(bookingAttendees.childId, childId),
-            with: {
-                booking: {
+ 
+        let confirmationCode: string;
+        try {
+            confirmationCode = await db.transaction(async (tx) => {
+                // Check for duplicate booking (same child, same startAt)
+                const existingAttendee = await tx.query.bookingAttendees.findFirst({
+                    where: eq(bookingAttendees.childId, childId),
+                    with: {
+                        booking: {
+                            where: and(
+                                eq(bookings.centreId, centreId),
+                                eq(bookings.startAt, startDate)
+                            ),
+                        },
+                    },
+                });
+ 
+                if (existingAttendee?.booking) {
+                    throw new Error('A booking for this child at this time already exists.');
+                }
+ 
+                // Also check via bookings table directly
+                const duplicateCheck = await tx.query.bookings.findFirst({
                     where: and(
+                        eq(bookings.parentId, parent.id),
                         eq(bookings.centreId, centreId),
                         eq(bookings.startAt, startDate)
                     ),
-                },
-            },
-        });
-
-        if (existingAttendee?.booking) {
-            return { success: false, error: 'A booking for this child at this time already exists.' };
+                });
+                if (duplicateCheck) {
+                    throw new Error('You already have a booking at this time.');
+                }
+ 
+                const code = Date.now().toString(36).toUpperCase();
+                const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
+ 
+                // Create booking
+                const [newBooking] = await tx.insert(bookings).values({
+                    parentId: parent.id,
+                    centreId,
+                    childId, // deprecated but still present
+                    startAt: startDate,
+                    duration,
+                    modality: 'in_person',
+                    status: 'confirmed',
+                    confirmationCode: code,
+                    magicLinkToken,
+                    communicationsConsent: false,
+                }).returning();
+ 
+                // Create bookingAttendee record
+                await tx.insert(bookingAttendees).values({
+                    bookingId: newBooking.id,
+                    childId,
+                });
+ 
+                return code;
+            });
+        } catch (e: any) {
+            return { success: false, error: e.message || 'Failed to complete booking.' };
         }
-
-        // Also check via bookings table directly
-        const duplicateCheck = await db.query.bookings.findFirst({
-            where: and(
-                eq(bookings.parentId, parent.id),
-                eq(bookings.centreId, centreId),
-                eq(bookings.startAt, startDate)
-            ),
-        });
-        if (duplicateCheck) {
-            return { success: false, error: 'You already have a booking at this time.' };
-        }
-
-        const confirmationCode = Date.now().toString(36).toUpperCase();
-        const magicLinkToken = `${confirmationCode}-${Math.random().toString(36).slice(2)}`;
-
-        // Create booking
-        const [newBooking] = await db.insert(bookings).values({
-            parentId: parent.id,
-            centreId,
-            childId, // deprecated but still present
-            startAt: startDate,
-            duration,
-            modality: 'in_person',
-            status: 'confirmed',
-            confirmationCode,
-            magicLinkToken,
-            communicationsConsent: false,
-        }).returning();
-
-        // Create bookingAttendee record
-        await db.insert(bookingAttendees).values({
-            bookingId: newBooking.id,
-            childId,
-        });
-
+ 
         revalidatePath('/portal');
-
+ 
         // Fire-and-forget email confirmation
         if (parent.email) {
             emailService.sendBookingConfirmation({
@@ -109,7 +118,7 @@ export async function createPortalBooking({
                 magicLink: `${process.env.NEXTAUTH_URL || ''}/portal`,
             }).catch((e: unknown) => console.error('[Email] Failed to send booking confirmation:', e));
         }
-
+ 
         return { success: true, confirmationCode };
     } catch (e) {
         console.error('Failed to create portal booking:', e);

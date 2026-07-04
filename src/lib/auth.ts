@@ -14,7 +14,7 @@ import { users, accounts, sessions, verificationTokens } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuthResult = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
   adapter: DrizzleAdapter(db, {
@@ -239,6 +239,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, signIn, signOut } = nextAuthResult;
+
+export const auth = async (...args: any[]) => {
+  const session = await nextAuthResult.auth(...args);
+
+  if (session?.user?.id && !(session.user as any).organisationId) {
+    try {
+      const dbUser = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+      });
+      if (dbUser?.organisationId) {
+        (session.user as any).organisationId = dbUser.organisationId;
+        (session.user as any).role = dbUser.role ?? (session.user as any).role;
+        (session.user as any).needsOnboarding = false;
+      }
+    } catch (e) {
+      console.error('Failed to fetch user organisation in auth wrapper:', e);
+    }
+  }
+
+  return session;
+};
 
 // Helper to get current user with organisation
 export async function getCurrentUser() {

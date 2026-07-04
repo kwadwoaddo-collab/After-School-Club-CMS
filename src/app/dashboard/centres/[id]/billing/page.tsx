@@ -7,8 +7,15 @@ import CentreBillingForm from './CentreBillingForm';
 
 export default async function CentreBillingPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
+    const { id } = params;
+ 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+        notFound();
+    }
+ 
     const session = await auth();
-
+ 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
     if ((session.user as any).role !== 'ORG_OWNER') return redirect('/dashboard');

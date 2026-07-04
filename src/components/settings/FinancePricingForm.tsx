@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface Centre {
     id: string;
@@ -88,7 +89,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
         setSaving(true);
         setError(null);
         setSuccess(false);
-
+ 
         try {
             const response = await fetch(`/api/centres/${selectedCentreId}`, {
                 method: 'PATCH',
@@ -106,13 +107,14 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                     signatureUrl
                 }),
             });
-
+ 
             if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.error || 'Failed to update pricing');
             }
-
+ 
             setSuccess(true);
+            toast.success('Pricing & Billing settings saved successfully!');
             router.refresh(); // triggers a server refresh to get updated data
             
             // Hide success message after 3 seconds
@@ -122,7 +124,9 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
             
         } catch (err) {
             console.error('Save error:', err);
-            setError(err instanceof Error ? err.message : 'Failed to save changes');
+            const errMsg = err instanceof Error ? err.message : 'Failed to save changes';
+            setError(errMsg);
+            toast.error(errMsg);
         } finally {
             setSaving(false);
         }

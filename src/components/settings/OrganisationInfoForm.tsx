@@ -1,10 +1,11 @@
 'use client';
-
+ 
 import { useState } from 'react';
 import { Pencil, Check, X, AlertCircle, Phone, Mail, MapPin, Link2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '../ui/ConfirmModal';
-
+import { toast } from 'react-hot-toast';
+ 
 interface OrganisationInfoFormProps {
     org: {
         name: string;
@@ -15,26 +16,26 @@ interface OrganisationInfoFormProps {
     };
     baseUrl: string;
 }
-
+ 
 export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoFormProps) {
     const router = useRouter();
-
+ 
     const [isEditingName, setIsEditingName] = useState(false);
     const [name, setName] = useState(org.name);
-
+ 
     const [isEditingSlug, setIsEditingSlug] = useState(false);
     const [slug, setSlug] = useState(org.slug);
     const [showConfirmSlug, setShowConfirmSlug] = useState(false);
     const [pendingSlug, setPendingSlug] = useState('');
-
+ 
     const [isEditingContact, setIsEditingContact] = useState(false);
     const [contactEmail, setContactEmail] = useState(org.contactEmail || '');
     const [contactPhone, setContactPhone] = useState(org.contactPhone || '');
     const [address, setAddress] = useState(org.address || '');
-
+ 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
+ 
     const patchOrg = async (payload: Record<string, string>) => {
         const res = await fetch('/api/settings/organisation', {
             method: 'PATCH',
@@ -47,36 +48,57 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
         }
         return res.json();
     };
-
+ 
     const handleSaveName = async () => {
         if (!name.trim()) { setError('Name cannot be empty'); return; }
         if (name === org.name) { setIsEditingName(false); return; }
         setSaving(true); setError(null);
-        try { await patchOrg({ name: name.trim() }); setIsEditingName(false); router.refresh(); }
-        catch (e: any) { setError(e.message); }
+        try { 
+            await patchOrg({ name: name.trim() }); 
+            setIsEditingName(false); 
+            toast.success('Organisation name updated successfully!');
+            router.refresh(); 
+        }
+        catch (e: any) { 
+            setError(e.message); 
+            toast.error(e.message || 'Failed to update organisation name');
+        }
         finally { setSaving(false); }
     };
-
+ 
     const handleSaveSlug = () => {
         const s = slug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
         if (!s) { setError('Slug cannot be empty'); return; }
         if (s === org.slug) { setIsEditingSlug(false); return; }
         setPendingSlug(s); setShowConfirmSlug(true);
     };
-
+ 
     const confirmSaveSlug = async () => {
         setSaving(true); setError(null);
-        try { await patchOrg({ slug: pendingSlug }); setIsEditingSlug(false); router.refresh(); }
-        catch (e: any) { setError(e.message); }
+        try { 
+            await patchOrg({ slug: pendingSlug }); 
+            setIsEditingSlug(false); 
+            toast.success('Slug updated successfully!');
+            router.refresh(); 
+        }
+        catch (e: any) { 
+            setError(e.message); 
+            toast.error(e.message || 'Failed to update slug');
+        }
         finally { setSaving(false); setShowConfirmSlug(false); }
     };
-
+ 
     const handleSaveContact = async () => {
         setSaving(true); setError(null);
         try {
             await patchOrg({ contactEmail: contactEmail.trim(), contactPhone: contactPhone.trim(), address: address.trim() });
-            setIsEditingContact(false); router.refresh();
-        } catch (e: any) { setError(e.message); }
+            setIsEditingContact(false); 
+            toast.success('Contact details updated successfully!');
+            router.refresh();
+        } catch (e: any) { 
+            setError(e.message); 
+            toast.error(e.message || 'Failed to update contact details');
+        }
         finally { setSaving(false); }
     };
 

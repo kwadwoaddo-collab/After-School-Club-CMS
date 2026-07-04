@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Upload, Palette, Save, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 interface BrandingFormProps {
     initialColor: string;
@@ -32,28 +33,32 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
     const handleSave = async () => {
         setSaving(true);
         setSaveSuccess(false);
-
+        setSaveError('');
+ 
         try {
             const response = await fetch('/api/branding', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ primaryColor }),
             });
-
+ 
             if (!response.ok) {
                 throw new Error('Failed to save branding');
             }
-
+ 
             setSaveSuccess(true);
-
+            toast.success('Branding settings saved successfully!');
+ 
             // Refresh the page to show updated branding
             router.refresh();
-
+ 
             // Hide success message after 3 seconds
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error) {
             console.error('Save error:', error);
-            setSaveError('Failed to save branding settings. Please try again.');
+            const errMsg = 'Failed to save branding settings. Please try again.';
+            setSaveError(errMsg);
+            toast.error(errMsg);
         } finally {
             setSaving(false);
         }

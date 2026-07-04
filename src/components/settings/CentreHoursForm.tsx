@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Save, Plus, X, Clock, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface DaySchedule {
@@ -117,10 +118,12 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                 throw new Error(d.error || 'Failed to save opening hours');
             }
             setHoursSuccess('Opening hours saved successfully.');
+            toast.success('Opening hours saved successfully!');
             router.refresh();
             setTimeout(() => setHoursSuccess(''), 3000);
         } catch (err: any) {
             setHoursError(err.message);
+            toast.error(err.message || 'Failed to save opening hours');
         } finally {
             setSavingHours(false);
         }
@@ -154,10 +157,12 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                 throw new Error(d.error || 'Failed to save session slots');
             }
             setSlotsSuccess('Session slots saved successfully.');
+            toast.success('Session slots saved successfully!');
             router.refresh();
             setTimeout(() => setSlotsSuccess(''), 3000);
         } catch (err: any) {
             setSlotsError(err.message);
+            toast.error(err.message || 'Failed to save session slots');
         } finally {
             setSavingSlots(false);
         }
