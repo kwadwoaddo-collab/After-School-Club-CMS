@@ -1198,6 +1198,91 @@ export class EmailService {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
   }
+
+  /**
+   * Send assessment feedback to parent
+   */
+  async sendAssessmentFeedback(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    childFirstName: string;
+    childLastName: string;
+    notes?: string | null;
+    score?: string | null;
+    attachmentBase64?: string | null;
+    attachmentMime?: string | null;
+    centreName?: string | null;
+    orgName: string;
+  }): Promise<EmailResult> {
+    if (!resend) return { success: false, error: 'Email service not configured' };
+
+    const scoreDisplay = data.score ? `<div style="background:#eef2ff;border:2px dashed #4F46E5;border-radius:12px;padding:16px;text-align:center;margin-bottom:28px;">
+        <span style="font-size:14px;color:#4F46E5;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Assessment Score</span>
+        <strong style="font-size:28px;color:#4F46E5;">${data.score}</strong>
+      </div>` : '';
+
+    const notesDisplay = data.notes ? `<div style="background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:28px;border-left:4px solid #4F46E5;">
+        <p style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Feedback & Recommendations</p>
+        <p style="color:#1e293b;font-size:15px;line-height:1.6;margin:0;white-space:pre-line;">${data.notes}</p>
+      </div>` : '';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Assessment Feedback — ${data.childFirstName}</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#4F46E5,#7c3aed);padding:40px 32px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">📊</div>
+      <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Assessment Feedback</h1>
+      <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:14px;">For ${data.childFirstName} ${data.childLastName}</p>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi ${data.parentFirstName},</p>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 28px;">We have completed the assessment for <strong>${data.childFirstName}</strong> at ${data.centreName || data.orgName}. Below is the feedback and scoring from our education team.</p>
+      
+      ${scoreDisplay}
+      ${notesDisplay}
+
+      <div style="background:#f8fafc;padding:16px 20px;border-radius:6px;border:1px solid #e5e7eb;text-align:center;">
+        <p style="color:#6b7280;font-size:13px;margin:0;">If you have any questions or would like to discuss this feedback in more detail, please reach out to us at ${data.centreName || data.orgName}.</p>
+      </div>
+    </div>
+    <div style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">Powered by SprintScale · support@sprintscaleit.co.uk</p>
+    </div>
+  </div>
+</body></html>`;
+
+    let attachments: any[] | undefined = undefined;
+    if (data.attachmentBase64) {
+      try {
+        const parts = data.attachmentBase64.split(';base64,');
+        const base64Data = parts[1] || parts[0];
+        const buffer = Buffer.from(base64Data, 'base64');
+        const extension = (data.attachmentMime || 'image/png').split('/')[1] || 'png';
+        attachments = [
+          {
+            filename: `assessment-report-${data.childFirstName.toLowerCase()}.${extension}`,
+            content: buffer,
+          }
+        ];
+      } catch (err) {
+        console.error('[EmailService] Error processing attachment:', err);
+      }
+    }
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: `${data.orgName} via SprintScale <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `📊 Assessment Feedback for ${data.childFirstName} — ${data.orgName}`,
+        html,
+        attachments,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, messageId: result?.id };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
 }
 
 // Export singleton instance

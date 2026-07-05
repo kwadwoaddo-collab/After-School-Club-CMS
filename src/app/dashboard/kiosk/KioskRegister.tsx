@@ -138,7 +138,7 @@ export default function KioskRegister({ bookings, date, centreName, centres, act
     const router = useRouter();
     const [sessionIdx, setSessionIdx] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [clock, setClock] = useState(new Date());
+    const [clock, setClock] = useState(() => new Date());
     const [large, setLarge] = useState(true);
 
     // Live clock

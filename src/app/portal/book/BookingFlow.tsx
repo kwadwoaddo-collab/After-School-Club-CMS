@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { CalendarDays, Clock, User, CheckCircle2, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { createPortalBooking } from './actions';
 import toast from 'react-hot-toast';
@@ -72,7 +72,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<{ confirmationCode: string } | null>(null);
 
-    const dates = getSelectableDates();
+    const dates = useMemo(() => getSelectableDates(), []);
     const slots = parseSessionSlots(selectedCentre?.sessionSlots ?? null);
 
     async function handleConfirm() {

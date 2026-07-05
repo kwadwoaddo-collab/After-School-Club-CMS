@@ -41,3 +41,15 @@ React Compiler enforces strict purity rules. Direct calls to impure functions li
 In parent-billing platforms with multiple centres, combined sibling invoicing requires checking for mismatched centre contexts. If sibling students attend different centres:
 - Automatically notify or prompt the administrator to choose which centre's invoice template, bank details, and Ofsted registration should apply to the final combined invoice PDF, rather than arbitrarily picking a default centre context.
 - Implement inline warnings below the centre selection elements when multi-centre sibling contexts are detected.
+
+## 13. DB Transaction Wrapping for Multi-Write API Routes
+When creating composite database models (such as inserting a `Parent` and then inserting a `Child` linked to that parent) inside an API route or server action, wrap the sequence in a database transaction block (`db.transaction`). This prevents orphaned records (e.g. creating a parent record but failing to create the child record due to a subsequent validation error or database failure), guaranteeing referential and transactional integrity.
+
+## 14. React Compiler Purity with Impure Date Computations
+To avoid compilation errors or warnings under the React Compiler (React 19), do not compute dates or construct date instances directly inside the render lifecycle of Client Components. For example:
+- Wrap date calculations in `useMemo` blocks: `const dates = useMemo(() => getSelectableDates(), [])`
+- Initialize states lazily using initializer functions: `const [clock, setClock] = useState(() => new Date())`
+
+## 15. Base64 Attachment Stripping for Resend Emails
+When sending attachments stored as base64-encoded strings (often prepended with Data URL prefixes like `data:image/png;base64,...`) via the Resend API, strip the prefix before converting the string to a Node `Buffer`. Resend expects raw binary buffers or clean base64 strings; passing raw Data URL strings causes mail delivery failures. Extract the raw base64 string using `.split(';base64,')` and convert using `Buffer.from(base64Data, 'base64')`.
+

@@ -47,41 +47,44 @@ export async function POST(req: Request) {
             );
         }
 
-        // Check if parent exists by email within this org
-        let parentId: string;
-        const existingParent = await db.query.parents.findFirst({
-            where: and(
-                eq(parents.email, data.parentEmail),
-                eq(parents.organisationId, session.user.organisationId)
-            ),
+        const newChildId = await db.transaction(async (tx) => {
+            let pId: string;
+            const existingParent = await tx.query.parents.findFirst({
+                where: and(
+                    eq(parents.email, data.parentEmail),
+                    eq(parents.organisationId, session.user.organisationId)
+                ),
+            });
+
+            if (existingParent) {
+                pId = existingParent.id;
+            } else {
+                const [newParent] = await tx.insert(parents).values({
+                    firstName: data.parentFirstName,
+                    lastName: data.parentLastName,
+                    email: data.parentEmail,
+                    phone: data.parentPhone,
+                    organisationId: session.user.organisationId,
+                    preferredContact: 'email',
+                }).returning();
+                pId = newParent.id;
+            }
+
+            // Create Child — with direct organisationId and centreId
+            const [newChild] = await tx.insert(children).values({
+                parentId: pId,
+                organisationId: session.user.organisationId,
+                centreId: data.centreId,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                dateOfBirth: new Date(data.dateOfBirth),
+                schoolYear: data.schoolYear,
+            }).returning({ id: children.id });
+
+            return newChild.id;
         });
 
-        if (existingParent) {
-            parentId = existingParent.id;
-        } else {
-            const [newParent] = await db.insert(parents).values({
-                firstName: data.parentFirstName,
-                lastName: data.parentLastName,
-                email: data.parentEmail,
-                phone: data.parentPhone,
-                organisationId: session.user.organisationId,
-                preferredContact: 'email',
-            }).returning();
-            parentId = newParent.id;
-        }
-
-        // Create Child — with direct organisationId and centreId
-        const [newChild] = await db.insert(children).values({
-            parentId,
-            organisationId: session.user.organisationId,
-            centreId: data.centreId,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            dateOfBirth: new Date(data.dateOfBirth),
-            schoolYear: data.schoolYear,
-        }).returning({ id: children.id });
-
-        return NextResponse.json({ success: true, id: newChild.id });
+        return NextResponse.json({ success: true, id: newChildId });
     } catch (error) {
         console.error('Add Student error:', error);
         if (error instanceof z.ZodError) {

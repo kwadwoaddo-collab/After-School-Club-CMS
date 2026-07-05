@@ -1,11 +1,12 @@
 'use server';
 
 import { db } from '@/db';
-import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calendarBusy, children, parents, centres } from '@/db/schema';
+import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calendarBusy, children, parents, centres, organisations } from '@/db/schema';
 import { eq, and, gt, gte, lte, or, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import type { AttendanceStatus } from '@/lib/attendance';
+import { emailService } from '@/lib/services/email';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await auth();
@@ -142,6 +143,11 @@ export async function sendAssessmentFeedback(attendeeId: string) {
                 with: {
                     centre: true
                 }
+            },
+            child: {
+                with: {
+                    parent: true
+                }
             }
         }
     });
@@ -150,8 +156,25 @@ export async function sendAssessmentFeedback(attendeeId: string) {
         throw new Error('Unauthorized access');
     }
 
-    // TODO: Stub email sending (integrate Resend here later)
-    console.log(`[Assessment] Stub: Sending feedback email to parent for attendee ${attendeeId}`);
+    const parent = attendee.child?.parent;
+    if (parent && parent.email) {
+        const org = await db.query.organisations.findFirst({
+            where: eq(organisations.id, session.user.organisationId)
+        });
+
+        await emailService.sendAssessmentFeedback({
+            parentFirstName: parent.firstName,
+            parentEmail: parent.email,
+            childFirstName: attendee.child.firstName,
+            childLastName: attendee.child.lastName,
+            notes: attendee.feedbackNotes,
+            score: attendee.feedbackScore,
+            attachmentBase64: attendee.feedbackAttachmentBase64,
+            attachmentMime: attendee.feedbackAttachmentMime,
+            centreName: attendee.booking.centre.name,
+            orgName: org?.name || 'SprintScale Club',
+        });
+    }
 
     await db.update(bookingAttendees)
         .set({
