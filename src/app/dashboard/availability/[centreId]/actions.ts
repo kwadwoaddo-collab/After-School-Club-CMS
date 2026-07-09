@@ -20,6 +20,11 @@ export async function updateAvailability(centreId: string, rules: DayRule[]) {
         throw new Error('Unauthorized');
     }
 
+    const userRole = (session.user as any).role || 'TUTOR';
+    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        throw new Error('Unauthorized');
+    }
+
     const hasAccess = await canUserAccessCentre(session.user.id, centreId);
     if (!hasAccess) {
         throw new Error('Unauthorized access to this centre');

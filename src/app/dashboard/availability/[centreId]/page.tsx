@@ -5,6 +5,7 @@ import { centres, centreAvailabilityRules } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { DayRule } from './actions';
 import AvailabilityForm from './AvailabilityForm';
+import { canUserAccessCentre } from '@/lib/permissions';
 
 export default async function EditAvailabilityPage({ params }: { params: Promise<{ centreId: string }> }) {
     const { centreId } = await params;
@@ -15,8 +16,22 @@ export default async function EditAvailabilityPage({ params }: { params: Promise
     }
  
     const session = await auth();
-    if (!session?.user?.organisationId) {
+    if (!session?.user?.id) {
+        redirect('/login');
+    }
+
+    if (!session.user.organisationId) {
         redirect('/onboarding');
+    }
+
+    const userRole = (session.user as any).role || 'TUTOR';
+    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        redirect('/dashboard');
+    }
+
+    const hasAccess = await canUserAccessCentre(session.user.id, centreId);
+    if (!hasAccess) {
+        redirect('/dashboard');
     }
 
     const [centre] = await db

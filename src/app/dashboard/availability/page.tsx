@@ -2,26 +2,44 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { centres, centreAvailabilityRules } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import { Clock, MapPin, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default async function AvailabilityPage() {
     const session = await auth();
 
-    if (!session?.user?.organisationId) {
+    if (!session?.user?.id) {
+        redirect('/login');
+    }
+
+    if (!session.user.organisationId) {
         redirect('/onboarding');
+    }
+
+    const userRole = (session.user as any).role || 'TUTOR';
+    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        redirect('/dashboard');
     }
 
     const orgId = session.user.organisationId;
 
-    const centresList = await db.query.centres.findMany({
-        where: eq(centres.organisationId, orgId),
-        with: { availabilityRules: true },
-    });
+    const accessibleCentres = await getUserAccessibleCentres(session.user.id);
+    const accessibleCentreIds = accessibleCentres.map(c => c.id);
+
+    const centresList = accessibleCentreIds.length > 0
+        ? await db.query.centres.findMany({
+            where: and(
+                eq(centres.organisationId, orgId),
+                inArray(centres.id, accessibleCentreIds)
+            ),
+            with: { availabilityRules: true },
+        })
+        : [];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
