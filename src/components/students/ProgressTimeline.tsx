@@ -2,8 +2,8 @@
 
 import { format } from 'date-fns';
 import { useState, useTransition } from 'react';
-import { deleteStudentNote, toggleStudentNotePin } from '@/features/students/notes.actions';
-import { Pin, Trash2, BookOpen, Users, Star, Stethoscope, AlertCircle, Clock, Smile, ThumbsUp, Meh, ThumbsDown, AlertTriangle, TrendingUp } from 'lucide-react';
+import { deleteStudentNote, toggleStudentNotePin, editStudentNote } from '@/features/students/notes.actions';
+import { Pin, Trash2, Edit3, BookOpen, Users, Star, Stethoscope, AlertCircle, Clock, Smile, ThumbsUp, Meh, ThumbsDown, AlertTriangle, TrendingUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 type NoteType = 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'attendance_concern' | 'medical' | null;
@@ -50,6 +50,8 @@ const FILTER_OPTIONS = ['All', 'General', 'Progress', 'Subject', 'Behaviour', 'M
 export default function ProgressTimeline({ notes, currentUserId, currentUserRole }: ProgressTimelineProps) {
     const [filter, setFilter] = useState('All');
     const [isPending, startTransition] = useTransition();
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingContent, setEditingContent] = useState('');
 
     const isAdmin = currentUserRole === 'ORG_OWNER' || currentUserRole === 'MANAGER';
 
@@ -82,6 +84,19 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                 toast.success('Note deleted');
             } catch (e: any) {
                 toast.error(e.message || 'Failed to delete note');
+            }
+        });
+    };
+
+    const handleSaveEdit = (noteId: string) => {
+        if (!editingContent.trim()) return;
+        startTransition(async () => {
+            try {
+                await editStudentNote(noteId, editingContent);
+                setEditingId(null);
+                toast.success('Note updated');
+            } catch (e: any) {
+                toast.error(e.message || 'Failed to update note');
             }
         });
     };
@@ -149,6 +164,19 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             <Pin className="w-3.5 h-3.5" />
                                         </button>
                                     )}
+                                    {canEdit && (
+                                        <button
+                                            onClick={() => {
+                                                setEditingId(note.id);
+                                                setEditingContent(note.content);
+                                            }}
+                                            disabled={isPending}
+                                            className="p-1.5 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
+                                            title="Edit note"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
                                     {canDelete && (
                                         <button
                                             onClick={() => handleDelete(note.id)}
@@ -179,7 +207,34 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                 </div>
 
                                 {/* Content */}
-                                <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                                {editingId === note.id ? (
+                                    <div className="space-y-3 mt-2">
+                                        <textarea
+                                            value={editingContent}
+                                            onChange={(e) => setEditingContent(e.target.value)}
+                                            className="w-full bg-[#1a1d23] text-white border border-[#424754]/30 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-y min-h-[80px]"
+                                            disabled={isPending}
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => setEditingId(null)}
+                                                className="px-3 py-1.5 rounded-lg bg-white/5 text-on-surface-variant hover:bg-white/10 text-xs font-bold transition-all"
+                                                disabled={isPending}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleSaveEdit(note.id)}
+                                                disabled={!editingContent.trim() || isPending}
+                                                className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold transition-all disabled:opacity-50"
+                                            >
+                                                {isPending ? 'Saving...' : 'Save'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                                )}
 
                                 {/* Footer */}
                                 <p className="text-[11px] text-on-surface-variant mt-3">

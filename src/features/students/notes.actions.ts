@@ -118,3 +118,59 @@ export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
 
     return { success: true };
 }
+
+export async function editStudentNote(
+    noteId: string,
+    content: string,
+    category: string = 'General',
+    options?: {
+        noteType?: 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'attendance_concern' | 'medical';
+        subject?: string;
+        rating?: 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
+    }
+) {
+    // 1. Authenticate user
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+    }
+
+    // 2. Validate input
+    if (!content || !content.trim()) {
+        throw new Error('Note content cannot be empty');
+    }
+
+    // 3. Retrieve note and verify existence
+    const note = await db.query.studentNotes.findFirst({
+        where: eq(studentNotes.id, noteId)
+    });
+
+    if (!note) {
+        throw new Error('Note not found');
+    }
+
+    // 4. Authorization check (Author or ORG_OWNER / MANAGER only)
+    const userRole = (session.user as any).role;
+    if (note.userId !== session.user.id && userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only the author or an Admin can edit this note');
+    }
+
+    // 5. Perform the database update safely preserving non-updated optional fields
+    await db.update(studentNotes)
+        .set({
+            content: content.trim(),
+            category,
+            noteType: options?.noteType ?? note.noteType,
+            subject: options?.subject !== undefined ? options.subject : note.subject,
+            rating: options?.rating !== undefined ? options.rating : note.rating,
+            updatedAt: new Date(),
+        })
+        .where(eq(studentNotes.id, noteId));
+
+    // 6. Revalidate relevant cache paths
+    revalidatePath('/dashboard/bookings/[bookingId]', 'page');
+    revalidatePath('/dashboard/students/[id]', 'page');
+    revalidatePath('/dashboard', 'layout');
+
+    return { success: true };
+}
