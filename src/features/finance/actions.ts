@@ -8,6 +8,56 @@ import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
 
+async function insertInvoiceAndLog(
+    tx: any,
+    orgId: string,
+    userId: string,
+    params: {
+        centreId: string;
+        parentId: string;
+        childId: string | null;
+        amount: string;
+        invoiceDate: Date;
+        dueDate: Date;
+        billingPeriodStart?: Date;
+        billingPeriodEnd?: Date;
+        notes: string;
+        adhoc?: boolean;
+        childName?: string;
+    }
+) {
+    const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+    const [inv] = await tx.insert(invoices).values({
+        organisationId: orgId,
+        centreId: params.centreId,
+        parentId: params.parentId,
+        childId: params.childId,
+        invoiceNumber,
+        amount: params.amount,
+        status: 'draft',
+        invoiceDate: params.invoiceDate,
+        dueDate: params.dueDate,
+        billingPeriodStart: params.billingPeriodStart,
+        billingPeriodEnd: params.billingPeriodEnd,
+        notes: params.notes,
+    }).returning();
+
+    await tx.insert(auditEvents).values({
+        organisationId: orgId,
+        userId,
+        eventType: 'invoice_created',
+        eventData: JSON.stringify({
+            invoiceId: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            amount: inv.amount,
+            adhoc: params.adhoc,
+            childName: params.childName,
+        })
+    });
+
+    return inv;
+}
+
 export async function getParents(query: string) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
@@ -127,29 +177,17 @@ export async function createInvoice(data: {
 
     // Execute database operations atomically in a transaction
     const newInvoice = await db.transaction(async (tx) => {
-        const [inv] = await tx.insert(invoices).values({
-            organisationId: session.user.organisationId,
+        return await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId: data.parentId,
-            childId: data.childIds[0] || null, 
-            invoiceNumber,
+            childId: data.childIds[0] || null,
             amount: data.amount,
-            status: 'draft',
             invoiceDate: data.invoiceDate,
             dueDate: data.dueDate,
             billingPeriodStart: data.billingPeriodStart,
             billingPeriodEnd: data.billingPeriodEnd,
             notes: description,
-        }).returning();
-
-        await tx.insert(auditEvents).values({
-            organisationId: session.user.organisationId,
-            userId: session.user.id,
-            eventType: 'invoice_created',
-            eventData: JSON.stringify({ invoiceId: inv.id, invoiceNumber: inv.invoiceNumber, amount: inv.amount })
         });
-
-        return inv;
     });
 
     // Send invoice email notification to parent (fire-and-forget)
@@ -225,27 +263,16 @@ export async function createLegacyFamilyAndInvoice(data: {
             ? `${data.invoice.notes}\n(Includes: ${childNames})`
             : `After School Club Childcare Services for ${childNames}`;
 
-        const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
-        const [newInvoice] = await tx.insert(invoices).values({
-            organisationId: session.user.organisationId!,
+        const newInvoice = await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.invoice.centreId,
             parentId: newParent.id,
             childId: createdChildren[0]?.id || null,
-            invoiceNumber,
             amount: data.invoice.amount,
-            status: 'draft',
             invoiceDate: data.invoice.invoiceDate,
             dueDate: data.invoice.dueDate,
             billingPeriodStart: data.invoice.billingPeriodStart,
             billingPeriodEnd: data.invoice.billingPeriodEnd,
             notes: description,
-        }).returning();
-
-        await tx.insert(auditEvents).values({
-            organisationId: session.user.organisationId!,
-            userId: session.user.id,
-            eventType: 'invoice_created',
-            eventData: JSON.stringify({ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amount: newInvoice.amount })
         });
 
         return { parent: newParent, children: createdChildren, invoice: newInvoice };
@@ -296,34 +323,18 @@ export async function createAdHocInvoice(data: {
             ? `${data.notes}\nChild: ${childLabel}`
             : `After School Club Childcare Services\nChild: ${childLabel}`;
 
-        // 3. Create invoice with childId: null
-        const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
-        const [newInvoice] = await tx.insert(invoices).values({
-            organisationId: session.user.organisationId!,
+        const newInvoice = await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId,
             childId: null,
-            invoiceNumber,
             amount: data.amount,
-            status: 'draft',
             invoiceDate: data.invoiceDate,
             dueDate: data.dueDate,
             billingPeriodStart: data.billingPeriodStart,
             billingPeriodEnd: data.billingPeriodEnd,
             notes: baseDescription,
-        }).returning();
-
-        await tx.insert(auditEvents).values({
-            organisationId: session.user.organisationId!,
-            userId: session.user.id,
-            eventType: 'invoice_created',
-            eventData: JSON.stringify({
-                invoiceId: newInvoice.id,
-                invoiceNumber: newInvoice.invoiceNumber,
-                amount: newInvoice.amount,
-                adhoc: true,
-                childName: childLabel,
-            })
+            adhoc: true,
+            childName: childLabel,
         });
 
         revalidatePath('/dashboard/finance');
