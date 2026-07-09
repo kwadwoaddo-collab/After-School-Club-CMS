@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { ArrowLeft, Crown, Briefcase, MonitorSmartphone, GraduationCap, Mail, MapPin, Calendar, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import StaffCentreAssignment from '@/components/staff/StaffCentreAssignment';
+import StaffRoleSelector from '@/components/staff/StaffRoleSelector';
 import { format } from 'date-fns';
 
 interface PageProps {
@@ -118,20 +119,12 @@ export default async function EditStaffPage({ params }: PageProps) {
                 </div>
             </div>
 
-            {/* Permissions */}
-            <div className="bg-[#1a1d23] rounded-[24px] p-6 border border-[#424754]/15">
-                <div className="flex items-center gap-3 mb-4">
-                    <ShieldCheck className="w-5 h-5 text-[#adc6ff]" />
-                    <h2 className="font-bold text-[#e5e2e1]">Role Permissions</h2>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {getRolePermissions(staffMember.role).map(perm => (
-                        <span key={perm} className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#2a2a2a] text-[#c2c6d6] border border-[#424754]/20">
-                            {perm}
-                        </span>
-                    ))}
-                </div>
-            </div>
+            {/* Role Selector */}
+            <StaffRoleSelector
+                userId={userId}
+                currentRole={staffMember.role as any}
+                staffName={staffMember.name || staffMember.email}
+            />
 
             {/* Centre Assignment */}
             {staffMember.role === 'ORG_OWNER' ? (
