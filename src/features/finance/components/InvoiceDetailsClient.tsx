@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye } from 'lucide-react';
+import { useState, useEffect, useTransition } from 'react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -24,6 +24,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
     const [confirmAction, setConfirmAction] = useState<'delete' | 'void' | null>(null);
+    const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
     useEffect(() => {
@@ -119,8 +120,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     )}
                     {remainingBalance > 0 && (
                         <button 
+                            disabled={isPending}
                             onClick={() => setIsPaymentModalOpen(true)}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <CreditCard className="w-4 h-4" /> Record Payment
                         </button>
@@ -128,8 +130,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {invoice.status !== 'void' && (
                         <button 
                             type="button"
+                            disabled={isPending}
                             onClick={() => setConfirmAction('void')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Ban className="w-4 h-4" /> Void
                         </button>
@@ -137,8 +140,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {invoice.status !== 'paid' && (
                         <button 
                             type="button"
+                            disabled={isPending}
                             onClick={() => setConfirmAction('delete')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all cursor-pointer"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Trash2 className="w-4 h-4" /> Delete
                         </button>
@@ -244,8 +248,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
 
                         {remainingBalance > 0 && (
                             <button 
+                                disabled={isPending}
                                 onClick={() => setIsPaymentModalOpen(true)}
-                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-white hover:bg-blue-600 transition-all shadow-xl shadow-primary/20"
+                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-white hover:bg-blue-600 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Record Received Payment
                             </button>
@@ -262,7 +267,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     remainingBalance={remainingBalance}
                     onClose={() => setIsPaymentModalOpen(false)}
                     onSuccess={() => {
-                        router.refresh();
+                        startTransition(() => {
+                            router.refresh();
+                        });
                     }}
                 />
             )}
@@ -274,13 +281,15 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 invoiceNumber={invoice.invoiceNumber}
                 hasPayments={hasPayments}
                 onConfirm={async () => {
-                    if (confirmAction === 'delete') {
-                        await deleteInvoice(invoice.id);
-                        router.push('/dashboard/finance');
-                    } else {
-                        await voidInvoice(invoice.id);
-                        router.refresh();
-                    }
+                    startTransition(async () => {
+                        if (confirmAction === 'delete') {
+                            await deleteInvoice(invoice.id);
+                            router.push('/dashboard/finance');
+                        } else {
+                            await voidInvoice(invoice.id);
+                            router.refresh();
+                        }
+                    });
                 }}
             />
 
@@ -297,6 +306,16 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     )
                 }
             />
+
+            {/* Transition Blocker Overlay */}
+            {isPending && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-[250] animate-in fade-in duration-150">
+                    <div className="flex items-center gap-3 bg-surface-container-high border border-outline-variant/10 px-6 py-4 rounded-2xl text-base font-bold text-white shadow-2xl animate-in zoom-in-95 duration-150">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        Updating Invoice...
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Filter, FileText, Trash2, Ban } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { Plus, Filter, FileText, Trash2, Ban, Loader2 } from 'lucide-react';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import ConfirmActionModal from './ConfirmActionModal';
 import { useRouter } from 'next/navigation';
@@ -53,6 +53,7 @@ export default function FinanceDashboardClient({ students, recentInvoices = [], 
 export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: any[], isOwner?: boolean }) {
     const router = useRouter();
     const [confirmTarget, setConfirmTarget] = useState<{ id: string; invoiceNumber: string; hasPayments: boolean; action: 'delete' | 'void' } | null>(null);
+    const [isPending, startTransition] = useTransition();
     
     if (!invoices || invoices.length === 0) {
         return (
@@ -70,7 +71,15 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
 
     return (
         <>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
+                {isPending && (
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
+                        <div className="flex items-center gap-2 bg-surface-container-high border border-outline-variant/10 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-xl animate-in zoom-in-95 duration-150">
+                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                            Updating Ledger...
+                        </div>
+                    </div>
+                )}
                 <table className="w-full">
                     <thead>
                         <tr className="text-left border-b border-outline-variant/10">
@@ -87,8 +96,11 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                             return (
                                 <tr 
                                     key={invoice.id} 
-                                    onClick={() => router.push(`/dashboard/finance/invoices/${invoice.id}`)}
-                                    className="group hover:bg-white/5 transition-colors cursor-pointer"
+                                    onClick={() => {
+                                        if (isPending) return;
+                                        router.push(`/dashboard/finance/invoices/${invoice.id}`);
+                                    }}
+                                    className={`group hover:bg-white/5 transition-colors ${isPending ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
                                 >
                                     <td className="py-4 px-4">
                                         <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
@@ -121,8 +133,9 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                                 {invoice.status !== 'void' && (
                                                     <button 
                                                         type="button"
+                                                        disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'void' })}
-                                                        className="p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 cursor-pointer"
+                                                        className="p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         title="Void Invoice"
                                                     >
                                                         <Ban className="w-4 h-4" />
@@ -131,8 +144,9 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                                 {invoice.status !== 'paid' && (
                                                     <button 
                                                         type="button"
+                                                        disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'delete' })}
-                                                        className="p-2 bg-error/10 text-error hover:bg-error/20 rounded-lg transition-colors border border-error/20 cursor-pointer"
+                                                        className="p-2 bg-error/10 text-error hover:bg-error/20 rounded-lg transition-colors border border-error/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         title="Delete Invoice"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -156,12 +170,14 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                 hasPayments={confirmTarget?.hasPayments ?? false}
                 onConfirm={async () => {
                     if (!confirmTarget) return;
-                    if (confirmTarget.action === 'delete') {
-                        await deleteInvoice(confirmTarget.id);
-                    } else {
-                        await voidInvoice(confirmTarget.id);
-                    }
-                    router.refresh();
+                    startTransition(async () => {
+                        if (confirmTarget.action === 'delete') {
+                            await deleteInvoice(confirmTarget.id);
+                        } else {
+                            await voidInvoice(confirmTarget.id);
+                        }
+                        router.refresh();
+                    });
                 }}
             />
         </>
