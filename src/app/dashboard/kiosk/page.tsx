@@ -238,6 +238,7 @@ export default async function KioskPage(props: {
         <KioskRegister
             slots={sortedSlots as any}
             date={format(now, 'EEEE, d MMMM yyyy')}
+            dateStr={format(now, 'yyyy-MM-dd')}
             centreName={activeCentreName}
             centres={orgCentres}
             activeCentreId={activeCentreId}

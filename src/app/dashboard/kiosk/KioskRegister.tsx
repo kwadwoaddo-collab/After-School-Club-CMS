@@ -5,59 +5,69 @@ import { markAttendeeAttendance } from '@/features/bookings/actions';
 import {
     CheckCircle2, XCircle, Clock, AlertTriangle,
     Loader2, ChevronLeft, ChevronRight, Users,
-    Maximize2, RefreshCw, Shield, Stethoscope, Edit2
+    Maximize2, RefreshCw, Stethoscope, Edit2, Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | null;
 
-interface Child {
-    id: string;
-    firstName: string;
-    lastName: string;
-    schoolYear: string;
-    notes: string | null;
-    parent: { firstName: string; lastName: string; phone: string | null };
-}
-
 interface Attendee {
     id: string;
     childId: string;
+    firstName: string;
+    lastName: string;
+    schoolYear: string;
+    notes?: string | null;
+    parentFirstName: string;
+    parentLastName: string;
+    parentPhone: string | null;
+    parentEmail?: string | null;
     attendanceStatus: AttendanceStatus;
     attendanceNote: string | null;
     lateMinutes: number | null;
-    child: Child;
+    isCatchUp: boolean;
+    bookingId: string | null;
 }
 
-interface Booking {
-    id: string;
-    startAt: Date;
-    duration: number;
-    centre: { name: string } | null;
-    attendees: Attendee[];
+interface CompiledSlot {
+    time: string;
+    timeLabel: string;
+    regulars: Attendee[];
+    catchups: Attendee[];
 }
 
 interface Centre { id: string; name: string; }
 
 interface Props {
-    bookings: Booking[];
+    slots: CompiledSlot[];
     date: string;
+    dateStr?: string;
     centreName: string;
     centres: Centre[];
     activeCentreId: string;
 }
 
 // ── Individual student card ───────────────────────────────────────────────────
-function StudentCard({ bookingId, attendee, isLarge }: {
-    bookingId: string;
+function StudentCard({
+    attendee,
+    dateStr,
+    sessionTime,
+    centreId,
+    isLarge,
+}: {
     attendee: Attendee;
+    dateStr: string;
+    sessionTime: string;
+    centreId: string;
     isLarge: boolean;
 }) {
+    const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
+    const [curAttendeeId, setCurAttendeeId] = useState<string>(attendee.id);
     const [status, setStatus] = useState<AttendanceStatus>(attendee.attendanceStatus);
     const [note, setNote] = useState<string>(attendee.attendanceNote || '');
     const [lateMinutes, setLateMinutes] = useState<string>(
-        attendee.lateMinutes !== null && attendee.lateMinutes !== undefined ? attendee.lateMinutes.toString() : ''
+        attendee.lateMinutes != null ? attendee.lateMinutes.toString() : ''
     );
     const [showDetails, setShowDetails] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -65,45 +75,68 @@ function StudentCard({ bookingId, attendee, isLarge }: {
 
     const mark = (s: AttendanceStatus) => {
         const next = status === s ? null : s;
-        const autoOpen = next === 'late';
-        if (autoOpen) setShowDetails(true);
+        if (next === 'late') setShowDetails(true);
 
         startTransition(async () => {
-            await markAttendeeAttendance({
-                bookingId,
-                attendeeId: attendee.id,
-                status: next,
-                note: note || null,
-                lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null
-            });
-            setStatus(next);
-            setFlash(true);
-            setTimeout(() => setFlash(false), 800);
+            try {
+                const res = await markAttendeeAttendance({
+                    bookingId: curBookingId,
+                    attendeeId: curAttendeeId,
+                    status: next,
+                    note: note || null,
+                    lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
+                    childId: attendee.childId,
+                    dateStr,
+                    sessionTime,
+                    centreId,
+                });
+                if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
+                    setCurBookingId(res.bookingId);
+                    setCurAttendeeId(res.attendeeId);
+                }
+                setStatus(next);
+                setFlash(true);
+                setTimeout(() => setFlash(false), 800);
+            } catch (err: any) {
+                alert(err.message || 'Failed to mark attendance');
+            }
         });
     };
 
     const saveDetails = () => {
         startTransition(async () => {
-            await markAttendeeAttendance({
-                bookingId,
-                attendeeId: attendee.id,
-                status,
-                note: note || null,
-                lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null
-            });
-            setFlash(true);
-            setTimeout(() => setFlash(false), 800);
+            try {
+                const res = await markAttendeeAttendance({
+                    bookingId: curBookingId,
+                    attendeeId: curAttendeeId,
+                    status,
+                    note: note || null,
+                    lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
+                    childId: attendee.childId,
+                    dateStr,
+                    sessionTime,
+                    centreId,
+                });
+                if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
+                    setCurBookingId(res.bookingId);
+                    setCurAttendeeId(res.attendeeId);
+                }
+                setFlash(true);
+                setTimeout(() => setFlash(false), 800);
+            } catch (err: any) {
+                alert(err.message || 'Failed to save');
+            }
         });
     };
 
-    const hasAlert = !!attendee.child.notes;
-    const initials = `${attendee.child.firstName[0]}${attendee.child.lastName[0]}`.toUpperCase();
+    const hasAlert = !!attendee.notes;
+    const initials = `${attendee.firstName[0]}${attendee.lastName[0]}`.toUpperCase();
 
     const statusStyle = {
         present: { ring: 'ring-2 ring-emerald-500 bg-emerald-500/10', avatar: 'bg-emerald-500 text-white' },
-        absent:  { ring: 'ring-2 ring-red-500 bg-red-500/10',     avatar: 'bg-red-500 text-white' },
-        late:    { ring: 'ring-2 ring-amber-500 bg-amber-500/10', avatar: 'bg-amber-500 text-white' },
-        excused: { ring: 'ring-2 ring-purple-500 bg-purple-500/10', avatar: 'bg-purple-500 text-white' },
+        absent:  { ring: 'ring-2 ring-red-500 bg-red-500/10',         avatar: 'bg-red-500 text-white' },
+        late:    { ring: 'ring-2 ring-amber-500 bg-amber-500/10',     avatar: 'bg-amber-500 text-white' },
+        excused: { ring: 'ring-2 ring-purple-500 bg-purple-500/10',   avatar: 'bg-purple-500 text-white' },
     };
 
     const style = status ? statusStyle[status] : { ring: 'ring-1 ring-white/10 bg-white/5', avatar: 'bg-white/10 text-white/60' };
@@ -124,10 +157,15 @@ function StudentCard({ bookingId, attendee, isLarge }: {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <p className={`font-bold text-white truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
-                                {attendee.child.firstName} {attendee.child.lastName}
+                                {attendee.firstName} {attendee.lastName}
                             </p>
+                            {attendee.isCatchUp && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/20 text-amber-400 text-[10px] font-bold">
+                                    <Sparkles className="w-2.5 h-2.5" /> Catch-Up
+                                </span>
+                            )}
                             {hasAlert && (
-                                <span title={attendee.child.notes!} className="flex-shrink-0">
+                                <span title={attendee.notes!} className="flex-shrink-0">
                                     <Stethoscope className="w-4 h-4 text-red-400" />
                                 </span>
                             )}
@@ -136,13 +174,13 @@ function StudentCard({ bookingId, attendee, isLarge }: {
                             )}
                         </div>
                         <p className="text-xs text-white/40 mt-0.5">
-                            Year {attendee.child.schoolYear} · {attendee.child.parent.firstName} {attendee.child.parent.lastName}
-                            {attendee.child.parent.phone && ` · ${attendee.child.parent.phone}`}
+                            Year {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName}
+                            {attendee.parentPhone && ` · ${attendee.parentPhone}`}
                             {lateMinutes && ` · Late: ${lateMinutes}m`}
                             {note && ` · "${note}"`}
                         </p>
                         {hasAlert && (
-                            <p className="text-xs text-red-400 mt-1 font-medium truncate">⚠ {attendee.child.notes}</p>
+                            <p className="text-xs text-red-400 mt-1 font-medium truncate">⚠ {attendee.notes}</p>
                         )}
                     </div>
 
@@ -160,9 +198,9 @@ function StudentCard({ bookingId, attendee, isLarge }: {
                                 <Edit2 className="w-4 h-4" />
                             </button>
                             {([
-                                { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',     active: 'bg-emerald-500 text-white', inactive: 'bg-white/5 text-white/40 hover:text-emerald-400' },
-                                { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late',   active: 'bg-amber-500 text-white',   inactive: 'bg-white/5 text-white/40 hover:text-amber-400'   },
-                                { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',    active: 'bg-red-500 text-white',     inactive: 'bg-white/5 text-white/40 hover:text-red-400'     },
+                                { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-emerald-500 text-white', inactive: 'bg-white/5 text-white/40 hover:text-emerald-400' },
+                                { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-500 text-white',   inactive: 'bg-white/5 text-white/40 hover:text-amber-400'   },
+                                { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-red-500 text-white',     inactive: 'bg-white/5 text-white/40 hover:text-red-400'     },
                             ]).map(({ s, icon, label, active, inactive }) => (
                                 <button
                                     key={s}
@@ -177,7 +215,7 @@ function StudentCard({ bookingId, attendee, isLarge }: {
                 </div>
             </div>
 
-            {/* Note & Late Minutes Edit Drawer */}
+            {/* Note & Late Minutes Drawer */}
             {showDetails && (
                 <div className="bg-[#14161b] border border-white/10 rounded-2xl p-4 ml-6 space-y-3 animate-in slide-in-from-top-2 duration-200">
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -226,12 +264,15 @@ function StudentCard({ bookingId, attendee, isLarge }: {
 }
 
 // ── Main Kiosk Register ───────────────────────────────────────────────────────
-export default function KioskRegister({ bookings, date, centreName, centres, activeCentreId }: Props) {
+export default function KioskRegister({ slots, date, dateStr, centreName, centres, activeCentreId }: Props) {
     const router = useRouter();
-    const [sessionIdx, setSessionIdx] = useState(0);
+    const [slotIdx, setSlotIdx] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [clock, setClock] = useState(() => new Date());
     const [large, setLarge] = useState(true);
+
+    // Derive a dateStr from date prop if not passed separately
+    const resolvedDateStr = dateStr || new Date().toISOString().slice(0, 10);
 
     // Live clock
     useEffect(() => {
@@ -239,7 +280,7 @@ export default function KioskRegister({ bookings, date, centreName, centres, act
         return () => clearInterval(t);
     }, []);
 
-    // Auto-refresh every 60s to pick up new bookings
+    // Auto-refresh every 60s
     useEffect(() => {
         const t = setInterval(() => router.refresh(), 60_000);
         return () => clearInterval(t);
@@ -255,39 +296,35 @@ export default function KioskRegister({ bookings, date, centreName, centres, act
         }
     };
 
-    const allStudents = bookings.flatMap(b => b.attendees.map(a => ({ ...a, bookingId: b.id })));
-    const totalCount = allStudents.length;
-    const presentCount = allStudents.filter(a => a.attendanceStatus === 'present').length;
-    const absentCount = allStudents.filter(a => a.attendanceStatus === 'absent').length;
-    const lateCount = allStudents.filter(a => a.attendanceStatus === 'late').length;
-    const unmarkedCount = allStudents.filter(a => a.attendanceStatus === null).length;
-    const progressPct = totalCount > 0 ? Math.round(((totalCount - unmarkedCount) / totalCount) * 100) : 0;
+    // Aggregate stats across all slots
+    const allAttendees = slots.flatMap(s => [...s.regulars, ...s.catchups]);
+    const totalCount   = allAttendees.length;
+    const presentCount = allAttendees.filter(a => a.attendanceStatus === 'present').length;
+    const absentCount  = allAttendees.filter(a => a.attendanceStatus === 'absent').length;
+    const lateCount    = allAttendees.filter(a => a.attendanceStatus === 'late').length;
+    const unmarkedCount = allAttendees.filter(a => a.attendanceStatus === null).length;
+    const progressPct  = totalCount > 0 ? Math.round(((totalCount - unmarkedCount) / totalCount) * 100) : 0;
 
-    // If multiple sessions, show per-session view; otherwise flat list
-    const useSessionView = bookings.length > 1;
-    const activeBooking = useSessionView ? bookings[sessionIdx] : null;
-    const displayAttendees = useSessionView
-        ? (activeBooking?.attendees.map(a => ({ ...a, bookingId: activeBooking.id })) ?? [])
-        : allStudents;
+    const activeSlot = slots.length > 0 ? slots[Math.min(slotIdx, slots.length - 1)] : null;
+    const displayAttendees = activeSlot
+        ? [...activeSlot.regulars, ...activeSlot.catchups]
+        : [];
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0f1117] -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
 
-            {/* ── TOP BAR ───────────────────────────────────────────────────── */}
+            {/* ── TOP BAR ─────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c23] border-b border-white/5 flex-shrink-0">
-                {/* Left: date + centre */}
                 <div>
                     <h1 className="text-white font-black text-lg leading-tight">Daily Register</h1>
                     <p className="text-white/40 text-xs mt-0.5">{date} · {centreName}</p>
                 </div>
 
-                {/* Centre: live clock */}
                 <div className="text-white font-black text-3xl tabular-nums tracking-tight">
                     {format(clock, 'HH:mm')}
                     <span className="text-white/20 text-lg ml-1">{format(clock, ':ss')}</span>
                 </div>
 
-                {/* Right: controls */}
                 <div className="flex items-center gap-2">
                     <button onClick={() => router.refresh()} title="Refresh"
                         className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
@@ -314,13 +351,13 @@ export default function KioskRegister({ bookings, date, centreName, centres, act
                 </div>
             </div>
 
-            {/* ── STATS BAR ─────────────────────────────────────────────────── */}
+            {/* ── STATS BAR ──────────────────────────────────────────────── */}
             <div className="flex items-center gap-0 border-b border-white/5 flex-shrink-0">
                 {[
-                    { label: 'Total', value: totalCount, color: 'text-white' },
-                    { label: 'Present', value: presentCount, color: 'text-emerald-400' },
-                    { label: 'Late', value: lateCount, color: 'text-amber-400' },
-                    { label: 'Absent', value: absentCount, color: 'text-red-400' },
+                    { label: 'Total',    value: totalCount,    color: 'text-white' },
+                    { label: 'Present',  value: presentCount,  color: 'text-emerald-400' },
+                    { label: 'Late',     value: lateCount,     color: 'text-amber-400' },
+                    { label: 'Absent',   value: absentCount,   color: 'text-red-400' },
                     { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-orange-400' : 'text-white/30' },
                 ].map((stat, i) => (
                     <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-white/5' : ''}`}>
@@ -328,7 +365,6 @@ export default function KioskRegister({ bookings, date, centreName, centres, act
                         <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{stat.label}</p>
                     </div>
                 ))}
-                {/* Progress */}
                 <div className="flex-1 py-3 px-4 border-l border-white/5">
                     <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Done</p>
@@ -343,59 +379,68 @@ export default function KioskRegister({ bookings, date, centreName, centres, act
                 </div>
             </div>
 
-            {/* ── SESSION TABS (if multiple bookings) ────────────────────────── */}
-            {useSessionView && (
+            {/* ── SESSION SLOT TABS ──────────────────────────────────────── */}
+            {slots.length > 0 && (
                 <div className="flex items-center gap-2 px-6 py-3 border-b border-white/5 overflow-x-auto flex-shrink-0">
-                    {bookings.map((b, i) => {
-                        const bPresent = b.attendees.filter(a => a.attendanceStatus === 'present').length;
-                        const bMarked = b.attendees.filter(a => a.attendanceStatus !== null).length;
-                        const bDone = bMarked === b.attendees.length && b.attendees.length > 0;
+                    {slots.map((slot, i) => {
+                        const slotAll = [...slot.regulars, ...slot.catchups];
+                        const slotPresent = slotAll.filter(a => a.attendanceStatus === 'present').length;
+                        const slotDone = slotAll.length > 0 && slotAll.every(a => a.attendanceStatus !== null);
                         return (
-                            <button key={b.id} onClick={() => setSessionIdx(i)}
+                            <button key={slot.time} onClick={() => setSlotIdx(i)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all ${
-                                    i === sessionIdx
-                                        ? 'bg-primary text-white'
+                                    i === slotIdx
+                                        ? 'bg-[#adc6ff] text-slate-950'
                                         : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
                                 }`}>
-                                {bDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                                {format(new Date(b.startAt), 'h:mm a')}
-                                <span className="text-[11px] opacity-60">{bPresent}/{b.attendees.length}</span>
+                                {slotDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                                {slot.timeLabel}
+                                <span className="text-[11px] opacity-60">{slotPresent}/{slotAll.length}</span>
                             </button>
                         );
                     })}
                 </div>
             )}
 
-            {/* ── STUDENT LIST ──────────────────────────────────────────────── */}
+            {/* ── STUDENT LIST ─────────────────────────────────────────── */}
             <div className="flex-1 overflow-y-auto">
-                {bookings.length === 0 ? (
+                {slots.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center px-8">
                         <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-5">
                             <Users className="w-9 h-9 text-white/20" />
                         </div>
                         <h2 className="text-xl font-black text-white mb-2">No sessions today</h2>
-                        <p className="text-white/40 text-sm max-w-xs">There are no bookings scheduled for today at this centre.</p>
+                        <p className="text-white/40 text-sm max-w-xs">
+                            No children are permanently scheduled for today. Use Attendance to add a catch-up.
+                        </p>
                     </div>
                 ) : displayAttendees.length === 0 ? (
-                    <div className="flex items-center justify-center h-32 text-white/30 text-sm">No students in this session</div>
+                    <div className="flex items-center justify-center h-32 text-white/30 text-sm">No students in this slot</div>
                 ) : (
                     <div className={`grid gap-3 p-6 ${large ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                         {displayAttendees.map(a => (
-                            <StudentCard key={a.id} bookingId={a.bookingId} attendee={a as any} isLarge={large} />
+                            <StudentCard
+                                key={a.id}
+                                attendee={a}
+                                dateStr={resolvedDateStr}
+                                sessionTime={activeSlot!.time}
+                                centreId={activeCentreId}
+                                isLarge={large}
+                            />
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* ── BOTTOM NAV (mobile multi-session) ─────────────────────────── */}
-            {useSessionView && (
+            {/* ── BOTTOM NAV ───────────────────────────────────────────── */}
+            {slots.length > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-white/5 bg-[#1a1c23] flex-shrink-0">
-                    <button onClick={() => setSessionIdx(i => Math.max(0, i - 1))} disabled={sessionIdx === 0}
+                    <button onClick={() => setSlotIdx(i => Math.max(0, i - 1))} disabled={slotIdx === 0}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 text-white font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition-all">
                         <ChevronLeft className="w-4 h-4" /> Previous
                     </button>
-                    <p className="text-white/40 text-sm">Session {sessionIdx + 1} of {bookings.length}</p>
-                    <button onClick={() => setSessionIdx(i => Math.min(bookings.length - 1, i + 1))} disabled={sessionIdx === bookings.length - 1}
+                    <p className="text-white/40 text-sm">Slot {slotIdx + 1} of {slots.length}</p>
+                    <button onClick={() => setSlotIdx(i => Math.min(slots.length - 1, i + 1))} disabled={slotIdx === slots.length - 1}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 text-white font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition-all">
                         Next <ChevronRight className="w-4 h-4" />
                     </button>
