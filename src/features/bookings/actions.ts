@@ -479,3 +479,66 @@ export async function registerWalkInChild(params: {
     revalidatePath('/dashboard/kiosk');
     revalidatePath('/dashboard');
 }
+
+export async function registerExistingChildWalkIn(params: {
+    centreId: string;
+    dateStr: string; // YYYY-MM-DD
+    childId: string;
+    sessionTime: string; // e.g. "15:30"
+}) {
+    const session = await auth();
+    if (!session?.user?.id || !session.user.organisationId) {
+        throw new Error('Unauthorized');
+    }
+
+    const { centreId, dateStr, childId, sessionTime } = params;
+
+    // 1. Verify centre belongs to user's organisation
+    const targetCentre = await db.query.centres.findFirst({
+        where: and(eq(centres.id, centreId), eq(centres.organisationId, session.user.organisationId)),
+    });
+
+    if (!targetCentre) {
+        throw new Error('Centre not found or unauthorized');
+    }
+
+    // 2. Verify child belongs to user's organisation
+    const targetChild = await db.query.children.findFirst({
+        where: and(eq(children.id, childId), eq(children.organisationId, session.user.organisationId)),
+    });
+
+    if (!targetChild) {
+        throw new Error('Child not found or unauthorized');
+    }
+
+    // Calculate booking start time
+    const startAt = new Date(`${dateStr}T${sessionTime}:00`);
+
+    // 3. Perform operations inside a transaction
+    await db.transaction(async (tx) => {
+        // Create Booking
+        const [newBooking] = await tx.insert(bookings).values({
+            organisationId: session.user.organisationId,
+            centreId: centreId,
+            parentId: targetChild.parentId,
+            startAt: startAt,
+            duration: 180, // Default duration 3 hours (after-school slot)
+            status: 'confirmed',
+            modality: 'in_person',
+            billingStatus: 'pending',
+        }).returning();
+
+        // Create Booking Attendee & automatically mark as present
+        await tx.insert(bookingAttendees).values({
+            bookingId: newBooking.id,
+            childId: targetChild.id,
+            attendanceStatus: 'present',
+            attendanceMarkedAt: new Date(),
+            attendanceMarkedBy: session.user.id,
+        });
+    });
+
+    revalidatePath('/dashboard/attendance');
+    revalidatePath('/dashboard/kiosk');
+    revalidatePath('/dashboard');
+}

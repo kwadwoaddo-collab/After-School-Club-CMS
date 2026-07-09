@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { markAttendeeAttendance, registerWalkInChild } from '@/features/bookings/actions';
-import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Edit2, Plus, Search, X, Users, Sparkles } from 'lucide-react';
+import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
+import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Edit2, Plus, Search, X, Users, Sparkles, UserCheck } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
@@ -36,6 +36,17 @@ interface Props {
     slots: CompiledSlot[];
     centreId: string;
     dateStr: string;
+    allStudents?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        schoolYear: string;
+        parentId: string;
+        parentFirstName: string;
+        parentLastName: string;
+        parentEmail: string;
+        parentPhone: string;
+    }[];
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -269,11 +280,16 @@ function AttendeeCard({
     );
 }
 
-export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) {
+export default function AttendanceRollCall({ slots, centreId, dateStr, allStudents = [] }: Props) {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [showWalkIn, setShowWalkIn] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Walk-in Modality Tabs
+    const [walkInTab, setWalkInTab] = useState<'existing' | 'new'>('existing');
+    const [selectedChildId, setSelectedChildId] = useState('');
+    const [studentSearchQuery, setStudentSearchQuery] = useState('');
 
     // Walk-in Form States
     const [formChildFirst, setFormChildFirst] = useState('');
@@ -286,25 +302,46 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
     const [formParentPhone, setFormParentPhone] = useState('');
 
     const handleWalkInSubmit = async () => {
-        if (!formChildFirst || !formChildLast || !formParentFirst || !formParentLast || !formParentEmail) {
-            toast({ title: 'Missing information', message: 'Please fill in all required fields before submitting.', variant: 'warning' });
-            return;
-        }
-
         setIsSubmitting(true);
         try {
-            await registerWalkInChild({
-                centreId,
-                dateStr,
-                childFirstName: formChildFirst,
-                childLastName: formChildLast,
-                schoolYear: formYear,
-                parentFirstName: formParentFirst,
-                parentLastName: formParentLast,
-                parentEmail: formParentEmail,
-                parentPhone: formParentPhone || undefined,
-                sessionTime: formSessionTime,
-            });
+            if (walkInTab === 'existing') {
+                if (!selectedChildId) {
+                    toast({ title: 'No student selected', message: 'Please select a student from the list first.', variant: 'warning' });
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                await registerExistingChildWalkIn({
+                    centreId,
+                    dateStr,
+                    childId: selectedChildId,
+                    sessionTime: formSessionTime,
+                });
+
+                const childObj = allStudents.find(s => s.id === selectedChildId);
+                toast({ title: `${childObj?.firstName || 'Student'} added successfully`, message: 'They have been added to today\'s session.', variant: 'success' });
+            } else {
+                if (!formChildFirst || !formChildLast || !formParentFirst || !formParentLast || !formParentEmail) {
+                    toast({ title: 'Missing information', message: 'Please fill in all required fields before submitting.', variant: 'warning' });
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                await registerWalkInChild({
+                    centreId,
+                    dateStr,
+                    childFirstName: formChildFirst,
+                    childLastName: formChildLast,
+                    schoolYear: formYear,
+                    parentFirstName: formParentFirst,
+                    parentLastName: formParentLast,
+                    parentEmail: formParentEmail,
+                    parentPhone: formParentPhone || undefined,
+                    sessionTime: formSessionTime,
+                });
+
+                toast({ title: `${formChildFirst} registered successfully`, message: 'They have been added to today\'s session.', variant: 'success' });
+            }
 
             // Reset Form & Close Modal
             setFormChildFirst('');
@@ -313,8 +350,9 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
             setFormParentLast('');
             setFormParentEmail('');
             setFormParentPhone('');
+            setSelectedChildId('');
+            setStudentSearchQuery('');
             setShowWalkIn(false);
-            toast({ title: `${formChildFirst} registered successfully`, message: 'They have been added to today\'s session.', variant: 'success' });
         } catch (err: any) {
             toast({ title: 'Could not register student', message: 'Please check the details and try again.', variant: 'error' });
         } finally {
@@ -535,6 +573,32 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
                             </button>
                         </div>
 
+                        {centreId !== 'all' && (
+                            /* Tabs */
+                            <div className="flex border-b border-[#424754]/15 px-6 bg-[#1a1d23]">
+                                <button
+                                    onClick={() => setWalkInTab('existing')}
+                                    className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all ${
+                                        walkInTab === 'existing'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-[#8c909f] hover:text-[#c2c6d6]'
+                                    }`}
+                                >
+                                    Select Existing Student
+                                </button>
+                                <button
+                                    onClick={() => setWalkInTab('new')}
+                                    className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all ${
+                                        walkInTab === 'new'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-[#8c909f] hover:text-[#c2c6d6]'
+                                    }`}
+                                >
+                                    Register New Guest
+                                </button>
+                            </div>
+                        )}
+
                         {/* Form */}
                         <div className="p-6 space-y-4">
                             {centreId === 'all' ? (
@@ -543,108 +607,187 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
                                 </div>
                             ) : (
                                 <>
-                                    {/* Child details */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Child First Name *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formChildFirst}
-                                                onChange={(e) => setFormChildFirst(e.target.value)}
-                                                placeholder="e.g. John"
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Child Last Name *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formChildLast}
-                                                onChange={(e) => setFormChildLast(e.target.value)}
-                                                placeholder="e.g. Doe"
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
+                                    {walkInTab === 'existing' ? (
+                                        <>
+                                            {/* Search input */}
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Search Students</label>
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-3 w-4 h-4 text-[#8c909f]" />
+                                                    <input
+                                                        type="text"
+                                                        value={studentSearchQuery}
+                                                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                                                        placeholder="Search existing students..."
+                                                        className="w-full h-10 pl-9 pr-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">School Year</label>
-                                            <select
-                                                value={formYear}
-                                                onChange={(e) => setFormYear(e.target.value)}
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            >
-                                                {['Nursery', 'Reception', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(yr => (
-                                                    <option key={yr} value={yr} className="bg-[#1a1d23] text-white">Year {yr}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Session Time</label>
-                                            <select
-                                                value={formSessionTime}
-                                                onChange={(e) => setFormSessionTime(e.target.value)}
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            >
-                                                {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
-                                                    <option key={t} value={t} className="bg-[#1a1d23] text-white">{t}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
+                                            {/* List box */}
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Select Student *</label>
+                                                {(() => {
+                                                    const bookedChildIds = new Set(
+                                                        slots.flatMap(s => [...s.regulars, ...s.catchups].map(a => a.childId))
+                                                    );
+                                                    const availableStudents = allStudents.filter(
+                                                        s => !bookedChildIds.has(s.id) &&
+                                                        (`${s.firstName} ${s.lastName}`.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                                                         `${s.parentFirstName} ${s.parentLastName}`.toLowerCase().includes(studentSearchQuery.toLowerCase()))
+                                                    );
 
-                                    {/* Parent details */}
-                                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#424754]/10">
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent First Name *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formParentFirst}
-                                                onChange={(e) => setFormParentFirst(e.target.value)}
-                                                placeholder="e.g. Mary"
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Last Name *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formParentLast}
-                                                onChange={(e) => setFormParentLast(e.target.value)}
-                                                placeholder="e.g. Doe"
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
+                                                    return (
+                                                        <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                                                            {availableStudents.length === 0 ? (
+                                                                <p className="text-xs text-[#8c909f] py-4 text-center border border-dashed border-[#424754]/10 rounded-2xl">
+                                                                    No available students found.
+                                                                </p>
+                                                            ) : (
+                                                                availableStudents.map(student => (
+                                                                    <button
+                                                                        key={student.id}
+                                                                        type="button"
+                                                                        onClick={() => setSelectedChildId(student.id)}
+                                                                        className={`w-full text-left p-3 rounded-xl border text-xs flex justify-between items-center transition-all ${
+                                                                            selectedChildId === student.id
+                                                                                ? 'bg-primary/10 border-primary text-white font-bold'
+                                                                                : 'bg-white/5 border-[#424754]/10 text-slate-300 hover:bg-white/10'
+                                                                        }`}
+                                                                    >
+                                                                        <div>
+                                                                            <div>{student.firstName} {student.lastName} (Year {student.schoolYear})</div>
+                                                                            <div className="text-[10px] text-[#8c909f] font-normal mt-0.5">Parent: {student.parentFirstName} {student.parentLastName} ({student.parentEmail})</div>
+                                                                        </div>
+                                                                        {selectedChildId === student.id && <UserCheck className="w-4 h-4 text-primary" />}
+                                                                    </button>
+                                                                ))
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Email *</label>
-                                            <input
-                                                type="email"
-                                                required
-                                                value={formParentEmail}
-                                                onChange={(e) => setFormParentEmail(e.target.value)}
-                                                placeholder="e.g. mary@gmail.com"
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Phone</label>
-                                            <input
-                                                type="tel"
-                                                value={formParentPhone}
-                                                onChange={(e) => setFormParentPhone(e.target.value)}
-                                                placeholder="e.g. 07123456789"
-                                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
+                                            {/* Session time */}
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Session Time</label>
+                                                <select
+                                                    value={formSessionTime}
+                                                    onChange={(e) => setFormSessionTime(e.target.value)}
+                                                    className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                >
+                                                    {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
+                                                        <option key={t} value={t} className="bg-[#1a1d23] text-white">{t}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {/* Child details */}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Child First Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={formChildFirst}
+                                                        onChange={(e) => setFormChildFirst(e.target.value)}
+                                                        placeholder="e.g. John"
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Child Last Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={formChildLast}
+                                                        onChange={(e) => setFormChildLast(e.target.value)}
+                                                        placeholder="e.g. Doe"
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">School Year</label>
+                                                    <select
+                                                        value={formYear}
+                                                        onChange={(e) => setFormYear(e.target.value)}
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    >
+                                                        {['Nursery', 'Reception', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(yr => (
+                                                            <option key={yr} value={yr} className="bg-[#1a1d23] text-white">Year {yr}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Session Time</label>
+                                                    <select
+                                                        value={formSessionTime}
+                                                        onChange={(e) => setFormSessionTime(e.target.value)}
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    >
+                                                        {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
+                                                            <option key={t} value={t} className="bg-[#1a1d23] text-white">{t}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {/* Parent details */}
+                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#424754]/10">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent First Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={formParentFirst}
+                                                        onChange={(e) => setFormParentFirst(e.target.value)}
+                                                        placeholder="e.g. Mary"
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Last Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={formParentLast}
+                                                        onChange={(e) => setFormParentLast(e.target.value)}
+                                                        placeholder="e.g. Doe"
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Email *</label>
+                                                    <input
+                                                        type="email"
+                                                        required
+                                                        value={formParentEmail}
+                                                        onChange={(e) => setFormParentEmail(e.target.value)}
+                                                        placeholder="e.g. mary@gmail.com"
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Phone</label>
+                                                    <input
+                                                        type="tel"
+                                                        value={formParentPhone}
+                                                        onChange={(e) => setFormParentPhone(e.target.value)}
+                                                        placeholder="e.g. 07123456789"
+                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -664,7 +807,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
                                     className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-700 disabled:opacity-55 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
                                 >
                                     {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                    Register & Check In
+                                    {walkInTab === 'existing' ? 'Add to Register' : 'Register & Check In'}
                                 </button>
                             )}
                         </div>

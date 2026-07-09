@@ -328,6 +328,17 @@ export default async function AttendancePage(props: {
                 slots={sortedSlots as any}
                 centreId={activeCentreId}
                 dateStr={targetStr}
+                allStudents={allChildrenAtCentre.map(c => ({
+                    id: c.id,
+                    firstName: c.firstName,
+                    lastName: c.lastName,
+                    schoolYear: c.schoolYear,
+                    parentId: c.parentId,
+                    parentFirstName: c.parent?.firstName ?? '',
+                    parentLastName: c.parent?.lastName ?? '',
+                    parentEmail: c.parent?.email ?? '',
+                    parentPhone: c.parent?.phone ?? '',
+                }))}
             />
         </div>
     );
