@@ -78,7 +78,7 @@ export default async function CentresPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">Centres</h1>
                     <p className="text-on-surface-variant font-medium mt-1">
-                        Manage your assessment centres and locations
+                        Manage your club centres and locations
                     </p>
                 </div>
                 <Link
@@ -97,7 +97,7 @@ export default async function CentresPage() {
                     </div>
                     <h3 className="text-xl font-bold text-white mb-2">No centres yet</h3>
                     <p className="text-on-surface-variant mb-6">
-                        Get started by adding your first assessment centre
+                        Get started by adding your first centre
                     </p>
                     <Link
                         href="/dashboard/centres/add"

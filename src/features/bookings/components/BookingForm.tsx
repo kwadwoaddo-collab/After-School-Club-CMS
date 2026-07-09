@@ -65,7 +65,7 @@ function ErrorAlert({ message, onDismiss }: { message: string; onDismiss: () => 
     );
 }
 
-const SUBJECTS = ['Maths', 'English', 'Science', 'Other'] as const;
+const SUBJECTS = ['Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech', 'Other'] as const;
 const DEFAULT_DURATION = 60;
 const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
@@ -720,7 +720,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                     {isSelected && childFormIndex !== -1 && (
                                                         <div className="pt-4 border-t border-gray-200/65 space-y-4 animate-fadeIn">
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-slate-800 mb-2">Subjects for Assessment *</label>
+                                                                <label className="block text-sm font-semibold text-slate-800 mb-2">Club Activities / Interests *</label>
                                                                 <Controller
                                                                     name={`children.${childFormIndex}.subjects`}
                                                                     control={control}
@@ -803,7 +803,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-slate-800 mb-2">Subjects for Assessment *</label>
+                                                <label className="block text-sm font-medium text-slate-800 mb-2">Club Activities / Interests *</label>
                                                 <Controller
                                                     name={`children.${index}.subjects`}
                                                     control={control}
@@ -948,8 +948,8 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             <span className="font-medium text-gray-900">{child.firstName} {child.lastName}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-gray-500">Subjects</span>
-                                            <span className="font-medium text-gray-900">{child.subjects?.join(', ') || 'No subjects'}</span>
+                                            <span className="text-gray-500">Activities / Interests</span>
+                                            <span className="font-medium text-gray-900">{child.subjects?.join(', ') || 'None selected'}</span>
                                         </div>
                                     </div>
                                 ))}

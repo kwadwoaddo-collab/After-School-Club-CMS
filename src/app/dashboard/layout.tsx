@@ -19,7 +19,7 @@ const ROUTE_PERMISSIONS: Record<string, string[]> = {
     '/dashboard/settings': ['ORG_OWNER'],
     '/dashboard/centres': ['ORG_OWNER', 'MANAGER'],
     '/dashboard/bookings/new': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
-    '/dashboard/booking-link': ['ORG_OWNER', 'MANAGER'],
+    '/dashboard/share': ['ORG_OWNER', 'MANAGER'],
     // Student data — tutors cannot access
     '/dashboard/students': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
     '/dashboard/registrations': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],

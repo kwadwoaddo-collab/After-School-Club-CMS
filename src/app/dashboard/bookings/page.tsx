@@ -251,7 +251,7 @@ export default async function BookingsPage(props: {
                         <span className="hidden sm:inline">Export CSV</span>
                     </Link>
                     <Link href="/dashboard/bookings/new" className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn">
-                        <Plus className="w-4 h-4" /> New Assessment
+                        <Plus className="w-4 h-4" /> New Booking
                     </Link>
                 </div>
             </div>

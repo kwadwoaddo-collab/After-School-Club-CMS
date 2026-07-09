@@ -77,7 +77,7 @@ export default function ReportsClient() {
                 item.feedbackScore || 'N/A'
             ]);
 
-            downloadCSV(headers, rows, `assessment_bookings_${filter}_${new Date().toISOString().split('T')[0]}.csv`);
+            downloadCSV(headers, rows, `session_bookings_${filter}_${new Date().toISOString().split('T')[0]}.csv`);
 
             if (filter === 'custom') {
                 setShowCustomRangeBooking(false);
@@ -188,7 +188,7 @@ export default function ReportsClient() {
                     </div>
                     <div>
                         <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Export Bookings</h2>
-                        <p className="text-sm text-[#8c909f] mt-1">Download assessment schedules and records</p>
+                        <p className="text-sm text-[#8c909f] mt-1">Download session schedules and records</p>
                     </div>
                 </div>
 

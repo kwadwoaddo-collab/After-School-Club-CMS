@@ -25,7 +25,7 @@ const ROLES: RoleOption[] = [
         value: 'TUTOR',
         label: 'Tutor',
         description: 'Teaching staff with limited access to their sessions only.',
-        permissions: ['View assigned sessions', 'Mark attendance', 'Add assessment feedback', 'Access kiosk'],
+        permissions: ['View assigned sessions', 'Mark attendance', 'Add session feedback', 'Access kiosk'],
         icon: <GraduationCap className="w-5 h-5" />,
         color: 'text-emerald-400',
         bg: 'bg-emerald-500/5',

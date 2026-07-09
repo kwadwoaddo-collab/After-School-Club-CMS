@@ -249,14 +249,7 @@ export default function DiscountsForm() {
  
     return (
         <div className="max-w-2xl space-y-6 animate-in fade-in duration-500">
-            {/* Header */}
             <div className="flex items-center gap-3">
-                <button
-                    onClick={() => router.back()}
-                    className="w-8 h-8 rounded-xl bg-surface-container-high border border-outline-variant/10 flex items-center justify-center hover:border-outline-variant/30 transition-all"
-                >
-                    <ChevronLeft className="w-4 h-4 text-on-surface-variant" />
-                </button>
                 <div>
                     <h1 className="text-2xl font-bold text-white tracking-tight">Discount Rules</h1>
                     <p className="text-sm text-on-surface-variant mt-0.5">

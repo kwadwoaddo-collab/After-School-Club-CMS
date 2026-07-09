@@ -47,10 +47,7 @@ export default function RegistrationTermsForm() {
  
     return (
         <div className="max-w-3xl mx-auto p-6 space-y-8 animate-in fade-in duration-700">
-            {/* Back link */}
-            <Link href="/dashboard/settings" className="inline-flex items-center gap-2 text-[#8c909f] hover:text-white text-sm transition-colors mb-8">
-                <ArrowLeft className="w-4 h-4" /> Back to Settings
-            </Link>
+
  
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div className="flex items-center gap-4">

@@ -69,7 +69,7 @@ export default function InviteStaffPage() {
         {
             value: 'TUTOR',
             label: 'Tutor',
-            description: 'Can view assessments and add feedback',
+            description: 'Can view sessions and add feedback',
             color: 'amber',
         },
     ];

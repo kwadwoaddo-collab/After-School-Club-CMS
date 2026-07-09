@@ -22,6 +22,7 @@ import {
     MapPin,
     Layers,
     Monitor,
+    Share2,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -157,24 +158,13 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         />
                                     </button>
                                     <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${quickActionsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                        {allowedActions.includes('booking-link') && (
-                                            <Link
-                                                href="/dashboard/booking-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#adc6ff]/8 transition-all text-sm font-semibold group"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                                                Booking Link
-                                            </Link>
-                                        )}
-                                        {allowedActions.includes('registration-link') && (
-                                            <Link
-                                                href="/dashboard/registration-link"
-                                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#adc6ff]/8 transition-all text-sm font-semibold group"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                                                Registration Link
-                                            </Link>
-                                        )}
+                                        <Link
+                                            href="/dashboard/share"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#adc6ff]/8 transition-all text-sm font-semibold group"
+                                        >
+                                            <Share2 className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                            Share Portals
+                                        </Link>
                                     </div>
                                 </div>
                             )}
@@ -397,7 +387,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             Need help with bookings or payments?
                         </p>
                         <a
-                            href="mailto:support@afterschool.com"
+                            href="mailto:support@sprintscaleit.co.uk"
                             className="mt-3 text-xs font-bold text-[#adc6ff] hover:text-[#6b9dff] transition-colors inline-flex items-center gap-1"
                         >
                             CONTACT SUPPORT <span aria-hidden>→</span>

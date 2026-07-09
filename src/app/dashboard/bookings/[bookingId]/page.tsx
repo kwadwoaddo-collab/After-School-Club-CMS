@@ -123,7 +123,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-white tracking-tight">Booking Details</h1>
-                    <p className="text-slate-300 font-medium mt-1">View and manage assessment booking</p>
+                    <p className="text-slate-300 font-medium mt-1">View and manage booking</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Link href={`/dashboard/bookings/${bookingId}/reschedule`} className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all">
@@ -194,7 +194,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0"><Calendar className="w-6 h-6 text-primary" /></div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Assessment Date</p>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Session Date</p>
                                             <p className="text-lg font-bold text-white">{booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d, yyyy') : 'Date TBD'}</p>
                                         </div>
                                     </div>
@@ -240,7 +240,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Parent Name</p>
                             <p className="text-base font-bold text-white">{booking.parent.firstName} {booking.parent.lastName}</p>
-                            <p className="text-xs text-primary font-semibold mt-1">Assessment Point of Contact</p>
+                            <p className="text-xs text-primary font-semibold mt-1">Primary Point of Contact</p>
                         </div>
                     </div>
 

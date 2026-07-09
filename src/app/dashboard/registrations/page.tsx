@@ -11,7 +11,7 @@ import RegistrationsFilters from '@/components/registration/RegistrationsFilters
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeString } from '@/lib/search-params';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import { FileText, Clock, CheckCircle2, AlertTriangle, Settings } from 'lucide-react';
+import { FileText, Clock, CheckCircle2, AlertTriangle, Share2 } from 'lucide-react';
 
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
@@ -172,19 +172,30 @@ export default async function RegistrationsPage(props: {
                         {rows.length} total submission{rows.length !== 1 ? 's' : ''} {isFiltered ? 'matching filters' : ''}
                     </p>
                 </div>
-                {fullRegistrationUrl && (
-                    <Link
-                        href={fullRegistrationUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] rounded-2xl text-sm font-bold text-[#e5e2e1] hover:bg-[#353535] transition-all border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#adc6ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        Open Registration Form
-                    </Link>
-                )}
+                <div className="flex items-center gap-3">
+                    {fullRegistrationUrl && (
+                        <>
+                            <Link
+                                href="/dashboard/share"
+                                className="flex items-center gap-2 px-5 py-3 bg-[#2a2a2a] hover:bg-[#353535] text-[#adc6ff] hover:text-[#6b9dff] text-sm font-bold rounded-2xl transition-all border border-[#424754]/15 shadow-sm"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                Share Form
+                            </Link>
+                            <Link
+                                href={fullRegistrationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Open Form
+                            </Link>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Stats Overview */}
@@ -227,26 +238,7 @@ export default async function RegistrationsPage(props: {
                 </div>
             </div>
 
-            {/* Registration link card */}
-            {fullRegistrationUrl && registrationUrl && (
-                <div className="bg-[#1a1d23] border border-[#424754]/15 rounded-[24px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
-                    <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-[#adc6ff] uppercase tracking-wider mb-1">Your Registration Link</p>
-                        <p className="text-sm text-[#e5e2e1] font-mono truncate">{registrationUrl}</p>
-                        <p className="text-xs text-[#8c909f] mt-1 font-medium">Share this link with parents to let them register their children.</p>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                        <CopyRegistrationLink url={fullRegistrationUrl} />
-                        <Link
-                            href="/dashboard/settings/registration"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2a2a2a] border border-[#424754]/15 text-[#e5e2e1] hover:bg-[#353535] text-sm font-bold rounded-2xl transition-all shadow-sm"
-                        >
-                            <Settings className="w-4 h-4 text-[#adc6ff]" />
-                            Edit Settings
-                        </Link>
-                    </div>
-                </div>
-            )}
+
 
             {/* Filters */}
             <div className="bg-[#1a1d23] border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] rounded-3xl p-6">

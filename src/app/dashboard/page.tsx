@@ -458,7 +458,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         {
             id: 'first-booking',
             label: 'Create your first booking',
-            description: 'Schedule an assessment or session for a student.',
+            description: 'Schedule a session for a student.',
             href: '/dashboard/bookings/new',
             done: totalBookingsAll > 0,
         },
@@ -538,7 +538,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                     <CalendarCheck className="w-6 h-6 text-secondary" />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold text-white text-lg leading-tight">Assessments & Bookings</h2>
+                                    <h2 className="font-bold text-white text-lg leading-tight">Sessions & Bookings</h2>
                                     <p className="text-sm text-on-surface-variant font-medium mt-1">Manage schedules and attendance</p>
                                 </div>
                             </div>
@@ -642,7 +642,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             href="/dashboard/bookings"
                             className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10"
                         >
-                            View All Assessments <ArrowRight className="w-4 h-4" />
+                            View All Bookings <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
 
