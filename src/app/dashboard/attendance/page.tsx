@@ -127,19 +127,11 @@ export default async function AttendancePage(props: {
                 </div>
             )}
 
-            {/* Empty state */}
-            {dayBookings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-[#1a1d23] rounded-2xl border border-dashed border-[#424754]/30">
-                    <div className="w-16 h-16 rounded-2xl bg-[#2a2a2a] flex items-center justify-center mb-4"><Users className="w-7 h-7 text-[#424754]" /></div>
-                    <h3 className="text-[#e5e2e1] font-bold mb-2">No sessions scheduled</h3>
-                    <p className="text-[#8c909f] text-sm max-w-xs">There are no bookings for {format(targetDate, 'EEEE, d MMMM')}. Use the arrows above to navigate to a different day.</p>
-                    <Link href="/dashboard/bookings/new" className="mt-5 inline-flex items-center gap-2 px-6 py-2.5 bg-[#adc6ff]/10 border border-[#adc6ff]/20 text-[#adc6ff] rounded-xl text-sm font-bold hover:bg-[#adc6ff]/20 transition-all">
-                        Create a booking
-                    </Link>
-                </div>
-            ) : (
-                <AttendanceRollCall bookings={dayBookings as any} />
-            )}
+            <AttendanceRollCall
+                bookings={dayBookings as any}
+                centreId={activeCentreId}
+                dateStr={targetStr}
+            />
         </div>
     );
 }

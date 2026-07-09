@@ -268,3 +268,108 @@ export async function getExportData() {
         .where(eq(centres.organisationId, session.user.organisationId))
         .orderBy(desc(bookings.startAt));
 }
+
+export async function registerWalkInChild(params: {
+    centreId: string;
+    dateStr: string; // YYYY-MM-DD
+    childFirstName: string;
+    childLastName: string;
+    schoolYear: string;
+    parentFirstName: string;
+    parentLastName: string;
+    parentEmail: string;
+    parentPhone?: string;
+    sessionTime: string; // e.g. "15:30"
+}) {
+    const session = await auth();
+    if (!session?.user?.id || !session.user.organisationId) {
+        throw new Error('Unauthorized');
+    }
+
+    const {
+        centreId,
+        dateStr,
+        childFirstName,
+        childLastName,
+        schoolYear,
+        parentFirstName,
+        parentLastName,
+        parentEmail,
+        parentPhone,
+        sessionTime,
+    } = params;
+
+    // 1. Verify centre belongs to user's organisation
+    const targetCentre = await db.query.centres.findFirst({
+        where: and(eq(centres.id, centreId), eq(centres.organisationId, session.user.organisationId)),
+    });
+
+    if (!targetCentre) {
+        throw new Error('Centre not found or unauthorized');
+    }
+
+    // 2. Perform operations in a transaction for integrity
+    await db.transaction(async (tx) => {
+        // Find or create parent
+        let pId: string;
+        const existingParent = await tx.query.parents.findFirst({
+            where: and(
+                eq(parents.email, parentEmail),
+                eq(parents.organisationId, session.user.organisationId)
+            ),
+        });
+
+        if (existingParent) {
+            pId = existingParent.id;
+        } else {
+            const [newParent] = await tx.insert(parents).values({
+                firstName: parentFirstName,
+                lastName: parentLastName,
+                email: parentEmail,
+                phone: parentPhone || null,
+                organisationId: session.user.organisationId,
+                preferredContact: 'email',
+            }).returning();
+            pId = newParent.id;
+        }
+
+        // Create child
+        const [newChild] = await tx.insert(children).values({
+            parentId: pId,
+            organisationId: session.user.organisationId,
+            centreId: centreId,
+            firstName: childFirstName,
+            lastName: childLastName,
+            schoolYear: schoolYear,
+        }).returning();
+
+        // Calculate booking start time
+        // dateStr is YYYY-MM-DD, sessionTime is HH:MM
+        const startAt = new Date(`${dateStr}T${sessionTime}:00`);
+
+        // Create Booking
+        const [newBooking] = await tx.insert(bookings).values({
+            organisationId: session.user.organisationId,
+            centreId: centreId,
+            parentId: pId,
+            startAt: startAt,
+            duration: 180, // Default duration 3 hours (after-school slot)
+            status: 'confirmed',
+            modality: 'in_person',
+            billingStatus: 'pending',
+        }).returning();
+
+        // Create Booking Attendee & automatically check in
+        await tx.insert(bookingAttendees).values({
+            bookingId: newBooking.id,
+            childId: newChild.id,
+            attendanceStatus: 'present',
+            attendanceMarkedAt: new Date(),
+            attendanceMarkedBy: session.user.id,
+        });
+    });
+
+    revalidatePath('/dashboard/attendance');
+    revalidatePath('/dashboard/kiosk');
+    revalidatePath('/dashboard');
+}
