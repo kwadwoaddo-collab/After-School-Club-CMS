@@ -91,44 +91,47 @@ export async function POST(req: NextRequest) {
         // Hash Password
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // 1. Create Organisation
-        const [newOrg] = await db.insert(organisations).values({
-            name: organisationName,
-            slug: slug,
-            contactEmail: contactEmail,
-            contactPhone: contactPhone || null,
-            website: website || null,
-            privacyPolicyUrl: privacyPolicyUrl || null,
-            address: address || null,
-            description: description || null,
-            logoUrl: logoUrl || null,
-        }).returning();
+        // Execute insertions atomically inside a transaction
+        await db.transaction(async (tx) => {
+            // 1. Create Organisation
+            const [newOrg] = await tx.insert(organisations).values({
+                name: organisationName,
+                slug: slug,
+                contactEmail: contactEmail,
+                contactPhone: contactPhone || null,
+                website: website || null,
+                privacyPolicyUrl: privacyPolicyUrl || null,
+                address: address || null,
+                description: description || null,
+                logoUrl: logoUrl || null,
+            }).returning();
 
-        // 2. Create User (Org Owner)
-        await db.insert(users).values({
-            organisationId: newOrg.id,
-            email: contactEmail,
-            firstName: firstName,
-            lastName: lastName,
-            role: 'ORG_OWNER',
-            passwordHash: passwordHash,
-        });
+            // 2. Create User (Org Owner)
+            await tx.insert(users).values({
+                organisationId: newOrg.id,
+                email: contactEmail,
+                firstName: firstName,
+                lastName: lastName,
+                role: 'ORG_OWNER',
+                passwordHash: passwordHash,
+            });
 
-        // 3. Create Default Centre
-        await db.insert(centres).values({
-            organisationId: newOrg.id,
-            name: `${organisationName} Main`,
-            slug: slug, // Default centre slug matches org slug for simplicity in standard URLs
-            address: address || null,
-            operatingHours: JSON.stringify({
-                monday: { start: '11:00', end: '18:30' },
-                tuesday: { start: '11:00', end: '18:30' },
-                wednesday: { start: '11:00', end: '18:30' },
-                thursday: { start: '11:00', end: '18:30' },
-                friday: { start: '11:00', end: '18:30' },
-                saturday: { start: '11:00', end: '18:30' },
-                sunday: { start: '11:00', end: '18:30' },
-            })
+            // 3. Create Default Centre
+            await tx.insert(centres).values({
+                organisationId: newOrg.id,
+                name: `${organisationName} Main`,
+                slug: slug, // Default centre slug matches org slug for simplicity in standard URLs
+                address: address || null,
+                operatingHours: JSON.stringify({
+                    monday: { start: '11:00', end: '18:30' },
+                    tuesday: { start: '11:00', end: '18:30' },
+                    wednesday: { start: '11:00', end: '18:30' },
+                    thursday: { start: '11:00', end: '18:30' },
+                    friday: { start: '11:00', end: '18:30' },
+                    saturday: { start: '11:00', end: '18:30' },
+                    sunday: { start: '11:00', end: '18:30' },
+                })
+            });
         });
 
         const response = NextResponse.json({

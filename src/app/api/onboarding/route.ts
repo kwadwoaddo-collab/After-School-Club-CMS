@@ -38,25 +38,35 @@ export async function POST(req: Request) {
         const orgSlug = generateSlug(data.organisationName);
         const centreSlug = generateSlug(data.centreName);
 
-        // 1. Create Organisation
-        const [org] = await db.insert(organisations).values({
-            name: data.organisationName,
-            slug: orgSlug,
-            brandColor: data.brandColor,
-            logoUrl: data.logoUrl,
-        }).returning();
+        // 1. Execute database operations atomically in a transaction
+        const org = await db.transaction(async (tx) => {
+            // Create Organisation
+            const [newOrg] = await tx.insert(organisations).values({
+                name: data.organisationName,
+                slug: orgSlug,
+                brandColor: data.brandColor,
+                logoUrl: data.logoUrl,
+            }).returning();
 
-        // 2. Create Centre
-        await db.insert(centres).values({
-            organisationId: org.id,
-            name: data.centreName,
-            slug: centreSlug,
+            // Create Centre
+            await tx.insert(centres).values({
+                organisationId: newOrg.id,
+                name: data.centreName,
+                slug: centreSlug,
+            });
+
+            // Update User and verify update succeeded
+            const [updatedUser] = await tx.update(users)
+                .set({ organisationId: newOrg.id, role: 'ORG_OWNER' })
+                .where(eq(users.id, session.user.id))
+                .returning();
+
+            if (!updatedUser) {
+                throw new Error('User not found or update failed');
+            }
+
+            return newOrg;
         });
-
-        // 3. Update User
-        await db.update(users)
-            .set({ organisationId: org.id, role: 'ORG_OWNER' })
-            .where(eq(users.id, session.user.id));
 
         return NextResponse.json({ success: true, orgId: org.id });
     } catch (error: any) {
