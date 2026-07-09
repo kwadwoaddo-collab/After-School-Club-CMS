@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/ToastProvider';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | null;
 
@@ -55,12 +56,14 @@ function StudentCard({
     sessionTime,
     centreId,
     isLarge,
+    onToast,
 }: {
     attendee: Attendee;
     dateStr: string;
     sessionTime: string;
     centreId: string;
     isLarge: boolean;
+    onToast: ReturnType<typeof useToast>['toast'];
 }) {
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string>(attendee.id);
@@ -98,7 +101,7 @@ function StudentCard({
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
             } catch (err: any) {
-                alert(err.message || 'Failed to mark attendance');
+                onToast({ title: 'Could not mark attendance', message: 'Please try again or refresh.', variant: 'error' });
             }
         });
     };
@@ -124,7 +127,7 @@ function StudentCard({
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
             } catch (err: any) {
-                alert(err.message || 'Failed to save');
+                onToast({ title: 'Could not save details', message: 'Please try again.', variant: 'error' });
             }
         });
     };
@@ -266,6 +269,7 @@ function StudentCard({
 // ── Main Kiosk Register ───────────────────────────────────────────────────────
 export default function KioskRegister({ slots, date, dateStr, centreName, centres, activeCentreId }: Props) {
     const router = useRouter();
+    const { toast } = useToast();
     const [slotIdx, setSlotIdx] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [clock, setClock] = useState(() => new Date());
@@ -426,6 +430,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                                 sessionTime={activeSlot!.time}
                                 centreId={activeCentreId}
                                 isLarge={large}
+                                onToast={toast}
                             />
                         ))}
                     </div>

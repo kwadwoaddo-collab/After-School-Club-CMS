@@ -1,20 +1,26 @@
 'use client';
 
-import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
+import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type ToastVariant = 'success' | 'error' | 'info';
+export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
-export interface Toast {
+export interface ToastOptions {
+    title: string;
+    message?: string;
+    variant?: ToastVariant;
+}
+
+export interface Toast extends Required<ToastOptions> {
     id: string;
-    message: string;
-    variant: ToastVariant;
 }
 
 interface ToastContextValue {
     toasts: Toast[];
-    toast: (message: string, variant?: ToastVariant) => void;
+    /** Primary API: toast({ title, message?, variant? }) */
+    toast: (options: ToastOptions | string, variant?: ToastVariant) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -34,64 +40,158 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const toast = useCallback((message: string, variant: ToastVariant = 'info') => {
+    const toast = useCallback((options: ToastOptions | string, variantArg: ToastVariant = 'info') => {
+        // Support legacy string signature: toast('message', 'error')
+        const normalized: Omit<Toast, 'id'> =
+            typeof options === 'string'
+                ? { title: options, message: '', variant: variantArg }
+                : { title: options.title, message: options.message ?? '', variant: options.variant ?? 'info' };
+
         const id = Math.random().toString(36).slice(2);
-        setToasts(prev => [...prev, { id, message, variant }]);
+        setToasts(prev => [...prev, { ...normalized, id }]);
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 4000);
     }, []);
 
+    const dismiss = useCallback((id: string) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, []);
+
     return (
         <ToastContext.Provider value={{ toasts, toast }}>
             {children}
-            {/* Toast Container — bottom-center on mobile (above bottom nav), top-right on desktop */}
+            {/* Toast Container — top-right */}
             <div
-                className="fixed bottom-20 left-4 right-4 sm:bottom-auto sm:top-4 sm:left-auto sm:right-4 z-[9999] flex flex-col gap-2 pointer-events-none items-center sm:items-end"
+                className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none items-end"
                 role="status"
                 aria-live="polite"
                 aria-atomic="false"
             >
                 {toasts.map(t => (
-                    <ToastItem key={t.id} toast={t} onDismiss={() => setToasts(prev => prev.filter(x => x.id !== t.id))} />
+                    <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
                 ))}
             </div>
         </ToastContext.Provider>
     );
 }
 
+// ─── Variant config ───────────────────────────────────────────────────────────
+
+const VARIANT_CONFIG: Record<ToastVariant, {
+    icon: React.ComponentType<{ className?: string }>;
+    iconClass: string;
+    border: string;
+    titleClass: string;
+}> = {
+    success: {
+        icon: CheckCircle2,
+        iconClass: 'text-emerald-400',
+        border: 'border-emerald-500/25',
+        titleClass: 'text-emerald-400',
+    },
+    error: {
+        icon: XCircle,
+        iconClass: 'text-red-400',
+        border: 'border-red-500/25',
+        titleClass: 'text-red-400',
+    },
+    warning: {
+        icon: AlertTriangle,
+        iconClass: 'text-amber-400',
+        border: 'border-amber-500/25',
+        titleClass: 'text-amber-400',
+    },
+    info: {
+        icon: Info,
+        iconClass: 'text-[#adc6ff]',
+        border: 'border-[#adc6ff]/25',
+        titleClass: 'text-[#adc6ff]',
+    },
+};
+
 // ─── Toast Item ───────────────────────────────────────────────────────────────
 
-const ICONS: Record<ToastVariant, string> = {
-    success: '✓',
-    error: '✕',
-    info: 'ℹ',
-};
+function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+    const [visible, setVisible] = useState(false);
 
-const STYLES: Record<ToastVariant, string> = {
-    success: 'bg-emerald-600 text-white border-emerald-700',
-    error:   'bg-red-600 text-white border-red-700',
-    info:    'bg-slate-800 text-white border-slate-900',
-};
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => setVisible(true));
+        return () => cancelAnimationFrame(raf);
+    }, []);
 
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+    const cfg = VARIANT_CONFIG[t.variant];
+    const Icon = cfg.icon;
+
     return (
         <div
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-sm font-semibold
-                        animate-in slide-in-from-top-2 duration-300 ${STYLES[toast.variant]}`}
-            style={{ minWidth: 260, maxWidth: 400 }}
+            className={`
+                pointer-events-auto w-[340px] max-w-[calc(100vw-2rem)]
+                bg-[#1a1d23] border ${cfg.border}
+                rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45)]
+                transition-all duration-300
+                ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}
+                overflow-hidden
+            `}
+            role="alert"
         >
-            <span className="w-6 h-6 flex items-center justify-center bg-white/20 rounded-full text-xs font-bold flex-shrink-0">
-                {ICONS[toast.variant]}
-            </span>
-            <span className="flex-1">{toast.message}</span>
-            <button
-                onClick={onDismiss}
-                className="opacity-70 hover:opacity-100 transition-opacity flex-shrink-0 text-base leading-none"
-                aria-label="Dismiss"
-            >
-                ✕
-            </button>
+            <div className="flex items-start gap-3 p-4">
+                <div className={`flex-shrink-0 mt-0.5 ${cfg.iconClass}`}>
+                    <Icon className="w-5 h-5" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-bold leading-snug ${cfg.titleClass}`}>
+                        {t.title}
+                    </p>
+                    {t.message && (
+                        <p className="text-[#8c909f] text-xs mt-1 leading-relaxed">
+                            {t.message}
+                        </p>
+                    )}
+                </div>
+
+                <button
+                    onClick={onDismiss}
+                    className="flex-shrink-0 p-1 rounded-lg text-[#8c909f] hover:text-white hover:bg-white/5 transition-all"
+                    aria-label="Dismiss notification"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Auto-dismiss progress bar */}
+            <ProgressBar duration={4000} />
+        </div>
+    );
+}
+
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+
+function ProgressBar({ duration }: { duration: number }) {
+    const [width, setWidth] = useState(100);
+
+    useEffect(() => {
+        const start = performance.now();
+        let raf: number;
+
+        const step = (now: number) => {
+            const elapsed = now - start;
+            const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+            setWidth(remaining);
+            if (remaining > 0) raf = requestAnimationFrame(step);
+        };
+
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [duration]);
+
+    return (
+        <div className="h-0.5 bg-white/5 w-full">
+            <div
+                className="h-full bg-white/20"
+                style={{ width: `${width}%`, transition: 'none' }}
+            />
         </div>
     );
 }

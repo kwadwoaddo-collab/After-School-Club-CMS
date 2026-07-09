@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild } from '@/features/bookings/actions';
 import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Edit2, Plus, Search, X, Users, Sparkles } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
 
@@ -50,11 +51,13 @@ function AttendeeCard({
     dateStr,
     sessionTime,
     centreId,
+    onToast,
 }: {
     attendee: Attendee;
     dateStr: string;
     sessionTime: string;
     centreId: string;
+    onToast: ReturnType<typeof useToast>['toast'];
 }) {
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string | null>(attendee.id);
@@ -94,7 +97,7 @@ function AttendeeCard({
                 setSaved(true);
                 setTimeout(() => setSaved(false), 2000);
             } catch (err: any) {
-                alert(err.message || 'Failed to mark attendance');
+                onToast({ title: 'Could not mark attendance', message: 'Please try again. If the problem continues, refresh the page.', variant: 'error' });
             }
         });
     };
@@ -122,7 +125,7 @@ function AttendeeCard({
                 setSaved(true);
                 setTimeout(() => setSaved(false), 2000);
             } catch (err: any) {
-                alert(err.message || 'Failed to save notes');
+                onToast({ title: 'Could not save details', message: 'Please try again.', variant: 'error' });
             }
         });
     };
@@ -267,6 +270,7 @@ function AttendeeCard({
 }
 
 export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) {
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [showWalkIn, setShowWalkIn] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -283,7 +287,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
 
     const handleWalkInSubmit = async () => {
         if (!formChildFirst || !formChildLast || !formParentFirst || !formParentLast || !formParentEmail) {
-            alert('Please fill out all required fields.');
+            toast({ title: 'Missing information', message: 'Please fill in all required fields before submitting.', variant: 'warning' });
             return;
         }
 
@@ -310,8 +314,9 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
             setFormParentEmail('');
             setFormParentPhone('');
             setShowWalkIn(false);
+            toast({ title: `${formChildFirst} registered successfully`, message: 'They have been added to today\'s session.', variant: 'success' });
         } catch (err: any) {
-            alert(err.message || 'Failed to register walk-in child');
+            toast({ title: 'Could not register student', message: 'Please check the details and try again.', variant: 'error' });
         } finally {
             setIsSubmitting(false);
         }
@@ -468,6 +473,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
                                                     centreId={centreId}
+                                                    onToast={toast}
                                                 />
                                             ))}
                                         </div>
@@ -499,6 +505,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr }: Props) 
                                                     dateStr={dateStr}
                                                     sessionTime={slot.time}
                                                     centreId={centreId}
+                                                    onToast={toast}
                                                 />
                                             ))}
                                         </div>

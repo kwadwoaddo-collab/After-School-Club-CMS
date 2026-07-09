@@ -25,6 +25,7 @@ import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import { resolveAttendanceStatus, getAttendanceColorClass, countAttendance } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { updateStudentSchedule } from '@/features/students/student-actions';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface AssessmentProfileProps {
     student: {
@@ -82,6 +83,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
     const [selectedSchedules, setSelectedSchedules] = useState<string[]>(student.registeredSessions || []);
     const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
 
     const handleToggleSession = (session: string) => {
         setSelectedSchedules(prev => 
@@ -97,7 +99,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                 await updateStudentSchedule(student.id, selectedSchedules);
                 setIsEditingSchedule(false);
             } catch (err: any) {
-                alert(err.message || 'Failed to update schedule');
+                toast({ title: 'Could not update schedule', message: 'Please try again.', variant: 'error' });
             }
         });
     };
