@@ -125,26 +125,31 @@ export async function createInvoice(data: {
 
     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 
-    const [newInvoice] = await db.insert(invoices).values({
-        organisationId: session.user.organisationId,
-        centreId: data.centreId,
-        parentId: data.parentId,
-        childId: data.childIds[0] || null, 
-        invoiceNumber,
-        amount: data.amount,
-        status: 'draft',
-        invoiceDate: data.invoiceDate,
-        dueDate: data.dueDate,
-        billingPeriodStart: data.billingPeriodStart,
-        billingPeriodEnd: data.billingPeriodEnd,
-        notes: description,
-    }).returning();
+    // Execute database operations atomically in a transaction
+    const newInvoice = await db.transaction(async (tx) => {
+        const [inv] = await tx.insert(invoices).values({
+            organisationId: session.user.organisationId,
+            centreId: data.centreId,
+            parentId: data.parentId,
+            childId: data.childIds[0] || null, 
+            invoiceNumber,
+            amount: data.amount,
+            status: 'draft',
+            invoiceDate: data.invoiceDate,
+            dueDate: data.dueDate,
+            billingPeriodStart: data.billingPeriodStart,
+            billingPeriodEnd: data.billingPeriodEnd,
+            notes: description,
+        }).returning();
 
-    await db.insert(auditEvents).values({
-        organisationId: session.user.organisationId,
-        userId: session.user.id,
-        eventType: 'invoice_created',
-        eventData: JSON.stringify({ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amount: newInvoice.amount })
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId,
+            userId: session.user.id,
+            eventType: 'invoice_created',
+            eventData: JSON.stringify({ invoiceId: inv.id, invoiceNumber: inv.invoiceNumber, amount: inv.amount })
+        });
+
+        return inv;
     });
 
     // Send invoice email notification to parent (fire-and-forget)
@@ -457,28 +462,34 @@ export async function voidInvoice(invoiceId: string) {
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owner can void invoices');
 
-    const invoice = await db.query.invoices.findFirst({
-        where: and(
-            eq(invoices.id, invoiceId),
-            eq(invoices.organisationId, session.user.organisationId),
-        ),
+    // Run the lookup, validation, update, and log inside the transaction
+    const invoice = await db.transaction(async (tx) => {
+        const inv = await tx.query.invoices.findFirst({
+            where: and(
+                eq(invoices.id, invoiceId),
+                eq(invoices.organisationId, session.user.organisationId),
+            ),
+        });
+
+        if (!inv) throw new Error('Invoice not found');
+        if (inv.status === 'void') throw new Error('Invoice is already voided');
+
+        await tx
+            .update(invoices)
+            .set({ status: 'void', updatedAt: new Date() })
+            .where(eq(invoices.id, invoiceId));
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId,
+            userId: session.user.id,
+            eventType: 'invoice_voided',
+            eventData: JSON.stringify({ invoiceId })
+        });
+
+        return inv;
     });
 
-    if (!invoice) throw new Error('Invoice not found');
-    if (invoice.status === 'void') throw new Error('Invoice is already voided');
-
-    await db
-        .update(invoices)
-        .set({ status: 'void', updatedAt: new Date() })
-        .where(eq(invoices.id, invoiceId));
-
-    await db.insert(auditEvents).values({
-        organisationId: session.user.organisationId,
-        userId: session.user.id,
-        eventType: 'invoice_voided',
-        eventData: JSON.stringify({ invoiceId })
-    });
-
+    // Revalidate paths using the safely retrieved invoice parentId
     revalidatePath('/dashboard/finance');
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     if (invoice.parentId) {
