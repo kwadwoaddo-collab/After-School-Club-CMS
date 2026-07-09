@@ -45,7 +45,7 @@ export default async function AttendancePage(props: {
             : eq(children.centreId, 'no-centre');
 
     const allChildrenAtCentre = await db.query.children.findMany({
-        where: and(centreChildrenCondition, eq(children.active, true)),
+        where: and(centreChildrenCondition, eq(children.isRegistered, true)),
         with: { parent: true, centre: true },
     });
 

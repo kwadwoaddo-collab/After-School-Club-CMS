@@ -38,7 +38,7 @@ export default async function KioskPage(props: {
             : eq(children.centreId, 'no-centre');
 
     const allChildrenAtCentre = await db.query.children.findMany({
-        where: and(centreChildrenCondition, eq(children.active, true)),
+        where: and(centreChildrenCondition, eq(children.isRegistered, true)),
         with: { parent: true, centre: true },
     });
 
