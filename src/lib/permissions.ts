@@ -9,7 +9,7 @@
  */
 
 import { db } from '@/db';
-import { users, centres, centreMemberships } from '@/db/schema';
+import { users, centres, centreMemberships, children } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 
 /**
@@ -266,7 +266,6 @@ export async function getVisibleChildIds(
     // Direct column query — no join required after the migration backfill.
     // children.centreId is populated by all write paths from Phase 5 onward,
     // and backfilled for historical records by the Phase 2-4 SQL scripts.
-    const { children } = await import('@/db/schema');
 
     const rows = await db
         .select({ id: children.id })

@@ -89,7 +89,9 @@ export const centres = pgTable('centres', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgIdx: index('centres_org_idx').on(table.organisationId),
+}));
 
 // ==================== USERS & PERMISSIONS ====================
 export const users = pgTable('users', {
@@ -155,6 +157,7 @@ export const centreMemberships = pgTable('centre_memberships', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
   uniqueMembership: unique().on(table.centreId, table.userId),
+  userIdIdx: index('centre_memberships_user_idx').on(table.userId),
 }));
 
 export const staffInvites = pgTable('staff_invites', {
@@ -192,7 +195,10 @@ export const parents = pgTable('parents', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgIdx: index('parents_org_idx').on(table.organisationId),
+  emailIdx: index('parents_email_idx').on(table.email),
+}));
 
 export const children = pgTable('children', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -240,7 +246,10 @@ export const studentNotes = pgTable('student_notes', {
   pinnedAt: timestamp('pinned_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  childIdx: index('student_notes_child_idx').on(table.childId),
+  userIdIdx: index('student_notes_user_idx').on(table.userId),
+}));
 
 
 export const childSubjects = pgTable('child_subjects', {
@@ -277,6 +286,8 @@ export const bookings = pgTable('bookings', {
   uniqueTimeSlot: unique('unique_time_slot').on(table.centreId, table.modality, table.startAt),
   centreIdx: index('bookings_centre_idx').on(table.centreId),
   parentIdx: index('bookings_parent_idx').on(table.parentId),
+  centreStatusStartIdx: index('bookings_centre_status_start_idx').on(table.centreId, table.status, table.startAt),
+  createdAtIdx: index('bookings_created_at_idx').on(table.createdAt),
 }));
 
 export const bookingAttendees = pgTable('booking_attendees', {
@@ -287,6 +298,7 @@ export const bookingAttendees = pgTable('booking_attendees', {
   // Per-child attendance tracking (Phase A: schema only — no UI writes yet)
   attendanceStatus: attendanceStatusEnum('attendance_status'),        // present | absent | late | no_show | excused
   attendanceNote: text('attendance_note'),                            // free-text context
+  lateMinutes: integer('late_minutes'),                               // minutes late for pickup/dropoff
   attendanceMarkedAt: timestamp('attendance_marked_at'),              // when staff recorded it
   attendanceMarkedBy: uuid('attendance_marked_by').references(() => users.id, { onDelete: 'set null' }), // who recorded it
 
@@ -300,6 +312,8 @@ export const bookingAttendees = pgTable('booking_attendees', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   uniqueAttendee: unique().on(table.bookingId, table.childId),
+  bookingIdx: index('booking_attendees_booking_idx').on(table.bookingId),
+  childIdx: index('booking_attendees_child_idx').on(table.childId),
 }));
 
 // ==================== AVAILABILITY ====================
@@ -367,7 +381,9 @@ export const studentRegistrations = pgTable('student_registrations', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  centreStatusIdx: index('student_registrations_centre_status_idx').on(table.centreId, table.status),
+}));
 
 // ==================== FULL REGISTRATION FORMS ====================
 // New tables for the multi-child, multi-parent registration form
@@ -406,7 +422,10 @@ export const registrations = pgTable('registrations', {
   submittedAt: timestamp('submitted_at').defaultNow(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgStatusIdx: index('registrations_org_status_idx').on(table.organisationId, table.status),
+  centreIdx: index('registrations_centre_idx').on(table.centreId),
+}));
 
 // Links each registration to the resolved children records
 export const registrationChildren = pgTable('registration_children', {
@@ -421,7 +440,10 @@ export const registrationChildren = pgTable('registration_children', {
   submittedSessions: text('submitted_sessions').array(),
   wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing child
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  registrationIdx: index('registration_children_registration_idx').on(table.registrationId),
+  childIdx: index('registration_children_child_idx').on(table.childId),
+}));
 
 // Links each registration to the resolved parent records
 export const registrationParents = pgTable('registration_parents', {
@@ -437,7 +459,10 @@ export const registrationParents = pgTable('registration_parents', {
   submittedRelationship: varchar('submitted_relationship', { length: 50 }),
   wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing parent
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  registrationIdx: index('registration_parents_registration_idx').on(table.registrationId),
+  parentIdx: index('registration_parents_parent_idx').on(table.parentId),
+}));
 
 // ==================== FINANCE (BILLING INFRASTRUCTURE) ====================
 export const invoices = pgTable('invoices', {
@@ -459,7 +484,12 @@ export const invoices = pgTable('invoices', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgStatusIdx: index('invoices_org_status_idx').on(table.organisationId, table.status),
+  parentIdx: index('invoices_parent_idx').on(table.parentId),
+  centreIdx: index('invoices_centre_idx').on(table.centreId),
+  childIdx: index('invoices_child_idx').on(table.childId),
+}));
 
 export const payments = pgTable('payments', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -473,7 +503,9 @@ export const payments = pgTable('payments', {
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  invoiceIdx: index('payments_invoice_idx').on(table.invoiceId),
+}));
 
 // ==================== AUDIT LOGS ====================
 export const auditEvents = pgTable('audit_events', {
@@ -483,7 +515,9 @@ export const auditEvents = pgTable('audit_events', {
   eventType: varchar('event_type', { length: 100 }).notNull(),
   eventData: text('event_data'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgCreatedIdx: index('audit_events_org_created_idx').on(table.organisationId, table.createdAt),
+}));
 
 // ==================== NOTIFICATIONS ====================
 export const notifications = pgTable('notifications', {
@@ -496,7 +530,10 @@ export const notifications = pgTable('notifications', {
   bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }),
   isRead: boolean('is_read').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  orgIdx: index('notifications_org_idx').on(table.organisationId),
+  userIdIdx: index('notifications_user_idx').on(table.userId),
+}));
 
 // ==================== RELATIONS ====================
 export const organisationsRelations = relations(organisations, ({ many }) => ({

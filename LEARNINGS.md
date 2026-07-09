@@ -53,3 +53,10 @@ To avoid compilation errors or warnings under the React Compiler (React 19), do 
 ## 15. Base64 Attachment Stripping for Resend Emails
 When sending attachments stored as base64-encoded strings (often prepended with Data URL prefixes like `data:image/png;base64,...`) via the Resend API, strip the prefix before converting the string to a Node `Buffer`. Resend expects raw binary buffers or clean base64 strings; passing raw Data URL strings causes mail delivery failures. Extract the raw base64 string using `.split(';base64,')` and convert using `Buffer.from(base64Data, 'base64')`.
 
+## 16. Consolidation of Duplicated Server Actions
+Keep server actions and data logic consolidated in specialized modules (e.g. `notes.actions.ts`) rather than duplicating them in generic `actions.ts`. Ensure components import from single sources of truth to avoid redundant database queries, conflicting cache revalidation paths, and diverging permission checks.
+
+## 17. Declaring Physical DB Indexes in ORM Schemas
+Always declare database indexes (such as foreign keys and frequently queried filter/sorting combinations) directly in the Drizzle Schema ORM definition (`schema.ts`), matching any raw SQL migrations (like `add-indexes.sql`). This ensures schema synchronization tools (like `drizzle-kit`) remain in sync and that database tables created in development, testing, and production environments are identically optimized.
+
+

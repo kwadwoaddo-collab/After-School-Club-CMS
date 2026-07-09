@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { addStudentNote, deleteStudentNote } from '@/features/students/actions';
+import { addStudentNote, deleteStudentNote } from '@/features/students/notes.actions';
 import { format } from 'date-fns';
 import { Trash2, MessageSquare, Loader2 } from 'lucide-react';
 import ConfirmModal from '../ui/ConfirmModal';
