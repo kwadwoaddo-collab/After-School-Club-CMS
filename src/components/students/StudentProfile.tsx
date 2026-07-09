@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import {
     Phone,
     Mail,
@@ -12,6 +13,8 @@ import {
     CheckCircle,
     XCircle,
     MinusCircle,
+    Loader2,
+    Edit2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
@@ -21,6 +24,7 @@ import ProgressTimeline from '@/components/students/ProgressTimeline';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import { resolveAttendanceStatus, getAttendanceColorClass, countAttendance } from '@/lib/attendance';
 import type { AttendanceStatus } from '@/lib/attendance';
+import { updateStudentSchedule } from '@/features/students/student-actions';
 
 interface AssessmentProfileProps {
     student: {
@@ -74,6 +78,29 @@ interface AssessmentProfileProps {
 export default function StudentProfile({ student, initialNotes, currentUserId, currentUserRole }: AssessmentProfileProps) {
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
+
+    const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+    const [selectedSchedules, setSelectedSchedules] = useState<string[]>(student.registeredSessions || []);
+    const [isPending, startTransition] = useTransition();
+
+    const handleToggleSession = (session: string) => {
+        setSelectedSchedules(prev => 
+            prev.includes(session)
+                ? prev.filter(s => s !== session)
+                : [...prev, session]
+        );
+    };
+
+    const handleSaveSchedule = () => {
+        startTransition(async () => {
+            try {
+                await updateStudentSchedule(student.id, selectedSchedules);
+                setIsEditingSchedule(false);
+            } catch (err: any) {
+                alert(err.message || 'Failed to update schedule');
+            }
+        });
+    };
 
     const attendanceBreakdown = countAttendance(
         student.bookings.map(b => ({
@@ -262,20 +289,111 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
 
                         {/* Selected Sessions Card */}
                         <div className="bg-surface-container-low rounded-[32px] p-6 border border-outline-variant/10">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Calendar className="w-5 h-5 text-primary" />
-                                <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-widest">Selected Days</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                    <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-widest">Permanent Schedule</h3>
+                                </div>
+                                {!isEditingSchedule ? (
+                                    <button
+                                        onClick={() => setIsEditingSchedule(true)}
+                                        className="text-xs font-bold text-primary hover:text-blue-400 transition-colors flex items-center gap-1"
+                                    >
+                                        <Edit2 className="w-3.5 h-3.5" /> Edit
+                                    </button>
+                                ) : (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setSelectedSchedules(student.registeredSessions || []);
+                                                setIsEditingSchedule(false);
+                                            }}
+                                            className="text-xs font-bold text-on-surface-variant hover:text-white transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveSchedule}
+                                            disabled={isPending}
+                                            className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                                        >
+                                            {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                                            Save
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                            {student.registeredSessions && student.registeredSessions.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {student.registeredSessions.map((session, idx) => (
-                                        <span key={idx} className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl text-sm font-bold">
-                                            {session}
-                                        </span>
-                                    ))}
+                            
+                            {isEditingSchedule ? (
+                                <div className="space-y-4">
+                                    <div className="space-y-3">
+                                        <h4 className="text-[10px] font-black text-on-surface-variant/60 uppercase tracking-wider">After-School (Mon - Fri)</h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                                                <div key={day} className="space-y-2 p-3 bg-surface-container-high rounded-2xl border border-outline-variant/10">
+                                                    <p className="text-xs font-black text-white">{day}</p>
+                                                    {['3.45pm', '5.00pm'].map((time) => {
+                                                        const slot = `${day} ${time}`;
+                                                        const isChecked = selectedSchedules.includes(slot);
+                                                        return (
+                                                            <label key={time} className="flex items-center gap-2 cursor-pointer group">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={() => handleToggleSession(slot)}
+                                                                    className="rounded bg-[#13151a] border-[#2a2d35] text-primary focus:ring-0 w-3.5 h-3.5"
+                                                                />
+                                                                <span className="text-[10px] font-bold text-on-surface-variant group-hover:text-white transition-colors">{time}</span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 pt-2 border-t border-outline-variant/10">
+                                        <h4 className="text-[10px] font-black text-on-surface-variant/60 uppercase tracking-wider">Weekends (Sat - Sun)</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {['Saturday', 'Sunday'].map((day) => (
+                                                <div key={day} className="space-y-2 p-3 bg-surface-container-high rounded-2xl border border-outline-variant/10">
+                                                    <p className="text-xs font-black text-white">{day}</p>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {['11.00am', '12.15pm', '1.30pm', '2.45pm'].map((time) => {
+                                                            const slot = `${day} ${time}`;
+                                                            const isChecked = selectedSchedules.includes(slot);
+                                                            return (
+                                                                <label key={time} className="flex items-center gap-2 cursor-pointer group">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isChecked}
+                                                                        onChange={() => handleToggleSession(slot)}
+                                                                        className="rounded bg-[#13151a] border-[#2a2d35] text-primary focus:ring-0 w-3.5 h-3.5"
+                                                                    />
+                                                                    <span className="text-[10px] font-bold text-on-surface-variant group-hover:text-white transition-colors">{time}</span>
+                                                                </label>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
-                                <p className="text-sm text-on-surface-variant font-medium">No preferred sessions recorded.</p>
+                                <>
+                                    {student.registeredSessions && student.registeredSessions.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {student.registeredSessions.map((session, idx) => (
+                                                <span key={idx} className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl text-sm font-bold">
+                                                    {session}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-on-surface-variant font-medium">No preferred sessions recorded.</p>
+                                    )}
+                                </>
                             )}
                         </div>
 

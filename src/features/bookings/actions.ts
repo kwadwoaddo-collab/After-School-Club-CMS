@@ -188,54 +188,160 @@ export async function sendAssessmentFeedback(attendeeId: string) {
 }
 
 export async function markAttendeeAttendance(params: {
-    bookingId: string;
-    attendeeId: string;
+    bookingId?: string | null;
+    attendeeId?: string | null;
     status: AttendanceStatus | null;
     note?: string | null;
     lateMinutes?: number | null;
+    childId?: string;
+    dateStr?: string;
+    sessionTime?: string;
+    centreId?: string;
 }) {
     const session = await auth();
     if (!session?.user?.id || !session.user.organisationId) {
         throw new Error('Unauthorized');
     }
 
-    const { bookingId, attendeeId, status, note, lateMinutes } = params;
+    const { bookingId, attendeeId, status, note, lateMinutes, childId, dateStr, sessionTime, centreId } = params;
 
-    // Verify booking belongs to user's organisation
-    const booking = await db.query.bookings.findFirst({
-        where: eq(bookings.id, bookingId),
-        with: {
-            centre: true,
-            attendees: true
+    const hasBooking = bookingId && !bookingId.startsWith('temp-');
+
+    if (hasBooking) {
+        // Verify booking belongs to user's organisation
+        const booking = await db.query.bookings.findFirst({
+            where: eq(bookings.id, bookingId!),
+            with: {
+                centre: true,
+                attendees: true
+            }
+        });
+
+        if (!booking || !booking.centre || booking.centre.organisationId !== session.user.organisationId) {
+            throw new Error('Unauthorized access to this booking');
         }
-    });
 
-    if (!booking || !booking.centre || booking.centre.organisationId !== session.user.organisationId) {
-        throw new Error('Unauthorized access to this booking');
+        const attendeeExists = booking.attendees.some(a => a.id === attendeeId);
+        if (!attendeeExists) {
+            throw new Error('Attendee not found in this booking');
+        }
+
+        // 1. Update the per-child attendance record with audit trail
+        await db.update(bookingAttendees)
+            .set({
+                attendanceStatus: status,
+                attendanceNote: note || null,
+                lateMinutes: lateMinutes || null,
+                attendanceMarkedAt: new Date(),
+                attendanceMarkedBy: session.user.id,
+                updatedAt: new Date()
+            })
+            .where(eq(bookingAttendees.id, attendeeId!));
+
+        revalidatePath(`/dashboard/bookings/${bookingId}`);
+        revalidatePath('/dashboard/bookings');
+        revalidatePath('/dashboard/attendance');
+        revalidatePath('/dashboard');
+        
+        return { bookingId, attendeeId };
+    } else {
+        // We need to create a new booking on demand
+        if (!childId || !dateStr || !sessionTime || !centreId) {
+            throw new Error('Missing parameters to create on-demand booking');
+        }
+
+        // Verify child belongs to organisation
+        const child = await db.query.children.findFirst({
+            where: eq(children.id, childId),
+        });
+
+        if (!child || child.organisationId !== session.user.organisationId) {
+            throw new Error('Child not found or unauthorized');
+        }
+
+        // Form startAt date
+        const startAt = new Date(`${dateStr}T${sessionTime}:00`);
+
+        const result = await db.transaction(async (tx) => {
+            // Check if booking already exists for today/time slot for this child
+            const existingBooking = await tx.query.bookings.findFirst({
+                where: and(
+                    eq(bookings.centreId, centreId),
+                    eq(bookings.startAt, startAt),
+                    eq(bookings.organisationId, session.user.organisationId)
+                ),
+                with: {
+                    attendees: true
+                }
+            });
+
+            let finalBookingId: string;
+            let finalAttendeeId: string;
+
+            if (existingBooking) {
+                finalBookingId = existingBooking.id;
+                const existingAttendee = existingBooking.attendees.find(a => a.childId === childId);
+                if (existingAttendee) {
+                    finalAttendeeId = existingAttendee.id;
+                    await tx.update(bookingAttendees)
+                        .set({
+                            attendanceStatus: status,
+                            attendanceNote: note || null,
+                            lateMinutes: lateMinutes || null,
+                            attendanceMarkedAt: new Date(),
+                            attendanceMarkedBy: session.user.id,
+                            updatedAt: new Date()
+                        })
+                        .where(eq(bookingAttendees.id, finalAttendeeId));
+                } else {
+                    const [newAtt] = await tx.insert(bookingAttendees).values({
+                        bookingId: finalBookingId,
+                        childId: childId,
+                        attendanceStatus: status,
+                        attendanceNote: note || null,
+                        lateMinutes: lateMinutes || null,
+                        attendanceMarkedAt: new Date(),
+                        attendanceMarkedBy: session.user.id,
+                    }).returning();
+                    finalAttendeeId = newAtt.id;
+                }
+            } else {
+                // Create Booking
+                const [newBooking] = await tx.insert(bookings).values({
+                    organisationId: session.user.organisationId,
+                    centreId: centreId,
+                    parentId: child.parentId,
+                    startAt: startAt,
+                    duration: 180, // Default 3 hours
+                    status: 'confirmed',
+                    modality: 'in_person',
+                    billingStatus: 'pending',
+                }).returning();
+
+                finalBookingId = newBooking.id;
+
+                // Create Booking Attendee
+                const [newAtt] = await tx.insert(bookingAttendees).values({
+                    bookingId: finalBookingId,
+                    childId: childId,
+                    attendanceStatus: status,
+                    attendanceNote: note || null,
+                    lateMinutes: lateMinutes || null,
+                    attendanceMarkedAt: new Date(),
+                    attendanceMarkedBy: session.user.id,
+                }).returning();
+
+                finalAttendeeId = newAtt.id;
+            }
+
+            return { bookingId: finalBookingId, attendeeId: finalAttendeeId };
+        });
+
+        revalidatePath('/dashboard/attendance');
+        revalidatePath('/dashboard/bookings');
+        revalidatePath('/dashboard');
+        return result;
     }
-
-    const attendeeExists = booking.attendees.some(a => a.id === attendeeId);
-    if (!attendeeExists) {
-        throw new Error('Attendee not found in this booking');
-    }
-
-    // 1. Update the per-child attendance record with audit trail
-    await db.update(bookingAttendees)
-        .set({
-            attendanceStatus: status,
-            attendanceNote: note || null,
-            lateMinutes: lateMinutes || null,
-            attendanceMarkedAt: new Date(),
-            attendanceMarkedBy: session.user.id,
-            updatedAt: new Date()
-        })
-        .where(eq(bookingAttendees.id, attendeeId));
-    // Per user instructions: Do not update legacy booking.status automatically yet.
-    // Keep legacy booking.status unchanged for backwards compatibility.
-
-    revalidatePath(`/dashboard/bookings/${bookingId}`);
-    revalidatePath('/dashboard/bookings');
-    revalidatePath('/dashboard');
 }
 
 export async function getExportData() {
