@@ -102,6 +102,11 @@ async function run() {
     console.log('payments.status column ready.');
   } catch (e: any) { console.log('payments.status column:', e.message); }
 
+  try {
+    await client`ALTER TABLE booking_attendees ADD COLUMN IF NOT EXISTS late_minutes integer;`;
+    console.log('booking_attendees.late_minutes column ready.');
+  } catch (e: any) { console.log('booking_attendees.late_minutes column:', e.message); }
+
   console.log('Done resolving DB schema.');
   process.exit(0);
 }

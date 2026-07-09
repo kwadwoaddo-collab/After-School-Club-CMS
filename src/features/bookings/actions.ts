@@ -191,14 +191,15 @@ export async function markAttendeeAttendance(params: {
     bookingId: string;
     attendeeId: string;
     status: AttendanceStatus | null;
-    note?: string;
+    note?: string | null;
+    lateMinutes?: number | null;
 }) {
     const session = await auth();
     if (!session?.user?.id || !session.user.organisationId) {
         throw new Error('Unauthorized');
     }
 
-    const { bookingId, attendeeId, status, note } = params;
+    const { bookingId, attendeeId, status, note, lateMinutes } = params;
 
     // Verify booking belongs to user's organisation
     const booking = await db.query.bookings.findFirst({
@@ -223,6 +224,7 @@ export async function markAttendeeAttendance(params: {
         .set({
             attendanceStatus: status,
             attendanceNote: note || null,
+            lateMinutes: lateMinutes || null,
             attendanceMarkedAt: new Date(),
             attendanceMarkedBy: session.user.id,
             updatedAt: new Date()

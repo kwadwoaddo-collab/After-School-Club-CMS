@@ -5,7 +5,7 @@ import { markAttendeeAttendance } from '@/features/bookings/actions';
 import {
     CheckCircle2, XCircle, Clock, AlertTriangle,
     Loader2, ChevronLeft, ChevronRight, Users,
-    Maximize2, RefreshCw, Shield, Stethoscope
+    Maximize2, RefreshCw, Shield, Stethoscope, Edit2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -25,6 +25,8 @@ interface Attendee {
     id: string;
     childId: string;
     attendanceStatus: AttendanceStatus;
+    attendanceNote: string | null;
+    lateMinutes: number | null;
     child: Child;
 }
 
@@ -53,14 +55,42 @@ function StudentCard({ bookingId, attendee, isLarge }: {
     isLarge: boolean;
 }) {
     const [status, setStatus] = useState<AttendanceStatus>(attendee.attendanceStatus);
+    const [note, setNote] = useState<string>(attendee.attendanceNote || '');
+    const [lateMinutes, setLateMinutes] = useState<string>(
+        attendee.lateMinutes !== null && attendee.lateMinutes !== undefined ? attendee.lateMinutes.toString() : ''
+    );
+    const [showDetails, setShowDetails] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [flash, setFlash] = useState(false);
 
     const mark = (s: AttendanceStatus) => {
         const next = status === s ? null : s;
+        const autoOpen = next === 'late';
+        if (autoOpen) setShowDetails(true);
+
         startTransition(async () => {
-            await markAttendeeAttendance({ bookingId, attendeeId: attendee.id, status: next });
+            await markAttendeeAttendance({
+                bookingId,
+                attendeeId: attendee.id,
+                status: next,
+                note: note || null,
+                lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null
+            });
             setStatus(next);
+            setFlash(true);
+            setTimeout(() => setFlash(false), 800);
+        });
+    };
+
+    const saveDetails = () => {
+        startTransition(async () => {
+            await markAttendeeAttendance({
+                bookingId,
+                attendeeId: attendee.id,
+                status,
+                note: note || null,
+                lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null
+            });
             setFlash(true);
             setTimeout(() => setFlash(false), 800);
         });
@@ -82,53 +112,115 @@ function StudentCard({ bookingId, attendee, isLarge }: {
     const btnSize = isLarge ? 'h-14 text-sm gap-2 px-4' : 'h-11 text-xs gap-1.5 px-3';
 
     return (
-        <div className={`rounded-2xl border transition-all duration-200 ${pad} ${style.ring} ${flash ? 'scale-[0.98]' : ''}`}>
-            <div className="flex items-center gap-4">
-                {/* Avatar */}
-                <div className={`${avatarSize} rounded-xl flex items-center justify-center font-black flex-shrink-0 transition-colors ${style.avatar}`}>
-                    {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : initials}
-                </div>
+        <div className="space-y-2">
+            <div className={`rounded-2xl border transition-all duration-200 ${pad} ${style.ring} ${flash ? 'scale-[0.98]' : ''}`}>
+                <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <div className={`${avatarSize} rounded-xl flex items-center justify-center font-black flex-shrink-0 transition-colors ${style.avatar}`}>
+                        {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : initials}
+                    </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <p className={`font-bold text-white truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
-                            {attendee.child.firstName} {attendee.child.lastName}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                            <p className={`font-bold text-white truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
+                                {attendee.child.firstName} {attendee.child.lastName}
+                            </p>
+                            {hasAlert && (
+                                <span title={attendee.child.notes!} className="flex-shrink-0">
+                                    <Stethoscope className="w-4 h-4 text-red-400" />
+                                </span>
+                            )}
+                            {(note || lateMinutes) && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
+                            )}
+                        </div>
+                        <p className="text-xs text-white/40 mt-0.5">
+                            Year {attendee.child.schoolYear} · {attendee.child.parent.firstName} {attendee.child.parent.lastName}
+                            {attendee.child.parent.phone && ` · ${attendee.child.parent.phone}`}
+                            {lateMinutes && ` · Late: ${lateMinutes}m`}
+                            {note && ` · "${note}"`}
                         </p>
                         {hasAlert && (
-                            <span title={attendee.child.notes!} className="flex-shrink-0">
-                                <Stethoscope className="w-4 h-4 text-red-400" />
-                            </span>
+                            <p className="text-xs text-red-400 mt-1 font-medium truncate">⚠ {attendee.child.notes}</p>
                         )}
                     </div>
-                    <p className="text-xs text-white/40 mt-0.5">
-                        Year {attendee.child.schoolYear} · {attendee.child.parent.firstName} {attendee.child.parent.lastName}
-                        {attendee.child.parent.phone && ` · ${attendee.child.parent.phone}`}
-                    </p>
-                    {hasAlert && (
-                        <p className="text-xs text-red-400 mt-1 font-medium truncate">⚠ {attendee.child.notes}</p>
+
+                    {/* Action buttons */}
+                    {!isPending && (
+                        <div className={`flex items-center gap-2 flex-shrink-0 ${isLarge ? 'flex-row' : 'flex-col sm:flex-row'}`}>
+                            <button
+                                onClick={() => setShowDetails(!showDetails)}
+                                title="Add Notes/Details"
+                                className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all border ${showDetails
+                                    ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
+                                    : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
+                                }`}
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                            {([
+                                { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',     active: 'bg-emerald-500 text-white', inactive: 'bg-white/5 text-white/40 hover:text-emerald-400' },
+                                { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late',   active: 'bg-amber-500 text-white',   inactive: 'bg-white/5 text-white/40 hover:text-amber-400'   },
+                                { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',    active: 'bg-red-500 text-white',     inactive: 'bg-white/5 text-white/40 hover:text-red-400'     },
+                            ]).map(({ s, icon, label, active, inactive }) => (
+                                <button
+                                    key={s}
+                                    onClick={() => mark(s)}
+                                    className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 ${status === s ? active : inactive}`}
+                                >
+                                    {icon} {isLarge && label}
+                                </button>
+                            ))}
+                        </div>
                     )}
                 </div>
-
-                {/* Action buttons */}
-                {!isPending && (
-                    <div className={`flex items-center gap-2 flex-shrink-0 ${isLarge ? 'flex-row' : 'flex-col sm:flex-row'}`}>
-                        {([
-                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',     active: 'bg-emerald-500 text-white', inactive: 'bg-white/5 text-white/40 hover:text-emerald-400' },
-                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late',   active: 'bg-amber-500 text-white',   inactive: 'bg-white/5 text-white/40 hover:text-amber-400'   },
-                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',    active: 'bg-red-500 text-white',     inactive: 'bg-white/5 text-white/40 hover:text-red-400'     },
-                        ]).map(({ s, icon, label, active, inactive }) => (
-                            <button
-                                key={s}
-                                onClick={() => mark(s)}
-                                className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 ${status === s ? active : inactive}`}
-                            >
-                                {icon} {isLarge && label}
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
+
+            {/* Note & Late Minutes Edit Drawer */}
+            {showDetails && (
+                <div className="bg-[#14161b] border border-white/10 rounded-2xl p-4 ml-6 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1">Attendance Note</label>
+                            <input
+                                type="text"
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder="Add custom notes..."
+                                className="w-full h-10 px-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                            />
+                        </div>
+                        <div className="w-full sm:w-28">
+                            <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1">Late Mins</label>
+                            <input
+                                type="number"
+                                value={lateMinutes}
+                                onChange={(e) => setLateMinutes(e.target.value)}
+                                placeholder="Minutes"
+                                min="0"
+                                className="w-full h-10 px-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                        <button
+                            onClick={() => setShowDetails(false)}
+                            className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white text-xs font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={saveDetails}
+                            disabled={isPending}
+                            className="px-3.5 py-1.5 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 hover:bg-[#adc6ff]/20 text-[#adc6ff] text-xs font-bold transition-all flex items-center gap-1.5"
+                        >
+                            {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                            Save Details
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
