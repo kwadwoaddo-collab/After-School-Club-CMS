@@ -71,11 +71,11 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                             onClick={() => handleTabChange(tab.id)}
                             className={`w-full flex items-start gap-3 p-4 rounded-2xl border text-left transition-all duration-200 ${
                                 isActive
-                                    ? 'bg-[#adc6ff]/10 border-[#adc6ff]/35 text-[#adc6ff] font-extrabold shadow-md'
+                                    ? 'bg-primary/10 border-primary/30 text-primary font-extrabold shadow-md shadow-primary/5'
                                     : 'bg-transparent border-transparent text-[#8c909f] hover:text-white hover:bg-white/5 hover:border-white/5'
                             }`}
                         >
-                            <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isActive ? 'text-[#adc6ff]' : 'text-[#8c909f]'}`} />
+                            <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isActive ? 'text-primary' : 'text-[#8c909f]'}`} />
                             <div className="min-w-0">
                                 <p className="text-xs font-bold uppercase tracking-wider leading-none mb-1">{tab.label}</p>
                                 <p className="text-[10px] text-[#8c909f] leading-tight truncate">{tab.description}</p>
@@ -87,7 +87,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
 
             {/* Main Content Pane */}
             <div className="lg:col-span-3 min-h-[500px]">
-                <div className="bg-[#1a1c23] border border-[#424754]/15 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div className="glassmorphic-card rounded-3xl p-6 sm:p-8 shadow-xl">
                     {activeTab === 'general' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
