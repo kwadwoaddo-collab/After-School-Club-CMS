@@ -42,7 +42,7 @@ export default function DashboardHero({ firstName, children }: DashboardHeroProp
             >
                 <div className={cn("transition-all duration-300", isScrolled ? "scale-95 origin-left" : "")}>
                     {!isScrolled && (
-                        <span className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-1.5 block animate-in slide-in-from-top-1 duration-300">
+                        <span className="text-xs font-bold text-primary animated-eyebrow uppercase tracking-[0.2em] mb-1.5 block animate-in slide-in-from-top-1 duration-300">
                             After-School Club CMS
                         </span>
                     )}

@@ -34,6 +34,7 @@ import { cn } from '@/components/ui/utils';
 import { TodaysSnapshot } from '@/components/dashboard/TodaysSnapshot';
 import { AttendanceHeatmap } from '@/components/dashboard/AttendanceHeatmap';
 import DashboardHero from '@/components/dashboard/DashboardHero';
+import { SegmentedTabControl } from '@/components/dashboard/SegmentedTabControl';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -464,33 +465,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 </Suspense>
             </DashboardHero>
 
-            {/* ── Apple Segmented Tab Switcher ───────────────────────────────── */}
-            <div className="flex justify-center my-2">
-                <div className="inline-flex p-1 bg-[#19191b]/80 backdrop-blur-md rounded-2xl border border-outline-variant/10 shadow-lg">
-                    <Link
-                        href={{ pathname: '/dashboard', query: { ...searchParams, tab: 'overview' } }}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200",
-                            activeTab === 'overview' 
-                                ? "bg-white/10 text-white shadow-sm" 
-                                : "text-slate-400 hover:text-white"
-                        )}
-                    >
-                        Overview
-                    </Link>
-                    <Link
-                        href={{ pathname: '/dashboard', query: { ...searchParams, tab: 'activity' } }}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200",
-                            activeTab === 'activity' 
-                                ? "bg-white/10 text-white shadow-sm" 
-                                : "text-slate-400 hover:text-white"
-                        )}
-                    >
-                        Activity & Funnel
-                    </Link>
-                </div>
-            </div>
+            {/* ── Apple Segmented Tab Switcher (Client — Optimistic Pill) ───── */}
+            <SegmentedTabControl
+                defaultTab={activeTab as 'overview' | 'activity'}
+                searchParams={searchParams as Record<string, string | string[] | undefined>}
+            />
 
             {activeTab === 'overview' ? (
                 <div key="overview-tab" className="space-y-8 animate-in fade-in duration-500 slide-in-from-bottom-2">
@@ -621,7 +600,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                             <Link
                                                 key={b.id}
                                                 href={`/dashboard/bookings/${b.id}`}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
+                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-[background-color,transform,opacity] duration-150 active:scale-[0.99] active:opacity-80 cursor-pointer group"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <AttendanceRadial 
@@ -689,7 +668,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             <Link
                                 href="/dashboard/bookings"
-                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-[background-color,transform,opacity] duration-150 active:scale-[0.97] active:opacity-80 cursor-pointer border border-outline-variant/10 relative z-10 group/btn"
                             >
                                 View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>
@@ -739,7 +718,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                             <Link
                                                 key={`${r.registrationId}-${i}`}
                                                 href={`/dashboard/registrations/${r.registrationId}`}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
+                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-[background-color,transform,opacity] duration-150 active:scale-[0.99] active:opacity-80 cursor-pointer group"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
@@ -783,7 +762,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             <Link
                                 href="/dashboard/registrations"
-                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-[background-color,transform,opacity] duration-150 active:scale-[0.97] active:opacity-80 cursor-pointer border border-outline-variant/10 relative z-10 group/btn"
                             >
                                 View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>
