@@ -167,7 +167,7 @@ export default async function RegistrationsPage(props: {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">Registrations</h1>
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Registrations</h1>
                     <p className="text-[#8c909f] font-medium mt-1">
                         {rows.length} total submission{rows.length !== 1 ? 's' : ''} {isFiltered ? 'matching filters' : ''}
                     </p>
@@ -177,7 +177,7 @@ export default async function RegistrationsPage(props: {
                         <>
                             <Link
                                 href="/dashboard/share"
-                                className="flex items-center gap-2 px-5 py-3 bg-[#2a2a2a] hover:bg-[#353535] text-[#adc6ff] hover:text-[#6b9dff] text-sm font-bold rounded-2xl transition-all border border-[#424754]/15 shadow-sm"
+                                className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 text-primary hover:text-blue-400 text-sm font-bold rounded-2xl transition-all border border-outline-variant/10 shadow-sm"
                             >
                                 <Share2 className="w-4 h-4" />
                                 Share Form
@@ -200,48 +200,46 @@ export default async function RegistrationsPage(props: {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-[#adc6ff] flex-shrink-0">
                         <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{totalCount}</p>
-                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Total Submissions</p>
+                        <p className="text-3xl font-bold text-white tracking-tight">{totalCount}</p>
+                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Total Submissions</p>
                     </div>
                 </div>
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-amber-400 flex-shrink-0">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-amber-400 flex-shrink-0">
                         <Clock className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{awaitingConfirmationCount}</p>
-                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Awaiting Conf.</p>
+                        <p className="text-3xl font-bold text-white tracking-tight">{awaitingConfirmationCount}</p>
+                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Awaiting Conf.</p>
                     </div>
                 </div>
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-emerald-400 flex-shrink-0">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-emerald-400 flex-shrink-0">
                         <CheckCircle2 className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{signedUpCount}</p>
-                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Signed Up</p>
+                        <p className="text-3xl font-bold text-white tracking-tight">{signedUpCount}</p>
+                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Signed Up</p>
                     </div>
                 </div>
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-red-400 flex-shrink-0">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-red-400 flex-shrink-0">
                         <AlertTriangle className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{notInterestedCount}</p>
-                        <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider mt-1">Not Interested</p>
+                        <p className="text-3xl font-bold text-white tracking-tight">{notInterestedCount}</p>
+                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Not Interested</p>
                     </div>
                 </div>
             </div>
 
-
-
             {/* Filters */}
-            <div className="bg-[#1a1d23] border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] rounded-3xl p-6">
+            <div className="glassmorphic-card rounded-3xl p-6">
                 <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>
@@ -249,9 +247,9 @@ export default async function RegistrationsPage(props: {
 
             {/* Empty state or list */}
             {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-[#1a1d23] rounded-2xl border border-dashed border-[#424754]/30 animate-in fade-in duration-300">
-                    <div className="w-16 h-16 rounded-2xl bg-[#2a2a2a] flex items-center justify-center mb-4 text-3xl">📋</div>
-                    <h3 className="text-[#e5e2e1] font-bold mb-2">
+                <div className="flex flex-col items-center justify-center py-20 text-center glassmorphic-card rounded-2xl border-dashed border-outline-variant/30 animate-in fade-in duration-300">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4 text-3xl">📋</div>
+                    <h3 className="text-white font-bold mb-2">
                         {isFiltered ? 'No matching registrations' : 'No registrations yet'}
                     </h3>
                     <p className="text-[#8c909f] text-sm max-w-sm mb-5">
@@ -264,7 +262,7 @@ export default async function RegistrationsPage(props: {
                             href={fullRegistrationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] text-[#adc6ff] hover:bg-[#353535] text-sm font-bold rounded-2xl transition-all border border-[#424754]/15"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 text-primary hover:bg-white/10 text-sm font-bold rounded-2xl transition-all border border-outline-variant/10"
                         >
                             Open Registration Form ↗
                         </Link>

@@ -78,8 +78,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                                 }
                             }}
                             placeholder="Search parents, children..."
-                            className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                            className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-[#19191b]/40 border-outline-variant/20 text-white"
                         />
                     </div>
                 </form>
@@ -92,12 +91,11 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                             onChange={(e) => {
                                 setSelectedCentreId(e.target.value);
                             }}
-                            className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
-                            style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                            className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
                         >
-                            <option value="all">All Centres</option>
+                            <option value="all" className="bg-[#1a1d23] text-white">All Centres</option>
                             {centres.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
+                                <option key={c.id} value={c.id} className="bg-[#1a1d23] text-white">{c.name}</option>
                             ))}
                         </select>
                         <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -113,11 +111,10 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                             setStatus(val);
                             applyFilters({ newStatus: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
-                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
                     >
                         {statusOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
+                            <option key={opt.value} value={opt.value} className="bg-[#1a1d23] text-white">
                                 {opt.label}
                             </option>
                         ))}
@@ -129,7 +126,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-bold text-[#FFFFFF] transition-all cursor-pointer border border-[#424754]/10"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer border border-outline-variant/10"
                     >
                         <X className="w-4 h-4" />
                         Clear
