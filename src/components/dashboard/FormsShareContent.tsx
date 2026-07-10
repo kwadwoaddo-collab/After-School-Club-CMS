@@ -106,13 +106,13 @@ export default function FormsShareContent({ organisation, centres }: Props) {
             </div>
 
             {/* Portal Tab Switcher */}
-            <div className="flex bg-[#13151a] p-1.5 rounded-2xl border border-white/5 max-w-md">
+            <div className="flex bg-[#131314]/30 p-1.5 rounded-2xl border border-outline-variant/15 max-w-md">
                 <button
                     onClick={() => { setActiveTab('booking'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 border ${
                         activeTab === 'booking'
-                            ? 'bg-[#adc6ff] text-slate-950 shadow-md font-extrabold'
-                            : 'text-[#8c909f] hover:text-white hover:bg-white/5'
+                            ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_15px_-3px_rgba(142,171,255,0.2)] font-extrabold'
+                            : 'bg-transparent border-transparent text-[#8c909f] hover:text-white hover:bg-white/5'
                     }`}
                 >
                     <Calendar className="w-4 h-4" />
@@ -120,10 +120,10 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                 </button>
                 <button
                     onClick={() => { setActiveTab('registration'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 border ${
                         activeTab === 'registration'
-                            ? 'bg-[#adc6ff] text-slate-950 shadow-md font-extrabold'
-                            : 'text-[#8c909f] hover:text-white hover:bg-white/5'
+                            ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_15px_-3px_rgba(142,171,255,0.2)] font-extrabold'
+                            : 'bg-transparent border-transparent text-[#8c909f] hover:text-white hover:bg-white/5'
                     }`}
                 >
                     <ClipboardList className="w-4 h-4" />
@@ -135,9 +135,9 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                 {/* Configuration Panel */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Setup Card */}
-                    <div className="bg-[#1a1c23] border border-[#424754]/15 rounded-3xl p-6 space-y-6 shadow-xl">
-                        <div className="flex items-center gap-2 pb-4 border-b border-white/5">
-                            <Share2 className="w-5 h-5 text-[#adc6ff]" />
+                    <div className="glassmorphic-card rounded-3xl p-6 space-y-6 shadow-xl">
+                        <div className="flex items-center gap-2 pb-4 border-b border-outline-variant/10">
+                            <Share2 className="w-5 h-5 text-primary" />
                             <h2 className="text-lg font-bold text-white">
                                 {activeTab === 'booking' ? 'Booking Portal Setup' : 'Registration Form Setup'}
                             </h2>
@@ -152,7 +152,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                 <select
                                     value={selectedCentre}
                                     onChange={(e) => setSelectedCentre(e.target.value)}
-                                    className="w-full h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                    className="w-full h-11 px-4 rounded-xl bg-[#19191b]/40 border border-outline-variant/20 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
                                 >
                                     <option value="">All Centres (Shows selector to parents)</option>
                                     {centres.map(c => (
@@ -172,7 +172,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                     type="text"
                                     value={shareLink}
                                     readOnly
-                                    className="flex-1 h-11 px-4 rounded-xl bg-[#14161b] border border-white/10 text-[#adc6ff] font-mono text-xs focus:outline-none"
+                                    className="flex-1 h-11 px-4 rounded-xl bg-[#19191b]/40 border border-outline-variant/20 text-primary font-mono text-xs focus:outline-none"
                                 />
                                 <button
                                     onClick={handleCopyLink}
@@ -194,7 +194,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         </div>
 
                         {/* Embed Options Section */}
-                        <div className="space-y-4 pt-4 border-t border-white/5">
+                        <div className="space-y-4 pt-4 border-t border-outline-variant/10">
                             <div className="flex items-center justify-between">
                                 <label className="block text-xs font-bold text-[#8c909f] uppercase tracking-wider">
                                     Embed Code (iFrame)
@@ -206,7 +206,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                             onClick={() => setEmbedSize(size)}
                                             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
                                                 embedSize === size
-                                                    ? 'bg-[#adc6ff]/10 border border-[#adc6ff]/20 text-[#adc6ff]'
+                                                    ? 'bg-primary/10 border border-primary/30 text-primary'
                                                     : 'bg-white/5 text-[#8c909f] border border-transparent hover:text-white'
                                             }`}
                                         >
@@ -217,7 +217,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                             </div>
 
                             {embedSize === 'custom' && (
-                                <div className="flex items-center gap-3 p-3 bg-[#14161b] rounded-2xl border border-white/5 animate-in fade-in duration-200">
+                                <div className="flex items-center gap-3 p-3 bg-[#19191b]/40 rounded-2xl border border-outline-variant/20 animate-in fade-in duration-200">
                                     <span className="text-xs text-[#8c909f] font-semibold">Iframe Height (pixels):</span>
                                     <input
                                         type="number"
@@ -235,7 +235,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                     value={embedCode}
                                     readOnly
                                     rows={2}
-                                    className="flex-1 p-3 rounded-xl bg-[#14161b] border border-white/10 text-white/60 font-mono text-[10px] focus:outline-none resize-none"
+                                    className="flex-1 p-3 rounded-xl bg-[#19191b]/40 border border-outline-variant/20 text-white/60 font-mono text-[10px] focus:outline-none resize-none"
                                 />
                                 <button
                                     onClick={handleCopyEmbed}
@@ -261,8 +261,8 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
                     {/* Embed Preview Box */}
                     {showPreview && (
-                        <div className="bg-[#14161b] rounded-3xl border border-white/5 overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
-                            <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c23] border-b border-white/5">
+                        <div className="bg-[#19191b]/40 rounded-3xl border border-outline-variant/15 overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
+                            <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c23]/30 border-b border-outline-variant/10">
                                 <div className="flex items-center gap-2 text-white/50">
                                     <Laptop className="w-4 h-4" />
                                     <Smartphone className="w-4 h-4" />
@@ -270,7 +270,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                 </div>
                                 <span className="text-[10px] bg-white/5 text-white/40 px-2 py-0.5 rounded-md font-mono">{iframeHeight}px</span>
                             </div>
-                            <div className="p-4 bg-slate-900 flex justify-center">
+                            <div className="p-4 bg-slate-900/50 flex justify-center">
                                 <iframe
                                     src={shareLink}
                                     width="100%"
@@ -286,14 +286,14 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                 {/* Instruction / Integration Guides Sidebar */}
                 <div className="space-y-6">
                     {/* Flow Steps Card */}
-                    <div className="bg-[#1a1c23] border border-[#424754]/15 rounded-3xl p-6 shadow-xl space-y-4">
-                        <h3 className="font-bold text-white text-sm uppercase tracking-wider border-b border-white/5 pb-2">
+                    <div className="glassmorphic-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 className="font-bold text-white text-xs uppercase tracking-wider border-b border-outline-variant/10 pb-2">
                             How it works
                         </h3>
                         <ol className="space-y-3">
                             {steps.map((step, i) => (
                                 <li key={i} className="flex gap-3 text-xs leading-relaxed text-[#c2c6d6]">
-                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#adc6ff]/10 text-[#adc6ff] flex items-center justify-center font-bold text-[10px]">
+                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
                                         {i + 1}
                                     </span>
                                     <span>{step}</span>
@@ -303,10 +303,10 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     </div>
 
                     {/* Website Embed Guides Accordion */}
-                    <div className="bg-[#1a1c23] border border-[#424754]/15 rounded-3xl p-6 shadow-xl space-y-4">
-                        <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                            <Code className="w-4 h-4 text-[#adc6ff]" />
-                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">
+                    <div className="glassmorphic-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <div className="flex items-center gap-2 border-b border-outline-variant/10 pb-2">
+                            <Code className="w-4 h-4 text-primary" />
+                            <h3 className="font-bold text-white text-xs uppercase tracking-wider">
                                 Platform Embed Guides
                             </h3>
                         </div>
@@ -357,12 +357,12 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                     ]
                                 }
                             ].map(p => (
-                                <details key={p.platform} className="group border border-[#424754]/15 rounded-xl overflow-hidden transition-all duration-200">
+                                <details key={p.platform} className="group border border-outline-variant/15 rounded-xl overflow-hidden transition-all duration-200">
                                     <summary className="px-4 py-3 cursor-pointer hover:bg-white/5 font-semibold text-xs text-white/70 hover:text-white flex items-center justify-between outline-none">
                                         <span>{p.icon} {p.platform}</span>
                                         <span className="text-white/30 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                                     </summary>
-                                    <div className="px-4 py-3 bg-[#14161b] border-t border-[#424754]/15 text-[11px] leading-relaxed text-[#8c909f] space-y-1.5">
+                                    <div className="px-4 py-3 bg-[#131314]/20 border-t border-outline-variant/15 text-[11px] leading-relaxed text-[#8c909f] space-y-1.5">
                                         {p.steps.map((s, idx) => (
                                             <div key={idx} className="flex gap-1.5">
                                                 <span className="font-bold text-white/30">{idx + 1}.</span>
