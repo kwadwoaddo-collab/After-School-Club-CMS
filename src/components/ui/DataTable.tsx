@@ -113,7 +113,7 @@ export default function DataTable<T>({
     return (
       <div
         className={cn(
-          'bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden',
+          'glassmorphic-card rounded-[32px] overflow-hidden',
           className
         )}
       >
@@ -121,7 +121,7 @@ export default function DataTable<T>({
           <table className={cn('w-full', tableClassName)}>
             {caption && <caption className="sr-only">{caption}</caption>}
             <thead>
-              <tr className="border-b border-outline-variant/10 bg-surface-container-low/50">
+              <tr className="border-b border-outline-variant/10 bg-white/5">
                 {columns.map((col) => (
                   <th
                     key={col.key}
@@ -152,7 +152,7 @@ export default function DataTable<T>({
     return (
       <div
         className={cn(
-          'bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden',
+          'glassmorphic-card rounded-[32px] overflow-hidden',
           className
         )}
       >
@@ -165,7 +165,7 @@ export default function DataTable<T>({
   return (
     <div
       className={cn(
-        'bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden data-grid-optimized',
+        'glassmorphic-card rounded-[32px] overflow-hidden data-grid-optimized',
         className
       )}
     >
@@ -173,7 +173,7 @@ export default function DataTable<T>({
         <table className={cn('w-full', tableClassName)}>
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
-            <tr className="border-b border-outline-variant/10 bg-surface-container-low/50">
+            <tr className="border-b border-outline-variant/10 bg-white/5">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -200,7 +200,7 @@ export default function DataTable<T>({
                 <tr
                   key={key}
                   className={cn(
-                    'hover:bg-surface-bright transition-colors',
+                    'hover:bg-white/5 transition-colors',
                     onRowClick && 'cursor-pointer',
                     rowCls
                   )}

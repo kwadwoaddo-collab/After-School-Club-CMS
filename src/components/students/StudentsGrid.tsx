@@ -61,7 +61,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                     <Link
                         key={student.id}
                         href={`/dashboard/students/${student.id}`}
-                        className="group relative bg-[#1a1d23] border border-[#424754]/15 rounded-[24px] p-5 hover:border-primary/30 hover:bg-[#1e2128] transition-all shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex flex-col gap-4"
+                        className="group relative glassmorphic-card rounded-[24px] p-5 hover:border-primary/30 hover:shadow-primary/5 transition-all flex flex-col gap-4"
                     >
                         {/* Alert badges — top-right corner */}
                         {hasAlerts && (

@@ -97,8 +97,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         placeholder="Search student or parent name, contact..."
-                        className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none border"
-                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                        className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-[#19191b]/40 border-outline-variant/20 text-white"
                     />
                     {search && (
                         <button
@@ -120,18 +119,17 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                             setStatus(val);
                             applyFilters({ newStatus: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer border pr-8"
-                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer border pr-8 bg-[#19191b]/40 border-outline-variant/20 text-white"
                     >
                         {statusOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            <option key={opt.value} value={opt.value} className="bg-[#1a1d23] text-white">{opt.label}</option>
                         ))}
                     </select>
                     <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
 
                 {/* View Toggle: Table / Grid */}
-                <div className="flex items-center bg-[#14161b] border border-[#2a2a2a] rounded-2xl p-1 gap-1">
+                <div className="flex items-center bg-[#19191b]/40 border border-outline-variant/20 rounded-2xl p-1 gap-1">
                     <button
                         onClick={() => applyFilters({ newView: 'table' })}
                         className={`p-2 rounded-xl transition-all ${currentView === 'table' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-white'}`}
@@ -152,7 +150,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-bold text-white transition-all cursor-pointer border border-[#424754]/10"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer border border-outline-variant/10"
                     >
                         <X className="w-4 h-4" />
                         Clear
@@ -172,7 +170,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                             year === pill.value
                                 ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-[#14161b] border-[#2a2a2a] text-slate-400 hover:border-primary/30 hover:text-white'
+                                : 'bg-[#19191b]/40 border-outline-variant/20 text-slate-400 hover:border-primary/30 hover:text-white'
                         }`}
                     >
                         {pill.label}

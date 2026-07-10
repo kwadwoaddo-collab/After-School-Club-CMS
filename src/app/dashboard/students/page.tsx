@@ -212,8 +212,8 @@ export default async function StudentsPage(props: {
         <div className="space-y-8 animate-in fade-in duration-700">
             <div className="flex items-end justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
-                    <p className="text-on-surface-variant font-medium mt-1">
+                    <h1 className="text-3xl font-black text-white tracking-tight">Students</h1>
+                    <p className="text-sm text-[#8c909f] mt-1">
                         View all registered students and their details
                     </p>
                 </div>
@@ -228,52 +228,52 @@ export default async function StudentsPage(props: {
             {/* KPI Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {/* Total Students */}
-                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-[#adc6ff] flex-shrink-0">
                             <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{totalCount}</p>
+                            <p className="text-2xl font-bold text-white tracking-tight">{totalCount}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Total Students</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Registered */}
-                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-emerald-400 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-emerald-400 flex-shrink-0">
                             <GraduationCap className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{registeredCount}</p>
+                            <p className="text-2xl font-bold text-white tracking-tight">{registeredCount}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Registered</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Leads */}
-                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-amber-400 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-amber-400 flex-shrink-0">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{leadCount}</p>
+                            <p className="text-2xl font-bold text-white tracking-tight">{leadCount}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Leads</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Medical Alerts */}
-                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-error/10 text-error flex-shrink-0">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-[#e5e2e1] tracking-tight">{medicalAlertCount}</p>
+                            <p className="text-2xl font-bold text-white tracking-tight">{medicalAlertCount}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Medical Alerts</p>
                         </div>
                     </div>
@@ -282,14 +282,14 @@ export default async function StudentsPage(props: {
                 {/* Low Attendance */}
                 <Link
                     href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'}
-                    className={`bg-[#1a1d23] rounded-2xl p-5 border shadow-[0_4px_24px_rgba(0,0,0,0.2)] transition-all hover:border-amber-500/30 ${showLowAttendance ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-[#424754]/15'}`}
+                    className={`rounded-2xl p-5 transition-all glassmorphic-card ${showLowAttendance ? 'border-amber-500/40 ring-1 ring-amber-500/20 shadow-amber-500/5' : 'hover:border-amber-500/30'}`}
                 >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 flex-shrink-0">
                             <TrendingDown className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-amber-400' : 'text-[#e5e2e1]'}`}>{lowAttendanceCount}</p>
+                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-amber-400' : 'text-white'}`}>{lowAttendanceCount}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
                         </div>
                     </div>

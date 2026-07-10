@@ -147,7 +147,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
             </div>
 
             {/* Assessment Card Detail */}
-            <div className="bg-surface-container-high border border-outline-variant/10 rounded-[48px] overflow-hidden shadow-2xl shadow-black/50">
+            <div className="glassmorphic-card rounded-[48px] overflow-hidden">
                 {/* Visual Header */}
                 <div className="bg-gradient-to-r from-primary/10 via-violet-500/10 to-transparent p-12 pb-0">
                     <div className="flex flex-col md:flex-row items-center gap-8">
@@ -155,7 +155,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                             percentage={student.attendanceStats ? (Number(student.attendanceStats.completed) / (Number(student.attendanceStats.total) || 1)) * 100 : 0} 
                             size="lg"
                         >
-                            <div className="w-full h-full bg-surface-container-low flex items-center justify-center relative group">
+                            <div className="w-full h-full bg-[#19191b]/40 flex items-center justify-center relative group">
                                 <User className="w-16 h-16 text-outline-variant group-hover:scale-110 transition-transform" />
                                 <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
@@ -255,9 +255,9 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                     <div className="space-y-8">
                         <div>
                             <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em] mb-6">Parent Information</h3>
-                            <div className="bg-surface-container-low rounded-[32px] p-6 border border-outline-variant/10">
+                            <div className="bg-[#19191b]/40 rounded-[32px] p-6 border border-outline-variant/10">
                                 <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-12 h-12 rounded-2xl bg-surface-container-high border border-outline-variant/10 flex items-center justify-center text-on-surface-variant">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-outline-variant/10 flex items-center justify-center text-on-surface-variant">
                                         <User className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -266,14 +266,14 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <a href={`tel:${student.parent.phone}`} className="flex items-center justify-between p-4 bg-surface-container-high rounded-2xl border border-outline-variant/10 hover:border-primary/30 transition-all group">
+                                    <a href={`tel:${student.parent.phone}`} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-outline-variant/10 hover:border-primary/30 transition-all group">
                                         <div className="flex items-center gap-3">
                                             <Phone className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                                             <span className="text-sm font-bold text-white">{student.parent.phone || 'No phone'}</span>
                                         </div>
                                         <ChevronLeft className="w-4 h-4 text-outline-variant rotate-180" />
                                     </a>
-                                    <a href={`mailto:${student.parent.email}`} className="flex items-center justify-between p-4 bg-surface-container-high rounded-2xl border border-outline-variant/10 hover:border-violet-500/30 transition-all group">
+                                    <a href={`mailto:${student.parent.email}`} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-outline-variant/10 hover:border-violet-500/30 transition-all group">
                                         <div className="flex items-center gap-3">
                                             <Mail className="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform" />
                                             <span className="text-sm font-bold text-white truncate max-w-[180px]">{student.parent.email || 'No email'}</span>
@@ -297,9 +297,9 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                 )}
                             </div>
                         </div>
-
+ 
                         {/* Selected Sessions Card */}
-                        <div className="bg-surface-container-low rounded-[32px] p-6 border border-outline-variant/10">
+                        <div className="bg-[#19191b]/40 rounded-[32px] p-6 border border-outline-variant/10">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-primary" />
@@ -341,7 +341,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                         <h4 className="text-[10px] font-black text-on-surface-variant/60 uppercase tracking-wider">After-School (Mon - Fri)</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                             {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                                                <div key={day} className="space-y-2 p-3 bg-surface-container-high rounded-2xl border border-outline-variant/10">
+                                                <div key={day} className="space-y-2 p-3 bg-white/5 rounded-2xl border border-outline-variant/10">
                                                     <p className="text-xs font-black text-white">{day}</p>
                                                     {['3.45pm', '5.00pm'].map((time) => {
                                                         const slot = `${day} ${time}`;
@@ -352,7 +352,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                                                     type="checkbox"
                                                                     checked={isChecked}
                                                                     onChange={() => handleToggleSession(slot)}
-                                                                    className="rounded bg-[#13151a] border-[#2a2d35] text-primary focus:ring-0 w-3.5 h-3.5"
+                                                                    className="rounded bg-[#19191b]/40 border-outline-variant/20 text-primary focus:ring-0 w-3.5 h-3.5"
                                                                 />
                                                                 <span className="text-[10px] font-bold text-on-surface-variant group-hover:text-white transition-colors">{time}</span>
                                                             </label>
@@ -367,7 +367,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                         <h4 className="text-[10px] font-black text-on-surface-variant/60 uppercase tracking-wider">Weekends (Sat - Sun)</h4>
                                         <div className="grid grid-cols-2 gap-3">
                                             {['Saturday', 'Sunday'].map((day) => (
-                                                <div key={day} className="space-y-2 p-3 bg-surface-container-high rounded-2xl border border-outline-variant/10">
+                                                <div key={day} className="space-y-2 p-3 bg-white/5 rounded-2xl border border-outline-variant/10">
                                                     <p className="text-xs font-black text-white">{day}</p>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {['11.00am', '12.15pm', '1.30pm', '2.45pm'].map((time) => {
@@ -379,7 +379,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                                                         type="checkbox"
                                                                         checked={isChecked}
                                                                         onChange={() => handleToggleSession(slot)}
-                                                                        className="rounded bg-[#13151a] border-[#2a2d35] text-primary focus:ring-0 w-3.5 h-3.5"
+                                                                        className="rounded bg-[#19191b]/40 border-outline-variant/20 text-primary focus:ring-0 w-3.5 h-3.5"
                                                                     />
                                                                     <span className="text-[10px] font-bold text-on-surface-variant group-hover:text-white transition-colors">{time}</span>
                                                                 </label>
@@ -439,7 +439,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                         </div>
 
                         {/* Attendance History */}
-                        <div className="bg-surface-container-low rounded-[32px] p-6 border border-outline-variant/10">
+                        <div className="bg-[#19191b]/40 rounded-[32px] p-6 border border-outline-variant/10">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-xs font-black text-on-surface-variant uppercase tracking-[0.2em]">Attendance History</h3>
                                 <Link
@@ -458,7 +458,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                             booking.status
                                         );
                                         return (
-                                            <div key={booking.id} className="p-3 rounded-xl bg-surface-container-high border border-outline-variant/10 flex items-center justify-between gap-3">
+                                            <div key={booking.id} className="p-3 rounded-xl bg-white/5 border border-outline-variant/10 flex items-center justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-sm font-black text-white">
                                                         {new Date(booking.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
