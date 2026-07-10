@@ -41,33 +41,37 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    const hasCentres = accessibleCentreIds.length > 0;
+    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
+
     let org: any;
+    let centresList: any[] = [];
     try {
-        const orgs = await db
-            .select({
-                id: organisations.id,
-                slug: organisations.slug,
-                contactEmail: organisations.contactEmail,
-                contactPhone: organisations.contactPhone,
-                registrationTerms: organisations.registrationTerms,
-                brandColor: organisations.brandColor,
-                logoUrl: organisations.logoUrl,
-            })
-            .from(organisations)
-            .where(eq(organisations.id, session.user.organisationId))
-            .limit(1);
+        const [orgs, fetchedCentres] = await Promise.all([
+            db
+                .select({
+                    id: organisations.id,
+                    slug: organisations.slug,
+                    contactEmail: organisations.contactEmail,
+                    contactPhone: organisations.contactPhone,
+                    registrationTerms: organisations.registrationTerms,
+                    brandColor: organisations.brandColor,
+                    logoUrl: organisations.logoUrl,
+                })
+                .from(organisations)
+                .where(eq(organisations.id, session.user.organisationId))
+                .limit(1),
+            db.select().from(centres).where(eq(centres.organisationId, session.user.organisationId))
+        ]);
         org = orgs[0];
+        centresList = fetchedCentres;
     } catch {
         throw new Error('Failed to load organisation data. Please try refreshing.');
     }
     if (!org) return redirect('/onboarding');
-
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
     const userRole = (session.user as any).role as string;
-    const hasCentres = accessibleCentreIds.length > 0;
     const firstName = session.user.name?.split(' ')[0] || '';
-
-    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
 
     const childrenCentreCondition = activeCentreId !== 'all'
         ? eq(children.centreId, activeCentreId)
@@ -113,214 +117,208 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // ── Run all DB queries in parallel (CONSOLIDATED) ────────────────────────────────────
-    let dashboardData: any = {};
+    const activeTab = normalizeString(searchParams.tab) === 'activity' ? 'activity' : 'overview';
+
+    // ── Conditionally Run DB Queries based on active tab ─────────────────────────────────
+    let dashboardData: any = {
+        students: { total: 0, active: 0, prev: 0 },
+        bookings: { total: 0, month: 0, week: 0, active: 0, prev: 0 },
+        recentBookings: [],
+        registrations: { total: 0, pending: 0, month: 0, week: 0, active: 0, prev: 0 },
+        recentRegistrations: [],
+        weeklyRegistrations: [],
+        registrationPipelineData: [],
+    };
+
     try {
-        const [
-            [studentKpis],
-            [bookingKpis],
-            recentBookings,
-            [registrationKpis],
-            recentRegistrations,
-            centresList,
-            centreOccupancyData,
-            weeklyRegistrations,
-            registrationPipelineData,
-            peakDayData,
-        ] = await Promise.all([
-            // consolidated Students
-            db.select({ 
-                total: sql<number>`count(distinct ${children.id})::int`,
-                activePeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${activeStartDate.toISOString()} and ${children.createdAt} <= ${activeEndDate.toISOString()})::int`,
-                prevPeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${prevStartDate.toISOString()} and ${children.createdAt} <= ${prevEndDate.toISOString()})::int`
-            })
-                .from(children)
-                .innerJoin(parents, eq(children.parentId, parents.id))
-                .where(
+        if (activeTab === 'overview') {
+            const [
+                [studentKpis],
+                [bookingKpis],
+                [registrationKpis],
+                weeklyRegistrations,
+            ] = await Promise.all([
+                // consolidated Students
+                db.select({ 
+                    total: sql<number>`count(distinct ${children.id})::int`,
+                    activePeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${activeStartDate.toISOString()} and ${children.createdAt} <= ${activeEndDate.toISOString()})::int`,
+                    prevPeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${prevStartDate.toISOString()} and ${children.createdAt} <= ${prevEndDate.toISOString()})::int`
+                })
+                    .from(children)
+                    .innerJoin(parents, eq(children.parentId, parents.id))
+                    .where(
+                        and(
+                            eq(parents.organisationId, org.id),
+                            childrenCentreCondition
+                        )
+                    ),
+
+                // consolidated bookings
+                hasCentres
+                    ? db.select({ 
+                        totalAll: sql<number>`count(*)::int`,
+                        thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
+                        thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
+                        activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate.toISOString()} and ${bookings.startAt} <= ${activeEndDate.toISOString()})::int`,
+                        prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate.toISOString()} and ${bookings.startAt} <= ${prevEndDate.toISOString()})::int`
+                    }).from(bookings).where(bookingsCentreCondition)
+                    : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
+
+                // consolidated Registrations
+                db.select({ 
+                    total: sql<number>`count(*)::int`,
+                    pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
+                    thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart.toISOString()} and ${registrations.startDate} <= ${targetMonthEnd.toISOString()})::int`,
+                    thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
+                    activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
+                    prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
+                }).from(registrations).where(
                     and(
-                        eq(parents.organisationId, org.id),
-                        childrenCentreCondition
+                        eq(registrations.organisationId, org.id),
+                        registrationsCentreCondition
                     )
                 ),
 
-            // consolidated bookings
-            hasCentres
-                ? db.select({ 
-                    totalAll: sql<number>`count(*)::int`,
-                    thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
-                    thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
-                    activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate.toISOString()} and ${bookings.startAt} <= ${activeEndDate.toISOString()})::int`,
-                    prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate.toISOString()} and ${bookings.startAt} <= ${prevEndDate.toISOString()})::int`
-                }).from(bookings).where(bookingsCentreCondition)
-                : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
-
-            // Recent bookings preview
-            hasCentres
-                ? db.select({
-                    id: bookings.id,
-                    startAt: bookings.startAt,
-                    status: bookings.status,
-                    centreName: centres.name,
-                    childFirst: children.firstName,
-                    childLast: children.lastName,
-                    childId: children.id,
-                    attendanceStats: sql<string>`(
-                        SELECT json_build_object(
-                            'total', count(*)::int,
-                            'completed', (count(*) filter (where b2.status = 'completed'))::int
-                        )
-                        FROM booking_attendees ba
-                        JOIN bookings b2 ON ba.booking_id = b2.id
-                        WHERE ba.child_id = ${children.id}
-                    )`
-                })
-                    .from(bookings)
-                    .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
-                    .innerJoin(children, eq(bookingAttendees.childId, children.id))
-                    .innerJoin(centres, eq(bookings.centreId, centres.id))
-                    .where(
-                        and(
-                            bookingsCentreCondition,
-                            gte(bookings.startAt, activeStartDate),
-                            lte(bookings.startAt, activeEndDate)
-                        )
-                    )
-                    .orderBy(asc(bookings.startAt))
-                    .limit(10)
-                : Promise.resolve([]),
-
-            // consolidated Registrations
-            db.select({ 
-                total: sql<number>`count(*)::int`,
-                pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
-                thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart.toISOString()} and ${registrations.startDate} <= ${targetMonthEnd.toISOString()})::int`,
-                thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
-                activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
-                prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
-            }).from(registrations).where(
-                and(
-                    eq(registrations.organisationId, org.id),
-                    registrationsCentreCondition
-                )
-            ),
-
-            // Recent registrations preview
-            db.select({
-                childFirst: registrationChildren.submittedFirstName,
-                childLast: registrationChildren.submittedLastName,
-                submittedAt: registrations.submittedAt,
-                startDate: registrations.startDate,
-                status: registrations.status,
-                registrationId: registrations.id,
-            })
-                .from(registrationChildren)
-                .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
+                // Growth
+                db.select({
+                    weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
+                    count: sql<number>`count(*)::int`
+                }).from(registrations)
                 .where(
                     and(
                         eq(registrations.organisationId, org.id),
                         registrationsCentreCondition,
-                        gte(registrations.startDate, activeStartDate),
-                        lte(registrations.startDate, activeEndDate)
+                        gte(registrations.createdAt, subDays(now, 56))
                     )
                 )
-                .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
-                .limit(10),
+                .groupBy(sql`date_trunc('week', ${registrations.createdAt})`).orderBy(asc(sql`date_trunc('week', ${registrations.createdAt})`)),
+            ]);
 
-            // All centres
-            db.select().from(centres).where(eq(centres.organisationId, org.id)),
+            dashboardData = {
+                ...dashboardData,
+                students: { total: Number(studentKpis.total), active: Number(studentKpis.activePeriod), prev: Number(studentKpis.prevPeriod) },
+                bookings: { total: Number(bookingKpis.totalAll), month: Number(bookingKpis.thisMonth), week: Number(bookingKpis.thisWeek), active: Number(bookingKpis.activePeriod), prev: Number(bookingKpis.prevPeriod) },
+                registrations: { total: Number(registrationKpis.total), pending: Number(registrationKpis.pending), month: Number(registrationKpis.thisMonth), week: Number(registrationKpis.thisWeek), active: Number(registrationKpis.activePeriod), prev: Number(registrationKpis.prevPeriod) },
+                weeklyRegistrations,
+            };
+        } else {
+            const [
+                recentBookings,
+                recentRegistrations,
+                registrationPipelineData,
+                [registrationKpis],
+                [bookingKpis],
+            ] = await Promise.all([
+                // Recent bookings preview
+                hasCentres
+                    ? db.select({
+                        id: bookings.id,
+                        startAt: bookings.startAt,
+                        status: bookings.status,
+                        centreName: centres.name,
+                        childFirst: children.firstName,
+                        childLast: children.lastName,
+                        childId: children.id,
+                        attendanceStats: sql<string>`(
+                            SELECT json_build_object(
+                                'total', count(*)::int,
+                                'completed', (count(*) filter (where b2.status = 'completed'))::int
+                            )
+                            FROM booking_attendees ba
+                            JOIN bookings b2 ON ba.booking_id = b2.id
+                            WHERE ba.child_id = ${children.id}
+                        )`
+                    })
+                        .from(bookings)
+                        .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
+                        .innerJoin(children, eq(bookingAttendees.childId, children.id))
+                        .innerJoin(centres, eq(bookings.centreId, centres.id))
+                        .where(
+                            and(
+                                bookingsCentreCondition,
+                                gte(bookings.startAt, activeStartDate),
+                                lte(bookings.startAt, activeEndDate)
+                            )
+                        )
+                        .orderBy(asc(bookings.startAt))
+                        .limit(10)
+                    : Promise.resolve([]),
 
-            // Capacity stats
-            hasCentres
-                ? db.select({
-                    centreId: bookings.centreId,
-                    centreName: centres.name,
-                    day: sql<string>`date_trunc('day', ${bookings.startAt})`,
-                    count: sql<number>`count(*)::int`
+                // Recent registrations preview
+                db.select({
+                    childFirst: registrationChildren.submittedFirstName,
+                    childLast: registrationChildren.submittedLastName,
+                    submittedAt: registrations.submittedAt,
+                    startDate: registrations.startDate,
+                    status: registrations.status,
+                    registrationId: registrations.id,
                 })
-                .from(bookings)
-                .innerJoin(centres, eq(bookings.centreId, centres.id))
-                .where(and(
-                    bookingsCentreCondition,
-                    gte(bookings.startAt, startOfDay(now)),
-                    lt(bookings.startAt, endOfDay(addDays(now, 7))),
-                    eq(bookings.status, 'confirmed')
-                ))
-                .groupBy(bookings.centreId, centres.name, sql`date_trunc('day', ${bookings.startAt})`)
-                : Promise.resolve([]),
+                    .from(registrationChildren)
+                    .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
+                    .where(
+                        and(
+                            eq(registrations.organisationId, org.id),
+                            registrationsCentreCondition,
+                            gte(registrations.startDate, activeStartDate),
+                            lte(registrations.startDate, activeEndDate)
+                        )
+                    )
+                    .orderBy(asc(registrations.startDate), asc(registrationChildren.submittedFirstName))
+                    .limit(10),
 
-            // Growth
-            db.select({
-                weekStart: sql<string>`date_trunc('week', ${registrations.createdAt})`,
-                count: sql<number>`count(*)::int`
-            }).from(registrations)
-            .where(
-                and(
-                    eq(registrations.organisationId, org.id),
-                    registrationsCentreCondition,
-                    gte(registrations.createdAt, subDays(now, 56))
-                )
-            )
-            .groupBy(sql`date_trunc('week', ${registrations.createdAt})`).orderBy(asc(sql`date_trunc('week', ${registrations.createdAt})`)),
-
-            // Status pipeline
-            db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
-            .from(registrations).where(
-                and(
-                    eq(registrations.organisationId, org.id),
-                    registrationsCentreCondition
-                )
-            ).groupBy(registrations.status),
-
-            // Peak Day
-            hasCentres
-                ? db.select({
-                    dow: sql<number>`EXTRACT(DOW FROM ${bookings.startAt})::int`,
-                    count: sql<number>`count(*)::int`
-                })
-                .from(bookings)
-                .where(
+                // Status pipeline
+                db.select({ status: registrations.status, count: sql<number>`count(*)::int` })
+                .from(registrations).where(
                     and(
-                        bookingsCentreCondition,
-                        gte(bookings.startAt, subDays(now, 30))
+                        eq(registrations.organisationId, org.id),
+                        registrationsCentreCondition
                     )
-                )
-                .groupBy(sql`EXTRACT(DOW FROM ${bookings.startAt})`).orderBy(desc(sql`count`)).limit(1)
-                : Promise.resolve([])
-        ]);
+                ).groupBy(registrations.status),
 
-        dashboardData = {
-            students: { total: Number(studentKpis.total), active: Number(studentKpis.activePeriod), prev: Number(studentKpis.prevPeriod) },
-            bookings: { total: Number(bookingKpis.totalAll), month: Number(bookingKpis.thisMonth), week: Number(bookingKpis.thisWeek), active: Number(bookingKpis.activePeriod), prev: Number(bookingKpis.prevPeriod) },
-            recentBookings,
-            registrations: { total: Number(registrationKpis.total), pending: Number(registrationKpis.pending), month: Number(registrationKpis.thisMonth), week: Number(registrationKpis.thisWeek), active: Number(registrationKpis.activePeriod), prev: Number(registrationKpis.prevPeriod) },
-            recentRegistrations,
-            centresList,
-            centreOccupancyData,
-            weeklyRegistrations,
-            registrationPipelineData,
-            peakDayData
-        };
+                // consolidated Registrations
+                db.select({ 
+                    total: sql<number>`count(*)::int`,
+                    pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
+                    thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart.toISOString()} and ${registrations.startDate} <= ${targetMonthEnd.toISOString()})::int`,
+                    thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
+                    activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
+                    prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
+                }).from(registrations).where(
+                    and(
+                        eq(registrations.organisationId, org.id),
+                        registrationsCentreCondition
+                    )
+                ),
+
+                // consolidated bookings
+                hasCentres
+                    ? db.select({ 
+                        totalAll: sql<number>`count(*)::int`,
+                        thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
+                        thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
+                        activePeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${activeStartDate.toISOString()} and ${bookings.startAt} <= ${activeEndDate.toISOString()})::int`,
+                        prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate.toISOString()} and ${bookings.startAt} <= ${prevEndDate.toISOString()})::int`
+                    }).from(bookings).where(bookingsCentreCondition)
+                    : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
+            ]);
+
+            dashboardData = {
+                ...dashboardData,
+                recentBookings,
+                recentRegistrations,
+                registrationPipelineData,
+                registrations: { total: Number(registrationKpis.total), pending: Number(registrationKpis.pending), month: Number(registrationKpis.thisMonth), week: Number(registrationKpis.thisWeek), active: Number(registrationKpis.activePeriod), prev: Number(registrationKpis.prevPeriod) },
+                bookings: { total: Number(bookingKpis.totalAll), month: Number(bookingKpis.thisMonth), week: Number(bookingKpis.thisWeek), active: Number(bookingKpis.activePeriod), prev: Number(bookingKpis.prevPeriod) },
+            };
+        }
     } catch (e) {
         console.error('CRITICAL: Dashboard Fetch Failure', e);
-        // Fallback placeholder data to allow page to render partially
-        dashboardData = {
-            students: { total: 0, active: 0, prev: 0 },
-            bookings: { total: 0, month: 0, week: 0, active: 0, prev: 0 },
-            recentBookings: [],
-            registrations: { total: 0, pending: 0, month: 0, week: 0, active: 0, prev: 0 },
-            recentRegistrations: [],
-            centresList: [],
-            centreOccupancyData: [],
-            weeklyRegistrations: [],
-            registrationPipelineData: [],
-            peakDayData: []
-        };
     }
 
     // Assign variables back for the rest of the logic
     const { total: totalStudents, active: studentsActivePeriod, prev: studentsPrevPeriod } = dashboardData.students;
     const { total: totalBookingsAll, month: bookingsThisMonth, week: bookingsThisWeek, active: bookingsActivePeriod, prev: bookingsPrevPeriod } = dashboardData.bookings;
-    const { recentBookings, recentRegistrations, centresList, centreOccupancyData, weeklyRegistrations, registrationPipelineData, peakDayData } = dashboardData;
+    const { recentBookings, recentRegistrations, weeklyRegistrations, registrationPipelineData } = dashboardData;
     const { total: totalRegistrations, pending: pendingRegistrations, month: registrationsThisMonth, week: registrationsThisWeek, active: registrationsActivePeriod, prev: registrationsPrevPeriod } = dashboardData.registrations;
 
     // Deduplicate by booking ID — the query JOINs bookingAttendees so one booking
@@ -335,12 +333,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const recentBookingsChildIds = uniqueRecentBookings.map(b => b.childId);
     
     // Fetch medical and safeguarding notes with idiomatic Drizzle Relational API
-    const safetyNotes = recentBookingsChildIds.length > 0 ? await db.query.studentNotes.findMany({
-        where: (notes, { and, inArray }) => and(
-            inArray(notes.childId, recentBookingsChildIds),
-            inArray(notes.category, ['Medical', 'Safeguarding'])
-        )
-    }) : [];
+    const safetyNotes = (activeTab === 'activity' && recentBookingsChildIds.length > 0)
+        ? await db.query.studentNotes.findMany({
+            where: (notes, { and, inArray }) => and(
+                inArray(notes.childId, recentBookingsChildIds),
+                inArray(notes.category, ['Medical', 'Safeguarding'])
+            )
+        })
+        : [];
 
     // Map to bookings
     const recentBookingsWithNotes = uniqueRecentBookings.map((b: any) => {
@@ -392,18 +392,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const bookingsTrend = calculateTrend(bookingsActivePeriod, bookingsPrevPeriod);
     const registrationsTrend = calculateTrend(registrationsActivePeriod, registrationsPrevPeriod);
 
-    const centresWithOccupancy = centresList
-        .filter((c: any) => activeCentreId === 'all' || c.id === activeCentreId)
-        .map((centre: any) => {
-            const stats = centreOccupancyData.filter((d: any) => d.centreId === centre.id);
-            const todayStats = stats.find((d: any) => isSameDay(new Date(d.day), now));
-            return {
-                ...centre,
-                todayCount: Number(todayStats?.count || 0),
-                forecast: stats.map((d: any) => ({ day: new Date(d.day), count: Number(d.count || 0) }))
-            };
-        });
-
     // Format Registration Pipeline
     const pipelineCounts = {
         new: Number(registrationPipelineData.find((d: any) => d.status === 'awaiting_confirmation')?.count || 0),
@@ -421,9 +409,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         const match = weeklyRegistrations.find((d: any) => isSameDay(new Date(d.weekStart), w));
         return Number(match?.count || 0);
     });
-
-    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const peakDayName = peakDayData[0] ? daysOfWeek[Math.round(Number(peakDayData[0].dow))] : null;
 
     // ── Onboarding checklist steps ────────────────────────────────────────────
     const onboardingSteps = [
@@ -479,303 +464,335 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 </Suspense>
             </DashboardHero>
 
-            {/* ── Onboarding checklist ─────────────────────────────────────── */}
-            {!onboardingAllDone && (
-                <OnboardingChecklist steps={onboardingSteps} />
+            {/* ── Apple Segmented Tab Switcher ───────────────────────────────── */}
+            <div className="flex justify-center my-2">
+                <div className="inline-flex p-1 bg-[#19191b]/80 backdrop-blur-md rounded-2xl border border-outline-variant/10 shadow-lg">
+                    <Link
+                        href={{ pathname: '/dashboard', query: { ...searchParams, tab: 'overview' } }}
+                        className={cn(
+                            "px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200",
+                            activeTab === 'overview' 
+                                ? "bg-white/10 text-white shadow-sm" 
+                                : "text-slate-400 hover:text-white"
+                        )}
+                    >
+                        Overview
+                    </Link>
+                    <Link
+                        href={{ pathname: '/dashboard', query: { ...searchParams, tab: 'activity' } }}
+                        className={cn(
+                            "px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200",
+                            activeTab === 'activity' 
+                                ? "bg-white/10 text-white shadow-sm" 
+                                : "text-slate-400 hover:text-white"
+                        )}
+                    >
+                        Activity & Funnel
+                    </Link>
+                </div>
+            </div>
+
+            {activeTab === 'overview' ? (
+                <div key="overview-tab" className="space-y-8 animate-in fade-in duration-500 slide-in-from-bottom-2">
+                    {/* ── Onboarding checklist ─────────────────────────────────────── */}
+                    {!onboardingAllDone && (
+                        <OnboardingChecklist steps={onboardingSteps} />
+                    )}
+
+                    {/* ── Today's Snapshot ───────────────────────────────────── */}
+                    <TodaysSnapshot
+                        activeCentreId={activeCentreId}
+                        accessibleCentreIds={accessibleCentreIds}
+                    />
+
+                    {/* ── Top-level stats row ──────────────────────────────────── */}
+                    <KpiGrid
+                        studentsActive={studentsActivePeriod}
+                        studentsTotal={totalStudents}
+                        bookingsActive={bookingsActivePeriod}
+                        bookingsTotal={totalBookingsAll}
+                        registrationsActive={registrationsActivePeriod}
+                        registrationsTotal={totalRegistrations}
+                        pendingRegistrations={pendingRegistrations}
+                        studentsTrend={studentsTrend}
+                        bookingsTrend={bookingsTrend}
+                        registrationsTrend={registrationsTrend}
+                        growthStats={growthStats}
+                    />
+                </div>
+            ) : (
+                <div key="activity-tab" className="space-y-8 animate-in fade-in duration-500 slide-in-from-bottom-2">
+                    {/* ── Feature Module Cards ─────────────────────────────────── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                        {/* Registration Pipeline (Unified Visual Structure) */}
+                        <div className="glassmorphic-card p-6 rounded-2xl border border-tertiary/20 relative overflow-hidden group hover:border-tertiary/40 glow-hover-tertiary transition-all flex flex-col gap-6">
+                            {/* Backdrop light aura */}
+                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-tertiary/5 rounded-full blur-3xl group-hover:bg-tertiary/10 transition-colors pointer-events-none" />
+
+                            {/* Header: Matches Bookings & Registrations */}
+                            <div className="flex items-start justify-between relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center">
+                                        <BarChart3 className="w-6 h-6 text-tertiary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-bold text-white text-lg leading-tight">Registration Funnel</h2>
+                                        <p className="text-sm text-on-surface-variant font-medium mt-1">Funnel stages & processing health</p>
+                                    </div>
+                                </div>
+                                <span className="flex items-center gap-2 px-3 py-1 bg-tertiary-container/20 text-tertiary rounded-full border border-tertiary/10 shadow-[0_0_12px_rgba(92,253,128,0.2)]">
+                                    <span className="flex h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
+                                </span>
+                            </div>
+
+                            {/* Unified Stats Grid */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                                <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{pipelineCounts.new}</p>
+                                    <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Inquiry</p>
+                                </div>
+                                <div className="p-3 bg-tertiary/5 rounded-xl border border-tertiary/10 flex flex-col justify-center hover:bg-tertiary/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.review}</p>
+                                    <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Review</p>
+                                </div>
+                                <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/20 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
+                                    <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
+                                </div>
+                            </div>
+
+                            {/* Funnel display */}
+                            <div className="flex flex-col flex-1 relative z-10 justify-center">
+                                <RegistrationFunnel data={pipelineCounts} />
+                            </div>
+
+                            {/* Bottom Action */}
+                            <Link
+                                href="/dashboard/registrations"
+                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-tertiary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                            >
+                                Manage Pipeline <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
+
+                        {/* Sessions & Bookings (Unified Card Structure) */}
+                        <div className="glassmorphic-card p-6 rounded-2xl border border-secondary/20 relative overflow-hidden group hover:border-secondary/40 glow-hover-secondary transition-all flex flex-col gap-6">
+                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-colors pointer-events-none"></div>
+                            
+                            <div className="flex items-start justify-between relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
+                                        <CalendarCheck className="w-6 h-6 text-secondary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-bold text-white text-lg leading-tight">Sessions & Bookings</h2>
+                                        <p className="text-sm text-on-surface-variant font-medium mt-1">Manage schedules and attendance</p>
+                                    </div>
+                                </div>
+                                <span className="flex items-center gap-2 px-3 py-1 bg-secondary-container/20 text-secondary rounded-full border border-secondary/10 shadow-[0_0_12px_rgba(110,6,208,0.2)]">
+                                    <span className="flex h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                                <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{totalBookingsAll}</p>
+                                    <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                                </div>
+                                <div className="p-3 bg-secondary/5 rounded-xl border border-secondary/10 flex flex-col justify-center hover:bg-secondary/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
+                                    <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                </div>
+                                <div className="p-3 bg-secondary/10 rounded-xl border border-secondary/20 flex flex-col justify-center hover:bg-secondary/20 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
+                                    <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                </div>
+                            </div>
+
+                            {/* Recent preview */}
+                            <div className="flex flex-col flex-1 relative z-10">
+                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
+                                {recentBookingsWithNotes.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {recentBookingsWithNotes.map((b: any) => (
+                                            <Link
+                                                key={b.id}
+                                                href={`/dashboard/bookings/${b.id}`}
+                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <AttendanceRadial 
+                                                        percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
+                                                        size="sm"
+                                                    >
+                                                        <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+                                                            {b.childFirst[0]}{b.childLast[0]}
+                                                        </div>
+                                                    </AttendanceRadial>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
+                                                            {(() => {
+                                                                const resolved = resolveAttendanceStatus(
+                                                                    (b.attendanceStatus as AttendanceStatus | null) ?? null,
+                                                                    b.status
+                                                                );
+                                                                return (
+                                                                    <span className={cn(
+                                                                        "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                                                        getAttendanceColorClass(resolved.status),
+                                                                        resolved.status === 'pending' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'border-current/20'
+                                                                    )}>
+                                                                        {resolved.label}
+                                                                    </span>
+                                                                );
+                                                            })()}
+                                                            {b.hasMedicalNote && (
+                                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
+                                                                        <AlertTriangle className="w-3 h-3 text-error" />
+                                                                    </div>
+                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                        <div className="font-bold text-error mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                        {b.medicalNotesContent}
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {b.hasSafeguardingNote && (
+                                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
+                                                                        <Shield className="w-3 h-3 text-primary" />
+                                                                    </div>
+                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                        <div className="font-bold text-primary mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                        {b.safeguardingNotesContent}
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-on-surface-variant font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                )}
+                            </div>
+
+                            <Link
+                                href="/dashboard/bookings"
+                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                            >
+                                View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
+
+                        {/* Registrations (Unified Card Structure) */}
+                        <div className="glassmorphic-card p-6 rounded-2xl border border-primary/20 relative overflow-hidden group hover:border-primary/40 glow-hover-primary transition-all flex flex-col gap-6">
+                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none"></div>
+
+                            <div className="flex items-start justify-between relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                                        <ClipboardList className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-bold text-white text-lg leading-tight">Registrations</h2>
+                                        <p className="text-sm text-on-surface-variant font-medium mt-1">Student sign-ups</p>
+                                    </div>
+                                </div>
+                                <span className="flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary rounded-full border border-primary/10 shadow-[0_0_12px_rgba(142,171,255,0.2)]">
+                                    <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                                <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{totalRegistrations}</p>
+                                    <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                                </div>
+                                <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
+                                    <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                </div>
+                                <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/20 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
+                                    <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                </div>
+                            </div>
+
+                            {/* Recent preview */}
+                            <div className="flex flex-col flex-1 relative z-10">
+                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
+                                {recentRegistrations.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {recentRegistrations.map((r: any, i: any) => (
+                                            <Link
+                                                key={`${r.registrationId}-${i}`}
+                                                href={`/dashboard/registrations/${r.registrationId}`}
+                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                                        {r.childFirst[0]}{r.childLast[0]}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-sm font-bold text-white">{r.childFirst} {r.childLast}</p>
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                                r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-error border border-error/20' :
+                                                                r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
+                                                                'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                                            }`}>
+                                                                {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
+                                                                 r.status === 'signed_up' ? 'Approved' : 'Pending'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+                                                            Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col gap-2 mt-2 relative z-10">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
+                                    <p className="text-[10px] text-on-surface-variant">{registrationsThisMonth} new this month</p>
+                                </div>
+                                <div className="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+                                    <p className="text-xs text-white font-mono truncate">{registrationLink}</p>
+                                </div>
+                            </div>
+
+                            <Link
+                                href="/dashboard/registrations"
+                                className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                            >
+                                View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
+
+                    </div>
+                </div>
             )}
 
-            {/* ── Today's Snapshot ───────────────────────────────────── */}
-            <TodaysSnapshot
-                activeCentreId={activeCentreId}
-                accessibleCentreIds={accessibleCentreIds}
-            />
-
-            {/* ── Top-level stats row ──────────────────────────────────── */}
-            <KpiGrid
-                studentsActive={studentsActivePeriod}
-                studentsTotal={totalStudents}
-                bookingsActive={bookingsActivePeriod}
-                bookingsTotal={totalBookingsAll}
-                registrationsActive={registrationsActivePeriod}
-                registrationsTotal={totalRegistrations}
-                pendingRegistrations={pendingRegistrations}
-                studentsTrend={studentsTrend}
-                bookingsTrend={bookingsTrend}
-                registrationsTrend={registrationsTrend}
-                growthStats={growthStats}
-            />
-
-
-
-            {/* ── Feature Module Cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                {/* Registration Pipeline (Unified Visual Structure) */}
-                <div className="glassmorphic-card p-6 rounded-2xl border border-tertiary/20 relative overflow-hidden group hover:border-tertiary/40 glow-hover-tertiary transition-all flex flex-col gap-6">
-                    {/* Backdrop light aura */}
-                    <div className="absolute -right-4 -top-4 w-32 h-32 bg-tertiary/5 rounded-full blur-3xl group-hover:bg-tertiary/10 transition-colors pointer-events-none" />
-
-                    {/* Header: Matches Bookings & Registrations */}
-                    <div className="flex items-start justify-between relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center">
-                                <BarChart3 className="w-6 h-6 text-tertiary" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-white text-lg leading-tight">Registration Funnel</h2>
-                                <p className="text-sm text-on-surface-variant font-medium mt-1">Funnel stages & processing health</p>
-                            </div>
-                        </div>
-                        <span className="flex items-center gap-2 px-3 py-1 bg-tertiary-container/20 text-tertiary rounded-full border border-tertiary/10 shadow-[0_0_12px_rgba(92,253,128,0.2)]">
-                            <span className="flex h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                        </span>
-                    </div>
-
-                    {/* Unified Stats Grid */}
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                        <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-white">{pipelineCounts.new}</p>
-                            <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Inquiry</p>
-                        </div>
-                        <div className="p-3 bg-tertiary/5 rounded-xl border border-tertiary/10 flex flex-col justify-center hover:bg-tertiary/10 transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.review}</p>
-                            <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Review</p>
-                        </div>
-                        <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/20 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
-                            <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
-                        </div>
-                    </div>
-
-                    {/* Funnel display */}
-                    <div className="flex flex-col flex-1 relative z-10 justify-center">
-                        <RegistrationFunnel data={pipelineCounts} />
-                    </div>
-
-                    {/* Bottom Action */}
-                    <Link
-                        href="/dashboard/registrations"
-                        className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-tertiary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
-                    >
-                        Manage Pipeline <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
-                </div>
-
-                {/* Sessions & Bookings (Unified Card Structure) */}
-                <div className="glassmorphic-card p-6 rounded-2xl border border-secondary/20 relative overflow-hidden group hover:border-secondary/40 glow-hover-secondary transition-all flex flex-col gap-6">
-                    <div className="absolute -right-4 -top-4 w-32 h-32 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-colors pointer-events-none"></div>
-                    
-                    <div className="flex items-start justify-between relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
-                                <CalendarCheck className="w-6 h-6 text-secondary" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-white text-lg leading-tight">Sessions & Bookings</h2>
-                                <p className="text-sm text-on-surface-variant font-medium mt-1">Manage schedules and attendance</p>
-                            </div>
-                        </div>
-                        <span className="flex items-center gap-2 px-3 py-1 bg-secondary-container/20 text-secondary rounded-full border border-secondary/10 shadow-[0_0_12px_rgba(110,6,208,0.2)]">
-                            <span className="flex h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                        <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-white">{totalBookingsAll}</p>
-                            <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
-                        </div>
-                        <div className="p-3 bg-secondary/5 rounded-xl border border-secondary/10 flex flex-col justify-center hover:bg-secondary/10 transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
-                            <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
-                        </div>
-                        <div className="p-3 bg-secondary/10 rounded-xl border border-secondary/20 flex flex-col justify-center hover:bg-secondary/20 transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
-                            <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
-                        </div>
-                    </div>
-
-                    {/* Recent preview */}
-                    <div className="flex flex-col flex-1 relative z-10">
-                        <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
-                        {recentBookingsWithNotes.length > 0 ? (
-                            <div className="space-y-2">
-                                {recentBookingsWithNotes.map((b: any) => (
-                                    <Link
-                                        key={b.id}
-                                        href={`/dashboard/bookings/${b.id}`}
-                                        className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <AttendanceRadial 
-                                                percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
-                                                size="sm"
-                                            >
-                                                <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
-                                                    {b.childFirst[0]}{b.childLast[0]}
-                                                </div>
-                                            </AttendanceRadial>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
-                                                    {(() => {
-                                                        const resolved = resolveAttendanceStatus(
-                                                            (b.attendanceStatus as AttendanceStatus | null) ?? null,
-                                                            b.status
-                                                        );
-                                                        return (
-                                                            <span className={cn(
-                                                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                                                                getAttendanceColorClass(resolved.status),
-                                                                resolved.status === 'pending' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'border-current/20'
-                                                            )}>
-                                                                {resolved.label}
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                    {b.hasMedicalNote && (
-                                                        <div className="relative group/tooltip flex items-center outline-none">
-                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
-                                                                <AlertTriangle className="w-3 h-3 text-error" />
-                                                            </div>
-                                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                <div className="font-bold text-error mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
-                                                                {b.medicalNotesContent}
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {b.hasSafeguardingNote && (
-                                                        <div className="relative group/tooltip flex items-center outline-none">
-                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
-                                                                <Shield className="w-3 h-3 text-primary" />
-                                                            </div>
-                                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                <div className="font-bold text-primary mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
-                                                                {b.safeguardingNotesContent}
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-on-surface-variant font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
-                                    </Link>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
-                        )}
-                    </div>
-
-                    <Link
-                        href="/dashboard/bookings"
-                        className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
-                    >
-                        View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
-                </div>
-
-                {/* Registrations (Unified Card Structure) */}
-                <div className="glassmorphic-card p-6 rounded-2xl border border-primary/20 relative overflow-hidden group hover:border-primary/40 glow-hover-primary transition-all flex flex-col gap-6">
-                    <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none"></div>
-
-                    <div className="flex items-start justify-between relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                                <ClipboardList className="w-6 h-6 text-primary" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-white text-lg leading-tight">Registrations</h2>
-                                <p className="text-sm text-on-surface-variant font-medium mt-1">Student sign-ups</p>
-                            </div>
-                        </div>
-                        <span className="flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary rounded-full border border-primary/10 shadow-[0_0_12px_rgba(142,171,255,0.2)]">
-                            <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                        <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-white">{totalRegistrations}</p>
-                            <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
-                        </div>
-                        <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
-                            <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
-                        </div>
-                        <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/20 transition-all">
-                            <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
-                            <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
-                        </div>
-                    </div>
-
-                    {/* Recent preview */}
-                    <div className="flex flex-col flex-1 relative z-10">
-                        <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
-                        {recentRegistrations.length > 0 ? (
-                            <div className="space-y-2">
-                                {recentRegistrations.map((r: any, i: any) => (
-                                    <Link
-                                        key={`${r.registrationId}-${i}`}
-                                        href={`/dashboard/registrations/${r.registrationId}`}
-                                        className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                {r.childFirst[0]}{r.childLast[0]}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-sm font-bold text-white">{r.childFirst} {r.childLast}</p>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                        r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-error border border-error/20' :
-                                                        r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
-                                                        'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                                    }`}>
-                                                        {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
-                                                         r.status === 'signed_up' ? 'Approved' : 'Pending'}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-on-surface-variant font-medium mt-0.5">
-                                                    Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
-                                    </Link>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 mt-2 relative z-10">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
-                            <p className="text-[10px] text-on-surface-variant">{registrationsThisMonth} new this month</p>
-                        </div>
-                        <div className="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
-                            <p className="text-xs text-white font-mono truncate">{registrationLink}</p>
-                        </div>
-                    </div>
-
-                    <Link
-                        href="/dashboard/registrations"
-                        className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
-                    >
-                        View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
-                </div>
-
-
-            </div>
         </div>
     );
 }
