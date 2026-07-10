@@ -131,7 +131,7 @@ export default async function StaffPage(props: {
                         {roleBreakdown.ORG_OWNER > 0 && <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">{roleBreakdown.ORG_OWNER} Owner{roleBreakdown.ORG_OWNER > 1 ? 's' : ''}</span>}
                         {roleBreakdown.MANAGER > 0 && <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#d0bcff]/10 text-[#d0bcff] border border-[#d0bcff]/20">{roleBreakdown.MANAGER} Manager{roleBreakdown.MANAGER > 1 ? 's' : ''}</span>}
                         {roleBreakdown.FRONT_DESK > 0 && <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#adc6ff]/10 text-[#adc6ff] border border-[#adc6ff]/20">{roleBreakdown.FRONT_DESK} Front Desk</span>}
-                        {roleBreakdown.TUTOR > 0 && <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{roleBreakdown.TUTOR} Tutor{roleBreakdown.TUTOR > 1 ? 's' : ''}</span>}
+                        {roleBreakdown.TUTOR > 0 && <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{roleBreakdown.TUTOR} Club Leader{roleBreakdown.TUTOR > 1 ? 's' : ''}</span>}
                         {filteredStaffMembers.length === 0 && <span className="text-[#8c909f] text-xs">No staff yet</span>}
                     </div>
                 </div>
@@ -142,7 +142,7 @@ export default async function StaffPage(props: {
                 <div className="w-10 h-10 rounded-xl bg-[#2a2a2a] flex items-center justify-center flex-shrink-0"><Shield className="w-5 h-5 text-[#adc6ff]" /></div>
                 <div>
                     <h3 className="font-bold text-[#e5e2e1]">Centre-Level Access Control</h3>
-                    <p className="text-sm text-[#8c909f] mt-1 leading-relaxed max-w-4xl">Staff members (Manager, Front Desk, Tutor) only see data from centres they&apos;re assigned to. As an Organisation Owner, you have full access to all centres and system settings.</p>
+                    <p className="text-sm text-[#8c909f] mt-1 leading-relaxed max-w-4xl">Staff members (Manager, Front Desk, Club Leader) only see data from centres they&apos;re assigned to. As an Organisation Owner, you have full access to all centres and system settings.</p>
                 </div>
             </div>
 

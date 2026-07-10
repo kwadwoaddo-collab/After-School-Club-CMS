@@ -560,7 +560,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
 
                 {/* Notes Input */}
                 <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Tutor Notes</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Club Leader Notes</label>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
@@ -577,7 +577,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
 
                     {fileBase64 ? (
                         <div className="relative group inline-block">
-                            <img src={fileBase64} alt="Assessment" className="w-full max-w-[200px] h-32 object-cover rounded-md border border-slate-700" />
+                            <img src={fileBase64} alt="Session Activity" className="w-full max-w-[200px] h-32 object-cover rounded-md border border-slate-700" />
                             {status !== 'SENT' && (
                                 <button
                                     onClick={() => { setFileBase64(null); setMimeType(null); }}

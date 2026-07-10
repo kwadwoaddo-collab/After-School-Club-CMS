@@ -25,7 +25,7 @@ const ROLE_LABELS: Record<string, string> = {
     ORG_OWNER: 'Owner',
     ADMIN: 'Admin',
     MANAGER: 'Manager',
-    TUTOR: 'Tutor',
+    TUTOR: 'Club Leader',
     STAFF: 'Staff',
 };
 

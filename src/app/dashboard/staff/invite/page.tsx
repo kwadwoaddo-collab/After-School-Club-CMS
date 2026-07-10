@@ -68,7 +68,7 @@ export default function InviteStaffPage() {
         },
         {
             value: 'TUTOR',
-            label: 'Tutor',
+            label: 'Club Leader',
             description: 'Can view sessions and add feedback',
             color: 'amber',
         },
