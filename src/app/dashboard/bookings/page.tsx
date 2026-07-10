@@ -227,8 +227,8 @@ export default async function BookingsPage(props: {
             {/* Header */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
-                    <p className="text-slate-400 font-medium mt-1">Manage upcoming and past appointments</p>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Bookings</h1>
+                    <p className="text-sm text-[#8c909f] mt-1">Manage upcoming and past appointments</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Today quick filter */}
@@ -236,8 +236,8 @@ export default async function BookingsPage(props: {
                         href={isToday ? '/dashboard/bookings' : '/dashboard/bookings?today=true'}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold border transition-all ${
                             isToday
-                                ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
-                                : 'bg-[#2a2d35] hover:bg-[#343843] border-[#3a3f4b] text-[#FFFFFF]'
+                                ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
+                                : 'bg-white/5 hover:bg-white/10 border-white/10 text-white'
                         }`}
                     >
                         <Calendar className="w-4 h-4" />
@@ -245,7 +245,7 @@ export default async function BookingsPage(props: {
                     </Link>
                     <Link
                         href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] border border-[#3a3f4b] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-sm font-semibold text-white transition-all"
                     >
                         <Download className="w-4 h-4" />
                         <span className="hidden sm:inline">Export CSV</span>
@@ -273,7 +273,7 @@ export default async function BookingsPage(props: {
             </div>
 
             {/* Filters */}
-            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
+            <div className="glassmorphic-card rounded-3xl p-6 shadow-xl">
                 <Suspense fallback={<div className="h-20 animate-pulse bg-slate-800/50 rounded-2xl w-full"></div>}>
                     <BookingsFilters centres={orgCentres} resultsCount={totalRecords} />
                 </Suspense>

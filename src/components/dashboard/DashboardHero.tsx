@@ -52,7 +52,7 @@ export default function DashboardHero({ firstName, children }: DashboardHeroProp
                             isScrolled ? "text-lg md:text-xl" : "text-3xl md:text-4xl headline-lg"
                         )}
                     >
-                        Welcome back{firstName ? `, ${firstName}` : ''}!
+                        Overview
                     </h1>
                     {!isScrolled && (
                         <p className="text-on-surface-variant text-sm mt-1 max-w-xl font-medium animate-in fade-in duration-300">

@@ -472,24 +472,24 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             />
         )}
 
-        <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] overflow-hidden relative">
+        <div className="glassmorphic-card rounded-[32px] overflow-hidden relative">
             {/* Table for Desktop */}
             <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="border-b border-outline-variant/10 bg-surface-container-low/50">
+                        <tr className="border-b border-outline-variant/10 bg-white/5">
                             <th className="text-left px-5 py-4 w-12">
                                 <div className="flex items-center justify-center">
                                     <input 
                                         type="checkbox" 
                                         checked={bookings.length > 0 && selectedBookings.size === bookings.length}
                                         onChange={handleSelectAll}
-                                        className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                        className="w-4 h-4 rounded appearance-none border border-primary/40 bg-[#19191b]/40 checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
                                     />
                                 </div>
                             </th>
                             <th 
-                                className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider cursor-pointer hover:bg-[#2a2d35] transition-colors group select-none relative"
+                                className="text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none relative"
                                 onClick={() => handleSort('date')}
                             >
                                 <div className="flex items-center gap-2">
@@ -501,7 +501,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             </th>
                             <th 
-                                className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider cursor-pointer hover:bg-[#2a2d35] transition-colors group select-none relative"
+                                className="text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none relative"
                                 onClick={() => handleSort('student')}
                             >
                                 <div className="flex items-center gap-2">
@@ -512,14 +512,14 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                             </th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
+                            <th className="text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider">
                                 Session Type
                             </th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
+                            <th className="text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider">
                                 Centre
                             </th>
                             <th 
-                                className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider cursor-pointer hover:bg-[#2a2d35] transition-colors group select-none relative"
+                                className="text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none relative"
                                 onClick={() => handleSort('status')}
                             >
                                 <div className="flex items-center gap-2">
@@ -530,17 +530,17 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                             </th>
-                            <th className="text-right px-6 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
+                            <th className="text-right px-6 py-4 text-xs font-bold text-white uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#2a2a2a]">
+                    <tbody className="divide-y divide-outline-variant/10">
                         {sortedBookings.map((booking) => (
                             <tr
                                 key={booking.id}
                                 onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                                className={`cursor-pointer hover:bg-[#2a2d35] transition-colors group ${selectedBookings.has(booking.id) ? 'bg-[#2a2d35]/50' : ''}`}
+                                className={`cursor-pointer hover:bg-white/5 transition-colors group ${selectedBookings.has(booking.id) ? 'bg-white/5 border-l-2 border-primary' : ''}`}
                             >
                                 <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center justify-center">
@@ -548,7 +548,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                             type="checkbox" 
                                             checked={selectedBookings.has(booking.id)}
                                             onChange={() => handleSelectRow(booking.id)}
-                                            className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                            className="w-4 h-4 rounded appearance-none border border-primary/40 bg-[#19191b]/40 checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
                                         />
                                     </div>
                                 </td>
@@ -613,7 +613,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                         <a 
                                                             href={`mailto:${booking.parent.email}`}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="p-1.5 hover:bg-[#343843] rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
                                                             title={`Email ${booking.parent.firstName}`}
                                                         >
                                                             <Mail className="w-3.5 h-3.5" />
@@ -623,7 +623,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                         <a 
                                                             href={`tel:${booking.parent.phone}`}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="p-1.5 hover:bg-[#343843] rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
                                                             title={`Call ${booking.parent.firstName}`}
                                                         >
                                                             <Phone className="w-3.5 h-3.5" />
@@ -656,21 +656,21 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 e.stopPropagation();
                                                 setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
                                             }}
-                                            className="p-2 hover:bg-[#343843] rounded-xl transition-colors"
+                                            className="p-2 hover:bg-white/10 rounded-xl transition-colors"
                                         >
                                             <MoreVertical className="w-4 h-4 text-slate-500" />
                                         </button>
-
+ 
                                         {activeDropdown === booking.id && (
                                             <>
                                                 <div
                                                     className="fixed inset-0 z-10"
                                                     onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}
                                                 />
-                                                <div className="absolute right-0 top-full mt-2 w-52 bg-[#1a1d23] rounded-2xl shadow-xl border border-[#2a2a2a] py-2 z-20">
+                                                <div className="absolute right-0 top-full mt-2 w-52 bg-[#1a1d23]/95 backdrop-blur-md rounded-2xl shadow-xl border border-outline-variant/10 py-2 z-20">
                                                     <Link
                                                         href={`/dashboard/bookings/${booking.id}`}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-white transition-colors"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                         View Details
@@ -678,7 +678,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     {(booking.attendees?.[0]?.child?.id || booking.child?.id) && (
                                                         <Link
                                                             href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-primary transition-colors"
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-primary transition-colors"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -688,7 +688,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     )}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-white transition-colors w-full text-left"
                                                     >
                                                         <CalendarIcon className="w-4 h-4" />
                                                         Reschedule
@@ -696,19 +696,19 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     {centres.length > 1 && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-[#FFFFFF] transition-colors w-full text-left"
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-white transition-colors w-full text-left"
                                                         >
                                                             <MapPin className="w-4 h-4 text-indigo-400" />
                                                             Reassign Centre
                                                         </button>
                                                     )}
                                                     {/* Task 33: Quick status updates */}
-                                                    <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
+                                                    <div className="mx-3 my-1 border-t border-outline-variant/10" />
                                                     <p className="px-4 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick Status</p>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
                                                         disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-blue-400 transition-colors w-full text-left disabled:opacity-50"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-blue-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <BookOpen className="w-4 h-4" />
                                                         Mark as Booked
@@ -716,7 +716,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
                                                         disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-emerald-400 transition-colors w-full text-left disabled:opacity-50"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-emerald-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <CheckCircle className="w-4 h-4" />
                                                         Mark as Signed-up
@@ -725,23 +725,23 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                         onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
                                                         disabled={updatingStatus === booking.id}
                                                         title="Marks entire booking as attended (applies to all children)"
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2a2d35] text-sm font-medium text-violet-400 transition-colors w-full text-left disabled:opacity-50"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-violet-400 transition-colors w-full text-left disabled:opacity-50"
                                                     >
                                                         <GraduationCap className="w-4 h-4" />
                                                         Mark as Attended
                                                     </button>
-                                                    <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
+                                                    <div className="mx-3 my-1 border-t border-outline-variant/10" />
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2b1f24] text-sm font-medium text-red-400 transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-sm font-medium text-red-400 transition-colors w-full text-left"
                                                     >
                                                         <X className="w-4 h-4" />
                                                         Cancel Booking
                                                     </button>
-                                                    <div className="mx-3 my-1 border-t border-[#2a2a2a]" />
+                                                    <div className="mx-3 my-1 border-t border-outline-variant/10" />
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#2b1f24] text-sm font-medium text-red-500 transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-sm font-medium text-red-500 transition-colors w-full text-left"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                         Delete Booking
@@ -758,24 +758,24 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             </div>
 
             {/* Card View for Mobile */}
-            <div className="lg:hidden divide-y divide-[#2a2a2a]">
+            <div className="lg:hidden divide-y divide-outline-variant/10">
                 {/* Simplified Mobile Select All */}
-                <div className="p-4 bg-[#2a2d35]/30 flex items-center justify-between border-b border-[#2a2a2a]">
+                <div className="p-4 bg-white/5 flex items-center justify-between border-b border-outline-variant/10">
                     <div className="flex items-center gap-3">
                         <input 
                             type="checkbox" 
                             checked={bookings.length > 0 && selectedBookings.size === bookings.length}
                             onChange={handleSelectAll}
-                            className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                            className="w-4 h-4 rounded appearance-none border border-primary/40 bg-[#19191b]/40 checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
                         />
-                        <span className="text-sm font-bold text-[#FFFFFF]">Select All</span>
+                        <span className="text-sm font-bold text-white">Select All</span>
                     </div>
                 </div>
                 {sortedBookings.map((booking) => (
                     <div 
                         key={booking.id} 
                         onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                        className={`p-5 cursor-pointer hover:bg-[#2a2d35] transition-colors ${selectedBookings.has(booking.id) ? 'bg-[#2a2d35]/50' : ''}`}
+                        className={`p-5 cursor-pointer hover:bg-white/5 transition-colors ${selectedBookings.has(booking.id) ? 'bg-white/5 border-l-2 border-primary' : ''}`}
                     >
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -784,7 +784,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         type="checkbox" 
                                         checked={selectedBookings.has(booking.id)}
                                         onChange={() => handleSelectRow(booking.id)}
-                                        className="w-4 h-4 rounded appearance-none border border-[#4F46E5]/40 bg-[#1a1d23] checked:bg-[#4F46E5] checked:border-[#4F46E5] flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                        className="w-4 h-4 rounded appearance-none border border-primary/40 bg-[#19191b]/40 checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
                                     />
                                 </div>
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold">
@@ -829,7 +829,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     <a 
                                                         href={`mailto:${booking.parent.email}`}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="p-1 hover:bg-[#343843] rounded-md text-slate-400 hover:text-white transition-colors"
+                                                        className="p-1 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors"
                                                     >
                                                         <Mail className="w-3.5 h-3.5" />
                                                     </a>
@@ -838,7 +838,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     <a 
                                                         href={`tel:${booking.parent.phone}`}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="p-1 hover:bg-[#343843] rounded-md text-slate-400 hover:text-white transition-colors"
+                                                        className="p-1 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors"
                                                     >
                                                         <Phone className="w-3.5 h-3.5" />
                                                     </a>
@@ -871,7 +871,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         <div className="flex gap-2 mt-3 pl-8">
                             <Link
                                 href={`/dashboard/bookings/${booking.id}`}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#2a2d35] hover:bg-[#343843] rounded-xl text-sm font-semibold text-[#FFFFFF] transition-all"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-semibold text-white transition-all"
                             >
                                 <Eye className="w-4 h-4" />
                                 View Details
@@ -882,7 +882,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     e.stopPropagation();
                                     setConfirmDelete(booking.id);
                                 }}
-                                className="px-3 py-2 bg-[#2b1f24] hover:bg-red-500/20 rounded-xl text-red-400 transition-all"
+                                className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all"
                                 title="Delete Booking"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -899,8 +899,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
             }`}
         >
-            <div className="bg-[#1a1d23] border border-[#2a2a2a] shadow-[0_20px_40px_rgba(0,0,0,0.5)] rounded-2xl p-2 px-3 flex items-center gap-4 mx-4">
-                <div className="pl-2 pr-4 py-2 border-r border-[#2a2a2a] flex items-center gap-2.5">
+            <div className="bg-[#1a1d23]/95 backdrop-blur-md border border-outline-variant/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)] rounded-2xl p-2 px-3 flex items-center gap-4 mx-4">
+                <div className="pl-2 pr-4 py-2 border-r border-outline-variant/10 flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/30">
                         {selectedBookings.size}
                     </div>
@@ -923,7 +923,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                         Mark Signed-up
                     </button>
-                    <div className="w-px h-6 bg-[#2a2a2a] mx-1"></div>
+                    <div className="w-px h-6 bg-outline-variant/10 mx-1"></div>
                     <button
                         onClick={() => setConfirmBulkDelete(true)}
                         disabled={isProcessingBulk}
@@ -944,7 +944,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 aria-modal="true"
                 aria-labelledby="bulk-delete-dialog-title"
             >
-                <div className="bg-[#1a1d23] border border-[#2a2a2a] rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                <div className="bg-[#1a1d23]/95 backdrop-blur-md border border-outline-variant/10 rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
                     <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-red-500/30">
                         <Trash2 className="w-7 h-7 text-red-400" />
                     </div>
@@ -957,7 +957,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <div className="flex gap-3">
                         <button
                             onClick={() => setConfirmBulkDelete(false)}
-                            className="flex-1 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-white transition-all border border-[#3a3f4b]"
+                            className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-sm font-semibold text-white transition-all border border-white/10"
                         >
                             Cancel
                         </button>
