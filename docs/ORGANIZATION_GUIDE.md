@@ -239,7 +239,7 @@ Create a dedicated "**Book an Assessment**" page on your website:
 If you encounter any issues:
 
 1. **Check this guide** - Most common issues are covered above
-2. **Contact support** - support@afterschool.com
+2. **Contact support** - support@sprintscaleit.co.uk
 3. **In your dashboard** - Click "Contact Support" in the sidebar
 
 ---
@@ -285,7 +285,7 @@ Before going live, make sure you:
 
 ## 📞 Support
 
-**Email:** support@afterschool.com  
+**Email:** support@sprintscaleit.co.uk  
 **Dashboard Link:** [after-school-club-live.vercel.app](https://after-school-club-live.vercel.app)
 
 ---

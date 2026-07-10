@@ -58,7 +58,7 @@ https://your-domain.com/book/your-org/centre
 → Or increase the height to 1000px
 
 **Need help?**
-→ support@afterschool.com
+→ support@sprintscaleit.co.uk
 → Check ORGANIZATION_GUIDE.md for detailed steps
 
 ---

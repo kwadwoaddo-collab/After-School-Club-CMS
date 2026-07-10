@@ -118,18 +118,20 @@ body {
 }
 
 /* Input Field Visibility */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-input[type="tel"],
-input[type="url"],
-input[type="search"],
-input[type="date"],
-input[type="time"],
-input[type="datetime-local"],
-textarea,
-select {
+:where(
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  textarea,
+  select
+) {
   background-color: #ffffff;
   color: #0f172a;
   font-weight: 500;
@@ -143,9 +145,11 @@ textarea::placeholder {
 }
 
 /* Focus states - premium glow */
-input:focus,
-textarea:focus,
-select:focus {
+:where(
+  input:focus,
+  textarea:focus,
+  select:focus
+) {
   background-color: #ffffff;
   color: #0f172a;
   border-color: #3b82f6;
@@ -155,9 +159,11 @@ select:focus {
 }
 
 /* Disabled states */
-input:disabled,
-textarea:disabled,
-select:disabled {
+:where(
+  input:disabled,
+  textarea:disabled,
+  select:disabled
+) {
   background-color: #f1f5f9;
   color: #64748b;
   opacity: 0.7;
@@ -183,11 +189,6 @@ select:user-valid {
 .data-grid-optimized {
   content-visibility: auto;
   contain-intrinsic-size: auto 500px;
-}
-
-input[style*="background"],
-textarea[style*="background"] {
-  background-color: inherit !important;
 }
 
 /* Light Glassmorphism */
