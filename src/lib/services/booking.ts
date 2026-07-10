@@ -47,7 +47,7 @@ export class BookingService {
         {
           firstName: input.parent.firstName,
           lastName: input.parent.lastName,
-          email: input.parent.email,
+          email: input.parent.email || '',
           phone: input.parent.phone,
         },
         centre.organisationId

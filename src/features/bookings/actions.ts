@@ -269,11 +269,12 @@ export async function markAttendeeAttendance(params: {
         const startAt = new Date(`${dateStr}T${sessionTime}:00`);
 
         const result = await db.transaction(async (tx) => {
-            // Check if booking already exists for today/time slot for this child
+            // Check if booking already exists for today/time slot for this specific parent/family
             const existingBooking = await tx.query.bookings.findFirst({
                 where: and(
                     eq(bookings.centreId, centreId),
-                    eq(bookings.startAt, startAt)
+                    eq(bookings.startAt, startAt),
+                    eq(bookings.parentId, child.parentId)
                 ),
                 with: {
                     attendees: true
@@ -314,7 +315,7 @@ export async function markAttendeeAttendance(params: {
                 const code = Date.now().toString(36).toUpperCase();
                 const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
 
-                // Create Booking
+                // Create Booking with atomic handling of concurrent check-ins
                 const [newBooking] = await tx.insert(bookings).values({
                     centreId: centreId,
                     parentId: child.parentId,
@@ -325,21 +326,62 @@ export async function markAttendeeAttendance(params: {
                     confirmationCode: code,
                     magicLinkToken,
                     communicationsConsent: false,
-                }).returning();
+                })
+                .onConflictDoNothing({
+                    target: [bookings.centreId, bookings.modality, bookings.startAt, bookings.parentId]
+                })
+                .returning();
 
-                finalBookingId = newBooking.id;
+                if (newBooking) {
+                    finalBookingId = newBooking.id;
+                } else {
+                    // Conflicted! Query for the concurrently-inserted booking
+                    const conflictedBooking = await tx.query.bookings.findFirst({
+                        where: and(
+                            eq(bookings.centreId, centreId),
+                            eq(bookings.startAt, startAt),
+                            eq(bookings.parentId, child.parentId)
+                        )
+                    });
+                    if (!conflictedBooking) {
+                        throw new Error('Failed to resolve or create booking due to concurrency conflict.');
+                    }
+                    finalBookingId = conflictedBooking.id;
+                }
 
-                // Create Booking Attendee
-                const [newAtt] = await tx.insert(bookingAttendees).values({
-                    bookingId: finalBookingId,
-                    childId: childId,
-                    attendanceStatus: status,
-                    attendanceNote: note || null,
-                    lateMinutes: lateMinutes || null,
-                    attendanceMarkedAt: new Date(),
-                    attendanceMarkedBy: session.user.id,
-                }).returning();
-                finalAttendeeId = newAtt.id;
+                // Check if the attendee record was also created concurrently
+                const existingAtt = await tx.query.bookingAttendees.findFirst({
+                    where: and(
+                        eq(bookingAttendees.bookingId, finalBookingId),
+                        eq(bookingAttendees.childId, childId)
+                    )
+                });
+
+                if (existingAtt) {
+                    finalAttendeeId = existingAtt.id;
+                    await tx.update(bookingAttendees)
+                        .set({
+                            attendanceStatus: status,
+                            attendanceNote: note || null,
+                            lateMinutes: lateMinutes || null,
+                            attendanceMarkedAt: new Date(),
+                            attendanceMarkedBy: session.user.id,
+                            updatedAt: new Date()
+                        })
+                        .where(eq(bookingAttendees.id, finalAttendeeId));
+                } else {
+                    // Create Booking Attendee
+                    const [newAtt] = await tx.insert(bookingAttendees).values({
+                        bookingId: finalBookingId,
+                        childId: childId,
+                        attendanceStatus: status,
+                        attendanceNote: note || null,
+                        lateMinutes: lateMinutes || null,
+                        attendanceMarkedAt: new Date(),
+                        attendanceMarkedBy: session.user.id,
+                    }).returning();
+                    finalAttendeeId = newAtt.id;
+                }
             }
 
             return { bookingId: finalBookingId, attendeeId: finalAttendeeId };

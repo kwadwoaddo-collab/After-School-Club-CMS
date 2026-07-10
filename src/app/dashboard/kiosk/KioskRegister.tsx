@@ -5,11 +5,60 @@ import { markAttendeeAttendance } from '@/features/bookings/actions';
 import {
     CheckCircle2, XCircle, Clock, AlertTriangle,
     Loader2, ChevronLeft, ChevronRight, Users,
-    Maximize2, RefreshCw, Stethoscope, Edit2, Sparkles
+    Maximize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
+
+const playChime = (type: 'success' | 'error') => {
+    try {
+        const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as any).webkitAudioContext) : null;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        
+        if (type === 'success') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'sine';
+            const now = ctx.currentTime;
+            
+            // High-fidelity double chime: G5 (783.99 Hz) then C6 (1046.50 Hz)
+            osc.frequency.setValueAtTime(783.99, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            
+            osc.frequency.setValueAtTime(1046.50, now + 0.12);
+            gain.gain.setValueAtTime(0.1, now + 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            
+            osc.start(now);
+            osc.stop(now + 0.35);
+        } else {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'triangle';
+            const now = ctx.currentTime;
+            
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+            
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+            
+            osc.start(now);
+            osc.stop(now + 0.25);
+        }
+    } catch (e) {
+        console.error('Failed to play Web Audio API chime:', e);
+    }
+};
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | null;
 
@@ -100,7 +149,9 @@ function StudentCard({
                 setStatus(next);
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
+                playChime('success');
             } catch (err: any) {
+                playChime('error');
                 onToast({ title: 'Could not mark attendance', message: 'Please try again or refresh.', variant: 'error' });
             }
         });
@@ -126,7 +177,9 @@ function StudentCard({
                 }
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
+                playChime('success');
             } catch (err: any) {
+                playChime('error');
                 onToast({ title: 'Could not save details', message: 'Please try again.', variant: 'error' });
             }
         });
@@ -274,6 +327,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [clock, setClock] = useState(() => new Date());
     const [large, setLarge] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Derive a dateStr from date prop if not passed separately
     const resolvedDateStr = dateStr || new Date().toISOString().slice(0, 10);
@@ -310,9 +364,31 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const progressPct  = totalCount > 0 ? Math.round(((totalCount - unmarkedCount) / totalCount) * 100) : 0;
 
     const activeSlot = slots.length > 0 ? slots[Math.min(slotIdx, slots.length - 1)] : null;
-    const displayAttendees = activeSlot
+    const rawAttendees = activeSlot
         ? [...activeSlot.regulars, ...activeSlot.catchups]
         : [];
+
+    const searchQueryClean = searchQuery.toLowerCase().trim();
+    const filteredAttendees = rawAttendees.filter(a => {
+        if (!searchQueryClean) return true;
+        return (
+            a.firstName.toLowerCase().includes(searchQueryClean) ||
+            a.lastName.toLowerCase().includes(searchQueryClean) ||
+            `${a.firstName} ${a.lastName}`.toLowerCase().includes(searchQueryClean) ||
+            `${a.parentFirstName} ${a.parentLastName}`.toLowerCase().includes(searchQueryClean) ||
+            (a.parentEmail && a.parentEmail.toLowerCase().includes(searchQueryClean)) ||
+            (a.parentPhone && a.parentPhone.includes(searchQueryClean)) ||
+            a.schoolYear.toLowerCase().includes(searchQueryClean)
+        );
+    });
+
+    const displayAttendees = [...filteredAttendees].sort((a, b) => {
+        const aHasAlert = !!a.notes;
+        const bHasAlert = !!b.notes;
+        if (aHasAlert && !bHasAlert) return -1;
+        if (!aHasAlert && bHasAlert) return 1;
+        return 0;
+    });
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0f1117] -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
@@ -406,6 +482,35 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                 </div>
             )}
 
+            {/* ── SEARCH BAR ────────────────────────────────────────────── */}
+            {slots.length > 0 && (
+                <div className="px-6 py-2.5 bg-[#14161d] border-b border-white/5 flex items-center gap-3 flex-shrink-0">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search students by name or parent..."
+                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded bg-white/10"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                    {searchQuery && (
+                        <p className="text-xs text-white/40 font-medium">
+                            Found {displayAttendees.length} student{displayAttendees.length === 1 ? '' : 's'}
+                        </p>
+                    )}
+                </div>
+            )}
+
             {/* ── STUDENT LIST ─────────────────────────────────────────── */}
             <div className="flex-1 overflow-y-auto">
                 {slots.length === 0 ? (
@@ -419,7 +524,9 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         </p>
                     </div>
                 ) : displayAttendees.length === 0 ? (
-                    <div className="flex items-center justify-center h-32 text-white/30 text-sm">No students in this slot</div>
+                    <div className="flex items-center justify-center h-32 text-white/30 text-sm">
+                        {searchQuery ? 'No matching students found' : 'No students in this slot'}
+                    </div>
                 ) : (
                     <div className={`grid gap-3 p-6 ${large ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                         {displayAttendees.map(a => (

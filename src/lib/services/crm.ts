@@ -20,7 +20,7 @@ export interface ChildInput {
   lastName: string;
   parentId: string;
   organisationId: string;
-  centreId: string;
+  centreId?: string | null;
   dateOfBirth?: Date | null;
   schoolYear: string;
   notes?: string | null;

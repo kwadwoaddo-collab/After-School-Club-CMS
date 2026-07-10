@@ -283,7 +283,7 @@ export const bookings = pgTable('bookings', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
-  uniqueTimeSlot: unique('unique_time_slot').on(table.centreId, table.modality, table.startAt),
+  uniqueTimeSlot: unique('unique_time_slot').on(table.centreId, table.modality, table.startAt, table.parentId),
   centreIdx: index('bookings_centre_idx').on(table.centreId),
   parentIdx: index('bookings_parent_idx').on(table.parentId),
   centreStatusStartIdx: index('bookings_centre_status_start_idx').on(table.centreId, table.status, table.startAt),
