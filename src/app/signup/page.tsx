@@ -136,7 +136,7 @@ export default function SignupPage() {
             <p className="text-white/40 text-xs uppercase tracking-widest font-semibold">After signing up you'll</p>
             {[
               'Set up your organisation name',
-              'Create your first assessment centre',
+              'Create your first centre',
               'Choose your brand colour',
               'Invite your team',
             ].map((item, i) => (

@@ -11,7 +11,7 @@ type Rating = 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'uns
 const NOTE_TYPES: { value: NoteType; label: string; color: string }[] = [
     { value: 'general', label: 'General', color: 'bg-slate-100 text-slate-700 ring-slate-200' },
     { value: 'progress', label: 'Progress', color: 'bg-blue-100 text-blue-700 ring-blue-200' },
-    { value: 'subject_feedback', label: 'Subject Feedback', color: 'bg-violet-100 text-violet-700 ring-violet-200' },
+    { value: 'subject_feedback', label: 'Activity Feedback', color: 'bg-violet-100 text-violet-700 ring-violet-200' },
     { value: 'behaviour', label: 'Behaviour', color: 'bg-amber-100 text-amber-700 ring-amber-200' },
     { value: 'attendance_concern', label: 'Attendance Concern', color: 'bg-orange-100 text-orange-700 ring-orange-200' },
     { value: 'medical', label: 'Medical / Welfare', color: 'bg-red-100 text-red-700 ring-red-200' },
@@ -25,7 +25,7 @@ const RATINGS: { value: Rating; label: string; icon: React.ReactNode; color: str
     { value: 'unsatisfactory', label: 'Unsatisfactory', icon: <AlertTriangle className="w-4 h-4" />, color: 'bg-red-100 text-red-700 ring-red-300 hover:bg-red-200' },
 ];
 
-const SUBJECTS = ['Maths', 'English', 'Science', 'Reading', 'Writing', 'Phonics', 'History', 'Geography', 'Art', 'PE', 'Music', 'Computing', 'PSHE', 'Other'];
+const SUBJECTS = ['Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech', 'Reading', 'Writing', 'Art', 'Music', 'Computing', 'Board Games', 'Other'];
 
 interface ProgressNoteFormProps {
     childId: string;
@@ -100,13 +100,13 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                     {/* Subject picker (for progress/subject_feedback) */}
                     {needsSubject && (
                         <div>
-                            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Subject</label>
+                            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Activity / Club</label>
                             <select
                                 value={subject}
                                 onChange={e => setSubject(e.target.value)}
                                 className="w-full bg-white/5 border border-outline-variant/20 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
                             >
-                                <option value="">Select subject…</option>
+                                <option value="">Select activity…</option>
                                 {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>

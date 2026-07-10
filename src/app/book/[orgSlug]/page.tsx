@@ -72,7 +72,7 @@ export default async function OrgBookingPage({
                 )}
 
                 <h1 className="text-2xl font-bold text-center text-white mb-2">Select a Centre</h1>
-                <p className="text-center text-slate-400 mb-8">Choose a location to book your assessment with <strong className="text-white">{org.name}</strong>.</p>
+                <p className="text-center text-slate-400 mb-8">Choose a location to book your session with <strong className="text-white">{org.name}</strong>.</p>
 
                 <div className="space-y-4">
                     {org.centres.length === 0 ? (

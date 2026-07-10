@@ -21,7 +21,7 @@ function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
     );
 }
 
-const SUBJECTS = ['Maths', 'English', 'Science'];
+const SUBJECTS = ['Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech', 'Other'];
 const SCHOOL_YEARS = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -44,24 +44,43 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
         defaultValues: {
             centreId,
             child: {
+                firstName: '',
+                lastName: '',
+                schoolYear: 'Y1',
                 subjects: [],
             },
-            preferences: {
-                preferredDays: [],
-                lessonType: 'Group',
+            parents: [
+                {
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    phone: '',
+                    relationship: '',
+                },
+            ],
+            emergencyContact: {
+                name: '',
+                phone: '',
+                relationship: '',
             },
+            funding: {
+                types: [],
+                other: '',
+            },
+            specialNeeds: {
+                has: false,
+                details: '',
+            },
+            termsAgreed: false,
         },
     });
 
     const watchSubjects = useWatch({ control, name: 'child.subjects' });
-    const watchDays = useWatch({ control, name: 'preferences.preferredDays' });
-    const watchLessonType = useWatch({ control, name: 'preferences.lessonType' });
-
-    const watchedParentFirstName = useWatch({ control, name: 'parent.firstName' });
-    const watchedParentLastName = useWatch({ control, name: 'parent.lastName' });
-    const watchedParentEmail = useWatch({ control, name: 'parent.email' });
-    const watchedChildFirstName = useWatch({ control, name: 'child.firstName' });
-    const watchedChildSchoolYear = useWatch({ control, name: 'child.schoolYear' });
+    const watchParents = watch('parents');
+    const watchChild = watch('child');
+    const watchEmergency = watch('emergencyContact');
+    const watchFunding = watch('funding');
+    const watchSpecial = watch('specialNeeds');
 
     const toggleSubject = (subject: string) => {
         const current = watchSubjects || [];
@@ -302,7 +321,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Subjects Needed</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">Activities / Interests</label>
                                 <div className="flex flex-wrap gap-3">
                                     {SUBJECTS.map((subject) => (
                                         <button
@@ -310,7 +329,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                             type="button"
                                             onClick={() => toggleSubject(subject)}
                                             className={`px-6 py-3 rounded-lg font-medium transition-all ${watchSubjects?.includes(subject)
-                                                    ? 'bg-indigo-600 text-white shadow-md transform scale-105'
+                                                    ? 'brand-bg text-white shadow-md transform scale-105'
                                                     : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                                                 }`}
                                         >
@@ -341,8 +360,8 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                 {step === 3 && (
                     <div className="p-8 space-y-6 animate-fadeIn">
                         <div className="border-b pb-4 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Lesson Preferences</h2>
-                            <p className="text-gray-500">When would you like lessons to take place?</p>
+                            <h2 className="text-2xl font-bold text-gray-900">Session Preferences</h2>
+                            <p className="text-gray-500">When would you like sessions to take place?</p>
                         </div>
 
                         <div className="space-y-6">
@@ -355,7 +374,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                             type="button"
                                             onClick={() => toggleDay(day)}
                                             className={`px-4 py-3 rounded-lg font-medium transition-all text-left ${watchDays?.includes(day)
-                                                    ? 'bg-indigo-600 text-white shadow-md'
+                                                    ? 'brand-bg text-white shadow-md'
                                                     : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                                 }`}
                                         >
@@ -370,12 +389,12 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Lesson Format</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">Session Format</label>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {[
-                                        { val: 'Group', label: 'Group Class', desc: 'Learn with peers (Max 6)' },
-                                        { val: '1:1', label: 'One-to-One', desc: 'Dedicated attention' },
-                                        { val: 'Online', label: 'Online', desc: 'Remote learning via Zoom' },
+                                        { val: 'Group', label: 'Group Session', desc: 'Learn and play with peers (Max 6)' },
+                                        { val: '1:1', label: 'One-to-One Session', desc: 'Dedicated attention' },
+                                        { val: 'Online', label: 'Online Session', desc: 'Remote activities' },
                                     ].map((type) => (
                                         <label
                                             key={type.val}
@@ -422,7 +441,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                 <span className="font-medium">{watchedChildFirstName} ({watchedChildSchoolYear})</span>
                             </div>
                             <div className="flex justify-between border-b border-gray-200 pb-2">
-                                <span className="text-gray-500">Subjects</span>
+                                <span className="text-gray-500">Activities / Interests</span>
                                 <span className="font-medium">{watchSubjects?.join(', ')}</span>
                             </div>
                             <div className="flex justify-between">

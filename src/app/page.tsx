@@ -112,7 +112,7 @@ export default function Home() {
                         </div>
                         <h3 className="text-2xl font-bold mb-3">Smart Bookings</h3>
                         <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Automate assessment scheduling and class bookings with intelligent calendar management
+                            Automate session scheduling and class bookings with intelligent calendar management
                         </p>
                     </div>
 

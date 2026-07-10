@@ -31,7 +31,7 @@ interface ProgressTimelineProps {
 const NOTE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeClass: string }> = {
     general: { label: 'General', icon: <BookOpen className="w-3.5 h-3.5" />, badgeClass: 'bg-slate-500/10 text-slate-400 ring-slate-500/20' },
     progress: { label: 'Progress', icon: <TrendingUp className="w-3.5 h-3.5" />, badgeClass: 'bg-blue-500/10 text-blue-400 ring-blue-500/20' },
-    subject_feedback: { label: 'Subject', icon: <Star className="w-3.5 h-3.5" />, badgeClass: 'bg-violet-500/10 text-violet-400 ring-violet-500/20' },
+    subject_feedback: { label: 'Activity', icon: <Star className="w-3.5 h-3.5" />, badgeClass: 'bg-violet-500/10 text-violet-400 ring-violet-500/20' },
     behaviour: { label: 'Behaviour', icon: <Users className="w-3.5 h-3.5" />, badgeClass: 'bg-amber-500/10 text-amber-400 ring-amber-500/20' },
     attendance_concern: { label: 'Attendance', icon: <Clock className="w-3.5 h-3.5" />, badgeClass: 'bg-orange-500/10 text-orange-400 ring-orange-500/20' },
     medical: { label: 'Medical', icon: <Stethoscope className="w-3.5 h-3.5" />, badgeClass: 'bg-red-500/10 text-red-400 ring-red-500/20' },
@@ -45,7 +45,7 @@ const RATING_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
     unsatisfactory: { label: 'Unsatisfactory', icon: <AlertTriangle className="w-3.5 h-3.5" />, class: 'bg-red-500/10 text-red-400 ring-red-500/20' },
 };
 
-const FILTER_OPTIONS = ['All', 'General', 'Progress', 'Subject', 'Behaviour', 'Medical'];
+const FILTER_OPTIONS = ['All', 'General', 'Progress', 'Activity', 'Behaviour', 'Medical'];
 
 export default function ProgressTimeline({ notes, currentUserId, currentUserRole }: ProgressTimelineProps) {
     const [filter, setFilter] = useState('All');
@@ -60,7 +60,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
         const typeKey = note.noteType || 'general';
         const config = NOTE_TYPE_CONFIG[typeKey];
         return config?.label.toLowerCase() === filter.toLowerCase() ||
-            (filter === 'Subject' && typeKey === 'subject_feedback');
+            (filter === 'Activity' && typeKey === 'subject_feedback');
     });
 
     const pinnedNotes = filtered.filter(n => n.pinnedAt);

@@ -8,7 +8,7 @@ export const childSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').max(100),
   dateOfBirth: z.string().optional(),
   schoolYear: z.enum(SCHOOL_YEARS, { message: 'Please select a valid school year' }),
-  subjects: z.array(z.enum(['Maths', 'English', 'Science', 'Other', 'Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech'])).min(1, 'Please select at least one subject'),
+  subjects: z.array(z.enum(['Maths', 'English', 'Science', 'Other', 'Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech'])).min(1, 'Please select at least one activity'),
   customSubject: z.string().max(100).optional(),
   notes: z.string().max(1000).optional(),
 });

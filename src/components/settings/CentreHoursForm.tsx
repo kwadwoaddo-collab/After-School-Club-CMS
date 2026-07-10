@@ -180,7 +180,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white">Opening Hours</h2>
-                        <p className="text-sm text-[#8c909f]">Controls when parents can book assessments at this centre.</p>
+                        <p className="text-sm text-[#8c909f]">Controls when parents can book sessions at this centre.</p>
                     </div>
                 </div>
 

@@ -167,9 +167,9 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
 
                             {/* Cost / Type info mimicking the image "Total cost" */}
                             <div className="mt-2">
-                                <div className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-0.5">Assmnt Type</div>
+                                <div className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-0.5">Session Type</div>
                                 <div className="text-white font-medium">
-                                    {booking.assessmentType.replace('_', ' ')}
+                                    {booking.assessmentType === 'initial_assessment' ? 'Introductory Session' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity Session'}
                                 </div>
                             </div>
                         </div>
@@ -232,11 +232,11 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                                                 key={s.id}
                                                                 className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700/50 text-indigo-300 border border-slate-600/50 capitalize shadow-sm"
                                                             >
-                                                                {s.subject.replace(/_/g, ' ')}
+                                                                {s.subject === 'Other' ? (s.customSubject || 'Other') : s.subject.replace(/_/g, ' ')}
                                                             </span>
                                                         ))
                                                     ) : (
-                                                        <span className="text-xs text-slate-500 italic">No subjects listed</span>
+                                                        <span className="text-xs text-slate-500 italic">No activities listed</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -324,7 +324,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                 }}
                                 className="w-full flex items-center justify-between text-xs text-slate-500 uppercase font-bold tracking-wider mb-2 hover:text-slate-400 transition-colors"
                             >
-                                <span>Assessment & Feedback</span>
+                                <span>Feedback & Notes</span>
                                 {showAssessment ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </button>
                             {showAssessment && (
@@ -532,7 +532,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
         <div className="bg-slate-900/30 rounded-lg p-4 border border-slate-700/50 mt-4">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                    <h5 className="font-semibold text-white text-sm">{attendee.child.firstName}'s Assessment</h5>
+                    <h5 className="font-semibold text-white text-sm">{attendee.child.firstName}'s Session Feedback</h5>
                     <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border", statusColor)}>
                         {status}
                     </span>
@@ -573,7 +573,7 @@ function AttendeeAssessment({ attendee }: { attendee: BookingWithDetails['attend
 
                 {/* File Upload */}
                 <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Marked Assessment (Photo)</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Session Activity / Worksheet (Photo)</label>
 
                     {fileBase64 ? (
                         <div className="relative group inline-block">

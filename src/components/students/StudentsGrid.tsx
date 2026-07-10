@@ -36,7 +36,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-3">No students yet</h3>
                 <p className="text-on-surface-variant mb-8 max-w-xs mx-auto">
-                    Students will appear here once they book assessments, or you can add one manually.
+                    Students will appear here once they register or book sessions, or you can add one manually.
                 </p>
                 <Link
                     href="/dashboard/students/add"

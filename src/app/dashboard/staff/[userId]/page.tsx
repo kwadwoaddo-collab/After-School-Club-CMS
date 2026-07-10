@@ -69,7 +69,7 @@ export default async function EditStaffPage({ params }: PageProps) {
         if (role === 'ORG_OWNER') return ['Full system access', 'Manage all centres', 'Manage staff & invites', 'View all reports', 'Manage billing'];
         if (role === 'MANAGER') return ['Manage bookings', 'Manage students', 'View assigned centres', 'View reports'];
         if (role === 'FRONT_DESK') return ['View & manage bookings', 'Check-in students', 'View assigned centre data'];
-        return ['View assigned sessions', 'Add assessment feedback', 'Mark attendance'];
+        return ['View assigned sessions', 'Add session feedback', 'Mark attendance'];
     };
 
 

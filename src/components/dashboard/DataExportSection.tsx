@@ -23,7 +23,7 @@ const EXPORTS: ExportItem[] = [
   },
   {
     label: 'Export Bookings CSV',
-    description: 'All assessment bookings & records',
+    description: 'All session bookings & records',
     endpoint: '/api/reports/bookings',
     icon: CalendarCheck,
     color: 'text-secondary',

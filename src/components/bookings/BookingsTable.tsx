@@ -372,13 +372,13 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 <h3 className="text-2xl font-bold text-[#e5e2e1] mb-3">No bookings found</h3>
                 <p className="text-[#a19d9c] max-w-md mx-auto mb-8">
                     Upcoming or past bookings will appear here once they are created.
-                    Try adjusting your filters or create a new assessment booking.
+                    Try adjusting your filters or create a new session booking.
                 </p>
                 <Link
                     href="/dashboard/bookings/new"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] hover:bg-[#4338ca] text-white rounded-2xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)]"
                 >
-                    + New Assessment
+                    + Book Session
                 </Link>
             </div>
         );
@@ -513,7 +513,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             </th>
                             <th className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
-                                Assessment Type
+                                Session Type
                             </th>
                             <th className="text-left px-4 py-4 text-xs font-bold text-[#FFFFFF] uppercase tracking-wider">
                                 Centre
@@ -636,7 +636,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </td>
                                 <td className="px-4 py-4">
                                     <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold">
-                                        {booking.assessmentType || 'Initial Assessment'}
+                                        {booking.assessmentType === 'initial_assessment' ? 'Introductory Session' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity Session'}
                                     </span>
                                 </td>
                                 <td className="px-4 py-4">

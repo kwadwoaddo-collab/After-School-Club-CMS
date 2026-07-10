@@ -27,7 +27,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `Book Assessment at ${org.centres[0].name} - ${org.name}`,
+    title: `Book Session at ${org.centres[0].name} - ${org.name}`,
   };
 }
 
@@ -116,7 +116,7 @@ export default async function BookingPage({
               )}
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Book an Assessment
+                  Book a Session
                 </h1>
                 <p className="text-lg text-gray-600">
                   {centre.name}

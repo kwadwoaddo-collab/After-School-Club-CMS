@@ -18,7 +18,7 @@ export const registrationSchema = z.object({
             message: 'Date of birth must be in the past',
         }),
         schoolYear: z.string().min(1, 'Please select a school year'),
-        subjects: z.array(z.string()).min(1, 'Please select at least one subject'),
+        subjects: z.array(z.string()).min(1, 'Please select at least one activity'),
         notes: z.string().optional(),
     }),
 
