@@ -5,7 +5,7 @@ import { markAttendeeAttendance } from '@/features/bookings/actions';
 import {
     CheckCircle2, XCircle, Clock, AlertTriangle,
     Loader2, ChevronLeft, ChevronRight, Users,
-    Maximize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search
+    Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -344,6 +344,15 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         return () => clearInterval(t);
     }, [router]);
 
+    // Sync fullscreen state with browser events (e.g. Esc key)
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
@@ -414,9 +423,9 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
                         <Users className="w-4 h-4" />
                     </button>
-                    <button onClick={toggleFullscreen} title="Fullscreen"
+                    <button onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                         className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
-                        <Maximize2 className="w-4 h-4" />
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
                     {centres.length > 1 && (
                         <select

@@ -269,7 +269,7 @@ export async function POST(req: NextRequest) {
             const primaryParentId = resolvedParents[0]?.parentId;
  
             for (const c of submittedChildren) {
-                let matched = false;
+                let childMatched = false;
                 let childId: string | null = null;
  
                 if (c.firstName && c.lastName && primaryParentId) {
@@ -281,7 +281,7 @@ export async function POST(req: NextRequest) {
                         ),
                         columns: { id: true }
                     });
-                    matched = !!existing;
+                    childMatched = !!existing;
 
                     const child = await resolveOrCreateChild(tx, {
                         firstName: c.firstName,
@@ -306,7 +306,7 @@ export async function POST(req: NextRequest) {
                     submittedDateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
                     submittedSchoolYear: c.schoolYear ?? null,
                     submittedSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
-                    wasMatched: matched,
+                    wasMatched: childMatched,
                 });
             }
         });
