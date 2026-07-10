@@ -468,23 +468,27 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
 
-            {/* ── Page Header ─────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight headline-lg">
-                        Overview
-                    </h1>
-                    <p className="text-on-surface-variant body-md mt-2">
-                        Welcome back{firstName ? `, ${firstName}` : ''}! 
-                    </p>
+            {/* ── Dynamic Welcome Banner Hero ───────────────────────── */}
+            <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-surface-container-high via-surface-container-high to-primary/5 p-8 border border-outline-variant/10 shadow-xl mb-2">
+                <div className="absolute right-0 top-0 -mr-16 -mt-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+                    <div>
+                        <span className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-1.5 block">After-School Club CMS</span>
+                        <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight headline-lg">
+                            Welcome back{firstName ? `, ${firstName}` : ''}!
+                        </h1>
+                        <p className="text-on-surface-variant text-sm mt-1 max-w-xl font-medium">
+                            Here is a breakdown of your centres, enrolments, and booking activity for today.
+                        </p>
+                    </div>
+                    <Suspense fallback={<div className="w-[180px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" />}>
+                        <DashboardFilter 
+                            currentView={currentView}
+                            currentDateIso={targetDate.toISOString()}
+                            dateLabel={dateLabel}
+                        />
+                    </Suspense>
                 </div>
-                <Suspense fallback={<div className="w-[180px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" />}>
-                    <DashboardFilter 
-                        currentView={currentView}
-                        currentDateIso={targetDate.toISOString()}
-                        dateLabel={dateLabel}
-                    />
-                </Suspense>
             </div>
 
             {/* ── Onboarding checklist ─────────────────────────────────────── */}
@@ -518,228 +522,269 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             {/* ── Feature Module Cards ─────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {/* Registration Pipeline (NEW Placement) */}
-                <div className="bg-surface-container-high p-8 rounded-[32px] border border-outline-variant/10 shadow-xl overflow-hidden relative group flex flex-col justify-between">
-                    <div className="absolute -right-12 -top-12 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <RegistrationFunnel data={pipelineCounts} />
-                    <Link href="/dashboard/registrations" className="mt-6 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-emerald-400 text-xs font-black hover:bg-surface-bright transition-colors border border-outline-variant/10 group/btn">
-                        Manage Registration Pipeline <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                {/* Registration Pipeline (Unified Visual Structure) */}
+                <div className="glassmorphic-card p-6 rounded-2xl border border-tertiary/20 relative overflow-hidden group hover:border-tertiary/40 glow-hover-tertiary transition-all flex flex-col gap-6">
+                    {/* Backdrop light aura */}
+                    <div className="absolute -right-4 -top-4 w-32 h-32 bg-tertiary/5 rounded-full blur-3xl group-hover:bg-tertiary/10 transition-colors pointer-events-none" />
+
+                    {/* Header: Matches Bookings & Registrations */}
+                    <div className="flex items-start justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center">
+                                <BarChart3 className="w-6 h-6 text-tertiary" />
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-white text-lg leading-tight">Registration Funnel</h2>
+                                <p className="text-sm text-on-surface-variant font-medium mt-1">Funnel stages & processing health</p>
+                            </div>
+                        </div>
+                        <span className="flex items-center gap-2 px-3 py-1 bg-tertiary-container/20 text-tertiary rounded-full border border-tertiary/10 shadow-[0_0_12px_rgba(92,253,128,0.2)]">
+                            <span className="flex h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
+                        </span>
+                    </div>
+
+                    {/* Unified Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                        <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-white">{pipelineCounts.new}</p>
+                            <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Inquiry</p>
+                        </div>
+                        <div className="p-3 bg-tertiary/5 rounded-xl border border-tertiary/10 flex flex-col justify-center hover:bg-tertiary/10 transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.review}</p>
+                            <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Review</p>
+                        </div>
+                        <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/20 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
+                            <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
+                        </div>
+                    </div>
+
+                    {/* Funnel display */}
+                    <div className="flex flex-col flex-1 relative z-10 justify-center">
+                        <RegistrationFunnel data={pipelineCounts} />
+                    </div>
+
+                    {/* Bottom Action */}
+                    <Link
+                        href="/dashboard/registrations"
+                        className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-tertiary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                    >
+                        Manage Pipeline <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 </div>
 
-                {/* Left Column - Assessments */}
-                {/* Assessments & Bookings */}
-                <div className="bg-surface-container-high p-6 rounded-2xl border border-secondary/20 relative overflow-hidden group hover:border-secondary/40 transition-all flex flex-col gap-6">
+                {/* Sessions & Bookings (Unified Card Structure) */}
+                <div className="glassmorphic-card p-6 rounded-2xl border border-secondary/20 relative overflow-hidden group hover:border-secondary/40 glow-hover-secondary transition-all flex flex-col gap-6">
                     <div className="absolute -right-4 -top-4 w-32 h-32 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-colors pointer-events-none"></div>
                     
                     <div className="flex items-start justify-between relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
-                                    <CalendarCheck className="w-6 h-6 text-secondary" />
-                                </div>
-                                <div>
-                                    <h2 className="font-bold text-white text-lg leading-tight">Sessions & Bookings</h2>
-                                    <p className="text-sm text-on-surface-variant font-medium mt-1">Manage schedules and attendance</p>
-                                </div>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
+                                <CalendarCheck className="w-6 h-6 text-secondary" />
                             </div>
-                            <span className="flex items-center gap-2 px-3 py-1 bg-secondary-container/20 text-secondary rounded-full border border-secondary/10 shadow-[0_0_12px_rgba(110,6,208,0.2)]">
-                                <span className="flex h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                            <div className="p-3 sm:p-4 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
-                                <p className="text-xl sm:text-2xl font-bold text-white">{totalBookingsAll}</p>
-                                <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
-                            </div>
-                            <div className="p-3 sm:p-4 bg-secondary/5 rounded-xl border border-secondary/10 flex flex-col justify-center hover:bg-secondary/10 transition-all">
-                                <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
-                                <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
-                            </div>
-                            <div className="p-3 sm:p-4 bg-secondary/10 rounded-xl border border-secondary/20 flex flex-col justify-center hover:bg-secondary/20 transition-all">
-                                <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
-                                <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                            <div>
+                                <h2 className="font-bold text-white text-lg leading-tight">Sessions & Bookings</h2>
+                                <p className="text-sm text-on-surface-variant font-medium mt-1">Manage schedules and attendance</p>
                             </div>
                         </div>
-
-                        {/* Recent preview */}
-                        <div className="flex flex-col flex-1 relative z-10">
-                            <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
-                            {recentBookingsWithNotes.length > 0 ? (
-                                <div className="space-y-2">
-                                    {recentBookingsWithNotes.map((b: any) => (
-                                        <Link
-                                            key={b.id}
-                                            href={`/dashboard/bookings/${b.id}`}
-                                            className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <AttendanceRadial 
-                                                    percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
-                                                    size="sm"
-                                                >
-                                                    <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
-                                                        {b.childFirst[0]}{b.childLast[0]}
-                                                    </div>
-                                                </AttendanceRadial>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
-                                                        {(() => {
-                                                            const resolved = resolveAttendanceStatus(
-                                                                (b.attendanceStatus as AttendanceStatus | null) ?? null,
-                                                                b.status
-                                                            );
-                                                            return (
-                                                                <span className={cn(
-                                                                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                                                                    getAttendanceColorClass(resolved.status),
-                                                                    resolved.status === 'pending' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'border-current/20'
-                                                                )}>
-                                                                    {resolved.label}
-                                                                </span>
-                                                            );
-                                                        })()}
-                                                        {b.hasMedicalNote && (
-                                                            <div className="relative group/tooltip flex items-center outline-none">
-                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
-                                                                    <AlertTriangle className="w-3 h-3 text-error" />
-                                                                </div>
-                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                    <div className="font-bold text-error mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
-                                                                    {b.medicalNotesContent}
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {b.hasSafeguardingNote && (
-                                                            <div className="relative group/tooltip flex items-center outline-none">
-                                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
-                                                                    <Shield className="w-3 h-3 text-primary" />
-                                                                </div>
-                                                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                    <div className="font-bold text-primary mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
-                                                                    {b.safeguardingNotesContent}
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-xs text-on-surface-variant font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
-                                                </div>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
-                            )}
-                        </div>
-
-                        <Link
-                            href="/dashboard/bookings"
-                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10"
-                        >
-                            View All Bookings <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        <span className="flex items-center gap-2 px-3 py-1 bg-secondary-container/20 text-secondary rounded-full border border-secondary/10 shadow-[0_0_12px_rgba(110,6,208,0.2)]">
+                            <span className="flex h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
+                        </span>
                     </div>
 
-                {/* Middle Column - Registrations */}
-                {/* Registrations */}
-                <div className="bg-surface-container-high p-6 rounded-2xl border border-primary/20 relative overflow-hidden group hover:border-primary/40 transition-all flex flex-col gap-6">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                        <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-white">{totalBookingsAll}</p>
+                            <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                        </div>
+                        <div className="p-3 bg-secondary/5 rounded-xl border border-secondary/10 flex flex-col justify-center hover:bg-secondary/10 transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
+                            <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                        </div>
+                        <div className="p-3 bg-secondary/10 rounded-xl border border-secondary/20 flex flex-col justify-center hover:bg-secondary/20 transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
+                            <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                        </div>
+                    </div>
+
+                    {/* Recent preview */}
+                    <div className="flex flex-col flex-1 relative z-10">
+                        <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
+                        {recentBookingsWithNotes.length > 0 ? (
+                            <div className="space-y-2">
+                                {recentBookingsWithNotes.map((b: any) => (
+                                    <Link
+                                        key={b.id}
+                                        href={`/dashboard/bookings/${b.id}`}
+                                        className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <AttendanceRadial 
+                                                percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
+                                                size="sm"
+                                            >
+                                                <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+                                                    {b.childFirst[0]}{b.childLast[0]}
+                                                </div>
+                                            </AttendanceRadial>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
+                                                    {(() => {
+                                                        const resolved = resolveAttendanceStatus(
+                                                            (b.attendanceStatus as AttendanceStatus | null) ?? null,
+                                                            b.status
+                                                        );
+                                                        return (
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                                                getAttendanceColorClass(resolved.status),
+                                                                resolved.status === 'pending' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'border-current/20'
+                                                            )}>
+                                                                {resolved.label}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                    {b.hasMedicalNote && (
+                                                        <div className="relative group/tooltip flex items-center outline-none">
+                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
+                                                                <AlertTriangle className="w-3 h-3 text-error" />
+                                                            </div>
+                                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                <div className="font-bold text-error mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                {b.medicalNotesContent}
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {b.hasSafeguardingNote && (
+                                                        <div className="relative group/tooltip flex items-center outline-none">
+                                                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
+                                                                <Shield className="w-3 h-3 text-primary" />
+                                                            </div>
+                                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                <div className="font-bold text-primary mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                {b.safeguardingNotesContent}
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-on-surface-variant font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                        )}
+                    </div>
+
+                    <Link
+                        href="/dashboard/bookings"
+                        className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-secondary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                    >
+                        View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+                </div>
+
+                {/* Registrations (Unified Card Structure) */}
+                <div className="glassmorphic-card p-6 rounded-2xl border border-primary/20 relative overflow-hidden group hover:border-primary/40 glow-hover-primary transition-all flex flex-col gap-6">
                     <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none"></div>
 
                     <div className="flex items-start justify-between relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                                    <ClipboardList className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <h2 className="font-bold text-white text-lg leading-tight">Registrations</h2>
-                                    <p className="text-sm text-on-surface-variant font-medium mt-1">Student sign-ups</p>
-                                </div>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                                <ClipboardList className="w-6 h-6 text-primary" />
                             </div>
-                            <span className="flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary rounded-full border border-primary/10 shadow-[0_0_12px_rgba(142,171,255,0.2)]">
-                                <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                            <div className="p-3 sm:p-4 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
-                                <p className="text-xl sm:text-2xl font-bold text-white">{totalRegistrations}</p>
-                                <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
-                            </div>
-                            <div className="p-3 sm:p-4 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
-                                <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
-                                <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
-                            </div>
-                            <div className="p-3 sm:p-4 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/20 transition-all">
-                                <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
-                                <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                            <div>
+                                <h2 className="font-bold text-white text-lg leading-tight">Registrations</h2>
+                                <p className="text-sm text-on-surface-variant font-medium mt-1">Student sign-ups</p>
                             </div>
                         </div>
-
-                        {/* Recent preview */}
-                        <div className="flex flex-col flex-1 relative z-10">
-                            <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
-                            {recentRegistrations.length > 0 ? (
-                                <div className="space-y-2">
-                                    {recentRegistrations.map((r: any, i: any) => (
-                                        <Link
-                                            key={`${r.registrationId}-${i}`}
-                                            href={`/dashboard/registrations/${r.registrationId}`}
-                                            className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                    {r.childFirst[0]}{r.childLast[0]}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold text-white">{r.childFirst} {r.childLast}</p>
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                            r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-error border border-error/20' :
-                                                            r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
-                                                            'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                                        }`}>
-                                                            {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
-                                                             r.status === 'signed_up' ? 'Approved' : 'Pending'}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs text-on-surface-variant font-medium mt-0.5">
-                                                        Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col gap-2 mt-2 relative z-10">
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
-                                <p className="text-[10px] text-on-surface-variant">{registrationsThisMonth} new this month</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
-                                <p className="text-xs text-white font-mono truncate">{registrationLink}</p>
-                            </div>
-                        </div>
-
-                        <Link
-                            href="/dashboard/registrations"
-                            className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10"
-                        >
-                            View All Registrations <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        <span className="flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary rounded-full border border-primary/10 shadow-[0_0_12px_rgba(142,171,255,0.2)]">
+                            <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
+                        </span>
                     </div>
+
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
+                        <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-white">{totalRegistrations}</p>
+                            <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                        </div>
+                        <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
+                            <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                        </div>
+                        <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/20 transition-all">
+                            <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
+                            <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                        </div>
+                    </div>
+
+                    {/* Recent preview */}
+                    <div className="flex flex-col flex-1 relative z-10">
+                        <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
+                        {recentRegistrations.length > 0 ? (
+                            <div className="space-y-2">
+                                {recentRegistrations.map((r: any, i: any) => (
+                                    <Link
+                                        key={`${r.registrationId}-${i}`}
+                                        href={`/dashboard/registrations/${r.registrationId}`}
+                                        className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-all group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                                {r.childFirst[0]}{r.childLast[0]}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-white">{r.childFirst} {r.childLast}</p>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                        r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-error border border-error/20' :
+                                                        r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
+                                                        'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                                                    }`}>
+                                                        {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
+                                                         r.status === 'signed_up' ? 'Approved' : 'Pending'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+                                                    Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-on-surface-variant italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-2 mt-2 relative z-10">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
+                            <p className="text-[10px] text-on-surface-variant">{registrationsThisMonth} new this month</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+                            <p className="text-xs text-white font-mono truncate">{registrationLink}</p>
+                        </div>
+                    </div>
+
+                    <Link
+                        href="/dashboard/registrations"
+                        className="mt-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-low text-primary text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/10 relative z-10 group/btn"
+                    >
+                        View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+                </div>
 
 
             </div>

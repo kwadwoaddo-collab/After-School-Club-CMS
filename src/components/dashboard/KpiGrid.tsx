@@ -132,23 +132,30 @@ export function KpiGrid({
     },
   ];
 
+  const glowClasses: Record<string, string> = {
+    'text-primary': 'glow-hover-primary',
+    'text-secondary': 'glow-hover-secondary',
+    'text-tertiary': 'glow-hover-tertiary',
+    'text-amber-400': 'glow-hover-warning'
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
       {stats.map(stat => (
         <div
           key={stat.label}
           className={cn(
-            'relative group overflow-hidden rounded-xl border transition-all duration-300 cursor-default',
-            'bg-surface-container-high',
-            'hover:shadow-[0_8px_32px_rgba(0,0,0,0.25)] hover:scale-[1.015] hover:-translate-y-0.5',
-            stat.borderColor,
+            'relative group overflow-hidden rounded-2xl border transition-all duration-300 cursor-default',
+            'glassmorphic-card',
+            'hover:scale-[1.015] hover:-translate-y-0.5',
+            glowClasses[stat.colorClass] || 'hover:border-outline-variant/30',
             'min-h-[116px] p-4 flex flex-col justify-between'
           )}
         >
           {/* Background gradient wash */}
           <div
             className={cn(
-              'absolute inset-0 bg-gradient-to-br opacity-70 pointer-events-none',
+              'absolute inset-0 bg-gradient-to-br opacity-5 pointer-events-none',
               stat.bgGradient
             )}
           />

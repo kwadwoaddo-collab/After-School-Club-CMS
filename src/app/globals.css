@@ -507,3 +507,34 @@ select:user-valid {
     transform: scale(0.99);
   }
 }
+
+/* Glassmorphism panel styling */
+.glassmorphic-card {
+  background: rgba(25, 25, 27, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(72, 72, 73, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Accent-specific glow variations on hover */
+.glow-hover-primary:hover {
+  border-color: rgba(142, 171, 255, 0.4) !important;
+  box-shadow: 0 0 30px -5px rgba(142, 171, 255, 0.15), var(--shadow-lg) !important;
+}
+
+.glow-hover-secondary:hover {
+  border-color: rgba(184, 132, 255, 0.4) !important;
+  box-shadow: 0 0 30px -5px rgba(184, 132, 255, 0.15), var(--shadow-lg) !important;
+}
+
+.glow-hover-tertiary:hover {
+  border-color: rgba(92, 253, 128, 0.4) !important;
+  box-shadow: 0 0 30px -5px rgba(92, 253, 128, 0.15), var(--shadow-lg) !important;
+}
+
+.glow-hover-warning:hover {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 0 30px -5px rgba(245, 158, 11, 0.15), var(--shadow-lg) !important;
+}
+
