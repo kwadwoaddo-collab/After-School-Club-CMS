@@ -55,9 +55,12 @@ const columns: DataTableColumn<StudentRow>[] = [
           </AttendanceRadial>
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-bold text-white group-hover:text-primary transition-colors">
+              <Link 
+                href={`/dashboard/students/${student.id}`}
+                className="font-bold text-white hover:text-primary transition-colors hover:underline decoration-primary/30"
+              >
                 {student.firstName} {student.lastName}
-              </p>
+              </Link>
               {student.isRegistered && (
                 <span className="px-1.5 py-0.5 rounded-md bg-tertiary-container/10 border border-tertiary/20 text-[10px] font-bold text-tertiary uppercase tracking-wider uppercase ml-1" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
                   Registered

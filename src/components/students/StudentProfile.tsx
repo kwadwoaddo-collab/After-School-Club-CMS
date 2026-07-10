@@ -36,6 +36,7 @@ interface AssessmentProfileProps {
         schoolYear: string;
         notes: string | null;
         registeredSessions?: string[] | null;
+        registrationId?: string | null;
         parent: {
             id: string;
             firstName: string;
@@ -282,10 +283,18 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                 </div>
                                 <Link 
                                     href={`/dashboard/parents/${student.parent.id}`}
-                                    className="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-primary/20 rounded-2xl text-primary font-black uppercase tracking-widest text-[10px] hover:bg-primary/10 hover:border-primary/40 transition-all"
+                                    className="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-primary/20 rounded-2xl text-primary font-black uppercase tracking-widest text-[10px] hover:bg-primary/10 hover:border-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
                                 >
                                     View Family Account & Ledger →
                                 </Link>
+                                {student.registrationId && (
+                                    <Link 
+                                        href={`/dashboard/registrations/${student.registrationId}`}
+                                        className="mt-3 w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-secondary/35 rounded-2xl text-white font-black uppercase tracking-widest text-[10px] hover:bg-[#b884ff]/20 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                                    >
+                                        View Registration Submission →
+                                    </Link>
+                                )}
                             </div>
                         </div>
 

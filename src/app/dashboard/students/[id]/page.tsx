@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
-import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { eq, desc, sql, inArray } from 'drizzle-orm';
+import { children, parents, bookings, centres, bookingAttendees, registrationChildren } from '@/db/schema';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -28,9 +28,9 @@ export default async function StudentProfilePage(
     const userRole = (session.user as any).role as string | undefined;
     const isOwner = userRole === 'ORG_OWNER';
 
-    // 1. Fetch Student with Parent
-    const studentData = await db
-        .select({
+    // Consolidated parallel database queries to avoid round-trip latency overhead
+    const [studentData, bookingsRaw, initialNotes, [attendanceResults]] = await Promise.all([
+        db.select({
             id: children.id,
             firstName: children.firstName,
             lastName: children.lastName,
@@ -40,6 +40,7 @@ export default async function StudentProfilePage(
             registeredSessions: children.registeredSessions,
             centreId: children.centreId,
             organisationId: children.organisationId,
+            registrationId: registrationChildren.registrationId, // Left-joined registration identifier
             parent: {
                 id: parents.id,
                 firstName: parents.firstName,
@@ -51,37 +52,11 @@ export default async function StudentProfilePage(
         })
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(eq(children.id, params.id))
-        .limit(1);
+        .leftJoin(registrationChildren, eq(children.id, registrationChildren.childId))
+        .where(eq(children.id, id))
+        .limit(1),
 
-    if (studentData.length === 0) return notFound();
-
-    const student = studentData[0];
-
-    // ── Org-level check ──────────────────────────────────────────────────────
-    // Use children.organisationId first (fast direct check).
-    // Fall back to parent.organisationId for rows not yet backfilled (NULL centreId/orgId).
-    const studentOrgId = student.organisationId ?? student.parent.organisationId;
-    if (studentOrgId !== session.user.organisationId) {
-        return notFound();
-    }
-
-    // ── Centre-level check for non-ORG_OWNER users ───────────────────────────
-    // ORG_OWNER can view any student in their org.
-    // For other roles, the student's centreId must be in their accessible set.
-    // Returns notFound() (not 403) to avoid leaking student existence.
-    if (!isOwner) {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-
-        // If the student has no centreId or it's not in the accessible set → deny
-        if (!student.centreId || !accessibleCentreIds.includes(student.centreId)) {
-            return notFound();
-        }
-    }
-
-    // 2. Fetch All Bookings for this student (attendance history)
-    const studentBookings = (await db
-        .select({
+        db.select({
             id: bookings.id,
             startAt: bookings.startAt,
             status: bookings.status,
@@ -99,18 +74,12 @@ export default async function StudentProfilePage(
         .from(bookings)
         .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
         .leftJoin(centres, eq(bookings.centreId, centres.id))
-        .where(eq(bookingAttendees.childId, student.id))
-        .orderBy(desc(bookings.startAt)))
-        .map(b => ({
-            ...b,
-            centreName: b.centreName || 'Unknown Centre'
-        }));
+        .where(eq(bookingAttendees.childId, id))
+        .orderBy(desc(bookings.startAt)),
 
-    const initialNotes = await getStudentNotes(student.id);
+        getStudentNotes(id),
 
-    // 3. Fetch Full Attendance Stats with per-status breakdown
-    const [attendanceResults] = await db
-        .select({
+        db.select({
             total: sql<number>`count(*)`,
             completed: sql<number>`count(*) filter (where
                 COALESCE(${bookingAttendees.attendanceStatus}::text, CASE WHEN ${bookings.status} = 'completed' THEN 'present' ELSE NULL END) = 'present'
@@ -122,7 +91,27 @@ export default async function StudentProfilePage(
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(eq(bookingAttendees.childId, student.id));
+        .where(eq(bookingAttendees.childId, id))
+    ]);
+
+    if (studentData.length === 0) return notFound();
+    const student = studentData[0];
+
+    // Enforce strict multi-tenant boundary checks
+    const studentOrgId = student.organisationId ?? student.parent.organisationId;
+    if (studentOrgId !== session.user.organisationId) return notFound();
+
+    if (!isOwner) {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!student.centreId || !accessibleCentreIds.includes(student.centreId)) {
+            return notFound();
+        }
+    }
+
+    const studentBookings = bookingsRaw.map(b => ({
+        ...b,
+        centreName: b.centreName || 'Unknown Centre'
+    }));
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">

@@ -166,7 +166,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                             {initials}
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold text-white mb-2">{child.firstName} {child.lastName}</h2>
+                                            <h2 className="text-2xl font-bold text-white mb-2 hover:text-primary transition-colors">
+                                                <Link href={`/dashboard/students/${child.id}`} className="hover:underline underline-offset-4 decoration-primary/30">
+                                                    {child.firstName} {child.lastName}
+                                                </Link>
+                                            </h2>
                                             <div className="flex flex-wrap items-center gap-4">
                                                 <span className="px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold uppercase">{child.schoolYear || 'Grade N/A'}</span>
                                                 {child.dateOfBirth && <span className="text-sm text-slate-500 font-medium">Born: {format(new Date(child.dateOfBirth), 'MMM d, yyyy')}</span>}

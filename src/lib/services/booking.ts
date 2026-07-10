@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { bookings, bookingAttendees, parents, children, childSubjects, centres, studentNotes } from '@/db/schema';
 import { BookingInput } from '@/lib/validations/booking';
 import { eq, and } from 'drizzle-orm';
+import { resolveOrCreateParent, resolveOrCreateChild } from './crm';
 import { nanoid } from 'nanoid';
 import { googleCalendarService, buildBookingEventDetails } from './google-calendar';
 import { notificationService } from './notifications';
@@ -41,23 +42,16 @@ export class BookingService {
     // Wrap the entire database creation flow in a transaction to guarantee data integrity
     const txResult = await db.transaction(async (tx) => {
       // 2. Find or create parent within this organisation
-      let parent = await tx.query.parents.findFirst({
-        where: and(
-          eq(parents.email, input.parent.email || ''),
-          eq(parents.organisationId, centre.organisationId)
-        ),
-      });
-
-      if (!parent) {
-        [parent] = await tx.insert(parents).values({
+      const parent = await resolveOrCreateParent(
+        tx,
+        {
           firstName: input.parent.firstName,
           lastName: input.parent.lastName,
-          phone: input.parent.phone || undefined,
-          email: input.parent.email || undefined,
-          preferredContact: input.parent.preferredContact ?? 'email',
-          organisationId: centre.organisationId,
-        }).returning();
-      }
+          email: input.parent.email,
+          phone: input.parent.phone,
+        },
+        centre.organisationId
+      );
 
       // Generate confirmation code and magic link token
       const confirmationCode = nanoid(10).toUpperCase();
@@ -114,42 +108,18 @@ export class BookingService {
 
       // Process each child
       for (const childInput of input.children) {
-        let child;
-
-        // If child already exists, resolve it!
-        if (childInput.id) {
-          child = await tx.query.children.findFirst({
-            where: and(
-              eq(children.id, childInput.id),
-              eq(children.parentId, parent.id)
-            )
-          });
-
-          if (child) {
-            // Update child's centreId if it has changed to match the booking centre
-            await tx.update(children)
-              .set({ 
-                centreId: input.appointment.centreId as string,
-                updatedAt: new Date()
-              })
-              .where(eq(children.id, child.id));
-          }
-        }
-
-        // If not existing, create a new child!
-        if (!child) {
-          const [insertedChild] = await tx.insert(children).values({
-            parentId: parent.id,
-            organisationId: centre.organisationId,
-            centreId: input.appointment.centreId as string,
-            firstName: childInput.firstName,
-            lastName: childInput.lastName,
-            schoolYear: childInput.schoolYear,
-            dateOfBirth: childInput.dateOfBirth ? new Date(childInput.dateOfBirth) : undefined,
-            notes: childInput.notes || undefined,
-          }).returning();
-          child = insertedChild;
-        }
+        const child = await resolveOrCreateChild(tx, {
+          id: childInput.id,
+          firstName: childInput.firstName,
+          lastName: childInput.lastName,
+          parentId: parent.id,
+          organisationId: centre.organisationId,
+          centreId: input.appointment.centreId as string,
+          dateOfBirth: childInput.dateOfBirth ? new Date(childInput.dateOfBirth) : null,
+          schoolYear: childInput.schoolYear,
+          notes: childInput.notes || null,
+          systemNoteContent: childInput.notes || null,
+        });
 
         // Add child subjects (only if the relation doesn't exist yet to prevent duplicates)
         for (const subject of childInput.subjects) {
@@ -180,15 +150,7 @@ export class BookingService {
           childId: child.id,
         });
 
-        // If the parent provided notes during booking, create an initial 'System' internal note
-        if (childInput.notes) {
-          await tx.insert(studentNotes).values({
-            childId: child.id,
-            content: childInput.notes,
-            authorName: 'System',
-            category: 'General',
-          });
-        }
+
 
         createdChildren.push({
           firstName: child.firstName,

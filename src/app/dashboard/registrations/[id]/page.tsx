@@ -234,7 +234,18 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                     <div key={p.id} className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
                         <h2 className="text-white font-semibold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
                         <dl className="space-y-3 text-sm">
-                            <DetailRow label="Name" value={`${p.submittedFirstName} ${p.submittedLastName}`} />
+                            {p.parentId ? (
+                                <div className="flex justify-between gap-4">
+                                    <dt className="text-on-surface-variant flex-shrink-0">Name</dt>
+                                    <dd className="text-white text-right font-medium">
+                                        <Link href={`/dashboard/parents/${p.parentId}`} className="text-primary hover:text-blue-400 hover:underline transition-colors">
+                                            {p.submittedFirstName} {p.submittedLastName}
+                                        </Link>
+                                    </dd>
+                                </div>
+                            ) : (
+                                <DetailRow label="Name" value={`${p.submittedFirstName} ${p.submittedLastName}`} />
+                            )}
                             <DetailRow label="Relationship" value={p.submittedRelationship ?? '—'} />
                             <DetailRow label="Email" value={p.submittedEmail ?? '—'} />
                             <DetailRow label="Phone" value={p.submittedPhone ?? '—'} />

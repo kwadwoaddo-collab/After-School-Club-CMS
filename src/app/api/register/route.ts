@@ -9,6 +9,7 @@ import {
 import { eq, and, ilike, inArray } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
 import { z } from 'zod';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
@@ -215,41 +216,27 @@ export async function POST(req: NextRequest) {
                 let parentId: string;
  
                 if (p.email) {
-                    const existing = await tx.query.parents.findFirst({
+                    const existingBefore = await tx.query.parents.findFirst({
                         where: and(
                             ilike(parents.email, p.email.trim()),
                             eq(parents.organisationId, org.id)
                         ),
+                        columns: { id: true }
                     });
- 
-                    if (existing) {
-                        matched = true;
-                        parentId = existing.id;
-                        // Enrich existing record with new address/relationship info if missing
-                        await tx.update(parents).set({
-                            relationship: (p.relationship ?? existing.relationship) as any,
-                            addressLine1: p.addressLine1 ?? existing.addressLine1,
-                            addressLine2: p.addressLine2 ?? existing.addressLine2,
-                            city: p.city ?? existing.city,
-                            postcode: p.postcode ?? existing.postcode,
-                            updatedAt: new Date(),
-                        }).where(eq(parents.id, existing.id));
-                    } else {
-                        const [newParent] = await tx.insert(parents).values({
-                            firstName: p.firstName,
-                            lastName: p.lastName,
-                            email: p.email,
-                            phone: p.phone,
-                            organisationId: org.id,
-                            preferredContact: 'email',
-                            relationship: (p.relationship ?? null) as any,
-                            addressLine1: p.addressLine1 ?? null,
-                            addressLine2: p.addressLine2 ?? null,
-                            city: p.city ?? null,
-                            postcode: p.postcode ?? null,
-                        }).returning();
-                        parentId = newParent.id;
-                    }
+                    matched = !!existingBefore;
+
+                    const resolvedParent = await resolveOrCreateParent(tx, {
+                        firstName: p.firstName,
+                        lastName: p.lastName,
+                        email: p.email,
+                        phone: p.phone,
+                        relationship: p.relationship,
+                        addressLine1: p.addressLine1,
+                        addressLine2: p.addressLine2,
+                        city: p.city,
+                        postcode: p.postcode,
+                    }, org.id);
+                    parentId = resolvedParent.id;
                 } else {
                     const [newParent] = await tx.insert(parents).values({
                         firstName: p.firstName,
@@ -292,40 +279,23 @@ export async function POST(req: NextRequest) {
                             ilike(children.lastName, c.lastName.trim()),
                             eq(children.parentId, primaryParentId)
                         ),
+                        columns: { id: true }
                     });
- 
-                    if (existing) {
-                        matched = true;
-                        childId = existing.id;
-                        await tx.update(children).set({
-                            dateOfBirth: existing.dateOfBirth ?? (c.dateOfBirth ? new Date(c.dateOfBirth) : null),
-                            schoolYear: c.schoolYear ?? existing.schoolYear,
-                            notes: specialNeeds?.details
-                                ? (existing.notes ? `${existing.notes}\n${specialNeeds.details}` : specialNeeds.details)
-                                : existing.notes,
-                            source: 'both',
-                            isRegistered: true,
-                            registeredAt: new Date(),
-                            registeredSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
-                            updatedAt: new Date(),
-                        }).where(eq(children.id, existing.id));
-                    } else {
-                        const [newChild] = await tx.insert(children).values({
-                            parentId: primaryParentId,
-                            organisationId: org.id,
-                            centreId: validatedCentreId,
-                            firstName: c.firstName,
-                            lastName: c.lastName,
-                            dateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
-                            schoolYear: c.schoolYear ?? 'Unknown',
-                            notes: specialNeeds?.details ?? null,
-                            source: 'registration',
-                            isRegistered: true,
-                            registeredAt: new Date(),
-                            registeredSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
-                        }).returning();
-                        childId = newChild.id;
-                    }
+                    matched = !!existing;
+
+                    const child = await resolveOrCreateChild(tx, {
+                        firstName: c.firstName,
+                        lastName: c.lastName,
+                        parentId: primaryParentId,
+                        organisationId: org.id,
+                        centreId: validatedCentreId,
+                        dateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
+                        schoolYear: c.schoolYear || 'Unknown',
+                        notes: specialNeeds?.details || null,
+                        sessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
+                        systemNoteContent: specialNeeds?.details ? `Special Needs (from Registration): ${specialNeeds.details}` : null,
+                    });
+                    childId = child.id;
                 }
  
                 await tx.insert(registrationChildren).values({
@@ -338,16 +308,6 @@ export async function POST(req: NextRequest) {
                     submittedSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                     wasMatched: matched,
                 });
- 
-                // If special needs were provided, create an initial 'System' internal note for each child
-                if (specialNeeds?.details && childId) {
-                    await tx.insert(studentNotes).values({
-                        childId,
-                        content: `Special Needs (from Registration): ${specialNeeds.details}`,
-                        authorName: 'System',
-                        category: 'General',
-                    });
-                }
             }
         });
 

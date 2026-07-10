@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { emailService } from '@/lib/services/email';
+import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await auth();
@@ -424,38 +425,24 @@ export async function registerWalkInChild(params: {
 
     // 2. Perform operations in a transaction for integrity
     await db.transaction(async (tx) => {
-        // Find or create parent
-        let pId: string;
-        const existingParent = await tx.query.parents.findFirst({
-            where: and(
-                eq(parents.email, parentEmail),
-                eq(parents.organisationId, orgId)
-            ),
-        });
+        // Resolve or create parent
+        const resolvedParent = await resolveOrCreateParent(tx, {
+            firstName: parentFirstName,
+            lastName: parentLastName,
+            email: parentEmail,
+            phone: parentPhone || null,
+        }, orgId);
+        const pId = resolvedParent.id;
 
-        if (existingParent) {
-            pId = existingParent.id;
-        } else {
-            const [newParent] = await tx.insert(parents).values({
-                firstName: parentFirstName,
-                lastName: parentLastName,
-                email: parentEmail,
-                phone: parentPhone || null,
-                organisationId: orgId,
-                preferredContact: 'email',
-            }).returning();
-            pId = newParent.id;
-        }
-
-        // Create child
-        const [newChild] = await tx.insert(children).values({
+        // Resolve or create child
+        const child = await resolveOrCreateChild(tx, {
+            firstName: childFirstName,
+            lastName: childLastName,
             parentId: pId,
             organisationId: orgId,
             centreId: centreId,
-            firstName: childFirstName,
-            lastName: childLastName,
             schoolYear: schoolYear,
-        }).returning();
+        });
 
         // Calculate booking start time
         // dateStr is YYYY-MM-DD, sessionTime is HH:MM
@@ -480,7 +467,7 @@ export async function registerWalkInChild(params: {
         // Create Booking Attendee & automatically check in
         await tx.insert(bookingAttendees).values({
             bookingId: newBooking.id,
-            childId: newChild.id,
+            childId: child.id,
             attendanceStatus: 'present',
             attendanceMarkedAt: new Date(),
             attendanceMarkedBy: session.user.id,
