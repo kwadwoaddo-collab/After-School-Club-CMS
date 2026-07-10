@@ -242,18 +242,33 @@ const nextAuthResult = NextAuth({
 
 export const { handlers, signIn, signOut } = nextAuthResult;
 
-export const auth = async (...args: Parameters<typeof nextAuthResult.auth>) => {
-  const session = await nextAuthResult.auth(...args);
+export interface SessionWithOrg {
+  user: {
+    id: string;
+    organisationId?: string | null;
+    role?: string;
+    needsOnboarding?: boolean;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+  expires: string;
+}
 
-  if (session?.user?.id && !(session.user as any).organisationId) {
+export function auth(): Promise<SessionWithOrg | null>;
+export function auth(req: any, ctx: any): any;
+export async function auth(...args: any[]) {
+  const session = await (nextAuthResult.auth as any)(...args);
+
+  if (session?.user?.id && !session.user.organisationId) {
     try {
       const dbUser = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
       });
       if (dbUser?.organisationId) {
-        (session.user as any).organisationId = dbUser.organisationId;
-        (session.user as any).role = dbUser.role ?? (session.user as any).role;
-        (session.user as any).needsOnboarding = false;
+        session.user.organisationId = dbUser.organisationId;
+        session.user.role = dbUser.role ?? session.user.role;
+        session.user.needsOnboarding = false;
       }
     } catch (e) {
       console.error('Failed to fetch user organisation in auth wrapper:', e);
@@ -261,7 +276,7 @@ export const auth = async (...args: Parameters<typeof nextAuthResult.auth>) => {
   }
 
   return session;
-};
+}
 
 // Helper to get current user with organisation
 export async function getCurrentUser() {

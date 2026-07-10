@@ -59,4 +59,19 @@ Keep server actions and data logic consolidated in specialized modules (e.g. `no
 ## 17. Declaring Physical DB Indexes in ORM Schemas
 Always declare database indexes (such as foreign keys and frequently queried filter/sorting combinations) directly in the Drizzle Schema ORM definition (`schema.ts`), matching any raw SQL migrations (like `add-indexes.sql`). This ensures schema synchronization tools (like `drizzle-kit`) remain in sync and that database tables created in development, testing, and production environments are identically optimized.
 
+## 18. Drizzle Relational Query with vs Join Queries
+Drizzle's relational query builder (`db.query.table.findFirst`) does not support nested `where` clauses inside `with` relations to filter parent rows. Attempting to use them causes type compilation errors. Instead, construct a standard select-join query (`db.select().from().innerJoin()`) which compiles directly to SQL and is fully typed by TypeScript.
 
+## 19. NextAuth Wrapper and TypeScript Overloading
+NextAuth's `auth` helper contains multiple overloaded signatures (supporting both server-side session fetching and middleware usage). When wrapping `auth` in a custom function, TypeScript can incorrectly infer the return type as `NextMiddleware` (which does not expose `.user`), producing parameter-count mismatch errors across call-sites. Resolve this by specifying explicit function overloads for the wrapper:
+```typescript
+export function auth(): Promise<SessionWithOrg | null>;
+export function auth(req: any, ctx: any): any;
+export async function auth(...args: any[]) { ... }
+```
+
+## 20. Type Narrowing inside Transaction Callbacks
+TypeScript type-narrowing of parent object properties (e.g., `session.user.organisationId`) is not automatically preserved inside asynchronous closure callbacks like `db.transaction(async (tx) => { ... })`. Store nested property values in local constants (`const orgId = session.user.organisationId`) before entering the transaction callback. This narrows the type to a non-nullable primitive and prevents type mismatch errors.
+
+## 21. Database Enum Fallbacks for Evolving UI Fields
+When UI options (such as after-school club activities) evolve faster than strict database enums (such as PostgreSQL custom types), map the non-matching options to a generic option (like `'Other'`) and write the exact UI text selection into a nullable varchar field (like `customSubject`) at the database insert layer. This prevents database constraint crashes and avoids the need for immediate, disruptive DB migrations.
