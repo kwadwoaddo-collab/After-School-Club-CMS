@@ -32,8 +32,8 @@ import type { AttendanceStatus } from '@/lib/attendance';
 import { normalizeString, normalizeDate } from '@/lib/search-params';
 import { cn } from '@/components/ui/utils';
 import { TodaysSnapshot } from '@/components/dashboard/TodaysSnapshot';
-import { RevenueWidget } from '@/components/dashboard/RevenueWidget';
 import { AttendanceHeatmap } from '@/components/dashboard/AttendanceHeatmap';
+import DashboardHero from '@/components/dashboard/DashboardHero';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -468,28 +468,16 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
 
-            {/* ── Dynamic Welcome Banner Hero ───────────────────────── */}
-            <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-surface-container-high via-surface-container-high to-primary/5 p-8 border border-outline-variant/10 shadow-xl mb-2">
-                <div className="absolute right-0 top-0 -mr-16 -mt-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-                    <div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-1.5 block">After-School Club CMS</span>
-                        <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight headline-lg">
-                            Welcome back{firstName ? `, ${firstName}` : ''}!
-                        </h1>
-                        <p className="text-on-surface-variant text-sm mt-1 max-w-xl font-medium">
-                            Here is a breakdown of your centres, enrolments, and booking activity for today.
-                        </p>
-                    </div>
-                    <Suspense fallback={<div className="w-[180px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" />}>
-                        <DashboardFilter 
-                            currentView={currentView}
-                            currentDateIso={targetDate.toISOString()}
-                            dateLabel={dateLabel}
-                        />
-                    </Suspense>
-                </div>
-            </div>
+            {/* ── Collapsible Sticky Welcome Banner Hero ───────────────────────── */}
+            <DashboardHero firstName={firstName}>
+                <Suspense fallback={<div className="w-[180px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" />}>
+                    <DashboardFilter 
+                        currentView={currentView}
+                        currentDateIso={targetDate.toISOString()}
+                        dateLabel={dateLabel}
+                    />
+                </Suspense>
+            </DashboardHero>
 
             {/* ── Onboarding checklist ─────────────────────────────────────── */}
             {!onboardingAllDone && (
