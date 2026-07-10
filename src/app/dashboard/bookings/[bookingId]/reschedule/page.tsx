@@ -58,29 +58,29 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
             <div className="flex items-center gap-4">
                 <Link
                     href={`/dashboard/bookings/${bookingId}`}
-                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                    className="p-2 hover:bg-white/10 rounded-xl transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5 text-slate-600" />
+                    <ChevronLeft className="w-5 h-5 text-white/60 hover:text-white" />
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-white tracking-tight">Reschedule Booking</h1>
-                    <p className="text-slate-300 font-medium mt-1">
+                    <p className="text-slate-400 font-medium mt-1">
                         Select a new date and time for {firstChild?.childFirstName || 'child'} {firstChild?.childLastName || ''}
                     </p>
                 </div>
             </div>
 
             {/* Current Booking Info */}
-            <div className="glass-card rounded-[32px] p-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Current Booking</h3>
+            <div className="glassmorphic-card rounded-[32px] p-8">
+                <h3 className="text-lg font-bold text-white mb-4">Current Booking</h3>
                 <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-slate-700">
+                    <div className="flex items-center gap-3 text-slate-300">
                         <Calendar className="w-5 h-5 text-primary" />
                         <span className="font-medium">
                             {booking.startAt && !isNaN(new Date(booking.startAt).getTime()) ? format(new Date(booking.startAt), 'EEEE, MMMM d, yyyy') : 'Date TBD'}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 text-slate-700">
+                    <div className="flex items-center gap-3 text-slate-300">
                         <Clock className="w-5 h-5 text-primary" />
                         <span className="font-medium">
                             {booking.startAt && !isNaN(new Date(booking.startAt).getTime()) ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}

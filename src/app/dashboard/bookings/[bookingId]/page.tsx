@@ -118,15 +118,15 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link href="/dashboard/bookings" className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                    <ChevronLeft className="w-5 h-5 text-slate-600" />
+                <Link href="/dashboard/bookings" className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                    <ChevronLeft className="w-5 h-5 text-white/60 hover:text-white" />
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-white tracking-tight">Booking Details</h1>
-                    <p className="text-slate-300 font-medium mt-1">View and manage booking</p>
+                    <p className="text-slate-400 font-medium mt-1">View and manage booking</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Link href={`/dashboard/bookings/${bookingId}/reschedule`} className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-sm font-semibold text-slate-700 transition-all">
+                    <Link href={`/dashboard/bookings/${bookingId}/reschedule`} className="px-4 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl text-sm font-semibold text-white transition-all">
                         Reschedule
                     </Link>
                     <MarkAttendedButton bookingId={bookingId} initialStatus={booking.status} />
@@ -134,7 +134,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             </div>
 
             {/* Booking Lifecycle Timeline */}
-            <div className="glass-card rounded-3xl p-6 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+            <div className="glassmorphic-card rounded-3xl p-6">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Booking Lifecycle</h3>
                 <div className="flex items-center gap-0">
                     {timelineSteps.map((step, i) => (
@@ -145,7 +145,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                 {step.date && step.done && <p className="text-[10px] text-slate-500">{step.date}</p>}
                             </div>
                             {i < timelineSteps.length - 1 && (
-                                <div className={`h-px flex-1 mx-2 ${step.done ? 'bg-slate-500' : 'bg-slate-700'}`} />
+                                <div className={`h-px flex-1 mx-2 ${step.done ? 'bg-outline-variant/30' : 'bg-white/5'}`} />
                             )}
                         </div>
                     ))}
@@ -159,10 +159,10 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         const child = attendee.child;
                         const initials = `${child.firstName[0]}${child.lastName[0]}`.toUpperCase();
                         return (
-                            <div key={attendee.id} className="glass-card rounded-[32px] p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+                            <div key={attendee.id} className="glassmorphic-card rounded-[32px] p-8">
                                 <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-primary/20">
                                             {initials}
                                         </div>
                                         <div>
@@ -173,7 +173,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                             </h2>
                                             <div className="flex flex-wrap items-center gap-4">
                                                 <span className="px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold uppercase">{child.schoolYear || 'Grade N/A'}</span>
-                                                {child.dateOfBirth && <span className="text-sm text-slate-500 font-medium">Born: {format(new Date(child.dateOfBirth), 'MMM d, yyyy')}</span>}
+                                                {child.dateOfBirth && <span className="text-sm text-slate-400 font-medium">Born: {format(new Date(child.dateOfBirth), 'MMM d, yyyy')}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -194,7 +194,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                 </div>
 
                                 {/* Booking Details Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant/10">
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0"><Calendar className="w-6 h-6 text-primary" /></div>
                                         <div>
@@ -229,18 +229,18 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         );
                     })
                 ) : (
-                    <div className="glass-card rounded-[32px] p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
-                        <p className="text-white text-center">No attendees found for this booking.</p>
+                    <div className="glassmorphic-card rounded-[32px] p-8 text-center text-white/50 text-sm">
+                        No attendees found for this booking.
                     </div>
                 )}
             </div>
 
             {/* Parent Information */}
-            <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+            <div className="glassmorphic-card rounded-3xl p-8">
                 <h3 className="text-xl font-bold text-white mb-6">Parent Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-slate-600" /></div>
+                        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-white/60" /></div>
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Parent Name</p>
                             <p className="text-base font-bold text-white">{booking.parent.firstName} {booking.parent.lastName}</p>
@@ -250,7 +250,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
                     {booking.parent.phone && (
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0"><Phone className="w-6 h-6 text-slate-600" /></div>
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0"><Phone className="w-6 h-6 text-white/60" /></div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Phone</p>
                                 <a href={`tel:${booking.parent.phone}`} className="text-base font-bold text-white hover:text-primary transition-colors">
@@ -262,7 +262,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
                     {booking.parent.email && (
                         <div className="flex items-center gap-4 md:col-span-2">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0"><Mail className="w-6 h-6 text-slate-600" /></div>
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0"><Mail className="w-6 h-6 text-white/60" /></div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
                                 <a href={`mailto:${booking.parent.email}`} className="text-base font-bold text-white hover:text-primary transition-colors">
@@ -275,7 +275,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             </div>
 
             {/* Internal Notes Timeline */}
-            <div className="glass-card rounded-3xl p-8 !bg-[#1a1c23]/80 !border-[#2a2d35]">
+            <div className="glassmorphic-card rounded-3xl p-8">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-white">Internal Notes</h3>
                 </div>
