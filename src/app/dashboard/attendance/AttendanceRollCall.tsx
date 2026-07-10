@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
-import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Edit2, Plus, Search, X, Users, Sparkles, UserCheck } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Edit2, Plus, Search, X, Users, Sparkles, UserCheck, UserMinus, CalendarX } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
@@ -53,7 +53,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
     present: { label: 'Present', bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/20' },
     absent: { label: 'Absent', bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/20' },
     late: { label: 'Late', bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/20' },
-    no_show: { label: 'No Show', bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/20' },
+    no_show: { label: 'No Show', bg: 'bg-rose-500/15', text: 'text-rose-400', border: 'border-rose-500/20' },
     excused: { label: 'Excused', bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'border-purple-500/20' },
 };
 
@@ -146,90 +146,118 @@ function AttendeeCard({
 
     return (
         <div className="space-y-2">
-            <div className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${cfg
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border transition-all ${cfg
                 ? `${cfg.bg} ${cfg.border}`
                 : 'bg-[#2a2d35]/30 border-[#424754]/20 hover:border-[#adc6ff]/20'
             }`}>
-                {/* Avatar */}
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-[#adc6ff]/10 text-[#adc6ff]'}`}>
-                    {initials}
+                {/* Left side: Avatar + Info */}
+                <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
+                    {/* Avatar */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-[#adc6ff]/10 text-[#adc6ff]'}`}>
+                        {initials}
+                    </div>
+
+                    {/* Name + details */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                            <Link href={`/dashboard/students/${attendee.childId}`} className="text-white hover:text-[#adc6ff] font-semibold text-sm truncate transition-colors">
+                                {attendee.firstName} {attendee.lastName}
+                            </Link>
+                            {(note || lateMinutes) && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
+                            )}
+                        </div>
+                        <p className="text-[#8c909f] text-[11px] font-medium leading-normal truncate">
+                            Year {attendee.schoolYear} · Parent: {attendee.parentFirstName} ({attendee.parentEmail || 'No email'})
+                            {lateMinutes && ` · Late: ${lateMinutes}m`}
+                            {note && ` · "${note}"`}
+                        </p>
+                    </div>
                 </div>
 
-                {/* Name + details */}
-                <div className="flex-1 min-w-0">
+                {/* Right side: Status badge, saved, loading, and buttons */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t border-[#424754]/10 sm:border-0 pt-3 sm:pt-0">
                     <div className="flex items-center gap-2">
-                        <Link href={`/dashboard/students/${attendee.childId}`} className="text-white hover:text-[#adc6ff] font-semibold text-sm truncate transition-colors">
-                            {attendee.firstName} {attendee.lastName}
-                        </Link>
-                        {(note || lateMinutes) && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
+                        {/* Status badge */}
+                        {cfg && (
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+                                {cfg.label}
+                            </span>
                         )}
+
+                        {/* Saved flash */}
+                        {saved && <span className="text-emerald-400 text-xs font-bold animate-pulse">Saved</span>}
+
+                        {/* Loading */}
+                        {isPending && <Loader2 className="w-4 h-4 text-[#8c909f] animate-spin flex-shrink-0" />}
                     </div>
-                    <p className="text-[#8c909f] text-[11px] font-medium leading-normal truncate">
-                        Year {attendee.schoolYear} · Parent: {attendee.parentFirstName} ({attendee.parentEmail || 'No email'})
-                        {lateMinutes && ` · Late: ${lateMinutes}m`}
-                        {note && ` · "${note}"`}
-                    </p>
+
+                    {/* Quick action buttons */}
+                    {!isPending && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                                onClick={() => setShowDetails(!showDetails)}
+                                title="Add Note/Details"
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${showDetails
+                                    ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
+                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-[#adc6ff]/40 hover:text-white'
+                                }`}
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => mark(status === 'present' ? null : 'present')}
+                                title="Mark Present"
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'present'
+                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-emerald-500/50 hover:text-emerald-400'
+                                }`}
+                            >
+                                <CheckCircle2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => mark(status === 'late' ? null : 'late')}
+                                title="Mark Late"
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'late'
+                                    ? 'bg-amber-500 border-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-amber-500/50 hover:text-amber-400'
+                                }`}
+                            >
+                                <Clock className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => mark(status === 'absent' ? null : 'absent')}
+                                title="Mark Absent"
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'absent'
+                                    ? 'bg-red-500 border-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-red-500/50 hover:text-red-400'
+                                }`}
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => mark(status === 'no_show' ? null : 'no_show')}
+                                title="Mark No Show"
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'no_show'
+                                    ? 'bg-rose-500 border-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-rose-500/50 hover:text-rose-400'
+                                }`}
+                            >
+                                <UserMinus className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => mark(status === 'excused' ? null : 'excused')}
+                                title="Mark Excused"
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'excused'
+                                    ? 'bg-purple-500 border-purple-500 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-purple-500/50 hover:text-purple-400'
+                                }`}
+                            >
+                                <CalendarX className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
                 </div>
-
-                {/* Status badge */}
-                {cfg && (
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${cfg.bg} ${cfg.text} ${cfg.border} hidden sm:inline-flex`}>
-                        {cfg.label}
-                    </span>
-                )}
-
-                {/* Saved flash */}
-                {saved && <span className="text-emerald-400 text-xs font-bold animate-pulse">Saved</span>}
-
-                {/* Loading */}
-                {isPending && <Loader2 className="w-4 h-4 text-[#8c909f] animate-spin flex-shrink-0" />}
-
-                {/* Quick action buttons */}
-                {!isPending && (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                            onClick={() => setShowDetails(!showDetails)}
-                            title="Add Note/Details"
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${showDetails
-                                ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
-                                : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-[#adc6ff]/40 hover:text-white'
-                            }`}
-                        >
-                            <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => mark(status === 'present' ? null : 'present')}
-                            title="Mark Present"
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'present'
-                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                                : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-emerald-500/50 hover:text-emerald-400'
-                            }`}
-                        >
-                            <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => mark(status === 'late' ? null : 'late')}
-                            title="Mark Late"
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'late'
-                                ? 'bg-amber-500 border-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                                : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-amber-500/50 hover:text-amber-400'
-                            }`}
-                        >
-                            <Clock className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => mark(status === 'absent' ? null : 'absent')}
-                            title="Mark Absent"
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'absent'
-                                ? 'bg-red-500 border-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]'
-                                : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-red-500/50 hover:text-red-400'
-                            }`}
-                        >
-                            <XCircle className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Note and Late Pickup edit form drawer */}
