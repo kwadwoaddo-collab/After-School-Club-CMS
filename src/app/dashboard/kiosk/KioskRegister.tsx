@@ -189,13 +189,13 @@ function StudentCard({
     const initials = `${attendee.firstName[0]}${attendee.lastName[0]}`.toUpperCase();
 
     const statusStyle = {
-        present: { ring: 'ring-2 ring-emerald-500 bg-emerald-500/10', avatar: 'bg-emerald-500 text-white' },
-        absent:  { ring: 'ring-2 ring-red-500 bg-red-500/10',         avatar: 'bg-red-500 text-white' },
-        late:    { ring: 'ring-2 ring-amber-500 bg-amber-500/10',     avatar: 'bg-amber-500 text-white' },
-        excused: { ring: 'ring-2 ring-purple-500 bg-purple-500/10',   avatar: 'bg-purple-500 text-white' },
+        present: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },
+        absent:  { ring: 'border-error/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-error' },
+        late:    { ring: 'border-amber-500/30 bg-amber-500/5 ring-2 ring-amber-500/10 glow-hover-warning',     avatar: 'bg-amber-500/20 text-amber-400' },
+        excused: { ring: 'border-secondary/30 bg-secondary-container/5 ring-2 ring-secondary/10 glow-hover-secondary',   avatar: 'bg-secondary-container/20 text-secondary' },
     };
 
-    const style = status ? statusStyle[status] : { ring: 'ring-1 ring-white/10 bg-white/5', avatar: 'bg-white/10 text-white/60' };
+    const style = status ? statusStyle[status] : { ring: 'glassmorphic-card hover:border-primary/30 glow-hover-primary', avatar: 'bg-white/5 text-white/40' };
     const pad = isLarge ? 'p-5' : 'p-4';
     const avatarSize = isLarge ? 'w-14 h-14 text-xl' : 'w-11 h-11 text-base';
     const btnSize = isLarge ? 'h-14 text-sm gap-2 px-4' : 'h-11 text-xs gap-1.5 px-3';
@@ -247,21 +247,21 @@ function StudentCard({
                                 onClick={() => setShowDetails(!showDetails)}
                                 title="Add Notes/Details"
                                 className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all border ${showDetails
-                                    ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
-                                    : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
+                                    ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
+                                    : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20'
                                 }`}
                             >
                                 <Edit2 className="w-4 h-4" />
                             </button>
                             {([
-                                { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-emerald-500 text-white', inactive: 'bg-white/5 text-white/40 hover:text-emerald-400' },
-                                { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-500 text-white',   inactive: 'bg-white/5 text-white/40 hover:text-amber-400'   },
-                                { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-red-500 text-white',     inactive: 'bg-white/5 text-white/40 hover:text-red-400'     },
+                                { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-tertiary hover:border-tertiary/20' },
+                                { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-400 text-slate-950 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-amber-400/20',   inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-amber-400 hover:border-amber-400/20'   },
+                                { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-slate-950 shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-error hover:border-error/20'     },
                             ]).map(({ s, icon, label, active, inactive }) => (
                                 <button
                                     key={s}
                                     onClick={() => mark(s)}
-                                    className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 ${status === s ? active : inactive}`}
+                                    className={`${btnSize} border rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 ${status === s ? active : inactive}`}
                                 >
                                     {icon} {isLarge && label}
                                 </button>
@@ -400,13 +400,13 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     });
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0f1117] -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-64px)] bg-[#0e0e0f] -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
 
             {/* ── TOP BAR ─────────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c23] border-b border-white/5 flex-shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 bg-[#19191b]/40 backdrop-blur-md border-b border-outline-variant/10 flex-shrink-0">
                 <div>
-                    <h1 className="text-white font-black text-lg leading-tight">Daily Register</h1>
-                    <p className="text-white/40 text-xs mt-0.5">{date} · {centreName}</p>
+                    <h1 className="text-white font-black text-lg leading-tight tracking-tight">Daily Register</h1>
+                    <p className="text-white/40 text-xs mt-0.5 font-medium">{date} · {centreName}</p>
                 </div>
 
                 <div className="text-white font-black text-3xl tabular-nums tracking-tight">
@@ -416,22 +416,22 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
                 <div className="flex items-center gap-2">
                     <button onClick={() => router.refresh()} title="Refresh"
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
                         <RefreshCw className="w-4 h-4" />
                     </button>
                     <button onClick={() => setLarge(v => !v)} title="Toggle size"
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
                         <Users className="w-4 h-4" />
                     </button>
                     <button onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
                         {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
                     {centres.length > 1 && (
                         <select
                             value={activeCentreId}
                             onChange={e => router.push(`/dashboard/kiosk?centre=${e.target.value}`)}
-                            className="bg-white/5 border border-white/10 text-white text-xs font-bold px-3 py-2.5 rounded-xl outline-none"
+                            className="bg-white/5 border border-white/10 text-white text-xs font-bold px-3 py-2.5 rounded-xl outline-none focus:border-primary/50 transition-colors"
                         >
                             <option value="all">All Centres</option>
                             {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -441,27 +441,27 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
             </div>
 
             {/* ── STATS BAR ──────────────────────────────────────────────── */}
-            <div className="flex items-center gap-0 border-b border-white/5 flex-shrink-0">
+            <div className="flex items-center gap-0 bg-[#131314]/30 border-b border-outline-variant/10 flex-shrink-0">
                 {[
                     { label: 'Total',    value: totalCount,    color: 'text-white' },
-                    { label: 'Present',  value: presentCount,  color: 'text-emerald-400' },
+                    { label: 'Present',  value: presentCount,  color: 'text-tertiary' },
                     { label: 'Late',     value: lateCount,     color: 'text-amber-400' },
-                    { label: 'Absent',   value: absentCount,   color: 'text-red-400' },
+                    { label: 'Absent',   value: absentCount,   color: 'text-error' },
                     { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-orange-400' : 'text-white/30' },
                 ].map((stat, i) => (
-                    <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-white/5' : ''}`}>
+                    <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-outline-variant/10' : ''}`}>
                         <p className={`text-xl font-black ${stat.color}`}>{stat.value}</p>
                         <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{stat.label}</p>
                     </div>
                 ))}
-                <div className="flex-1 py-3 px-4 border-l border-white/5">
+                <div className="flex-1 py-3 px-4 border-l border-outline-variant/10">
                     <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Done</p>
                         <p className="text-xs font-black text-white">{progressPct}%</p>
                     </div>
                     <div className="h-1.5 bg-white/5 rounded-full">
                         <div
-                            className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-tertiary to-primary rounded-full transition-all duration-500"
                             style={{ width: `${progressPct}%` }}
                         />
                     </div>
@@ -470,19 +470,19 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
             {/* ── SESSION SLOT TABS ──────────────────────────────────────── */}
             {slots.length > 0 && (
-                <div className="flex items-center gap-2 px-6 py-3 border-b border-white/5 overflow-x-auto flex-shrink-0">
+                <div className="flex items-center gap-2 px-6 py-3 bg-[#131314]/15 border-b border-outline-variant/10 overflow-x-auto flex-shrink-0">
                     {slots.map((slot, i) => {
                         const slotAll = [...slot.regulars, ...slot.catchups];
                         const slotPresent = slotAll.filter(a => a.attendanceStatus === 'present').length;
                         const slotDone = slotAll.length > 0 && slotAll.every(a => a.attendanceStatus !== null);
                         return (
                             <button key={slot.time} onClick={() => setSlotIdx(i)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all ${
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 border transition-all ${
                                     i === slotIdx
-                                        ? 'bg-[#adc6ff] text-slate-950'
-                                        : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                                        ? 'bg-primary/20 text-primary border-primary/30 shadow-[0_0_15px_-3px_rgba(142,171,255,0.2)]'
+                                        : 'bg-white/5 border-white/5 text-white/50 hover:text-white hover:bg-white/10'
                                 }`}>
-                                {slotDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                                {slotDone && <CheckCircle2 className="w-3.5 h-3.5 text-tertiary" />}
                                 {slot.timeLabel}
                                 <span className="text-[11px] opacity-60">{slotPresent}/{slotAll.length}</span>
                             </button>
@@ -493,7 +493,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
             {/* ── SEARCH BAR ────────────────────────────────────────────── */}
             {slots.length > 0 && (
-                <div className="px-6 py-2.5 bg-[#14161d] border-b border-white/5 flex items-center gap-3 flex-shrink-0">
+                <div className="px-6 py-2.5 bg-[#131314]/10 border-b border-outline-variant/10 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <input
@@ -501,7 +501,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search students by name or parent..."
-                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-[#19191b]/40 backdrop-blur-md border border-outline-variant/20 text-white placeholder-white/30 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300"
                         />
                         {searchQuery && (
                             <button
@@ -537,7 +537,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                         {searchQuery ? 'No matching students found' : 'No students in this slot'}
                     </div>
                 ) : (
-                    <div className={`grid gap-3 p-6 ${large ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+                    <div className={`grid gap-4 p-6 ${large ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
                         {displayAttendees.map(a => (
                             <StudentCard
                                 key={a.id}
@@ -555,14 +555,14 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
             {/* ── BOTTOM NAV ───────────────────────────────────────────── */}
             {slots.length > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-white/5 bg-[#1a1c23] flex-shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-t border-outline-variant/10 bg-[#19191b]/40 backdrop-blur-md flex-shrink-0">
                     <button onClick={() => setSlotIdx(i => Math.max(0, i - 1))} disabled={slotIdx === 0}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 text-white font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition-all">
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 text-white font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition-all">
                         <ChevronLeft className="w-4 h-4" /> Previous
                     </button>
                     <p className="text-white/40 text-sm">Slot {slotIdx + 1} of {slots.length}</p>
                     <button onClick={() => setSlotIdx(i => Math.min(slots.length - 1, i + 1))} disabled={slotIdx === slots.length - 1}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 text-white font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition-all">
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 text-white font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition-all">
                         Next <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>

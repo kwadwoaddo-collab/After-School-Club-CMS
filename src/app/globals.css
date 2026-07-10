@@ -538,3 +538,8 @@ select:user-valid {
   box-shadow: 0 0 30px -5px rgba(245, 158, 11, 0.15), var(--shadow-lg) !important;
 }
 
+.glow-hover-error:hover {
+  border-color: rgba(255, 113, 108, 0.4) !important;
+  box-shadow: 0 0 30px -5px rgba(255, 113, 108, 0.15), var(--shadow-lg) !important;
+}
+
