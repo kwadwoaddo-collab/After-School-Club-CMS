@@ -2,17 +2,37 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { db } from '@/db';
+import { eq } from 'drizzle-orm';
+import { centres, children } from '@/db/schema';
+import ReceiptGeneratorClient from '@/components/finance/ReceiptGeneratorClient';
 
-export default async function ReceiptIframePage() {
+export default async function ReceiptPage() {
     const session = await auth();
 
     if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
+    const orgId = (session.user as any).organisationId;
+    if (!orgId) return redirect('/onboarding');
+
+    // Fetch accessible centres
+    const orgCentres = await db.query.centres.findMany({
+        where: eq(centres.organisationId, orgId),
+        orderBy: (centres, { asc }) => [asc(centres.name)],
+    });
+
+    // Fetch all children with parent records for the selection dropdown
+    const allChildren = await db.query.children.findMany({
+        where: eq(children.organisationId, orgId),
+        with: {
+            parent: true,
+        },
+        orderBy: (children, { asc }) => [asc(children.firstName)],
+    });
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
             {/* Page Header */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 no-print">
                 <Link
                     href="/dashboard/finance"
                     className="p-2 hover:bg-[#2a2a2a] rounded-2xl transition-all text-[#8c909f] hover:text-white"
@@ -29,13 +49,16 @@ export default async function ReceiptIframePage() {
                 </div>
             </div>
 
-            {/* Iframe Card */}
-            <div className="bg-[#14161b] border border-[#2a2a2a] rounded-[32px] overflow-hidden shadow-2xl">
-                <iframe
-                    src="https://assessment-dashboard-5610a.web.app"
-                    className="w-full h-[calc(100vh-240px)] min-h-[600px] border-0"
-                    allow="clipboard-write"
-                    title="Cash Receipt Generator"
+            {/* Main Interactive Work Area */}
+            <div className="bg-[#14161b] border border-[#2a2a2a]/40 rounded-[32px] p-6 sm:p-8 shadow-2xl relative">
+                <ReceiptGeneratorClient 
+                    organisation={{
+                        id: orgId,
+                        name: session.user.name || 'AfterSchool Club',
+                        slug: '',
+                    }}
+                    centres={orgCentres}
+                    children={allChildren}
                 />
             </div>
         </div>
