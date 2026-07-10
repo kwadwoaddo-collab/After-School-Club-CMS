@@ -299,72 +299,83 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                 </div>
             )}
 
-            {/* Registration rows */}
-            <div className="space-y-4">
+            {/* Registration cards grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {rows.map(r => {
                     const primary = r.registrationParents.find(p => p.isPrimary) ?? r.registrationParents[0];
                     const childNames = r.registrationChildren.map(k => `${k.submittedFirstName} ${k.submittedLastName}`).join(', ');
                     const isChecked = selected.has(r.id);
 
                     return (
-                        <div key={r.id} className={`flex items-start gap-3 group ${isChecked ? 'opacity-100' : ''}`}>
-                            {/* Checkbox */}
-                            <div className="pt-6 pl-2 flex-shrink-0">
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleOne(r.id)}
-                                    className="w-4 h-4 rounded accent-[#adc6ff] cursor-pointer"
-                                    onClick={e => e.stopPropagation()}
-                                />
+                        <Link
+                            key={r.id}
+                            href={`/dashboard/registrations/${r.id}`}
+                            className={`relative block bg-[#1a1d23] border rounded-[24px] p-6 hover:border-[#adc6ff]/30 hover:bg-[#202228] transition-all shadow-[0_4px_24px_rgba(0,0,0,0.15)] flex flex-col justify-between min-h-[220px] group ${
+                                isChecked ? 'border-[#adc6ff]/30 bg-[#202228]' : 'border-[#424754]/15'
+                            }`}
+                        >
+                            <div>
+                                {/* Header Row: Checkbox, Name, and Date */}
+                                <div className="flex items-start justify-between gap-3 mb-4">
+                                    <div className="flex items-center gap-2.5 min-w-0" onClick={e => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={() => toggleOne(r.id)}
+                                            className="w-4 h-4 rounded accent-[#adc6ff] cursor-pointer flex-shrink-0"
+                                        />
+                                        <p className="text-[#e5e2e1] font-bold text-base truncate group-hover:text-[#adc6ff] transition-colors">
+                                            {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
+                                        </p>
+                                    </div>
+                                    <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap pt-1">
+                                        {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </p>
+                                </div>
+
+                                {/* Status Badge */}
+                                <div className="mb-4 animate-in fade-in duration-300">
+                                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusBadge[r.status] || ''}`}>
+                                        {statusLabel[r.status] ?? r.status}
+                                    </span>
+                                </div>
+
+                                {/* Children & Contact Info */}
+                                <div className="space-y-1 mb-6">
+                                    <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider">Children</p>
+                                    <p className="text-[#c2c6d6] text-sm font-semibold leading-relaxed line-clamp-2">
+                                        {childNames || 'None'}
+                                    </p>
+                                    {primary?.submittedEmail && (
+                                        <p className="text-[#8c909f] text-xs font-semibold truncate mt-2">{primary.submittedEmail}</p>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Card */}
-                            <Link
-                                href={`/dashboard/registrations/${r.id}`}
-                                className={`flex-1 block bg-[#1a1d23] border rounded-[24px] p-6 hover:border-[#adc6ff]/30 hover:bg-[#202228] transition-all shadow-[0_4px_24px_rgba(0,0,0,0.15)] ${isChecked ? 'border-[#adc6ff]/30 bg-[#202228]' : 'border-[#424754]/15'}`}
-                            >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <p className="text-[#e5e2e1] font-bold text-base truncate group-hover:text-[#adc6ff] transition-colors">
-                                                {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
-                                            </p>
-                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusBadge[r.status] || ''}`}>
-                                                {statusLabel[r.status] ?? r.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-[#8c909f] text-sm font-medium truncate">
-                                            {r.registrationChildren.length} child{r.registrationChildren.length !== 1 ? 'ren' : ''}: <span className="text-[#c2c6d6] font-semibold">{childNames}</span>
-                                        </p>
-                                        {primary?.submittedEmail && (
-                                            <p className="text-[#8c909f] text-xs font-semibold mt-1.5">{primary.submittedEmail}</p>
-                                        )}
-                                    </div>
-                                    <div className="text-right flex-shrink-0 flex flex-col items-end justify-between self-stretch">
-                                        <p className="text-[#8c909f] text-xs font-bold uppercase tracking-wider">
-                                            {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        </p>
-                                        <div onClick={e => e.preventDefault()} className="mt-4">
-                                            <select
-                                                value={r.centreId || 'null'}
-                                                onChange={e => handleCentreChange(r.id, e)}
-                                                disabled={isPending}
-                                                className={`text-xs border rounded-xl py-1.5 px-3.5 disabled:opacity-50 transition-all w-44 cursor-pointer outline-none font-bold ${r.centreId
-                                                    ? 'bg-[#adc6ff]/10 border-[#adc6ff]/20 text-[#adc6ff] hover:bg-[#adc6ff]/15'
-                                                    : 'bg-[#2a2a2a] border-[#424754]/30 text-[#8c909f] hover:border-[#424754]/60'
-                                                    }`}
-                                            >
-                                                <option value="null" className="bg-[#1a1d23] text-[#8c909f]">No Centre Assigned</option>
-                                                {centres.map(c => (
-                                                    <option key={c.id} value={c.id} className="bg-[#1a1d23] text-[#e5e2e1]">{c.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
+                            {/* Actions Footer */}
+                            <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#424754]/10 mt-auto">
+                                <span className="text-xs font-bold text-[#adc6ff] group-hover:text-[#6b9dff] transition-colors">
+                                    View Details →
+                                </span>
+
+                                <div onClick={e => { e.stopPropagation(); e.preventDefault(); }}>
+                                    <select
+                                        value={r.centreId || 'null'}
+                                        onChange={e => handleCentreChange(r.id, e)}
+                                        disabled={isPending}
+                                        className={`text-xs border rounded-xl py-1.5 px-3.5 disabled:opacity-50 transition-all w-40 cursor-pointer outline-none font-bold ${r.centreId
+                                            ? 'bg-[#adc6ff]/10 border-[#adc6ff]/20 text-[#adc6ff] hover:bg-[#adc6ff]/15'
+                                            : 'bg-[#2a2a2a] border-[#424754]/30 text-[#8c909f] hover:border-[#424754]/60'
+                                            }`}
+                                    >
+                                        <option value="null" className="bg-[#1a1d23] text-[#8c909f]">No Centre</option>
+                                        {centres.map(c => (
+                                            <option key={c.id} value={c.id} className="bg-[#1a1d23] text-[#e5e2e1]">{c.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                            </Link>
-                        </div>
+                            </div>
+                        </Link>
                     );
                 })}
             </div>
