@@ -135,6 +135,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                         const isPinned = !!note.pinnedAt;
                         const canDelete = note.userId === currentUserId || isAdmin;
                         const canPin = note.userId === currentUserId || isAdmin;
+                        const canEdit = note.userId === currentUserId || isAdmin;
 
                         return (
                             <div

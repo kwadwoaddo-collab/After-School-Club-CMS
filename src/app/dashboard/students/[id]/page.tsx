@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { eq, desc, sql, inArray, leftJoin } from 'drizzle-orm';
+import { eq, desc, sql, inArray } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -80,7 +80,7 @@ export default async function StudentProfilePage(
     }
 
     // 2. Fetch All Bookings for this student (attendance history)
-    const studentBookings = await db
+    const studentBookings = (await db
         .select({
             id: bookings.id,
             startAt: bookings.startAt,
@@ -100,7 +100,11 @@ export default async function StudentProfilePage(
         .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
         .leftJoin(centres, eq(bookings.centreId, centres.id))
         .where(eq(bookingAttendees.childId, student.id))
-        .orderBy(desc(bookings.startAt));
+        .orderBy(desc(bookings.startAt)))
+        .map(b => ({
+            ...b,
+            centreName: b.centreName || 'Unknown Centre'
+        }));
 
     const initialNotes = await getStudentNotes(student.id);
 

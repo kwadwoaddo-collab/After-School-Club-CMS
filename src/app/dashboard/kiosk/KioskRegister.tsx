@@ -95,7 +95,7 @@ function StudentCard({
                 });
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId);
+                    setCurAttendeeId(res.attendeeId || attendee.id);
                 }
                 setStatus(next);
                 setFlash(true);
@@ -122,7 +122,7 @@ function StudentCard({
                 });
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId);
+                    setCurAttendeeId(res.attendeeId || attendee.id);
                 }
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);

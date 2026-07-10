@@ -470,7 +470,8 @@ export async function deleteInvoice(invoiceId: string) {
 
 export async function voidInvoice(invoiceId: string) {
     const session = await auth();
-    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session?.user?.organisationId;
+    if (!orgId) throw new Error('Unauthorized');
     if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owner can void invoices');
 
     // Run the lookup, validation, update, and log inside the transaction
@@ -478,7 +479,7 @@ export async function voidInvoice(invoiceId: string) {
         const inv = await tx.query.invoices.findFirst({
             where: and(
                 eq(invoices.id, invoiceId),
-                eq(invoices.organisationId, session.user.organisationId),
+                eq(invoices.organisationId, orgId),
             ),
         });
 
@@ -491,7 +492,7 @@ export async function voidInvoice(invoiceId: string) {
             .where(eq(invoices.id, invoiceId));
 
         await tx.insert(auditEvents).values({
-            organisationId: session.user.organisationId,
+            organisationId: orgId,
             userId: session.user.id,
             eventType: 'invoice_voided',
             eventData: JSON.stringify({ invoiceId })

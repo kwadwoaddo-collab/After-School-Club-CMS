@@ -50,7 +50,7 @@ export async function updateCentreBilling(payload: CentreBillingPayload) {
 
     const parsed = billingSchema.safeParse(payload);
     if (!parsed.success) {
-        throw new Error(parsed.error.errors[0].message);
+        throw new Error(parsed.error.issues[0].message);
     }
     const data = parsed.data;
 

@@ -101,7 +101,7 @@ function AttendeeCard({
                 
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId);
+                    setCurAttendeeId(res.attendeeId ?? null);
                 }
                 
                 setStatus(newStatus);
@@ -130,7 +130,7 @@ function AttendeeCard({
                 
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId);
+                    setCurAttendeeId(res.attendeeId ?? null);
                 }
                 
                 setSaved(true);

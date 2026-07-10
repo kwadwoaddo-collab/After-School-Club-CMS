@@ -242,7 +242,7 @@ const nextAuthResult = NextAuth({
 
 export const { handlers, signIn, signOut } = nextAuthResult;
 
-export const auth = async (...args: any[]) => {
+export const auth = async (...args: Parameters<typeof nextAuthResult.auth>) => {
   const session = await nextAuthResult.auth(...args);
 
   if (session?.user?.id && !(session.user as any).organisationId) {

@@ -250,12 +250,17 @@ export async function markAttendeeAttendance(params: {
             throw new Error('Missing parameters to create on-demand booking');
         }
 
+        const orgId = session.user.organisationId;
+        if (!orgId) {
+            throw new Error('Unauthorized');
+        }
+
         // Verify child belongs to organisation
         const child = await db.query.children.findFirst({
             where: eq(children.id, childId),
         });
 
-        if (!child || child.organisationId !== session.user.organisationId) {
+        if (!child || child.organisationId !== orgId) {
             throw new Error('Child not found or unauthorized');
         }
 
@@ -267,8 +272,7 @@ export async function markAttendeeAttendance(params: {
             const existingBooking = await tx.query.bookings.findFirst({
                 where: and(
                     eq(bookings.centreId, centreId),
-                    eq(bookings.startAt, startAt),
-                    eq(bookings.organisationId, session.user.organisationId)
+                    eq(bookings.startAt, startAt)
                 ),
                 with: {
                     attendees: true
@@ -306,16 +310,20 @@ export async function markAttendeeAttendance(params: {
                     finalAttendeeId = newAtt.id;
                 }
             } else {
+                const code = Date.now().toString(36).toUpperCase();
+                const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
+
                 // Create Booking
                 const [newBooking] = await tx.insert(bookings).values({
-                    organisationId: session.user.organisationId,
                     centreId: centreId,
                     parentId: child.parentId,
                     startAt: startAt,
                     duration: 180, // Default 3 hours
                     status: 'confirmed',
                     modality: 'in_person',
-                    billingStatus: 'pending',
+                    confirmationCode: code,
+                    magicLinkToken,
+                    communicationsConsent: false,
                 }).returning();
 
                 finalBookingId = newBooking.id;
@@ -330,7 +338,6 @@ export async function markAttendeeAttendance(params: {
                     attendanceMarkedAt: new Date(),
                     attendanceMarkedBy: session.user.id,
                 }).returning();
-
                 finalAttendeeId = newAtt.id;
             }
 
@@ -388,7 +395,8 @@ export async function registerWalkInChild(params: {
     sessionTime: string; // e.g. "15:30"
 }) {
     const session = await auth();
-    if (!session?.user?.id || !session.user.organisationId) {
+    const orgId = session?.user?.organisationId;
+    if (!session?.user?.id || !orgId) {
         throw new Error('Unauthorized');
     }
 
@@ -407,7 +415,7 @@ export async function registerWalkInChild(params: {
 
     // 1. Verify centre belongs to user's organisation
     const targetCentre = await db.query.centres.findFirst({
-        where: and(eq(centres.id, centreId), eq(centres.organisationId, session.user.organisationId)),
+        where: and(eq(centres.id, centreId), eq(centres.organisationId, orgId)),
     });
 
     if (!targetCentre) {
@@ -421,7 +429,7 @@ export async function registerWalkInChild(params: {
         const existingParent = await tx.query.parents.findFirst({
             where: and(
                 eq(parents.email, parentEmail),
-                eq(parents.organisationId, session.user.organisationId)
+                eq(parents.organisationId, orgId)
             ),
         });
 
@@ -433,7 +441,7 @@ export async function registerWalkInChild(params: {
                 lastName: parentLastName,
                 email: parentEmail,
                 phone: parentPhone || null,
-                organisationId: session.user.organisationId,
+                organisationId: orgId,
                 preferredContact: 'email',
             }).returning();
             pId = newParent.id;
@@ -442,7 +450,7 @@ export async function registerWalkInChild(params: {
         // Create child
         const [newChild] = await tx.insert(children).values({
             parentId: pId,
-            organisationId: session.user.organisationId,
+            organisationId: orgId,
             centreId: centreId,
             firstName: childFirstName,
             lastName: childLastName,
@@ -453,16 +461,20 @@ export async function registerWalkInChild(params: {
         // dateStr is YYYY-MM-DD, sessionTime is HH:MM
         const startAt = new Date(`${dateStr}T${sessionTime}:00`);
 
+        const code = Date.now().toString(36).toUpperCase();
+        const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
+
         // Create Booking
         const [newBooking] = await tx.insert(bookings).values({
-            organisationId: session.user.organisationId,
             centreId: centreId,
             parentId: pId,
             startAt: startAt,
             duration: 180, // Default duration 3 hours (after-school slot)
             status: 'confirmed',
             modality: 'in_person',
-            billingStatus: 'pending',
+            confirmationCode: code,
+            magicLinkToken,
+            communicationsConsent: false,
         }).returning();
 
         // Create Booking Attendee & automatically check in
@@ -487,7 +499,8 @@ export async function registerExistingChildWalkIn(params: {
     sessionTime: string; // e.g. "15:30"
 }) {
     const session = await auth();
-    if (!session?.user?.id || !session.user.organisationId) {
+    const orgId = session?.user?.organisationId;
+    if (!session?.user?.id || !orgId) {
         throw new Error('Unauthorized');
     }
 
@@ -495,7 +508,7 @@ export async function registerExistingChildWalkIn(params: {
 
     // 1. Verify centre belongs to user's organisation
     const targetCentre = await db.query.centres.findFirst({
-        where: and(eq(centres.id, centreId), eq(centres.organisationId, session.user.organisationId)),
+        where: and(eq(centres.id, centreId), eq(centres.organisationId, orgId)),
     });
 
     if (!targetCentre) {
@@ -504,7 +517,7 @@ export async function registerExistingChildWalkIn(params: {
 
     // 2. Verify child belongs to user's organisation
     const targetChild = await db.query.children.findFirst({
-        where: and(eq(children.id, childId), eq(children.organisationId, session.user.organisationId)),
+        where: and(eq(children.id, childId), eq(children.organisationId, orgId)),
     });
 
     if (!targetChild) {
@@ -516,16 +529,20 @@ export async function registerExistingChildWalkIn(params: {
 
     // 3. Perform operations inside a transaction
     await db.transaction(async (tx) => {
+        const code = Date.now().toString(36).toUpperCase();
+        const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
+
         // Create Booking
         const [newBooking] = await tx.insert(bookings).values({
-            organisationId: session.user.organisationId,
             centreId: centreId,
             parentId: targetChild.parentId,
             startAt: startAt,
             duration: 180, // Default duration 3 hours (after-school slot)
             status: 'confirmed',
             modality: 'in_person',
-            billingStatus: 'pending',
+            confirmationCode: code,
+            magicLinkToken,
+            communicationsConsent: false,
         }).returning();
 
         // Create Booking Attendee & automatically mark as present

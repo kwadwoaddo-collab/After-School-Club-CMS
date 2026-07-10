@@ -21,7 +21,8 @@ const schema = z.object({
 
 export async function POST(req: Request) {
     const session = await auth();
-    if (!session?.user?.organisationId) {
+    const orgId = session?.user?.organisationId;
+    if (!orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
         const centre = await db.query.centres.findFirst({
             where: and(
                 eq(centres.id, data.centreId),
-                eq(centres.organisationId, session.user.organisationId)
+                eq(centres.organisationId, orgId)
             ),
             columns: { id: true },
         });
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
             const existingParent = await tx.query.parents.findFirst({
                 where: and(
                     eq(parents.email, data.parentEmail),
-                    eq(parents.organisationId, session.user.organisationId)
+                    eq(parents.organisationId, orgId)
                 ),
             });
 
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
                     lastName: data.parentLastName,
                     email: data.parentEmail,
                     phone: data.parentPhone,
-                    organisationId: session.user.organisationId,
+                    organisationId: orgId,
                     preferredContact: 'email',
                 }).returning();
                 pId = newParent.id;
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
             // Create Child — with direct organisationId and centreId
             const [newChild] = await tx.insert(children).values({
                 parentId: pId,
-                organisationId: session.user.organisationId,
+                organisationId: orgId,
                 centreId: data.centreId,
                 firstName: data.firstName,
                 lastName: data.lastName,

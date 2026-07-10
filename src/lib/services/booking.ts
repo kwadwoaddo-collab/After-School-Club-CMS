@@ -153,17 +153,23 @@ export class BookingService {
 
         // Add child subjects (only if the relation doesn't exist yet to prevent duplicates)
         for (const subject of childInput.subjects) {
+          const dbSubject = ['Maths', 'English', 'Science', 'Other'].includes(subject)
+            ? (subject as 'Maths' | 'English' | 'Science' | 'Other')
+            : 'Other';
+          const dbCustomSubject = dbSubject === 'Other' ? (childInput.customSubject || subject) : undefined;
+
           const existingSubject = await tx.query.childSubjects.findFirst({
             where: and(
               eq(childSubjects.childId, child.id),
-              eq(childSubjects.subject, subject)
+              eq(childSubjects.subject, dbSubject),
+              dbCustomSubject ? eq(childSubjects.customSubject, dbCustomSubject) : undefined
             ),
           });
           if (!existingSubject) {
             await tx.insert(childSubjects).values({
               childId: child.id,
-              subject,
-              customSubject: subject === 'Other' ? childInput.customSubject : undefined,
+              subject: dbSubject,
+              customSubject: dbCustomSubject,
             });
           }
         }

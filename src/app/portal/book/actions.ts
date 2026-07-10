@@ -44,19 +44,20 @@ export async function createPortalBooking({
         try {
             confirmationCode = await db.transaction(async (tx) => {
                 // Check for duplicate booking (same child, same startAt)
-                const existingAttendee = await tx.query.bookingAttendees.findFirst({
-                    where: eq(bookingAttendees.childId, childId),
-                    with: {
-                        booking: {
-                            where: and(
-                                eq(bookings.centreId, centreId),
-                                eq(bookings.startAt, startDate)
-                            ),
-                        },
-                    },
-                });
+                const existingAttendee = await tx
+                    .select({ id: bookingAttendees.id })
+                    .from(bookingAttendees)
+                    .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
+                    .where(
+                        and(
+                            eq(bookingAttendees.childId, childId),
+                            eq(bookings.centreId, centreId),
+                            eq(bookings.startAt, startDate)
+                        )
+                    )
+                    .limit(1);
  
-                if (existingAttendee?.booking) {
+                if (existingAttendee.length > 0) {
                     throw new Error('A booking for this child at this time already exists.');
                 }
  
