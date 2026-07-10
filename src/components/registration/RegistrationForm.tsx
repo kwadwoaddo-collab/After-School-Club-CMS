@@ -43,44 +43,42 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
         resolver: zodResolver(registrationSchema),
         defaultValues: {
             centreId,
+            parent: {
+                firstName: '',
+                lastName: '',
+                email: '',
+                phone: '',
+                relationship: 'Mother',
+            },
             child: {
                 firstName: '',
                 lastName: '',
+                dateOfBirth: '',
                 schoolYear: 'Y1',
                 subjects: [],
+                notes: '',
             },
-            parents: [
-                {
-                    firstName: '',
-                    lastName: '',
-                    email: '',
-                    phone: '',
-                    relationship: '',
-                },
-            ],
-            emergencyContact: {
-                name: '',
-                phone: '',
-                relationship: '',
+            preferences: {
+                preferredDays: [],
+                preferredTimes: [],
+                lessonType: 'Group',
             },
-            funding: {
-                types: [],
-                other: '',
+            consent: {
+                terms: false,
+                marketing: false,
             },
-            specialNeeds: {
-                has: false,
-                details: '',
-            },
-            termsAgreed: false,
         },
     });
 
     const watchSubjects = useWatch({ control, name: 'child.subjects' });
-    const watchParents = watch('parents');
-    const watchChild = watch('child');
-    const watchEmergency = watch('emergencyContact');
-    const watchFunding = watch('funding');
-    const watchSpecial = watch('specialNeeds');
+    const watchDays = useWatch({ control, name: 'preferences.preferredDays' });
+    const watchLessonType = useWatch({ control, name: 'preferences.lessonType' });
+
+    const watchedParentFirstName = useWatch({ control, name: 'parent.firstName' });
+    const watchedParentLastName = useWatch({ control, name: 'parent.lastName' });
+    const watchedParentEmail = useWatch({ control, name: 'parent.email' });
+    const watchedChildFirstName = useWatch({ control, name: 'child.firstName' });
+    const watchedChildSchoolYear = useWatch({ control, name: 'child.schoolYear' });
 
     const toggleSubject = (subject: string) => {
         const current = watchSubjects || [];

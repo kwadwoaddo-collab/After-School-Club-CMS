@@ -87,7 +87,7 @@ export default async function StudentAttendanceHistoryPage(
     const student = studentData[0];
 
     // Enforce strict multi-tenant boundary checks
-    const studentOrgId = student.organisationId ?? student.parent.organisationId;
+    const studentOrgId = student.organisationId;
     if (studentOrgId !== session.user.organisationId) return notFound();
 
     if (!isOwner) {
