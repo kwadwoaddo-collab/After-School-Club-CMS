@@ -513,33 +513,41 @@ select:user-valid {
   background: rgba(25, 25, 27, 0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(72, 72, 73, 0.2);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), var(--shadow-sm);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Accent-specific glow variations on hover */
-.glow-hover-primary:hover {
-  border-color: rgba(142, 171, 255, 0.4) !important;
-  box-shadow: 0 0 30px -5px rgba(142, 171, 255, 0.15), var(--shadow-lg) !important;
-}
+/* Accent-specific glow variations on hover - Restricted to devices supporting hover */
+@media (hover: hover) {
+  .glassmorphic-card:hover {
+    transform: translateY(-2px);
+    background: rgba(30, 30, 32, 0.55);
+  }
 
-.glow-hover-secondary:hover {
-  border-color: rgba(184, 132, 255, 0.4) !important;
-  box-shadow: 0 0 30px -5px rgba(184, 132, 255, 0.15), var(--shadow-lg) !important;
-}
+  .glow-hover-primary:hover {
+    border-color: rgba(142, 171, 255, 0.35) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 12px 40px -12px rgba(142, 171, 255, 0.2), var(--shadow-lg) !important;
+  }
 
-.glow-hover-tertiary:hover {
-  border-color: rgba(92, 253, 128, 0.4) !important;
-  box-shadow: 0 0 30px -5px rgba(92, 253, 128, 0.15), var(--shadow-lg) !important;
-}
+  .glow-hover-secondary:hover {
+    border-color: rgba(184, 132, 255, 0.35) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 12px 40px -12px rgba(184, 132, 255, 0.2), var(--shadow-lg) !important;
+  }
 
-.glow-hover-warning:hover {
-  border-color: rgba(245, 158, 11, 0.4) !important;
-  box-shadow: 0 0 30px -5px rgba(245, 158, 11, 0.15), var(--shadow-lg) !important;
-}
+  .glow-hover-tertiary:hover {
+    border-color: rgba(92, 253, 128, 0.35) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 12px 40px -12px rgba(92, 253, 128, 0.2), var(--shadow-lg) !important;
+  }
 
-.glow-hover-error:hover {
-  border-color: rgba(255, 113, 108, 0.4) !important;
-  box-shadow: 0 0 30px -5px rgba(255, 113, 108, 0.15), var(--shadow-lg) !important;
+  .glow-hover-warning:hover {
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 12px 40px -12px rgba(245, 158, 11, 0.2), var(--shadow-lg) !important;
+  }
+
+  .glow-hover-error:hover {
+    border-color: rgba(255, 113, 108, 0.35) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 12px 40px -12px rgba(255, 113, 108, 0.2), var(--shadow-lg) !important;
+  }
 }
 

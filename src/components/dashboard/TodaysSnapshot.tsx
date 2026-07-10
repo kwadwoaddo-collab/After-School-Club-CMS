@@ -117,9 +117,9 @@ export async function TodaysSnapshot({
   ];
 
   return (
-    <div className="bg-surface-container-high rounded-2xl border border-outline-variant/10 overflow-hidden">
+    <div className="glassmorphic-card rounded-2xl overflow-hidden">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.04] bg-white/[0.01]">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
           <span className="text-xs font-black uppercase tracking-[0.15em] text-on-surface-variant">
@@ -143,10 +143,10 @@ export async function TodaysSnapshot({
         </div>
       </div>
 
-      {/* Metrics row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-outline-variant/10">
+      {/* Metrics grid - Removed divide-x, using soft bordered cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
         {items.map((item, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 py-5 px-4 text-center">
+          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-white/[0.01] rounded-xl border border-white/[0.03] hover:bg-white/[0.03] transition-all duration-300">
             <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
               <item.icon className={cn('w-4 h-4', item.color)} />
             </div>
