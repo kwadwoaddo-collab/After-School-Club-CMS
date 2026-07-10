@@ -4,6 +4,7 @@ import {
   getAttendanceLabel,
   getAttendanceColorClass,
   countAttendance,
+  compileDailyRegisterSlots,
 } from './attendance';
 
 describe('resolveAttendanceStatus', () => {
@@ -175,3 +176,86 @@ describe('countAttendance', () => {
     expect(result.pending).toBe(1);
   });
 });
+
+describe('compileDailyRegisterSlots', () => {
+  const mockParent = {
+    id: 'p-1',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    phone: '021-555-0199',
+    email: 'jane@example.com',
+  };
+
+  const mockChild = {
+    id: 'c-1',
+    firstName: 'Alex',
+    lastName: 'Doe',
+    schoolYear: '3',
+    notes: 'Peanut allergy',
+    registeredSessions: ['Monday 3.45pm'],
+    parent: mockParent,
+  };
+
+  it('initializes standard weekday slots (15:45, 17:00)', () => {
+    // 2026-07-13 is a Monday
+    const targetDate = new Date(2026, 6, 13, 12, 0, 0);
+    const result = compileDailyRegisterSlots({
+      targetDate,
+      allChildrenAtCentre: [],
+      dayBookings: [],
+    });
+
+    expect(result.length).toBe(2);
+    expect(result[0].time).toBe('15:45');
+    expect(result[1].time).toBe('17:00');
+  });
+
+  it("maps regular attendees to their registered slots with temp IDs when booking doesn't exist", () => {
+    const targetDate = new Date(2026, 6, 13, 12, 0, 0); // Monday
+    const result = compileDailyRegisterSlots({
+      targetDate,
+      allChildrenAtCentre: [mockChild as any],
+      dayBookings: [],
+    });
+
+    const slot = result.find(s => s.time === '15:45');
+    expect(slot?.regulars.length).toBe(1);
+    expect(slot?.regulars[0].id).toBe('temp-c-1-15:45');
+    expect(slot?.regulars[0].isCatchUp).toBe(false);
+    expect(slot?.regulars[0].notes).toBe('Peanut allergy');
+  });
+
+  it('maps catchup attendees based on actual bookings when slot not registered', () => {
+    const targetDate = new Date(2026, 6, 13, 12, 0, 0); // Monday
+    const bookingDate = new Date(2026, 6, 13, 17, 0, 0); // 17:00
+    
+    // Booking at 17:00 containing child c-1 (who is only registered for Monday 3.45pm/15:45)
+    const mockBooking = {
+      id: 'b-1',
+      startAt: bookingDate,
+      parent: mockParent,
+      attendees: [
+        {
+          id: 'att-1',
+          childId: 'c-1',
+          child: mockChild,
+          attendanceStatus: 'present',
+          attendanceNote: 'On time',
+          lateMinutes: null,
+        }
+      ]
+    };
+
+    const result = compileDailyRegisterSlots({
+      targetDate,
+      allChildrenAtCentre: [mockChild as any],
+      dayBookings: [mockBooking as any],
+    });
+
+    const slot = result.find(s => s.time === '17:00');
+    expect(slot?.catchups.length).toBe(1);
+    expect(slot?.catchups[0].id).toBe('att-1');
+    expect(slot?.catchups[0].isCatchUp).toBe(true);
+  });
+});
+
