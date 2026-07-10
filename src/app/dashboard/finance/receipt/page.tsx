@@ -58,6 +58,7 @@ export default async function ReceiptPage() {
                         slug: '',
                     }}
                     centres={orgCentres}
+                    // eslint-disable-next-line react/no-children-prop
                     children={allChildren}
                 />
             </div>
