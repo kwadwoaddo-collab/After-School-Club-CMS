@@ -91,41 +91,36 @@ export default async function StaffPage(props: {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">Team Management</h1>
-                    <p className="text-[#8c909f] font-medium mt-1">Manage your staff and centre access</p>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Team Management</h1>
+                    <p className="text-[#8c909f] text-sm font-medium mt-1">Manage your staff and centre access</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Link href="/dashboard" className="flex items-center gap-2 px-4 py-3 bg-[#2a2a2a] rounded-2xl text-sm font-bold text-[#adc6ff] hover:bg-[#353535] transition-all border border-[#424754]/15">
-                        Back to Dashboard
-                    </Link>
-                    <Link href="/dashboard/staff/invite" className="flex items-center gap-2 px-6 py-3 bg-[#adc6ff] rounded-2xl text-sm font-bold text-[#1a1d23] hover:bg-[#c8d9ff] transition-all shadow-[0_4px_24px_rgba(173,198,255,0.25)]">
-                        <UserPlus className="w-4 h-4" />
-                        Invite Staff
-                    </Link>
-                </div>
+                <Link href="/dashboard/staff/invite" className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn">
+                    <UserPlus className="w-4 h-4" />
+                    Invite Staff
+                </Link>
             </div>
 
             {/* Stats Row: real data only */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#adc6ff] flex-shrink-0"><Users className="w-6 h-6" /></div>
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-[#adc6ff] flex-shrink-0"><Users className="w-6 h-6" /></div>
                         <div>
-                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{filteredStaffMembers.length}</p>
+                            <p className="text-3xl font-bold text-white tracking-tight">{filteredStaffMembers.length}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Team Members</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#2a2a2a] text-[#d0bcff] flex-shrink-0"><Mail className="w-6 h-6" /></div>
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-[#d0bcff] flex-shrink-0"><Mail className="w-6 h-6" /></div>
                         <div>
-                            <p className="text-3xl font-bold text-[#e5e2e1] tracking-tight">{activeInviteCount}</p>
+                            <p className="text-3xl font-bold text-white tracking-tight">{activeInviteCount}</p>
                             <p className="text-[10px] text-[#c2c6d6] font-bold mt-1 uppercase tracking-wider">Active Invites</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-[#1a1d23] rounded-2xl p-6 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
                     <p className="text-[10px] text-[#c2c6d6] font-bold mb-3 uppercase tracking-wider">Roles Breakdown</p>
                     <div className="flex flex-wrap gap-2">
                         {roleBreakdown.ORG_OWNER > 0 && <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">{roleBreakdown.ORG_OWNER} Owner{roleBreakdown.ORG_OWNER > 1 ? 's' : ''}</span>}

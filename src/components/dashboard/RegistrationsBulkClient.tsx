@@ -298,8 +298,10 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                             key={r.id}
                             className={`relative glassmorphic-card rounded-[24px] flex flex-col justify-between min-h-[220px] group transition-all duration-200 ${
                                 isChecked
+                                    // Checked state: ring border, no hover shadow (they'd visually conflict)
                                     ? 'border-primary/40 bg-white/[0.03] shadow-[0_0_0_1.5px_rgba(142,171,255,0.4)]'
-                                    : 'border-outline-variant/15 hover:border-primary/20 hover:shadow-[0_8px_32px_rgba(142,171,255,0.08)]'
+                                    // Unchecked state: subtle hover glow only
+                                    : 'border-outline-variant/15 hover:border-primary/20 hover:shadow-[0_8px_32px_rgba(142,171,255,0.08)] hover:bg-white/[0.01]'
                             }`}
                         >
                             {/* Header row: checkbox (interactive) is a SIBLING of Link — never inside <a> */}
@@ -352,9 +354,16 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
                             {/* Actions Footer — select and footer are outside the Link entirely */}
                             <div className="flex items-center justify-between gap-3 px-6 pb-5 pt-3 border-t border-outline-variant/10">
-                                <span className="text-xs font-bold text-primary group-hover:text-blue-400 transition-colors pointer-events-none">
-                                    View Details →
-                                </span>
+                                {/* Contextual label — toggles based on selection state */}
+                                {isChecked ? (
+                                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                        <span className="text-emerald-400">✓</span> Selected
+                                    </span>
+                                ) : (
+                                    <span className="text-xs font-bold text-primary group-hover:text-blue-400 transition-colors pointer-events-none">
+                                        View Details →
+                                    </span>
+                                )}
 
                                 <select
                                     value={r.centreId || 'null'}

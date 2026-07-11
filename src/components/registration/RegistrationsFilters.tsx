@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, X, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -17,6 +17,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
 
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const statusOptions = [
         { value: 'all', label: 'All Statuses' },
@@ -31,66 +32,84 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
         selectedCentreId !== 'all'
     );
 
+    const buildUrl = useCallback(
+        (overrides?: { newSearch?: string; newStatus?: string; newCentre?: string }) => {
+            const params = new URLSearchParams();
+
+            const s = overrides?.newSearch !== undefined ? overrides.newSearch : search;
+            if (s) params.set('search', s);
+
+            const st = overrides?.newStatus !== undefined ? overrides.newStatus : status;
+            if (st !== 'all') params.set('status', st);
+
+            const c = overrides?.newCentre !== undefined ? overrides.newCentre : selectedCentreId;
+            if (c !== 'all') params.set('centre', c);
+
+            const qs = params.toString();
+            return `/dashboard/registrations${qs ? `?${qs}` : ''}`;
+        },
+        [search, status, selectedCentreId],
+    );
+
     const handleClearFilters = () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
         setSearch('');
         setStatus('all');
         setSelectedCentreId('all');
         router.push('/dashboard/registrations');
     };
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        applyFilters();
+    // Debounced search — applies 400ms after the user stops typing
+    const handleSearchChange = (val: string) => {
+        setSearch(val);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            router.push(buildUrl({ newSearch: val }));
+        }, 400);
     };
 
-    const applyFilters = (overrides?: { newSearch?: string; newStatus?: string }) => {
-        const params = new URLSearchParams();
-
-        const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
-        if (currentSearch) params.set('search', currentSearch);
-
-        const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
-        if (currentStatus !== 'all') params.set('status', currentStatus);
-
-        if (selectedCentreId !== 'all') {
-            params.set('centre', selectedCentreId);
-        }
-
-        const queryString = params.toString();
-        router.push(`/dashboard/registrations${queryString ? `?${queryString}` : ''}`);
+    // Status filter — immediate (consistent with centre filter)
+    const handleStatusChange = (val: string) => {
+        setStatus(val);
+        router.push(buildUrl({ newStatus: val }));
     };
+
+    // Centre filter — already immediate via context; also apply to URL
+    const handleCentreChange = (val: string) => {
+        setSelectedCentreId(val);
+        router.push(buildUrl({ newCentre: val }));
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
 
     return (
         <div className="space-y-2 animate-in fade-in duration-300">
             <div className="flex items-center gap-2 flex-wrap">
-                {/* Search */}
-                <form onSubmit={handleSearch} className="min-w-[200px]">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setSearch(val);
-                                if (val === '') {
-                                    applyFilters({ newSearch: '' });
-                                }
-                            }}
-                            placeholder="Search…"
-                            className="w-full pl-8 pr-3 py-2 rounded-xl text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-[#19191b]/60 border-outline-variant/20 text-white"
-                        />
-                    </div>
-                </form>
+                {/* Search — debounced 400ms */}
+                <div className="relative min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        placeholder="Search…"
+                        aria-label="Search registrations"
+                        className="w-full pl-8 pr-3 py-2 rounded-xl text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-[#19191b]/60 border-outline-variant/20 text-white"
+                    />
+                </div>
 
                 {/* Centre Filter — only visible when there are multiple centres */}
                 {centres.length > 1 && (
                     <div className="relative min-w-[160px]">
                         <select
                             value={selectedCentreId}
-                            onChange={(e) => {
-                                setSelectedCentreId(e.target.value);
-                            }}
+                            onChange={(e) => handleCentreChange(e.target.value)}
+                            aria-label="Filter by centre"
                             className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
                         >
                             <option value="all" className="bg-[#1a1d23] text-white">All Centres</option>
@@ -102,15 +121,12 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                     </div>
                 )}
 
-                {/* Status Filter */}
+                {/* Status Filter — immediate */}
                 <div className="relative min-w-[160px]">
                     <select
                         value={status}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setStatus(val);
-                            applyFilters({ newStatus: val });
-                        }}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        aria-label="Filter by status"
                         className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
                     >
                         {statusOptions.map((opt) => (
@@ -139,21 +155,21 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                         Active Filters:
-                      </span>
+                    </span>
                     {searchParams.get('search') && (
                         <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/15">
-                            Search: "{searchParams.get('search')}" ({resultsCount} results)
-                          </span>
+                            Search: &ldquo;{searchParams.get('search')}&rdquo; ({resultsCount} results)
+                        </span>
                     )}
                     {status !== 'all' && (
                         <span className="px-3 py-1 bg-tertiary-container/10 text-tertiary text-xs font-bold rounded-full border border-tertiary/15">
                             Status: {statusOptions.find((o) => o.value === status)?.label}
-                          </span>
+                        </span>
                     )}
                     {selectedCentreId !== 'all' && (
                         <span className="px-3 py-1 bg-accent-cyan/10 text-accent-cyan text-xs font-bold rounded-full border border-accent-cyan/15">
                             Centre: {centres.find(c => c.id === selectedCentreId)?.name || 'Selected'}
-                          </span>
+                        </span>
                     )}
                 </div>
             )}

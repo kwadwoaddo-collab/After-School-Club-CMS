@@ -1,8 +1,9 @@
 import { auth } from '@/lib/auth';
-import { redirect, RedirectType } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
+import MobileBottomNav from '@/components/dashboard/MobileBottomNav';
 import { SidebarProvider } from '@/components/dashboard/SidebarContext';
 import DashboardContent from '@/components/dashboard/DashboardContent';
 import { ToastProvider } from '@/components/ui/ToastProvider';
@@ -106,16 +107,18 @@ export default async function DashboardLayout({
                             {/* Dynamic Page Content */}
                             <main
                                 id="main-content"
-                                className="p-4 sm:p-8 flex-1 dashboard-main-content"
+                                className="p-4 sm:p-8 pb-24 lg:pb-8 flex-1 dashboard-main-content"
                                 tabIndex={-1}
                             >
                                 {children}
                             </main>
                         </DashboardContent>
+
+                        {/* Mobile Bottom Navigation — shown only on <lg screens */}
+                        <MobileBottomNav userRole={userRole} />
                     </div>
                 </CentreFilterProvider>
             </SidebarProvider>
         </ToastProvider>
     );
 }
-
