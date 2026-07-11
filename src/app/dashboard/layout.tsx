@@ -47,7 +47,10 @@ export default async function DashboardLayout({
 
     // ── Enforce route-level role restrictions ───────────────────────
     const headersList = await headers();
-    const currentPath = headersList.get('x-invoke-path') || headersList.get('x-pathname') || '';
+    const currentPath = headersList.get('x-invoke-path') 
+        || headersList.get('x-pathname')
+        || headersList.get('next-url')
+        || '';
     for (const [prefix, allowedRoles] of Object.entries(ROUTE_PERMISSIONS)) {
         if (currentPath.startsWith(prefix) && !allowedRoles.includes(userRole)) {
             return redirect('/dashboard');
@@ -97,6 +100,7 @@ export default async function DashboardLayout({
                                 userName={session.user?.name || undefined}
                                 userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
                                 userRole={userRole}
+                                hideSearch={currentPath.startsWith('/dashboard/registrations')}
                             />
 
                             {/* Dynamic Page Content */}

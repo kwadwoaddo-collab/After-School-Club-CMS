@@ -170,22 +170,6 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
     return (
         <div>
-            {/* Kanban Pipeline */}
-            <div className="flex items-center gap-0 mb-6 bg-[#19191b]/40 border border-outline-variant/10 rounded-2xl overflow-hidden flex-wrap sm:flex-nowrap">
-                {[
-                    { status: 'awaiting_confirmation', label: 'Awaiting', icon: '⏳', colour: 'text-amber-400', count: rows.filter(r => r.status === 'awaiting_confirmation').length },
-                    { status: 'signed_up', label: 'Signed Up', icon: '✅', colour: 'text-emerald-400', count: rows.filter(r => r.status === 'signed_up').length },
-                    { status: 'not_interested', label: 'Not Interested', icon: '❌', colour: 'text-red-400', count: rows.filter(r => r.status === 'not_interested').length },
-                ].map((stage, idx) => (
-                    <div key={stage.status} className={`flex-1 flex items-center justify-center gap-3 p-4 border-r border-outline-variant/10 last:border-r-0 min-w-[150px] ${idx === 0 ? 'bg-amber-500/5' : idx === 1 ? 'bg-emerald-500/5' : 'bg-red-500/5'}`}>
-                        <span className="text-xl">{stage.icon}</span>
-                        <div>
-                            <p className={`text-xl font-black ${stage.colour}`}>{stage.count}</p>
-                            <p className="text-[10px] text-[#8c909f] font-bold uppercase tracking-wider">{stage.label}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
 
             {/* Select-all header row */}
             <div className="flex items-center gap-3 mb-3 px-2">
@@ -223,12 +207,13 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     </button>
 
                     <button
-                        onClick={() => bulkUpdateStatus('signed_up')}
-                        disabled={bulkLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                        disabled={true}
+                        title="Email sending coming soon"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/5 border border-blue-500/10 text-blue-400/40 rounded-xl text-sm font-semibold cursor-not-allowed opacity-50"
                     >
-                        {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                        Send Welcome Email
+                        <Mail className="w-3.5 h-3.5" />
+                        Send Email
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-500/20 px-1.5 py-0.5 rounded-full">Soon</span>
                     </button>
 
                     <button

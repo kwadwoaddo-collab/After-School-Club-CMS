@@ -340,11 +340,14 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 );
                             }
 
-                            const isActive = pathname === item.href;
+                            const isActive = item.href === '/dashboard'
+                                ? pathname === item.href
+                                : pathname.startsWith(item.href);
                             return (
                                 <Link
                                     key={item.name}
                                     href={item.href}
+                                    prefetch={true}
                                     onClick={() => {
                                         if (window.innerWidth < 768) {
                                             setCollapsed(true);

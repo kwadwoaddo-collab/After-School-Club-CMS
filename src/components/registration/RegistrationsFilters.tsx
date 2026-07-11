@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
@@ -61,12 +61,12 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
     };
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center gap-4 flex-wrap">
+        <div className="space-y-2 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 flex-wrap">
                 {/* Search */}
-                <form onSubmit={handleSearch} className="flex-1 min-w-[280px]">
+                <form onSubmit={handleSearch} className="min-w-[200px]">
                     <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                         <input
                             type="text"
                             value={search}
@@ -77,33 +77,33 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                                     applyFilters({ newSearch: '' });
                                 }
                             }}
-                            placeholder="Search parents, children..."
-                            className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-[#19191b]/40 border-outline-variant/20 text-white"
+                            placeholder="Search…"
+                            className="w-full pl-8 pr-3 py-2 rounded-xl text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-[#19191b]/60 border-outline-variant/20 text-white"
                         />
                     </div>
                 </form>
 
                 {/* Centre Filter — only visible when there are multiple centres */}
                 {centres.length > 1 && (
-                    <div className="relative min-w-[180px]">
+                    <div className="relative min-w-[160px]">
                         <select
                             value={selectedCentreId}
                             onChange={(e) => {
                                 setSelectedCentreId(e.target.value);
                             }}
-                            className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
+                            className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
                         >
                             <option value="all" className="bg-[#1a1d23] text-white">All Centres</option>
                             {centres.map((c) => (
                                 <option key={c.id} value={c.id} className="bg-[#1a1d23] text-white">{c.name}</option>
                             ))}
                         </select>
-                        <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                     </div>
                 )}
 
                 {/* Status Filter */}
-                <div className="relative min-w-[180px]">
+                <div className="relative min-w-[160px]">
                     <select
                         value={status}
                         onChange={(e) => {
@@ -111,7 +111,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                             setStatus(val);
                             applyFilters({ newStatus: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
+                        className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
                     >
                         {statusOptions.map((opt) => (
                             <option key={opt.value} value={opt.value} className="bg-[#1a1d23] text-white">
@@ -119,21 +119,20 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                             </option>
                         ))}
                     </select>
-                    <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 </div>
 
                 {/* Clear Filters */}
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer border border-outline-variant/10"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-all cursor-pointer border border-outline-variant/10"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                         Clear
                     </button>
                 )}
             </div>
-
 
             {/* Active Filters Display */}
             {hasActiveFilters && (
@@ -161,4 +160,3 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
         </div>
     );
 }
-

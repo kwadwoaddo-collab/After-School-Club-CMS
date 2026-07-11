@@ -169,7 +169,7 @@ export default async function RegistrationsPage(props: {
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Registrations</h1>
                     <p className="text-[#8c909f] font-medium mt-1">
-                        {rows.length} total submission{rows.length !== 1 ? 's' : ''} {isFiltered ? 'matching filters' : ''}
+                        {isFiltered ? `Showing ${rows.length} of ${totalCount}` : `${totalCount} total submission${totalCount !== 1 ? 's' : ''}`}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -207,6 +207,7 @@ export default async function RegistrationsPage(props: {
                     <div>
                         <p className="text-3xl font-bold text-white tracking-tight">{totalCount}</p>
                         <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Total Submissions</p>
+                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
                     </div>
                 </div>
                 <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
@@ -216,6 +217,7 @@ export default async function RegistrationsPage(props: {
                     <div>
                         <p className="text-3xl font-bold text-white tracking-tight">{awaitingConfirmationCount}</p>
                         <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Awaiting Conf.</p>
+                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
                     </div>
                 </div>
                 <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
@@ -225,6 +227,7 @@ export default async function RegistrationsPage(props: {
                     <div>
                         <p className="text-3xl font-bold text-white tracking-tight">{signedUpCount}</p>
                         <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Signed Up</p>
+                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
                     </div>
                 </div>
                 <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
@@ -234,12 +237,13 @@ export default async function RegistrationsPage(props: {
                     <div>
                         <p className="text-3xl font-bold text-white tracking-tight">{notInterestedCount}</p>
                         <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Not Interested</p>
+                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
                     </div>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="glassmorphic-card rounded-3xl p-6">
+            {/* Filters — sticky below the nav header */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-2 bg-[#0d1117]/80 backdrop-blur-xl border-b border-white/5">
                 <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>
