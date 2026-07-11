@@ -169,8 +169,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 db.select({ 
                     total: sql<number>`count(*)::int`,
                     pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
-                    thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart.toISOString()} and ${registrations.startDate} <= ${targetMonthEnd.toISOString()})::int`,
-                    thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
+                    thisMonth: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetMonthStart.toISOString()} and ${registrations.createdAt} <= ${targetMonthEnd.toISOString()})::int`,
+                    thisWeek: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetWeekStart.toISOString()} and ${registrations.createdAt} <= ${targetWeekEnd.toISOString()})::int`,
                     activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
                     prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
                 }).from(registrations).where(
@@ -280,8 +280,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 db.select({ 
                     total: sql<number>`count(*)::int`,
                     pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
-                    thisMonth: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetMonthStart.toISOString()} and ${registrations.startDate} <= ${targetMonthEnd.toISOString()})::int`,
-                    thisWeek: sql<number>`count(*) filter (where ${registrations.startDate} >= ${targetWeekStart.toISOString()} and ${registrations.startDate} <= ${targetWeekEnd.toISOString()})::int`,
+                    thisMonth: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetMonthStart.toISOString()} and ${registrations.createdAt} <= ${targetMonthEnd.toISOString()})::int`,
+                    thisWeek: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetWeekStart.toISOString()} and ${registrations.createdAt} <= ${targetWeekEnd.toISOString()})::int`,
                     activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
                     prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
                 }).from(registrations).where(
@@ -393,10 +393,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const bookingsTrend = calculateTrend(bookingsActivePeriod, bookingsPrevPeriod);
     const registrationsTrend = calculateTrend(registrationsActivePeriod, registrationsPrevPeriod);
 
-    // Format Registration Pipeline
+    // Format Registration Pipeline — 2 meaningful stages (Pending Review → Approved)
     const pipelineCounts = {
         new: Number(registrationPipelineData.find((d: any) => d.status === 'awaiting_confirmation')?.count || 0),
-        review: 0, 
         approved: Number(registrationPipelineData.find((d: any) => d.status === 'signed_up')?.count || 0),
     };
 
@@ -482,6 +481,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     <TodaysSnapshot
                         activeCentreId={activeCentreId}
                         accessibleCentreIds={accessibleCentreIds}
+                        centreCapacity={activeCentreId !== 'all'
+                            ? (centresList.find(c => c.id === activeCentreId)?.capacity ?? undefined)
+                            : undefined
+                        }
                     />
 
                     {/* ── Top-level stats row ──────────────────────────────────── */}
@@ -526,15 +529,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                 </span>
                             </div>
 
-                            {/* Unified Stats Grid */}
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 flex flex-col justify-center hover:bg-surface-bright transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-white">{pipelineCounts.new}</p>
-                                    <p className="text-[10px] sm:text-xs text-on-surface-variant font-bold mt-1 uppercase tracking-wider leading-tight">Inquiry</p>
-                                </div>
-                                <div className="p-3 bg-tertiary/5 rounded-xl border border-tertiary/10 flex flex-col justify-center hover:bg-tertiary/10 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.review}</p>
-                                    <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Review</p>
+                            {/* Unified Stats Grid — 2 real data-backed stages */}
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4 relative z-10">
+                                <div className="p-3 bg-error/5 rounded-xl border border-error/10 flex flex-col justify-center hover:bg-error/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-error">{pipelineCounts.new}</p>
+                                    <p className="text-[10px] sm:text-xs text-error opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
                                 </div>
                                 <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/20 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
@@ -593,7 +592,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             {/* Recent preview */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Bookings This Week' : 'Bookings This Month'}</h3>
+                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Bookings: {dateLabel}</h3>
                                 {recentBookingsWithNotes.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentBookingsWithNotes.map((b: any) => (
@@ -711,7 +710,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             {/* Recent preview */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">{currentView === 'weekly' ? 'Starts This Week' : 'Starts This Month'}</h3>
+                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Registrations: {dateLabel}</h3>
                                 {recentRegistrations.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentRegistrations.map((r: any, i: any) => (
@@ -753,7 +752,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             <div className="flex flex-col gap-2 mt-2 relative z-10">
                                 <div className="flex items-center justify-between">
                                     <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
-                                    <p className="text-[10px] text-on-surface-variant">{registrationsThisMonth} new this month</p>
+                                    <p className="text-[10px] text-on-surface-variant">{registrationsActivePeriod} new {currentView === 'weekly' ? 'this week' : 'this month'}</p>
                                 </div>
                                 <div className="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
                                     <p className="text-xs text-white font-mono truncate">{registrationLink}</p>
