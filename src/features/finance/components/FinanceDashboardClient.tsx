@@ -71,7 +71,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
 
     return (
         <>
-            <div className="relative overflow-x-auto">
+            <div className="relative overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
                 {isPending && (
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
                         <div className="flex items-center gap-2 bg-surface-container-high border border-outline-variant/10 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-xl animate-in zoom-in-95 duration-150">
@@ -83,11 +83,11 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                 <table className="w-full">
                     <thead>
                         <tr className="text-left border-b border-outline-variant/10">
-                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Invoice #</th>
-                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Student</th>
-                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Status</th>
-                            <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Amount</th>
-                            {isOwner && <th className="pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Actions</th>}
+                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
+                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Student</th>
+                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Status</th>
+                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
+                            {isOwner && <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/5">
@@ -192,17 +192,17 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
     }
 
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-outline-variant/10">
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Invoice #</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Parent</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Amount</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Paid</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Balance</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Due Date</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Status</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Paid</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Due Date</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">
@@ -297,15 +297,15 @@ export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
     if (!balances || balances.length === 0) return null;
 
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-outline-variant/10">
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4">Parent</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center px-4">Unpaid Invoices</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Total Invoiced</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Total Paid</th>
-                        <th className="pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4">Balance</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center px-4 select-none">Unpaid Invoices</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Total Invoiced</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Total Paid</th>
+                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">

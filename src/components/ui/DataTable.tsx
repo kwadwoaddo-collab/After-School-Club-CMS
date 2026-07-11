@@ -169,16 +169,16 @@ export default function DataTable<T>({
         className
       )}
     >
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
         <table className={cn('w-full', tableClassName)}>
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
-            <tr className="border-b border-outline-variant/10 bg-white/5">
+            <tr className="border-b border-outline-variant/10">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    'px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider',
+                    'sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider select-none',
                     col.headerAlign === 'right' ? 'text-right' : col.headerAlign === 'center' ? 'text-center' : 'text-left',
                     col.headerClassName
                   )}

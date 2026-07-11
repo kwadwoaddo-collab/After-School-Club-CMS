@@ -101,7 +101,11 @@ export default async function DashboardLayout({
                                 userName={session.user?.name || undefined}
                                 userInitial={session.user?.name?.[0]?.toUpperCase() || 'A'}
                                 userRole={userRole}
-                                hideSearch={currentPath.startsWith('/dashboard/registrations')}
+                                hideSearch={
+                                    currentPath.startsWith('/dashboard/registrations') ||
+                                    currentPath.startsWith('/dashboard/bookings') ||
+                                    currentPath.startsWith('/dashboard/students')
+                                }
                             />
 
                             {/* Dynamic Page Content */}
