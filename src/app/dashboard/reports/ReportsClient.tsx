@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, FileSpreadsheet, Loader2, Calendar, FileText, Users } from 'lucide-react';
+import { Download, FileSpreadsheet, Loader2, Calendar, FileText, Users, BarChart3 } from 'lucide-react';
 import { getExportData } from '@/features/bookings/actions';
 import { getStudentExportData } from '@/features/students/actions';
 import { cn } from '@/components/ui/utils';
 import { resolveAttendanceStatus } from '@/lib/attendance';
 import { DataExportSection } from '@/components/dashboard/DataExportSection';
+import WeeklyReportTab from './WeeklyReportTab';
 import type { AttendanceStatus } from '@/lib/attendance';
 
+type ReportsTab = 'exports' | 'ceo';
 type FilterType = 'all' | 'month' | 'week' | 'custom';
 
 export default function ReportsClient() {
+    const [activeTab, setActiveTab] = useState<ReportsTab>('exports');
     const [isExportingBookings, setIsExportingBookings] = useState(false);
     const [isExportingStudents, setIsExportingStudents] = useState(false);
     
@@ -179,7 +182,44 @@ export default function ReportsClient() {
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-6">
+
+            {/* ── Tab Switcher ──────────────────────────────────────────────────── */}
+            <div className="flex items-center gap-2 p-1 bg-[#1a1d23] border border-[#424754]/15 rounded-2xl w-fit shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+                <button
+                    onClick={() => setActiveTab('exports')}
+                    className={cn(
+                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                        activeTab === 'exports'
+                            ? 'bg-[#adc6ff] text-[#131313] shadow-sm'
+                            : 'text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#2a2a2a]'
+                    )}
+                >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Data Exports
+                </button>
+                <button
+                    onClick={() => setActiveTab('ceo')}
+                    className={cn(
+                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                        activeTab === 'ceo'
+                            ? 'bg-[#adc6ff] text-[#131313] shadow-sm'
+                            : 'text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#2a2a2a]'
+                    )}
+                >
+                    <BarChart3 className="w-4 h-4" />
+                    CEO Weekly Report
+                </button>
+            </div>
+
+            {/* ── CEO Weekly Report Tab ──────────────────────────────────────── */}
+            {activeTab === 'ceo' && (
+                <WeeklyReportTab />
+            )}
+
+            {/* ── Data Exports Tab ──────────────────────────────────────────── */}
+            {activeTab === 'exports' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Booking Export Card */}
             <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#adc6ff]/20 transition-all duration-300">
                 <div className="flex items-center gap-4">
@@ -363,6 +403,8 @@ export default function ReportsClient() {
                     )}
                 </div>
             </div>
+            </div>
+            )}
         </div>
     );
 }
