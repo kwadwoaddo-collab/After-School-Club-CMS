@@ -1,20 +1,18 @@
 import { db } from '@/db';
-import { bookings, bookingAttendees, centres } from '@/db/schema';
+import { bookings, bookingAttendees } from '@/db/schema';
 import { eq, gte, lt, and, inArray, sql } from 'drizzle-orm';
 import { startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/components/ui/utils';
-import { CalendarCheck, Clock, UserCheck, LayoutGrid } from 'lucide-react';
+import { CalendarCheck, Clock, UserCheck, UserX } from 'lucide-react';
 
 interface TodaysSnapshotProps {
   activeCentreId: string;
   accessibleCentreIds: string[];
-  centreCapacity?: number;
 }
 
 export async function TodaysSnapshot({
   activeCentreId,
   accessibleCentreIds,
-  centreCapacity = 20,
 }: TodaysSnapshotProps) {
   const hasCentres = accessibleCentreIds.length > 0;
   if (!hasCentres) return null;
@@ -33,6 +31,7 @@ export async function TodaysSnapshot({
     confirmed: 0,
     pending: 0,
     checkedIn: 0,
+    notArrived: 0,
   };
 
   try {
@@ -51,9 +50,13 @@ export async function TodaysSnapshot({
         )
       );
 
-    // Count check-ins from bookingAttendees
-    const checkinRows = await db
-      .select({ count: sql<number>`count(*)::int` })
+    // Count check-ins and unresolved attendees from bookingAttendees
+    const [attendeeStats] = await db
+      .select({
+        checkedIn: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} = 'present')::int`,
+        // Not arrived = booked today but attendance not yet recorded (null or 'pending')
+        notArrived: sql<number>`count(*) filter (where ${bookingAttendees.attendanceStatus} is null or ${bookingAttendees.attendanceStatus} = 'pending')::int`,
+      })
       .from(bookingAttendees)
       .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
       .where(
@@ -61,7 +64,7 @@ export async function TodaysSnapshot({
           centreCondition,
           gte(bookings.startAt, todayStart),
           lt(bookings.startAt, todayEnd),
-          eq(bookingAttendees.attendanceStatus, 'present')
+          eq(bookings.status, 'confirmed')
         )
       );
 
@@ -69,14 +72,17 @@ export async function TodaysSnapshot({
       total: Number(bookingStats?.total ?? 0),
       confirmed: Number(bookingStats?.confirmed ?? 0),
       pending: Number(bookingStats?.pending ?? 0),
-      checkedIn: Number(checkinRows[0]?.count ?? 0),
+      checkedIn: Number(attendeeStats?.checkedIn ?? 0),
+      notArrived: Number(attendeeStats?.notArrived ?? 0),
     };
   } catch {
     // silently degrade
   }
 
-  const spacesRemaining = Math.max(0, centreCapacity - snapshot.total);
-  const fillPct = Math.min(100, (snapshot.total / centreCapacity) * 100);
+  // Attendance rate: how many confirmed attendees have actually shown up today
+  const attendanceRate = snapshot.confirmed > 0
+    ? Math.round((snapshot.checkedIn / snapshot.confirmed) * 100)
+    : null;
 
   const items = [
     {
@@ -108,11 +114,12 @@ export async function TodaysSnapshot({
       iconBg: 'bg-secondary/10',
     },
     {
-      label: 'Spaces Left',
-      value: spacesRemaining,
-      icon: LayoutGrid,
-      color: spacesRemaining <= 3 ? 'text-red-400' : 'text-on-surface-variant',
-      iconBg: spacesRemaining <= 3 ? 'bg-red-500/10' : 'bg-surface-container-low',
+      label: 'Not Arrived',
+      value: snapshot.notArrived,
+      icon: UserX,
+      // Highlight in amber if there are unresolved confirmed bookings
+      color: snapshot.notArrived > 0 ? 'text-amber-400' : 'text-on-surface-variant',
+      iconBg: snapshot.notArrived > 0 ? 'bg-amber-500/10' : 'bg-surface-container-low',
     },
   ];
 
@@ -126,27 +133,33 @@ export async function TodaysSnapshot({
             Today&apos;s Snapshot
           </span>
         </div>
-        {/* Capacity fill bar */}
+        {/* Attendance rate — far more meaningful than capacity % */}
         <div className="flex items-center gap-2">
-          <div className="w-24 h-1.5 bg-surface-container-low rounded-full overflow-hidden">
-            <div
-              className={cn(
-                'h-full rounded-full transition-all duration-1000',
-                fillPct >= 90 ? 'bg-red-500' : fillPct >= 70 ? 'bg-amber-400' : 'bg-emerald-500'
-              )}
-              style={{ width: `${fillPct}%` }}
-            />
-          </div>
-          <span className="text-[10px] font-bold text-on-surface-variant/60">
-            {Math.round(fillPct)}% full
-          </span>
+          {attendanceRate !== null ? (
+            <>
+              <div className="w-24 h-1.5 bg-surface-container-low rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-1000',
+                    attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 50 ? 'bg-amber-400' : 'bg-red-500'
+                  )}
+                  style={{ width: `${attendanceRate}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant/60">
+                {attendanceRate}% attended
+              </span>
+            </>
+          ) : (
+            <span className="text-[10px] font-bold text-on-surface-variant/40">No sessions yet</span>
+          )}
         </div>
       </div>
 
-      {/* Metrics grid - Removed divide-x, using soft bordered cards */}
+      {/* Metrics grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
         {items.map((item, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-white/[0.01] rounded-xl border border-white/[0.03] hover:bg-white/[0.03] transition-all duration-300">
+          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-white/[0.01] rounded-xl border border-white/[0.03] hover:bg-white/[0.03] transition-[background-color] duration-150 cursor-default">
             <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
               <item.icon className={cn('w-4 h-4', item.color)} />
             </div>

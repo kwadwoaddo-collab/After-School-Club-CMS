@@ -481,10 +481,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     <TodaysSnapshot
                         activeCentreId={activeCentreId}
                         accessibleCentreIds={accessibleCentreIds}
-                        centreCapacity={activeCentreId !== 'all'
-                            ? (centresList.find(c => c.id === activeCentreId)?.capacity ?? undefined)
-                            : undefined
-                        }
                     />
 
                     {/* ── Top-level stats row ──────────────────────────────────── */}
