@@ -14,7 +14,7 @@ export default function DashboardContent({ children }: { children: React.ReactNo
               pt-16 sm:pt-20 = space for the fixed header (h-16 on mobile, h-20 on sm+)
               pb-16 lg:pb-0  = space for the fixed mobile bottom nav
             */}
-            <div className="flex-1 flex flex-col pt-16 sm:pt-20 pb-16 lg:pb-0">
+            <div className="flex-1 flex flex-col pt-16 sm:pt-20">
                 {children}
             </div>
         </div>

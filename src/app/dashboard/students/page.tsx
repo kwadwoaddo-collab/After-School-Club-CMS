@@ -43,7 +43,7 @@ export default async function StudentsPage(props: {
             <div className="space-y-8 animate-in fade-in duration-700">
                 <div className="flex items-end justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Students</h1>
+                        <h1 className="text-3xl font-black text-white tracking-tight">Students</h1>
                         <p className="text-on-surface-variant font-medium mt-1">
                             View all registered students and their details
                         </p>
