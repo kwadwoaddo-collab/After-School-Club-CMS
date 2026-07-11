@@ -296,12 +296,14 @@ export default async function StudentsPage(props: {
                 </Link>
             </div>
 
-            {/* Filters */}
-            <StudentsFilters
-                centres={accessibleCentres}
-                resultsCount={visibleStudents.length}
-                currentView={searchParams.view === 'grid' ? 'grid' : 'table'}
-            />
+            {/* Filters — sticky so it stays visible while scrolling through students */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
+                <StudentsFilters
+                    centres={accessibleCentres}
+                    resultsCount={visibleStudents.length}
+                    currentView={searchParams.view === 'grid' ? 'grid' : 'table'}
+                />
+            </div>
 
             {searchParams.view === 'grid' ? (
                 <StudentsGrid students={visibleStudents} />

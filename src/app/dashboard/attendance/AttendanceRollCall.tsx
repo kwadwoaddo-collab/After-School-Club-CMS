@@ -388,8 +388,8 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Action Bar */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 bg-[#1a1d23] p-4 rounded-2xl border border-[#424754]/15">
+            {/* Action Bar — sticky so it stays visible while scrolling through slots */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5 flex flex-col sm:flex-row items-center gap-3">
                 {/* Search Bar */}
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f]" />

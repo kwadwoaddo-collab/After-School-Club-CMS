@@ -272,9 +272,9 @@ export default async function BookingsPage(props: {
                 ))}
             </div>
 
-            {/* Filters */}
-            <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-3xl p-6">
-                <Suspense fallback={<div className="h-20 animate-pulse bg-slate-800/50 rounded-2xl w-full"></div>}>
+            {/* Filters — sticky so it stays visible while scrolling through bookings */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
+                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
                     <BookingsFilters centres={orgCentres} resultsCount={totalRecords} />
                 </Suspense>
             </div>
