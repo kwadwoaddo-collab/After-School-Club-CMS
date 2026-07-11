@@ -258,7 +258,7 @@ export default async function FinancePage(props: {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Finance Ledger</h1>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Finance Ledger</h1>
                     <p className="text-on-surface-variant font-medium mt-1">
                         Manage invoices, payments, and financial health
                     </p>
@@ -289,7 +289,7 @@ export default async function FinancePage(props: {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {stats.map((stat) => (
-                    <div key={stat.name} className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6 relative overflow-hidden group">
+                    <div key={stat.name} className="glassmorphic-card rounded-[32px] p-6 relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform">
                                 <stat.icon className="w-6 h-6 text-primary" />
@@ -317,7 +317,7 @@ export default async function FinancePage(props: {
                     <InvoiceAgingSummary buckets={agingBuckets} />
 
                     {parentBalancesResult.length > 0 && (
-                        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+                        <div className="glassmorphic-card rounded-[32px] p-6">
                             <div className="flex items-center justify-between mb-6 px-2">
                                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-primary" />
@@ -346,7 +346,7 @@ export default async function FinancePage(props: {
                         </div>
                     )}
 
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+                    <div className="glassmorphic-card rounded-[32px] p-6">
                         <div className="flex items-center justify-between mb-6 px-2">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                 <FileText className="w-5 h-5 text-primary" />
@@ -364,7 +364,7 @@ export default async function FinancePage(props: {
                 {/* Sidebar Cards */}
                 <div className="space-y-6">
                     {/* Bank & Payment Info */}
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 bg-gradient-to-br from-primary/5 to-transparent">
+                    <div className="glassmorphic-card rounded-[32px] p-8 bg-gradient-to-br from-primary/5 to-transparent">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                             <CreditCard className="w-5 h-5 text-primary" />
                             Billing Settings
@@ -381,7 +381,7 @@ export default async function FinancePage(props: {
                     </div>
 
                     {/* Quick Tools */}
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-6">
+                    <div className="glassmorphic-card rounded-[32px] p-6">
                         <h3 className="text-lg font-bold text-white mb-4 px-2">Quick Tools</h3>
                         <div className="space-y-2">
                             <Link href="/dashboard/finance/receipt" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
