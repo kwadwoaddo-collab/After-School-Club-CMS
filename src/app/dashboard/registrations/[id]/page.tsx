@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, organisations, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, ChevronLeft } from 'lucide-react';
 import RegistrationStatusUpdater from './StatusUpdater';
 import DownloadButton from './DownloadButton';
 import EditRegistrationForm from './EditRegistrationForm';
@@ -87,16 +87,17 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     const primary = pars.find(p => p.isPrimary) ?? pars[0];
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="p-4 sm:p-6 max-w-4xl mx-auto">
             {/* Back link */}
-            <Link href="/dashboard/registrations" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-white text-sm transition-colors mb-8">
-                ← All Registrations
+            <Link href="/dashboard/registrations" className="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-white text-sm font-medium transition-colors mb-8 group">
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                All Registrations
             </Link>
 
             {/* Header */}
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">
+                    <h1 className="text-2xl font-black text-white">
                         {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Registration'}
                     </h1>
                     <p className="text-on-surface-variant text-sm mt-1">
@@ -193,8 +194,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 {/* Children */}
-                <div className="md:col-span-2 bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                    <h2 className="text-white font-semibold mb-4">Children ({kids.length})</h2>
+                <div className="md:col-span-2 glassmorphic-card rounded-2xl p-6">
+                    <h2 className="text-white font-bold mb-4">Children ({kids.length})</h2>
                     <div className="space-y-3">
                         {kids.map((k) => (
                             <div key={k.id} className="py-4 border-b border-outline-variant/10 last:border-0">
@@ -231,8 +232,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
                 {/* Parents */}
                 {pars.map((p) => (
-                    <div key={p.id} className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                        <h2 className="text-white font-semibold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
+                    <div key={p.id} className="glassmorphic-card rounded-2xl p-6">
+                        <h2 className="text-white font-bold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
                         <dl className="space-y-3 text-sm">
                             {p.parentId ? (
                                 <div className="flex justify-between gap-4">
@@ -262,8 +263,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 ))}
 
                 {/* Emergency Contact */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                    <h2 className="text-white font-semibold mb-4">Emergency Contact</h2>
+                <div className="glassmorphic-card rounded-2xl p-6">
+                    <h2 className="text-white font-bold mb-4">Emergency Contact</h2>
                     <dl className="space-y-3 text-sm">
                         <DetailRow label="Name" value={reg.emergencyContactName ?? '—'} />
                         <DetailRow label="Relationship" value={reg.emergencyContactRelationship ?? '—'} />
@@ -272,8 +273,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 </div>
 
                 {/* Funding & Details */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                    <h2 className="text-white font-semibold mb-4">Funding &amp; Details</h2>
+                <div className="glassmorphic-card rounded-2xl p-6">
+                    <h2 className="text-white font-bold mb-4">Funding &amp; Details</h2>
                     <dl className="space-y-3 text-sm">
                         <DetailRow label="Start Date" value={reg.startDate ? new Date(reg.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not specified'} />
                         <DetailRow label="Funding" value={reg.fundingTypes?.map(t => FUNDING_LABELS[t] ?? t).join(', ') || 'Not specified'} />
@@ -286,8 +287,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
                 {/* Signature */}
                 {reg.parentSignature && (
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                        <h2 className="text-white font-semibold mb-4">Parent Signature</h2>
+                    <div className="glassmorphic-card rounded-2xl p-6">
+                        <h2 className="text-white font-bold mb-4">Parent Signature</h2>
                         <div className="bg-white rounded-xl p-4 border border-outline-variant/10">
                             <img
                                 src={reg.parentSignature}

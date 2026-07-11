@@ -56,10 +56,10 @@ export default async function BookingsPage(props: {
         return (
             <div className="space-y-8 animate-in fade-in duration-700">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#FFFFFF] tracking-tight">Bookings</h1>
-                    <p className="text-slate-400 font-medium mt-1">Manage upcoming and past appointments</p>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Bookings</h1>
+                    <p className="text-slate-400 text-sm font-medium mt-1">Manage upcoming and past appointments</p>
                 </div>
-                <div className="bg-surface-container-high border border-outline-variant/10 shadow-xl rounded-[32px] p-12 text-center">
+                <div className="glassmorphic-card rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Calendar className="w-8 h-8 text-primary" />
                     </div>

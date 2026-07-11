@@ -26,9 +26,10 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
         { value: 'not_interested', label: 'Not Interested' },
     ];
 
+    // Computed from local state, not URL — avoids desync during debounce window
     const hasActiveFilters = !!(
-        searchParams.get('search') ||
-        (searchParams.get('status') && searchParams.get('status') !== 'all') ||
+        search ||
+        (status && status !== 'all') ||
         selectedCentreId !== 'all'
     );
 
@@ -150,15 +151,15 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                 )}
             </div>
 
-            {/* Active Filters Display */}
+            {/* Active Filters Display — reads from local state to avoid desync during debounce */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                         Active Filters:
                     </span>
-                    {searchParams.get('search') && (
+                    {search && (
                         <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/15">
-                            Search: &ldquo;{searchParams.get('search')}&rdquo; ({resultsCount} results)
+                            Search: &ldquo;{search}&rdquo; ({resultsCount} results)
                         </span>
                     )}
                     {status !== 'all' && (

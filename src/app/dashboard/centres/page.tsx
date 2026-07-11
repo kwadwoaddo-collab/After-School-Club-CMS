@@ -76,7 +76,7 @@ export default async function CentresPage() {
             {/* Page Header */}
             <div className="flex items-end justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Centres</h1>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Centres</h1>
                     <p className="text-on-surface-variant font-medium mt-1">
                         Manage your club centres and locations
                     </p>
@@ -91,7 +91,7 @@ export default async function CentresPage() {
 
             {/* Centres Grid */}
             {centresList.length === 0 ? (
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-12 text-center shadow-xl">
+                <div className="glassmorphic-card rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <MapPin className="w-8 h-8 text-primary" />
                     </div>
@@ -111,7 +111,7 @@ export default async function CentresPage() {
                     {centresWithStats.map((centre) => (
                         <div
                             key={centre.id}
-                            className="bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6 hover:border-primary/30 shadow-xl transition-all group"
+                            className="glassmorphic-card rounded-3xl p-6 hover:border-primary/30 transition-all group glow-hover-primary"
                         >
                             <div className="flex items-start justify-between mb-6">
                                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">

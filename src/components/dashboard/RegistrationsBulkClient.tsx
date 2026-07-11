@@ -37,6 +37,8 @@ interface Props {
     statusBadge: Record<string, string>;
     statusLabel: Record<string, string>;
     centres: { id: string; name: string }[];
+    isFiltered?: boolean;
+    totalCount?: number;
 }
 
 const FUNDING_LABELS: Record<string, string> = {
@@ -48,7 +50,7 @@ const FUNDING_LABELS: Record<string, string> = {
     other: 'Other',
 };
 
-export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres }: Props) {
+export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres, isFiltered = false, totalCount }: Props) {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
     const [bulkMessage, setBulkMessage] = useState('');
@@ -181,7 +183,12 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
                     />
                     <span className="text-[#8c909f] text-xs font-semibold group-hover:text-white transition-colors">
-                        {allSelected ? 'Deselect all' : `Select all (${rows.length})`}
+                        {allSelected
+                            ? 'Deselect all'
+                            : isFiltered && totalCount !== undefined
+                                ? `Select all (${rows.length} of ${totalCount} filtered)`
+                                : `Select all (${rows.length})`
+                        }
                     </span>
                 </label>
                 {someSelected && (

@@ -278,6 +278,8 @@ export default async function RegistrationsPage(props: {
                     statusBadge={STATUS_BADGE}
                     statusLabel={STATUS_LABEL}
                     centres={orgCentres}
+                    isFiltered={isFiltered}
+                    totalCount={totalCount}
                 />
             )}
         </div>

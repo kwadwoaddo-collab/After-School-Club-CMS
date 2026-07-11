@@ -29,8 +29,8 @@ export default async function ReportsPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">
-                        Reports & Exports
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                        Reports &amp; Exports
                     </h1>
                     <p className="text-[#8c909f] font-medium mt-1">
                         Download your booking and student data as CSV files.
