@@ -106,7 +106,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Centre Address */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
+                <div className="glassmorphic-card rounded-[32px] p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-violet-500/10 rounded-2xl flex items-center justify-center">
                             <MapPin className="w-5 h-5 text-violet-400" />
@@ -133,7 +133,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                 </div>
 
                 {/* Bank Details */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
+                <div className="glassmorphic-card rounded-[32px] p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
                             <CreditCard className="w-5 h-5 text-primary" />
@@ -187,7 +187,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                 </div>
 
                 {/* Centre Identity */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
+                <div className="glassmorphic-card rounded-[32px] p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
                             <ShieldCheck className="w-5 h-5 text-emerald-400" />
@@ -241,7 +241,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                 </div>
 
                 {/* Contact Info */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
+                <div className="glassmorphic-card rounded-[32px] p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-accent-cyan/10 rounded-2xl flex items-center justify-center">
                             <Phone className="w-5 h-5 text-accent-cyan" />

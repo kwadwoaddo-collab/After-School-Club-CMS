@@ -27,7 +27,7 @@ export default function AddCentreForm() {
  
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="max-w-2xl mx-auto w-full space-y-8 bg-surface-container-high border border-outline-variant/10 p-10 rounded-2xl shadow-xl">
+            <div className="max-w-2xl mx-auto w-full space-y-8 glassmorphic-card p-10 rounded-2xl">
                 <div>
                     <h2 className="mt-6 text-2xl sm:text-4xl font-extrabold text-white tracking-tight headline-lg">
                         Add a New Centre
