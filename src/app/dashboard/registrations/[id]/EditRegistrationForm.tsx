@@ -272,8 +272,8 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 {/* Children */}
-                <div className="md:col-span-2 bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                    <h2 className="text-white font-semibold mb-4">Children</h2>
+                <div className="md:col-span-2 glassmorphic-card rounded-2xl p-6">
+                    <h2 className="text-white font-bold mb-4">Children</h2>
                     <div className="space-y-6">
                         {childrenState.map((c, i) => (
                             <div key={c.id} className="border border-white/5 rounded-xl p-4 bg-white/2">
@@ -322,8 +322,8 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
 
                 {/* Parents */}
                 {parentsState.map((p, i) => (
-                    <div key={p.id} className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                        <h2 className="text-white font-semibold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
+                    <div key={p.id} className="glassmorphic-card rounded-2xl p-6">
+                        <h2 className="text-white font-bold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -375,8 +375,8 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 ))}
 
                 {/* Emergency Contact */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                    <h2 className="text-white font-semibold mb-4">Emergency Contact</h2>
+                <div className="glassmorphic-card rounded-2xl p-6">
+                    <h2 className="text-white font-bold mb-4">Emergency Contact</h2>
                     <div className="space-y-3">
                         <div>
                             <label className={label}>Full Name</label>
@@ -394,8 +394,8 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 </div>
 
                 {/* Funding & Details */}
-                <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-6 shadow-xl">
-                    <h2 className="text-white font-semibold mb-4">Funding &amp; Details</h2>
+                <div className="glassmorphic-card rounded-2xl p-6">
+                    <h2 className="text-white font-bold mb-4">Funding &amp; Details</h2>
                     <div className="space-y-3">
                         <div>
                             <label className={label}>Requested Start Date</label>
