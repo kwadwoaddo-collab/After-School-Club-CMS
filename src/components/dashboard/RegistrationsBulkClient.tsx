@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle, Mail } from 'lucide-react';
+import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle, Mail, ClipboardList } from 'lucide-react';
 import { assignRegistrationCentre, deleteRegistrations } from '@/app/dashboard/registrations/actions';
 
 type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
@@ -291,7 +291,34 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                 </div>
             )}
 
-            {/* Registration cards grid */}
+            {/* Registration cards grid — or empty state */}
+            {rows.length === 0 ? (
+                <div className="glassmorphic-card rounded-[32px] p-12 text-center">
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <ClipboardList className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                        {isFiltered ? 'No matching registrations' : 'No registrations yet'}
+                    </h3>
+                    <p className="text-sm text-[#8c909f] mb-6">
+                        {isFiltered
+                            ? 'Try adjusting your filters to see more results'
+                            : 'Registrations will appear here once parents sign up'
+                        }
+                    </p>
+                    {isFiltered && (
+                        <button
+                            onClick={() => {
+                                // Navigate to the base registrations URL to clear all filters
+                                window.location.href = '/dashboard/registrations';
+                            }}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white text-sm font-bold rounded-2xl hover:bg-blue-600 transition-all shadow-lg shadow-primary/30"
+                        >
+                            Clear all filters
+                        </button>
+                    )}
+                </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {rows.map(r => {
                     const primary = r.registrationParents.find(p => p.isPrimary) ?? r.registrationParents[0];
@@ -392,6 +419,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     );
                 })}
             </div>
+            )}
         </div>
     );
 }

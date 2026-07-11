@@ -124,10 +124,10 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 block">Organisation Name</label>
+                    <label htmlFor="org-name" className="text-xs font-medium text-slate-400 mb-1.5 block">Organisation Name</label>
                     {isEditingName ? (
                         <div className="flex gap-2">
-                            <input type="text" value={name} onChange={e => setName(e.target.value)}
+                            <input id="org-name" type="text" value={name} onChange={e => setName(e.target.value)}
                                 className={inp} autoFocus disabled={saving} />
                             <button onClick={handleSaveName} disabled={saving}
                                 className="p-2 text-white bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
@@ -151,13 +151,13 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
 
                 {/* Slug */}
                 <div>
-                    <label className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <label htmlFor="org-slug" className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
                         Slug
                         <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded border border-amber-500/20">URL ID</span>
                     </label>
                     {isEditingSlug ? (
                         <div className="flex gap-2">
-                            <input type="text" value={slug}
+                            <input id="org-slug" type="text" value={slug}
                                 onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                 className={`${inp} font-mono`} autoFocus disabled={saving} />
                             <button onClick={handleSaveSlug} disabled={saving}
@@ -202,19 +202,19 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><Mail className="w-3 h-3" /> Email</label>
-                                <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
+                                <label htmlFor="contact-email" className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><Mail className="w-3 h-3" /> Email</label>
+                                <input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
                                     className={inp} placeholder="info@yourclub.co.uk" disabled={saving} />
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</label>
-                                <input type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)}
+                                <label htmlFor="contact-phone" className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</label>
+                                <input id="contact-phone" type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)}
                                     className={inp} placeholder="+44 7700 900000" disabled={saving} />
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><MapPin className="w-3 h-3" /> Address</label>
-                            <textarea value={address} onChange={e => setAddress(e.target.value)}
+                            <label htmlFor="contact-address" className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><MapPin className="w-3 h-3" /> Address</label>
+                            <textarea id="contact-address" value={address} onChange={e => setAddress(e.target.value)}
                                 className={`${inp} resize-none`} rows={2}
                                 placeholder="123 High Street, London, SE26 5RX" disabled={saving} />
                         </div>
