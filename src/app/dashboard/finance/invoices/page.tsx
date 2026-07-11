@@ -49,7 +49,7 @@ export default async function InvoicesListPage() {
             </div>
 
             {/* List Card */}
-            <div className="bg-surface-container-high border border-outline-variant/10 rounded-3xl p-6">
+            <div className="glassmorphic-card rounded-3xl p-6">
                 <div className="flex items-center gap-2 mb-6 text-primary">
                     <FileText className="w-5 h-5" />
                     <span className="text-sm font-bold uppercase tracking-widest">{allInvoices.length} total records</span>

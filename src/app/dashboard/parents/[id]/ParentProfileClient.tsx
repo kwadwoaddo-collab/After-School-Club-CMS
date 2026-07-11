@@ -61,7 +61,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Contact Info */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[40px] p-8 space-y-6">
+                        <div className="glassmorphic-card rounded-[40px] p-8 space-y-6">
                             <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2">Contact Details</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="flex items-center gap-4">
@@ -135,7 +135,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                             </div>
                         </div>
 
-                        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[40px] p-6 space-y-4">
+                        <div className="glassmorphic-card rounded-[40px] p-6 space-y-4">
                             <div className="flex items-center justify-between px-2">
                                 <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Invoiced</span>
                                 <span className="font-bold text-white">£{stats.totalOwed.toFixed(2)}</span>
@@ -154,14 +154,14 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Stats strip for Finance tab */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="p-6 bg-surface-container-high border border-outline-variant/10 rounded-3xl flex items-center justify-between">
+                        <div className="glassmorphic-card p-6 rounded-3xl flex items-center justify-between">
                             <div>
                                 <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Family Billing</p>
                                 <p className="text-xl font-black text-white mt-1">£{stats.totalOwed.toFixed(2)}</p>
                             </div>
                             <CreditCard className="w-8 h-8 text-primary/40" />
                         </div>
-                        <div className="p-6 bg-surface-container-high border border-outline-variant/10 rounded-3xl flex items-center justify-between">
+                        <div className="glassmorphic-card p-6 rounded-3xl flex items-center justify-between">
                             <div>
                                 <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Paid to Date</p>
                                 <p className="text-xl font-black text-emerald-400 mt-1">£{stats.totalPaid.toFixed(2)}</p>
@@ -178,7 +178,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     </div>
 
                     {/* Full Ledger Table */}
-                    <div className="bg-surface-container-high border border-outline-variant/10 rounded-[40px] overflow-hidden shadow-2xl">
+                    <div className="glassmorphic-card rounded-[40px] overflow-hidden">
                         <div className="px-8 py-6 border-b border-outline-variant/5 bg-surface-container-low/50">
                             <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Transaction History</h3>
                             <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mt-1">Consolidated family invoices and payments</p>

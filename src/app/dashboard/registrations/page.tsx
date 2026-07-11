@@ -169,7 +169,9 @@ export default async function RegistrationsPage(props: {
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Registrations</h1>
                     <p className="text-[#8c909f] font-medium mt-1">
-                        {isFiltered ? `Showing ${rows.length} of ${totalCount}` : `${totalCount} total submission${totalCount !== 1 ? 's' : ''}`}
+                        {isFiltered
+                            ? `Showing ${rows.length} of ${totalCount}`
+                            : `${totalCount} total submission${totalCount !== 1 ? 's' : ''}`}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -242,9 +244,9 @@ export default async function RegistrationsPage(props: {
                 </div>
             </div>
 
-            {/* Filters — sticky below the nav header */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-2 bg-[#0d1117]/80 backdrop-blur-xl border-b border-white/5">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
+            {/* Filters — sticky so it stays visible while scrolling through registrations */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
+                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>
             </div>
