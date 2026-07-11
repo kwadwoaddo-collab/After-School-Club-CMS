@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Menu, LogOut, ChevronDown, Loader2, Sun, Cloud, Moon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useSidebar } from './SidebarContext';
 
@@ -50,6 +50,12 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const notificationRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const pathname = usePathname();
+
+    // Check if the current page is a dashboard list view to merge page elements to global header
+    const isListPage = pathname.startsWith('/dashboard/registrations') ||
+                       pathname.startsWith('/dashboard/bookings') ||
+                       pathname.startsWith('/dashboard/students');
 
     // Scroll-based blur backdrop
     const [isScrolled, setIsScrolled] = useState(false);
@@ -88,7 +94,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         if (showNotifications && notifications.length === 0) {
             fetchNotifications();
         }
-    }, [showNotifications, notifications.length]);
+    }, [showNotifications]);
 
     const handleNotificationClick = async (notification: Notification) => {
         if (!notification.read) {
@@ -204,89 +210,104 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <Menu className="w-5 h-5" />
             </button>
 
-            {/* Greeting — hidden on mobile, hidden when search is focused */}
-            {!hideSearch && (
-                <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-1">
-                    <span className="text-lg leading-none">{greeting.emoji}</span>
-                    <span className="text-sm font-semibold text-[#c2c6d6]">
-                        {greeting.text}{userName ? `, ${userName.split(' ')[0]}` : ''}
-                    </span>
-                </div>
-            )}
-
-            {/* Search Bar */}
-            {!hideSearch && (
-                <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
-                    <form onSubmit={handleSearch} className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
-                        <input
-                            suppressHydrationWarning
-                            ref={searchInputRef}
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setShowSearchResults(true);
-                            }}
-                            onFocus={() => {
-                                if (searchQuery.trim().length >= 2) setShowSearchResults(true);
-                            }}
-                            placeholder="Search students, bookings… (⌘K)"
-                            className="w-full pl-11 pr-16 py-2.5 bg-[#1a1d23] border border-[#424754]/15 rounded-xl text-sm text-white placeholder:text-[#8c909f]/60 focus:ring-2 focus:ring-[#adc6ff]/25 focus:border-[#adc6ff]/30 transition-all outline-none hover:border-[#424754]/25"
-                        />
-                        {isSearching && (
-                            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] animate-spin" />
-                        )}
-                        {!searchQuery && !isSearching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-40">
-                                <span className="text-[10px] bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#424754]/20 text-[#8c909f] font-mono">⌘</span>
-                                <span className="text-[10px] bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#424754]/20 text-[#8c909f] font-mono">K</span>
-                            </div>
-                        )}
-                    </form>
-
-                    {/* Search Results Dropdown */}
-                    {showSearchResults && searchQuery.trim().length >= 2 && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                            {searchResults.length === 0 && !isSearching ? (
-                                <div className="p-6 text-center">
-                                    <p className="text-2xl mb-2">🔍</p>
-                                    <p className="text-sm text-[#8c909f]">No results for &ldquo;<span className="text-white">{searchQuery}</span>&rdquo;</p>
-                                </div>
-                            ) : (
-                                <div className="max-h-96 overflow-y-auto">
-                                    {searchResults.map((result) => (
-                                        <div
-                                            key={`${result.type}-${result.id}`}
-                                            onClick={() => {
-                                                router.push(result.url);
-                                                setShowSearchResults(false);
-                                                setSearchQuery('');
-                                            }}
-                                            className="p-3 border-b border-[#424754]/15 hover:bg-[#353535] cursor-pointer transition-colors flex items-center justify-between group"
-                                        >
-                                            <div>
-                                                <p className="font-semibold text-sm text-[#e5e2e1] group-hover:text-[#adc6ff] transition-colors">
-                                                    {result.title}
-                                                </p>
-                                                <p className="text-xs text-[#8c909f] mt-0.5">
-                                                    {result.subtitle}
-                                                </p>
-                                            </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#424754]/30 text-[#8c909f]">
-                                                {result.type}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+            {/* Title / Greeting Portal Insertion */}
+            {isListPage ? (
+                <div id="header-left" className="flex items-center gap-2 flex-shrink-0" />
+            ) : (
+                <>
+                    {/* Greeting — hidden on mobile, hidden when search is focused */}
+                    {!hideSearch && (
+                        <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-1">
+                            <span className="text-lg leading-none">{greeting.emoji}</span>
+                            <span className="text-sm font-semibold text-[#c2c6d6]">
+                                {greeting.text}{userName ? `, ${userName.split(' ')[0]}` : ''}
+                            </span>
                         </div>
                     )}
-                </div>
+                </>
+            )}
+
+            {/* Middle Section: Tabs Portal or Global Search */}
+            {isListPage ? (
+                <div id="header-middle" className="hidden lg:flex flex-1 justify-center max-w-2xl px-4" />
+            ) : (
+                /* Search Bar */
+                !hideSearch && (
+                    <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
+                        <form onSubmit={handleSearch} className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] group-focus-within:text-[#adc6ff] transition-colors" />
+                            <input
+                                suppressHydrationWarning
+                                ref={searchInputRef}
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setShowSearchResults(true);
+                                }}
+                                onFocus={() => {
+                                    if (searchQuery.trim().length >= 2) setShowSearchResults(true);
+                                }}
+                                placeholder="Search students, bookings… (⌘K)"
+                                className="w-full pl-11 pr-16 py-2.5 bg-[#1a1d23] border border-[#424754]/15 rounded-xl text-sm text-white placeholder:text-[#8c909f]/60 focus:ring-2 focus:ring-[#adc6ff]/25 focus:border-[#adc6ff]/30 transition-all outline-none hover:border-[#424754]/25"
+                            />
+                            {isSearching && (
+                                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f] animate-spin" />
+                            )}
+                            {!searchQuery && !isSearching && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-40">
+                                    <span className="text-[10px] bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#424754]/20 text-[#8c909f] font-mono">⌘</span>
+                                    <span className="text-[10px] bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#424754]/20 text-[#8c909f] font-mono">K</span>
+                                </div>
+                            )}
+                        </form>
+
+                        {/* Search Results Dropdown */}
+                        {showSearchResults && searchQuery.trim().length >= 2 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1d23] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#424754]/15 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {searchResults.length === 0 && !isSearching ? (
+                                    <div className="p-6 text-center">
+                                        <p className="text-2xl mb-2">🔍</p>
+                                        <p className="text-sm text-[#8c909f]">No results for &ldquo;<span className="text-white">{searchQuery}</span>&rdquo;</p>
+                                    </div>
+                                ) : (
+                                    <div className="max-h-96 overflow-y-auto">
+                                        {searchResults.map((result) => (
+                                            <div
+                                                key={`${result.type}-${result.id}`}
+                                                onClick={() => {
+                                                    router.push(result.url);
+                                                    setShowSearchResults(false);
+                                                    setSearchQuery('');
+                                                }}
+                                                className="p-3 border-b border-[#424754]/15 hover:bg-[#353535] cursor-pointer transition-colors flex items-center justify-between group"
+                                            >
+                                                <div>
+                                                    <p className="font-semibold text-sm text-[#e5e2e1] group-hover:text-[#adc6ff] transition-colors">
+                                                        {result.title}
+                                                    </p>
+                                                    <p className="text-xs text-[#8c909f] mt-0.5">
+                                                        {result.subtitle}
+                                                    </p>
+                                                </div>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#424754]/30 text-[#8c909f]">
+                                                    {result.type}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )
             )}
 
             {/* Right Section */}
             <div className="flex items-center gap-3">
+                {isListPage && (
+                    <div id="header-right-actions" className="hidden md:flex items-center gap-2" />
+                )}
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                     <button

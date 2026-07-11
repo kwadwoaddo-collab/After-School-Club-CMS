@@ -10,6 +10,7 @@ import { Suspense } from 'react';
 import BookingsTable from '@/components/bookings/BookingsTable';
 import BookingsFilters from '@/components/bookings/BookingsFilters';
 import Pagination from '@/components/ui/Pagination';
+import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, format } from 'date-fns';
@@ -243,79 +244,88 @@ export default async function BookingsPage(props: {
     const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-700">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Bookings</h1>
-                    <p className="text-sm text-[#8c909f] mt-1">Manage upcoming and past appointments</p>
+        <div className="space-y-4 animate-in fade-in duration-700">
+            {/* Header Portals — Fuses page header into the global header bar */}
+            <HeaderPortal targetId="header-left">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-base sm:text-lg font-black text-white tracking-tight">Bookings</h1>
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
+                        {isFiltered ? `${totalRecords} of ${totalAggCount}` : totalAggCount}
+                    </span>
                 </div>
-                <div className="flex items-center gap-3">
-                    {/* Today quick filter */}
-                    <Link
-                        href={isToday ? '/dashboard/bookings' : '/dashboard/bookings?today=true'}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold border transition-all ${
-                            isToday
-                                ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
-                                : 'bg-white/5 hover:bg-white/10 border-white/10 text-white'
-                        }`}
-                    >
-                        <Calendar className="w-4 h-4" />
-                        <span className="hidden sm:inline">Today</span>
-                    </Link>
-                    <Link
-                        href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-sm font-semibold text-white transition-all"
-                    >
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Export CSV</span>
-                    </Link>
-                    <Link href="/dashboard/bookings/new" className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn">
-                        <Plus className="w-4 h-4" /> New Booking
-                    </Link>
-                </div>
-            </div>
+            </HeaderPortal>
 
-            {/* Segmented Status Tabs — Combines Metrics and filtering inside a single clean row */}
-            <div className="flex bg-[#14161b]/60 p-1 rounded-2xl border border-outline-variant/10 self-start overflow-x-auto max-w-full scrollbar-none gap-1">
-                {[
-                    { value: 'all', label: 'All Bookings', count: totalAggCount },
-                    { value: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed, color: 'text-blue-400 bg-blue-500/10' },
-                    { value: 'pending', label: 'Pending', count: statusCounts.pending, color: 'text-amber-400 bg-amber-500/10' },
-                    { value: 'completed', label: 'Attended', count: statusCounts.completed, color: 'text-violet-400 bg-violet-500/10' },
-                    { value: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled, color: 'text-slate-400 bg-slate-500/10' },
-                    { value: 'rescheduled', label: 'Rescheduled', count: statusCounts.rescheduled, color: 'text-indigo-400 bg-indigo-500/10' },
-                ].map((tab) => {
-                    const isActive = (searchParams.status || 'all') === tab.value;
-                    const query = new URLSearchParams();
-                    if (searchParams.search) query.set('search', searchParams.search);
-                    if (searchParams.centre) query.set('centre', searchParams.centre);
-                    if (searchParams.from) query.set('from', searchParams.from);
-                    if (searchParams.to) query.set('to', searchParams.to);
-                    if (tab.value !== 'all') query.set('status', tab.value);
-                    
-                    const href = `/dashboard/bookings${query.toString() ? `?${query.toString()}` : ''}`;
-                    
-                    return (
-                        <Link
-                            key={tab.value}
-                            href={href}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
-                                isActive
-                                    ? 'bg-[#2a2d35] text-white shadow-lg border border-[#424754]/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            <span>{tab.label}</span>
-                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
-                                isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-white/5 text-slate-400'}`
-                            }`}>
-                                {tab.count}
-                            </span>
-                        </Link>
-                    );
-                })}
-            </div>
+            <HeaderPortal targetId="header-middle">
+                {/* Segmented Status Tabs — Combines Metrics and filtering inside a single clean row */}
+                <div className="flex bg-[#14161b]/60 p-1 rounded-2xl border border-outline-variant/10 self-start overflow-x-auto max-w-full scrollbar-none gap-1">
+                    {[
+                        { value: 'all', label: 'All', count: totalAggCount },
+                        { value: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed, color: 'text-blue-400 bg-blue-500/10' },
+                        { value: 'pending', label: 'Pending', count: statusCounts.pending, color: 'text-amber-400 bg-amber-500/10' },
+                        { value: 'completed', label: 'Attended', count: statusCounts.completed, color: 'text-violet-400 bg-violet-500/10' },
+                        { value: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled, color: 'text-slate-400 bg-slate-500/10' },
+                        { value: 'rescheduled', label: 'Rescheduled', count: statusCounts.rescheduled, color: 'text-indigo-400 bg-indigo-500/10' },
+                    ].map((tab) => {
+                        const isActive = (searchParams.status || 'all') === tab.value;
+                        const query = new URLSearchParams();
+                        if (searchParams.search) query.set('search', searchParams.search);
+                        if (searchParams.centre) query.set('centre', searchParams.centre);
+                        if (searchParams.from) query.set('from', searchParams.from);
+                        if (searchParams.to) query.set('to', searchParams.to);
+                        if (tab.value !== 'all') query.set('status', tab.value);
+                        
+                        const href = `/dashboard/bookings${query.toString() ? `?${query.toString()}` : ''}`;
+                        
+                        return (
+                            <Link
+                                key={tab.value}
+                                href={href}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
+                                    isActive
+                                        ? 'bg-[#2a2d35] text-white shadow-lg border border-[#424754]/25'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                <span>{tab.label}</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                                    isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-white/5 text-slate-400'}`
+                                }`}>
+                                    {tab.count}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </HeaderPortal>
+
+            <HeaderPortal targetId="header-right-actions">
+                {/* Today quick filter */}
+                <Link
+                    href={isToday ? '/dashboard/bookings' : '/dashboard/bookings?today=true'}
+                    className={`flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border rounded-xl text-xs font-bold transition-all ${
+                        isToday
+                            ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
+                            : 'border-white/10 text-white'
+                    }`}
+                >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Today</span>
+                </Link>
+                <Link
+                    href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all active:scale-95 duration-100"
+                >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export</span>
+                </Link>
+                <Link
+                    href="/dashboard/bookings/new"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100"
+                >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>New Booking</span>
+                </Link>
+            </HeaderPortal>
 
             {/* Filters — sticky so it stays visible while scrolling through bookings */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
