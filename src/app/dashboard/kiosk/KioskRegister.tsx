@@ -202,8 +202,9 @@ function StudentCard({
 
     return (
         <div className="space-y-2">
-            <div className={`rounded-2xl border transition-all duration-200 ${pad} ${style.ring} ${flash ? 'scale-[0.98]' : ''}`}>
-                <div className="flex items-center gap-4">
+            <div className={`rounded-2xl border transition-all duration-200 ${pad} ${style.ring} ${flash ? 'scale-[0.98]' : ''} flex flex-col gap-4`}>
+                {/* Top Section: Avatar and Info */}
+                <div className="flex items-start gap-4">
                     {/* Avatar */}
                     <div className={`${avatarSize} rounded-xl flex items-center justify-center font-black flex-shrink-0 transition-colors ${style.avatar}`}>
                         {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : initials}
@@ -211,7 +212,7 @@ function StudentCard({
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <p className={`font-bold text-white truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
                                 {attendee.firstName} {attendee.lastName}
                             </p>
@@ -229,46 +230,46 @@ function StudentCard({
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
                             )}
                         </div>
-                        <p className="text-xs text-white/40 mt-0.5">
+                        <p className="text-xs text-white/40 mt-1 leading-relaxed">
                             Year {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName}
                             {attendee.parentPhone && ` · ${attendee.parentPhone}`}
                             {lateMinutes && ` · Late: ${lateMinutes}m`}
                             {note && ` · "${note}"`}
                         </p>
                         {hasAlert && (
-                            <p className="text-xs text-red-400 mt-1 font-medium truncate">⚠ {attendee.notes}</p>
+                            <p className="text-xs text-red-400 mt-1.5 font-medium">⚠ {attendee.notes}</p>
                         )}
                     </div>
-
-                    {/* Action buttons */}
-                    {!isPending && (
-                        <div className={`flex items-center gap-2 flex-shrink-0 ${isLarge ? 'flex-row' : 'flex-col sm:flex-row'}`}>
-                            <button
-                                onClick={() => setShowDetails(!showDetails)}
-                                title="Add Notes/Details"
-                                className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all border ${showDetails
-                                    ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
-                                    : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20'
-                                }`}
-                            >
-                                <Edit2 className="w-4 h-4" />
-                            </button>
-                            {([
-                                { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-tertiary hover:border-tertiary/20' },
-                                { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-400 text-slate-950 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-amber-400/20',   inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-amber-400 hover:border-amber-400/20'   },
-                                { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-slate-950 shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-error hover:border-error/20'     },
-                            ]).map(({ s, icon, label, active, inactive }) => (
-                                <button
-                                    key={s}
-                                    onClick={() => mark(s)}
-                                    className={`${btnSize} border rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 ${status === s ? active : inactive}`}
-                                >
-                                    {icon} {isLarge && label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
+
+                {/* Bottom Section: Action buttons */}
+                {!isPending && (
+                    <div className="flex items-center justify-end gap-2 border-t border-white/5 pt-3 w-full">
+                        <button
+                            onClick={() => setShowDetails(!showDetails)}
+                            title="Add Notes/Details"
+                            className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all border ${showDetails
+                                ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
+                                : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20'
+                            }`}
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                        {([
+                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-tertiary hover:border-tertiary/20' },
+                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-400 text-slate-950 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-amber-400/20',   inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-amber-400 hover:border-amber-400/20'   },
+                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-slate-950 shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-white/5 border-white/5 text-white/40 hover:text-error hover:border-error/20'     },
+                        ]).map(({ s, icon, label, active, inactive }) => (
+                            <button
+                                key={s}
+                                onClick={() => mark(s)}
+                                className={`${btnSize} border rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 flex-1 sm:flex-initial ${status === s ? active : inactive}`}
+                            >
+                                {icon} <span className="ml-1">{label}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Note & Late Minutes Drawer */}
