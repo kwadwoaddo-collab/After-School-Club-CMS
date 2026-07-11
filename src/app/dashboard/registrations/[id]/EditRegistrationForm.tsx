@@ -208,14 +208,6 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
     };
 
     const slots = centreSessionSlots || SESSION_SLOTS;
-    const FUNDING_LABEL: Record<string, string> = {
-        tax_free_childcare: 'Tax-Free Childcare',
-        childcare_vouchers: 'Childcare Vouchers',
-        universal_credit: 'Universal Credit',
-        student_finance: 'Student Finance (CCG)',
-        self_funded: 'Self-Funded',
-        other: 'Other',
-    };
 
     if (!isEditing) {
         return (
@@ -280,27 +272,27 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                 <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Child {i + 1}</p>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div>
-                                        <label className={label}>First Name</label>
-                                        <input className={input} value={c.firstName} onChange={e => updateChild(i, 'firstName', e.target.value)} placeholder="First name" />
+                                        <label htmlFor={`child-${c.id}-firstName`} className={label}>First Name</label>
+                                        <input id={`child-${c.id}-firstName`} className={input} value={c.firstName} onChange={e => updateChild(i, 'firstName', e.target.value)} placeholder="First name" />
                                     </div>
                                     <div>
-                                        <label className={label}>Last Name</label>
-                                        <input className={input} value={c.lastName} onChange={e => updateChild(i, 'lastName', e.target.value)} placeholder="Last name" />
+                                        <label htmlFor={`child-${c.id}-lastName`} className={label}>Last Name</label>
+                                        <input id={`child-${c.id}-lastName`} className={input} value={c.lastName} onChange={e => updateChild(i, 'lastName', e.target.value)} placeholder="Last name" />
                                     </div>
                                     <div>
-                                        <label className={label}>Date of Birth</label>
-                                        <input type="date" className={input} value={c.dateOfBirth} onChange={e => updateChild(i, 'dateOfBirth', e.target.value)} />
+                                        <label htmlFor={`child-${c.id}-dob`} className={label}>Date of Birth</label>
+                                        <input id={`child-${c.id}-dob`} type="date" className={input} value={c.dateOfBirth} onChange={e => updateChild(i, 'dateOfBirth', e.target.value)} />
                                     </div>
                                     <div>
-                                        <label className={label}>Year Group</label>
-                                        <select className={input} value={c.schoolYear} onChange={e => updateChild(i, 'schoolYear', e.target.value)}>
+                                        <label htmlFor={`child-${c.id}-year`} className={label}>Year Group</label>
+                                        <select id={`child-${c.id}-year`} className={input} value={c.schoolYear} onChange={e => updateChild(i, 'schoolYear', e.target.value)}>
                                             <option value="">Select year</option>
                                             {YEAR_GROUPS.map(y => <option key={y} value={y}>{y}</option>)}
                                         </select>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className={label}>Sessions</label>
+                                    <p className={label}>Sessions</p>
                                     <div className="grid grid-cols-2 gap-2 mt-1">
                                         {slots.map(slot => (
                                             <label key={slot} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${c.sessions.includes(slot) ? 'border-primary/50 bg-primary/10 text-white' : 'border-white/10 bg-white/3 text-white/50 hover:border-white/20'}`}>
@@ -327,47 +319,47 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className={label}>First Name</label>
-                                    <input className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} placeholder="First name" />
+                                    <label htmlFor={`parent-${p.id}-firstName`} className={label}>First Name</label>
+                                    <input id={`parent-${p.id}-firstName`} className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} placeholder="First name" />
                                 </div>
                                 <div>
-                                    <label className={label}>Last Name</label>
-                                    <input className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} placeholder="Last name" />
+                                    <label htmlFor={`parent-${p.id}-lastName`} className={label}>Last Name</label>
+                                    <input id={`parent-${p.id}-lastName`} className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} placeholder="Last name" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className={label}>Relationship</label>
-                                    <select className={input} value={p.relationship} onChange={e => updateParent(i, 'relationship', e.target.value)}>
+                                    <label htmlFor={`parent-${p.id}-relationship`} className={label}>Relationship</label>
+                                    <select id={`parent-${p.id}-relationship`} className={input} value={p.relationship} onChange={e => updateParent(i, 'relationship', e.target.value)}>
                                         <option value="">Select</option>
                                         {RELATIONSHIPS.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={label}>Phone</label>
-                                    <input className={input} value={p.phone} onChange={e => updateParent(i, 'phone', e.target.value)} placeholder="07xxx xxxxxx" />
+                                    <label htmlFor={`parent-${p.id}-phone`} className={label}>Phone</label>
+                                    <input id={`parent-${p.id}-phone`} className={input} value={p.phone} onChange={e => updateParent(i, 'phone', e.target.value)} placeholder="07xxx xxxxxx" />
                                 </div>
                             </div>
                             <div>
-                                <label className={label}>Email</label>
-                                <input type="email" className={input} value={p.email} onChange={e => updateParent(i, 'email', e.target.value)} placeholder="email@example.com" />
+                                <label htmlFor={`parent-${p.id}-email`} className={label}>Email</label>
+                                <input id={`parent-${p.id}-email`} type="email" className={input} value={p.email} onChange={e => updateParent(i, 'email', e.target.value)} placeholder="email@example.com" />
                             </div>
                             <div>
-                                <label className={label}>Address Line 1</label>
-                                <input className={input} value={p.addressLine1} onChange={e => updateParent(i, 'addressLine1', e.target.value)} placeholder="Street address" />
+                                <label htmlFor={`parent-${p.id}-addr1`} className={label}>Address Line 1</label>
+                                <input id={`parent-${p.id}-addr1`} className={input} value={p.addressLine1} onChange={e => updateParent(i, 'addressLine1', e.target.value)} placeholder="Street address" />
                             </div>
                             <div>
-                                <label className={label}>Address Line 2</label>
-                                <input className={input} value={p.addressLine2} onChange={e => updateParent(i, 'addressLine2', e.target.value)} placeholder="Flat / suite (optional)" />
+                                <label htmlFor={`parent-${p.id}-addr2`} className={label}>Address Line 2</label>
+                                <input id={`parent-${p.id}-addr2`} className={input} value={p.addressLine2} onChange={e => updateParent(i, 'addressLine2', e.target.value)} placeholder="Flat / suite (optional)" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className={label}>City</label>
-                                    <input className={input} value={p.city} onChange={e => updateParent(i, 'city', e.target.value)} placeholder="London" />
+                                    <label htmlFor={`parent-${p.id}-city`} className={label}>City</label>
+                                    <input id={`parent-${p.id}-city`} className={input} value={p.city} onChange={e => updateParent(i, 'city', e.target.value)} placeholder="London" />
                                 </div>
                                 <div>
-                                    <label className={label}>Postcode</label>
-                                    <input className={input} value={p.postcode} onChange={e => updateParent(i, 'postcode', e.target.value)} placeholder="SE26 4AA" />
+                                    <label htmlFor={`parent-${p.id}-postcode`} className={label}>Postcode</label>
+                                    <input id={`parent-${p.id}-postcode`} className={input} value={p.postcode} onChange={e => updateParent(i, 'postcode', e.target.value)} placeholder="SE26 4AA" />
                                 </div>
                             </div>
                         </div>
@@ -379,16 +371,16 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                     <h2 className="text-white font-bold mb-4">Emergency Contact</h2>
                     <div className="space-y-3">
                         <div>
-                            <label className={label}>Full Name</label>
-                            <input className={input} value={ecName} onChange={e => setEcName(e.target.value)} placeholder="Full name" />
+                            <label htmlFor="ec-name" className={label}>Full Name</label>
+                            <input id="ec-name" className={input} value={ecName} onChange={e => setEcName(e.target.value)} placeholder="Full name" />
                         </div>
                         <div>
-                            <label className={label}>Relationship</label>
-                            <input className={input} value={ecRel} onChange={e => setEcRel(e.target.value)} placeholder="e.g. Grandparent, Aunt" />
+                            <label htmlFor="ec-relationship" className={label}>Relationship</label>
+                            <input id="ec-relationship" className={input} value={ecRel} onChange={e => setEcRel(e.target.value)} placeholder="e.g. Grandparent, Aunt" />
                         </div>
                         <div>
-                            <label className={label}>Phone</label>
-                            <input className={input} value={ecPhone} onChange={e => setEcPhone(e.target.value)} placeholder="07xxx xxxxxx" />
+                            <label htmlFor="ec-phone" className={label}>Phone</label>
+                            <input id="ec-phone" className={input} value={ecPhone} onChange={e => setEcPhone(e.target.value)} placeholder="07xxx xxxxxx" />
                         </div>
                     </div>
                 </div>
@@ -398,24 +390,24 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                     <h2 className="text-white font-bold mb-4">Funding &amp; Details</h2>
                     <div className="space-y-3">
                         <div>
-                            <label className={label}>Requested Start Date</label>
-                            <input type="date" className={input} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                            <label htmlFor="funding-start-date" className={label}>Requested Start Date</label>
+                            <input id="funding-start-date" type="date" className={input} value={startDate} onChange={e => setStartDate(e.target.value)} />
                         </div>
                         <div>
-                            <label className={label}>Funding Method</label>
-                            <select className={input} value={fundingType} onChange={e => setFundingType(e.target.value)}>
+                            <label htmlFor="funding-method" className={label}>Funding Method</label>
+                            <select id="funding-method" className={input} value={fundingType} onChange={e => setFundingType(e.target.value)}>
                                 <option value="">Select funding</option>
                                 {FUNDING_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                             </select>
                         </div>
                         {fundingType === 'other' && (
                             <div>
-                                <label className={label}>Funding Details</label>
-                                <input className={input} value={fundingOther} onChange={e => setFundingOther(e.target.value)} placeholder="Describe your funding" />
+                                <label htmlFor="funding-other" className={label}>Funding Details</label>
+                                <input id="funding-other" className={input} value={fundingOther} onChange={e => setFundingOther(e.target.value)} placeholder="Describe your funding" />
                             </div>
                         )}
                         <div>
-                            <label className={label}>Special Needs / Medical</label>
+                            <p className={label}>Special Needs / Medical</p>
                             <div className="flex gap-3 mt-1 mb-2">
                                 {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
                                     <button
@@ -430,6 +422,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                             </div>
                             {hasSpecialNeeds && (
                                 <textarea
+                                    id="special-needs-details"
                                     className={`${input} min-h-[80px] resize-none`}
                                     value={specialNeedsDetails}
                                     onChange={e => setSpecialNeedsDetails(e.target.value)}

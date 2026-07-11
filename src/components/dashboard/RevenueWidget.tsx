@@ -85,7 +85,7 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
   ];
 
   return (
-    <div className="bg-surface-container-high rounded-2xl border border-outline-variant/10 overflow-hidden">
+    <div className="glassmorphic-card rounded-2xl overflow-hidden">
       <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/10">
         <PoundSterling className="w-4 h-4 text-emerald-400" />
         <span className="text-xs font-black uppercase tracking-[0.15em] text-on-surface-variant">

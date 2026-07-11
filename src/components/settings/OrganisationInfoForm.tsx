@@ -110,7 +110,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
 
     return (
         <>
-        <div className="bg-surface-container-high border border-outline-variant/10 rounded-2xl p-5 space-y-5">
+        <div className="glassmorphic-card rounded-2xl p-5 space-y-5">
             <h3 className="text-sm font-bold text-white">Organisation Information</h3>
 
             {error && (
