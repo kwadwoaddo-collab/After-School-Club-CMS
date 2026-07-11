@@ -98,7 +98,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                         type="text"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder="Search…"
+                        placeholder="Search registrations…"
                         aria-label="Search registrations"
                         className="w-full pl-8 pr-3 py-2 rounded-xl text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-[#19191b]/60 border-outline-variant/20 text-white"
                     />
@@ -122,28 +122,11 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                     </div>
                 )}
 
-                {/* Status Filter — immediate */}
-                <div className="relative min-w-[160px]">
-                    <select
-                        value={status}
-                        onChange={(e) => handleStatusChange(e.target.value)}
-                        aria-label="Filter by status"
-                        className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
-                    >
-                        {statusOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value} className="bg-[#1a1d23] text-white">
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
-                </div>
-
                 {/* Clear Filters */}
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-all cursor-pointer border border-outline-variant/10"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-all cursor-pointer border border-outline-variant/10 active:scale-95 duration-100"
                     >
                         <X className="w-3.5 h-3.5" />
                         Clear

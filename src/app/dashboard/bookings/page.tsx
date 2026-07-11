@@ -126,12 +126,16 @@ export default async function BookingsPage(props: {
         }
     }
 
-    // Build exactly the same conditions for `.findMany()` and `.select({ count })`
+    // Build conditions for Bookings list query and aggregation query
     const conds = [];
+    const aggConds = [];
+
     if (activeCentreId !== 'all') {
         conds.push(eq(bookings.centreId, activeCentreId));
+        aggConds.push(eq(bookings.centreId, activeCentreId));
     } else {
         conds.push(inArray(bookings.centreId, centreIds));
+        aggConds.push(inArray(bookings.centreId, centreIds));
     }
 
     if (searchParams.status && searchParams.status !== 'all') {
@@ -143,32 +147,47 @@ export default async function BookingsPage(props: {
 
     if (effectiveFrom) {
         const fromDate = new Date(effectiveFrom);
-        if (!isNaN(fromDate.getTime())) conds.push(gte(bookings.startAt, startOfDay(fromDate)));
+        if (!isNaN(fromDate.getTime())) {
+            conds.push(gte(bookings.startAt, startOfDay(fromDate)));
+            aggConds.push(gte(bookings.startAt, startOfDay(fromDate)));
+        }
     }
     if (effectiveTo) {
         const toDate = new Date(effectiveTo);
-        if (!isNaN(toDate.getTime())) conds.push(lte(bookings.startAt, endOfDay(toDate)));
+        if (!isNaN(toDate.getTime())) {
+            conds.push(lte(bookings.startAt, endOfDay(toDate)));
+            aggConds.push(lte(bookings.startAt, endOfDay(toDate)));
+        }
     }
 
-    if (searchParams.search) conds.push(inArray(bookings.id, matchingIds));
+    if (searchParams.search) {
+        conds.push(inArray(bookings.id, matchingIds));
+        aggConds.push(inArray(bookings.id, matchingIds));
+    }
 
     const finalWhere = conds.length === 1 ? conds[0] : and(...conds);
+    const aggWhere = aggConds.length === 1 ? aggConds[0] : (aggConds.length > 0 ? and(...aggConds) : undefined);
 
     let totalRecords = 0;
     let statusCountsAgg: any[] = [];
 
     if (!searchActiveAndNoResults) {
         try {
-            // Retrieve aggregations for accurate top-level bubbles
+            // Retrieve aggregations for accurate top-level bubbles (excludes status filter)
             statusCountsAgg = await db.select({
                 status: bookings.status,
                 count: sql<number>`count(*)::int`
             })
             .from(bookings)
-            .where(finalWhere)
+            .where(aggWhere)
             .groupBy(bookings.status);
 
-            totalRecords = statusCountsAgg.reduce((sum, item) => sum + item.count, 0);
+            // Set total records for the active filters (includes status filter)
+            const [totalRes] = await db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(bookings)
+                .where(finalWhere);
+            totalRecords = totalRes?.count || 0;
 
             bookingsData = await db.query.bookings.findMany({
                 where: finalWhere,
@@ -211,7 +230,7 @@ export default async function BookingsPage(props: {
         activeCentreId !== 'all'
     );
 
-    // Status counts for colour-coded summary
+    // Status counts for Segmented Status Tabs
     const statusCounts = {
         confirmed:   statusCountsAgg.find(s => s.status === 'confirmed')?.count || 0,
         pending:     statusCountsAgg.find(s => s.status === 'pending')?.count || 0,
@@ -220,6 +239,7 @@ export default async function BookingsPage(props: {
         rescheduled: statusCountsAgg.find(s => s.status === 'rescheduled')?.count || 0,
     };
 
+    const totalAggCount = statusCounts.confirmed + statusCounts.pending + statusCounts.completed + statusCounts.cancelled + statusCounts.rescheduled;
     const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
     return (
@@ -256,25 +276,50 @@ export default async function BookingsPage(props: {
                 </div>
             </div>
 
-            {/* Colour-coded status summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {/* Segmented Status Tabs — Combines Metrics and filtering inside a single clean row */}
+            <div className="flex bg-[#14161b]/60 p-1 rounded-2xl border border-outline-variant/10 self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                 {[
-                    { label: 'Confirmed', count: statusCounts.confirmed,   colour: 'text-blue-400   bg-blue-500/10   border-blue-500/20'   },
-                    { label: 'Pending',   count: statusCounts.pending,     colour: 'text-amber-400  bg-amber-500/10  border-amber-500/20'  },
-                    { label: 'Attended',  count: statusCounts.completed,   colour: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
-                    { label: 'Cancelled', count: statusCounts.cancelled,   colour: 'text-slate-400  bg-slate-500/10  border-slate-500/20'  },
-                    { label: 'Rescheduled', count: statusCounts.rescheduled, colour: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
-                ].map(s => (
-                    <div key={s.label} className={`flex items-center justify-between p-3 rounded-2xl border ${s.colour}`}>
-                        <p className="text-xs font-bold uppercase tracking-wider opacity-80">{s.label}</p>
-                        <p className="text-xl font-black">{s.count}</p>
-                    </div>
-                ))}
+                    { value: 'all', label: 'All Bookings', count: totalAggCount },
+                    { value: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed, color: 'text-blue-400 bg-blue-500/10' },
+                    { value: 'pending', label: 'Pending', count: statusCounts.pending, color: 'text-amber-400 bg-amber-500/10' },
+                    { value: 'completed', label: 'Attended', count: statusCounts.completed, color: 'text-violet-400 bg-violet-500/10' },
+                    { value: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled, color: 'text-slate-400 bg-slate-500/10' },
+                    { value: 'rescheduled', label: 'Rescheduled', count: statusCounts.rescheduled, color: 'text-indigo-400 bg-indigo-500/10' },
+                ].map((tab) => {
+                    const isActive = (searchParams.status || 'all') === tab.value;
+                    const query = new URLSearchParams();
+                    if (searchParams.search) query.set('search', searchParams.search);
+                    if (searchParams.centre) query.set('centre', searchParams.centre);
+                    if (searchParams.from) query.set('from', searchParams.from);
+                    if (searchParams.to) query.set('to', searchParams.to);
+                    if (tab.value !== 'all') query.set('status', tab.value);
+                    
+                    const href = `/dashboard/bookings${query.toString() ? `?${query.toString()}` : ''}`;
+                    
+                    return (
+                        <Link
+                            key={tab.value}
+                            href={href}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
+                                isActive
+                                    ? 'bg-[#2a2d35] text-white shadow-lg border border-[#424754]/25'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <span>{tab.label}</span>
+                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                                isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-white/5 text-slate-400'}`
+                            }`}>
+                                {tab.count}
+                            </span>
+                        </Link>
+                    );
+                })}
             </div>
 
             {/* Filters — sticky so it stays visible while scrolling through bookings */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full"></div>}>
+                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <BookingsFilters centres={orgCentres} resultsCount={totalRecords} />
                 </Suspense>
             </div>

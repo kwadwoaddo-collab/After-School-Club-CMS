@@ -71,7 +71,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-4 flex-wrap lg:flex-nowrap">
                 {/* Search */}
                 <form onSubmit={handleSearch} className="flex-1 min-w-[280px]">
                     <div className="relative">
@@ -86,9 +86,8 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                                     applyFilters({ newSearch: '' });
                                 }
                             }}
-                            placeholder="Search students, bookings..."
-                            className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                            placeholder="Search parent name, child name..."
+                            className="w-full pl-11 pr-4 py-2.5 bg-[#14161b] border border-[#2a2a2a]/40 rounded-2xl text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                         />
                     </div>
                 </form>
@@ -101,8 +100,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                             onChange={(e) => {
                                 setSelectedCentreId(e.target.value);
                             }}
-                            className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
-                            style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
+                            className="w-full pl-4 pr-10 py-2.5 bg-[#14161b] border border-[#2a2a2a]/40 rounded-2xl text-sm text-white font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
                         >
                             <option value="all">All Centres</option>
                             {centres.map(c => (
@@ -113,64 +111,43 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                     </div>
                 )}
 
-                {/* Status Filter */}
-                <div className="relative min-w-[160px]">
-                    <select
-                        value={status}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setStatus(val);
-                            applyFilters({ newStatus: val });
-                        }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
-                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
-                    >
-                        {statusOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                    <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-
-                {/* From Date Filter */}
-                <div className="relative min-w-[160px] flex items-center">
-                    <span className="absolute left-4 text-xs font-bold text-slate-500 uppercase pointer-events-none">From</span>
-                    <input
-                        type="date"
-                        value={fromDate}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setFromDate(val);
-                            applyFilters({ newFrom: val });
-                        }}
-                        className="w-full pl-16 pr-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer"
-                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
-                    />
-                </div>
-
-                {/* To Date Filter */}
-                <div className="relative min-w-[140px] flex items-center">
-                    <span className="absolute left-4 text-xs font-bold text-slate-500 uppercase pointer-events-none">To</span>
-                    <input
-                        type="date"
-                        value={toDate}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setToDate(val);
-                            applyFilters({ newTo: val });
-                        }}
-                        className="w-full pl-12 pr-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer"
-                        style={{ backgroundColor: '#14161b', color: '#ffffff', borderColor: '#2a2a2a' }}
-                    />
+                {/* Unified Date Range Group */}
+                <div className="flex items-center gap-2 bg-[#14161b] border border-[#2a2a2a]/40 rounded-2xl px-3 py-1 flex-shrink-0">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <div className="flex items-center">
+                        <span className="text-[10px] font-black text-slate-500 uppercase mr-2 pointer-events-none">From</span>
+                        <input
+                            type="date"
+                            value={fromDate}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFromDate(val);
+                                applyFilters({ newFrom: val });
+                            }}
+                            className="bg-transparent border-none text-xs text-white outline-none cursor-pointer w-28 py-1.5"
+                        />
+                    </div>
+                    <span className="text-slate-600 text-xs font-bold px-1">➔</span>
+                    <div className="flex items-center">
+                        <span className="text-[10px] font-black text-slate-500 uppercase mr-2 pointer-events-none">To</span>
+                        <input
+                            type="date"
+                            value={toDate}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setToDate(val);
+                                applyFilters({ newTo: val });
+                            }}
+                            className="bg-transparent border-none text-xs text-white outline-none cursor-pointer w-28 py-1.5"
+                        />
+                    </div>
                 </div>
 
                 {/* Clear Filters */}
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all cursor-pointer border border-[#424754]/10"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all cursor-pointer border border-[#424754]/10 flex-shrink-0 active:scale-95 duration-100"
                     >
                         <X className="w-4 h-4" />
                         Clear

@@ -200,48 +200,41 @@ export default async function RegistrationsPage(props: {
                 </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-[#adc6ff] flex-shrink-0">
-                        <FileText className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-3xl font-bold text-white tracking-tight">{totalCount}</p>
-                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Total Submissions</p>
-                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
-                    </div>
-                </div>
-                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-amber-400 flex-shrink-0">
-                        <Clock className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-3xl font-bold text-white tracking-tight">{awaitingConfirmationCount}</p>
-                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Awaiting Conf.</p>
-                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
-                    </div>
-                </div>
-                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-emerald-400 flex-shrink-0">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-3xl font-bold text-white tracking-tight">{signedUpCount}</p>
-                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Signed Up</p>
-                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
-                    </div>
-                </div>
-                <div className="glassmorphic-card rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-red-400 flex-shrink-0">
-                        <AlertTriangle className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-3xl font-bold text-white tracking-tight">{notInterestedCount}</p>
-                        <p className="text-[10px] text-[#c2c6d6] font-bold uppercase tracking-wider mt-1 text-slate-400">Not Interested</p>
-                        {isFiltered && <p className="text-[9px] text-slate-600 uppercase tracking-wider mt-0.5">All time</p>}
-                    </div>
-                </div>
+            {/* Segmented Status Tabs — Combines stats and filtering inside a single clean row */}
+            <div className="flex bg-[#14161b]/60 p-1 rounded-2xl border border-outline-variant/10 self-start overflow-x-auto max-w-full scrollbar-none gap-1">
+                {[
+                    { value: 'all', label: 'All Registrations', count: totalCount },
+                    { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-amber-400 bg-amber-500/10' },
+                    { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-emerald-400 bg-emerald-500/10' },
+                    { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-red-400 bg-red-500/10' },
+                ].map((tab) => {
+                    const isActive = (searchParams.status || 'all') === tab.value;
+                    const query = new URLSearchParams();
+                    if (searchParams.search) query.set('search', searchParams.search);
+                    if (searchParams.centre) query.set('centre', searchParams.centre);
+                    if (tab.value !== 'all') query.set('status', tab.value);
+                    
+                    const href = `/dashboard/registrations${query.toString() ? `?${query.toString()}` : ''}`;
+                    
+                    return (
+                        <Link
+                            key={tab.value}
+                            href={href}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
+                                isActive
+                                    ? 'bg-[#2a2d35] text-white shadow-lg border border-[#424754]/25'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <span>{tab.label}</span>
+                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
+                                isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-white/5 text-slate-400'}`
+                            }`}>
+                                {tab.count}
+                            </span>
+                        </Link>
+                    );
+                })}
             </div>
 
             {/* Filters — sticky so it stays visible while scrolling through registrations */}
