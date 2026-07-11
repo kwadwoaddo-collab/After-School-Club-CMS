@@ -97,7 +97,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                         </div>
 
                         {/* Children List */}
-                        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[40px] p-8">
+                        <div className="glassmorphic-card rounded-[40px] p-8">
                             <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4">Associated Children</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {parent.children?.map((child: any) => (

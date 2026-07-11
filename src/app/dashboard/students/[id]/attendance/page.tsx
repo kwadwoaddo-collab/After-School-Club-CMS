@@ -243,7 +243,7 @@ export default async function StudentAttendanceHistoryPage(
                                 return (
                                     <div
                                         key={booking.id}
-                                        className="p-5 rounded-2xl bg-surface-container-high border border-outline-variant/10 hover:border-outline-variant/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                        className="glassmorphic-card p-5 rounded-2xl hover:border-outline-variant/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                                     >
                                         <div className="space-y-1.5 min-w-0">
                                             <div className="flex items-center gap-2.5 flex-wrap">
