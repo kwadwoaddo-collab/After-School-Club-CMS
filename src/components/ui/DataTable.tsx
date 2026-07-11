@@ -178,7 +178,7 @@ export default function DataTable<T>({
                 <th
                   key={col.key}
                   className={cn(
-                    'sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider select-none',
+                    'sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider select-none',
                     col.headerAlign === 'right' ? 'text-right' : col.headerAlign === 'center' ? 'text-center' : 'text-left',
                     col.headerClassName
                   )}

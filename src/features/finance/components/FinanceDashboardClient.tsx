@@ -83,11 +83,11 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                 <table className="w-full">
                     <thead>
                         <tr className="text-left border-b border-outline-variant/10">
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Student</th>
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Status</th>
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
-                            {isOwner && <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Actions</th>}
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Student</th>
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Status</th>
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
+                            {isOwner && <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/5">
@@ -196,13 +196,13 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-outline-variant/10">
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Parent</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Paid</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Due Date</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Status</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Paid</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Due Date</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">
@@ -301,11 +301,11 @@ export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-outline-variant/10">
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Parent</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center px-4 select-none">Unpaid Invoices</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Total Invoiced</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Total Paid</th>
-                        <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center px-4 select-none">Unpaid Invoices</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Total Invoiced</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Total Paid</th>
+                        <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 pb-4 pt-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">

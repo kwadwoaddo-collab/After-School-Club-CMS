@@ -478,7 +478,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-outline-variant/10">
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-left px-5 py-4 w-12">
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-left px-5 py-4 w-12">
                                 <div className="flex items-center justify-center">
                                     <input 
                                         type="checkbox" 
@@ -489,7 +489,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             </th>
                             <th 
-                                className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none"
+                                className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none"
                                 onClick={() => handleSort('date')}
                             >
                                 <div className="flex items-center gap-2">
@@ -501,7 +501,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             </th>
                             <th 
-                                className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none"
+                                className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none"
                                 onClick={() => handleSort('student')}
                             >
                                 <div className="flex items-center gap-2">
@@ -512,14 +512,14 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                             </th>
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider">
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider">
                                 Session Type
                             </th>
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider">
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider">
                                 Centre
                             </th>
                             <th 
-                                className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none"
+                                className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-left px-4 py-4 text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors group select-none"
                                 onClick={() => handleSort('status')}
                             >
                                 <div className="flex items-center gap-2">
@@ -530,7 +530,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                             </th>
-                            <th className="sticky top-0 z-10 bg-[#121418]/95 backdrop-blur-md border-b border-outline-variant/10 text-right px-6 py-4 text-xs font-bold text-white uppercase tracking-wider">
+                            <th className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 text-right px-6 py-4 text-xs font-bold text-white uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
