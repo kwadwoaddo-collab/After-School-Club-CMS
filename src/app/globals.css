@@ -141,7 +141,7 @@ body {
 
 input::placeholder,
 textarea::placeholder {
-  color: #94a3b8 !important;
+  color: rgba(255, 255, 255, 0.35);
   font-weight: 400;
 }
 

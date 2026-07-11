@@ -292,75 +292,87 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     const isChecked = selected.has(r.id);
 
                     return (
-                        <Link
+                        // ⚠️ Use a div, not Link — the card contains a <select> which cannot
+                        // be a descendant of <a> (HTML spec violation / a11y violation)
+                        <div
                             key={r.id}
-                            href={`/dashboard/registrations/${r.id}`}
-                            className={`relative block glassmorphic-card rounded-[24px] p-6 hover:border-primary/30 hover:shadow-primary/5 transition-all flex flex-col justify-between min-h-[220px] group ${
-                                isChecked ? 'border-primary/30 bg-white/5 border-l-2 border-l-primary' : 'border-outline-variant/15'
+                            className={`relative glassmorphic-card rounded-[24px] flex flex-col justify-between min-h-[220px] group transition-all duration-200 ${
+                                isChecked
+                                    ? 'border-primary/40 bg-white/[0.03] shadow-[0_0_0_1.5px_rgba(142,171,255,0.4)]'
+                                    : 'border-outline-variant/15 hover:border-primary/20 hover:shadow-[0_8px_32px_rgba(142,171,255,0.08)]'
                             }`}
                         >
-                            <div>
-                                {/* Header Row: Checkbox, Name, and Date */}
-                                <div className="flex items-start justify-between gap-3 mb-4">
-                                    <div className="flex items-center gap-2.5 min-w-0" onClick={e => e.stopPropagation()}>
-                                        <input
-                                            type="checkbox"
-                                            checked={isChecked}
-                                            onChange={() => toggleOne(r.id)}
-                                            className="w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0"
-                                        />
+                            {/* Header row: checkbox (interactive) is a SIBLING of Link — never inside <a> */}
+                            <div className="flex items-start gap-3 px-6 pt-6 flex-1">
+                                {/* Checkbox — outside Link to comply with HTML spec (no interactive content inside <a>) */}
+                                <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => toggleOne(r.id)}
+                                    aria-label={`Select registration for ${primary?.submittedFirstName ?? 'unknown'}`}
+                                    className="w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 mt-1"
+                                />
+
+                                {/* Link wraps only text/icon content — no interactive children */}
+                                <Link
+                                    href={`/dashboard/registrations/${r.id}`}
+                                    prefetch={true}
+                                    className="flex-1 block min-w-0 pb-4"
+                                    aria-label={`View registration for ${primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}`}
+                                >
+                                    {/* Name and Date */}
+                                    <div className="flex items-start justify-between gap-2 mb-4">
                                         <p className="text-white font-bold text-base truncate group-hover:text-primary transition-colors">
                                             {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
                                         </p>
+                                        <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap pt-1 flex-shrink-0">
+                                            {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </p>
                                     </div>
-                                    <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap pt-1">
-                                        {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                    </p>
-                                </div>
 
-                                {/* Status Badge */}
-                                <div className="mb-4 animate-in fade-in duration-300">
-                                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusBadge[r.status] || ''}`}>
-                                        {statusLabel[r.status] ?? r.status}
-                                    </span>
-                                </div>
+                                    {/* Status Badge */}
+                                    <div className="mb-4 animate-in fade-in duration-300">
+                                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusBadge[r.status] || ''}`}>
+                                            {statusLabel[r.status] ?? r.status}
+                                        </span>
+                                    </div>
 
-                                {/* Children & Contact Info */}
-                                <div className="space-y-1 mb-6">
-                                    <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider">Children</p>
-                                    <p className="text-[#c2c6d6] text-sm font-semibold leading-relaxed line-clamp-2">
-                                        {childNames || 'None'}
-                                    </p>
-                                    {primary?.submittedEmail && (
-                                        <p className="text-[#8c909f] text-xs font-semibold truncate mt-2">{primary.submittedEmail}</p>
-                                    )}
-                                </div>
+                                    {/* Children & Contact Info */}
+                                    <div className="space-y-1">
+                                        <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider">Children</p>
+                                        <p className="text-[#c2c6d6] text-sm font-semibold leading-relaxed line-clamp-2">
+                                            {childNames || 'None'}
+                                        </p>
+                                        {primary?.submittedEmail && (
+                                            <p className="text-[#8c909f] text-xs font-semibold truncate mt-2">{primary.submittedEmail}</p>
+                                        )}
+                                    </div>
+                                </Link>
                             </div>
 
-                            {/* Actions Footer */}
-                            <div className="flex items-center justify-between gap-3 pt-4 border-t border-outline-variant/10 mt-auto">
-                                <span className="text-xs font-bold text-primary group-hover:text-blue-400 transition-colors">
+                            {/* Actions Footer — select and footer are outside the Link entirely */}
+                            <div className="flex items-center justify-between gap-3 px-6 pb-5 pt-3 border-t border-outline-variant/10">
+                                <span className="text-xs font-bold text-primary group-hover:text-blue-400 transition-colors pointer-events-none">
                                     View Details →
                                 </span>
 
-                                <div onClick={e => { e.stopPropagation(); e.preventDefault(); }}>
-                                    <select
-                                        value={r.centreId || 'null'}
-                                        onChange={e => handleCentreChange(r.id, e)}
-                                        disabled={isPending}
-                                        className={`text-xs border rounded-xl py-1.5 px-3.5 disabled:opacity-50 transition-all w-40 cursor-pointer outline-none font-bold ${r.centreId
-                                            ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
-                                            : 'bg-white/5 border-outline-variant/10 text-slate-400 hover:border-outline-variant/30'
-                                            }`}
-                                    >
-                                        <option value="null" className="bg-[#1a1d23] text-slate-400">No Centre</option>
-                                        {centres.map(c => (
-                                            <option key={c.id} value={c.id} className="bg-[#1a1d23] text-white">{c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <select
+                                    value={r.centreId || 'null'}
+                                    onChange={e => handleCentreChange(r.id, e)}
+                                    disabled={isPending}
+                                    aria-label="Assign to centre"
+                                    className={`text-xs border rounded-xl py-1.5 px-3.5 disabled:opacity-50 transition-all w-40 cursor-pointer outline-none font-bold ${r.centreId
+                                        ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
+                                        : 'bg-white/5 border-outline-variant/10 text-slate-400 hover:border-outline-variant/30'
+                                        }`}
+                                >
+                                    <option value="null" className="bg-[#1a1d23] text-slate-400">No Centre</option>
+                                    {centres.map(c => (
+                                        <option key={c.id} value={c.id} className="bg-[#1a1d23] text-white">{c.name}</option>
+                                    ))}
+                                </select>
                             </div>
-                        </Link>
+                        </div>
                     );
                 })}
             </div>

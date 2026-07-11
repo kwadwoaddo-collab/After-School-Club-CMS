@@ -124,18 +124,26 @@ export default async function AttendancePage(props: {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {[
-                    { label: 'Sessions', value: dayBookings.length, color: 'text-[#adc6ff]', icon: '📋' },
-                    { label: 'Students', value: totalStudents,       color: 'text-white',     icon: '👤' },
-                    { label: 'Present',  value: present,             color: 'text-emerald-400', icon: '✅' },
-                    { label: 'Absent',   value: absent,              color: 'text-red-400',   icon: '❌' },
-                    { label: 'Rate',     value: `${attendanceRate}%`, color: attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 50 ? 'text-amber-400' : 'text-red-400', icon: '📊' },
+                    { label: 'Sessions', value: dayBookings.length, color: 'text-[#adc6ff]', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-[#adc6ff]/10' },
+                    { label: 'Students', value: totalStudents, color: 'text-white', icon: <Users className="w-4 h-4" />, iconBg: 'bg-white/5' },
+                    { label: 'Present', value: present, color: 'text-emerald-400', icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-emerald-500/10' },
+                    { label: 'Absent', value: absent, color: 'text-red-400', icon: <Users className="w-4 h-4" />, iconBg: 'bg-red-500/10' },
+                    {
+                        label: 'Rate',
+                        value: `${attendanceRate}%`,
+                        color: attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 50 ? 'text-amber-400' : 'text-red-400',
+                        icon: <CheckCircle2 className="w-4 h-4" />,
+                        iconBg: attendanceRate >= 80 ? 'bg-emerald-500/10' : attendanceRate >= 50 ? 'bg-amber-500/10' : 'bg-red-500/10'
+                    },
                 ].map(stat => (
-                    <div key={stat.label} className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">{stat.icon}</span>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8c909f]">{stat.label}</p>
+                    <div key={stat.label} className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-8 h-8 rounded-lg ${stat.iconBg} flex items-center justify-center ${stat.color}`}>
+                                {stat.icon}
+                            </div>
                         </div>
                         <p className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#8c909f] mt-1">{stat.label}</p>
                     </div>
                 ))}
             </div>
