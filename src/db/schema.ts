@@ -258,7 +258,7 @@ export const childSubjects = pgTable('child_subjects', {
   subject: subjectEnum('subject').notNull(),
   customSubject: varchar('custom_subject', { length: 100 }),
 }, (table) => ({
-  uniqueSubject: unique().on(table.childId, table.subject),
+  uniqueSubject: unique().on(table.childId, table.subject, table.customSubject),
 }));
 
 
