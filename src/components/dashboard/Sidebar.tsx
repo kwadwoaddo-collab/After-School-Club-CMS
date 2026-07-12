@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-    LayoutDashboard,
+    LayoutGrid,
     School,
     Users,
     Settings,
@@ -68,7 +68,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     const allowedActions = ROLE_QUICK_ACTIONS[userRole] || [];
 
     const navItems = [
-        { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+        { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard' },
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },

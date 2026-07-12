@@ -249,7 +249,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings… (⌘K)"
-                                className="w-full h-10 pl-11 pr-16 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none hover:border-border/80"
+                                className="w-full h-10 pl-11 pr-16 py-0 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none hover:border-border/80"
                             />
                             {isSearching && (
                                 <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
