@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Building2, Palette, Clock, FileText, Wallet, Tag, ShieldCheck } from 'lucide-react';
+import { Building2, Palette, Clock, FileText, Wallet, Tag, ShieldCheck, GraduationCap, RefreshCw } from 'lucide-react';
 import OrganisationInfoForm from './OrganisationInfoForm';
 import CentreHoursTab from './CentreHoursTab';
 import BrandingForm from './BrandingForm';
@@ -10,6 +10,8 @@ import FinancePricingForm from './FinancePricingForm';
 import RegistrationTermsForm from './RegistrationTermsForm';
 import DiscountsForm from './DiscountsForm';
 import GdprExportButton from '@/app/dashboard/settings/GdprExportButton';
+import { rollSchoolYearsAction } from '@/features/students/roll-actions';
+import { toast } from 'react-hot-toast';
 
 interface SettingsTabsProps {
     org: {
@@ -34,6 +36,30 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
     const activeTabParam = searchParams.get('tab') as TabType | null;
 
     const [activeTab, setActiveTab] = useState<TabType>(activeTabParam || 'general');
+    const [isRolling, setIsRolling] = useState(false);
+
+    const handleRollSchoolYears = async () => {
+        const confirmRoll = window.confirm(
+            "Are you sure you want to roll the school years forward (+1) for all students in your organisation? " +
+            "This will increment nursery, reception, and numeric years by 1, and mark Year 13 students as 'Graduated'. " +
+            "This action cannot be undone."
+        );
+        if (!confirmRoll) return;
+
+        setIsRolling(true);
+        try {
+            const res = await rollSchoolYearsAction();
+            if (res.success) {
+                toast.success(res.message);
+            } else {
+                toast.error(res.message);
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to roll school years.');
+        } finally {
+            setIsRolling(false);
+        }
+    };
 
     const handleTabChange = (tab: TabType) => {
         setActiveTab(tab);
@@ -103,6 +129,33 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                                 </div>
                                 <p className="text-xs text-[#8c909f]">Export all stored records for GDPR portability requests.</p>
                                 <GdprExportButton />
+                            </div>
+
+                            <div className="pt-6 border-t border-white/5 space-y-4">
+                                <div className="flex items-center gap-2 text-white">
+                                    <GraduationCap className="w-5 h-5 text-[#adc6ff]" />
+                                    <h3 className="font-bold text-sm uppercase tracking-wider">Academic Year Rollover</h3>
+                                </div>
+                                <p className="text-xs text-[#8c909f] leading-relaxed">
+                                    Increment the school year for all active students in your organisation by +1 (e.g. Year 1 ➔ Year 2, Nursery ➔ Reception, Year 13 ➔ Graduated). This happens automatically on September 1st, but you can manually trigger it here.
+                                </p>
+                                <button
+                                    onClick={handleRollSchoolYears}
+                                    disabled={isRolling}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
+                                >
+                                    {isRolling ? (
+                                        <>
+                                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Rolling Years...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <GraduationCap className="w-3.5 h-3.5" />
+                                            <span>Roll School Years (+1)</span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     )}
