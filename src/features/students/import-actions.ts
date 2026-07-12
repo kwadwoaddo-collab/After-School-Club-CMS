@@ -80,20 +80,25 @@ export async function importStudentsAction(
       // Parse Date of Birth if provided
       let dob: Date | null = null;
       if (row.studentDoB) {
-        const parsedDate = new Date(row.studentDoB);
-        if (!isNaN(parsedDate.getTime())) {
-          dob = parsedDate;
+        const cleanedDob = row.studentDoB.trim();
+        
+        // Prioritize matching DD/MM/YYYY or DD-MM-YYYY (British format)
+        const brDateRegex = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
+        const match = cleanedDob.match(brDateRegex);
+        
+        if (match) {
+          const day = parseInt(match[1], 10);
+          const month = parseInt(match[2], 10) - 1;
+          const year = parseInt(match[3], 10);
+          const testDate = new Date(year, month, day);
+          if (!isNaN(testDate.getTime())) {
+            dob = testDate;
+          }
         } else {
-          // Try DD/MM/YYYY format parsing
-          const parts = row.studentDoB.split(/[-/]/);
-          if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const year = parseInt(parts[2], 10);
-            const testDate = new Date(year, month, day);
-            if (!isNaN(testDate.getTime())) {
-              dob = testDate;
-            }
+          // Fallback to ISO format (YYYY-MM-DD) or other standard date string format
+          const parsedDate = new Date(cleanedDob);
+          if (!isNaN(parsedDate.getTime())) {
+            dob = parsedDate;
           }
         }
       }

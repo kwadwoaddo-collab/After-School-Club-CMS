@@ -66,7 +66,7 @@ const REQUIRED_FIELDS = {
 };
 
 const OPTIONAL_FIELDS = {
-  studentDoB: 'Student Date of Birth (YYYY-MM-DD)',
+  studentDoB: 'Student Date of Birth (DD/MM/YYYY)',
   studentNotes: 'Student Notes / Allergies',
   parentPhone: 'Parent Phone Number',
 };
@@ -87,12 +87,12 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
   // Download simple sample CSV
   const handleDownloadTemplate = () => {
     const headerRow = [
-      'Student First Name', 'Student Last Name', 'Student Date of Birth (YYYY-MM-DD)', 'Student School Year', 'Student Notes',
+      'Student First Name', 'Student Last Name', 'Student Date of Birth (DD/MM/YYYY)', 'Student School Year', 'Student Notes',
       'Parent First Name', 'Parent Last Name', 'Parent Email', 'Parent Phone'
     ];
     const sampleRows = [
-      ['John', 'Doe', '2016-04-12', 'Year 3', 'Peanut allergy', 'Jane', 'Doe', 'jane.doe@example.com', '07700900077'],
-      ['Alice', 'Smith', '2018-09-05', 'Year 1', 'Needs visual aids', 'Bob', 'Smith', 'bob.smith@example.com', '07700900088']
+      ['John', 'Doe', '12/04/2016', 'Year 3', 'Peanut allergy', 'Jane', 'Doe', 'jane.doe@example.com', '07700900077'],
+      ['Alice', 'Smith', '05/09/2018', 'Year 1', 'Needs visual aids', 'Bob', 'Smith', 'bob.smith@example.com', '07700900088']
     ];
     
     const csvString = [
