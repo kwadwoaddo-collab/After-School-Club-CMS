@@ -103,11 +103,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 `}
             >
                 {/* Header / Logo area */}
-                <div className={`relative transition-all duration-300 flex flex-col flex-1 ${collapsed ? 'p-4' : 'p-8'}`}>
+                <div className={`relative transition-all duration-300 flex flex-col flex-1 ${collapsed ? 'p-4' : 'p-5'}`}>
                     {!collapsed && (
                         <button
                             suppressHydrationWarning
-                            className="absolute top-8 right-8 md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="absolute top-5 right-5 md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
                             aria-label="Close menu"
                         >
@@ -116,7 +116,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     )}
 
                     {/* Logo */}
-                    <div className={`flex items-center gap-3.5 mb-8 overflow-hidden px-3 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
+                    <div className={`flex items-center gap-3 mb-6 overflow-hidden px-2 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
                         <div
                             title={collapsed ? orgName : undefined}
                             className={`
@@ -130,9 +130,6 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             <div className="flex flex-col min-w-0">
                                 <span className="text-sm font-extrabold tracking-tight truncate leading-tight text-foreground">
                                     {orgName}
-                                </span>
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-                                    Workspace
                                 </span>
                             </div>
                         )}

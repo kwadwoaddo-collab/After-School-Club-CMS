@@ -457,7 +457,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
             {/* ── Collapsible Sticky Welcome Banner Hero ───────────────────────── */}
             <DashboardHero firstName={firstName} orgName={org.name}>
-                <Suspense fallback={<div className="w-auto min-w-[140px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" aria-label="Loading date filter" />}>
+                <Suspense fallback={<div role="status" className="w-auto min-w-[140px] h-[44px] bg-secondary rounded-xl animate-pulse" aria-label="Loading date filter" />}>
                     <DashboardFilter 
                         currentView={currentView}
                         currentDateIso={targetDate.toISOString()}
@@ -651,7 +651,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         <p className="text-xs text-muted-foreground font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary transition-colors" />
                                             </Link>
                                         ))}
                                     </div>
@@ -734,7 +734,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                             </Link>
                                         ))}
                                     </div>

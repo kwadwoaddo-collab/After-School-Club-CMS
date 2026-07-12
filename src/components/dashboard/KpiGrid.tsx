@@ -134,8 +134,8 @@ export function KpiGrid({
 
   const glowClasses: Record<string, string> = {
     'text-primary': 'glow-hover-primary',
-    'text-violet-600 dark:text-violet-400': 'glow-hover-violet',
-    'text-emerald-600 dark:text-emerald-400': 'glow-hover-success',
+    'text-violet-600 dark:text-violet-400': 'glow-hover-primary',
+    'text-emerald-600 dark:text-emerald-400': 'glow-hover-tertiary',
     'text-amber-700 dark:text-amber-400': 'glow-hover-warning'
   };
 
@@ -179,13 +179,13 @@ export function KpiGrid({
                 <stat.icon className="w-4 h-4" />
               </div>
 
-              {stat.trend ? (
+              {stat.trend && (stat.value ?? 0) > 0 ? (
                 <TrendBadge trend={stat.trend} />
               ) : null}
             </div>
 
             {/* Label */}
-            <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mb-0.5">
+            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-0.5">
               {stat.label}
             </p>
 
@@ -196,7 +196,7 @@ export function KpiGrid({
           </div>
 
           {/* Footer */}
-          <div className="relative z-10 pt-2 border-t border-outline-variant/10 text-[10px] text-muted-foreground font-medium">
+          <div className="relative z-10 pt-2 border-t border-border/30 text-[10px] text-muted-foreground font-medium">
             {stat.subtext}
           </div>
         </div>
