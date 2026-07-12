@@ -234,7 +234,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 /* Search Bar */
                 !hideSearch && (
                     <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
-                        <form onSubmit={handleSearch} className="relative group">
+                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                             <input
                                 suppressHydrationWarning
@@ -249,7 +249,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings… (⌘K)"
-                                className="w-full pl-11 pr-16 py-2.5 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none hover:border-border/80"
+                                className="w-full h-10 pl-11 pr-16 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none hover:border-border/80"
                             />
                             {isSearching && (
                                 <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
@@ -398,14 +398,14 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-3 pl-2 rounded-xl hover:bg-secondary pr-2 py-1.5 transition-all duration-200"
+                        className="flex items-center gap-3.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-all duration-200 mr-2"
                         aria-label="User menu"
                     >
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-foreground leading-none">
+                        <div className="text-right hidden sm:block min-w-0">
+                            <p className="text-sm font-bold text-foreground leading-tight truncate">
                                 {userName || 'Admin User'}
                             </p>
-                            <p className="text-xs font-medium text-muted-foreground mt-1">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
+                            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                         </div>
                         <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary font-bold flex-shrink-0 text-sm shadow-[0_0_12px_hsl(var(--primary)/0.12)]">
                             {userInitial || 'A'}

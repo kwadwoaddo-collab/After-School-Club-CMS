@@ -96,40 +96,40 @@ export async function TodaysSnapshot({
       label: 'Confirmed',
       value: snapshot.confirmed,
       icon: CalendarCheck,
-      color: 'text-emerald-400',
-      iconBg: 'bg-emerald-500/10',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
     },
     {
       label: 'Pending',
       value: snapshot.pending,
       icon: Clock,
-      color: 'text-amber-400',
-      iconBg: 'bg-amber-500/10',
+      color: 'text-amber-700 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
     },
     {
       label: 'Checked In',
       value: snapshot.checkedIn,
       icon: UserCheck,
-      color: 'text-secondary',
-      iconBg: 'bg-secondary/10',
+      color: 'text-indigo-600 dark:text-indigo-400',
+      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
     },
     {
       label: 'Not Arrived',
       value: snapshot.notArrived,
       icon: UserX,
       // Highlight in amber if there are unresolved confirmed bookings
-      color: snapshot.notArrived > 0 ? 'text-amber-400' : 'text-on-surface-variant',
-      iconBg: snapshot.notArrived > 0 ? 'bg-amber-500/10' : 'bg-surface-container-low',
+      color: snapshot.notArrived > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
+      iconBg: snapshot.notArrived > 0 ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'bg-secondary',
     },
   ];
 
   return (
     <div className="glassmorphic-card rounded-2xl overflow-hidden">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.04] bg-white/[0.01]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-          <span className="text-xs font-black uppercase tracking-[0.15em] text-on-surface-variant">
+          <span className="text-xs font-black uppercase tracking-[0.15em] text-muted-foreground">
             Today&apos;s Snapshot
           </span>
         </div>
@@ -137,7 +137,7 @@ export async function TodaysSnapshot({
         <div className="flex items-center gap-2">
           {attendanceRate !== null ? (
             <>
-              <div className="w-24 h-1.5 bg-surface-container-low rounded-full overflow-hidden">
+              <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full transition-all duration-1000',
@@ -146,12 +146,12 @@ export async function TodaysSnapshot({
                   style={{ width: `${attendanceRate}%` }}
                 />
               </div>
-              <span className="text-[10px] font-bold text-on-surface-variant/60">
+              <span className="text-[10px] font-bold text-muted-foreground/80">
                 {attendanceRate}% attended
               </span>
             </>
           ) : (
-            <span className="text-[10px] font-bold text-on-surface-variant/40">No sessions yet</span>
+            <span className="text-[10px] font-bold text-muted-foreground/60">No sessions yet</span>
           )}
         </div>
       </div>
@@ -159,14 +159,14 @@ export async function TodaysSnapshot({
       {/* Metrics grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
         {items.map((item, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-white/[0.01] rounded-xl border border-white/[0.03] hover:bg-white/[0.03] transition-[background-color] duration-150 cursor-default">
+          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border hover:bg-secondary/40 transition-[background-color] duration-150 cursor-default">
             <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
               <item.icon className={cn('w-4 h-4', item.color)} />
             </div>
             <span className={cn('text-2xl font-black tabular-nums', item.color)}>
               {item.value}
             </span>
-            <span className="text-[10px] font-semibold text-on-surface-variant/60 uppercase tracking-wider leading-tight text-center">
+            <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider leading-tight text-center">
               {item.label}
             </span>
           </div>

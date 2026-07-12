@@ -93,7 +93,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
             key={qf.id}
             suppressHydrationWarning
             onClick={() => handleQuickFilter(qf.id)}
-            className="px-3 py-1 text-[10px] font-bold rounded-lg border border-outline-variant/20 text-on-surface-variant hover:text-white hover:bg-surface-container-high hover:border-primary/30 transition-all"
+            className="px-3 py-1 text-[10px] font-bold rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-secondary hover:border-primary/30 transition-all"
           >
             {qf.label}
           </button>
@@ -103,14 +103,14 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
       {/* View toggle + date nav */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         {/* View Toggle */}
-        <div className="flex items-center p-1 rounded-xl bg-surface-container-low border border-outline-variant/10">
+        <div className="flex items-center p-1 rounded-xl bg-secondary border border-border">
           <button
             suppressHydrationWarning
             onClick={() => handleViewChange('weekly')}
             className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
               currentView === 'weekly'
-                ? 'bg-surface-container-high text-white shadow-sm border border-outline-variant/50'
-                : 'text-on-surface-variant hover:text-white'
+                ? 'bg-card text-foreground shadow-sm border border-border'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Weekly
@@ -120,8 +120,8 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
             onClick={() => handleViewChange('monthly')}
             className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
               currentView === 'monthly'
-                ? 'bg-surface-container-high text-white shadow-sm border border-outline-variant/50'
-                : 'text-on-surface-variant hover:text-white'
+                ? 'bg-card text-foreground shadow-sm border border-border'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Monthly
@@ -130,25 +130,25 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
 
         {/* Date Navigation */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center p-1 rounded-xl bg-surface-container-low border border-outline-variant/10">
+          <div className="flex items-center p-1 rounded-xl bg-secondary border border-border">
             <button
               suppressHydrationWarning
               onClick={() => handleNavigate('prev')}
-              className="p-1.5 text-on-surface-variant hover:text-white hover:bg-surface-bright rounded-lg transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card rounded-lg transition-colors"
               title="Previous"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2 px-3">
               <Calendar className="w-3.5 h-3.5 text-primary" />
-              <span className="text-sm font-bold text-white min-w-[120px] text-center">
+              <span className="text-sm font-bold text-foreground min-w-[120px] text-center">
                 {dateLabel}
               </span>
             </div>
             <button
               suppressHydrationWarning
               onClick={() => handleNavigate('next')}
-              className="p-1.5 text-on-surface-variant hover:text-white hover:bg-surface-bright rounded-lg transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card rounded-lg transition-colors"
               title="Next"
             >
               <ChevronRight className="w-4 h-4" />
@@ -158,7 +158,7 @@ export function DashboardFilter({ currentView, currentDateIso, dateLabel }: Dash
           <button
             suppressHydrationWarning
             onClick={goToToday}
-            className="text-xs font-bold text-on-surface-variant hover:text-white underline-offset-4 hover:underline transition-colors"
+            className="text-xs font-bold text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors"
           >
             Today
           </button>

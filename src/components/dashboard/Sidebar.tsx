@@ -116,7 +116,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     )}
 
                     {/* Logo */}
-                    <div className={`flex items-center gap-3 mb-8 overflow-hidden ${collapsed ? 'justify-center mt-0' : 'mt-2'}`}>
+                    <div className={`flex items-center gap-3 mb-8 overflow-hidden px-3 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
                         <div className={`
                             w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
                             ring-1 ring-border shadow-sm
@@ -354,7 +354,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     title={collapsed ? item.name : undefined}
                                 >
                                     <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-200 ${
-                                        isActive ? 'scale-105' : 'group-hover:scale-102 group-hover:text-primary'
+                                        isActive ? 'scale-105 text-primary' : 'text-muted-foreground group-hover:scale-102 group-hover:text-primary'
                                     }`} />
                                     {!collapsed && (
                                         <span className="font-semibold text-sm">{item.name}</span>

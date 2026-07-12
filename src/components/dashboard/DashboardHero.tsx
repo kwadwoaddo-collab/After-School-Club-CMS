@@ -25,8 +25,8 @@ export default function DashboardHero({ firstName, children }: DashboardHeroProp
             className={cn(
                 "transition-all duration-300 ease-in-out",
                 isScrolled
-                    ? "sticky top-16 sm:top-20 z-30 bg-[#0e0e0f]/90 backdrop-blur-xl border-b border-outline-variant/10 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.4)] mb-6"
-                    : "relative overflow-hidden rounded-[32px] bg-gradient-to-r from-surface-container-high via-surface-container-high to-primary/5 p-8 border border-outline-variant/10 shadow-xl mb-2"
+                    ? "sticky top-16 sm:top-20 z-30 bg-background/90 backdrop-blur-xl border-b border-border -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 shadow-sm mb-6"
+                    : "relative overflow-hidden rounded-[32px] bg-gradient-to-r from-card via-card to-primary/5 p-8 border border-border shadow-md mb-2"
             )}
         >
             {/* Backdrop light aura - visible only when expanded */}
@@ -48,14 +48,14 @@ export default function DashboardHero({ firstName, children }: DashboardHeroProp
                     )}
                     <h1
                         className={cn(
-                            "font-extrabold text-white tracking-tight transition-all duration-300",
+                            "font-extrabold text-foreground tracking-tight transition-all duration-300",
                             isScrolled ? "text-lg md:text-xl" : "text-3xl md:text-4xl headline-lg"
                         )}
                     >
                         Overview
                     </h1>
                     {!isScrolled && (
-                        <p className="text-on-surface-variant text-sm mt-1 max-w-xl font-medium animate-in fade-in duration-300">
+                        <p className="text-muted-foreground text-sm mt-1 max-w-xl font-medium animate-in fade-in duration-300">
                             Here is a breakdown of your centres, enrolments, and booking activity for today.
                         </p>
                     )}
