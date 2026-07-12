@@ -35,12 +35,12 @@ export function SegmentedTabControl({ defaultTab, searchParams }: SegmentedTabCo
 
     return (
         <div className="flex justify-center my-6 relative z-10">
-            <div className="relative inline-flex p-1 bg-secondary/80 dark:bg-[#19191b]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] shadow-lg">
-                {/* Sliding active pill — moves INSTANTLY on click */}
+            <div className="relative inline-flex p-1 bg-secondary border border-border rounded-2xl shadow-sm">
+                {/* Sliding active pill */}
                 <div
                     aria-hidden="true"
                     className={cn(
-                        'absolute top-1 bottom-1 rounded-xl bg-white/10 shadow-sm pointer-events-none',
+                        'absolute top-1 bottom-1 rounded-xl bg-card border border-border shadow-sm pointer-events-none',
                         'transition-[left,right] duration-200 ease-out',
                         optimisticTab === 'overview'
                             ? 'left-1 right-[calc(50%+2px)]'
@@ -53,7 +53,7 @@ export function SegmentedTabControl({ defaultTab, searchParams }: SegmentedTabCo
                         'relative z-10 px-5 py-2 rounded-xl text-xs font-bold cursor-pointer select-none',
                         'transition-[color,opacity] duration-150',
                         'active:scale-95 active:opacity-75',
-                        optimisticTab === 'overview' ? 'text-white' : 'text-slate-400 hover:text-white'
+                        optimisticTab === 'overview' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     )}
                     aria-pressed={optimisticTab === 'overview'}
                 >
@@ -65,7 +65,7 @@ export function SegmentedTabControl({ defaultTab, searchParams }: SegmentedTabCo
                         'relative z-10 px-5 py-2 rounded-xl text-xs font-bold cursor-pointer select-none',
                         'transition-[color,opacity] duration-150',
                         'active:scale-95 active:opacity-75',
-                        optimisticTab === 'activity' ? 'text-white' : 'text-slate-400 hover:text-white'
+                        optimisticTab === 'activity' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     )}
                     aria-pressed={optimisticTab === 'activity'}
                 >
