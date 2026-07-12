@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users, staffInvites, organisations } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, or, lt, isNotNull } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
 
@@ -46,6 +46,17 @@ export async function POST(request: NextRequest) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minute expiry
+
+        // Clean up any used or expired invite/login records for this email address first
+        await db.delete(staffInvites).where(
+            and(
+                eq(staffInvites.email, email),
+                or(
+                    isNotNull(staffInvites.usedAt),
+                    lt(staffInvites.expiresAt, new Date())
+                )
+            )
+        );
 
         // Store as a staff invite (reusing the table)
         await db.insert(staffInvites).values({

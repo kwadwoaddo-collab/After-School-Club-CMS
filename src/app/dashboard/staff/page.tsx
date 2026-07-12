@@ -42,6 +42,10 @@ export default async function StaffPage(props: {
     const invitations = await db.select().from(staffInvites).where(eq(staffInvites.organisationId, org.id)).orderBy(desc(staffInvites.createdAt));
 
     const filteredInvitations = invitations.filter(invite => {
+        // Filter out magic login links (lifespan < 1 hour)
+        const lifespan = invite.expiresAt.getTime() - invite.createdAt.getTime();
+        if (lifespan < 60 * 60 * 1000) return false;
+
         if (activeCentreId === 'all') return true;
         const member = staffMembers.find(m => m.email.toLowerCase() === invite.email.toLowerCase());
         if (!member) return false;
@@ -77,7 +81,12 @@ export default async function StaffPage(props: {
         return GraduationCap;
     };
 
-    const activeInviteCount = invitations.filter(inv => !inv.usedAt && new Date(inv.expiresAt) > new Date()).length;
+    const activeInviteCount = invitations.filter(inv => {
+        // Exclude magic login links (lifespan < 1 hour)
+        const lifespan = inv.expiresAt.getTime() - inv.createdAt.getTime();
+        if (lifespan < 60 * 60 * 1000) return false;
+        return !inv.usedAt && new Date(inv.expiresAt) > new Date();
+    }).length;
 
     const roleBreakdown = {
         ORG_OWNER:  filteredStaffMembers.filter(m => m.role === 'ORG_OWNER').length,
