@@ -231,8 +231,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 /* Search Bar */
                 !hideSearch && (
                     <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
-                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-secondary/40 border border-border rounded-xl transition-all hover:border-border/80 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30">
+                            <Search className="ml-3.5 w-4 h-4 text-muted-foreground flex-shrink-0 transition-colors group-focus-within:text-primary pointer-events-none" />
                             <input
                                 suppressHydrationWarning
                                 ref={searchInputRef}
@@ -246,13 +246,13 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings…"
-                                className="w-full h-10 pl-12 pr-16 py-0 bg-secondary/40 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none hover:border-border/80"
+                                className="flex-1 h-full bg-transparent px-3 py-0 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
                             />
                             {isSearching && (
-                                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+                                <Loader2 className="mr-4 w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
                             )}
                             {!searchQuery && !isSearching && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-40">
+                                <div className="mr-3 flex items-center gap-1 pointer-events-none opacity-40 flex-shrink-0">
                                     <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-border text-muted-foreground font-mono">⌘</span>
                                     <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-border text-muted-foreground font-mono">K</span>
                                 </div>
