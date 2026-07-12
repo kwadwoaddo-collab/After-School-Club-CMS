@@ -103,11 +103,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 `}
             >
                 {/* Header / Logo area */}
-                <div className="p-6 relative">
+                <div className={`relative transition-all duration-300 ${collapsed ? 'p-4' : 'p-8'}`}>
                     {!collapsed && (
                         <button
                             suppressHydrationWarning
-                            className="absolute top-6 right-6 md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="absolute top-8 right-8 md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
                             aria-label="Close menu"
                         >
@@ -116,7 +116,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     )}
 
                     {/* Logo */}
-                    <div className={`flex items-center gap-3 mb-8 overflow-hidden px-3 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
+                    <div className={`flex items-center gap-3.5 mb-8 overflow-hidden px-3 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
                         <div className={`
                             w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
                             ring-1 ring-border shadow-sm
@@ -343,8 +343,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         }
                                     }}
                                     className={`
-                                        flex items-center gap-3 px-3 py-2.5 rounded-xl
-                                        transition-all duration-200 group relative overflow-hidden
+                                        flex items-center gap-4 px-4 py-3 rounded-full
+                                        transition-all duration-300 ease-out group relative overflow-hidden
                                         ${isActive
                                             ? 'text-primary bg-primary/10 font-bold'
                                             : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
@@ -353,11 +353,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     `}
                                     title={collapsed ? item.name : undefined}
                                 >
-                                    <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-200 ${
+                                    <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-350 ease-out ${
                                         isActive ? 'scale-105 text-primary' : 'text-muted-foreground group-hover:scale-102 group-hover:text-primary'
                                     }`} />
                                     {!collapsed && (
-                                        <span className="font-semibold text-sm">{item.name}</span>
+                                        <span className="font-semibold text-sm tracking-tight">{item.name}</span>
                                     )}
                                 </Link>
                             );
