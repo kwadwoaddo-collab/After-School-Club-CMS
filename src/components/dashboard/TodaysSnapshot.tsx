@@ -128,7 +128,7 @@ export async function TodaysSnapshot({
       {/* Header bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+          <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
           <span className="text-xs font-black uppercase tracking-[0.15em] text-muted-foreground">
             Today&apos;s Snapshot
           </span>

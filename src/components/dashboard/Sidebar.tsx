@@ -103,7 +103,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 `}
             >
                 {/* Header / Logo area */}
-                <div className={`relative transition-all duration-300 flex-1 overflow-y-auto ${collapsed ? 'p-4' : 'p-8'}`}>
+                <div className={`relative transition-all duration-300 flex flex-col flex-1 ${collapsed ? 'p-4' : 'p-8'}`}>
                     {!collapsed && (
                         <button
                             suppressHydrationWarning
@@ -173,6 +173,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     )}
 
                     {/* Navigation */}
+                    <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
                     <nav className="space-y-0.5">
                         {navItems.map((item) => {
                             const isCentresPageActive = pathname.startsWith('/dashboard/centres');
@@ -365,10 +366,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             );
                         })}
                     </nav>
+                    </div>
                 </div>
-
-
-
                 {/* Collapse Toggle Button */}
                 <button
                     suppressHydrationWarning

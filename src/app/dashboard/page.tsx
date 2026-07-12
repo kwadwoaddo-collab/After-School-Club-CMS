@@ -35,6 +35,7 @@ import { TodaysSnapshot } from '@/components/dashboard/TodaysSnapshot';
 import { AttendanceHeatmap } from '@/components/dashboard/AttendanceHeatmap';
 import DashboardHero from '@/components/dashboard/DashboardHero';
 import { SegmentedTabControl } from '@/components/dashboard/SegmentedTabControl';
+import { CopyableLink } from '@/components/dashboard/CopyableLink';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -531,11 +532,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             <div className="grid grid-cols-2 gap-2 sm:gap-4 relative z-10">
                                 <div className="p-3 bg-error/5 rounded-xl border border-error/10 flex flex-col justify-center hover:bg-error/10 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-error">{pipelineCounts.new}</p>
-                                    <p className="text-[10px] sm:text-xs text-error opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
+                                    <p className="text-[10px] sm:text-xs text-error/80 font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
                                 </div>
                                 <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/20 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
-                                    <p className="text-[10px] sm:text-xs text-tertiary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
+                                    <p className="text-[10px] sm:text-xs text-tertiary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
                                 </div>
                             </div>
 
@@ -576,11 +577,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                 </div>
                                 <div className="p-3 bg-secondary/5 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/10 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                    <p className="text-[10px] sm:text-xs text-secondary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                                 </div>
                                 <div className="p-3 bg-secondary/10 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/20 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-secondary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                    <p className="text-[10px] sm:text-xs text-secondary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                                 </div>
                             </div>
 
@@ -593,7 +594,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                             <Link
                                                 key={b.id}
                                                 href={`/dashboard/bookings/${b.id}`}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low hover:bg-surface-bright border border-outline-variant/10 transition-[background-color,transform,opacity] duration-150 active:scale-[0.99] active:opacity-80 cursor-pointer group"
+                                                className="flex items-center justify-between p-4 rounded-xl bg-card hover:bg-secondary/60 border border-border transition-[background-color,transform,opacity] duration-150 active:scale-[0.99] active:opacity-80 cursor-pointer group"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <AttendanceRadial 
@@ -627,10 +628,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
                                                                         <AlertTriangle className="w-3 h-3 text-error" />
                                                                     </div>
-                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                        <div className="font-bold text-error mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                        <div className="font-bold text-error mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
                                                                         {b.medicalNotesContent}
-                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -639,15 +640,15 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
                                                                         <Shield className="w-3 h-3 text-primary" />
                                                                     </div>
-                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-on-surface text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                        <div className="font-bold text-primary mb-1 border-b border-outline-variant/50 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                                        <div className="font-bold text-primary mb-1 border-b border-border pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
                                                                         {b.safeguardingNotesContent}
-                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
                                                                     </div>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <p className="text-xs text-on-surface-variant font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
+                                                        <p className="text-xs text-muted-foreground font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
                                                     </div>
                                                 </div>
                                                 <ChevronRight className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
@@ -655,7 +656,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                    <div className="flex flex-col items-center gap-2 py-8 text-center">
+                                        <CalendarCheck className="w-8 h-8 text-muted-foreground/25" />
+                                        <p className="text-sm text-muted-foreground italic">No bookings this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                    </div>
                                 )}
                             </div>
 
@@ -684,17 +688,17 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             </div>
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-secondary/20 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/30 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-foreground">{totalRegistrations}</p>
-                                    <p className="text-[10px] sm:text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                                <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-primary">{totalRegistrations}</p>
+                                    <p className="text-[10px] sm:text-xs text-primary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                                 </div>
                                 <div className="p-3 bg-primary/5 rounded-xl border border-border flex flex-col justify-center hover:bg-primary/10 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                    <p className="text-[10px] sm:text-xs text-primary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                                 </div>
                                 <div className="p-3 bg-primary/10 rounded-xl border border-border flex flex-col justify-center hover:bg-primary/20 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary opacity-80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                    <p className="text-[10px] sm:text-xs text-primary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                                 </div>
                             </div>
 
@@ -735,18 +739,19 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground italic text-center py-6">No activity this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                    <div className="flex flex-col items-center gap-2 py-8 text-center">
+                                        <ClipboardList className="w-8 h-8 text-muted-foreground/25" />
+                                        <p className="text-sm text-muted-foreground italic">No registrations this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                    </div>
                                 )}
                             </div>
 
                             <div className="flex flex-col gap-2 mt-2 relative z-10">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between mb-1">
                                     <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
                                     <p className="text-[10px] text-muted-foreground">{registrationsActivePeriod} new {currentView === 'weekly' ? 'this week' : 'this month'}</p>
                                 </div>
-                                <div className="p-3 rounded-xl bg-secondary border border-border">
-                                    <p className="text-xs text-foreground font-mono truncate">{registrationLink}</p>
-                                </div>
+                                <CopyableLink link={registrationLink} />
                             </div>
 
                             <Link

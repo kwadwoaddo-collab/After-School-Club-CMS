@@ -43,7 +43,7 @@ export default function DashboardHero({ firstName, orgName, children }: Dashboar
             >
                 <div className={cn("transition-all duration-300", isScrolled ? "scale-95 origin-left" : "")}>
                     {!isScrolled && orgName && (
-                        <span className="text-xs font-bold text-primary animated-eyebrow uppercase tracking-[0.2em] mb-1.5 block animate-in slide-in-from-top-1 duration-300">
+                        <span className="text-xs font-semibold text-primary mb-1.5 block animate-in slide-in-from-top-1 duration-300">
                             {orgName}
                         </span>
                     )}
@@ -56,8 +56,8 @@ export default function DashboardHero({ firstName, orgName, children }: Dashboar
                         Overview
                     </h1>
                     {!isScrolled && (
-                        <p className="text-muted-foreground text-sm mt-1 max-w-xl font-medium animate-in fade-in duration-300">
-                            {firstName ? `Good to have you back, ${firstName}. ` : ''}Here is a breakdown of your centres, enrolments, and booking activity for today.
+                        <p className="text-muted-foreground text-sm mt-1.5 max-w-xl animate-in fade-in duration-300">
+                            Centres, enrolments, and booking activity — all in one place.
                         </p>
                     )}
                 </div>
