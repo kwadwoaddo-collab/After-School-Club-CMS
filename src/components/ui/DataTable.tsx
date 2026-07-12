@@ -121,12 +121,12 @@ export default function DataTable<T>({
           <table className={cn('w-full', tableClassName)}>
             {caption && <caption className="sr-only">{caption}</caption>}
             <thead>
-              <tr className="border-b border-outline-variant/10 bg-white/5">
+              <tr className="border-b border-border bg-secondary/30">
                 {columns.map((col) => (
                   <th
                     key={col.key}
                     className={cn(
-                      'px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider',
+                      'px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider',
                       col.headerAlign === 'right' ? 'text-right' : col.headerAlign === 'center' ? 'text-center' : 'text-left',
                       col.headerClassName
                     )}
@@ -136,7 +136,7 @@ export default function DataTable<T>({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant/5">
+            <tbody className="divide-y divide-border/40">
               {Array.from({ length: loadingRows }).map((_, i) => (
                 <SkeletonRow key={i} columnCount={columns.length} />
               ))}
@@ -152,7 +152,7 @@ export default function DataTable<T>({
     return (
       <div
         className={cn(
-          'glassmorphic-card rounded-[32px] overflow-hidden',
+          'glassmorphic-card rounded-[32px] overflow-hidden bg-card border border-border shadow-sm',
           className
         )}
       >
@@ -165,7 +165,7 @@ export default function DataTable<T>({
   return (
     <div
       className={cn(
-        'glassmorphic-card rounded-[32px] overflow-hidden data-grid-optimized',
+        'glassmorphic-card rounded-[32px] overflow-hidden data-grid-optimized border border-border shadow-sm',
         className
       )}
     >
@@ -173,12 +173,12 @@ export default function DataTable<T>({
         <table className={cn('w-full', tableClassName)}>
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
-            <tr className="border-b border-outline-variant/10">
+            <tr className="border-b border-border">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    'sticky top-0 z-10 bg-surface-container border-b border-outline-variant/10 px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider select-none',
+                    'sticky top-0 z-10 bg-card border-b border-border px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider select-none',
                     col.headerAlign === 'right' ? 'text-right' : col.headerAlign === 'center' ? 'text-center' : 'text-left',
                     col.headerClassName
                   )}
@@ -188,7 +188,7 @@ export default function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant/5">
+          <tbody className="divide-y divide-border/40 bg-card/45">
             {data.map((row, index) => {
               const key = rowKey(row);
               const rowCls =
@@ -200,7 +200,7 @@ export default function DataTable<T>({
                 <tr
                   key={key}
                   className={cn(
-                    'hover:bg-white/5 transition-colors',
+                    'hover:bg-secondary/40 transition-colors',
                     onRowClick && 'cursor-pointer',
                     rowCls
                   )}
@@ -209,7 +209,7 @@ export default function DataTable<T>({
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={cn('px-6 py-4', col.cellClassName)}
+                      className={cn('px-6 py-4 text-foreground/90 font-medium text-sm', col.cellClassName)}
                     >
                       {col.render(row, index)}
                     </td>

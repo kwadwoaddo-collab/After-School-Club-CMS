@@ -629,4 +629,48 @@ select:user-valid {
   }
 }
 
+/* ── Global Theme-Aware UI Overrides for Light Mode Compatibility ── */
+body:not(.landing-page-active) :is(.text-white, .text-slate-100, .text-zinc-100):not(
+  button,
+  button *,
+  a[class*="bg-primary"],
+  a[class*="bg-primary"] *,
+  a[class*="bg-blue"],
+  a[class*="bg-blue"] *,
+  [class*="bg-primary"] *,
+  [class*="bg-blue"] *,
+  [class*="bg-emerald"] *,
+  [class*="bg-red"] *,
+  [class*="bg-destructive"] *,
+  [class*="text-primary-foreground"],
+  .keep-white,
+  .keep-white *
+) {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Soft dynamic borders, shadows and overlays to replace harsh dark outlines */
+body:not(.landing-page-active) :is(.border-white\/10) {
+  border-color: hsl(var(--border)) !important;
+}
+body:not(.landing-page-active) :is(.border-white\/5) {
+  border-color: hsl(var(--border) / 0.5) !important;
+}
+body:not(.landing-page-active) :is(.bg-white\/5) {
+  background-color: hsl(var(--muted) / 0.5) !important;
+}
+body:not(.landing-page-active) :is(.bg-white\/3) {
+  background-color: hsl(var(--muted) / 0.3) !important;
+}
+body:not(.landing-page-active) :is(.bg-white\/10) {
+  background-color: hsl(var(--muted) / 0.8) !important;
+}
+body:not(.landing-page-active) :is(.hover\:bg-white\/5):hover {
+  background-color: hsl(var(--muted) / 0.5) !important;
+}
+body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
+  background-color: hsl(var(--muted) / 0.8) !important;
+}
+
+
 

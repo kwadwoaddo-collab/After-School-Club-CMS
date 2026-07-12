@@ -9,11 +9,15 @@ export default function Home() {
     const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
     useEffect(() => {
+        document.body.classList.add('landing-page-active');
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
         window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            document.body.classList.remove('landing-page-active');
+        };
     }, []);
 
     const toggleFaq = (index: number) => {
