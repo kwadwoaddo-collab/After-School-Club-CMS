@@ -55,9 +55,9 @@ function TrendBadge({ trend }: { trend: Trend }) {
     <div
       className={cn(
         'flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide border',
-        isPositive && 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        isNegative && 'bg-red-500/10 text-red-400 border-red-500/20',
-        !isPositive && !isNegative && 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/20'
+        isPositive && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+        isNegative && 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+        !isPositive && !isNegative && 'bg-secondary text-muted-foreground border-border'
       )}
     >
       {isPositive && <ArrowUpRight className="w-3 h-3" />}
@@ -100,43 +100,43 @@ export function KpiGrid({
       value: bookingsActive,
       subtext: `${formatNumber(bookingsTotal)} total bookings`,
       icon: CalendarCheck,
-      colorClass: 'text-secondary',
-      bgGradient: 'from-purple-500/5 via-transparent to-transparent',
-      borderColor: 'border-secondary/20 hover:border-secondary/40',
-      iconBg: 'bg-secondary/15 text-secondary',
+      colorClass: 'text-violet-600 dark:text-violet-400',
+      bgGradient: 'from-violet-500/5 via-transparent to-transparent',
+      borderColor: 'border-violet-500/20 hover:border-violet-500/40',
+      iconBg: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
       trend: bookingsTrend,
-      sparklineColor: 'stroke-secondary',
+      sparklineColor: 'stroke-violet-500',
     },
     {
       label: 'New Registrations',
       value: registrationsActive,
       subtext: `${formatNumber(registrationsTotal)} total registrations`,
       icon: ClipboardList,
-      colorClass: 'text-tertiary',
-      bgGradient: 'from-green-500/5 via-transparent to-transparent',
-      borderColor: 'border-tertiary/20 hover:border-tertiary/40',
-      iconBg: 'bg-tertiary/15 text-tertiary',
+      colorClass: 'text-emerald-600 dark:text-emerald-400',
+      bgGradient: 'from-emerald-500/5 via-transparent to-transparent',
+      borderColor: 'border-emerald-500/20 hover:border-emerald-500/40',
+      iconBg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
       trend: registrationsTrend,
       sparkline: growthStats,
-      sparklineColor: 'stroke-tertiary',
+      sparklineColor: 'stroke-emerald-500',
     },
     {
       label: 'Pending Approval',
       value: pendingRegistrations,
       subtext: 'Awaiting coordinator review',
       icon: Clock,
-      colorClass: 'text-amber-400',
+      colorClass: 'text-amber-700 dark:text-amber-400',
       bgGradient: 'from-amber-500/5 via-transparent to-transparent',
       borderColor: 'border-amber-500/20 hover:border-amber-500/40',
-      iconBg: 'bg-amber-500/15 text-amber-400',
+      iconBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
     },
   ];
 
   const glowClasses: Record<string, string> = {
     'text-primary': 'glow-hover-primary',
-    'text-secondary': 'glow-hover-secondary',
-    'text-tertiary': 'glow-hover-tertiary',
-    'text-amber-400': 'glow-hover-warning'
+    'text-violet-600 dark:text-violet-400': 'glow-hover-violet',
+    'text-emerald-600 dark:text-emerald-400': 'glow-hover-success',
+    'text-amber-700 dark:text-amber-400': 'glow-hover-warning'
   };
 
   return (

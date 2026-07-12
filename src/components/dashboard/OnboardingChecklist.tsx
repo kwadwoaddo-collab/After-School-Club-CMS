@@ -27,14 +27,14 @@ export default function OnboardingChecklist({ steps }: OnboardingChecklistProps)
     const pct = Math.round((done / total) * 100);
 
     return (
-        <div className="bg-gradient-to-br from-[#1a1d23] to-[#1e2130] border border-[#adc6ff]/15 rounded-[24px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.3)] relative overflow-hidden animate-in fade-in duration-500">
+        <div className="bg-gradient-to-br from-card to-secondary/30 border border-border rounded-[24px] p-6 shadow-sm relative overflow-hidden animate-in fade-in duration-500">
             {/* Background glow */}
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-[#adc6ff]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -right-16 -top-16 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
             {/* Dismiss */}
             <button
                 onClick={() => setDismissed(true)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg text-[#8c909f] hover:text-white hover:bg-white/5 transition-colors"
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 title="Dismiss"
             >
                 <X className="w-4 h-4" />
@@ -42,19 +42,19 @@ export default function OnboardingChecklist({ steps }: OnboardingChecklistProps)
 
             {/* Header */}
             <div className="flex items-start gap-4 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-lg">🚀</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h2 className="text-white font-bold text-base">Get started with your CMS</h2>
-                    <p className="text-[#8c909f] text-sm mt-0.5">{done} of {total} steps complete</p>
+                    <h2 className="text-foreground font-bold text-base">Get started with your CMS</h2>
+                    <p className="text-muted-foreground text-sm mt-0.5">{done} of {total} steps complete</p>
                 </div>
             </div>
 
             {/* Progress bar */}
-            <div className="h-1.5 bg-white/5 rounded-full mb-5 overflow-hidden">
+            <div className="h-1.5 bg-secondary rounded-full mb-5 overflow-hidden">
                 <div
-                    className="h-full bg-gradient-to-r from-[#adc6ff] to-[#4d8eff] rounded-full transition-all duration-700"
+                    className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full transition-all duration-700"
                     style={{ width: `${pct}%` }}
                 />
             </div>
@@ -67,25 +67,25 @@ export default function OnboardingChecklist({ steps }: OnboardingChecklistProps)
                         href={step.done ? '#' : step.href}
                         className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${step.done
                             ? 'opacity-50 cursor-default'
-                            : 'hover:bg-white/5 cursor-pointer'
+                            : 'hover:bg-secondary cursor-pointer'
                             }`}
                         onClick={e => step.done && e.preventDefault()}
                     >
                         {step.done ? (
-                            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                         ) : (
-                            <Circle className="w-5 h-5 text-[#424754] flex-shrink-0 group-hover:text-[#adc6ff] transition-colors" />
+                            <Circle className="w-5 h-5 text-muted-foreground/60 flex-shrink-0 group-hover:text-primary transition-colors" />
                         )}
                         <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${step.done ? 'text-[#8c909f] line-through' : 'text-[#e5e2e1]'}`}>
+                            <p className={`text-sm font-semibold ${step.done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                 {step.label}
                             </p>
                             {!step.done && (
-                                <p className="text-xs text-[#8c909f] mt-0.5">{step.description}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
                             )}
                         </div>
                         {!step.done && (
-                            <ChevronRight className="w-4 h-4 text-[#424754] group-hover:text-[#adc6ff] flex-shrink-0 transition-colors" />
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary flex-shrink-0 transition-colors" />
                         )}
                     </Link>
                 ))}

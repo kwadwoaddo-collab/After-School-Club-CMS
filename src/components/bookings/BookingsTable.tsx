@@ -394,13 +394,13 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 aria-modal="true"
                 aria-labelledby="cancel-dialog-title"
             >
-                <div className="bg-[#1a1d23] border border-[#2a2a2a] rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                <div className="bg-popover border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
                     <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-amber-500/30">
-                        <X className="w-7 h-7 text-amber-400" />
+                        <X className="w-7 h-7 text-amber-700 dark:text-amber-400" />
                     </div>
-                    <h3 id="cancel-dialog-title" className="text-lg font-bold text-white text-center mb-2">Cancel Booking?</h3>
-                    <p className="text-sm text-slate-400 text-center mb-6">
-                        The booking will be marked as <strong className="text-white">cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
+                    <h3 id="cancel-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">Cancel Booking?</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-6">
+                        The booking will be marked as <strong className="text-foreground">cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
                     </p>
                     <div className="flex gap-3">
                         <button
@@ -430,13 +430,13 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 aria-modal="true"
                 aria-labelledby="delete-dialog-title"
             >
-                <div className="bg-[#1a1d23] border border-[#2a2a2a] rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                <div className="bg-popover border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
                     <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-red-500/30">
-                        <Trash2 className="w-7 h-7 text-red-400" />
+                        <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
                     </div>
-                    <h3 id="delete-dialog-title" className="text-lg font-bold text-white text-center mb-2">Delete Booking?</h3>
-                    <p className="text-sm text-slate-400 text-center mb-6">
-                        This will permanently remove the booking record. This action <strong className="text-white">cannot be undone</strong>.
+                    <h3 id="delete-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">Delete Booking?</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-6">
+                        This will permanently remove the booking record. This action <strong className="text-foreground">cannot be undone</strong>.
                     </p>
                     <div className="flex gap-3">
                         <button
@@ -667,10 +667,10 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     className="fixed inset-0 z-10"
                                                     onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}
                                                 />
-                                                <div className="absolute right-0 top-full mt-2 w-52 bg-[#1a1d23]/95 backdrop-blur-md rounded-2xl shadow-xl border border-outline-variant/10 py-2 z-20">
+                                                <div className="absolute right-0 top-full mt-2 w-52 bg-popover/90 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-20">
                                                     <Link
                                                         href={`/dashboard/bookings/${booking.id}`}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-sm font-medium text-white transition-colors"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                         View Details
@@ -899,8 +899,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
             }`}
         >
-            <div className="bg-[#1a1d23]/95 backdrop-blur-md border border-outline-variant/10 shadow-[0_20px_40px_rgba(0,0,0,0.5)] rounded-2xl p-2 px-3 flex items-center gap-4 mx-4">
-                <div className="pl-2 pr-4 py-2 border-r border-outline-variant/10 flex items-center gap-2.5">
+            <div className="bg-popover/90 backdrop-blur-md border border-border shadow-xl rounded-2xl p-2 px-3 flex items-center gap-4 mx-4">
+                <div className="pl-2 pr-4 py-2 border-r border-border flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/30">
                         {selectedBookings.size}
                     </div>
@@ -910,7 +910,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         onClick={() => handleBulkStatus('completed')}
                         disabled={isProcessingBulk}
                         title="Marks selected bookings as attended (applies to all children in each booking)"
-                        className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
                     >
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
                         Mark as Attended
@@ -918,7 +918,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <button
                         onClick={() => handleBulkStatus('signed_up')}
                         disabled={isProcessingBulk}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
                     >
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                         Mark Signed-up
@@ -944,14 +944,14 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 aria-modal="true"
                 aria-labelledby="bulk-delete-dialog-title"
             >
-                <div className="bg-[#1a1d23]/95 backdrop-blur-md border border-outline-variant/10 rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                <div className="bg-popover/90 backdrop-blur-md border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
                     <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-red-500/30">
-                        <Trash2 className="w-7 h-7 text-red-400" />
+                        <Trash2 className="w-7 h-7 text-red-650 dark:text-red-400" />
                     </div>
-                    <h3 id="bulk-delete-dialog-title" className="text-lg font-bold text-white text-center mb-2">
+                    <h3 id="bulk-delete-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">
                         Delete {selectedBookings.size} Booking{selectedBookings.size !== 1 ? 's' : ''}?
                     </h3>
-                    <p className="text-sm text-slate-400 text-center mb-6">
+                    <p className="text-sm text-muted-foreground text-center mb-6">
                         This will permanently remove <strong className="text-white">{selectedBookings.size} booking{selectedBookings.size !== 1 ? 's' : ''}</strong>. This action <strong className="text-white">cannot be undone</strong>.
                     </p>
                     <div className="flex gap-3">
