@@ -136,14 +136,14 @@ export default async function AttendancePage(props: {
                         iconBg: attendanceRate >= 80 ? 'bg-emerald-500/10' : attendanceRate >= 50 ? 'bg-amber-500/10' : 'bg-red-500/10'
                     },
                 ].map(stat => (
-                    <div key={stat.label} className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-8 h-8 rounded-lg ${stat.iconBg} flex items-center justify-center ${stat.color}`}>
-                                {stat.icon}
+                    <div key={stat.label} className="glassmorphic-card rounded-xl p-3.5 shadow-md flex flex-col justify-between min-h-[85px] border border-white/5 hover:scale-[1.01] transition-transform duration-150">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#8c909f]">{stat.label}</span>
+                            <div className={`w-6 h-6 rounded-md ${stat.iconBg} flex items-center justify-center ${stat.color} flex-shrink-0`}>
+                                <div className="scale-[0.8]">{stat.icon}</div>
                             </div>
                         </div>
-                        <p className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#8c909f] mt-1">{stat.label}</p>
+                        <p className={`text-xl sm:text-2xl font-black leading-none tracking-tight ${stat.color}`}>{stat.value}</p>
                     </div>
                 ))}
             </div>
