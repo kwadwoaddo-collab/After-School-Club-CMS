@@ -4,13 +4,14 @@ import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
 import { eq, desc, sql, inArray, and, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown } from 'lucide-react';
+import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown, Upload } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
 import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import StudentsFilters from '@/components/students/StudentsFilters';
 import StudentsGrid from '@/components/students/StudentsGrid';
+import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 export default async function StudentsPage(props: {
     searchParams: Promise<{
@@ -209,21 +210,33 @@ export default async function StudentsPage(props: {
     const lowAttendanceCount = enrichedStudents.filter(s => s.lowAttendance).length;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="flex items-end justify-between">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Students</h1>
-                    <p className="text-sm text-[#8c909f] mt-1">
-                        View all registered students and their details
-                    </p>
+        <div className="space-y-6 animate-in fade-in duration-700">
+            {/* Header Portals */}
+            <HeaderPortal targetId="header-left">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-base sm:text-lg font-black text-white tracking-tight">Students</h1>
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
+                        {totalCount}
+                    </span>
                 </div>
+            </HeaderPortal>
+
+            <HeaderPortal targetId="header-right-actions">
+                <Link
+                    href="/dashboard/students/import"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all active:scale-95 duration-100 cursor-pointer"
+                >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Import CSV</span>
+                </Link>
                 <Link
                     href="/dashboard/students/add"
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100 cursor-pointer"
                 >
-                    <Plus className="w-4 h-4" /> Add Student
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Student</span>
                 </Link>
-            </div>
+            </HeaderPortal>
 
             {/* KPI Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
