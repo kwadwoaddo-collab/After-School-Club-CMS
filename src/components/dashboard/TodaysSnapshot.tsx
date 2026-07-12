@@ -3,7 +3,7 @@ import { bookings, bookingAttendees } from '@/db/schema';
 import { eq, gte, lt, and, inArray, sql } from 'drizzle-orm';
 import { startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/components/ui/utils';
-import { CalendarCheck, Clock, UserCheck, UserX } from 'lucide-react';
+import { CalendarCheck, Clock, UserCheck, UserX, Calendar } from 'lucide-react';
 
 interface TodaysSnapshotProps {
   activeCentreId: string;
@@ -88,7 +88,7 @@ export async function TodaysSnapshot({
     {
       label: "Today's Bookings",
       value: snapshot.total,
-      icon: CalendarCheck,
+      icon: Calendar,
       color: 'text-primary',
       iconBg: 'bg-primary/10',
     },
@@ -159,7 +159,7 @@ export async function TodaysSnapshot({
       {/* Metrics grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
         {items.map((item, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border hover:bg-secondary/40 transition-[background-color] duration-150 cursor-default">
+          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border rounded-xl hover:bg-secondary/40 transition-[background-color] duration-150 cursor-default">
             <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
               <item.icon className={cn('w-4 h-4', item.color)} />
             </div>

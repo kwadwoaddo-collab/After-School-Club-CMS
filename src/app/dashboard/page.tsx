@@ -53,6 +53,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             db
                 .select({
                     id: organisations.id,
+                    name: organisations.name,
                     slug: organisations.slug,
                     contactEmail: organisations.contactEmail,
                     contactPhone: organisations.contactPhone,
@@ -451,11 +452,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const onboardingAllDone = onboardingSteps.every(s => s.done);
 
     return (
-        <div className="space-y-12 animate-in fade-in duration-700">
+        <div className="space-y-8 animate-in fade-in duration-700">
 
             {/* ── Collapsible Sticky Welcome Banner Hero ───────────────────────── */}
-            <DashboardHero firstName={firstName}>
-                <Suspense fallback={<div className="w-[180px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" />}>
+            <DashboardHero firstName={firstName} orgName={org.name}>
+                <Suspense fallback={<div className="w-auto min-w-[140px] h-[44px] bg-surface-container-low rounded-xl animate-pulse" aria-label="Loading date filter" />}>
                     <DashboardFilter 
                         currentView={currentView}
                         currentDateIso={targetDate.toISOString()}
@@ -471,7 +472,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             />
 
             {activeTab === 'overview' ? (
-                <div key="overview-tab" className="space-y-12 animate-in fade-in duration-500 slide-in-from-bottom-2">
+                <div key="overview-tab" className="space-y-8 animate-in fade-in duration-500 slide-in-from-bottom-2">
                     {/* ── Onboarding checklist ─────────────────────────────────────── */}
                     {!onboardingAllDone && (
                         <OnboardingChecklist steps={onboardingSteps} />
@@ -484,22 +485,27 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     />
 
                     {/* ── Top-level stats row ──────────────────────────────────── */}
-                    <KpiGrid
-                        studentsActive={studentsActivePeriod}
-                        studentsTotal={totalStudents}
-                        bookingsActive={bookingsActivePeriod}
-                        bookingsTotal={totalBookingsAll}
-                        registrationsActive={registrationsActivePeriod}
-                        registrationsTotal={totalRegistrations}
-                        pendingRegistrations={pendingRegistrations}
-                        studentsTrend={studentsTrend}
-                        bookingsTrend={bookingsTrend}
-                        registrationsTrend={registrationsTrend}
-                        growthStats={growthStats}
-                    />
+                    <div>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+                            Period Summary — {dateLabel}
+                        </p>
+                        <KpiGrid
+                            studentsActive={studentsActivePeriod}
+                            studentsTotal={totalStudents}
+                            bookingsActive={bookingsActivePeriod}
+                            bookingsTotal={totalBookingsAll}
+                            registrationsActive={registrationsActivePeriod}
+                            registrationsTotal={totalRegistrations}
+                            pendingRegistrations={pendingRegistrations}
+                            studentsTrend={studentsTrend}
+                            bookingsTrend={bookingsTrend}
+                            registrationsTrend={registrationsTrend}
+                            growthStats={growthStats}
+                        />
+                    </div>
                 </div>
             ) : (
-                <div key="activity-tab" className="space-y-12 animate-in fade-in duration-500 slide-in-from-bottom-2">
+                <div key="activity-tab" className="space-y-8 animate-in fade-in duration-500 slide-in-from-bottom-2">
                     {/* ── Feature Module Cards ─────────────────────────────────── */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
@@ -519,10 +525,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                         <p className="text-xs text-muted-foreground font-medium mt-1">Funnel stages & processing health</p>
                                     </div>
                                 </div>
-                                <span className="flex items-center gap-2 px-3 py-1 bg-tertiary-container/20 text-tertiary rounded-full border border-tertiary/10 shadow-[0_0_12px_rgba(92,253,128,0.2)]">
-                                     <span className="flex h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
-                                     <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                                </span>
                             </div>
 
                             {/* Unified Stats Grid — 2 real data-backed stages */}
@@ -545,7 +547,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             {/* Bottom Action */}
                             <Link
                                 href="/dashboard/registrations"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-tertiary/10 text-tertiary text-sm font-semibold hover:bg-tertiary/20 transition-colors border border-tertiary/20 relative z-10 group/btn"
                             >
                                 Manage Pipeline <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>
@@ -565,10 +567,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                         <p className="text-xs text-muted-foreground font-medium mt-1">Manage schedules and attendance</p>
                                     </div>
                                 </div>
-                                <span className="flex items-center gap-2 px-3 py-1 bg-secondary-container/20 text-secondary rounded-full border border-secondary/10 shadow-[0_0_12px_rgba(110,6,208,0.2)]">
-                                    <span className="flex h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                                </span>
                             </div>
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
@@ -588,7 +586,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             {/* Recent preview */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Bookings: {dateLabel}</h3>
+                                <h3 className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wider">Bookings: {dateLabel}</h3>
                                 {recentBookingsWithNotes.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentBookingsWithNotes.map((b: any) => (
@@ -608,7 +606,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                     </AttendanceRadial>
                                                     <div>
                                                         <div className="flex items-center gap-2">
-                                                            <p className="text-sm font-bold text-white">{b.childFirst} {b.childLast}</p>
+                                                            <p className="text-sm font-bold text-foreground">{b.childFirst} {b.childLast}</p>
                                                             {(() => {
                                                                 const resolved = resolveAttendanceStatus(
                                                                     (b.attendanceStatus as AttendanceStatus | null) ?? null,
@@ -663,7 +661,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             <Link
                                 href="/dashboard/bookings"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-border relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary/20 text-secondary text-sm font-semibold hover:bg-secondary/30 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-secondary/30 relative z-10 group/btn"
                             >
                                 View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>
@@ -683,10 +681,6 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                         <p className="text-xs text-muted-foreground font-medium mt-1">Student sign-ups</p>
                                     </div>
                                 </div>
-                                <span className="flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary rounded-full border border-primary/10 shadow-[0_0_12px_rgba(142,171,255,0.2)]">
-                                    <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Live</span>
-                                </span>
                             </div>
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
@@ -757,7 +751,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             <Link
                                 href="/dashboard/registrations"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-border relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-primary/20 relative z-10 group/btn"
                             >
                                 View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>

@@ -103,7 +103,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                 `}
             >
                 {/* Header / Logo area */}
-                <div className={`relative transition-all duration-300 ${collapsed ? 'p-4' : 'p-8'}`}>
+                <div className={`relative transition-all duration-300 flex-1 overflow-y-auto ${collapsed ? 'p-4' : 'p-8'}`}>
                     {!collapsed && (
                         <button
                             suppressHydrationWarning
@@ -117,7 +117,9 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                     {/* Logo */}
                     <div className={`flex items-center gap-3.5 mb-8 overflow-hidden px-3 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
-                        <div className={`
+                        <div
+                            title={collapsed ? orgName : undefined}
+                            className={`
                             w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
                             ring-1 ring-border shadow-sm
                             transition-all duration-300
@@ -125,8 +127,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             {orgName.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
-                            <div className="flex flex-col">
-                                <span className="text-base font-extrabold tracking-tight truncate leading-tight text-foreground">
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-extrabold tracking-tight truncate leading-tight text-foreground">
                                     {orgName}
                                 </span>
                                 <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
@@ -365,23 +367,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     </nav>
                 </div>
 
-                {/* Quick Support Section */}
-                <div className={`mt-auto p-6 ${collapsed ? 'hidden' : ''}`}>
-                    <div className="p-4 rounded-2xl bg-secondary/40 border border-border">
-                        <p className="text-[10px] text-muted-foreground font-bold mb-2 uppercase tracking-wider">
-                            Quick Support
-                        </p>
-                        <p className="text-sm text-foreground/80 leading-relaxed">
-                            Need help with bookings or payments?
-                        </p>
-                        <a
-                            href="mailto:support@sprintscaleit.co.uk"
-                            className="mt-3 text-xs font-bold text-primary hover:underline transition-colors inline-flex items-center gap-1"
-                        >
-                            CONTACT SUPPORT <span aria-hidden>→</span>
-                        </a>
-                    </div>
-                </div>
+
 
                 {/* Collapse Toggle Button */}
                 <button

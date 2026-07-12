@@ -196,7 +196,7 @@ export function KpiGrid({
           </div>
 
           {/* Footer */}
-          <div className="relative z-10 pt-2 border-t border-outline-variant/10 text-[10px] text-on-surface-variant/60 font-medium">
+          <div className="relative z-10 pt-2 border-t border-outline-variant/10 text-[10px] text-muted-foreground font-medium">
             {stat.subtext}
           </div>
         </div>

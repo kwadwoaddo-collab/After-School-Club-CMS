@@ -65,11 +65,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Greeting - computed once on client
-    const [greeting, setGreeting] = useState({ text: 'Welcome', emoji: '✨' });
-    useEffect(() => {
-        setGreeting(getGreeting());
-    }, []);
+    // Greeting - computed once on first render, no flash
+    const [greeting] = useState(() => getGreeting());
 
     // Fetch real notifications from API
     const [notifications, setNotifications] = useState<Notification[]>([]);

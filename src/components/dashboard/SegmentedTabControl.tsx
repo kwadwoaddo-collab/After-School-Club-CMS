@@ -35,7 +35,7 @@ export function SegmentedTabControl({ defaultTab, searchParams }: SegmentedTabCo
 
     return (
         <div className="flex justify-center my-6 relative z-10">
-            <div className="relative inline-flex p-1 bg-[#19191b]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] shadow-lg">
+            <div className="relative inline-flex p-1 bg-secondary/80 dark:bg-[#19191b]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] shadow-lg">
                 {/* Sliding active pill — moves INSTANTLY on click */}
                 <div
                     aria-hidden="true"

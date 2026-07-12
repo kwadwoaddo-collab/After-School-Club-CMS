@@ -5,10 +5,11 @@ import { cn } from '@/components/ui/utils';
 
 interface DashboardHeroProps {
     firstName: string;
+    orgName?: string;
     children: ReactNode;
 }
 
-export default function DashboardHero({ firstName, children }: DashboardHeroProps) {
+export default function DashboardHero({ firstName, orgName, children }: DashboardHeroProps) {
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -41,9 +42,9 @@ export default function DashboardHero({ firstName, children }: DashboardHeroProp
                 )}
             >
                 <div className={cn("transition-all duration-300", isScrolled ? "scale-95 origin-left" : "")}>
-                    {!isScrolled && (
+                    {!isScrolled && orgName && (
                         <span className="text-xs font-bold text-primary animated-eyebrow uppercase tracking-[0.2em] mb-1.5 block animate-in slide-in-from-top-1 duration-300">
-                            After-School Club CMS
+                            {orgName}
                         </span>
                     )}
                     <h1
@@ -56,7 +57,7 @@ export default function DashboardHero({ firstName, children }: DashboardHeroProp
                     </h1>
                     {!isScrolled && (
                         <p className="text-muted-foreground text-sm mt-1 max-w-xl font-medium animate-in fade-in duration-300">
-                            Here is a breakdown of your centres, enrolments, and booking activity for today.
+                            {firstName ? `Good to have you back, ${firstName}. ` : ''}Here is a breakdown of your centres, enrolments, and booking activity for today.
                         </p>
                     )}
                 </div>

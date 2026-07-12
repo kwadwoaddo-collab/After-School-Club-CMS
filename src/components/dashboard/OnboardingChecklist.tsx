@@ -62,32 +62,34 @@ export default function OnboardingChecklist({ steps }: OnboardingChecklistProps)
             {/* Steps */}
             <div className="space-y-2">
                 {steps.map(step => (
-                    <Link
-                        key={step.id}
-                        href={step.done ? '#' : step.href}
-                        className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${step.done
-                            ? 'opacity-50 cursor-default'
-                            : 'hover:bg-secondary cursor-pointer'
-                            }`}
-                        onClick={e => step.done && e.preventDefault()}
-                    >
-                        {step.done ? (
+                    step.done ? (
+                        <div
+                            key={step.id}
+                            className="flex items-center gap-3 p-3 rounded-xl opacity-50 cursor-default"
+                        >
                             <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                        ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground/60 flex-shrink-0 group-hover:text-primary transition-colors" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${step.done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                                {step.label}
-                            </p>
-                            {!step.done && (
-                                <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                            )}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-muted-foreground line-through">
+                                    {step.label}
+                                </p>
+                            </div>
                         </div>
-                        {!step.done && (
+                    ) : (
+                        <Link
+                            key={step.id}
+                            href={step.href}
+                            className="flex items-center gap-3 p-3 rounded-xl transition-all group hover:bg-secondary cursor-pointer"
+                        >
+                            <Circle className="w-5 h-5 text-muted-foreground/60 flex-shrink-0 group-hover:text-primary transition-colors" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-foreground">
+                                    {step.label}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                            </div>
                             <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary flex-shrink-0 transition-colors" />
-                        )}
-                    </Link>
+                        </Link>
+                    )
                 ))}
             </div>
         </div>
