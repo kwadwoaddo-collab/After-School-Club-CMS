@@ -95,23 +95,19 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             <aside
                 className={`
                     fixed inset-y-0 left-0 z-50
-                    bg-[#0f1117] text-[#e5e2e1] flex flex-col
+                    bg-sidebar/45 backdrop-blur-2xl text-foreground flex flex-col
                     transition-all duration-300 ease-in-out
                     w-64
                     ${collapsed ? '-translate-x-full md:translate-x-0 md:w-20' : 'translate-x-0'}
-                    border-r border-white/5
+                    border-r border-sidebar-border
                 `}
-                style={{
-                    background: 'linear-gradient(195deg, #0d1117 0%, #13192a 100%)',
-                    boxShadow: '4px 0 32px rgba(0,0,0,0.4)',
-                }}
             >
                 {/* Header / Logo area */}
                 <div className="p-6 relative">
                     {!collapsed && (
                         <button
                             suppressHydrationWarning
-                            className="absolute top-6 right-6 md:hidden p-1.5 rounded-lg text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#353535] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="absolute top-6 right-6 md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
                             aria-label="Close menu"
                         >
@@ -122,18 +118,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     {/* Logo */}
                     <div className={`flex items-center gap-3 mb-8 overflow-hidden ${collapsed ? 'justify-center mt-0' : 'mt-2'}`}>
                         <div className={`
-                            w-9 h-9 rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#6366f1] flex items-center justify-center font-bold text-white text-xs flex-shrink-0
-                            shadow-[0_0_20px_rgba(99,102,241,0.4)] ring-1 ring-white/10
-                            transition-all duration-300 hover:shadow-[0_0_28px_rgba(99,102,241,0.6)]
+                            w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
+                            ring-1 ring-border shadow-sm
+                            transition-all duration-300
                         `}>
                             {orgName.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
                             <div className="flex flex-col">
-                                <span className="text-base font-extrabold tracking-tight truncate leading-tight text-white">
+                                <span className="text-base font-extrabold tracking-tight truncate leading-tight text-foreground">
                                     {orgName}
                                 </span>
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-[#8c909f]">
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                                     Workspace
                                 </span>
                             </div>
@@ -150,19 +146,19 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         onClick={() => setQuickActionsOpen(o => !o)}
                                         className="flex items-center justify-between w-full px-2 mb-3 group"
                                     >
-                                        <p className="text-[10px] font-bold text-[#8c909f] uppercase tracking-widest group-hover:text-[#c2c6d6] transition-colors">
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors">
                                             Quick Links
                                         </p>
                                         <ChevronDown
-                                            className={`w-3.5 h-3.5 text-[#8c909f] group-hover:text-[#c2c6d6] transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
+                                            className={`w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
                                         />
                                     </button>
                                     <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${quickActionsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
                                         <Link
                                             href="/dashboard/share"
-                                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#8c909f] hover:text-[#adc6ff] hover:bg-[#adc6ff]/8 transition-all text-sm font-semibold group"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all text-sm font-semibold group"
                                         >
-                                            <Share2 className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                            <Share2 className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-105 transition-transform" />
                                             Share Portals
                                         </Link>
                                     </div>
@@ -170,7 +166,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             )}
 
                             {/* Divider */}
-                            <div className="h-px bg-white/5 mb-6" />
+                            <div className="h-px bg-border mb-6" />
                         </>
                     )}
 
@@ -191,19 +187,19 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                         flex items-center justify-between w-full px-3 py-2.5 rounded-xl
                                                         transition-all group text-left relative overflow-hidden
                                                         ${isCentresPageActive
-                                                            ? 'text-[#adc6ff] bg-gradient-to-r from-[#adc6ff]/15 to-[#6366f1]/8 font-bold'
-                                                            : 'text-[#8c909f] hover:text-[#c2c6d6] hover:bg-white/4'
+                                                            ? 'text-primary bg-primary/10 font-bold'
+                                                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                                         }
                                                     `}
                                                 >
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         {selectedCentreId === 'all' ? (
-                                                            <Layers className="w-5 h-5 text-[#adc6ff] flex-shrink-0 group-hover:scale-105 transition-transform" />
+                                                            <Layers className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-105 transition-transform" />
                                                         ) : (
-                                                            <MapPin className="w-5 h-5 text-[#adc6ff] flex-shrink-0 group-hover:scale-105 transition-transform" />
+                                                            <MapPin className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-105 transition-transform" />
                                                         )}
                                                         <div className="flex flex-col min-w-0">
-                                                            <span className="text-[9px] text-[#8c909f] font-bold uppercase tracking-wider leading-none mb-0.5">Active Centre</span>
+                                                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider leading-none mb-0.5">Active Centre</span>
                                                             <span className="font-semibold truncate text-sm">
                                                                 {selectedCentreId === 'all'
                                                                     ? 'Combined View'
@@ -211,34 +207,30 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <ChevronDown className={`w-4 h-4 text-[#8c909f] transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
-                                                    {/* Active indicator */}
-                                                    {isCentresPageActive && (
-                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-[#adc6ff] to-[#6366f1] rounded-r-full" />
-                                                    )}
+                                                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
                                                 </button>
 
                                                 {dropdownOpen && (
                                                     <>
                                                         <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                                                        <div className="absolute left-0 right-0 mt-1 bg-[#15192a] border border-[#424754]/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50 py-1 overflow-hidden">
+                                                        <div className="absolute left-0 right-0 mt-1 bg-popover/90 backdrop-blur-2xl border border-border rounded-2xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                                                             <button
                                                                 onClick={() => selectCentre('all')}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
-                                                                    selectedCentreId === 'all' ? 'text-[#adc6ff] bg-[#adc6ff]/8' : 'text-[#8c909f] hover:text-white'
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                                    selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
                                                                 }`}
                                                             >
                                                                 <Layers className="w-4 h-4 flex-shrink-0" />
                                                                 Combined View
                                                             </button>
-                                                            <div className="h-px bg-white/5 my-1" />
+                                                            <div className="h-px bg-border my-1" />
                                                             <div className="max-h-48 overflow-y-auto">
                                                                 {centres.map(centre => (
                                                                     <button
                                                                         key={centre.id}
                                                                         onClick={() => selectCentre(centre.id)}
-                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
-                                                                            selectedCentreId === centre.id ? 'text-[#adc6ff] bg-[#adc6ff]/8 font-bold' : 'text-[#8c909f] hover:text-white'
+                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                                            selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
                                                                         }`}
                                                                     >
                                                                         <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -246,7 +238,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                                     </button>
                                                                 ))}
                                                             </div>
-                                                            <div className="h-px bg-white/5 my-1" />
+                                                            <div className="h-px bg-border my-1" />
                                                             <Link
                                                                 href="/dashboard/centres"
                                                                 onClick={() => {
@@ -255,8 +247,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                                         setCollapsed(true);
                                                                     }
                                                                 }}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] text-[#adc6ff] hover:text-[#6b9dff] transition-colors ${
-                                                                    isCentresPageActive ? 'bg-[#adc6ff]/5 font-bold' : ''
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
+                                                                    isCentresPageActive ? 'bg-primary/5 font-bold' : ''
                                                                 }`}
                                                             >
                                                                 <School className="w-4 h-4 flex-shrink-0" />
@@ -274,8 +266,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                         flex items-center justify-center w-full px-4 py-2.5 rounded-xl
                                                         transition-all group relative
                                                         ${isCentresPageActive
-                                                            ? 'text-[#adc6ff] bg-[#adc6ff]/10'
-                                                            : 'text-[#8c909f] hover:text-[#c2c6d6] hover:bg-white/4'
+                                                            ? 'text-primary bg-primary/10'
+                                                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                                         }
                                                     `}
                                                     title={selectedCentreId === 'all'
@@ -283,36 +275,33 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                         : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
                                                 >
                                                     {selectedCentreId === 'all' ? (
-                                                        <Layers className="w-5 h-5 text-[#adc6ff] group-hover:scale-110 transition-transform" />
+                                                        <Layers className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
                                                     ) : (
-                                                        <MapPin className="w-5 h-5 text-[#adc6ff] group-hover:scale-110 transition-transform" />
-                                                    )}
-                                                    {isCentresPageActive && (
-                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-[#adc6ff] to-[#6366f1] rounded-r-full" />
+                                                        <MapPin className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
                                                     )}
                                                 </button>
 
                                                 {dropdownOpen && (
                                                     <>
                                                         <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                                                        <div className="absolute left-16 top-0 w-52 bg-[#15192a] border border-[#424754]/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50 py-1 overflow-hidden">
+                                                        <div className="absolute left-16 top-0 w-52 bg-popover/90 backdrop-blur-2xl border border-border rounded-2xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                                                             <button
                                                                 onClick={() => selectCentre('all')}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
-                                                                    selectedCentreId === 'all' ? 'text-[#adc6ff] bg-[#adc6ff]/8' : 'text-[#8c909f] hover:text-white'
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                                    selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
                                                                 }`}
                                                             >
                                                                 <Layers className="w-4 h-4 flex-shrink-0" />
                                                                 Combined View
                                                             </button>
-                                                            <div className="h-px bg-white/5 my-1" />
+                                                            <div className="h-px bg-border my-1" />
                                                             <div className="max-h-48 overflow-y-auto">
                                                                 {centres.map(centre => (
                                                                     <button
                                                                         key={centre.id}
                                                                         onClick={() => selectCentre(centre.id)}
-                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-[#1e2436] transition-colors ${
-                                                                            selectedCentreId === centre.id ? 'text-[#adc6ff] bg-[#adc6ff]/8 font-bold' : 'text-[#8c909f] hover:text-white'
+                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                                            selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
                                                                         }`}
                                                                     >
                                                                         <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -320,12 +309,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                                                     </button>
                                                                 ))}
                                                             </div>
-                                                            <div className="h-px bg-white/5 my-1" />
+                                                            <div className="h-px bg-border my-1" />
                                                             <Link
                                                                 href="/dashboard/centres"
                                                                 onClick={() => setDropdownOpen(false)}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-[#1e2436] text-[#adc6ff] hover:text-[#6b9dff] transition-colors ${
-                                                                    isCentresPageActive ? 'bg-[#adc6ff]/5 font-bold' : ''
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
+                                                                    isCentresPageActive ? 'bg-primary/5 font-bold' : ''
                                                                 }`}
                                                             >
                                                                 <School className="w-4 h-4 flex-shrink-0" />
@@ -357,19 +346,15 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         flex items-center gap-3 px-3 py-2.5 rounded-xl
                                         transition-all duration-200 group relative overflow-hidden
                                         ${isActive
-                                            ? 'text-[#adc6ff] bg-gradient-to-r from-[#adc6ff]/15 to-[#6366f1]/8 font-bold'
-                                            : 'text-[#8c909f] hover:text-[#c2c6d6] hover:bg-white/4'
+                                            ? 'text-primary bg-primary/10 font-bold'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                         }
                                         ${collapsed ? 'justify-center' : ''}
                                     `}
                                     title={collapsed ? item.name : undefined}
                                 >
-                                    {/* Active left indicator */}
-                                    {isActive && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-[#adc6ff] to-[#6366f1] rounded-r-full" />
-                                    )}
                                     <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-200 ${
-                                        isActive ? 'scale-110' : 'group-hover:scale-105 group-hover:text-[#adc6ff]'
+                                        isActive ? 'scale-105' : 'group-hover:scale-102 group-hover:text-primary'
                                     }`} />
                                     {!collapsed && (
                                         <span className="font-semibold text-sm">{item.name}</span>
@@ -382,16 +367,16 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                 {/* Quick Support Section */}
                 <div className={`mt-auto p-6 ${collapsed ? 'hidden' : ''}`}>
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-[#adc6ff]/8 to-[#6366f1]/5 border border-[#adc6ff]/10">
-                        <p className="text-[10px] text-[#8c909f] font-bold mb-2 uppercase tracking-wider">
+                    <div className="p-4 rounded-2xl bg-secondary/40 border border-border">
+                        <p className="text-[10px] text-muted-foreground font-bold mb-2 uppercase tracking-wider">
                             Quick Support
                         </p>
-                        <p className="text-sm text-[#c2c6d6] leading-relaxed">
+                        <p className="text-sm text-foreground/80 leading-relaxed">
                             Need help with bookings or payments?
                         </p>
                         <a
                             href="mailto:support@sprintscaleit.co.uk"
-                            className="mt-3 text-xs font-bold text-[#adc6ff] hover:text-[#6b9dff] transition-colors inline-flex items-center gap-1"
+                            className="mt-3 text-xs font-bold text-primary hover:underline transition-colors inline-flex items-center gap-1"
                         >
                             CONTACT SUPPORT <span aria-hidden>→</span>
                         </a>
@@ -404,18 +389,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     onClick={() => setCollapsed(!collapsed)}
                     className={`
                         absolute -right-3 top-20
-                        w-6 h-6 bg-[#15192a] rounded-full
+                        w-6 h-6 bg-card rounded-full
                         flex items-center justify-center
-                        shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-white/10
-                        hover:bg-[#1e2436] hover:border-[#adc6ff]/20 hover:shadow-[0_0_12px_rgba(173,198,255,0.2)] transition-all duration-200
+                        shadow-md border border-border
+                        hover:bg-secondary transition-all duration-200
                         group z-50 hidden md:flex
                     `}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
                     {collapsed ? (
-                        <ChevronRight className="w-3.5 h-3.5 text-[#8c909f] group-hover:text-[#adc6ff] transition-colors" />
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                     ) : (
-                        <ChevronLeft className="w-3.5 h-3.5 text-[#8c909f] group-hover:text-[#adc6ff] transition-colors" />
+                        <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                     )}
                 </button>
             </aside>
