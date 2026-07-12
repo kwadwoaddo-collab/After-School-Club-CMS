@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Clock, CheckCircle2, XCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { Mail, Clock, CheckCircle2, XCircle, Trash2, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 type Invite = {
@@ -58,6 +58,7 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmId, setConfirmId] = useState<string | null>(null);
     const [clearingExpired, setClearingExpired] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
 
     const expiredCount = items.filter(i => getStatus(i) === 'expired').length;
 
@@ -86,30 +87,44 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
 
     return (
         <div className="bg-[#1a1d23] rounded-[32px] overflow-hidden border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-full">
-            {/* Header */}
-            <div className="px-8 py-6 border-b border-[#424754]/15 flex items-center justify-between">
+            {/* Header - Clickable to toggle collapse */}
+            <div
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="px-8 py-6 border-b border-[#424754]/15 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer select-none"
+            >
                 <div>
                     <div className="flex items-center gap-3">
                         <h2 className="text-lg font-bold text-[#e5e2e1]">
-                            Invitations ({items.length})
+                            Invitations
                         </h2>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#2a2a2a] text-[#8c909f] border border-[#424754]/20">
+                            {items.length}
+                        </span>
                     </div>
                     <p className="text-sm text-[#8c909f] mt-1">Track all staff invitations you've sent</p>
                 </div>
-                {expiredCount > 0 && (
-                    <button
-                        onClick={handleClearExpired}
-                        disabled={clearingExpired}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10 border border-red-500/20 rounded-xl transition-colors disabled:opacity-50"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        {clearingExpired ? 'Clearing...' : `Clear ${expiredCount} expired`}
-                    </button>
-                )}
+                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                    {expiredCount > 0 && (
+                        <button
+                            onClick={handleClearExpired}
+                            disabled={clearingExpired}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10 border border-red-500/20 rounded-xl transition-colors disabled:opacity-50 active:scale-95 duration-100"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            {clearingExpired ? 'Clearing...' : `Clear ${expiredCount} expired`}
+                        </button>
+                    )}
+                    {isCollapsed ? (
+                        <ChevronRight className="w-5 h-5 text-[#8c909f]" />
+                    ) : (
+                        <ChevronDown className="w-5 h-5 text-[#8c909f]" />
+                    )}
+                </div>
             </div>
 
-            {/* List */}
-            <div className="divide-y divide-[#424754]/15">
+            {/* List - only visible when not collapsed */}
+            {!isCollapsed && (
+                <div className="divide-y divide-[#424754]/15 animate-in fade-in slide-in-from-top-1 duration-150">
                 {items.map((invite) => {
                     const status = getStatus(invite);
                     const cfg = statusConfig[status];
@@ -203,7 +218,8 @@ export default function InvitationsList({ invitations }: { invitations: Invite[]
                         </div>
                     );
                 })}
-            </div>
+                </div>
+            )}
         </div>
     );
 }
