@@ -638,7 +638,7 @@ select:user-valid {
   }
 }
 
-/* ── Global Theme-Aware UI Overrides for Light Mode Compatibility ── */
+/* ── Global Theme-Aware UI Overrides for Light Mode & Apple Aesthetics ── */
 body:not(.landing-page-active) :is(.text-white, .text-slate-100, .text-zinc-100):not(
   button,
   button *,
@@ -656,6 +656,101 @@ body:not(.landing-page-active) :is(.text-white, .text-slate-100, .text-zinc-100)
   .keep-white *
 ) {
   color: hsl(var(--foreground)) !important;
+}
+
+/* Typography & Titles override */
+body:not(.landing-page-active) :is(h1, h2, h3, .h1, .h2, .h3):not(.keep-typography) {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+body:not(.landing-page-active) h1 {
+  letter-spacing: -0.04em !important;
+}
+
+/* Card & Panels override - Soft Squircles & Shadows */
+body:not(.landing-page-active) :is(
+  .card,
+  [class*="card"],
+  .glassmorphic-card,
+  .bg-card,
+  .bg-surface,
+  [class*="bg-surface-container"],
+  .bg-[#1a1d23],
+  .bg-[#1c1c1e]
+):not(body, html, main, aside, header) {
+  border-radius: 24px !important; /* rounded-3xl (Apple squircle) */
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Apple Micro-Interactions on hover/active */
+body:not(.landing-page-active) :is(
+  .card,
+  [class*="card"],
+  .glassmorphic-card,
+  .bg-card,
+  .bg-surface,
+  [class*="bg-surface-container"]
+):not(body, html, main, aside, header):hover {
+  transform: scale(1.012) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+body:not(.landing-page-active) :is(
+  .card,
+  [class*="card"],
+  .glassmorphic-card,
+  .bg-card,
+  .bg-surface,
+  [class*="bg-surface-container"]
+):not(body, html, main, aside, header):active {
+  transform: scale(0.988) !important;
+}
+
+/* Rounded Pill Capsules for Buttons, Toggle filters, and CTA Links */
+body:not(.landing-page-active) :is(
+  button,
+  .btn,
+  [class*="btn-"],
+  [class*="button-"],
+  a[class*="bg-primary"],
+  a[class*="bg-secondary"],
+  a[class*="btn-"],
+  input[type="submit"]
+):not(.keep-shape, [role="gridcell"] *, [role="row"] *) {
+  border-radius: 9999px !important; /* rounded-full pill shape */
+}
+
+/* Premium Form Inputs & Selects */
+body:not(.landing-page-active) :is(
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="date"],
+  select,
+  textarea
+) {
+  border-radius: 12px !important; /* rounded-xl */
+  border-color: hsl(var(--border)) !important;
+  background-color: var(--input-bg) !important;
+}
+
+/* Spacious Padding overrides for main section elements */
+body:not(.landing-page-active) :is(
+  .container,
+  main,
+  .main-content,
+  .p-6,
+  [class*="p-6"]
+):not(body, html, table, tr, td, th, section) {
+  padding: 2rem !important; /* p-8 */
 }
 
 /* Soft dynamic borders, shadows and overlays to replace harsh dark outlines */
