@@ -555,13 +555,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         </div>
 
                         {/* Sessions & Bookings (Unified Card Structure) */}
-                        <div className="glassmorphic-card p-8 rounded-3xl border border-secondary/20 relative overflow-hidden group hover:border-secondary/40 glow-hover-secondary transition-all flex flex-col gap-8">
-                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-secondary/5 rounded-full blur-3xl group-hover:bg-secondary/10 transition-colors pointer-events-none"></div>
-                            
+                        <div className="glassmorphic-card p-8 rounded-3xl border border-accent-violet/20 relative overflow-hidden group hover:border-accent-violet/40 glow-hover-accent-violet transition-all flex flex-col gap-8">
+                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-accent-violet/5 rounded-full blur-3xl group-hover:bg-accent-violet/10 transition-colors pointer-events-none"></div>
+
                             <div className="flex items-start justify-between relative z-10">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
-                                        <CalendarCheck className="w-6 h-6 text-secondary" />
+                                    <div className="w-12 h-12 bg-accent-violet/10 rounded-xl flex items-center justify-center">
+                                        <CalendarCheck className="w-6 h-6 text-accent-violet" />
                                     </div>
                                     <div>
                                         <h2 className="font-extrabold text-foreground text-lg leading-tight tracking-tight">Sessions & Bookings</h2>
@@ -575,13 +575,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                     <p className="text-xl sm:text-2xl font-bold text-foreground">{totalBookingsAll}</p>
                                     <p className="text-[10px] sm:text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                                 </div>
-                                <div className="p-3 bg-secondary/5 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/10 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-secondary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                <div className="p-3 bg-accent-violet/5 rounded-xl border border-accent-violet/10 flex flex-col justify-center hover:bg-accent-violet/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-accent-violet">{bookingsThisMonth}</p>
+                                    <p className="text-[10px] sm:text-xs text-accent-violet/80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                                 </div>
-                                <div className="p-3 bg-secondary/10 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/20 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-secondary">{bookingsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-secondary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                <div className="p-3 bg-accent-violet/10 rounded-xl border border-accent-violet/20 flex flex-col justify-center hover:bg-accent-violet/20 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-accent-violet">{bookingsThisWeek}</p>
+                                    <p className="text-[10px] sm:text-xs text-accent-violet/80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                                 </div>
                             </div>
 
@@ -601,7 +601,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
                                                         size="sm"
                                                     >
-                                                        <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+                                                        <div className="w-full h-full bg-accent-violet/10 flex items-center justify-center text-accent-violet font-bold">
                                                             {b.childFirst[0]}{b.childLast[0]}
                                                         </div>
                                                     </AttendanceRadial>
@@ -651,7 +651,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         <p className="text-xs text-muted-foreground font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary transition-colors" />
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent-violet transition-colors" />
                                             </Link>
                                         ))}
                                     </div>
@@ -665,7 +665,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             <Link
                                 href="/dashboard/bookings"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary/20 text-secondary text-sm font-semibold hover:bg-secondary/30 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-secondary/30 relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-accent-violet/10 text-accent-violet text-sm font-semibold hover:bg-accent-violet/20 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-accent-violet/20 relative z-10 group/btn"
                             >
                                 View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>

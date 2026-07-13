@@ -612,6 +612,11 @@ select:user-valid {
     box-shadow: 0 12px 40px -12px rgba(48, 209, 88, 0.1), var(--shadow-md) !important;
   }
 
+  .glow-hover-accent-violet:hover {
+    border-color: #8b5cf635 !important;
+    box-shadow: 0 12px 40px -12px rgba(139, 92, 246, 0.1), var(--shadow-md) !important;
+  }
+
   .glow-hover-warning:hover {
     border-color: rgba(245, 158, 11, 0.35) !important;
     box-shadow: 0 12px 40px -12px rgba(245, 158, 11, 0.1), var(--shadow-md) !important;
@@ -758,7 +763,7 @@ body:not(.landing-page-active) :is(
   main,
   .main-content,
   .p-6,
-  [class*="p-6"]
+  [class*=":p-6"]
 ):not(body, html, table, tr, td, th, section) {
   padding: 2rem !important; /* p-8 */
 }
