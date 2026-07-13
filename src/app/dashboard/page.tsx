@@ -530,13 +530,13 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             {/* Unified Stats Grid — 2 real data-backed stages */}
                             <div className="grid grid-cols-2 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-error/5 rounded-xl border border-error/10 flex flex-col justify-center hover:bg-error/10 transition-all">
+                                <div className="p-3 bg-error/5 rounded-xl border border-error/20 flex flex-col justify-center hover:bg-error/10 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-error">{pipelineCounts.new}</p>
-                                    <p className="text-[10px] sm:text-xs text-error/80 font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
+                                    <p className="text-[10px] sm:text-xs text-error font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
                                 </div>
-                                <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/20 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
+                                <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/25 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
-                                    <p className="text-[10px] sm:text-xs text-tertiary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
+                                    <p className="text-[10px] sm:text-xs text-tertiary font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
                                 </div>
                             </div>
 
@@ -573,21 +573,21 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
                                 <div className="p-3 bg-secondary/20 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/30 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-foreground">{totalBookingsAll}</p>
-                                    <p className="text-[10px] sm:text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                                    <p className="text-[10px] sm:text-xs text-foreground/60 font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                                 </div>
-                                <div className="p-3 bg-accent-violet/5 rounded-xl border border-accent-violet/10 flex flex-col justify-center hover:bg-accent-violet/10 transition-all">
+                                <div className="p-3 bg-accent-violet/10 rounded-xl border border-accent-violet/20 flex flex-col justify-center hover:bg-accent-violet/15 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-accent-violet">{bookingsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-accent-violet/80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                    <p className="text-[10px] sm:text-xs text-accent-violet font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                                 </div>
-                                <div className="p-3 bg-accent-violet/10 rounded-xl border border-accent-violet/20 flex flex-col justify-center hover:bg-accent-violet/20 transition-all">
+                                <div className="p-3 bg-accent-violet/10 rounded-xl border border-accent-violet/20 flex flex-col justify-center hover:bg-accent-violet/15 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-accent-violet">{bookingsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-accent-violet/80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                    <p className="text-[10px] sm:text-xs text-accent-violet font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                                 </div>
                             </div>
 
                             {/* Recent preview */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wider">Bookings: {dateLabel}</h3>
+                                <h3 className="text-xs font-bold text-foreground/60 mb-4 uppercase tracking-wider">Bookings: {dateLabel}</h3>
                                 {recentBookingsWithNotes.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentBookingsWithNotes.map((b: any) => (
@@ -690,21 +690,21 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
                                 <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-primary">{totalRegistrations}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
+                                    <p className="text-[10px] sm:text-xs text-primary font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
                                 </div>
-                                <div className="p-3 bg-primary/5 rounded-xl border border-border flex flex-col justify-center hover:bg-primary/10 transition-all">
+                                <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/15 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
+                                    <p className="text-[10px] sm:text-xs text-primary font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
                                 </div>
-                                <div className="p-3 bg-primary/10 rounded-xl border border-border flex flex-col justify-center hover:bg-primary/20 transition-all">
+                                <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/15 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary/80 font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
+                                    <p className="text-[10px] sm:text-xs text-primary font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
                                 </div>
                             </div>
 
                             {/* Recent preview */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wider">Registrations: {dateLabel}</h3>
+                                <h3 className="text-xs font-bold text-foreground/60 mb-4 uppercase tracking-wider">Registrations: {dateLabel}</h3>
                                 {recentRegistrations.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentRegistrations.map((r: any, i: any) => (
