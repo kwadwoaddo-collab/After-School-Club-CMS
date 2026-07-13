@@ -34,7 +34,7 @@ export default function ConfirmActionModal({
               title: 'Delete Invoice',
               confirmLabel: 'Delete Permanently',
               confirmClass:
-                  'bg-error hover:bg-red-700 text-white shadow-lg shadow-error/20',
+                  'bg-error hover:bg-red-700 text-foreground shadow-lg shadow-error/20',
               description: hasPayments
                   ? 'This invoice has recorded payments. Please delete all associated payments first before deleting the invoice.'
                   : `Invoice ${invoiceNumber} will be permanently removed from the database. This action cannot be undone.`,
@@ -45,7 +45,7 @@ export default function ConfirmActionModal({
               title: 'Void Invoice',
               confirmLabel: 'Void Invoice',
               confirmClass:
-                  'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20',
+                  'bg-amber-500 hover:bg-amber-600 text-foreground shadow-lg shadow-amber-500/20',
               description: `Invoice ${invoiceNumber} will be marked as VOID. All payment records will be preserved for audit purposes, but this invoice will be excluded from revenue reports.`,
           };
 
@@ -64,12 +64,12 @@ export default function ConfirmActionModal({
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
-            <div className="bg-surface-container-high border border-outline-variant/10 rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
+            <div className="bg-surface-container-high border border-border rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
                 {/* Close */}
                 <button
                     onClick={onClose}
                     disabled={isLoading}
-                    className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-on-surface-variant hover:text-white hover:bg-white/10 transition-all"
+                    className="absolute top-6 right-6 w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-foreground-variant hover:text-foreground hover:bg-secondary transition-all"
                 >
                     <X className="w-4 h-4" />
                 </button>
@@ -82,12 +82,12 @@ export default function ConfirmActionModal({
                 </div>
 
                 {/* Title */}
-                <h2 className="text-2xl font-black text-white tracking-tight mb-3">
+                <h2 className="text-2xl font-black text-foreground tracking-tight mb-3">
                     {config.title}
                 </h2>
 
                 {/* Description */}
-                <p className="text-sm text-on-surface-variant leading-relaxed mb-8">
+                <p className="text-sm text-foreground-variant leading-relaxed mb-8">
                     {config.description}
                 </p>
 
@@ -104,7 +104,7 @@ export default function ConfirmActionModal({
                     <button
                         onClick={onClose}
                         disabled={isLoading}
-                        className="flex-1 py-3.5 bg-white/5 border border-outline-variant/10 rounded-2xl text-sm font-bold text-on-surface-variant hover:bg-white/10 hover:text-white transition-all"
+                        className="flex-1 py-3.5 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-foreground-variant hover:bg-secondary hover:text-foreground transition-all"
                     >
                         Cancel
                     </button>

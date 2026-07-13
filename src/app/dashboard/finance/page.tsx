@@ -258,20 +258,20 @@ export default async function FinancePage(props: {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Finance Ledger</h1>
-                    <p className="text-on-surface-variant font-medium mt-1">
+                    <h1 className="text-3xl font-black text-foreground tracking-tight">Finance Ledger</h1>
+                    <p className="text-foreground-variant font-medium mt-1">
                         Manage invoices, payments, and financial health
                     </p>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
-                    <Suspense fallback={<div className="w-[180px] h-[44px] bg-[#14161b] rounded-2xl animate-pulse" />}>
+                    <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
                     {/* Export current-month finance CSV — direct download, no JS required */}
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold hover:bg-emerald-500/20 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm font-bold hover:bg-emerald-500/20 transition-all"
                         title="Download finance CSV for current month"
                     >
                         <Download className="w-4 h-4" />
@@ -289,20 +289,20 @@ export default async function FinancePage(props: {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {stats.map((stat) => (
-                    <div key={stat.name} className="glassmorphic-card rounded-[32px] p-6 relative overflow-hidden group">
+                    <div key={stat.name} className="bg-card border border-border shadow-sm rounded-[32px] p-6 relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform">
                                 <stat.icon className="w-6 h-6 text-primary" />
                             </div>
                             <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
-                                stat.changeType === 'increase' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-slate-400'
+                                stat.changeType === 'increase' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-500/10 text-muted-foreground'
                             }`}>
                                 {stat.changeType === 'increase' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                                 {stat.change}
                             </div>
                         </div>
-                        <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">{stat.name}</p>
-                        <h3 className="text-3xl font-black text-white mt-1">{stat.value}</h3>
+                        <p className="text-sm font-bold text-foreground-variant uppercase tracking-wider">{stat.name}</p>
+                        <h3 className="text-3xl font-black text-foreground mt-1">{stat.value}</h3>
                         
                         {/* Decorative background pulse */}
                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
@@ -317,9 +317,9 @@ export default async function FinancePage(props: {
                     <InvoiceAgingSummary buckets={agingBuckets} />
 
                     {parentBalancesResult.length > 0 && (
-                        <div className="glassmorphic-card rounded-[32px] p-6">
+                        <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
                             <div className="flex items-center justify-between mb-6 px-2">
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-primary" />
                                     Parent Balances
                                 </h3>
@@ -340,15 +340,15 @@ export default async function FinancePage(props: {
                                     View All
                                 </Link>
                             </div>
-                            <div className="relative z-10 bg-surface-container-highest/50 rounded-2xl overflow-hidden backdrop-blur-sm border border-outline-variant/10">
+                            <div className="relative z-10 bg-secondary/50 rounded-2xl overflow-hidden backdrop-blur-sm border border-border">
                                 <OverdueInvoiceTable invoices={overdueInvoices} />
                             </div>
                         </div>
                     )}
 
-                    <div className="glassmorphic-card rounded-[32px] p-6">
+                    <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
                         <div className="flex items-center justify-between mb-6 px-2">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
                                 <FileText className="w-5 h-5 text-primary" />
                                 Recent Invoices
                             </h3>
@@ -364,37 +364,37 @@ export default async function FinancePage(props: {
                 {/* Sidebar Cards */}
                 <div className="space-y-6">
                     {/* Bank & Payment Info */}
-                    <div className="glassmorphic-card rounded-[32px] p-8 bg-gradient-to-br from-primary/5 to-transparent">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <div className="bg-card border border-border shadow-sm rounded-[32px] p-8 bg-gradient-to-br from-primary/5 to-transparent">
+                        <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                             <CreditCard className="w-5 h-5 text-primary" />
                             Billing Settings
                         </h3>
-                        <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
+                        <p className="text-sm text-foreground-variant mb-6 leading-relaxed">
                             Configure your bank details and fee structures to ensure professional invoice generation.
                         </p>
                         <Link 
                             href="/dashboard/settings/finance"
-                            className="block w-full text-center py-4 bg-white/5 border border-outline-variant/20 rounded-2xl text-sm font-bold text-white hover:bg-white/10 transition-all"
+                            className="block w-full text-center py-4 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-foreground hover:bg-secondary transition-all"
                         >
                             Configure Billing
                         </Link>
                     </div>
 
                     {/* Quick Tools */}
-                    <div className="glassmorphic-card rounded-[32px] p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 px-2">Quick Tools</h3>
+                    <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
+                        <h3 className="text-lg font-bold text-foreground mb-4 px-2">Quick Tools</h3>
                         <div className="space-y-2">
-                            <Link href="/dashboard/finance/receipt" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <Link href="/dashboard/finance/receipt" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Cash Receipt Tool</span>
-                                <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
+                                <ArrowUpRight className="w-4 h-4 text-foreground-variant group-hover:text-primary transition-colors" />
                             </Link>
-                            <a href={`/api/export/finance?from=${monthStart}&to=${todayStr}`} download={`finance-${monthStart}-to-${todayStr}.csv`} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <a href={`/api/export/finance?from=${monthStart}&to=${todayStr}`} download={`finance-${monthStart}-to-${todayStr}.csv`} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Export Ledger (CSV)</span>
-                                <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
+                                <ArrowUpRight className="w-4 h-4 text-foreground-variant group-hover:text-primary transition-colors" />
                             </a>
-                            <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all text-sm font-medium text-white group">
+                            <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Tax Summary Report</span>
-                                <ArrowUpRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-colors" />
+                                <ArrowUpRight className="w-4 h-4 text-foreground-variant group-hover:text-primary transition-colors" />
                             </button>
                         </div>
                     </div>

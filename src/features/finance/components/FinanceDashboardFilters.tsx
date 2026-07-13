@@ -33,13 +33,13 @@ export default function FinanceDashboardFilters({ centres }: FinanceDashboardFil
                         </option>
                     ))}
                 </select>
-                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
             
             {selectedCentreId !== 'all' && (
                 <button
                     onClick={() => handleCentreChange('all')}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-secondary hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all"
                 >
                     <X className="w-4 h-4" />
                     Clear

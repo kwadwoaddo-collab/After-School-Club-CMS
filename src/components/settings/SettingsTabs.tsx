@@ -98,13 +98,13 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                             className={`w-full flex items-start gap-3 p-4 rounded-2xl border text-left transition-all duration-200 ${
                                 isActive
                                     ? 'bg-primary/10 border-primary/30 text-primary font-extrabold shadow-md shadow-primary/5'
-                                    : 'bg-transparent border-transparent text-[#8c909f] hover:text-white hover:bg-white/5 hover:border-white/5'
+                                    : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60 hover:border-border/50'
                             }`}
                         >
-                            <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isActive ? 'text-primary' : 'text-[#8c909f]'}`} />
+                            <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
                             <div className="min-w-0">
                                 <p className="text-xs font-bold uppercase tracking-wider leading-none mb-1">{tab.label}</p>
-                                <p className="text-[10px] text-[#8c909f] leading-tight truncate">{tab.description}</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight truncate">{tab.description}</p>
                             </div>
                         </button>
                     );
@@ -113,36 +113,36 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
 
             {/* Main Content Pane */}
             <div className="lg:col-span-3 min-h-[500px]">
-                <div className="glassmorphic-card rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div className="bg-card border border-border shadow-sm rounded-3xl p-6 sm:p-8 shadow-xl">
                     {activeTab === 'general' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-white tracking-tight">Organization Profile</h2>
-                                <p className="text-sm text-[#8c909f] mt-1">Configure your organization details and workspace details.</p>
+                                <h2 className="text-xl font-bold text-foreground tracking-tight">Organization Profile</h2>
+                                <p className="text-sm text-muted-foreground mt-1">Configure your organization details and workspace details.</p>
                             </div>
                             <OrganisationInfoForm org={org} baseUrl={baseUrl} />
                             
-                            <div className="pt-6 border-t border-white/5 space-y-4">
-                                <div className="flex items-center gap-2 text-white">
-                                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                            <div className="pt-6 border-t border-border/50 space-y-4">
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
                                     <h3 className="font-bold text-sm uppercase tracking-wider">Privacy &amp; Compliance</h3>
                                 </div>
-                                <p className="text-xs text-[#8c909f]">Export all stored records for GDPR portability requests.</p>
+                                <p className="text-xs text-muted-foreground">Export all stored records for GDPR portability requests.</p>
                                 <GdprExportButton />
                             </div>
 
-                            <div className="pt-6 border-t border-white/5 space-y-4">
-                                <div className="flex items-center gap-2 text-white">
-                                    <GraduationCap className="w-5 h-5 text-[#adc6ff]" />
+                            <div className="pt-6 border-t border-border/50 space-y-4">
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <GraduationCap className="w-5 h-5 text-primary" />
                                     <h3 className="font-bold text-sm uppercase tracking-wider">Academic Year Rollover</h3>
                                 </div>
-                                <p className="text-xs text-[#8c909f] leading-relaxed">
+                                <p className="text-xs text-muted-foreground leading-relaxed">
                                     Increment the school year for all active students in your organisation by +1 (e.g. Year 1 ➔ Year 2, Nursery ➔ Reception, Year 13 ➔ Graduated). This happens automatically on September 1st, but you can manually trigger it here.
                                 </p>
                                 <button
                                     onClick={handleRollSchoolYears}
                                     disabled={isRolling}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-secondary/60 hover:bg-secondary border border-border text-foreground rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
                                 >
                                     {isRolling ? (
                                         <>
@@ -169,8 +169,8 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                     {activeTab === 'branding' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-white tracking-tight">Branding &amp; Visual Design</h2>
-                                <p className="text-sm text-[#8c909f] mt-1">Customize visual styles for parent facing registration &amp; booking pages.</p>
+                                <h2 className="text-xl font-bold text-foreground tracking-tight">Branding &amp; Visual Design</h2>
+                                <p className="text-sm text-muted-foreground mt-1">Customize visual styles for parent facing registration &amp; booking pages.</p>
                             </div>
                             <BrandingForm initialColor={org.brandColor || '#136dec'} logoUrl={org.logoUrl} />
                         </div>
@@ -179,8 +179,8 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                     {activeTab === 'finance' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <div>
-                                <h2 className="text-xl font-bold text-white tracking-tight">Finance &amp; Pricing Rules</h2>
-                                <p className="text-sm text-[#8c909f] mt-1">Manage standard pricing rules and assisted session values.</p>
+                                <h2 className="text-xl font-bold text-foreground tracking-tight">Finance &amp; Pricing Rules</h2>
+                                <p className="text-sm text-muted-foreground mt-1">Manage standard pricing rules and assisted session values.</p>
                             </div>
                             <FinancePricingForm centres={formattedCentres} />
                         </div>

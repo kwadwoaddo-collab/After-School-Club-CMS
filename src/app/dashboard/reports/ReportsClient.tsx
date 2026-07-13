@@ -185,14 +185,14 @@ export default function ReportsClient() {
         <div className="flex flex-col gap-6">
 
             {/* ── Tab Switcher ──────────────────────────────────────────────────── */}
-            <div className="flex items-center gap-2 p-1 bg-[#1a1d23] border border-[#424754]/15 rounded-2xl w-fit shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+            <div className="flex items-center gap-2 p-1 bg-card border border-border rounded-2xl w-fit shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
                 <button
                     onClick={() => setActiveTab('exports')}
                     className={cn(
                         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                         activeTab === 'exports'
                             ? 'bg-[#adc6ff] text-[#131313] shadow-sm'
-                            : 'text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#2a2a2a]'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-[#2a2a2a]'
                     )}
                 >
                     <FileSpreadsheet className="w-4 h-4" />
@@ -204,7 +204,7 @@ export default function ReportsClient() {
                         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                         activeTab === 'ceo'
                             ? 'bg-[#adc6ff] text-[#131313] shadow-sm'
-                            : 'text-[#8c909f] hover:text-[#e5e2e1] hover:bg-[#2a2a2a]'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-[#2a2a2a]'
                     )}
                 >
                     <BarChart3 className="w-4 h-4" />
@@ -221,14 +221,14 @@ export default function ReportsClient() {
             {activeTab === 'exports' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Booking Export Card */}
-            <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#adc6ff]/20 transition-all duration-300">
+            <div className="bg-card rounded-[32px] p-8 flex flex-col gap-6 border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#adc6ff]/20 transition-all duration-300">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-[#adc6ff]" />
+                        <FileText className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Export Bookings</h2>
-                        <p className="text-sm text-[#8c909f] mt-1">Download session schedules and records</p>
+                        <h2 className="font-bold text-foreground text-xl leading-tight">Export Bookings</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Download session schedules and records</p>
                     </div>
                 </div>
 
@@ -238,59 +238,59 @@ export default function ReportsClient() {
                             <button
                                 onClick={() => handleExportBookings('all')}
                                 disabled={isExportingBookings}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-3">
-                                    <FileSpreadsheet className="w-5 h-5 text-[#adc6ff] group-hover:scale-110 transition-transform" />
+                                    <FileSpreadsheet className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                                     All History
                                 </span>
-                                {isExportingBookings ? <Loader2 className="w-4 h-4 text-[#adc6ff] animate-spin" /> : <Download className="w-4 h-4 text-[#8c909f]" />}
+                                {isExportingBookings ? <Loader2 className="w-4 h-4 text-primary animate-spin" /> : <Download className="w-4 h-4 text-muted-foreground" />}
                             </button>
                             <button
                                 onClick={() => handleExportBookings('month')}
                                 disabled={isExportingBookings}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-3">
-                                    <FileSpreadsheet className="w-5 h-5 text-[#adc6ff] group-hover:scale-110 transition-transform" />
+                                    <FileSpreadsheet className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                                     Last 30 Days
                                 </span>
-                                {isExportingBookings ? <Loader2 className="w-4 h-4 text-[#adc6ff] animate-spin" /> : <Download className="w-4 h-4 text-[#8c909f]" />}
+                                {isExportingBookings ? <Loader2 className="w-4 h-4 text-primary animate-spin" /> : <Download className="w-4 h-4 text-muted-foreground" />}
                             </button>
                             <button
                                 onClick={() => setShowCustomRangeBooking(true)}
                                 disabled={isExportingBookings}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-3">
-                                    <Calendar className="w-5 h-5 text-[#8c909f] group-hover:text-[#adc6ff] group-hover:scale-110 transition-all" />
+                                    <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all" />
                                     Custom Range
                                 </span>
                             </button>
                         </>
                     ) : (
-                        <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200">
                             <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-xs font-bold text-[#8c909f] uppercase tracking-wider">Custom Range</h4>
-                                <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-bold text-[#adc6ff] hover:text-[#8facff] hover:underline transition-colors">Cancel</button>
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Range</h4>
+                                <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-bold text-primary hover:text-[#8facff] hover:underline transition-colors">Cancel</button>
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-[#8c909f] uppercase mb-1.5">Start Date</label>
+                                    <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Start Date</label>
                                     <input
                                         type="date"
                                         value={startDateBooking}
                                         onChange={(e) => setStartDateBooking(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
+                                        className="w-full px-4 py-3 bg-secondary/60 border border-[#2a2a2a] rounded-2xl text-sm text-foreground font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-[#8c909f] uppercase mb-1.5">End Date</label>
+                                    <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">End Date</label>
                                     <input
                                         type="date"
                                         value={endDateBooking}
                                         onChange={(e) => setEndDateBooking(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
+                                        className="w-full px-4 py-3 bg-secondary/60 border border-[#2a2a2a] rounded-2xl text-sm text-foreground font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
                                     />
                                 </div>
                                 <button
@@ -306,21 +306,21 @@ export default function ReportsClient() {
                     )}
                     {bookingExportMsg && (
                         <p className={`text-xs font-bold px-4 py-3 rounded-xl ${
-                            bookingExportMsg.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-[#adc6ff]/10 text-[#adc6ff] border border-[#adc6ff]/20'
+                            bookingExportMsg.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-primary/10 text-primary border border-[#adc6ff]/20'
                         }`}>{bookingExportMsg.text}</p>
                     )}
                 </div>
             </div>
 
             {/* Student Export Card */}
-            <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#d0bcff]/20 transition-all duration-300">
+            <div className="bg-card rounded-[32px] p-8 flex flex-col gap-6 border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#d0bcff]/20 transition-all duration-300">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
                         <Users className="w-6 h-6 text-[#d0bcff]" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">Export Student Data</h2>
-                        <p className="text-sm text-[#8c909f] mt-1">Download contact info and registrations</p>
+                        <h2 className="font-bold text-foreground text-xl leading-tight">Export Student Data</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Download contact info and registrations</p>
                     </div>
                 </div>
 
@@ -330,59 +330,59 @@ export default function ReportsClient() {
                             <button
                                 onClick={() => handleExportStudents('all')}
                                 disabled={isExportingStudents}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-3">
                                     <FileSpreadsheet className="w-5 h-5 text-[#d0bcff] group-hover:scale-110 transition-transform" />
                                     All Registered Students
                                 </span>
-                                {isExportingStudents ? <Loader2 className="w-4 h-4 text-[#d0bcff] animate-spin" /> : <Download className="w-4 h-4 text-[#8c909f]" />}
+                                {isExportingStudents ? <Loader2 className="w-4 h-4 text-[#d0bcff] animate-spin" /> : <Download className="w-4 h-4 text-muted-foreground" />}
                             </button>
                             <button
                                 onClick={() => handleExportStudents('month')}
                                 disabled={isExportingStudents}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-3">
                                     <FileSpreadsheet className="w-5 h-5 text-[#d0bcff] group-hover:scale-110 transition-transform" />
                                     Registered Last 30 Days
                                 </span>
-                                {isExportingStudents ? <Loader2 className="w-4 h-4 text-[#d0bcff] animate-spin" /> : <Download className="w-4 h-4 text-[#8c909f]" />}
+                                {isExportingStudents ? <Loader2 className="w-4 h-4 text-[#d0bcff] animate-spin" /> : <Download className="w-4 h-4 text-muted-foreground" />}
                             </button>
                             <button
                                 onClick={() => setShowCustomRangeStudent(true)}
                                 disabled={isExportingStudents}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+                                className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-3">
-                                    <Calendar className="w-5 h-5 text-[#8c909f] group-hover:text-[#d0bcff] group-hover:scale-110 transition-all" />
+                                    <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-[#d0bcff] group-hover:scale-110 transition-all" />
                                     Custom Reg. Date Range
                                 </span>
                             </button>
                         </>
                     ) : (
-                        <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200">
                             <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-xs font-bold text-[#8c909f] uppercase tracking-wider">Custom Range</h4>
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Range</h4>
                                 <button onClick={() => setShowCustomRangeStudent(false)} className="text-xs font-bold text-[#d0bcff] hover:text-[#bd9eff] hover:underline transition-colors">Cancel</button>
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-[#8c909f] uppercase mb-1.5">Start Date</label>
+                                    <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Start Date</label>
                                     <input
                                         type="date"
                                         value={startDateStudent}
                                         onChange={(e) => setStartDateStudent(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#d0bcff]/50 focus:ring-2 focus:ring-[#d0bcff]/20 transition-all"
+                                        className="w-full px-4 py-3 bg-secondary/60 border border-[#2a2a2a] rounded-2xl text-sm text-foreground font-mono outline-none focus:border-[#d0bcff]/50 focus:ring-2 focus:ring-[#d0bcff]/20 transition-all"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-[#8c909f] uppercase mb-1.5">End Date</label>
+                                    <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">End Date</label>
                                     <input
                                         type="date"
                                         value={endDateStudent}
                                         onChange={(e) => setEndDateStudent(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#d0bcff]/50 focus:ring-2 focus:ring-[#d0bcff]/20 transition-all"
+                                        className="w-full px-4 py-3 bg-secondary/60 border border-[#2a2a2a] rounded-2xl text-sm text-foreground font-mono outline-none focus:border-[#d0bcff]/50 focus:ring-2 focus:ring-[#d0bcff]/20 transition-all"
                                     />
                                 </div>
                                 <button

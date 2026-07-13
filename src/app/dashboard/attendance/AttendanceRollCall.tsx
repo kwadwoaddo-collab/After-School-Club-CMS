@@ -148,26 +148,26 @@ function AttendeeCard({
         <div className="space-y-2">
             <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border transition-all ${cfg
                 ? `${cfg.bg} ${cfg.border}`
-                : 'bg-[#2a2d35]/30 border-[#424754]/20 hover:border-[#adc6ff]/20'
+                : 'bg-secondary/40 border-border hover:border-[#adc6ff]/20'
             }`}>
                 {/* Left side: Avatar + Info */}
                 <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
                     {/* Avatar */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-[#adc6ff]/10 text-[#adc6ff]'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-primary/10 text-primary'}`}>
                         {initials}
                     </div>
 
                     {/* Name + details */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                            <Link href={`/dashboard/students/${attendee.childId}`} className="text-white hover:text-[#adc6ff] font-semibold text-sm truncate transition-colors">
+                            <Link href={`/dashboard/students/${attendee.childId}`} className="text-foreground hover:text-primary font-semibold text-sm truncate transition-colors">
                                 {attendee.firstName} {attendee.lastName}
                             </Link>
                             {(note || lateMinutes) && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
                             )}
                         </div>
-                        <p className="text-[#8c909f] text-[11px] font-medium leading-normal truncate">
+                        <p className="text-muted-foreground text-[11px] font-medium leading-normal truncate">
                             Year {attendee.schoolYear} · Parent: {attendee.parentFirstName} ({attendee.parentEmail || 'No email'})
                             {lateMinutes && ` · Late: ${lateMinutes}m`}
                             {note && ` · "${note}"`}
@@ -176,7 +176,7 @@ function AttendeeCard({
                 </div>
 
                 {/* Right side: Status badge, saved, loading, and buttons */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t border-[#424754]/10 sm:border-0 pt-3 sm:pt-0">
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t border-border/60 sm:border-0 pt-3 sm:pt-0">
                     <div className="flex items-center gap-2">
                         {/* Status badge */}
                         {cfg && (
@@ -189,7 +189,7 @@ function AttendeeCard({
                         {saved && <span className="text-emerald-400 text-xs font-bold animate-pulse">Saved</span>}
 
                         {/* Loading */}
-                        {isPending && <Loader2 className="w-4 h-4 text-[#8c909f] animate-spin flex-shrink-0" />}
+                        {isPending && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />}
                     </div>
 
                     {/* Quick action buttons */}
@@ -199,8 +199,8 @@ function AttendeeCard({
                                 onClick={() => setShowDetails(!showDetails)}
                                 title="Add Note/Details"
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${showDetails
-                                    ? 'bg-[#adc6ff]/20 border-[#adc6ff]/40 text-[#adc6ff]'
-                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-[#adc6ff]/40 hover:text-white'
+                                    ? 'bg-primary/20 border-[#adc6ff]/40 text-primary'
+                                    : 'bg-card border-border text-muted-foreground hover:border-[#adc6ff]/40 hover:text-foreground'
                                 }`}
                             >
                                 <Edit2 className="w-4 h-4" />
@@ -209,8 +209,8 @@ function AttendeeCard({
                                 onClick={() => mark(status === 'present' ? null : 'present')}
                                 title="Mark Present"
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'present'
-                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-emerald-500/50 hover:text-emerald-400'
+                                    ? 'bg-emerald-500 border-emerald-500 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                                    : 'bg-card border-border text-muted-foreground hover:border-emerald-500/50 hover:text-emerald-400'
                                 }`}
                             >
                                 <CheckCircle2 className="w-4 h-4" />
@@ -219,8 +219,8 @@ function AttendeeCard({
                                 onClick={() => mark(status === 'late' ? null : 'late')}
                                 title="Mark Late"
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'late'
-                                    ? 'bg-amber-500 border-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-amber-500/50 hover:text-amber-400'
+                                    ? 'bg-amber-500 border-amber-500 text-foreground shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                                    : 'bg-card border-border text-muted-foreground hover:border-amber-500/50 hover:text-amber-400'
                                 }`}
                             >
                                 <Clock className="w-4 h-4" />
@@ -229,8 +229,8 @@ function AttendeeCard({
                                 onClick={() => mark(status === 'absent' ? null : 'absent')}
                                 title="Mark Absent"
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'absent'
-                                    ? 'bg-red-500 border-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]'
-                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-red-500/50 hover:text-red-400'
+                                    ? 'bg-red-500 border-red-500 text-foreground shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+                                    : 'bg-card border-border text-muted-foreground hover:border-red-500/50 hover:text-red-400'
                                 }`}
                             >
                                 <XCircle className="w-4 h-4" />
@@ -239,8 +239,8 @@ function AttendeeCard({
                                 onClick={() => mark(status === 'no_show' ? null : 'no_show')}
                                 title="Mark No Show"
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'no_show'
-                                    ? 'bg-rose-500 border-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-rose-500/50 hover:text-rose-400'
+                                    ? 'bg-rose-500 border-rose-500 text-foreground shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                                    : 'bg-card border-border text-muted-foreground hover:border-rose-500/50 hover:text-rose-400'
                                 }`}
                             >
                                 <UserMinus className="w-4 h-4" />
@@ -249,8 +249,8 @@ function AttendeeCard({
                                 onClick={() => mark(status === 'excused' ? null : 'excused')}
                                 title="Mark Excused"
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'excused'
-                                    ? 'bg-purple-500 border-purple-500 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                                    : 'bg-[#1a1d23] border-[#424754]/30 text-[#8c909f] hover:border-purple-500/50 hover:text-purple-400'
+                                    ? 'bg-purple-500 border-purple-500 text-foreground shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                                    : 'bg-card border-border text-muted-foreground hover:border-purple-500/50 hover:text-purple-400'
                                 }`}
                             >
                                 <CalendarX className="w-4 h-4" />
@@ -262,41 +262,41 @@ function AttendeeCard({
 
             {/* Note and Late Pickup edit form drawer */}
             {showDetails && (
-                <div className="bg-[#1a1d23] border border-[#424754]/15 rounded-2xl p-4 ml-6 space-y-3 animate-in slide-in-from-top-2 duration-300">
+                <div className="bg-card border border-border rounded-2xl p-4 ml-6 space-y-3 animate-in slide-in-from-top-2 duration-300">
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1">
-                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1">Attendance Note</label>
+                            <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Attendance Note</label>
                             <input
                                 type="text"
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 placeholder="Reason for late arrival, absence context, medical log..."
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                             />
                         </div>
                         <div className="w-full sm:w-32">
-                            <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1">Late Mins</label>
+                            <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Late Mins</label>
                             <input
                                 type="number"
                                 value={lateMinutes}
                                 onChange={(e) => setLateMinutes(e.target.value)}
                                 placeholder="Minutes"
                                 min="0"
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                             />
                         </div>
                     </div>
                     <div className="flex items-center justify-end gap-2">
                         <button
                             onClick={() => setShowDetails(false)}
-                            className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-[#424754]/20 text-white/60 hover:text-white text-xs font-bold transition-all"
+                            className="px-3.5 py-1.5 rounded-xl bg-secondary/60 border border-border text-foreground/60 hover:text-foreground text-xs font-bold transition-all"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={saveDetails}
                             disabled={isPending}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 hover:bg-[#adc6ff]/20 text-[#adc6ff] text-xs font-bold transition-all flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 rounded-xl bg-primary/10 border border-[#adc6ff]/20 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1.5"
                         >
                             {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
                             Save Details
@@ -417,21 +417,21 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Action Bar — sticky so it stays visible while scrolling through slots */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5 flex flex-col sm:flex-row items-center gap-3">
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/90/90 backdrop-blur-xl border-b border-border/50 flex flex-col sm:flex-row items-center gap-3">
                 {/* Search Bar */}
                 <div className="relative flex-1 w-full">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c909f]" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search expected students or parents..."
-                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#2a2d35]/30 border border-[#424754]/20 text-white placeholder-white/25 text-sm focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border text-foreground placeholder-gray-400 text-sm focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                     />
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 text-[#8c909f] hover:text-white transition-all"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
@@ -450,12 +450,12 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
             {/* List */}
             {filteredSlots.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-[#1a1d23] rounded-[24px] border border-dashed border-[#424754]/25">
-                    <div className="w-16 h-16 rounded-2xl bg-[#2a2d35]/40 flex items-center justify-center mb-4">
-                        <Users className="w-7 h-7 text-[#8c909f]/40" />
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-[24px] border border-dashed border-border">
+                    <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mb-4">
+                        <Users className="w-7 h-7 text-muted-foreground/40" />
                     </div>
-                    <h3 className="text-[#e5e2e1] font-bold mb-2">No expected students found</h3>
-                    <p className="text-[#8c909f] text-sm max-w-xs px-4">
+                    <h3 className="text-foreground font-bold mb-2">No expected students found</h3>
+                    <p className="text-muted-foreground text-sm max-w-xs px-4">
                         {searchQuery
                             ? "No scheduled children or parent names match your search term."
                             : "There are no bookings or permanent schedules compiled for today. Click 'Register Catch-Up' to add one."}
@@ -463,7 +463,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
-                            className="mt-4 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/10 transition-all"
+                            className="mt-4 px-4 py-2 bg-secondary/60 border border-border rounded-xl text-xs font-bold text-foreground hover:bg-secondary transition-all"
                         >
                             Clear Search Filter
                         </button>
@@ -478,25 +478,25 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                     return (
                         <div
                             key={slot.time}
-                            className="bg-[#1a1d23] rounded-[24px] border border-[#424754]/15 shadow-[0_4px_24px_rgba(0,0,0,0.2)] overflow-hidden"
+                            className="bg-card rounded-[24px] border border-border shadow-[0_4px_24px_rgba(0,0,0,0.2)] overflow-hidden"
                         >
                             {/* Slot header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-[#424754]/15 bg-[#1e2230]/50">
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-secondary/50">
                                 <div className="flex items-center gap-4">
                                     <div className="text-center">
-                                        <p className="text-[#adc6ff] font-black text-lg leading-none">
+                                        <p className="text-primary font-black text-lg leading-none">
                                             {slot.timeLabel.split(' ')[0]}
                                         </p>
-                                        <p className="text-[#8c909f] text-xs font-bold">
+                                        <p className="text-muted-foreground text-xs font-bold">
                                             {slot.timeLabel.split(' ')[1]}
                                         </p>
                                     </div>
                                     <div className="w-px h-8 bg-[#424754]/30" />
                                     <div>
-                                        <p className="text-white font-semibold text-sm">
+                                        <p className="text-foreground font-semibold text-sm">
                                             Session Slot: {slot.timeLabel}
                                         </p>
-                                        <p className="text-[#8c909f] text-xs">
+                                        <p className="text-muted-foreground text-xs">
                                             {totalCount} student{totalCount !== 1 ? 's' : ''} expected
                                         </p>
                                     </div>
@@ -520,14 +520,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                 {/* Regular Register (Master List) */}
                                 <div className="p-6 space-y-3">
                                     <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-[11px] font-black text-[#8c909f] uppercase tracking-wider">Regular Register (Master List)</h4>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#2a2d35]/40 text-[#8c909f] border border-[#424754]/10">
+                                        <h4 className="text-[11px] font-black text-muted-foreground uppercase tracking-wider">Regular Register (Master List)</h4>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-secondary/50 text-muted-foreground border border-border/60">
                                             {slot.regulars.length} Scheduled
                                         </span>
                                     </div>
                                     
                                     {slot.regulars.length === 0 ? (
-                                        <p className="text-center text-[#8c909f]/55 text-xs py-8 italic border border-dashed border-[#424754]/10 rounded-2xl">
+                                        <p className="text-center text-muted-foreground/55 text-xs py-8 italic border border-dashed border-border/60 rounded-2xl">
                                             No regular students permanently scheduled for this slot.
                                         </p>
                                     ) : (
@@ -559,7 +559,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     </div>
                                     
                                     {slot.catchups.length === 0 ? (
-                                        <p className="text-center text-[#8c909f]/55 text-xs py-8 italic border border-dashed border-[#424754]/10 rounded-2xl">
+                                        <p className="text-center text-muted-foreground/55 text-xs py-8 italic border border-dashed border-border/60 rounded-2xl">
                                             No one-off catchups or walk-ins registered.
                                         </p>
                                     ) : (
@@ -586,16 +586,16 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             {/* Walk-in Modal */}
             {showWalkIn && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-[#1a1d23] border border-[#424754]/20 rounded-[28px] max-w-lg w-full overflow-hidden shadow-[0_24px_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200">
+                    <div className="bg-card border border-border rounded-[28px] max-w-lg w-full overflow-hidden shadow-[0_24px_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200">
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-[#424754]/15 bg-[#1e2230]/50">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-secondary/50">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Register Catch-Up or Walk-In</h3>
-                                <p className="text-xs text-[#8c909f]">Add a child for a one-off session</p>
+                                <h3 className="text-lg font-bold text-foreground">Register Catch-Up or Walk-In</h3>
+                                <p className="text-xs text-muted-foreground">Add a child for a one-off session</p>
                             </div>
                             <button
                                 onClick={() => setShowWalkIn(false)}
-                                className="p-2 rounded-xl bg-white/5 border border-[#424754]/10 text-[#8c909f] hover:text-white transition-all"
+                                className="p-2 rounded-xl bg-secondary/60 border border-border/60 text-muted-foreground hover:text-foreground transition-all"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -603,13 +603,13 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
                         {centreId !== 'all' && (
                             /* Tabs */
-                            <div className="flex border-b border-[#424754]/15 px-6 bg-[#1a1d23]">
+                            <div className="flex border-b border-border px-6 bg-card">
                                 <button
                                     onClick={() => setWalkInTab('existing')}
                                     className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all ${
                                         walkInTab === 'existing'
                                             ? 'border-primary text-primary'
-                                            : 'border-transparent text-[#8c909f] hover:text-[#c2c6d6]'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground/70'
                                     }`}
                                 >
                                     Select Existing Student
@@ -619,7 +619,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     className={`flex-1 py-3 text-xs font-bold border-b-2 transition-all ${
                                         walkInTab === 'new'
                                             ? 'border-primary text-primary'
-                                            : 'border-transparent text-[#8c909f] hover:text-[#c2c6d6]'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground/70'
                                     }`}
                                 >
                                     Register New Guest
@@ -639,22 +639,22 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         <>
                                             {/* Search input */}
                                             <div>
-                                                <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Search Students</label>
+                                                <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Search Students</label>
                                                 <div className="relative">
-                                                    <Search className="absolute left-3 top-3 w-4 h-4 text-[#8c909f]" />
+                                                    <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                                                     <input
                                                         type="text"
                                                         value={studentSearchQuery}
                                                         onChange={(e) => setStudentSearchQuery(e.target.value)}
                                                         placeholder="Search existing students..."
-                                                        className="w-full h-10 pl-9 pr-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                             </div>
 
                                             {/* List box */}
                                             <div>
-                                                <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Select Student *</label>
+                                                <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Select Student *</label>
                                                 {(() => {
                                                     const bookedChildIds = new Set(
                                                         slots.flatMap(s => [...s.regulars, ...s.catchups].map(a => a.childId))
@@ -668,7 +668,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                     return (
                                                         <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
                                                             {availableStudents.length === 0 ? (
-                                                                <p className="text-xs text-[#8c909f] py-4 text-center border border-dashed border-[#424754]/10 rounded-2xl">
+                                                                <p className="text-xs text-muted-foreground py-4 text-center border border-dashed border-border/60 rounded-2xl">
                                                                     No available students found.
                                                                 </p>
                                                             ) : (
@@ -679,13 +679,13 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                                         onClick={() => setSelectedChildId(student.id)}
                                                                         className={`w-full text-left p-3 rounded-xl border text-xs flex justify-between items-center transition-all ${
                                                                             selectedChildId === student.id
-                                                                                ? 'bg-primary/10 border-primary text-white font-bold'
-                                                                                : 'bg-white/5 border-[#424754]/10 text-slate-300 hover:bg-white/10'
+                                                                                ? 'bg-primary/10 border-primary text-foreground font-bold'
+                                                                                : 'bg-secondary/60 border-border/60 text-slate-300 hover:bg-secondary'
                                                                         }`}
                                                                     >
                                                                         <div>
                                                                             <div>{student.firstName} {student.lastName} (Year {student.schoolYear})</div>
-                                                                            <div className="text-[10px] text-[#8c909f] font-normal mt-0.5">Parent: {student.parentFirstName} {student.parentLastName} ({student.parentEmail})</div>
+                                                                            <div className="text-[10px] text-muted-foreground font-normal mt-0.5">Parent: {student.parentFirstName} {student.parentLastName} ({student.parentEmail})</div>
                                                                         </div>
                                                                         {selectedChildId === student.id && <UserCheck className="w-4 h-4 text-primary" />}
                                                                     </button>
@@ -698,14 +698,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
                                             {/* Session time */}
                                             <div>
-                                                <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Session Time</label>
+                                                <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Session Time</label>
                                                 <select
                                                     value={formSessionTime}
                                                     onChange={(e) => setFormSessionTime(e.target.value)}
-                                                    className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                    className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                 >
                                                     {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
-                                                        <option key={t} value={t} className="bg-[#1a1d23] text-white">{t}</option>
+                                                        <option key={t} value={t} className="bg-card text-foreground">{t}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -715,102 +715,102 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             {/* Child details */}
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Child First Name *</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Child First Name *</label>
                                                     <input
                                                         type="text"
                                                         required
                                                         value={formChildFirst}
                                                         onChange={(e) => setFormChildFirst(e.target.value)}
                                                         placeholder="e.g. John"
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Child Last Name *</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Child Last Name *</label>
                                                     <input
                                                         type="text"
                                                         required
                                                         value={formChildLast}
                                                         onChange={(e) => setFormChildLast(e.target.value)}
                                                         placeholder="e.g. Doe"
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">School Year</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">School Year</label>
                                                     <select
                                                         value={formYear}
                                                         onChange={(e) => setFormYear(e.target.value)}
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     >
                                                         {['Nursery', 'Reception', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(yr => (
-                                                            <option key={yr} value={yr} className="bg-[#1a1d23] text-white">Year {yr}</option>
+                                                            <option key={yr} value={yr} className="bg-card text-foreground">Year {yr}</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Session Time</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Session Time</label>
                                                     <select
                                                         value={formSessionTime}
                                                         onChange={(e) => setFormSessionTime(e.target.value)}
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     >
                                                         {['15:45', '17:00', '11:00', '12:15', '13:30', '14:45'].map(t => (
-                                                            <option key={t} value={t} className="bg-[#1a1d23] text-white">{t}</option>
+                                                            <option key={t} value={t} className="bg-card text-foreground">{t}</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                             </div>
 
                                             {/* Parent details */}
-                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#424754]/10">
+                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/60">
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent First Name *</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Parent First Name *</label>
                                                     <input
                                                         type="text"
                                                         required
                                                         value={formParentFirst}
                                                         onChange={(e) => setFormParentFirst(e.target.value)}
                                                         placeholder="e.g. Mary"
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Last Name *</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Parent Last Name *</label>
                                                     <input
                                                         type="text"
                                                         required
                                                         value={formParentLast}
                                                         onChange={(e) => setFormParentLast(e.target.value)}
                                                         placeholder="e.g. Doe"
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Email *</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Parent Email *</label>
                                                     <input
                                                         type="email"
                                                         required
                                                         value={formParentEmail}
                                                         onChange={(e) => setFormParentEmail(e.target.value)}
                                                         placeholder="e.g. mary@gmail.com"
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-[#8c909f] uppercase tracking-wider mb-1.5">Parent Phone</label>
+                                                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Parent Phone</label>
                                                     <input
                                                         type="tel"
                                                         value={formParentPhone}
                                                         onChange={(e) => setFormParentPhone(e.target.value)}
                                                         placeholder="e.g. 07123456789"
-                                                        className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                                        className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                                                     />
                                                 </div>
                                             </div>
@@ -821,10 +821,10 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#424754]/15 bg-[#1e2230]/50">
+                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-secondary/50">
                             <button
                                 onClick={() => setShowWalkIn(false)}
-                                className="px-4 py-2 rounded-xl bg-white/5 border border-[#424754]/15 text-white/70 hover:text-white text-xs font-bold transition-all"
+                                className="px-4 py-2 rounded-xl bg-secondary/60 border border-border text-foreground/70 hover:text-foreground text-xs font-bold transition-all"
                             >
                                 Cancel
                             </button>
@@ -832,7 +832,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                 <button
                                     onClick={handleWalkInSubmit}
                                     disabled={isSubmitting}
-                                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-700 disabled:opacity-55 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
+                                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-700 disabled:opacity-55 text-foreground text-xs font-bold transition-all flex items-center gap-1.5 shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
                                 >
                                     {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                                     {walkInTab === 'existing' ? 'Add to Register' : 'Register & Check In'}

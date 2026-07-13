@@ -24,10 +24,10 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
 
     if (payments.length === 0) {
         return (
-            <div className="py-12 flex flex-col items-center justify-center text-center bg-white/5 rounded-[32px] border border-dashed border-outline-variant/20">
-                <CreditCard className="w-12 h-12 text-on-surface-variant/20 mb-4" />
-                <h4 className="text-lg font-bold text-white">No payments yet</h4>
-                <p className="text-sm text-on-surface-variant">Payments recorded for this invoice will appear here.</p>
+            <div className="py-12 flex flex-col items-center justify-center text-center bg-secondary/60 rounded-[32px] border border-dashed border-border">
+                <CreditCard className="w-12 h-12 text-foreground-variant/20 mb-4" />
+                <h4 className="text-lg font-bold text-foreground">No payments yet</h4>
+                <p className="text-sm text-foreground-variant">Payments recorded for this invoice will appear here.</p>
             </div>
         );
     }
@@ -35,9 +35,9 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
     const getMethodIcon = (method: string) => {
         switch (method) {
             case 'bank_transfer': return <Landmark className="w-4 h-4 text-blue-400" />;
-            case 'voucher': return <Ticket className="w-4 h-4 text-amber-400" />;
-            case 'cash': return <CreditCard className="w-4 h-4 text-emerald-400" />;
-            default: return <HelpCircle className="w-4 h-4 text-slate-400" />;
+            case 'voucher': return <Ticket className="w-4 h-4 text-amber-600" />;
+            case 'cash': return <CreditCard className="w-4 h-4 text-emerald-600" />;
+            default: return <HelpCircle className="w-4 h-4 text-muted-foreground" />;
         }
     };
 
@@ -74,44 +74,44 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
     };
 
     return (
-        <div className="overflow-hidden bg-surface-container-high border border-outline-variant/10 rounded-[32px]">
+        <div className="overflow-hidden bg-surface-container-high border border-border rounded-[32px]">
             <table className="w-full">
                 <thead>
-                    <tr className="text-left border-b border-outline-variant/10">
-                        <th className="px-6 py-4 text-xs font-black text-on-surface-variant uppercase tracking-widest">Date</th>
-                        <th className="px-6 py-4 text-xs font-black text-on-surface-variant uppercase tracking-widest">Method</th>
-                        <th className="px-6 py-4 text-xs font-black text-on-surface-variant uppercase tracking-widest">Reference</th>
-                        <th className="px-6 py-4 text-xs font-black text-on-surface-variant uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-4 text-xs font-black text-on-surface-variant uppercase tracking-widest text-right">Amount</th>
+                    <tr className="text-left border-b border-border">
+                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Date</th>
+                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Method</th>
+                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Reference</th>
+                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest text-right">Amount</th>
                         <th className="px-6 py-4"></th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/5">
                     {payments.map((payment) => (
-                        <tr key={payment.id} className="group hover:bg-white/5 transition-colors">
+                        <tr key={payment.id} className="group hover:bg-secondary/60 transition-colors">
                             <td className="px-6 py-5">
-                                <span className="text-sm font-bold text-white">
+                                <span className="text-sm font-bold text-foreground">
                                     {format(new Date(payment.recordedAt), 'MMM d, yyyy')}
                                 </span>
                             </td>
                             <td className="px-6 py-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center">
                                         {getMethodIcon(payment.method)}
                                     </div>
-                                    <span className="text-sm font-bold text-white">
+                                    <span className="text-sm font-bold text-foreground">
                                         {getMethodLabel(payment.method)}
                                     </span>
                                 </div>
                             </td>
                             <td className="px-6 py-5">
-                                <span className="text-sm font-medium text-on-surface-variant">
+                                <span className="text-sm font-medium text-foreground-variant">
                                     {payment.transactionReference || '-'}
                                 </span>
                             </td>
                             <td className="px-6 py-5">
                                 {payment.status === 'pending' ? (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-bold ring-1 ring-amber-500/20 w-fit">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20 w-fit">
                                         <Clock className="w-3.5 h-3.5" /> Pending
                                     </span>
                                 ) : payment.status === 'failed' ? (
@@ -119,13 +119,13 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                                         <AlertCircle className="w-3.5 h-3.5" /> Failed
                                     </span>
                                 ) : (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold ring-1 ring-emerald-500/20 w-fit">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold ring-1 ring-emerald-500/20 w-fit">
                                         <Check className="w-3.5 h-3.5" /> Verified
                                     </span>
                                 )}
                             </td>
                             <td className="px-6 py-5 text-right">
-                                <span className={`text-sm font-black ${payment.status === 'failed' ? 'text-on-surface-variant line-through' : 'text-white'}`}>
+                                <span className={`text-sm font-black ${payment.status === 'failed' ? 'text-foreground-variant line-through' : 'text-foreground'}`}>
                                     £{Number(payment.amount).toFixed(2)}
                                 </span>
                             </td>
@@ -135,7 +135,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                                         <button 
                                             onClick={() => handleVerify(payment.id)}
                                             disabled={processingId === payment.id}
-                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
                                             title="Verify Payment"
                                         >
                                             <Check className="w-4 h-4" />

@@ -54,9 +54,9 @@ function SectionHeading({ icon: Icon, title }: { icon: React.ElementType; title:
     return (
         <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 bg-[#2a2a2a] rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon className="w-4 h-4 text-[#adc6ff]" />
+                <Icon className="w-4 h-4 text-primary" />
             </div>
-            <h3 className="font-bold text-[#e5e2e1] text-base">{title}</h3>
+            <h3 className="font-bold text-foreground text-base">{title}</h3>
         </div>
     );
 }
@@ -64,7 +64,7 @@ function SectionHeading({ icon: Icon, title }: { icon: React.ElementType; title:
 function EmptyState({ message }: { message: string }) {
     return (
         <div className="py-8 text-center">
-            <p className="text-sm text-[#8c909f] font-medium italic">{message}</p>
+            <p className="text-sm text-muted-foreground font-medium italic">{message}</p>
         </div>
     );
 }
@@ -76,14 +76,14 @@ interface TableWrapperProps {
 
 function TableWrapper({ headers, children }: TableWrapperProps) {
     return (
-        <div className="overflow-x-auto rounded-2xl border border-[#424754]/15">
+        <div className="overflow-x-auto rounded-2xl border border-border">
             <table className="w-full text-sm min-w-max">
                 <thead>
-                    <tr className="bg-[#14161b] border-b border-[#424754]/15">
+                    <tr className="bg-secondary/60 border-b border-border">
                         {headers.map((h) => (
                             <th
                                 key={h}
-                                className="px-4 py-3 text-left text-xs font-bold text-[#8c909f] uppercase tracking-wider whitespace-nowrap"
+                                className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap"
                             >
                                 {h}
                             </th>
@@ -105,16 +105,16 @@ interface StatCardProps {
     accentClass?: string;
 }
 
-function StatCard({ label, value, icon: Icon, accentClass = 'text-[#adc6ff]' }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, accentClass = 'text-primary' }: StatCardProps) {
     return (
-        <div className="glassmorphic-card glow-hover-primary rounded-2xl p-5 flex flex-col gap-3">
+        <div className="bg-card border border-border shadow-sm glow-hover-primary rounded-2xl p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#8c909f] uppercase tracking-wider leading-tight">{label}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider leading-tight">{label}</span>
                 <div className="w-8 h-8 bg-[#2a2a2a] rounded-xl flex items-center justify-center flex-shrink-0">
                     <Icon className={`w-4 h-4 ${accentClass}`} />
                 </div>
             </div>
-            <span className="text-3xl font-bold text-[#e5e2e1] leading-none">{value}</span>
+            <span className="text-3xl font-bold text-foreground leading-none">{value}</span>
         </div>
     );
 }
@@ -123,14 +123,14 @@ function StatCard({ label, value, icon: Icon, accentClass = 'text-[#adc6ff]' }: 
 
 function SummarySection({ summary }: { summary: WeeklyReportData['summary'] }) {
     const stats: StatCardProps[] = [
-        { label: 'New Registrations', value: summary.newRegistrations, icon: Users, accentClass: 'text-[#adc6ff]' },
+        { label: 'New Registrations', value: summary.newRegistrations, icon: Users, accentClass: 'text-primary' },
         { label: 'New Bookings', value: summary.newBookings, icon: BookOpen, accentClass: 'text-[#d0bcff]' },
         { label: 'Sessions Run', value: summary.sessionsRun, icon: CalendarCheck, accentClass: 'text-emerald-400' },
         {
             label: 'Attendance Rate',
             value: summary.attendanceRate != null ? `${summary.attendanceRate}%` : '—',
             icon: BarChart3,
-            accentClass: summary.attendanceRate != null ? attendanceColor(summary.attendanceRate) : 'text-[#8c909f]',
+            accentClass: summary.attendanceRate != null ? attendanceColor(summary.attendanceRate) : 'text-muted-foreground',
         },
         { label: 'Pending This Period', value: summary.pendingRegistrationsThisPeriod, icon: Clock, accentClass: 'text-amber-400' },
         { label: 'Overdue Follow-ups', value: summary.overdueFollowUps, icon: AlertTriangle, accentClass: 'text-red-400' },
@@ -169,16 +169,16 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                                     : 'hover:bg-[#24272e]'
                                     }`}
                             >
-                                <td className="px-4 py-3 font-medium text-[#e5e2e1] whitespace-nowrap">{r.childNames}</td>
+                                <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{r.childNames}</td>
                                 <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{r.parentName}</td>
-                                <td className="px-4 py-3 text-[#8c909f] text-xs">
+                                <td className="px-4 py-3 text-muted-foreground text-xs">
                                     <div>{r.parentEmail}</div>
                                     <div>{r.parentPhone}</div>
                                 </td>
                                 <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{r.centre}</td>
                                 <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{r.startDate}</td>
                                 <td className="px-4 py-3">
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#2a2a2a] text-[#adc6ff] border border-[#adc6ff]/20">
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#2a2a2a] text-primary border border-[#adc6ff]/20">
                                         {r.status}
                                     </span>
                                 </td>
@@ -188,7 +188,7 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                                             {r.daysSinceSubmitted}d
                                         </span>
                                     ) : (
-                                        <span className="text-[#8c909f] text-xs">{r.daysSinceSubmitted}d</span>
+                                        <span className="text-muted-foreground text-xs">{r.daysSinceSubmitted}d</span>
                                     )}
                                 </td>
                             </tr>
@@ -213,9 +213,9 @@ function NewBookingsSection({ rows }: { rows: WeeklyReportData['newBookings'] })
                 <TableWrapper headers={headers}>
                     {rows.map((b, i) => (
                         <tr key={i} className="hover:bg-[#24272e] transition-colors">
-                            <td className="px-4 py-3 font-medium text-[#e5e2e1] whitespace-nowrap">{b.childNames}</td>
+                            <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{b.childNames}</td>
                             <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{b.parentName}</td>
-                            <td className="px-4 py-3 text-[#8c909f] text-xs">{b.parentEmail}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{b.parentEmail}</td>
                             <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{b.centre}</td>
                             <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{b.sessionDate}</td>
                             <td className="px-4 py-3">
@@ -245,7 +245,7 @@ function AttendanceSection({ rows }: { rows: WeeklyReportData['attendanceByCentr
                 <TableWrapper headers={headers}>
                     {rows.map((a) => (
                         <tr key={a.centreId} className="hover:bg-[#24272e] transition-colors">
-                            <td className="px-4 py-3 font-medium text-[#e5e2e1]">{a.centre}</td>
+                            <td className="px-4 py-3 font-medium text-foreground">{a.centre}</td>
                             <td className="px-4 py-3 text-[#c4c7d0]">{a.sessionsRun}</td>
                             <td className="px-4 py-3 text-[#c4c7d0]">{a.studentsExpected}</td>
                             <td className="px-4 py-3 text-[#c4c7d0]">{a.studentsAttended}</td>
@@ -288,8 +288,8 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
                                     {PENDING_TYPE_LABELS[p.type]}
                                 </span>
                             </td>
-                            <td className="px-4 py-3 font-medium text-[#e5e2e1] whitespace-nowrap">{p.name}</td>
-                            <td className="px-4 py-3 text-[#8c909f] text-xs">{p.description}</td>
+                            <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{p.name}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{p.description}</td>
                             <td className="px-4 py-3 text-[#c4c7d0] whitespace-nowrap">{p.date}</td>
                             <td className="px-4 py-3">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${p.daysPending >= 7
@@ -393,7 +393,7 @@ export default function WeeklyReportTab() {
             }}
             className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 border ${rangeMode === mode
                 ? 'bg-[#adc6ff] text-[#131313] border-[#adc6ff] shadow-[0_4px_16px_rgba(173,198,255,0.2)]'
-                : 'bg-[#2a2a2a] text-[#8c909f] border-[#424754]/15 hover:text-[#e5e2e1] hover:bg-[#353535]'
+                : 'bg-[#2a2a2a] text-muted-foreground border-border hover:text-foreground hover:bg-[#353535]'
                 }`}
         >
             {label}
@@ -404,14 +404,14 @@ export default function WeeklyReportTab() {
         <div className="flex flex-col gap-6">
 
             {/* ── Date Range Card ──────────────────────────────────────────────── */}
-            <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className="bg-card rounded-[32px] p-8 flex flex-col gap-6 border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#2a2a2a] rounded-2xl flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-[#adc6ff]" />
+                        <FileText className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-[#e5e2e1] text-xl leading-tight">CEO Weekly Activity Report</h2>
-                        <p className="text-sm text-[#8c909f] mt-1">Preview and download an executive summary for the selected period</p>
+                        <h2 className="font-bold text-foreground text-xl leading-tight">CEO Weekly Activity Report</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Preview and download an executive summary for the selected period</p>
                     </div>
                 </div>
 
@@ -424,26 +424,26 @@ export default function WeeklyReportTab() {
 
                 {/* Custom range inputs */}
                 {rangeMode === 'custom' && (
-                    <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-[#424754]/15 animate-in fade-in zoom-in-95 duration-200">
-                        <h4 className="text-xs font-bold text-[#8c909f] uppercase tracking-wider mb-4">Custom Range</h4>
+                    <div className="p-5 bg-[#2a2a2a] rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200">
+                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Custom Range</h4>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-[#8c909f] uppercase mb-1.5">Start Date</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Start Date</label>
                                 <input
                                     type="date"
                                     value={customStart}
                                     onChange={(e) => setCustomStart(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
+                                    className="w-full px-4 py-3 bg-secondary/60 border border-[#2a2a2a] rounded-2xl text-sm text-foreground font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
                                     style={{ colorScheme: 'dark' }}
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-[#8c909f] uppercase mb-1.5">End Date</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">End Date</label>
                                 <input
                                     type="date"
                                     value={customEnd}
                                     onChange={(e) => setCustomEnd(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#14161b] border border-[#2a2a2a] rounded-2xl text-sm text-[#e5e2e1] font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
+                                    className="w-full px-4 py-3 bg-secondary/60 border border-[#2a2a2a] rounded-2xl text-sm text-foreground font-mono outline-none focus:border-[#adc6ff]/50 focus:ring-2 focus:ring-[#adc6ff]/20 transition-all"
                                     style={{ colorScheme: 'dark' }}
                                 />
                             </div>
@@ -480,24 +480,24 @@ export default function WeeklyReportTab() {
 
             {/* ── Loading spinner (full-page feel) ─────────────────────────────── */}
             {isLoading && (
-                <div className="bg-[#1a1d23] rounded-[32px] p-16 flex flex-col items-center gap-4 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-                    <Loader2 className="w-10 h-10 text-[#adc6ff] animate-spin" />
-                    <p className="text-sm text-[#8c909f] font-medium">Fetching data for the selected period…</p>
+                <div className="bg-card rounded-[32px] p-16 flex flex-col items-center gap-4 border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground font-medium">Fetching data for the selected period…</p>
                 </div>
             )}
 
             {/* ── Report Preview ────────────────────────────────────────────────── */}
             {reportData && !isLoading && (
-                <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-8 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)] animate-in fade-in duration-300">
+                <div className="bg-card rounded-[32px] p-8 flex flex-col gap-8 border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] animate-in fade-in duration-300">
 
                     {/* Period header row */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#424754]/15">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                         <div>
-                            <p className="text-xs font-bold text-[#8c909f] uppercase tracking-wider mb-1">Report Period</p>
-                            <h2 className="text-lg font-bold text-[#e5e2e1]">
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Report Period</p>
+                            <h2 className="text-lg font-bold text-foreground">
                                 {fmtDisplay(reportData.startDate)} – {fmtDisplay(reportData.endDate)}
                             </h2>
-                            <p className="text-xs text-[#8c909f] mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 Generated for {reportData.orgName} · by {reportData.generatedBy}
                             </p>
                         </div>
@@ -507,16 +507,16 @@ export default function WeeklyReportTab() {
                             <button
                                 onClick={handleDownloadPdf}
                                 disabled={isPdfLoading}
-                                className="flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 hover:border-[#adc6ff]/20 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                className="flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-foreground transition-all border border-border hover:border-[#adc6ff]/20 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                             >
                                 {isPdfLoading ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 text-[#adc6ff] animate-spin" />
+                                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
                                         Generating PDF…
                                     </>
                                 ) : (
                                     <>
-                                        <Download className="w-4 h-4 text-[#adc6ff]" />
+                                        <Download className="w-4 h-4 text-primary" />
                                         Download PDF
                                     </>
                                 )}
@@ -530,22 +530,22 @@ export default function WeeklyReportTab() {
                     {/* 1. Summary */}
                     <SummarySection summary={reportData.summary} />
 
-                    <hr className="border-[#424754]/15" />
+                    <hr className="border-border" />
 
                     {/* 2. New Registrations */}
                     <NewRegistrationsSection rows={reportData.newRegistrations} />
 
-                    <hr className="border-[#424754]/15" />
+                    <hr className="border-border" />
 
                     {/* 3. New Bookings */}
                     <NewBookingsSection rows={reportData.newBookings} />
 
-                    <hr className="border-[#424754]/15" />
+                    <hr className="border-border" />
 
                     {/* 4. Attendance by Centre */}
                     <AttendanceSection rows={reportData.attendanceByCentre} />
 
-                    <hr className="border-[#424754]/15" />
+                    <hr className="border-border" />
 
                     {/* 5. Pending Actions */}
                     <PendingActionsSection rows={reportData.pendingActions} />

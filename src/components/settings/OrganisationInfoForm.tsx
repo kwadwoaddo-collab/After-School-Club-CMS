@@ -102,7 +102,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
         finally { setSaving(false); }
     };
 
-    const inp = "w-full px-3 py-2 bg-[#14161b] border border-[#2a2a2a] rounded-xl text-sm text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all";
+    const inp = "w-full px-3 py-2 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all";
 
     const Field = ({ label, editing, value, display, onEdit }: {
         label: string; editing: boolean; value: string; display?: string; onEdit: () => void;
@@ -110,11 +110,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
 
     return (
         <>
-        <div className="glassmorphic-card rounded-2xl p-5 space-y-5">
-            <h3 className="text-sm font-bold text-white">Organisation Information</h3>
+        <div className="bg-card border border-border shadow-sm rounded-2xl p-5 space-y-5">
+            <h3 className="text-sm font-bold text-foreground">Organisation Information</h3>
 
             {error && (
-                <div className="p-2.5 bg-red-900/20 border border-red-500/20 rounded-xl flex items-start gap-2 text-red-400 text-xs">
+                <div className="p-2.5 bg-red-900/20 border border-red-500/20 rounded-xl flex items-start gap-2 text-red-600 text-xs">
                     <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                     <p>{error}</p>
                 </div>
@@ -124,25 +124,25 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div>
-                    <label htmlFor="org-name" className="text-xs font-medium text-slate-400 mb-1.5 block">Organisation Name</label>
+                    <label htmlFor="org-name" className="text-xs font-medium text-muted-foreground mb-1.5 block">Organisation Name</label>
                     {isEditingName ? (
                         <div className="flex gap-2">
                             <input id="org-name" type="text" value={name} onChange={e => setName(e.target.value)}
                                 className={inp} autoFocus disabled={saving} />
                             <button onClick={handleSaveName} disabled={saving}
-                                className="p-2 text-white bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
+                                className="p-2 text-foreground bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => { setIsEditingName(false); setName(org.name); setError(null); }}
-                                className="p-2 text-slate-400 hover:bg-white/5 rounded-xl transition-all">
+                                className="p-2 text-muted-foreground hover:bg-secondary/60 rounded-xl transition-all">
                                 <X className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     ) : (
                         <div className="flex items-center justify-between group">
-                            <span className="text-sm font-bold text-white">{org.name}</span>
+                            <span className="text-sm font-bold text-foreground">{org.name}</span>
                             <button onClick={() => setIsEditingName(true)}
-                                className="p-1.5 text-slate-600 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
+                                className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
                                 <Pencil className="w-3.5 h-3.5" />
                             </button>
                         </div>
@@ -151,7 +151,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
 
                 {/* Slug */}
                 <div>
-                    <label htmlFor="org-slug" className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <label htmlFor="org-slug" className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
                         Slug
                         <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded border border-amber-500/20">URL ID</span>
                     </label>
@@ -161,38 +161,38 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                 className={`${inp} font-mono`} autoFocus disabled={saving} />
                             <button onClick={handleSaveSlug} disabled={saving}
-                                className="p-2 text-white bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
+                                className="p-2 text-foreground bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => { setIsEditingSlug(false); setSlug(org.slug); setError(null); }}
-                                className="p-2 text-slate-400 hover:bg-white/5 rounded-xl transition-all">
+                                className="p-2 text-muted-foreground hover:bg-secondary/60 rounded-xl transition-all">
                                 <X className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     ) : (
                         <div className="flex items-center justify-between group">
-                            <span className="text-sm font-mono font-bold text-white">{org.slug}</span>
+                            <span className="text-sm font-mono font-bold text-foreground">{org.slug}</span>
                             <button onClick={() => setIsEditingSlug(true)}
-                                className="p-1.5 text-slate-600 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
+                                className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
                                 <Pencil className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     )}
-                    <p className="text-[10px] text-slate-600 mt-1">Used in your sharing links</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">Used in your sharing links</p>
                 </div>
             </div>
 
-            <div className="border-t border-outline-variant/10" />
+            <div className="border-t border-border" />
 
             {/* Contact Details */}
             <div>
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5" /> Contact Details
                     </h4>
                     {!isEditingContact && (
                         <button onClick={() => setIsEditingContact(true)}
-                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all">
                             <Pencil className="w-3 h-3" /> Edit
                         </button>
                     )}
@@ -202,29 +202,29 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label htmlFor="contact-email" className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><Mail className="w-3 h-3" /> Email</label>
+                                <label htmlFor="contact-email" className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><Mail className="w-3 h-3" /> Email</label>
                                 <input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
                                     className={inp} placeholder="info@yourclub.co.uk" disabled={saving} />
                             </div>
                             <div>
-                                <label htmlFor="contact-phone" className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</label>
+                                <label htmlFor="contact-phone" className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</label>
                                 <input id="contact-phone" type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)}
                                     className={inp} placeholder="+44 7700 900000" disabled={saving} />
                             </div>
                         </div>
                         <div>
-                            <label htmlFor="contact-address" className="text-xs text-slate-400 mb-1.5 flex items-center gap-1"><MapPin className="w-3 h-3" /> Address</label>
+                            <label htmlFor="contact-address" className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><MapPin className="w-3 h-3" /> Address</label>
                             <textarea id="contact-address" value={address} onChange={e => setAddress(e.target.value)}
                                 className={`${inp} resize-none`} rows={2}
                                 placeholder="123 High Street, London, SE26 5RX" disabled={saving} />
                         </div>
                         <div className="flex gap-2 justify-end">
                             <button onClick={() => { setContactEmail(org.contactEmail || ''); setContactPhone(org.contactPhone || ''); setAddress(org.address || ''); setIsEditingContact(false); setError(null); }}
-                                className="px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                className="px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all">
                                 Cancel
                             </button>
                             <button onClick={handleSaveContact} disabled={saving}
-                                className="px-4 py-1.5 text-xs font-bold bg-primary text-white rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50">
+                                className="px-4 py-1.5 text-xs font-bold bg-primary text-foreground rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50">
                                 {saving ? 'Saving…' : 'Save'}
                             </button>
                         </div>
@@ -236,11 +236,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                             { icon: Phone, label: 'Phone', value: org.contactPhone },
                             { icon: MapPin, label: 'Address', value: org.address },
                         ].map(({ icon: Icon, label, value }) => (
-                            <div key={label} className="bg-white/5 rounded-xl px-3 py-2.5">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                            <div key={label} className="bg-secondary/60 rounded-xl px-3 py-2.5">
+                                <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                                     <Icon className="w-3 h-3" /> {label}
                                 </p>
-                                <p className={`text-xs font-bold ${value ? 'text-white' : 'text-slate-600 italic'}`}>
+                                <p className={`text-xs font-bold ${value ? 'text-foreground' : 'text-muted-foreground/60 italic'}`}>
                                     {value || 'Not set'}
                                 </p>
                             </div>
@@ -249,11 +249,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                 )}
             </div>
 
-            <div className="border-t border-outline-variant/10" />
+            <div className="border-t border-border" />
 
             {/* Sharing Links */}
             <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
                     <Link2 className="w-3.5 h-3.5" /> Sharing Links
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -261,8 +261,8 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                         { label: 'Booking Link', path: `/b/${org.slug}` },
                         { label: 'Registration Link', path: `/r/${org.slug}` },
                     ].map(({ label, path }) => (
-                        <div key={label} className="bg-white/5 rounded-xl px-3 py-2.5">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">{label}</p>
+                        <div key={label} className="bg-secondary/60 rounded-xl px-3 py-2.5">
+                            <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider mb-0.5">{label}</p>
                             <a href={`${baseUrl}${path}`} target="_blank" rel="noopener noreferrer"
                                 className="text-xs text-primary hover:underline font-bold break-all">
                                 {baseUrl.replace(/^https?:\/\//, '')}{path}
