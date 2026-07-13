@@ -169,166 +169,163 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         </>
                     )}
 
+                    {/* Active Centre Selector — hoisted OUTSIDE overflow-y-auto so dropdown z-index works */}
+                    {centres && centres.length > 1 && (() => {
+                        const isCentresPageActive = pathname.startsWith('/dashboard/centres');
+                        return (
+                            <div className="relative mb-1">
+                                {!collapsed ? (
+                                    <>
+                                        <button
+                                            onClick={() => setDropdownOpen(o => !o)}
+                                            className={`
+                                                flex items-center justify-between w-full px-3 py-2.5 rounded-xl
+                                                transition-all group text-left relative overflow-hidden
+                                                ${isCentresPageActive
+                                                    ? 'text-primary bg-primary/10 font-bold'
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                {selectedCentreId === 'all' ? (
+                                                    <Layers className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-105 transition-transform" />
+                                                ) : (
+                                                    <MapPin className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-105 transition-transform" />
+                                                )}
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider leading-none mb-0.5">Active Centre</span>
+                                                    <span className="font-semibold truncate text-sm">
+                                                        {selectedCentreId === 'all'
+                                                            ? 'Combined View'
+                                                            : centres.find(c => c.id === selectedCentreId)?.name || 'Select Centre'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
+                                        </button>
+
+                                        {dropdownOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                                                <div className="absolute left-0 right-0 mt-1 bg-popover border border-border rounded-2xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                                                    <button
+                                                        onClick={() => selectCentre('all')}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                            selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        <Layers className="w-4 h-4 flex-shrink-0" />
+                                                        Combined View
+                                                    </button>
+                                                    <div className="h-px bg-border my-1" />
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {centres.map(centre => (
+                                                            <button
+                                                                key={centre.id}
+                                                                onClick={() => selectCentre(centre.id)}
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                                    selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
+                                                                }`}
+                                                            >
+                                                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                                                <span className="truncate">{centre.name}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="h-px bg-border my-1" />
+                                                    <Link
+                                                        href="/dashboard/centres"
+                                                        onClick={() => {
+                                                            setDropdownOpen(false);
+                                                            if (window.innerWidth < 768) setCollapsed(true);
+                                                        }}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
+                                                            isCentresPageActive ? 'bg-primary/5 font-bold' : ''
+                                                        }`}
+                                                    >
+                                                        <School className="w-4 h-4 flex-shrink-0" />
+                                                        Manage Centres
+                                                    </Link>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => setDropdownOpen(o => !o)}
+                                            className={`
+                                                flex items-center justify-center w-full px-4 py-2.5 rounded-xl
+                                                transition-all group relative
+                                                ${isCentresPageActive
+                                                    ? 'text-primary bg-primary/10'
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                                }
+                                            `}
+                                            title={selectedCentreId === 'all'
+                                                ? 'Combined View'
+                                                : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
+                                        >
+                                            {selectedCentreId === 'all' ? (
+                                                <Layers className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
+                                            ) : (
+                                                <MapPin className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
+                                            )}
+                                        </button>
+
+                                        {dropdownOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                                                <div className="absolute left-16 top-0 w-52 bg-popover border border-border rounded-2xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                                                    <button
+                                                        onClick={() => selectCentre('all')}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                            selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        <Layers className="w-4 h-4 flex-shrink-0" />
+                                                        Combined View
+                                                    </button>
+                                                    <div className="h-px bg-border my-1" />
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {centres.map(centre => (
+                                                            <button
+                                                                key={centre.id}
+                                                                onClick={() => selectCentre(centre.id)}
+                                                                className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
+                                                                    selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
+                                                                }`}
+                                                            >
+                                                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                                                <span className="truncate">{centre.name}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="h-px bg-border my-1" />
+                                                    <Link
+                                                        href="/dashboard/centres"
+                                                        onClick={() => setDropdownOpen(false)}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
+                                                            isCentresPageActive ? 'bg-primary/5 font-bold' : ''
+                                                        }`}
+                                                    >
+                                                        <School className="w-4 h-4 flex-shrink-0" />
+                                                        Manage Centres
+                                                    </Link>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })()}
+
                     {/* Navigation */}
                     <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
                     <nav className="space-y-0.5">
                         {navItems.map((item) => {
-                            const isCentresPageActive = pathname.startsWith('/dashboard/centres');
-
-                            // Special Dropdown rendering for Centres if multiple centres exist
-                            if (item.name === 'Centres' && centres && centres.length > 1) {
-                                return (
-                                    <div key="centres-dropdown" className="relative">
-                                        {!collapsed ? (
-                                            <>
-                                                <button
-                                                    onClick={() => setDropdownOpen(o => !o)}
-                                                    className={`
-                                                        flex items-center justify-between w-full px-3 py-2.5 rounded-xl
-                                                        transition-all group text-left relative overflow-hidden
-                                                        ${isCentresPageActive
-                                                            ? 'text-primary bg-primary/10 font-bold'
-                                                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                                                        }
-                                                    `}
-                                                >
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        {selectedCentreId === 'all' ? (
-                                                            <Layers className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-105 transition-transform" />
-                                                        ) : (
-                                                            <MapPin className="w-5 h-5 text-primary flex-shrink-0 group-hover:scale-105 transition-transform" />
-                                                        )}
-                                                        <div className="flex flex-col min-w-0">
-                                                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider leading-none mb-0.5">Active Centre</span>
-                                                            <span className="font-semibold truncate text-sm">
-                                                                {selectedCentreId === 'all'
-                                                                    ? 'Combined View'
-                                                                    : centres.find(c => c.id === selectedCentreId)?.name || 'Select Centre'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
-                                                </button>
-
-                                                {dropdownOpen && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                                                        <div className="absolute left-0 right-0 mt-1 bg-popover/90 backdrop-blur-2xl border border-border rounded-2xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                                                            <button
-                                                                onClick={() => selectCentre('all')}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
-                                                                    selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
-                                                                }`}
-                                                            >
-                                                                <Layers className="w-4 h-4 flex-shrink-0" />
-                                                                Combined View
-                                                            </button>
-                                                            <div className="h-px bg-border my-1" />
-                                                            <div className="max-h-48 overflow-y-auto">
-                                                                {centres.map(centre => (
-                                                                    <button
-                                                                        key={centre.id}
-                                                                        onClick={() => selectCentre(centre.id)}
-                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
-                                                                            selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
-                                                                        }`}
-                                                                    >
-                                                                        <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                                        <span className="truncate">{centre.name}</span>
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                            <div className="h-px bg-border my-1" />
-                                                            <Link
-                                                                href="/dashboard/centres"
-                                                                onClick={() => {
-                                                                    setDropdownOpen(false);
-                                                                    if (window.innerWidth < 768) {
-                                                                        setCollapsed(true);
-                                                                    }
-                                                                }}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
-                                                                    isCentresPageActive ? 'bg-primary/5 font-bold' : ''
-                                                                }`}
-                                                            >
-                                                                <School className="w-4 h-4 flex-shrink-0" />
-                                                                Manage Centres
-                                                            </Link>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    onClick={() => setDropdownOpen(o => !o)}
-                                                    className={`
-                                                        flex items-center justify-center w-full px-4 py-2.5 rounded-xl
-                                                        transition-all group relative
-                                                        ${isCentresPageActive
-                                                            ? 'text-primary bg-primary/10'
-                                                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                                                        }
-                                                    `}
-                                                    title={selectedCentreId === 'all'
-                                                        ? 'Combined View'
-                                                        : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
-                                                >
-                                                    {selectedCentreId === 'all' ? (
-                                                        <Layers className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                                                    ) : (
-                                                        <MapPin className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                                                    )}
-                                                </button>
-
-                                                {dropdownOpen && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                                                        <div className="absolute left-16 top-0 w-52 bg-popover/90 backdrop-blur-2xl border border-border rounded-2xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                                                            <button
-                                                                onClick={() => selectCentre('all')}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
-                                                                    selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
-                                                                }`}
-                                                            >
-                                                                <Layers className="w-4 h-4 flex-shrink-0" />
-                                                                Combined View
-                                                            </button>
-                                                            <div className="h-px bg-border my-1" />
-                                                            <div className="max-h-48 overflow-y-auto">
-                                                                {centres.map(centre => (
-                                                                    <button
-                                                                        key={centre.id}
-                                                                        onClick={() => selectCentre(centre.id)}
-                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
-                                                                            selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
-                                                                        }`}
-                                                                    >
-                                                                        <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                                        <span className="truncate">{centre.name}</span>
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                            <div className="h-px bg-border my-1" />
-                                                            <Link
-                                                                href="/dashboard/centres"
-                                                                onClick={() => setDropdownOpen(false)}
-                                                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
-                                                                    isCentresPageActive ? 'bg-primary/5 font-bold' : ''
-                                                                }`}
-                                                            >
-                                                                <School className="w-4 h-4 flex-shrink-0" />
-                                                                Manage Centres
-                                                            </Link>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                );
-                            }
-
                             const isActive = item.href === '/dashboard'
                                 ? pathname === item.href
                                 : pathname.startsWith(item.href);
