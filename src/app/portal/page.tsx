@@ -119,7 +119,7 @@ export default async function PortalDashboard() {
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-white">
-                                                    {booking.assessmentType === 'initial_assessment' ? 'Introductory Session' : 'Club Session'}
+                                                    {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : 'Club Session'}
                                                 </h3>
                                                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-tertiary-container/10 text-tertiary border border-tertiary/20">
                                                     Confirmed

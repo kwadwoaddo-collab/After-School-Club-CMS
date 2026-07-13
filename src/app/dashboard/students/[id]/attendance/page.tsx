@@ -235,7 +235,7 @@ export default async function StudentAttendanceHistoryPage(
                                 });
 
                                 const sessionType = booking.assessmentType === 'initial_assessment'
-                                    ? 'Introductory Session'
+                                    ? 'Initial Assessment'
                                     : booking.assessmentType === 'progress_review'
                                     ? 'Progress Check'
                                     : 'Club Session';

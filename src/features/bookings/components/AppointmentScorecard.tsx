@@ -169,7 +169,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                             <div className="mt-2">
                                 <div className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-0.5">Session Type</div>
                                 <div className="text-white font-medium">
-                                    {booking.assessmentType === 'initial_assessment' ? 'Introductory Session' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity Session'}
+                                    {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity Session'}
                                 </div>
                             </div>
                         </div>

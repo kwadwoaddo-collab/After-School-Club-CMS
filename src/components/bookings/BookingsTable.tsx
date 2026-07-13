@@ -645,7 +645,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </td>
                                 <td className="px-4 py-3.5">
                                     <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold whitespace-nowrap">
-                                        {booking.assessmentType === 'initial_assessment' ? 'Introductory' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}
+                                        {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3.5">
