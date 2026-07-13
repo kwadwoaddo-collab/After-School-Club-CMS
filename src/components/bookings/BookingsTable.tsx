@@ -240,7 +240,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         const label = labels[status] ?? status;
 
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ${styles[status] || styles.pending}`}>
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 whitespace-nowrap ${styles[status] || styles.pending}`}>
                 {label}
             </span>
         );
