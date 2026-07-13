@@ -17,10 +17,10 @@ type Status = 'accepted' | 'pending' | 'expired';
 
 const getRoleBadge = (role: string) => {
     const styles: Record<string, string> = {
-        ORG_OWNER: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-        MANAGER: 'bg-primary/10 text-primary border-primary/20',
-        FRONT_DESK: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-        TUTOR: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+        ORG_OWNER: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+        MANAGER: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+        FRONT_DESK: 'bg-primary/10 text-primary border-primary/20',
+        TUTOR: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     };
     return styles[role] || 'bg-secondary text-muted-foreground border-border';
 };
