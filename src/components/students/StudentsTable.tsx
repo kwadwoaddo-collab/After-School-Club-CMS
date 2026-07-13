@@ -62,7 +62,7 @@ const columns: DataTableColumn<StudentRow>[] = [
                 {student.firstName} {student.lastName}
               </Link>
               {student.isRegistered && (
-                <span className="px-1.5 py-0.5 rounded-md bg-tertiary-container/10 border border-tertiary/20 text-[10px] font-bold text-tertiary uppercase tracking-wider uppercase ml-1" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-[10px] font-bold text-emerald-600 uppercase tracking-wider ml-1 whitespace-nowrap" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
                   Registered
                 </span>
               )}

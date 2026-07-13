@@ -101,7 +101,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                         </span>
                                     )}
                                     {student.isRegistered && (
-                                        <span className="px-2 py-0.5 rounded-md bg-tertiary-container/10 border border-tertiary/20 text-[10px] font-bold text-tertiary uppercase tracking-wider">
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-[10px] font-bold text-emerald-600 uppercase tracking-wider whitespace-nowrap">
                                             Reg
                                         </span>
                                     )}

@@ -93,14 +93,14 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
             <div className="flex items-center gap-2 flex-wrap">
                 {/* Search — debounced 400ms */}
                 <div className="relative min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         placeholder="Search registrations…"
                         aria-label="Search registrations"
-                        className="w-full pl-8 pr-3 py-2 rounded-xl text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-[#19191b]/60 border-outline-variant/20 text-white"
+                        className="w-full pl-8 pr-3 py-2 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/30 transition-all outline-none border bg-secondary/50 border-border"
                     />
                 </div>
 
@@ -111,14 +111,14 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                             value={selectedCentreId}
                             onChange={(e) => handleCentreChange(e.target.value)}
                             aria-label="Filter by centre"
-                            className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-[#19191b]/40 border-outline-variant/20 text-white"
+                            className="w-full pl-4 pr-8 py-2 rounded-xl text-sm font-medium text-foreground focus:ring-1 focus:ring-primary/40 transition-all outline-none appearance-none cursor-pointer text-left border bg-secondary/50 border-border"
                         >
-                            <option value="all" className="bg-[#1a1d23] text-white">All Centres</option>
+                            <option value="all">All Centres</option>
                             {centres.map((c) => (
-                                <option key={c.id} value={c.id} className="bg-[#1a1d23] text-white">{c.name}</option>
+                                <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60 pointer-events-none" />
                     </div>
                 )}
 
@@ -126,7 +126,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-all cursor-pointer border border-outline-variant/10 active:scale-95 duration-100"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-xl text-sm font-medium text-foreground transition-all cursor-pointer border border-border active:scale-95 duration-100"
                     >
                         <X className="w-3.5 h-3.5" />
                         Clear
@@ -137,7 +137,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
             {/* Active Filters Display — reads from local state to avoid desync during debounce */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
                         Active Filters:
                     </span>
                     {search && (

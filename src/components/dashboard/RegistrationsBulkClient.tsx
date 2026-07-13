@@ -182,7 +182,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         onChange={toggleAll}
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
                     />
-                    <span className="text-[#8c909f] text-xs font-semibold group-hover:text-white transition-colors">
+                    <span className="text-muted-foreground text-xs font-semibold group-hover:text-foreground transition-colors">
                         {allSelected
                             ? 'Deselect all'
                             : isFiltered && totalCount !== undefined
@@ -200,9 +200,9 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
             {/* Bulk action bar */}
             {someSelected && (
-                <div className="flex flex-wrap items-center gap-3 mb-4 p-4 bg-[#1a1d23]/95 backdrop-blur-md border border-outline-variant/10 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] animate-in slide-in-from-top-2 duration-200">
-                    <span className="text-[#adc6ff] text-sm font-bold">{selected.size} selected</span>
-                    <div className="h-4 w-px bg-[#424754]/40 mx-1" />
+                <div className="flex flex-wrap items-center gap-3 mb-4 p-4 bg-card border border-border rounded-2xl shadow-sm animate-in slide-in-from-top-2 duration-200">
+                    <span className="text-primary text-sm font-bold">{selected.size} selected</span>
+                    <div className="h-4 w-px bg-border mx-1" />
 
                     <button
                         onClick={() => bulkUpdateStatus('signed_up')}
@@ -234,7 +234,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
                     <button
                         onClick={exportCSV}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-outline-variant/10 text-white hover:bg-white/10 rounded-xl text-sm font-semibold transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-secondary border border-border text-foreground hover:bg-secondary/80 rounded-xl text-sm font-semibold transition-all"
                     >
                         <Download className="w-3.5 h-3.5" />
                         Export CSV
@@ -258,7 +258,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                 <button
                                     onClick={() => setConfirmingDelete(false)}
                                     disabled={bulkLoading}
-                                    className="px-3 py-2 text-[#8c909f] hover:text-white text-sm font-semibold transition-colors"
+                                    className="px-3 py-2 text-muted-foreground hover:text-foreground text-sm font-semibold transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -277,7 +277,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
                     <button
                         onClick={() => { setSelected(new Set()); setConfirmingDelete(false); }}
-                        className="ml-auto p-1.5 text-[#8c909f] hover:text-white transition-colors"
+                        className="ml-auto p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                         title="Clear selection"
                     >
                         <X className="w-4 h-4" />
@@ -293,14 +293,14 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
             {/* Registration cards grid — or empty state */}
             {rows.length === 0 ? (
-                <div className="glassmorphic-card rounded-[32px] p-12 text-center">
+                <div className="bg-card border border-border rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <ClipboardList className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">
+                    <h3 className="text-xl font-bold text-foreground mb-2">
                         {isFiltered ? 'No matching registrations' : 'No registrations yet'}
                     </h3>
-                    <p className="text-sm text-[#8c909f] mb-6">
+                    <p className="text-sm text-muted-foreground mb-6">
                         {isFiltered
                             ? 'Try adjusting your filters to see more results'
                             : 'Registrations will appear here once parents sign up'
@@ -330,12 +330,10 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                         // be a descendant of <a> (HTML spec violation / a11y violation)
                         <div
                             key={r.id}
-                            className={`relative glassmorphic-card rounded-[24px] flex flex-col justify-between min-h-[220px] group transition-all duration-200 ${
+                            className={`relative bg-card border rounded-[24px] flex flex-col justify-between min-h-[220px] group transition-all duration-200 ${
                                 isChecked
-                                    // Checked state: ring border, no hover shadow (they'd visually conflict)
-                                    ? 'border-primary/40 bg-white/[0.03] shadow-[0_0_0_1.5px_rgba(142,171,255,0.4)]'
-                                    // Unchecked state: subtle hover glow only
-                                    : 'border-outline-variant/15 hover:border-primary/20 hover:shadow-[0_8px_32px_rgba(142,171,255,0.08)] hover:bg-white/[0.01]'
+                                    ? 'border-primary/40 shadow-[0_0_0_1.5px_rgba(var(--primary),0.4)]'
+                                    : 'border-border hover:border-primary/30 hover:shadow-md'
                             }`}
                         >
                             {/* Header row: checkbox (interactive) is a SIBLING of Link — never inside <a> */}
@@ -358,10 +356,10 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                 >
                                     {/* Name and Date */}
                                     <div className="flex items-start justify-between gap-2 mb-4">
-                                        <p className="text-white font-bold text-base truncate group-hover:text-primary transition-colors">
+                                        <p className="text-foreground font-bold text-base truncate group-hover:text-primary transition-colors">
                                             {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown Parent'}
                                         </p>
-                                        <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap pt-1 flex-shrink-0">
+                                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider whitespace-nowrap pt-1 flex-shrink-0">
                                             {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </p>
                                     </div>
@@ -375,26 +373,26 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
 
                                     {/* Children & Contact Info */}
                                     <div className="space-y-1">
-                                        <p className="text-[#8c909f] text-[10px] font-bold uppercase tracking-wider">Children</p>
-                                        <p className="text-[#c2c6d6] text-sm font-semibold leading-relaxed line-clamp-2">
+                                        <p className="text-muted-foreground/70 text-[10px] font-bold uppercase tracking-wider">Children</p>
+                                        <p className="text-foreground text-sm font-semibold leading-relaxed line-clamp-2">
                                             {childNames || 'None'}
                                         </p>
                                         {primary?.submittedEmail && (
-                                            <p className="text-[#8c909f] text-xs font-semibold truncate mt-2">{primary.submittedEmail}</p>
+                                            <p className="text-muted-foreground text-xs font-medium truncate mt-2">{primary.submittedEmail}</p>
                                         )}
                                     </div>
                                 </Link>
                             </div>
 
                             {/* Actions Footer — select and footer are outside the Link entirely */}
-                            <div className="flex items-center justify-between gap-3 px-6 pb-5 pt-3 border-t border-outline-variant/10">
-                                {/* Contextual label — toggles based on selection state */}
+                            <div className="flex items-center justify-between gap-3 px-6 pb-5 pt-3 border-t border-border">
+                                {/* Contextual label */}
                                 {isChecked ? (
-                                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                                        <span className="text-emerald-400">✓</span> Selected
+                                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                                        <span>✓</span> Selected
                                     </span>
                                 ) : (
-                                    <span className="text-xs font-bold text-primary group-hover:text-blue-400 transition-colors pointer-events-none">
+                                    <span className="text-xs font-bold text-primary group-hover:text-blue-600 transition-colors pointer-events-none">
                                         View Details →
                                     </span>
                                 )}
@@ -406,12 +404,12 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                     aria-label="Assign to centre"
                                     className={`text-xs border rounded-xl py-1.5 px-3.5 disabled:opacity-50 transition-all w-40 cursor-pointer outline-none font-bold ${r.centreId
                                         ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
-                                        : 'bg-white/5 border-outline-variant/10 text-slate-400 hover:border-outline-variant/30'
+                                        : 'bg-secondary border-border text-muted-foreground hover:border-border'
                                         }`}
                                 >
-                                    <option value="null" className="bg-[#1a1d23] text-slate-400">No Centre</option>
+                                    <option value="null">No Centre</option>
                                     {centres.map(c => (
-                                        <option key={c.id} value={c.id} className="bg-[#1a1d23] text-white">{c.name}</option>
+                                        <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
                                 </select>
                             </div>

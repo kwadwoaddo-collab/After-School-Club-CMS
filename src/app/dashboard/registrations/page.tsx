@@ -168,8 +168,8 @@ export default async function RegistrationsPage(props: {
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-base sm:text-lg font-black text-white tracking-tight">Registrations</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
+                    <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Registrations</h1>
+                    <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground text-[10px] font-bold">
                         {isFiltered ? `${rows.length} of ${totalCount}` : totalCount}
                     </span>
                 </div>
@@ -177,12 +177,12 @@ export default async function RegistrationsPage(props: {
 
             <HeaderPortal targetId="header-middle">
                 {/* Segmented Status Tabs */}
-                <div className="flex bg-[#14161b]/60 p-1 rounded-2xl border border-outline-variant/10 self-start overflow-x-auto max-w-full scrollbar-none gap-1">
+                <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                     {[
                         { value: 'all', label: 'All', count: totalCount },
-                        { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-amber-400 bg-amber-500/10' },
-                        { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-emerald-400 bg-emerald-500/10' },
-                        { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-red-400 bg-red-500/10' },
+                        { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-amber-600 bg-amber-500/10' },
+                        { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-emerald-600 bg-emerald-500/10' },
+                        { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-red-600 bg-red-500/10' },
                     ].map((tab) => {
                         const isActive = (searchParams.status || 'all') === tab.value;
                         const query = new URLSearchParams();
@@ -198,13 +198,13 @@ export default async function RegistrationsPage(props: {
                                 href={href}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
                                     isActive
-                                        ? 'bg-[#2a2d35] text-white shadow-lg border border-[#424754]/25'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-card text-foreground shadow-sm border border-border'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
                                 }`}
                             >
                                 <span>{tab.label}</span>
                                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
-                                    isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-white/5 text-slate-400'}`
+                                    isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-secondary text-muted-foreground'}`
                                 }`}>
                                     {tab.count}
                                 </span>
@@ -218,7 +218,7 @@ export default async function RegistrationsPage(props: {
                 <HeaderPortal targetId="header-right-actions">
                     <Link
                         href="/dashboard/share"
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-primary hover:text-blue-400 text-xs font-bold rounded-xl transition-all border border-outline-variant/10 shadow-sm active:scale-95 duration-100"
+                        className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold rounded-xl transition-all border border-border shadow-sm active:scale-95 duration-100"
                     >
                         <Share2 className="w-3.5 h-3.5" />
                         Share
@@ -237,8 +237,8 @@ export default async function RegistrationsPage(props: {
                 </HeaderPortal>
             )}
 
-            {/* Filters — sticky so it stays visible while scrolling through registrations */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
+            {/* Filters — sticky */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
                 <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <RegistrationsFilters centres={orgCentres} resultsCount={rows.length} />
                 </Suspense>
@@ -246,12 +246,12 @@ export default async function RegistrationsPage(props: {
 
             {/* Empty state or list */}
             {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center glassmorphic-card rounded-2xl border-dashed border-outline-variant/30 animate-in fade-in duration-300">
-                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4 text-3xl">📋</div>
-                    <h3 className="text-white font-bold mb-2">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border border-dashed rounded-2xl animate-in fade-in duration-300">
+                    <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4 text-3xl">📋</div>
+                    <h3 className="text-foreground font-bold mb-2">
                         {isFiltered ? 'No matching registrations' : 'No registrations yet'}
                     </h3>
-                    <p className="text-[#8c909f] text-sm max-w-sm mb-5">
+                    <p className="text-muted-foreground text-sm max-w-sm mb-5">
                         {isFiltered 
                             ? 'Try adjusting or clearing your filters to find what you are looking for.' 
                             : 'Share your registration link with parents to start receiving submissions.'}
@@ -261,7 +261,7 @@ export default async function RegistrationsPage(props: {
                             href={fullRegistrationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 text-primary hover:bg-white/10 text-sm font-bold rounded-2xl transition-all border border-outline-variant/10"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-primary hover:bg-secondary/80 text-sm font-bold rounded-2xl transition-all border border-border"
                         >
                             Open Registration Form ↗
                         </Link>
