@@ -258,6 +258,29 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         return 'Unknown Student';
     };
 
+    // Returns structured list for rendering — first name + overflow count
+    const getStudentList = (booking: any): { first: string; rest: string[]; firstId?: string } => {
+        if (booking.attendees && booking.attendees.length > 0) {
+            const all = booking.attendees.map((a: any) => ({
+                name: `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim(),
+                id: a.child?.id,
+            }));
+            return {
+                first: all[0]?.name || 'Unknown',
+                firstId: all[0]?.id,
+                rest: all.slice(1).map((s: { name: string; id: string }) => s.name),
+            };
+        }
+        if (booking.child) {
+            return {
+                first: `${booking.child.firstName || ''} ${booking.child.lastName || ''}`.trim(),
+                firstId: booking.child.id,
+                rest: [],
+            };
+        }
+        return { first: 'Unknown Student', rest: [] };
+    };
+
     const getStudentInitials = (booking: any) => {
         if (booking.attendees && booking.attendees.length > 0 && booking.attendees[0].child) {
             const child = booking.attendees[0].child;
@@ -579,21 +602,51 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         </span>
                                     </div>
                                 </td>
-                                <td className="px-4 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                <td className="px-4 py-3.5">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0">
                                             {getStudentInitials(booking)}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Link
-                                                href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`} 
-                                                className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors hover:underline"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                {getStudentNames(booking)}
-                                            </Link>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {(() => {
+                                                const { first, rest, firstId } = getStudentList(booking);
+                                                const targetId = firstId || booking.attendees?.[0]?.child?.id || booking.child?.id;
+                                                const isLong = first.length > 18;
+                                                return (
+                                                    <div className="flex flex-col min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <Link
+                                                                href={`/dashboard/students/${targetId}`}
+                                                                className={`font-semibold text-foreground group-hover:text-primary transition-colors hover:underline truncate ${
+                                                                    isLong ? 'text-xs' : 'text-sm'
+                                                                }`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                {first}
+                                                            </Link>
+                                                            {rest.length > 0 && (
+                                                                <div className="relative group/more flex-shrink-0">
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-bold cursor-default border border-border">
+                                                                        +{rest.length}
+                                                                    </span>
+                                                                    {/* Tooltip with all extra names */}
+                                                                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover/more:block min-w-[160px] max-w-[220px] p-3 bg-popover border border-border rounded-2xl shadow-xl z-[60]">
+                                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">All Students</p>
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="text-xs font-semibold text-foreground">{first}</span>
+                                                                            {rest.map((name, i) => (
+                                                                                <span key={i} className="text-xs font-semibold text-foreground">{name}</span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                             {hasMedicalNote(booking) && (
-                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                <div className="relative group/tooltip flex items-center outline-none flex-shrink-0">
                                                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-50 border border-rose-100 cursor-help shadow-sm">
                                                         <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                                                     </div>
@@ -605,7 +658,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 </div>
                                             )}
                                             {hasSafeguardingNote(booking) && (
-                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                <div className="relative group/tooltip flex items-center outline-none flex-shrink-0">
                                                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 border border-blue-100 cursor-help shadow-sm">
                                                         <Shield className="w-3.5 h-3.5 text-blue-600" />
                                                     </div>
@@ -617,9 +670,9 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 </div>
                                             )}
                                             {(booking.parent?.email || booking.parent?.phone) && (
-                                                <div className="flex items-center gap-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                                                     {booking.parent.email && (
-                                                        <a 
+                                                        <a
                                                             href={`mailto:${booking.parent.email}`}
                                                             onClick={(e) => e.stopPropagation()}
                                                             className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
@@ -629,7 +682,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                         </a>
                                                     )}
                                                     {booking.parent.phone && (
-                                                        <a 
+                                                        <a
                                                             href={`tel:${booking.parent.phone}`}
                                                             onClick={(e) => e.stopPropagation()}
                                                             className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
