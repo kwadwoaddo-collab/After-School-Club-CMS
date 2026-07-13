@@ -57,7 +57,7 @@ const columns: DataTableColumn<StudentRow>[] = [
             <div className="flex items-center gap-2">
               <Link 
                 href={`/dashboard/students/${student.id}`}
-                className="font-bold text-white hover:text-primary transition-colors hover:underline decoration-primary/30"
+                className="font-bold text-foreground hover:text-primary transition-colors hover:underline decoration-primary/30"
               >
                 {student.firstName} {student.lastName}
               </Link>
@@ -71,10 +71,10 @@ const columns: DataTableColumn<StudentRow>[] = [
                   <div className="flex items-center justify-center w-6 h-6 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
                     <AlertTriangle className="w-3.5 h-3.5 text-error" />
                   </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-white text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
                     <div className="font-bold text-error mb-1 border-b border-error/20 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
                     {medicalNotesContent}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
                   </div>
                 </div>
               )}
@@ -83,10 +83,10 @@ const columns: DataTableColumn<StudentRow>[] = [
                   <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
                     <Shield className="w-3.5 h-3.5 text-primary" />
                   </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-surface-container-high border border-outline-variant/50 text-white text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
                     <div className="font-bold text-primary mb-1 border-b border-primary/20 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
                     {safeguardingNotesContent}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
                   </div>
                 </div>
               )}
@@ -95,15 +95,15 @@ const columns: DataTableColumn<StudentRow>[] = [
                   <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/30 cursor-help shadow-[0_0_8px_rgba(251,191,36,0.2)]">
                     <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-surface-container-high border border-outline-variant/50 text-white text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] leading-relaxed font-medium">
-                    <div className="font-bold text-amber-400 mb-1 border-b border-amber-400/20 pb-1 flex items-center gap-1.5"><TrendingDown className="w-3 h-3"/>Low Attendance</div>
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] leading-relaxed font-medium">
+                    <div className="font-bold text-amber-500 mb-1 border-b border-amber-500/20 pb-1 flex items-center gap-1.5"><TrendingDown className="w-3 h-3"/>Low Attendance</div>
                     {Math.round(student.attendanceRate)}% attendance rate — below 75% threshold
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-surface-container-high"></div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
                   </div>
                 </div>
               )}
             </div>
-            <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+            <p className="text-xs text-muted-foreground font-medium mt-0.5">
               DOB: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}
             </p>
           </div>
@@ -115,8 +115,8 @@ const columns: DataTableColumn<StudentRow>[] = [
     key: 'schoolYear',
     header: 'School Year',
     render: (student) => (
-      <span className="px-3 py-1 bg-surface-container-high border border-outline-variant/10 text-on-surface text-xs font-bold rounded-full shadow-sm">
-        Year {student.schoolYear}
+      <span className="px-3 py-1 bg-secondary border border-border text-foreground text-xs font-bold rounded-full shadow-sm">
+        {student.schoolYear === 0 ? 'Reception' : student.schoolYear != null ? `Year ${student.schoolYear}` : '—'}
       </span>
     ),
   },
@@ -127,19 +127,19 @@ const columns: DataTableColumn<StudentRow>[] = [
       <div className="space-y-1">
         <Link
           href={`/dashboard/parents/${student.parentId}`}
-          className="font-semibold text-sm text-white hover:text-primary transition-colors hover:underline underline-offset-4 decoration-primary/30"
+          className="font-semibold text-sm text-foreground hover:text-primary transition-colors hover:underline underline-offset-4 decoration-primary/30"
         >
           {student.parentFirstName} {student.parentLastName}
         </Link>
         {student.parentEmail && (
-          <p className="text-xs text-on-surface-variant opacity-80 flex items-center gap-1.5">
-            <Mail className="w-3 h-3 opacity-70" />
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Mail className="w-3 h-3 text-muted-foreground/60" />
             {student.parentEmail}
           </p>
         )}
         {student.parentPhone && (
-          <p className="text-xs text-on-surface-variant opacity-80 flex items-center gap-1.5">
-            <Phone className="w-3 h-3 opacity-70" />
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Phone className="w-3 h-3 text-muted-foreground/60" />
             {student.parentPhone}
           </p>
         )}
@@ -151,16 +151,16 @@ const columns: DataTableColumn<StudentRow>[] = [
     header: 'Bookings',
     render: (student) => (
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant/10 flex flex-col items-center justify-center">
-          <span className="font-bold text-white text-xs leading-none">
+        <div className="w-8 h-8 rounded-lg bg-secondary border border-border flex flex-col items-center justify-center">
+          <span className="font-bold text-foreground text-xs leading-none">
             {student.bookingCount}
           </span>
         </div>
         <div>
           {student.nextAssessment ? (
             <>
-              <span className="font-semibold text-white text-xs block">Next Booking</span>
-              <span className="text-xs text-on-surface-variant block">
+              <span className="font-semibold text-foreground text-xs block">Next Booking</span>
+              <span className="text-xs text-muted-foreground block">
                 {new Date(student.nextAssessment).toLocaleDateString('en-GB', {
                   day: 'numeric',
                   month: 'short',
@@ -169,7 +169,7 @@ const columns: DataTableColumn<StudentRow>[] = [
               </span>
             </>
           ) : (
-            <span className="text-xs text-on-surface-variant italic">No upcoming</span>
+            <span className="text-xs text-muted-foreground italic">No upcoming</span>
           )}
         </div>
       </div>
@@ -198,8 +198,8 @@ function StudentsEmptyState() {
       <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-primary/20">
         <Users className="w-10 h-10 text-primary" />
       </div>
-      <h3 className="text-2xl font-bold text-white mb-3">No students yet</h3>
-      <p className="text-on-surface-variant mb-8 max-w-xs mx-auto">
+      <h3 className="text-2xl font-bold text-foreground mb-3">No students yet</h3>
+      <p className="text-muted-foreground mb-8 max-w-xs mx-auto">
         Students will appear here once they register or book sessions, or you can add one manually.
       </p>
       <Link

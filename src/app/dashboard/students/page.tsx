@@ -44,8 +44,8 @@ export default async function StudentsPage(props: {
             <div className="space-y-8 animate-in fade-in duration-700">
                 <div className="flex items-end justify-between">
                     <div>
-                        <h1 className="text-3xl font-black text-white tracking-tight">Students</h1>
-                        <p className="text-on-surface-variant font-medium mt-1">
+                        <h1 className="text-3xl font-black text-foreground tracking-tight">Students</h1>
+                        <p className="text-muted-foreground font-medium mt-1">
                             View all registered students and their details
                         </p>
                     </div>
@@ -214,7 +214,7 @@ export default async function StudentsPage(props: {
             {/* Header Portals */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-base sm:text-lg font-black text-white tracking-tight">Students</h1>
+                    <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Students</h1>
                     <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
                         {totalCount}
                     </span>
@@ -224,7 +224,7 @@ export default async function StudentsPage(props: {
             <HeaderPortal targetId="header-right-actions">
                 <Link
                     href="/dashboard/students/import"
-                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all active:scale-95 duration-100 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-bold text-foreground transition-all active:scale-95 duration-100 cursor-pointer"
                 >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Import CSV</span>
@@ -241,53 +241,53 @@ export default async function StudentsPage(props: {
             {/* KPI Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {/* Total Students */}
-                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-[#adc6ff] flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary flex-shrink-0">
                             <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-white tracking-tight">{totalCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Total Students</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{totalCount}</p>
+                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Total Students</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Registered */}
-                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-emerald-400 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-600 flex-shrink-0">
                             <GraduationCap className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-white tracking-tight">{registeredCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Registered</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{registeredCount}</p>
+                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Registered</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Leads */}
-                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-amber-400 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-600 flex-shrink-0">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-white tracking-tight">{leadCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Leads</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{leadCount}</p>
+                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Leads</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Medical Alerts */}
-                <div className="glassmorphic-card rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+                <div className="bg-card border border-error/20 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-error/10 text-error flex-shrink-0">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-white tracking-tight">{medicalAlertCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Medical Alerts</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{medicalAlertCount}</p>
+                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Medical Alerts</p>
                         </div>
                     </div>
                 </div>
@@ -295,22 +295,22 @@ export default async function StudentsPage(props: {
                 {/* Low Attendance */}
                 <Link
                     href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'}
-                    className={`rounded-2xl p-5 transition-all glassmorphic-card ${showLowAttendance ? 'border-amber-500/40 ring-1 ring-amber-500/20 shadow-amber-500/5' : 'hover:border-amber-500/30'}`}
+                    className={`rounded-2xl p-5 transition-all bg-card border ${showLowAttendance ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-border hover:border-amber-500/30 hover:shadow-md'} shadow-sm`}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-600 flex-shrink-0">
                             <TrendingDown className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-amber-400' : 'text-white'}`}>{lowAttendanceCount}</p>
-                            <p className="text-[10px] text-[#c2c6d6] font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
+                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-amber-500' : 'text-foreground'}`}>{lowAttendanceCount}</p>
+                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
                         </div>
                     </div>
                 </Link>
             </div>
 
-            {/* Filters — sticky so it stays visible while scrolling through students */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
+            {/* Filters — sticky */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
                 <StudentsFilters
                     centres={accessibleCentres}
                     resultsCount={visibleStudents.length}

@@ -34,8 +34,8 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                 <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-primary/20">
                     <Users className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">No students yet</h3>
-                <p className="text-on-surface-variant mb-8 max-w-xs mx-auto">
+                <h3 className="text-2xl font-bold text-foreground mb-3">No students yet</h3>
+                <p className="text-muted-foreground mb-8 max-w-xs mx-auto">
                     Students will appear here once they register or book sessions, or you can add one manually.
                 </p>
                 <Link
@@ -61,7 +61,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                     <Link
                         key={student.id}
                         href={`/dashboard/students/${student.id}`}
-                        className="group relative glassmorphic-card rounded-[24px] p-5 hover:border-primary/30 hover:shadow-primary/5 transition-all flex flex-col gap-4"
+                        className="group relative bg-card border border-border rounded-[24px] p-5 hover:border-primary/30 hover:shadow-md transition-all flex flex-col gap-4"
                     >
                         {/* Alert badges — top-right corner */}
                         {hasAlerts && (
@@ -91,12 +91,12 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                 {initials}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="font-bold text-white text-sm truncate group-hover:text-primary transition-colors">
+                                <p className="font-bold text-foreground text-sm truncate group-hover:text-primary transition-colors">
                                     {student.firstName} {student.lastName}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                     {student.schoolYear !== null && (
-                                        <span className="px-2 py-0.5 bg-surface-container-high border border-outline-variant/10 text-on-surface text-[10px] font-bold rounded-full">
+                                        <span className="px-2 py-0.5 bg-secondary border border-border text-foreground text-[10px] font-bold rounded-full">
                                             {student.schoolYear === 0 ? 'Reception' : `Year ${student.schoolYear}`}
                                         </span>
                                     )}
@@ -110,32 +110,32 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                         </div>
 
                         {/* Parent contact */}
-                        <div className="border-t border-outline-variant/10 pt-3 space-y-1.5">
-                            <p className="text-xs font-semibold text-on-surface-variant truncate">
+                        <div className="border-t border-border pt-3 space-y-1.5">
+                            <p className="text-xs font-semibold text-foreground truncate">
                                 {student.parentFirstName} {student.parentLastName}
                             </p>
                             {student.parentEmail && (
-                                <p className="text-[11px] text-on-surface-variant/70 flex items-center gap-1.5 truncate">
-                                    <Mail className="w-3 h-3 flex-shrink-0 opacity-60" />
+                                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 truncate">
+                                    <Mail className="w-3 h-3 flex-shrink-0 text-muted-foreground/60" />
                                     {student.parentEmail}
                                 </p>
                             )}
                             {student.parentPhone && (
-                                <p className="text-[11px] text-on-surface-variant/70 flex items-center gap-1.5 truncate">
-                                    <Phone className="w-3 h-3 flex-shrink-0 opacity-60" />
+                                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 truncate">
+                                    <Phone className="w-3 h-3 flex-shrink-0 text-muted-foreground/60" />
                                     {student.parentPhone}
                                 </p>
                             )}
                         </div>
 
                         {/* Stats footer */}
-                        <div className="flex items-center justify-between border-t border-outline-variant/10 pt-3 mt-auto">
-                            <div className="flex items-center gap-1.5 text-[11px] text-on-surface-variant font-medium">
-                                <Calendar className="w-3 h-3 opacity-60" />
+                        <div className="flex items-center justify-between border-t border-border pt-3 mt-auto">
+                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+                                <Calendar className="w-3 h-3 text-muted-foreground/60" />
                                 {student.bookingCount} booking{student.bookingCount !== 1 ? 's' : ''}
                             </div>
                             {student.bookingCount > 0 && (
-                                <span className={`text-[11px] font-bold ${student.attendanceRate >= 80 ? 'text-emerald-400' : student.attendanceRate >= 50 ? 'text-amber-400' : 'text-error'}`}>
+                                <span className={`text-[11px] font-bold ${student.attendanceRate >= 80 ? 'text-emerald-600' : student.attendanceRate >= 50 ? 'text-amber-600' : 'text-error'}`}>
                                     {Math.round(student.attendanceRate)}% att.
                                 </span>
                             )}

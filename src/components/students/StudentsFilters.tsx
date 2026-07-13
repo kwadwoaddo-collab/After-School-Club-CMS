@@ -72,7 +72,6 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
         router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
     }, [search, year, status, selectedCentreId, currentView, router]);
 
-    // Debounced instant search — fires 350ms after user stops typing
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -89,20 +88,20 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
         <div className="space-y-4 animate-in fade-in duration-300">
             {/* Row 1: Search + Status + View Toggle */}
             <div className="flex items-center gap-3 flex-wrap">
-                {/* Instant Search — no submit button needed */}
+                {/* Search */}
                 <div className="flex-1 min-w-[240px] relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         placeholder="Search student or parent name, contact..."
-                        className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-[#19191b]/40 border-outline-variant/20 text-white"
+                        className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-secondary/50 border-border"
                     />
                     {search && (
                         <button
                             onClick={() => handleSearchChange('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                             aria-label="Clear search"
                         >
                             <X className="w-3.5 h-3.5" />
@@ -119,27 +118,27 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                             setStatus(val);
                             applyFilters({ newStatus: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer border pr-8 bg-[#19191b]/40 border-outline-variant/20 text-white"
+                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold text-foreground focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer border pr-8 bg-secondary/50 border-border"
                     >
                         {statusOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value} className="bg-[#1a1d23] text-white">{opt.label}</option>
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
-                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
                 </div>
 
-                {/* View Toggle: Table / Grid */}
-                <div className="flex items-center bg-[#19191b]/40 border border-outline-variant/20 rounded-2xl p-1 gap-1">
+                {/* View Toggle */}
+                <div className="flex items-center bg-secondary/50 border border-border rounded-2xl p-1 gap-1">
                     <button
                         onClick={() => applyFilters({ newView: 'table' })}
-                        className={`p-2 rounded-xl transition-all ${currentView === 'table' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-white'}`}
+                        className={`p-2 rounded-xl transition-all ${currentView === 'table' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
                         title="Table view"
                     >
                         <Table2 className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => applyFilters({ newView: 'grid' })}
-                        className={`p-2 rounded-xl transition-all ${currentView === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-white'}`}
+                        className={`p-2 rounded-xl transition-all ${currentView === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
                         title="Card grid view"
                     >
                         <LayoutGrid className="w-4 h-4" />
@@ -150,7 +149,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer border border-outline-variant/10"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-bold text-foreground transition-all cursor-pointer border border-border"
                     >
                         <X className="w-4 h-4" />
                         Clear
@@ -170,7 +169,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                             year === pill.value
                                 ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-[#19191b]/40 border-outline-variant/20 text-slate-400 hover:border-primary/30 hover:text-white'
+                                : 'bg-secondary/50 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary'
                         }`}
                     >
                         {pill.label}
@@ -181,24 +180,24 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
             {/* Active Filters Display */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active:</span>
+                    <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Active:</span>
                     {searchParams.get('search') && (
-                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/15">
+                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">
                             &quot;{searchParams.get('search')}&quot; ({resultsCount} results)
                         </span>
                     )}
                     {year !== 'all' && (
-                        <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold rounded-full border border-secondary/15">
+                        <span className="px-3 py-1 bg-secondary text-foreground text-xs font-bold rounded-full border border-border">
                             {yearPills.find((o) => o.value === year)?.label || `Year ${year}`}
                         </span>
                     )}
                     {status !== 'all' && (
-                        <span className="px-3 py-1 bg-tertiary-container/10 text-tertiary text-xs font-bold rounded-full border border-tertiary/15">
+                        <span className="px-3 py-1 bg-tertiary/10 text-tertiary text-xs font-bold rounded-full border border-tertiary/20">
                             {statusOptions.find((o) => o.value === status)?.label || status}
                         </span>
                     )}
                     {selectedCentreId !== 'all' && (
-                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/15">
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 text-xs font-bold rounded-full border border-emerald-500/20">
                             Centre: {centres.find((c) => c.id === selectedCentreId)?.name || 'Selected'}
                         </span>
                     )}
