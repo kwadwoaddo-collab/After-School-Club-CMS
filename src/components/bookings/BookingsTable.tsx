@@ -475,7 +475,16 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         <div className="glassmorphic-card rounded-[32px] overflow-hidden relative">
             {/* Table for Desktop */}
             <div className="hidden lg:block overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
-                <table className="w-full">
+                <table className="w-full table-fixed">
+                    <colgroup>
+                        <col className="w-12" />          {/* checkbox */}
+                        <col className="w-36" />          {/* date & time */}
+                        <col />                           {/* student — flex, takes remaining */}
+                        <col className="w-40" />          {/* session type */}
+                        <col className="w-44" />          {/* centre */}
+                        <col className="w-28" />          {/* status */}
+                        <col className="w-16" />          {/* actions */}
+                    </colgroup>
                     <thead>
                         <tr className="border-b border-border">
                             <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-5 py-4 w-12">
@@ -489,11 +498,11 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             </th>
                             <th 
-                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none"
+                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none whitespace-nowrap"
                                 onClick={() => handleSort('date')}
                             >
                                 <div className="flex items-center gap-2">
-                                    Date & Time
+                                    Date &amp; Time
                                     <div className={`flex flex-col ml-1 ${sortConfig.key === 'date' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
                                         <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'date' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
                                         <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'date' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
@@ -501,7 +510,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </div>
                             </th>
                             <th 
-                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none"
+                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none whitespace-nowrap"
                                 onClick={() => handleSort('student')}
                             >
                                 <div className="flex items-center gap-2">
@@ -512,14 +521,14 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                             </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                 Session Type
                             </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                 Centre
                             </th>
                             <th 
-                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none"
+                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none whitespace-nowrap"
                                 onClick={() => handleSort('status')}
                             >
                                 <div className="flex items-center gap-2">
@@ -530,7 +539,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                             </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-right px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            <th className="sticky top-0 z-10 bg-card border-b border-border text-right px-6 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                 Actions
                             </th>
                         </tr>
@@ -552,20 +561,20 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         />
                                     </div>
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-3.5">
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-foreground">
+                                        <span className="text-sm font-bold text-foreground whitespace-nowrap">
                                             {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d') : 'N/A'}
                                         </span>
-                                        <span className="text-xs text-muted-foreground font-medium mt-0.5">
+                                        <span className="text-xs text-muted-foreground font-medium mt-0.5 whitespace-nowrap">
                                             {booking.startAt && booking.endAt
-                                                ? `${format(new Date(booking.startAt), 'h:mm a')} - ${format(new Date(booking.endAt), 'h:mm a')}`
+                                                ? `${format(new Date(booking.startAt), 'h:mm a')} – ${format(new Date(booking.endAt), 'h:mm a')}`
                                                 : booking.startAt
                                                     ? format(new Date(booking.startAt), 'h:mm a')
                                                     : 'Time TBD'
                                             }
                                         </span>
-                                        <span className="text-xs text-muted-foreground/70 mt-1">
+                                        <span className="text-xs text-muted-foreground/60 mt-1 whitespace-nowrap">
                                             Booked: {booking.createdAt ? format(new Date(booking.createdAt), 'dd/MM/yy') : 'N/A'}
                                         </span>
                                     </div>
@@ -634,21 +643,21 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-4 py-4">
-                                    <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold">
-                                        {booking.assessmentType === 'initial_assessment' ? 'Introductory Session' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity Session'}
+                                <td className="px-4 py-3.5">
+                                    <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold whitespace-nowrap">
+                                        {booking.assessmentType === 'initial_assessment' ? 'Introductory' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}
                                     </span>
                                 </td>
-                                <td className="px-4 py-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <MapPin className="w-4 h-4 text-muted-foreground/60" />
-                                        {booking.centre?.name || 'Unknown'}
+                                <td className="px-4 py-3.5">
+                                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+                                        <span className="truncate">{booking.centre?.name || 'Unknown'}</span>
                                     </div>
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-3.5">
                                     {getStatusBadge(booking.status)}
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-3.5 text-right">
                                     <div className="relative inline-block">
                                         <button
                                             suppressHydrationWarning
