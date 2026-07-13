@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -70,6 +71,10 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         setDropdownOpen(false);
         setDropdownAnchor(null);
     };
+
+    // Portal mount guard — prevents SSR mismatch
+    const [portalMounted, setPortalMounted] = useState(false);
+    useEffect(() => { setPortalMounted(true); }, []);
 
     const selectCentre = (centreId: string) => {
         setSelectedCentreId(centreId);
@@ -275,8 +280,9 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     </button>
                                 )}
 
-                                {/* Fixed dropdown — viewport stacking context, z-[200] */}
-                                {dropdownOpen && dropdownAnchor && (
+                                {/* Portal dropdown — renders into document.body, escaping
+                                    the aside's compositing layer (backdrop-blur + translate) */}
+                                {dropdownOpen && dropdownAnchor && portalMounted && createPortal(
                                     <>
                                         <div className="fixed inset-0 z-[199]" onClick={closeCentreDropdown} />
                                         <div
@@ -285,7 +291,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         >
                                             {dropdownContent}
                                         </div>
-                                    </>
+                                    </>,
+                                    document.body
                                 )}
                             </div>
                         );
