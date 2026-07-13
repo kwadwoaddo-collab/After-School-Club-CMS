@@ -8,6 +8,16 @@
   --color-accent-cyan: #06b6d4;
   --color-accent-amber: #f59e0b;
 
+  /* Standard shadcn-style tokens referenced directly across components
+     (bg-card, border-border, text-foreground, bg-popover, etc.) — must
+     stay registered here or Tailwind won't generate those utilities. */
+  --color-border: hsl(var(--border));
+  --color-card: hsl(var(--card));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
   --font-sans: var(--font-inter);
 
   /* Midnight Luminary / SprintScale Dark Theme Tokens mapped to HIG variables */
