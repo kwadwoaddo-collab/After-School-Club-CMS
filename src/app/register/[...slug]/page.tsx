@@ -368,7 +368,7 @@ export default function RegisterPage() {
                                         <p className="text-gray-500 text-sm">{centre.address || 'After School provisions'}</p>
                                     </div>
                                     <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-600 transition-colors flex-shrink-0">
-                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
@@ -489,7 +489,7 @@ export default function RegisterPage() {
                         )}
                         <button
                             onClick={() => setShowFeesIntro(false)}
-                            className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all bg-primary hover:opacity-90 shadow-lg shadow-blue-600/20"
+                            className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-lg shadow-blue-600/25"
                         >
                             I understand — Proceed to Registration →
                         </button>
@@ -545,7 +545,7 @@ export default function RegisterPage() {
                                     />
                                 }
                                 fileName={`registration-${parentList[0]?.lastName.toLowerCase()}-${parentList[0]?.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-')}
-                                className="w-full py-4 bg-primary hover:opacity-90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/30 glow-btn"
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25"
                             >
                                 {({ loading }) => (
                                     <>
@@ -894,7 +894,7 @@ export default function RegisterPage() {
                             id="submit-registration"
                             onClick={handleSubmit}
                             disabled={submitting}
-                            className="w-full py-4 rounded-xl bg-primary text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:opacity-90 shadow-lg shadow-blue-600/20"
+                            className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
                         >
                             {submitting ? (
                                 <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Submitting...</>
@@ -904,20 +904,27 @@ export default function RegisterPage() {
                 )}
 
                 {/* ── Navigation ─────────────────────────────────────────── */}
-                <div className="flex justify-between mt-8">
+                <div className="flex justify-between items-center mt-10 pb-4">
                     {step > 1 ? (
-                        <button onClick={() => setStep(s => s - 1)} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
+                        <button
+                            onClick={() => setStep(s => s - 1)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-all text-sm font-medium"
+                        >
                             ← Back
                         </button>
                     ) : (
-                        <button onClick={() => {
-                            setShowFeesIntro(true);
-                        }} className="px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:border-white/20 hover:text-white transition-colors text-sm">
+                        <button
+                            onClick={() => setShowFeesIntro(true)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-all text-sm font-medium"
+                        >
                             ← Back
                         </button>
                     )}
                     {step < TOTAL_STEPS && (
-                        <button onClick={handleContinue} className="px-6 py-3 rounded-xl bg-primary glow-btn text-white font-medium transition-colors text-sm">
+                        <button
+                            onClick={handleContinue}
+                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold transition-all text-sm shadow-md shadow-blue-600/25"
+                        >
                             Continue →
                         </button>
                     )}

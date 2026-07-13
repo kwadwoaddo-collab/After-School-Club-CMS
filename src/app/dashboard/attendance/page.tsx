@@ -85,37 +85,37 @@ export default async function AttendancePage(props: {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e2e1] tracking-tight">Attendance Roll-Call</h1>
-                    <p className="text-[#8c909f] font-medium mt-1">Mark attendance for today&apos;s sessions</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Attendance Roll-Call</h1>
+                    <p className="text-muted-foreground font-medium mt-1">Mark attendance for today&apos;s sessions</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Jump to today */}
                     {!isToday && (
-                        <Link href="/dashboard/attendance" className="px-3 py-2 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 text-[#adc6ff] text-xs font-bold hover:bg-[#adc6ff]/20 transition-all flex items-center gap-1.5">
+                        <Link href="/dashboard/attendance" className="px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-all flex items-center gap-1.5">
                             <CalendarCheck className="w-3.5 h-3.5" />
                             Go to Today
                         </Link>
                     )}
-                    {/* Export CSV — direct download, no JS required */}
+                    {/* Export CSV */}
                     <a
                         href={`/api/export/register?date=${targetStr}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
                         download={`register-${targetStr}.csv`}
-                        className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5"
+                        className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5"
                         title={`Download register for ${format(targetDate, 'd MMM yyyy')} as CSV`}
                     >
                         <Download className="w-3.5 h-3.5" />
                         Export CSV
                     </a>
-                    <Link href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-[#1a1d23] border border-[#424754]/15 text-[#8c909f] hover:text-white hover:border-[#adc6ff]/30 transition-all">
+                    <Link href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all">
                         <ChevronLeft className="w-4 h-4" />
                     </Link>
-                    <div className="px-4 py-2 rounded-xl bg-[#1a1d23] border border-[#424754]/15">
-                        <p className="text-white font-bold text-sm">
+                    <div className="px-4 py-2 rounded-xl bg-secondary border border-border">
+                        <p className="text-foreground font-bold text-sm">
                             {format(targetDate, 'EEEE, d MMM yyyy')}
-                            {isToday && <span className="ml-2 text-[#adc6ff] text-xs font-bold uppercase tracking-wider">Today</span>}
+                            {isToday && <span className="ml-2 text-primary text-xs font-bold uppercase tracking-wider">Today</span>}
                         </p>
                     </div>
-                    <Link href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-[#1a1d23] border border-[#424754]/15 text-[#8c909f] hover:text-white hover:border-[#adc6ff]/30 transition-all">
+                    <Link href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all">
                         <ChevronRight className="w-4 h-4" />
                     </Link>
                 </div>
@@ -124,21 +124,21 @@ export default async function AttendancePage(props: {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {[
-                    { label: 'Sessions', value: dayBookings.length, color: 'text-[#adc6ff]', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-[#adc6ff]/10' },
-                    { label: 'Students', value: totalStudents, color: 'text-white', icon: <Users className="w-4 h-4" />, iconBg: 'bg-white/5' },
-                    { label: 'Present', value: present, color: 'text-emerald-400', icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-emerald-500/10' },
-                    { label: 'Absent', value: absent, color: 'text-red-400', icon: <Users className="w-4 h-4" />, iconBg: 'bg-red-500/10' },
+                    { label: 'Sessions', value: dayBookings.length, color: 'text-primary', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-primary/10' },
+                    { label: 'Students', value: totalStudents, color: 'text-foreground', icon: <Users className="w-4 h-4" />, iconBg: 'bg-secondary' },
+                    { label: 'Present', value: present, color: 'text-emerald-600', icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-emerald-500/10' },
+                    { label: 'Absent', value: absent, color: 'text-red-600', icon: <Users className="w-4 h-4" />, iconBg: 'bg-red-500/10' },
                     {
                         label: 'Rate',
                         value: `${attendanceRate}%`,
-                        color: attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 50 ? 'text-amber-400' : 'text-red-400',
+                        color: attendanceRate >= 80 ? 'text-emerald-600' : attendanceRate >= 50 ? 'text-amber-600' : 'text-red-600',
                         icon: <CheckCircle2 className="w-4 h-4" />,
                         iconBg: attendanceRate >= 80 ? 'bg-emerald-500/10' : attendanceRate >= 50 ? 'bg-amber-500/10' : 'bg-red-500/10'
                     },
                 ].map(stat => (
-                    <div key={stat.label} className="glassmorphic-card rounded-xl p-3.5 shadow-md flex flex-col justify-between min-h-[85px] border border-white/5 hover:scale-[1.01] transition-transform duration-150">
+                    <div key={stat.label} className="bg-card border border-border rounded-xl p-3.5 shadow-sm flex flex-col justify-between min-h-[85px] hover:scale-[1.01] transition-transform duration-150">
                         <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-[#8c909f]">{stat.label}</span>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">{stat.label}</span>
                             <div className={`w-6 h-6 rounded-md ${stat.iconBg} flex items-center justify-center ${stat.color} flex-shrink-0`}>
                                 <div className="scale-[0.8]">{stat.icon}</div>
                             </div>
@@ -150,16 +150,16 @@ export default async function AttendancePage(props: {
 
             {/* Progress bar */}
             {totalStudents > 0 && (
-                <div className="bg-[#1a1d23] rounded-2xl p-5 border border-[#424754]/15">
+                <div className="bg-card border border-border rounded-2xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-[#8c909f]">Register completion</p>
-                        <p className="text-sm font-bold text-white">{marked}/{totalStudents} marked</p>
+                        <p className="text-sm font-semibold text-muted-foreground">Register completion</p>
+                        <p className="text-sm font-bold text-foreground">{marked}/{totalStudents} marked</p>
                     </div>
-                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-[#adc6ff] to-[#4d8eff] rounded-full transition-all duration-700" style={{ width: `${Math.round((marked / totalStudents) * 100)}%` }} />
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full transition-all duration-700" style={{ width: `${Math.round((marked / totalStudents) * 100)}%` }} />
                     </div>
                     {marked === totalStudents && (
-                        <p className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold mt-2">
+                        <p className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold mt-2">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Register complete for this day
                         </p>

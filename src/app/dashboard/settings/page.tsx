@@ -38,8 +38,8 @@ export default async function SettingsPage() {
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-black text-white tracking-tight">Workspace Settings</h1>
-                <p className="text-sm text-[#8c909f] mt-1">
+                <h1 className="text-3xl font-black text-foreground tracking-tight">Workspace Settings</h1>
+                <p className="text-sm text-muted-foreground mt-1">
                     Manage your club configuration, billing details, custom branding, and schedules.
                 </p>
             </div>
