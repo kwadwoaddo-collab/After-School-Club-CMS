@@ -57,8 +57,8 @@ export default async function BookingsPage(props: {
         return (
             <div className="space-y-8 animate-in fade-in duration-700">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Bookings</h1>
-                    <p className="text-slate-400 text-sm font-medium mt-1">Manage upcoming and past appointments</p>
+                    <h1 className="text-3xl font-black text-foreground tracking-tight">Bookings</h1>
+                    <p className="text-muted-foreground text-sm font-medium mt-1">Manage upcoming and past appointments</p>
                 </div>
                 <div className="glassmorphic-card rounded-[32px] p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -257,7 +257,7 @@ export default async function BookingsPage(props: {
 
             <HeaderPortal targetId="header-middle">
                 {/* Segmented Status Tabs — Combines Metrics and filtering inside a single clean row */}
-                <div className="flex bg-[#14161b]/60 p-1 rounded-2xl border border-outline-variant/10 self-start overflow-x-auto max-w-full scrollbar-none gap-1">
+                <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                     {[
                         { value: 'all', label: 'All', count: totalAggCount },
                         { value: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed, color: 'text-blue-400 bg-blue-500/10' },
@@ -282,8 +282,8 @@ export default async function BookingsPage(props: {
                                 href={href}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
                                     isActive
-                                        ? 'bg-[#2a2d35] text-white shadow-lg border border-[#424754]/25'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-card text-foreground shadow-sm border border-border'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                 }`}
                             >
                                 <span>{tab.label}</span>
@@ -328,7 +328,7 @@ export default async function BookingsPage(props: {
             </HeaderPortal>
 
             {/* Filters — sticky so it stays visible while scrolling through bookings */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/5">
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
                 <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
                     <BookingsFilters centres={orgCentres} resultsCount={totalRecords} />
                 </Suspense>

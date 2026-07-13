@@ -87,7 +87,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                                 }
                             }}
                             placeholder="Search parent name, child name..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-[#14161b] border border-[#2a2a2a]/40 rounded-2xl text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            className="w-full pl-11 pr-4 py-2.5 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                         />
                     </div>
                 </form>
@@ -100,7 +100,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                             onChange={(e) => {
                                 setSelectedCentreId(e.target.value);
                             }}
-                            className="w-full pl-4 pr-10 py-2.5 bg-[#14161b] border border-[#2a2a2a]/40 rounded-2xl text-sm text-white font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
+                            className="w-full pl-4 pr-10 py-2.5 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer text-left"
                         >
                             <option value="all">All Centres</option>
                             {centres.map(c => (
@@ -112,7 +112,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                 )}
 
                 {/* Unified Date Range Group */}
-                <div className="flex items-center gap-2 bg-[#14161b] border border-[#2a2a2a]/40 rounded-2xl px-3 py-1 flex-shrink-0">
+                <div className="flex items-center gap-2 bg-secondary/50 border border-border rounded-2xl px-3 py-1 flex-shrink-0">
                     <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     <div className="flex items-center">
                         <span className="text-[10px] font-black text-slate-500 uppercase mr-2 pointer-events-none">From</span>
@@ -124,7 +124,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                                 setFromDate(val);
                                 applyFilters({ newFrom: val });
                             }}
-                            className="bg-transparent border-none text-xs text-white outline-none cursor-pointer w-28 py-1.5"
+                            className="bg-transparent border-none text-xs text-foreground outline-none cursor-pointer w-28 py-1.5"
                         />
                     </div>
                     <span className="text-slate-600 text-xs font-bold px-1">➔</span>
@@ -138,7 +138,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                                 setToDate(val);
                                 applyFilters({ newTo: val });
                             }}
-                            className="bg-transparent border-none text-xs text-white outline-none cursor-pointer w-28 py-1.5"
+                            className="bg-transparent border-none text-xs text-foreground outline-none cursor-pointer w-28 py-1.5"
                         />
                     </div>
                 </div>
@@ -147,7 +147,7 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                 {hasActiveFilters && (
                     <button
                         onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-[#FFFFFF] transition-all cursor-pointer border border-[#424754]/10 flex-shrink-0 active:scale-95 duration-100"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all cursor-pointer border border-border flex-shrink-0 active:scale-95 duration-100"
                     >
                         <X className="w-4 h-4" />
                         Clear
