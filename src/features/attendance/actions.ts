@@ -12,10 +12,8 @@ import {
     deriveLateMinutes,
 } from './utils';
 
-// Re-export helpers so consumers can import from one place
-export { getAcademicYear, getAcademicYearRange } from './utils';
-
 // ─── Update attendance with check-in/out times ────────────────────────────────
+
 
 export interface UpdateAttendanceParams {
     attendeeId: string;
