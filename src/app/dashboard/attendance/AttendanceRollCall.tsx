@@ -3,8 +3,13 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
-import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Edit2, Plus, Search, X, Users, Sparkles, UserCheck, UserMinus, CalendarX } from 'lucide-react';
+import { updateAttendanceTimelog } from '@/features/attendance/actions';
+import {
+    CheckCircle2, XCircle, AlertCircle, Loader2, Plus, Search, X,
+    Users, Sparkles, UserCheck, LogIn, LogOut, ChevronDown, BookOpen, AlertTriangle, BookMarked
+} from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
+
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
 
@@ -23,6 +28,14 @@ interface Attendee {
     lateMinutes: number | null;
     isCatchUp: boolean;
     bookingId: string | null;
+    // Time-log fields
+    checkInTime: string | null;
+    checkOutTime: string | null;
+    sessionType: 'scheduled' | 'extra' | null;
+    flagHomework: boolean;
+    flagBehaviour: boolean;
+    flagNote: string | null;
+    notes: string | null;
 }
 
 interface CompiledSlot {
@@ -49,13 +62,19 @@ interface Props {
     }[];
 }
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
-    present: { label: 'Present', bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/20' },
-    absent: { label: 'Absent', bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/20' },
-    late: { label: 'Late', bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/20' },
-    no_show: { label: 'No Show', bg: 'bg-rose-500/15', text: 'text-rose-400', border: 'border-rose-500/20' },
-    excused: { label: 'Excused', bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'border-purple-500/20' },
-};
+/** Returns current time as "HH:mm" */
+function nowHHmm(): string {
+    const n = new Date();
+    return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+
+/** Derives lateness: returns minutes if > 10min after slot, else null */
+function lateMinutesFrom(checkIn: string, slot: string): number | null {
+    const [ih, im] = checkIn.split(':').map(Number);
+    const [sh, sm] = slot.split(':').map(Number);
+    const diff = (ih * 60 + im) - (sh * 60 + sm);
+    return diff > 10 ? diff : null;
+}
 
 function AttendeeCard({
     attendee,
@@ -72,238 +91,194 @@ function AttendeeCard({
 }) {
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string | null>(attendee.id);
-    const [status, setStatus] = useState<AttendanceStatus>(attendee.attendanceStatus);
-    const [note, setNote] = useState<string>(attendee.attendanceNote || '');
-    const [lateMinutes, setLateMinutes] = useState<string>(
-        attendee.lateMinutes !== null && attendee.lateMinutes !== undefined ? attendee.lateMinutes.toString() : ''
-    );
-    const [showDetails, setShowDetails] = useState(false);
-    const [isPending, startTransition] = useTransition();
+
+    const [checkIn, setCheckIn] = useState<string>(attendee.checkInTime ?? '');
+    const [checkOut, setCheckOut] = useState<string>(attendee.checkOutTime ?? '');
+    const [isAbsent, setIsAbsent] = useState(attendee.attendanceStatus === 'absent');
+    const [absenceReason, setAbsenceReason] = useState<string>('');
+    const [note, setNote] = useState<string>(attendee.attendanceNote ?? '');
+    const [showAbsenceSelect, setShowAbsenceSelect] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
-    const mark = (newStatus: AttendanceStatus) => {
-        const autoOpen = newStatus === 'late';
-        if (autoOpen) setShowDetails(true);
+    const derivedLate = checkIn ? lateMinutesFrom(checkIn, sessionTime) : null;
+    const isIn = !!checkIn;
+    const isOut = !!checkOut;
+    const isExtra = attendee.isCatchUp || attendee.sessionType === 'extra';
 
+    const ensureBooking = async (): Promise<{ bookingId: string; attendeeId: string }> => {
+        if (curBookingId && !curBookingId.startsWith('temp-') && curAttendeeId && !curAttendeeId.startsWith('temp-')) {
+            return { bookingId: curBookingId, attendeeId: curAttendeeId };
+        }
+        const res = await markAttendeeAttendance({
+            bookingId: curBookingId,
+            attendeeId: curAttendeeId,
+            status: 'present',
+            note: null,
+            lateMinutes: null,
+            childId: attendee.childId,
+            dateStr,
+            sessionTime,
+            centreId,
+        });
+        if (res) {
+            setCurBookingId(res.bookingId);
+            setCurAttendeeId(res.attendeeId ?? null);
+            return { bookingId: res.bookingId, attendeeId: res.attendeeId! };
+        }
+        throw new Error('Could not create booking record');
+    };
+
+    const handleCheckIn = () => {
+        const time = nowHHmm();
+        setCheckIn(time);
+        setIsAbsent(false);
+        setShowAbsenceSelect(false);
         startTransition(async () => {
             try {
-                const res = await markAttendeeAttendance({
-                    bookingId: curBookingId,
-                    attendeeId: curAttendeeId,
-                    status: newStatus,
-                    note: note || null,
-                    lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
-                    childId: attendee.childId,
-                    dateStr,
-                    sessionTime,
-                    centreId,
-                });
-                
-                if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
-                    setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId ?? null);
-                }
-                
-                setStatus(newStatus);
-                setSaved(true);
-                setTimeout(() => setSaved(false), 2000);
-            } catch (err: any) {
-                onToast({ title: 'Could not mark attendance', message: 'Please try again. If the problem continues, refresh the page.', variant: 'error' });
-            }
+                const { attendeeId } = await ensureBooking();
+                await updateAttendanceTimelog({ attendeeId, checkInTime: time, checkOutTime: checkOut || null, absenceReason: null, attendanceNote: note || null, sessionTime });
+                setSaved(true); setTimeout(() => setSaved(false), 2000);
+            } catch { onToast({ title: 'Could not record check-in', message: 'Please try again.', variant: 'error' }); setCheckIn(''); }
         });
     };
 
-    const saveDetails = () => {
+    const handleCheckOut = () => {
+        const time = nowHHmm();
+        setCheckOut(time);
         startTransition(async () => {
             try {
-                const res = await markAttendeeAttendance({
-                    bookingId: curBookingId,
-                    attendeeId: curAttendeeId,
-                    status,
-                    note: note || null,
-                    lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
-                    childId: attendee.childId,
-                    dateStr,
-                    sessionTime,
-                    centreId,
-                });
-                
-                if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
-                    setCurBookingId(res.bookingId);
-                    setCurAttendeeId(res.attendeeId ?? null);
-                }
-                
-                setSaved(true);
-                setTimeout(() => setSaved(false), 2000);
-            } catch (err: any) {
-                onToast({ title: 'Could not save details', message: 'Please try again.', variant: 'error' });
-            }
+                const { attendeeId } = await ensureBooking();
+                await updateAttendanceTimelog({ attendeeId, checkInTime: checkIn || null, checkOutTime: time, absenceReason: null, attendanceNote: note || null, sessionTime });
+                setSaved(true); setTimeout(() => setSaved(false), 2000);
+            } catch { onToast({ title: 'Could not record check-out', message: 'Please try again.', variant: 'error' }); setCheckOut(''); }
+        });
+    };
+
+    const handleMarkAbsent = (reason: 'illness' | 'holiday' | 'family' | 'other') => {
+        setIsAbsent(true); setAbsenceReason(reason); setCheckIn(''); setCheckOut(''); setShowAbsenceSelect(false);
+        startTransition(async () => {
+            try {
+                const res = await markAttendeeAttendance({ bookingId: curBookingId, attendeeId: curAttendeeId, status: 'absent', note: reason, lateMinutes: null, childId: attendee.childId, dateStr, sessionTime, centreId });
+                if (res && (!curBookingId || curBookingId.startsWith('temp-'))) { setCurBookingId(res.bookingId); setCurAttendeeId(res.attendeeId ?? null); }
+                if (res?.attendeeId) { await updateAttendanceTimelog({ attendeeId: res.attendeeId, checkInTime: null, checkOutTime: null, absenceReason: reason, attendanceNote: null, sessionTime }); }
+                setSaved(true); setTimeout(() => setSaved(false), 2000);
+            } catch { onToast({ title: 'Could not mark absent', message: 'Please try again.', variant: 'error' }); }
         });
     };
 
     const initials = `${attendee.firstName[0]}${attendee.lastName[0]}`.toUpperCase();
-    const cfg = status ? STATUS_CONFIG[status] : null;
+    const borderClass = isAbsent ? 'bg-red-50 border-red-200' : isIn && isOut ? 'bg-emerald-50 border-emerald-200' : isIn ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200';
+    const avatarClass = isAbsent ? 'bg-red-100 text-red-600' : isIn ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600';
 
     return (
-        <div className="space-y-2">
-            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border transition-all ${cfg
-                ? `${cfg.bg} ${cfg.border}`
-                : 'bg-secondary/40 border-border hover:border-[#adc6ff]/20'
-            }`}>
-                {/* Left side: Avatar + Info */}
-                <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
-                    {/* Avatar */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${cfg ? `${cfg.bg} ${cfg.text}` : 'bg-primary/10 text-primary'}`}>
-                        {initials}
-                    </div>
-
-                    {/* Name + details */}
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                            <Link href={`/dashboard/students/${attendee.childId}`} className="text-foreground hover:text-primary font-semibold text-sm truncate transition-colors">
-                                {attendee.firstName} {attendee.lastName}
-                            </Link>
-                            {(note || lateMinutes) && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
-                            )}
-                        </div>
-                        <p className="text-muted-foreground text-[11px] font-medium leading-normal truncate">
-                            Year {attendee.schoolYear} · Parent: {attendee.parentFirstName} ({attendee.parentEmail || 'No email'})
-                            {lateMinutes && ` · Late: ${lateMinutes}m`}
-                            {note && ` · "${note}"`}
-                        </p>
-                    </div>
+        <div className={`rounded-2xl border p-4 transition-all ${borderClass}`}>
+            <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${avatarClass}`}>
+                    {initials}
                 </div>
-
-                {/* Right side: Status badge, saved, loading, and buttons */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t border-border/60 sm:border-0 pt-3 sm:pt-0">
-                    <div className="flex items-center gap-2">
-                        {/* Status badge */}
-                        {cfg && (
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
-                                {cfg.label}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Link href={`/dashboard/students/${attendee.childId}`} className="font-semibold text-gray-900 text-sm hover:text-blue-600 transition-colors">
+                            {attendee.firstName} {attendee.lastName}
+                        </Link>
+                        {isExtra && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                                <Sparkles className="w-2.5 h-2.5" /> EXTRA
                             </span>
                         )}
-
-                        {/* Saved flash */}
-                        {saved && <span className="text-emerald-400 text-xs font-bold animate-pulse">Saved</span>}
-
-                        {/* Loading */}
-                        {isPending && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />}
+                        {attendee.flagHomework && (
+                            <span title={attendee.flagNote || 'Not bringing homework'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                <BookOpen className="w-2.5 h-2.5" /> HW
+                            </span>
+                        )}
+                        {attendee.flagBehaviour && (
+                            <span title={attendee.flagNote || 'Behaviour concern'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                                <AlertTriangle className="w-2.5 h-2.5" /> BEHAVIOUR
+                            </span>
+                        )}
+                        {derivedLate !== null && isIn && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
+                                Late {derivedLate}m
+                            </span>
+                        )}
+                        {saved && <span className="text-[10px] font-bold text-emerald-600 animate-pulse">Saved ✓</span>}
+                        {isPending && <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />}
                     </div>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                        Year {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName}
+                        {attendee.parentPhone && ` · ${attendee.parentPhone}`}
+                    </p>
 
-                    {/* Quick action buttons */}
-                    {!isPending && (
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                    {isAbsent ? (
+                        <div className="mt-3 flex items-center gap-2 flex-wrap">
+                            <span className="px-3 py-1.5 rounded-xl bg-red-100 border border-red-200 text-red-700 text-xs font-bold">
+                                ❌ Absent{absenceReason ? ` — ${absenceReason}` : ''}
+                            </span>
+                            <button onClick={() => { setIsAbsent(false); setAbsenceReason(''); }} className="text-xs text-gray-400 hover:text-gray-600 underline transition-colors">Undo</button>
+                        </div>
+                    ) : (
+                        <div className="mt-3 flex items-center gap-2 flex-wrap">
+                            {/* CHECK IN */}
                             <button
-                                onClick={() => setShowDetails(!showDetails)}
-                                title="Add Note/Details"
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${showDetails
-                                    ? 'bg-primary/20 border-[#adc6ff]/40 text-primary'
-                                    : 'bg-card border-border text-muted-foreground hover:border-[#adc6ff]/40 hover:text-foreground'
+                                onClick={handleCheckIn}
+                                disabled={isPending}
+                                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                    isIn ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
                                 }`}
                             >
-                                <Edit2 className="w-4 h-4" />
+                                <LogIn className="w-3.5 h-3.5" />
+                                {isIn ? `In ${checkIn}` : 'Check In'}
                             </button>
-                            <button
-                                onClick={() => mark(status === 'present' ? null : 'present')}
-                                title="Mark Present"
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'present'
-                                    ? 'bg-emerald-500 border-emerald-500 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                                    : 'bg-card border-border text-muted-foreground hover:border-emerald-500/50 hover:text-emerald-400'
-                                }`}
-                            >
-                                <CheckCircle2 className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => mark(status === 'late' ? null : 'late')}
-                                title="Mark Late"
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'late'
-                                    ? 'bg-amber-500 border-amber-500 text-foreground shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                                    : 'bg-card border-border text-muted-foreground hover:border-amber-500/50 hover:text-amber-400'
-                                }`}
-                            >
-                                <Clock className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => mark(status === 'absent' ? null : 'absent')}
-                                title="Mark Absent"
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'absent'
-                                    ? 'bg-red-500 border-red-500 text-foreground shadow-[0_0_12px_rgba(239,68,68,0.4)]'
-                                    : 'bg-card border-border text-muted-foreground hover:border-red-500/50 hover:text-red-400'
-                                }`}
-                            >
-                                <XCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => mark(status === 'no_show' ? null : 'no_show')}
-                                title="Mark No Show"
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'no_show'
-                                    ? 'bg-rose-500 border-rose-500 text-foreground shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                                    : 'bg-card border-border text-muted-foreground hover:border-rose-500/50 hover:text-rose-400'
-                                }`}
-                            >
-                                <UserMinus className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => mark(status === 'excused' ? null : 'excused')}
-                                title="Mark Excused"
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${status === 'excused'
-                                    ? 'bg-purple-500 border-purple-500 text-foreground shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                                    : 'bg-card border-border text-muted-foreground hover:border-purple-500/50 hover:text-purple-400'
-                                }`}
-                            >
-                                <CalendarX className="w-4 h-4" />
-                            </button>
+                            {isIn && (
+                                <input type="time" value={checkIn} onChange={e => setCheckIn(e.target.value)}
+                                    className="h-8 px-2 text-xs rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-blue-400"
+                                    title="Edit check-in time" />
+                            )}
+                            {/* CHECK OUT */}
+                            {isIn && (
+                                <button
+                                    onClick={handleCheckOut}
+                                    disabled={isPending}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                        isOut ? 'bg-blue-100 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700'
+                                    }`}
+                                >
+                                    <LogOut className="w-3.5 h-3.5" />
+                                    {isOut ? `Out ${checkOut}` : 'Check Out'}
+                                </button>
+                            )}
+                            {isIn && isOut && (
+                                <input type="time" value={checkOut} onChange={e => setCheckOut(e.target.value)}
+                                    className="h-8 px-2 text-xs rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-blue-400"
+                                    title="Edit check-out time" />
+                            )}
+                            {/* ABSENT dropdown */}
+                            {!isIn && (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowAbsenceSelect(!showAbsenceSelect)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all"
+                                    >
+                                        <XCircle className="w-3.5 h-3.5" /> Mark Absent <ChevronDown className="w-3 h-3" />
+                                    </button>
+                                    {showAbsenceSelect && (
+                                        <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-150">
+                                            {(['illness', 'holiday', 'family', 'other'] as const).map(r => (
+                                                <button key={r} onClick={() => handleMarkAbsent(r)}
+                                                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-red-50 hover:text-red-700 capitalize transition-colors"
+                                                >
+                                                    {r === 'illness' ? '🤒 Illness' : r === 'holiday' ? '✈️ Holiday' : r === 'family' ? '👪 Family' : '📋 Other'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Note and Late Pickup edit form drawer */}
-            {showDetails && (
-                <div className="bg-card border border-border rounded-2xl p-4 ml-6 space-y-3 animate-in slide-in-from-top-2 duration-300">
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1">
-                            <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Attendance Note</label>
-                            <input
-                                type="text"
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                placeholder="Reason for late arrival, absence context, medical log..."
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                            />
-                        </div>
-                        <div className="w-full sm:w-32">
-                            <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Late Mins</label>
-                            <input
-                                type="number"
-                                value={lateMinutes}
-                                onChange={(e) => setLateMinutes(e.target.value)}
-                                placeholder="Minutes"
-                                min="0"
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-end gap-2">
-                        <button
-                            onClick={() => setShowDetails(false)}
-                            className="px-3.5 py-1.5 rounded-xl bg-secondary/60 border border-border text-foreground/60 hover:text-foreground text-xs font-bold transition-all"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={saveDetails}
-                            disabled={isPending}
-                            className="px-3.5 py-1.5 rounded-xl bg-primary/10 border border-[#adc6ff]/20 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1.5"
-                        >
-                            {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
-                            Save Details
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
@@ -446,6 +421,13 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                     <Plus className="w-4 h-4 stroke-[3]" />
                     Register Catch-Up / Walk-In
                 </button>
+                <Link
+                    href="/dashboard/attendance/ledger"
+                    className="w-full sm:w-auto h-11 px-5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold transition-all flex items-center justify-center gap-2 hover:bg-gray-50 shadow-sm"
+                >
+                    <BookMarked className="w-4 h-4" />
+                    Session Ledger
+                </Link>
             </div>
 
             {/* List */}
@@ -472,8 +454,9 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             ) : (
                 filteredSlots.map((slot) => {
                     const totalCount = slot.regulars.length + slot.catchups.length;
-                    const presentCount = [...slot.regulars, ...slot.catchups].filter(a => a.attendanceStatus === 'present').length;
-                    const allMarked = [...slot.regulars, ...slot.catchups].every(a => a.attendanceStatus !== null);
+                    const checkedInCount = [...slot.regulars, ...slot.catchups].filter(a => a.checkInTime || a.attendanceStatus === 'absent').length;
+                    const allMarked = [...slot.regulars, ...slot.catchups].every(a => a.checkInTime || a.attendanceStatus === 'absent');
+                    const missingOut = [...slot.regulars, ...slot.catchups].filter(a => a.checkInTime && !a.checkOutTime).length;
 
                     return (
                         <div
@@ -502,14 +485,20 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
+                                    {missingOut > 0 && (
+                                        <span className="flex items-center gap-1.5 text-orange-600 text-xs font-bold px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
+                                            <AlertCircle className="w-3.5 h-3.5" />
+                                            {missingOut} no check-out
+                                        </span>
+                                    )}
                                     {allMarked ? (
-                                        <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                        <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200">
                                             <CheckCircle2 className="w-3.5 h-3.5" /> Complete
                                         </span>
                                     ) : (
-                                        <span className="flex items-center gap-1.5 text-amber-400 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+                                        <span className="flex items-center gap-1.5 text-amber-600 text-xs font-bold px-3 py-1 rounded-full bg-amber-50 border border-amber-200">
                                             <AlertCircle className="w-3.5 h-3.5" />
-                                            {presentCount}/{totalCount} marked
+                                            {checkedInCount}/{totalCount} marked
                                         </span>
                                     )}
                                 </div>

@@ -31,6 +31,9 @@ export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'verified'
 export const progressRatingEnum = pgEnum('progress_rating', ['excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory']);
 export const noteTypeEnum = pgEnum('note_type', ['general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present', 'absent', 'late', 'no_show', 'excused']);
+export const sessionTypeEnum = pgEnum('session_type', ['scheduled', 'extra']);
+export const absenceReasonEnum = pgEnum('absence_reason', ['illness', 'holiday', 'family', 'other']);
+
 
 // ==================== ORGANISATIONS & CENTRES ====================
 export const organisations = pgTable('organisations', {
@@ -224,8 +227,14 @@ export const children = pgTable('children', {
   registeredAt: timestamp('registered_at'),
   registeredSessions: text('registered_sessions').array(),
 
+  // Operational flags (shown on roll-call card)
+  flagHomework: boolean('flag_homework').default(false).notNull(),
+  flagBehaviour: boolean('flag_behaviour').default(false).notNull(),
+  flagNote: text('flag_note'),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+
 }, (table) => ({
   parentIdx: index('children_parent_idx').on(table.parentId),
   orgIdx: index('children_org_idx').on(table.organisationId),
@@ -295,12 +304,21 @@ export const bookingAttendees = pgTable('booking_attendees', {
   bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }).notNull(),
   childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
 
-  // Per-child attendance tracking (Phase A: schema only — no UI writes yet)
-  attendanceStatus: attendanceStatusEnum('attendance_status'),        // present | absent | late | no_show | excused
-  attendanceNote: text('attendance_note'),                            // free-text context
-  lateMinutes: integer('late_minutes'),                               // minutes late for pickup/dropoff
-  attendanceMarkedAt: timestamp('attendance_marked_at'),              // when staff recorded it
-  attendanceMarkedBy: uuid('attendance_marked_by').references(() => users.id, { onDelete: 'set null' }), // who recorded it
+  // Per-child attendance tracking
+  attendanceStatus: attendanceStatusEnum('attendance_status'),
+  attendanceNote: text('attendance_note'),
+  lateMinutes: integer('late_minutes'),
+  attendanceMarkedAt: timestamp('attendance_marked_at'),
+  attendanceMarkedBy: uuid('attendance_marked_by').references(() => users.id, { onDelete: 'set null' }),
+
+  // Time-log fields (Phase B — check-in/out model)
+  checkInTime: varchar('check_in_time', { length: 5 }),   // "HH:mm" e.g. "15:47"
+  checkOutTime: varchar('check_out_time', { length: 5 }),  // "HH:mm" e.g. "17:05"
+  sessionType: sessionTypeEnum('session_type'),             // scheduled | extra (auto-set)
+  absenceReason: absenceReasonEnum('absence_reason'),       // illness | holiday | family | other
+  forgivenBy: uuid('forgiven_by').references(() => users.id, { onDelete: 'set null' }),
+  forgivenAt: timestamp('forgiven_at'),
+  forgivenNote: text('forgiven_note'),
 
   // Assessment / Feedback Fields
   feedbackNotes: text('feedback_notes'),
@@ -507,6 +525,20 @@ export const payments = pgTable('payments', {
   invoiceIdx: index('payments_invoice_idx').on(table.invoiceId),
 }));
 
+// ==================== SESSION CREDITS (Admin Forgiveness) ====================
+export const sessionCredits = pgTable('session_credits', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  academicYear: varchar('academic_year', { length: 9 }).notNull(), // e.g. "2025-26"
+  sessionsAmount: integer('sessions_amount').default(1).notNull(),
+  adminId: uuid('admin_id').references(() => users.id, { onDelete: 'set null' }),
+  note: text('note'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  childIdx: index('session_credits_child_idx').on(table.childId),
+  yearIdx: index('session_credits_year_idx').on(table.academicYear),
+}));
+
 // ==================== AUDIT LOGS ====================
 export const auditEvents = pgTable('audit_events', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -610,7 +642,9 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
   subjects: many(childSubjects),
   attendances: many(bookingAttendees),
   notes: many(studentNotes),
+  sessionCredits: many(sessionCredits),
 }));
+
 
 export const studentNotesRelations = relations(studentNotes, ({ one }) => ({
   child: one(children, {
@@ -739,5 +773,16 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   invoice: one(invoices, {
     fields: [payments.invoiceId],
     references: [invoices.id],
+  }),
+}));
+
+export const sessionCreditsRelations = relations(sessionCredits, ({ one }) => ({
+  child: one(children, {
+    fields: [sessionCredits.childId],
+    references: [children.id],
+  }),
+  admin: one(users, {
+    fields: [sessionCredits.adminId],
+    references: [users.id],
   }),
 }));

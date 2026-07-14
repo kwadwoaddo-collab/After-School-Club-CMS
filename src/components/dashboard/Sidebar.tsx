@@ -93,7 +93,10 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
-        { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance' },
+        { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', children: [
+            { name: 'Session Ledger', href: '/dashboard/attendance/ledger' },
+        ] },
+
         { name: 'Kiosk', icon: Monitor, href: '/dashboard/kiosk' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
@@ -306,35 +309,60 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 ? pathname === item.href
                                 : pathname.startsWith(item.href);
                             return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    prefetch={true}
-                                    onClick={() => {
-                                        if (window.innerWidth < 768) {
-                                            setCollapsed(true);
-                                        }
-                                    }}
-                                    className={`
-                                        flex items-center gap-4 px-4 py-3 rounded-full
-                                        transition-all duration-300 ease-out group relative overflow-hidden
-                                        ${isActive
-                                            ? 'text-primary bg-primary/10 font-bold'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                                        }
-                                        ${collapsed ? 'justify-center' : ''}
-                                    `}
-                                    title={collapsed ? item.name : undefined}
-                                >
-                                    <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-350 ease-out ${
-                                        isActive ? 'scale-105 text-primary' : 'text-muted-foreground group-hover:scale-102 group-hover:text-primary'
-                                    }`} />
-                                    {!collapsed && (
-                                        <span className="font-semibold text-sm tracking-tight">{item.name}</span>
+                                <div key={item.name}>
+                                    <Link
+                                        href={item.href}
+                                        prefetch={true}
+                                        onClick={() => {
+                                            if (window.innerWidth < 768) {
+                                                setCollapsed(true);
+                                            }
+                                        }}
+                                        className={`
+                                            flex items-center gap-4 px-4 py-3 rounded-full
+                                            transition-all duration-300 ease-out group relative overflow-hidden
+                                            ${isActive
+                                                ? 'text-primary bg-primary/10 font-bold'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                            }
+                                            ${collapsed ? 'justify-center' : ''}
+                                        `}
+                                        title={collapsed ? item.name : undefined}
+                                    >
+                                        <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-350 ease-out ${
+                                            isActive ? 'scale-105 text-primary' : 'text-muted-foreground group-hover:scale-102 group-hover:text-primary'
+                                        }`} />
+                                        {!collapsed && (
+                                            <span className="font-semibold text-sm tracking-tight">{item.name}</span>
+                                        )}
+                                    </Link>
+                                    {/* Sub-items (children) */}
+                                    {!collapsed && (item as any).children && (
+                                        <div className="ml-9 mt-0.5 space-y-0.5">
+                                            {(item as any).children.map((child: { name: string; href: string }) => {
+                                                const childActive = pathname.startsWith(child.href);
+                                                return (
+                                                    <Link
+                                                        key={child.href}
+                                                        href={child.href}
+                                                        onClick={() => { if (window.innerWidth < 768) setCollapsed(true); }}
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                                                            childActive
+                                                                ? 'text-primary bg-primary/10'
+                                                                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                                        }`}
+                                                    >
+                                                        <span className="w-1 h-1 rounded-full bg-current flex-shrink-0" />
+                                                        {child.name}
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
                                     )}
-                                </Link>
+                                </div>
                             );
                         })}
+
                     </nav>
                     </div>
                 </div>

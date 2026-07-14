@@ -223,7 +223,7 @@ function NewBookingsSection({ rows }: { rows: WeeklyReportData['newBookings'] })
     const headers = ['Child(ren)', 'Parent', 'Contact', 'Centre', 'Session Date', 'Status', 'Attendance'];
     return (
         <div>
-            <SectionHeading icon={BookOpen} title="New Bookings" iconClass="text-violet-600" iconBg="bg-violet-50" />
+            <SectionHeading icon={BookOpen} title="New Bookings" iconClass="text-violet-600" bgClass="bg-violet-50" />
             {rows.length === 0 ? (
                 <EmptyState message="No new bookings for this period." />
             ) : (
@@ -255,7 +255,7 @@ function AttendanceSection({ rows }: { rows: WeeklyReportData['attendanceByCentr
     const headers = ['Centre', 'Sessions', 'Expected', 'Attended', 'Rate'];
     return (
         <div>
-            <SectionHeading icon={BarChart3} title="Attendance by Centre" iconClass="text-emerald-600" iconBg="bg-emerald-50" />
+            <SectionHeading icon={BarChart3} title="Attendance by Centre" iconClass="text-emerald-600" bgClass="bg-emerald-50" />
             {rows.length === 0 ? (
                 <EmptyState message="No attendance data for this period." />
             ) : (
@@ -295,7 +295,7 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
     const headers = ['Type', 'Name', 'Description', 'Date', 'Days Pending'];
     return (
         <div>
-            <SectionHeading icon={AlertTriangle} title="Pending Actions" iconClass="text-amber-600" iconBg="bg-amber-50" />
+            <SectionHeading icon={AlertTriangle} title="Pending Actions" iconClass="text-amber-600" bgClass="bg-amber-50" />
             {rows.length === 0 ? (
                 <EmptyState message="No pending actions — all clear! 🎉" />
             ) : (
