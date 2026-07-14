@@ -9,6 +9,7 @@ import {
 import type { StudentLedgerEntry } from '@/features/attendance/actions';
 import { forgiveSessionsAction } from '@/features/attendance/actions';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
 interface Props {
     ledger: StudentLedgerEntry[];
@@ -269,6 +270,7 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
 
 export default function LedgerClient({ ledger, centres, selectedCentreId, selectedYear, academicYears }: Props) {
     const router = useRouter();
+    const { setSelectedCentreId } = useCentreFilter();
     const [tab, setTab] = useState<'all' | 'arrears' | 'ahead' | 'even'>('all');
     const [search, setSearch] = useState('');
 
@@ -283,11 +285,15 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
     const evenCount = ledger.filter(e => e.netBalance === 0).length;
 
     const handleCentreChange = (centreId: string) => {
-        router.push(`/dashboard/attendance/ledger?centre=${centreId}&year=${selectedYear}`);
+        // Use the global context setter — it writes the cookie AND calls router.refresh()
+        // so the server re-render picks up the new value correctly
+        setSelectedCentreId(centreId);
+        router.push(`/dashboard/attendance/ledger?year=${selectedYear}`);
     };
     const handleYearChange = (year: string) => {
-        router.push(`/dashboard/attendance/ledger?centre=${selectedCentreId}&year=${year}`);
+        router.push(`/dashboard/attendance/ledger?year=${year}`);
     };
+
 
     const exportCsv = () => {
         const headers = ['Name', 'Year', 'Schedule', 'Absences', 'Extras', 'Forgiven', 'Balance', 'Status'];
