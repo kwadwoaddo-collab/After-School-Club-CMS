@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import LedgerClient from './LedgerClient';
 import { getSessionLedger } from '@/features/attendance/actions';
 import { getAcademicYear } from '@/features/attendance/utils';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 
 export default async function AttendanceLedgerPage({
     searchParams,
@@ -23,9 +24,13 @@ export default async function AttendanceLedgerPage({
         where: eq(centres.organisationId, session.user.organisationId),
     });
 
-    const centreId = params.centre ?? allCentres[0]?.id ?? '';
+    const centreIds = allCentres.map(c => c.id);
 
-    const ledger = centreId
+    // Use the same resolver as every other page — reads ?centre= param first,
+    // then falls back to the cookie, then to the first centre.
+    const centreId = await resolveActiveCentreId(params.centre, centreIds);
+
+    const ledger = centreId && centreId !== 'all'
         ? await getSessionLedger(centreId, selectedYear)
         : [];
 
