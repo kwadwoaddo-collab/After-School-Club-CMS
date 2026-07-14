@@ -4,7 +4,8 @@ import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import LedgerClient from './LedgerClient';
-import { getSessionLedger, getAcademicYear } from '@/features/attendance/actions';
+import { getSessionLedger } from '@/features/attendance/actions';
+import { getAcademicYear } from '@/features/attendance/utils';
 
 export default async function AttendanceLedgerPage({
     searchParams,
