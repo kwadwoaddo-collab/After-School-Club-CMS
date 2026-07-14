@@ -263,7 +263,7 @@ function AttendeeCard({
                                         <XCircle className="w-3.5 h-3.5" /> Mark Absent <ChevronDown className="w-3 h-3" />
                                     </button>
                                     {showAbsenceSelect && (
-                                        <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-150">
+                                        <div className="absolute bottom-full left-0 mb-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[160px] animate-in fade-in slide-in-from-bottom-2 duration-150">
                                             {(['illness', 'holiday', 'family', 'other'] as const).map(r => (
                                                 <button key={r} onClick={() => handleMarkAbsent(r)}
                                                     className="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-red-50 hover:text-red-700 capitalize transition-colors"
