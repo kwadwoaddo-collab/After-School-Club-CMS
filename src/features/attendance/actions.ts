@@ -86,7 +86,37 @@ export async function getSessionLedger(
     const year = academicYear ?? getAcademicYear();
     const { start, end } = getAcademicYearRange(year);
 
-    // 1. Fetch all bookings+attendees in range for this centre
+    // ── Option B: start from ALL children at this centre ──────────────────────
+    const allChildren = await db.query.children.findMany({
+        where: eq(children.centreId, centreId),
+    });
+
+    // Build ledger map seeded with every child (balance starts at 0)
+    const ledgerMap = new Map<string, StudentLedgerEntry>();
+    for (const child of allChildren) {
+        const days = new Set<string>();
+        (child.registeredSessions || []).forEach(s => {
+            const day = s.split(' ')[0].slice(0, 3);
+            days.add(day);
+        });
+
+        ledgerMap.set(child.id, {
+            childId: child.id,
+            firstName: child.firstName,
+            lastName: child.lastName,
+            schoolYear: child.schoolYear,
+            schedule: [...days].join('/') || '—',
+            scheduledAbsences: 0,
+            extraSessionsAttended: 0,
+            forgivenSessions: 0,
+            netBalance: 0,
+            missedDates: [],
+            extraDates: [],
+            forgivenEntries: [],
+        });
+    }
+
+    // ── Fetch all booking attendees in date range for this centre ─────────────
     const rawBookings = await db.query.bookings.findMany({
         where: and(
             eq(bookings.centreId, centreId),
@@ -94,24 +124,34 @@ export async function getSessionLedger(
             lte(bookings.startAt, end),
         ),
         with: {
-            attendees: {
-                with: {
-                    child: {
-                        with: { parent: true },
-                    },
-                },
-            },
+            attendees: true,
         },
     });
 
-    // 2. Collect all child IDs
-    const childIds = [
-        ...new Set(
-            rawBookings.flatMap(b => b.attendees.map(a => a.childId))
-        ),
-    ];
+    // ── Tally absences and extras ─────────────────────────────────────────────
+    for (const booking of rawBookings) {
+        const dateStr = format(new Date(booking.startAt), 'yyyy-MM-dd');
+        for (const att of booking.attendees) {
+            const entry = ledgerMap.get(att.childId);
+            if (!entry) continue; // child not at this centre, skip
 
-    // 3. Fetch session credits for these children
+            const isAbsent = att.attendanceStatus === 'absent';
+            // Extra = explicitly tagged as extra session with a check-in
+            const isExtra = att.sessionType === 'extra' && !!att.checkInTime;
+
+            if (isExtra) {
+                entry.extraSessionsAttended += 1;
+                entry.extraDates.push(dateStr);
+            } else if (isAbsent) {
+                // Count absence regardless of whether sessionType was set
+                entry.scheduledAbsences += 1;
+                entry.missedDates.push(dateStr);
+            }
+        }
+    }
+
+    // ── Apply admin forgiveness credits ────────────────────────────────────────
+    const childIds = allChildren.map(c => c.id);
     const credits = childIds.length > 0
         ? await db.query.sessionCredits.findMany({
             where: and(
@@ -122,50 +162,6 @@ export async function getSessionLedger(
         })
         : [];
 
-    // 4. Build per-child ledger
-    const ledgerMap = new Map<string, StudentLedgerEntry>();
-
-    for (const booking of rawBookings) {
-        for (const att of booking.attendees) {
-            const child = att.child;
-            if (!child) continue;
-
-            if (!ledgerMap.has(child.id)) {
-                const days = new Set<string>();
-                (child.registeredSessions || []).forEach(s => {
-                    const day = s.split(' ')[0].slice(0, 3);
-                    days.add(day);
-                });
-
-                ledgerMap.set(child.id, {
-                    childId: child.id,
-                    firstName: child.firstName,
-                    lastName: child.lastName,
-                    schoolYear: child.schoolYear,
-                    schedule: [...days].join('/') || '—',
-                    scheduledAbsences: 0,
-                    extraSessionsAttended: 0,
-                    forgivenSessions: 0,
-                    netBalance: 0,
-                    missedDates: [],
-                    extraDates: [],
-                    forgivenEntries: [],
-                });
-            }
-
-            const entry = ledgerMap.get(child.id)!;
-
-            if (att.sessionType === 'extra' && att.checkInTime) {
-                entry.extraSessionsAttended += 1;
-                entry.extraDates.push(format(new Date(booking.startAt), 'yyyy-MM-dd'));
-            } else if (att.sessionType === 'scheduled' && att.attendanceStatus === 'absent') {
-                entry.scheduledAbsences += 1;
-                entry.missedDates.push(format(new Date(booking.startAt), 'yyyy-MM-dd'));
-            }
-        }
-    }
-
-    // 5. Apply credits
     for (const credit of credits) {
         const entry = ledgerMap.get(credit.childId);
         if (!entry) continue;
@@ -180,12 +176,17 @@ export async function getSessionLedger(
         });
     }
 
-    // 6. Calculate net balance
+    // ── Net balance: extras + forgiven − absences ─────────────────────────────
     for (const entry of ledgerMap.values()) {
         entry.netBalance = entry.extraSessionsAttended + entry.forgivenSessions - entry.scheduledAbsences;
     }
 
-    return [...ledgerMap.values()].sort((a, b) => a.netBalance - b.netBalance);
+    // Sort: most in-arrears first, then alphabetical
+    return [...ledgerMap.values()].sort((a, b) =>
+        a.netBalance !== b.netBalance
+            ? a.netBalance - b.netBalance
+            : a.lastName.localeCompare(b.lastName)
+    );
 }
 
 // ─── Admin: Forgive sessions ──────────────────────────────────────────────────
