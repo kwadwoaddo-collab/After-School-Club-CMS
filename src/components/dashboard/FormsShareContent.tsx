@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Copy, ExternalLink, Code, Eye, Laptop, Smartphone, HelpCircle, ArrowRight, Share2, ClipboardList, Calendar } from 'lucide-react';
+import { Check, Copy, ExternalLink, Code, Eye, Laptop, Smartphone, ArrowRight, Share2, ClipboardList, Calendar, Link2, ChevronDown } from 'lucide-react';
 
 interface Organisation {
     id: string;
@@ -37,7 +37,6 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
 
-    // Formulate links based on the active tab
     const getShareLink = () => {
         const prefix = activeTab === 'booking' ? 'b' : 'r';
         return selectedCentre
@@ -47,7 +46,6 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
     const shareLink = getShareLink();
 
-    // Default Iframe Heights
     const getIframeHeight = () => {
         if (embedSize === 'custom') return customHeight;
         if (activeTab === 'booking') {
@@ -95,24 +93,73 @@ export default function FormsShareContent({ organisation, centres }: Props) {
             'New submissions land inside Registrations as "Pending Approval" for you to audit.'
         ];
 
+    const platforms = [
+        {
+            platform: 'WordPress',
+            icon: '📝',
+            steps: [
+                'Edit your target page in WordPress.',
+                'Click the "+" button to add a new block.',
+                'Search for and select "Custom HTML".',
+                'Paste the iframe embed code inside the block.',
+                'Publish or Update your page.'
+            ]
+        },
+        {
+            platform: 'Squarespace',
+            icon: '⬛',
+            steps: [
+                'Edit the page where the form should appear.',
+                'Click "+" or an insertion point to add a block.',
+                'Choose the "Code" block.',
+                'Paste the iframe embed code inside.',
+                'Save and publish.'
+            ]
+        },
+        {
+            platform: 'Wix',
+            icon: '🔷',
+            steps: [
+                'Click the Add (+) button in the editor.',
+                'Select "Embed Code" → "Embed HTML / IFrame".',
+                'Paste the embed code into the block properties.',
+                'Adjust boundaries as needed and publish.'
+            ]
+        },
+        {
+            platform: 'Shopify',
+            icon: '🛍️',
+            steps: [
+                'Navigate to Online Store → Pages.',
+                'Edit or create a new page.',
+                'Click the "<>" (Show HTML) toggle button.',
+                'Paste the embed code where appropriate.',
+                'Save the page and view live.'
+            ]
+        }
+    ];
+
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black text-white tracking-tight">Share Portals & Embed Codes</h1>
-                <p className="text-sm text-[#8c909f] mt-1">
-                    Get custom links or embeddable code to easily connect parent forms to your website.
-                </p>
+
+            {/* ── Page Header ─────────────────────────────────────────── */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-black text-foreground tracking-tight">Share Portals</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Copy direct links or grab embeddable iFrame codes to put parent forms on any website.
+                    </p>
+                </div>
             </div>
 
-            {/* Portal Tab Switcher */}
-            <div className="flex bg-[#131314]/30 p-1.5 rounded-2xl border border-outline-variant/15 max-w-md">
+            {/* ── Portal Type Switcher ─────────────────────────────────── */}
+            <div className="inline-flex bg-gray-100 p-1 rounded-2xl gap-1">
                 <button
                     onClick={() => { setActiveTab('booking'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 border ${
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         activeTab === 'booking'
-                            ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_15px_-3px_rgba(142,171,255,0.2)] font-extrabold'
-                            : 'bg-transparent border-transparent text-[#8c909f] hover:text-white hover:bg-white/5'
+                            ? 'bg-white text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
                     <Calendar className="w-4 h-4" />
@@ -120,10 +167,10 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                 </button>
                 <button
                     onClick={() => { setActiveTab('registration'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 border ${
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         activeTab === 'registration'
-                            ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_15px_-3px_rgba(142,171,255,0.2)] font-extrabold'
-                            : 'bg-transparent border-transparent text-[#8c909f] hover:text-white hover:bg-white/5'
+                            ? 'bg-white text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
                     <ClipboardList className="w-4 h-4" />
@@ -132,60 +179,76 @@ export default function FormsShareContent({ organisation, centres }: Props) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Configuration Panel */}
-                <div className="lg:col-span-2 space-y-6">
+
+                {/* ── Left: Configuration Panel ────────────────────────── */}
+                <div className="lg:col-span-2 space-y-5">
+
                     {/* Setup Card */}
-                    <div className="glassmorphic-card rounded-3xl p-6 space-y-6 shadow-xl">
-                        <div className="flex items-center gap-2 pb-4 border-b border-outline-variant/10">
-                            <Share2 className="w-5 h-5 text-primary" />
-                            <h2 className="text-lg font-bold text-white">
+                    <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-6">
+
+                        {/* Card title */}
+                        <div className="flex items-center gap-2.5 pb-5 border-b border-gray-100">
+                            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <Share2 className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <h2 className="text-base font-bold text-foreground">
                                 {activeTab === 'booking' ? 'Booking Portal Setup' : 'Registration Form Setup'}
                             </h2>
                         </div>
 
-                        {/* Centre selection filter */}
+                        {/* Centre selector */}
                         {centres.length > 1 && (
-                            <div>
-                                <label className="block text-xs font-bold text-[#8c909f] uppercase tracking-wider mb-2">
-                                    Target Centre Link
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Target Centre
                                 </label>
-                                <select
-                                    value={selectedCentre}
-                                    onChange={(e) => setSelectedCentre(e.target.value)}
-                                    className="w-full h-11 px-4 rounded-xl bg-[#19191b]/40 border border-outline-variant/20 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                                >
-                                    <option value="">All Centres (Shows selector to parents)</option>
-                                    {centres.map(c => (
-                                        <option key={c.id} value={c.slug}>{c.name}</option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        value={selectedCentre}
+                                        onChange={(e) => setSelectedCentre(e.target.value)}
+                                        className="w-full h-11 pl-4 pr-10 rounded-xl bg-white border border-gray-200 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none"
+                                    >
+                                        <option value="">All Centres (Shows selector to parents)</option>
+                                        {centres.map(c => (
+                                            <option key={c.id} value={c.slug}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                </div>
                             </div>
                         )}
 
-                        {/* Direct Link Section */}
-                        <div className="space-y-2">
-                            <label className="block text-xs font-bold text-[#8c909f] uppercase tracking-wider">
-                                Direct Link Url
+                        {/* Direct Link URL */}
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                Direct Link URL
                             </label>
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    value={shareLink}
-                                    readOnly
-                                    className="flex-1 h-11 px-4 rounded-xl bg-[#19191b]/40 border border-outline-variant/20 text-primary font-mono text-xs focus:outline-none"
-                                />
+                                <div className="flex-1 flex items-center gap-2 h-11 pl-3 pr-2 rounded-xl bg-gray-50 border border-gray-200">
+                                    <Link2 className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                    <input
+                                        type="text"
+                                        value={shareLink}
+                                        readOnly
+                                        className="flex-1 bg-transparent text-blue-600 font-mono text-xs focus:outline-none min-w-0"
+                                    />
+                                </div>
                                 <button
                                     onClick={handleCopyLink}
-                                    className="h-11 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs font-bold"
+                                    className={`h-11 px-4 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                                        copiedLink
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                                    }`}
                                 >
-                                    {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                                    {copiedLink ? 'Copied' : 'Copy'}
+                                    {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                    {copiedLink ? 'Copied!' : 'Copy'}
                                 </button>
                                 <a
                                     href={shareLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="h-11 w-11 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all flex items-center justify-center"
+                                    className="h-11 w-11 rounded-xl bg-white border border-gray-200 text-muted-foreground hover:text-foreground hover:border-gray-300 transition-all flex items-center justify-center flex-shrink-0"
                                     title="Open portal in new tab"
                                 >
                                     <ExternalLink className="w-4 h-4" />
@@ -193,21 +256,22 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                             </div>
                         </div>
 
-                        {/* Embed Options Section */}
-                        <div className="space-y-4 pt-4 border-t border-outline-variant/10">
+                        {/* Embed Code */}
+                        <div className="space-y-3 pt-5 border-t border-gray-100">
                             <div className="flex items-center justify-between">
-                                <label className="block text-xs font-bold text-[#8c909f] uppercase tracking-wider">
+                                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                     Embed Code (iFrame)
                                 </label>
+                                {/* Size pills */}
                                 <div className="flex items-center gap-1">
                                     {(['small', 'medium', 'large', 'custom'] as const).map(size => (
                                         <button
                                             key={size}
                                             onClick={() => setEmbedSize(size)}
-                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${
                                                 embedSize === size
-                                                    ? 'bg-primary/10 border border-primary/30 text-primary'
-                                                    : 'bg-white/5 text-[#8c909f] border border-transparent hover:text-white'
+                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    : 'bg-gray-100 text-muted-foreground hover:bg-gray-200 hover:text-foreground'
                                             }`}
                                         >
                                             {size}
@@ -217,41 +281,45 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                             </div>
 
                             {embedSize === 'custom' && (
-                                <div className="flex items-center gap-3 p-3 bg-[#19191b]/40 rounded-2xl border border-outline-variant/20 animate-in fade-in duration-200">
-                                    <span className="text-xs text-[#8c909f] font-semibold">Iframe Height (pixels):</span>
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in duration-200">
+                                    <span className="text-xs text-muted-foreground font-medium">Iframe Height (px):</span>
                                     <input
                                         type="number"
                                         value={customHeight}
                                         onChange={(e) => setCustomHeight(e.target.value)}
-                                        className="w-24 h-8 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-bold text-center"
+                                        className="w-24 h-8 px-3 rounded-lg bg-white border border-gray-200 text-foreground text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                                         min="200"
                                         max="3000"
                                     />
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-end gap-2">
                                 <textarea
                                     value={embedCode}
                                     readOnly
-                                    rows={2}
-                                    className="flex-1 p-3 rounded-xl bg-[#19191b]/40 border border-outline-variant/20 text-white/60 font-mono text-[10px] focus:outline-none resize-none"
+                                    rows={3}
+                                    className="flex-1 p-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 font-mono text-[10px] focus:outline-none resize-none leading-relaxed"
                                 />
                                 <button
                                     onClick={handleCopyEmbed}
-                                    className="h-11 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs font-bold self-end"
+                                    className={`h-11 px-4 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                                        copiedEmbed
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                                    }`}
                                 >
-                                    {copiedEmbed ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                                    {copiedEmbed ? 'Copied' : 'Copy'}
+                                    {copiedEmbed ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                    {copiedEmbed ? 'Copied!' : 'Copy'}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Embed Preview Toggle */}
-                        <div className="pt-2">
+                        {/* Preview Toggle */}
+                        <div>
                             <button
                                 onClick={() => setShowPreview(!showPreview)}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-semibold transition-all"
                             >
                                 <Eye className="w-4 h-4" />
                                 {showPreview ? 'Hide Embed Preview' : 'Show Embed Preview'}
@@ -261,21 +329,21 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
                     {/* Embed Preview Box */}
                     {showPreview && (
-                        <div className="bg-[#19191b]/40 rounded-3xl border border-outline-variant/15 overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
-                            <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c23]/30 border-b border-outline-variant/10">
-                                <div className="flex items-center gap-2 text-white/50">
+                        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden animate-in slide-in-from-top-4 duration-300">
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
+                                <div className="flex items-center gap-2 text-muted-foreground">
                                     <Laptop className="w-4 h-4" />
                                     <Smartphone className="w-4 h-4" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Embed Preview Frame</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider">Embed Preview</span>
                                 </div>
-                                <span className="text-[10px] bg-white/5 text-white/40 px-2 py-0.5 rounded-md font-mono">{iframeHeight}px</span>
+                                <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md font-mono">{iframeHeight}px</span>
                             </div>
-                            <div className="p-4 bg-slate-900/50 flex justify-center">
+                            <div className="p-4 bg-gray-50 flex justify-center">
                                 <iframe
                                     src={shareLink}
                                     width="100%"
                                     height={iframeHeight}
-                                    className="border-0 bg-white rounded-2xl w-full max-w-3xl shadow-lg"
+                                    className="border-0 bg-white rounded-2xl w-full max-w-3xl shadow-sm"
                                     title="Live embed preview"
                                 />
                             </div>
@@ -283,17 +351,18 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     )}
                 </div>
 
-                {/* Instruction / Integration Guides Sidebar */}
-                <div className="space-y-6">
-                    {/* Flow Steps Card */}
-                    <div className="glassmorphic-card rounded-3xl p-6 shadow-xl space-y-4">
-                        <h3 className="font-bold text-white text-xs uppercase tracking-wider border-b border-outline-variant/10 pb-2">
-                            How it works
+                {/* ── Right Sidebar ────────────────────────────────────── */}
+                <div className="space-y-5">
+
+                    {/* How It Works Card */}
+                    <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-4">
+                        <h3 className="text-sm font-bold text-foreground tracking-tight border-b border-gray-100 pb-3">
+                            How It Works
                         </h3>
-                        <ol className="space-y-3">
+                        <ol className="space-y-4">
                             {steps.map((step, i) => (
-                                <li key={i} className="flex gap-3 text-xs leading-relaxed text-[#c2c6d6]">
-                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
+                                <li key={i} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
+                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[11px]">
                                         {i + 1}
                                     </span>
                                     <span>{step}</span>
@@ -302,70 +371,29 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         </ol>
                     </div>
 
-                    {/* Website Embed Guides Accordion */}
-                    <div className="glassmorphic-card rounded-3xl p-6 shadow-xl space-y-4">
-                        <div className="flex items-center gap-2 border-b border-outline-variant/10 pb-2">
-                            <Code className="w-4 h-4 text-primary" />
-                            <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+                    {/* Platform Embed Guides Card */}
+                    <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                            <Code className="w-4 h-4 text-blue-600" />
+                            <h3 className="text-sm font-bold text-foreground tracking-tight">
                                 Platform Embed Guides
                             </h3>
                         </div>
 
                         <div className="space-y-2">
-                            {[
-                                {
-                                    platform: 'WordPress',
-                                    icon: '📝',
-                                    steps: [
-                                        'Edit your target page in WordPress.',
-                                        'Click the "+" button to add a new block.',
-                                        'Search for and select "Custom HTML".',
-                                        'Paste the iframe embed code inside the block.',
-                                        'Publish or Update your page.'
-                                    ]
-                                },
-                                {
-                                    platform: 'Squarespace',
-                                    icon: '⬛',
-                                    steps: [
-                                        'Edit the page where the form should appear.',
-                                        'Click "+" or an insertion point to add a block.',
-                                        'Choose the "Code" block.',
-                                        'Paste the iframe embed code inside.',
-                                        'Save and publish.'
-                                    ]
-                                },
-                                {
-                                    platform: 'Wix',
-                                    icon: '🔷',
-                                    steps: [
-                                        'Click the Add (+) button in the editor.',
-                                        'Select "Embed Code" -> "Embed HTML / IFrame".',
-                                        'Paste the embed code into the block properties.',
-                                        'Adjust boundaries as needed and publish.'
-                                    ]
-                                },
-                                {
-                                    platform: 'Shopify',
-                                    icon: '🛍️',
-                                    steps: [
-                                        'Navigate to Online Store -> Pages.',
-                                        'Edit or create a new page.',
-                                        'Click the "<>" (Show HTML) toggle button.',
-                                        'Paste the embed code where appropriate.',
-                                        'Save the page and view live.'
-                                    ]
-                                }
-                            ].map(p => (
-                                <details key={p.platform} className="group border border-outline-variant/15 rounded-xl overflow-hidden transition-all duration-200">
-                                    <summary className="px-4 py-3 cursor-pointer hover:bg-white/5 font-semibold text-xs text-white/70 hover:text-white flex items-center justify-between outline-none">
-                                        <span>{p.icon} {p.platform}</span>
-                                        <span className="text-white/30 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                            {platforms.map(p => (
+                                <details key={p.platform} className="group rounded-xl overflow-hidden border border-gray-100 hover:border-gray-200 transition-colors">
+                                    <summary className="px-4 py-3 cursor-pointer font-semibold text-sm text-foreground flex items-center justify-between outline-none hover:bg-gray-50 select-none">
+                                        <span className="flex items-center gap-2">
+                                            <span>{p.icon}</span>
+                                            <span>{p.platform}</span>
+                                        </span>
+                                        <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform duration-200" />
                                     </summary>
-                                    <div className="px-4 py-3 bg-[#131314]/20 border-t border-outline-variant/15 text-[11px] leading-relaxed text-[#8c909f] space-y-1.5">
+                                    <div className="px-4 pb-4 pt-2 bg-gray-50 border-t border-gray-100 space-y-2">
                                         {p.steps.map((s, idx) => (
-                                            <div key={idx} className="flex gap-1.5">
-                                                <span className="font-bold text-white/30">{idx + 1}.</span>
+                                            <div key={idx} className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
+                                                <span className="flex-shrink-0 font-bold text-blue-600">{idx + 1}.</span>
                                                 <span>{s}</span>
                                             </div>
                                         ))}
