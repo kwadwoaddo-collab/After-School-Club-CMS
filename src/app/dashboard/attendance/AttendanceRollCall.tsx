@@ -82,12 +82,14 @@ function AttendeeCard({
     sessionTime,
     centreId,
     onToast,
+    onStatusChange,
 }: {
     attendee: Attendee;
     dateStr: string;
     sessionTime: string;
     centreId: string;
     onToast: ReturnType<typeof useToast>['toast'];
+    onStatusChange?: (id: string, patch: { checkedIn?: boolean; checkedOut?: boolean; absent?: boolean }) => void;
 }) {
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string | null>(attendee.id);
@@ -104,7 +106,7 @@ function AttendeeCard({
     const derivedLate = checkIn ? lateMinutesFrom(checkIn, sessionTime) : null;
     const isIn = !!checkIn;
     const isOut = !!checkOut;
-    const isExtra = attendee.isCatchUp || attendee.sessionType === 'extra';
+    const isExtra = attendee.sessionType === 'extra';
 
     const ensureBooking = async (): Promise<{ bookingId: string; attendeeId: string }> => {
         if (curBookingId && !curBookingId.startsWith('temp-') && curAttendeeId && !curAttendeeId.startsWith('temp-')) {
@@ -134,36 +136,39 @@ function AttendeeCard({
         setCheckIn(time);
         setIsAbsent(false);
         setShowAbsenceSelect(false);
+        onStatusChange?.(attendee.id, { checkedIn: true, absent: false });
         startTransition(async () => {
             try {
                 const { attendeeId } = await ensureBooking();
                 await updateAttendanceTimelog({ attendeeId, checkInTime: time, checkOutTime: checkOut || null, absenceReason: null, attendanceNote: note || null, sessionTime });
                 setSaved(true); setTimeout(() => setSaved(false), 2000);
-            } catch { onToast({ title: 'Could not record check-in', message: 'Please try again.', variant: 'error' }); setCheckIn(''); }
+            } catch { onToast({ title: 'Could not record check-in', message: 'Please try again.', variant: 'error' }); setCheckIn(''); onStatusChange?.(attendee.id, { checkedIn: false }); }
         });
     };
 
     const handleCheckOut = () => {
         const time = nowHHmm();
         setCheckOut(time);
+        onStatusChange?.(attendee.id, { checkedOut: true });
         startTransition(async () => {
             try {
                 const { attendeeId } = await ensureBooking();
                 await updateAttendanceTimelog({ attendeeId, checkInTime: checkIn || null, checkOutTime: time, absenceReason: null, attendanceNote: note || null, sessionTime });
                 setSaved(true); setTimeout(() => setSaved(false), 2000);
-            } catch { onToast({ title: 'Could not record check-out', message: 'Please try again.', variant: 'error' }); setCheckOut(''); }
+            } catch { onToast({ title: 'Could not record check-out', message: 'Please try again.', variant: 'error' }); setCheckOut(''); onStatusChange?.(attendee.id, { checkedOut: false }); }
         });
     };
 
     const handleMarkAbsent = (reason: 'illness' | 'holiday' | 'family' | 'other') => {
         setIsAbsent(true); setAbsenceReason(reason); setCheckIn(''); setCheckOut(''); setShowAbsenceSelect(false);
+        onStatusChange?.(attendee.id, { absent: true, checkedIn: false, checkedOut: false });
         startTransition(async () => {
             try {
                 const res = await markAttendeeAttendance({ bookingId: curBookingId, attendeeId: curAttendeeId, status: 'absent', note: reason, lateMinutes: null, childId: attendee.childId, dateStr, sessionTime, centreId });
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) { setCurBookingId(res.bookingId); setCurAttendeeId(res.attendeeId ?? null); }
                 if (res?.attendeeId) { await updateAttendanceTimelog({ attendeeId: res.attendeeId, checkInTime: null, checkOutTime: null, absenceReason: reason, attendanceNote: null, sessionTime }); }
                 setSaved(true); setTimeout(() => setSaved(false), 2000);
-            } catch { onToast({ title: 'Could not mark absent', message: 'Please try again.', variant: 'error' }); }
+            } catch { onToast({ title: 'Could not mark absent', message: 'Please try again.', variant: 'error' }); setIsAbsent(false); onStatusChange?.(attendee.id, { absent: false }); }
         });
     };
 
@@ -283,11 +288,33 @@ function AttendeeCard({
     );
 }
 
+/** Tracks live per-attendee status so slot KPI counters update in real time */
+type AttendeeStatus = { checkedIn: boolean; checkedOut: boolean; absent: boolean };
+
 export default function AttendanceRollCall({ slots, centreId, dateStr, allStudents = [] }: Props) {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [showWalkIn, setShowWalkIn] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Live status map — seeded from SSR data, updated by each card
+    const [markedStatus, setMarkedStatus] = useState<Record<string, AttendeeStatus>>(() => {
+        const map: Record<string, AttendeeStatus> = {};
+        for (const slot of slots) {
+            for (const a of [...slot.regulars, ...slot.catchups]) {
+                map[a.id] = {
+                    checkedIn: !!a.checkInTime,
+                    checkedOut: !!a.checkOutTime,
+                    absent: a.attendanceStatus === 'absent',
+                };
+            }
+        }
+        return map;
+    });
+
+    const updateMarkedStatus = (id: string, patch: Partial<AttendeeStatus>) => {
+        setMarkedStatus(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+    };
 
     // Walk-in Modality Tabs
     const [walkInTab, setWalkInTab] = useState<'existing' | 'new'>('existing');
@@ -454,9 +481,20 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             ) : (
                 filteredSlots.map((slot) => {
                     const totalCount = slot.regulars.length + slot.catchups.length;
-                    const checkedInCount = [...slot.regulars, ...slot.catchups].filter(a => a.checkInTime || a.attendanceStatus === 'absent').length;
-                    const allMarked = [...slot.regulars, ...slot.catchups].every(a => a.checkInTime || a.attendanceStatus === 'absent');
-                    const missingOut = [...slot.regulars, ...slot.catchups].filter(a => a.checkInTime && !a.checkOutTime).length;
+                    const allAttendees = [...slot.regulars, ...slot.catchups];
+                    // Read from live status map (updates immediately when cards change)
+                    const checkedInCount = allAttendees.filter(a => {
+                        const s = markedStatus[a.id];
+                        return s ? (s.checkedIn || s.absent) : (!!a.checkInTime || a.attendanceStatus === 'absent');
+                    }).length;
+                    const allMarked = allAttendees.every(a => {
+                        const s = markedStatus[a.id];
+                        return s ? (s.checkedIn || s.absent) : (!!a.checkInTime || a.attendanceStatus === 'absent');
+                    });
+                    const missingOut = allAttendees.filter(a => {
+                        const s = markedStatus[a.id];
+                        return s ? (s.checkedIn && !s.checkedOut && !s.absent) : (!!a.checkInTime && !a.checkOutTime);
+                    }).length;
 
                     return (
                         <div
