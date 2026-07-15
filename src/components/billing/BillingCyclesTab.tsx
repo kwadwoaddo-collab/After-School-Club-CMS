@@ -1,51 +1,20 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { CreditCard, AlertCircle, CheckCircle2, Clock, Pause, Settings2, ArrowRight, RefreshCw } from 'lucide-react';
+import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2 } from 'lucide-react';
 import { penceToPounds } from '@/lib/billing';
 import GenerateInvoiceModal from './GenerateInvoiceModal';
 import { useRouter } from 'next/navigation';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface BillingCycle {
-    config: {
-        id: string;
-        billingType: 'non_uc' | 'uc';
-        sessionsPerWeek: number | null;
-        status: 'active' | 'paused' | 'cancelled';
-        childId: string | null;
-    };
-    childName: string;
-    parentName: string;
-    parentEmail: string;
-    amountPence: number;
-    amountDisplay: string;
-    periodLabel: string;
-    nextPeriodStart: Date | null;
-    rateSource: string;
-    lastRun: {
-        runAt: Date;
-        periodStart: string;
-        rateAppliedPence: number;
-        invoiceId: string | null;
-    } | null;
-    cycleStatus: 'ready' | 'needs_setup' | 'invoice_sent' | 'paused';
-}
-
-interface Props {
-    cycles: BillingCycle[];
-    centreId: string;
-}
+import type { BillingCycleRow } from '@/features/billing/queries';
 
 // ─── Status pill ──────────────────────────────────────────────────────────────
 
-function StatusPill({ status }: { status: BillingCycle['cycleStatus'] }) {
+function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
     const map = {
-        ready:         { label: 'Ready',         cls: 'bg-blue-100 text-blue-700 border-blue-200' },
-        needs_setup:   { label: 'Needs Setup',   cls: 'bg-amber-100 text-amber-700 border-amber-200' },
-        invoice_sent:  { label: 'Invoice Sent',  cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-        paused:        { label: 'Paused',         cls: 'bg-gray-100 text-gray-500 border-gray-200' },
+        ready:        { label: 'Ready',        cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+        needs_setup:  { label: 'Needs Setup',  cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+        invoice_sent: { label: 'Invoice Sent', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+        paused:       { label: 'Paused',       cls: 'bg-gray-100 text-gray-500 border-gray-200' },
     };
     const { label, cls } = map[status];
     return (
@@ -57,19 +26,24 @@ function StatusPill({ status }: { status: BillingCycle['cycleStatus'] }) {
 
 // ─── Individual student billing card ─────────────────────────────────────────
 
-function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycle; onGenerated: () => void }) {
+function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onGenerated: () => void }) {
     const router = useRouter();
     const [showModal, setShowModal] = useState(false);
 
     const isUc = cycle.config.billingType === 'uc';
     const canGenerate = cycle.cycleStatus === 'ready' && cycle.amountPence > 0;
 
-    // Compute invoice + due dates for modal
-    const today       = new Date();
-    const leadMs      = 7 * 86400000;
-    const dueDate     = cycle.nextPeriodStart ?? today;
-    const invoiceDate = new Date(dueDate.getTime() - leadMs);
-    const toIso       = (d: Date) => d.toISOString().split('T')[0];
+    // Dates are already ISO strings from the server
+    const invoiceDateStr = cycle.nextInvoiceDateStr
+        ? cycle.nextInvoiceDateStr.split('T')[0]
+        : new Date().toISOString().split('T')[0];
+    const dueDateStr = cycle.dueDateStr
+        ? cycle.dueDateStr.split('T')[0]
+        : new Date().toISOString().split('T')[0];
+
+    const lastRunDisplay = cycle.lastRunAt
+        ? new Date(cycle.lastRunAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : null;
 
     return (
         <>
@@ -81,7 +55,9 @@ function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycle; onGen
                 <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-sm font-black text-gray-900 truncate">{cycle.childName || cycle.parentName}</span>
+                            <span className="text-sm font-black text-gray-900 truncate">
+                                {cycle.childName || cycle.parentName}
+                            </span>
                             {!cycle.config.childId && (
                                 <span className="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-black uppercase tracking-wider">Family</span>
                             )}
@@ -93,12 +69,11 @@ function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycle; onGen
                     <StatusPill status={cycle.cycleStatus} />
                 </div>
 
-                {/* Divider */}
                 <div className="mx-4 border-t border-gray-100" />
 
                 {/* Card body */}
                 <div className="px-4 py-3 space-y-2">
-                    {cycle.amountPence > 0 && (
+                    {cycle.periodLabel && (
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Next period</span>
                             <span className="font-bold text-gray-900 truncate max-w-[60%] text-right text-xs">{cycle.periodLabel}</span>
@@ -108,12 +83,10 @@ function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycle; onGen
                         <span className="text-gray-500">Amount</span>
                         <span className="font-black text-gray-900 text-base">{cycle.amountDisplay}</span>
                     </div>
-                    {cycle.lastRun && (
+                    {lastRunDisplay && (
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Last invoice</span>
-                            <span className="text-xs text-gray-500 font-semibold">
-                                {new Date(cycle.lastRun.runAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </span>
+                            <span className="text-xs text-gray-500 font-semibold">{lastRunDisplay}</span>
                         </div>
                     )}
                     {cycle.cycleStatus === 'needs_setup' && (
@@ -158,8 +131,8 @@ function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycle; onGen
                     parentEmail={cycle.parentEmail}
                     amountPence={cycle.amountPence}
                     periodLabel={cycle.periodLabel}
-                    invoiceDateStr={toIso(invoiceDate)}
-                    dueDateStr={toIso(dueDate)}
+                    invoiceDateStr={invoiceDateStr}
+                    dueDateStr={dueDateStr}
                     rateSource={cycle.rateSource}
                     onClose={() => setShowModal(false)}
                     onSuccess={onGenerated}
@@ -170,6 +143,11 @@ function StudentBillingCard({ cycle, onGenerated }: { cycle: BillingCycle; onGen
 }
 
 // ─── Billing Cycles Tab ───────────────────────────────────────────────────────
+
+interface Props {
+    cycles: BillingCycleRow[];
+    centreId: string;
+}
 
 export default function BillingCyclesTab({ cycles, centreId }: Props) {
     const router = useRouter();
@@ -205,16 +183,13 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                             }`}
                         >
                             {f === 'all' ? 'All' : f === 'needs_setup' ? 'Needs Setup' : f === 'invoice_sent' ? 'Sent' : 'Ready'}
-                            {' '}
-                            <span className="opacity-70">({counts[f]})</span>
+                            {' '}<span className="opacity-70">({counts[f]})</span>
                         </button>
                     ))}
                 </div>
 
                 {counts.ready > 1 && (
-                    <button
-                        className="flex items-center gap-2 h-10 px-4 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-[0.97]"
-                    >
+                    <button className="flex items-center gap-2 h-10 px-4 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-[0.97]">
                         <RefreshCw className="w-3.5 h-3.5" />
                         Generate All ({counts.ready} ready)
                     </button>

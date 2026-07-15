@@ -20,7 +20,8 @@ import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAging
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import { normalizeString } from '@/lib/search-params';
 import BillingCyclesTab from '@/components/billing/BillingCyclesTab';
-import { listBillingCycles } from '@/features/billing/actions';
+import { fetchBillingCycles } from '@/features/billing/queries';
+
 
 
 export default async function FinancePage(props: {
@@ -74,9 +75,13 @@ export default async function FinancePage(props: {
     
     const orgStudents = students.filter(s => s.parent?.organisationId === session.user.organisationId);
 
-    // Fetch billing cycles for the Billing Cycles tab
-    const billingCycles = await listBillingCycles(activeCentreId);
-
+    // Fetch billing cycles for the Billing Cycles tab — wrapped in try-catch for resilience
+    let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
+    try {
+        billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
+    } catch (err) {
+        console.error('[finance] fetchBillingCycles failed:', err);
+    }
 
     // Calculate real stats with database-level aggregations
     const orgId = session.user.organisationId;
