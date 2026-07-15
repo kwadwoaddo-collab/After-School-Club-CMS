@@ -8,8 +8,6 @@ import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { fetchStudentBillingConfig } from '@/features/billing/queries';
 
-
-
 export default async function StudentProfilePage(
     props: {
         params: Promise<{ id: string }>;
@@ -31,7 +29,7 @@ export default async function StudentProfilePage(
     const userRole = (session.user as any).role as string | undefined;
     const isOwner = userRole === 'ORG_OWNER';
 
-    // Consolidated parallel database queries to avoid round-trip latency overhead
+    // Consolidated parallel database queries
     const [studentData, bookingsRaw, initialNotes, [attendanceResults]] = await Promise.all([
 
         db.select({
@@ -44,7 +42,8 @@ export default async function StudentProfilePage(
             registeredSessions: children.registeredSessions,
             centreId: children.centreId,
             organisationId: children.organisationId,
-            registrationId: registrationChildren.registrationId, // Left-joined registration identifier
+            parentId: children.parentId,
+            registrationId: registrationChildren.registrationId,
             parent: {
                 id: parents.id,
                 firstName: parents.firstName,
@@ -101,7 +100,7 @@ export default async function StudentProfilePage(
     if (studentData.length === 0) return notFound();
     const student = studentData[0];
 
-    // Enforce strict multi-tenant boundary checks
+    // Enforce strict multi-tenant boundary
     const studentOrgId = student.organisationId ?? student.parent.organisationId;
     if (studentOrgId !== session.user.organisationId) return notFound();
 
@@ -117,36 +116,23 @@ export default async function StudentProfilePage(
         centreName: b.centreName || 'Unknown Centre'
     }));
 
-    // Fetch billing config separately — uses plain query, no serialization issues
-    type BillingConfigShape = {
-        id: string; billingType: 'non_uc' | 'uc'; sessionsPerWeek: number | null;
-        agreedRatePence: number | null; ucPeriodStartDay: number | null;
-        ucAgreedAmountPence: number | null; billingAnchorDate: string;
-        billingEndDate: string | null; invoiceLeadDays: number;
-        status: 'active' | 'paused' | 'cancelled'; notes: string | null;
-    };
-    let billingConfig: BillingConfigShape | null = null;
+    // Fetch siblings at the same centre (for the billing card's children checkboxes)
+    const siblings = student.centreId
+        ? await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName })
+            .from(children)
+            .where(and(
+                eq(children.parentId, student.parentId),
+                eq(children.centreId, student.centreId),
+            ))
+        : [];
+
+    // Fetch family billing config — plain query, no serialization issues
+    let billingConfig = null as import('@/features/billing/queries').StudentBillingConfig | null;
     try {
-        const rawConfig = await fetchStudentBillingConfig(id, session.user.organisationId);
-        if (rawConfig) {
-            billingConfig = {
-                id:                  rawConfig.id,
-                billingType:         rawConfig.billingType,
-                sessionsPerWeek:     rawConfig.sessionsPerWeek,
-                agreedRatePence:     rawConfig.agreedRatePence,
-                ucPeriodStartDay:    rawConfig.ucPeriodStartDay,
-                ucAgreedAmountPence: rawConfig.ucAgreedAmountPence,
-                billingAnchorDate:   rawConfig.billingAnchorDate,
-                billingEndDate:      rawConfig.billingEndDate ?? null,
-                invoiceLeadDays:     rawConfig.invoiceLeadDays,
-                status:              rawConfig.status,
-                notes:               rawConfig.notes ?? null,
-            };
-        }
+        billingConfig = await fetchStudentBillingConfig(id, student.parentId, session.user.organisationId);
     } catch (err) {
         console.error('[student-profile] fetchStudentBillingConfig failed:', err);
     }
-
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -159,7 +145,8 @@ export default async function StudentProfilePage(
                 initialNotes={initialNotes}
                 currentUserId={session.user.id}
                 currentUserRole={userRole}
-                billingConfig={billingConfig ?? null}
+                billingConfig={billingConfig}
+                siblings={siblings}
             />
         </div>
     );

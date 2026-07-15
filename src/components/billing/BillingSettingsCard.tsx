@@ -1,445 +1,460 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
-import {
-    CreditCard, ChevronRight, Check, Loader2, X, AlertTriangle, Pencil,
-    CircleDot, Pause, Ban
-} from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { PoundSterling, Calendar, Users, ChevronDown, ChevronUp, Pencil, X, Check, Pause, Play, AlertTriangle } from 'lucide-react';
+import { penceToPounds, poundsToPence, previewBillingPeriods } from '@/lib/billing';
 import {
     createBillingConfig,
     updateBillingConfig,
     pauseBillingConfig,
     resumeBillingConfig,
     cancelBillingConfig,
+    addChildToConfig,
+    removeChildFromConfig,
 } from '@/features/billing/actions';
-import { previewUcPeriods, penceToPounds, DEFAULT_NON_UC_RATES } from '@/lib/billing';
-import { useToast } from '@/components/ui/ToastProvider';
+import type { StudentBillingConfig, CoveredChild } from '@/features/billing/queries';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface BillingConfig {
-    id: string;
-    billingType: 'non_uc' | 'uc';
-    sessionsPerWeek: number | null;
-    agreedRatePence: number | null;
-    ucPeriodStartDay: number | null;
-    ucAgreedAmountPence: number | null;
-    billingAnchorDate: string;
-    billingEndDate: string | null;
-    invoiceLeadDays: number;
-    status: 'active' | 'paused' | 'cancelled';
-    notes: string | null;
+interface Sibling {
+    id:        string;
+    firstName: string;
+    lastName:  string;
 }
 
 interface Props {
-    childId: string;
+    // The student this card is on
+    childId:  string;
     parentId: string;
     centreId: string;
-    organisationId: string;
-    existingConfig: BillingConfig | null;
+    orgId:    string;
+
+    // All siblings at the same centre (for the coverage checkboxes)
+    siblings: Sibling[];
+
+    // Existing config if one already exists
+    existingConfig: StudentBillingConfig | null;
 }
 
-// ─── Session chip selector ────────────────────────────────────────────────────
+// ─── Status badge ─────────────────────────────────────────────────────────────
 
-const SESSION_OPTIONS = [1, 2, 3, 4, 5];
-
-function SessionChips({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function StatusBadge({ status }: { status: 'active' | 'paused' | 'cancelled' }) {
+    const map = {
+        active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        paused:    { label: 'Paused',    cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+        cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
+    };
+    const { label, cls } = map[status];
     return (
-        <div className="flex gap-2 flex-wrap">
-            {SESSION_OPTIONS.map(s => (
-                <button
-                    key={s}
-                    type="button"
-                    onClick={() => onChange(s)}
-                    className={`w-12 h-12 rounded-xl text-sm font-bold border-2 transition-all active:scale-95 ${
-                        value === s
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
-                            : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-700'
-                    }`}
-                >
-                    {s === 5 ? '5+' : s}
-                </button>
-            ))}
+        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${cls}`}>
+            {label}
+        </span>
+    );
+}
+
+// ─── Collapsed view ───────────────────────────────────────────────────────────
+
+function CollapsedView({
+    config,
+    onEdit,
+}: {
+    config: StudentBillingConfig;
+    onEdit: () => void;
+}) {
+    const preview = previewBillingPeriods(new Date(config.billingAnchorDate), 1);
+
+    return (
+        <div className="space-y-3">
+            {/* Fee + status row */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-2xl font-black text-gray-900 tracking-tight">
+                        {penceToPounds(config.agreedMonthlyPence)}
+                        <span className="text-sm font-semibold text-gray-400 ml-1">/month</span>
+                    </p>
+                    {preview[0] && (
+                        <p className="text-xs text-gray-400 font-medium mt-0.5">{preview[0]}</p>
+                    )}
+                </div>
+                <StatusBadge status={config.status} />
+            </div>
+
+            {/* Children covered */}
+            {config.coveredChildren.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                    {config.coveredChildren.map(c => (
+                        <span
+                            key={c.childId}
+                            className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold"
+                        >
+                            {c.childName}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {config.notes && (
+                <p className="text-xs text-gray-400 italic">{config.notes}</p>
+            )}
+
+            {/* Edit button */}
+            <button
+                onClick={onEdit}
+                className="w-full h-9 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50 transition-all flex items-center justify-center gap-1.5"
+            >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit billing settings
+            </button>
         </div>
     );
 }
 
-// ─── Rate display ─────────────────────────────────────────────────────────────
+// ─── Edit form ────────────────────────────────────────────────────────────────
 
-function defaultRateForSessions(sessions: number): number {
-    const row = DEFAULT_NON_UC_RATES.find(r => r.sessionsPerWeek === sessions);
-    if (row) return row.monthlyRatePence;
-    const max = DEFAULT_NON_UC_RATES[DEFAULT_NON_UC_RATES.length - 1];
-    return max.monthlyRatePence + (sessions - max.sessionsPerWeek) * (max.extraSessionRatePence ?? 0);
-}
+function EditForm({
+    childId,
+    parentId,
+    centreId,
+    orgId,
+    siblings,
+    existingConfig,
+    onCancel,
+    onSaved,
+}: Props & { onCancel: () => void; onSaved: () => void }) {
+    const isNew = !existingConfig;
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
-export default function BillingSettingsCard({ childId, parentId, centreId, organisationId, existingConfig }: Props) {
-    const { toast } = useToast();
-    const [isPending, startTransition] = useTransition();
-    const [isEditing, setIsEditing] = useState(!existingConfig); // open by default if not configured
-
-    // Form state
-    const [billingType, setBillingType]           = useState<'non_uc' | 'uc'>(existingConfig?.billingType ?? 'non_uc');
-    const [sessions, setSessions]                 = useState(existingConfig?.sessionsPerWeek ?? 3);
-    const [rateOverride, setRateOverride]         = useState(
-        existingConfig?.agreedRatePence ? (existingConfig.agreedRatePence / 100).toFixed(2) : ''
+    const [fee, setFee]                 = useState(existingConfig ? String(existingConfig.agreedMonthlyPence / 100) : '');
+    const [anchorDate, setAnchorDate]   = useState(existingConfig?.billingAnchorDate ?? '');
+    const [leadDays, setLeadDays]       = useState(existingConfig?.invoiceLeadDays ?? 7);
+    const [notes, setNotes]             = useState(existingConfig?.notes ?? '');
+    const [selectedChildIds, setSelected] = useState<Set<string>>(
+        new Set(existingConfig?.coveredChildren.map(c => c.childId) ?? [childId])
     );
-    const [ucStartDay, setUcStartDay]             = useState(existingConfig?.ucPeriodStartDay ?? 29);
-    const [ucAmount, setUcAmount]                 = useState(
-        existingConfig?.ucAgreedAmountPence ? (existingConfig.ucAgreedAmountPence / 100).toFixed(2) : ''
-    );
-    const [anchorDate, setAnchorDate]             = useState(existingConfig?.billingAnchorDate ?? new Date().toISOString().split('T')[0]);
-    const [isActive, setIsActive]                 = useState((existingConfig?.status ?? 'active') === 'active');
-    const [notes, setNotes]                       = useState(existingConfig?.notes ?? '');
-    const [ucPreview, setUcPreview]               = useState('');
+    const [error, setError]   = useState('');
+    const [isPending, start]  = useTransition();
 
-    // Live UC preview
-    useEffect(() => {
-        if (billingType === 'uc' && ucStartDay >= 1 && ucStartDay <= 31) {
-            setUcPreview(previewUcPeriods(ucStartDay, 2));
-        }
-    }, [billingType, ucStartDay]);
+    // Live period preview
+    const periodPreview = anchorDate
+        ? previewBillingPeriods(new Date(anchorDate), 2)
+        : [];
 
-    const autoRate = defaultRateForSessions(sessions);
-    const effectiveRatePence = rateOverride ? Math.round(parseFloat(rateOverride) * 100) : autoRate;
+    const toggleChild = (id: string) => {
+        setSelected(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) { next.delete(id); } else { next.add(id); }
+            return next;
+        });
+    };
 
     const handleSave = () => {
-        startTransition(async () => {
+        setError('');
+        const amountPence = poundsToPence(fee);
+        if (!amountPence || amountPence <= 0) { setError('Please enter a valid monthly fee'); return; }
+        if (!anchorDate) { setError('Please select a billing start date'); return; }
+        if (selectedChildIds.size === 0) { setError('Please select at least one child'); return; }
+
+        start(async () => {
             try {
-                const data = {
-                    childId:             childId,
-                    parentId:            parentId,
-                    centreId:            centreId,
-                    billingType:         billingType,
-                    sessionsPerWeek:     billingType === 'non_uc' ? sessions : null,
-                    agreedRatePence:     billingType === 'non_uc' && rateOverride ? Math.round(parseFloat(rateOverride) * 100) : null,
-                    ucPeriodStartDay:    billingType === 'uc' ? ucStartDay : null,
-                    ucAgreedAmountPence: billingType === 'uc' && ucAmount ? Math.round(parseFloat(ucAmount) * 100) : null,
-                    billingAnchorDate:   anchorDate,
-                    invoiceLeadDays:     7,
-                    notes:               notes || null,
-                };
-
-                if (existingConfig) {
-                    await updateBillingConfig(existingConfig.id, data);
-                    if (existingConfig.status === 'active' && !isActive) {
-                        await pauseBillingConfig(existingConfig.id);
-                    } else if (existingConfig.status === 'paused' && isActive) {
-                        await resumeBillingConfig(existingConfig.id);
-                    }
+                if (isNew) {
+                    await createBillingConfig({
+                        parentId,
+                        centreId,
+                        agreedMonthlyPence: amountPence,
+                        billingAnchorDate:  anchorDate,
+                        invoiceLeadDays:    leadDays,
+                        notes:              notes || undefined,
+                        childIds:           [...selectedChildIds],
+                    });
                 } else {
-                    await createBillingConfig(data);
+                    // Update the fee / dates
+                    await updateBillingConfig(existingConfig!.id, {
+                        agreedMonthlyPence: amountPence,
+                        billingAnchorDate:  anchorDate,
+                        invoiceLeadDays:    leadDays,
+                        notes:              notes || undefined,
+                    });
+                    // Sync children — add new ones, remove removed ones
+                    const current  = new Set(existingConfig!.coveredChildren.map(c => c.childId));
+                    const toAdd    = [...selectedChildIds].filter(id => !current.has(id));
+                    const toRemove = [...current].filter(id => !selectedChildIds.has(id));
+                    await Promise.all([
+                        ...toAdd.map(id    => addChildToConfig(existingConfig!.id, id)),
+                        ...toRemove.map(id => removeChildFromConfig(existingConfig!.id, id)),
+                    ]);
                 }
-
-                toast({ title: 'Billing settings saved', variant: 'success' });
-                setIsEditing(false);
+                onSaved();
             } catch (e: any) {
-                toast({ title: 'Could not save billing settings', message: e.message, variant: 'error' });
+                setError(e.message ?? 'Something went wrong. Please try again.');
             }
         });
     };
 
-    // ── Collapsed view ────────────────────────────────────────────────────────
-
-    if (!isEditing && existingConfig) {
-        const isUc = existingConfig.billingType === 'uc';
-        const ratePence = existingConfig.agreedRatePence
-            ? existingConfig.agreedRatePence
-            : existingConfig.sessionsPerWeek
-            ? defaultRateForSessions(existingConfig.sessionsPerWeek)
-            : existingConfig.ucAgreedAmountPence ?? 0;
-
-        return (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <span className="font-bold text-gray-900 text-sm">Billing Settings</span>
-                    </div>
-                    <button
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors py-2 px-3 rounded-xl hover:bg-blue-50"
-                    >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Edit
-                        <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                </div>
-                <div className="px-5 pb-4 space-y-1 border-t border-gray-100 pt-3">
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
-                        <div>
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Type</p>
-                            <p className="text-gray-900 font-semibold">
-                                {isUc ? 'UC' : `Non-UC · ${existingConfig.sessionsPerWeek} sessions/week`}
-
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Monthly Rate</p>
-                            <p className="text-gray-900 font-black text-base">{penceToPounds(ratePence)}</p>
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Billing Start</p>
-                            <p className="text-gray-900 font-semibold">{existingConfig.billingAnchorDate}</p>
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${existingConfig.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                <span className={`text-sm font-bold capitalize ${existingConfig.status === 'active' ? 'text-emerald-700' : 'text-amber-700'}`}>
-                                    {existingConfig.status}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    {existingConfig.notes && (
-                        <p className="text-xs text-gray-400 italic pt-1">"{existingConfig.notes}"</p>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    // ── Unconfigured state ────────────────────────────────────────────────────
-
-    if (!isEditing && !existingConfig) {
-        return (
-            <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                <div className="px-5 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <div>
-                            <span className="font-bold text-gray-900 text-sm">Billing Settings</span>
-                            <p className="text-xs text-gray-400">No billing configured yet</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors py-2 px-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100"
-                    >
-                        Set up billing
-                        <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Edit form (inline) ────────────────────────────────────────────────────
-
-    const inputClass = 'w-full h-11 px-3 rounded-xl bg-white border border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors';
-    const labelClass = 'block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5';
+    // All siblings at this centre (including current child)
+    const allSiblings = [
+        { id: childId, firstName: siblings.find(s => s.id === childId)?.firstName ?? '', lastName: siblings.find(s => s.id === childId)?.lastName ?? '' },
+        ...siblings.filter(s => s.id !== childId),
+    ];
 
     return (
-        <div className="bg-white rounded-2xl border border-blue-300 shadow-sm">
-            {/* Header */}
-            <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                        <CreditCard className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="font-bold text-gray-900 text-sm">Billing Settings</span>
-                </div>
-                <div className="flex gap-2">
-                    {existingConfig && (
-                        <button
-                            onClick={() => setIsEditing(false)}
-                            className="h-9 px-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold hover:bg-gray-200 transition-all"
-                        >
-                            Cancel
-                        </button>
-                    )}
-                    <button
-                        onClick={handleSave}
-                        disabled={isPending}
-                        className="h-9 px-4 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-60 active:scale-95"
-                    >
-                        {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                        Save
-                    </button>
+        <div className="space-y-4">
+            {/* Monthly fee */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Agreed Monthly Fee
+                </label>
+                <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">£</span>
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={fee}
+                        onChange={e => setFee(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full h-11 pl-7 pr-4 rounded-xl border border-gray-200 text-gray-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                 </div>
             </div>
 
-            <div className="p-5 space-y-5">
-                {/* Funding type segmented control */}
-                <div>
-                    <label className={labelClass}>Funding Type</label>
-                    <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-gray-50 p-1 gap-1">
-                        {(['non_uc', 'uc'] as const).map(t => (
-                            <button
-                                key={t}
-                                type="button"
-                                onClick={() => setBillingType(t)}
-                                className={`flex-1 h-10 rounded-lg text-sm font-bold transition-all ${
-                                    billingType === t
-                                        ? 'bg-white text-blue-600 shadow-sm border border-gray-200'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                {t === 'non_uc' ? 'Non-UC' : 'UC'}
-
-                            </button>
+            {/* Billing start date */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    First Billing Date
+                </label>
+                <input
+                    type="date"
+                    value={anchorDate}
+                    onChange={e => setAnchorDate(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border border-gray-200 text-gray-900 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {periodPreview.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                        {periodPreview.map((p, i) => (
+                            <p key={i} className="text-[11px] text-blue-600 font-semibold">
+                                {i === 0 ? '→ Next: ' : '→ Then: '}{p}
+                            </p>
                         ))}
                     </div>
+                )}
+            </div>
+
+            {/* Invoice lead days */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Invoice Lead Time
+                </label>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={leadDays}
+                        onChange={e => setLeadDays(Number(e.target.value))}
+                        className="w-20 h-11 px-3 rounded-xl border border-gray-200 text-gray-900 font-bold text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-500 font-semibold">days before period start</span>
                 </div>
+            </div>
 
-                {/* Non-UC panel */}
-                {billingType === 'non_uc' && (
-                    <>
-                        <div>
-                            <label className={labelClass}>Sessions per Week</label>
-                            <SessionChips value={sessions} onChange={setSessions} />
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-                            <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-0.5">Auto-calculated Rate</p>
-                            <p className="text-gray-900 font-black text-xl">{penceToPounds(autoRate)}<span className="text-sm font-bold text-gray-400"> / month</span></p>
-                            <p className="text-xs text-gray-400 mt-0.5">{sessions} session{sessions !== 1 ? 's' : ''}/week · standard rate</p>
-                        </div>
-
-                        <div>
-                            <label className={labelClass}>Rate Override <span className="text-gray-400 font-normal normal-case">(optional — overrides auto rate)</span></label>
-                            <div className="relative">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm pointer-events-none">£</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={rateOverride}
-                                    onChange={e => setRateOverride(e.target.value)}
-                                    placeholder="e.g. 180.00"
-                                    className={`${inputClass} pl-7`}
-                                />
-                                {rateOverride && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setRateOverride('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all"
-                                    >
-                                        <X className="w-3.5 h-3.5" />
-                                    </button>
-                                )}
-                            </div>
-                            {rateOverride && (
-                                <p className="text-xs text-amber-600 font-semibold mt-1.5 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    Override active — charged {penceToPounds(effectiveRatePence)}/month instead of {penceToPounds(autoRate)}
-                                </p>
-                            )}
-                        </div>
-                    </>
-                )}
-
-                {/* UC panel */}
-                {billingType === 'uc' && (
-                    <>
-                        <div>
-                            <label className={labelClass}>UC Period Start Day</label>
-                            <input
-                                type="number"
-                                min={1}
-                                max={31}
-                                value={ucStartDay}
-                                onChange={e => setUcStartDay(parseInt(e.target.value, 10))}
-                                className={`${inputClass} max-w-[120px]`}
-                            />
-                            {ucStartDay > 28 && (
-                                <p className="text-xs text-amber-600 font-semibold mt-1.5 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    Day {ucStartDay} doesn't exist in all months — billing will fall back to last day of short months.
-                                </p>
-                            )}
-                            {ucPreview && (
-                                <p className="text-xs text-blue-600 font-bold mt-2">
-                                    Preview: {ucPreview}
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className={labelClass}>Agreed Monthly Amount</label>
-                            <div className="relative">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm pointer-events-none">£</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={ucAmount}
-                                    onChange={e => setUcAmount(e.target.value)}
-                                    placeholder="e.g. 1800.00"
-                                    className={`${inputClass} pl-7`}
-                                />
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">This covers all children for this parent.</p>
-                        </div>
-                    </>
-                )}
-
-                {/* Shared fields */}
-                <div className="grid grid-cols-2 gap-4 pt-1 border-t border-gray-100">
-                    <div>
-                        <label className={labelClass}>Billing Start Date</label>
-                        <input
-                            type="date"
-                            value={anchorDate}
-                            onChange={e => setAnchorDate(e.target.value)}
-                            className={inputClass}
-                        />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Status</label>
-                        <button
-                            type="button"
-                            onClick={() => setIsActive(v => !v)}
-                            className={`h-11 w-full rounded-xl border-2 text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                                isActive
-                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                                    : 'bg-amber-50 border-amber-300 text-amber-700'
+            {/* Children covered */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Children Covered
+                </label>
+                <div className="space-y-2">
+                    {allSiblings.map(s => (
+                        <label
+                            key={s.id}
+                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                selectedChildIds.has(s.id)
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
                             }`}
                         >
-                            {isActive ? (
-                                <><CircleDot className="w-4 h-4" /> Active</>
-                            ) : (
-                                <><Pause className="w-4 h-4" /> Paused</>
-                            )}
-                        </button>
+                            <input
+                                type="checkbox"
+                                checked={selectedChildIds.has(s.id)}
+                                onChange={() => toggleChild(s.id)}
+                                className="w-4 h-4 rounded accent-blue-600"
+                            />
+                            <span className={`text-sm font-bold ${selectedChildIds.has(s.id) ? 'text-blue-700' : 'text-gray-700'}`}>
+                                {s.firstName} {s.lastName}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Notes (optional)
+                </label>
+                <textarea
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Any special agreements or notes..."
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+            </div>
+
+            {error && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-600 font-semibold">{error}</p>
+                </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2">
+                <button
+                    onClick={onCancel}
+                    disabled={isPending}
+                    className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSave}
+                    disabled={isPending}
+                    className="flex-1 h-11 rounded-xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 transition-all disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                    {isPending ? (
+                        <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
+                    ) : (
+                        <><Check className="w-4 h-4" />{isNew ? 'Set Up Billing' : 'Save Changes'}</>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ─── Pause / Cancel controls ──────────────────────────────────────────────────
+
+function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDone: () => void }) {
+    const [isPending, start] = useTransition();
+
+    const handlePause = () => start(async () => {
+        await pauseBillingConfig(config.id);
+        onDone();
+    });
+    const handleResume = () => start(async () => {
+        await resumeBillingConfig(config.id);
+        onDone();
+    });
+    const handleCancel = () => {
+        if (!confirm('Cancel billing for this family? This cannot be undone easily.')) return;
+        start(async () => {
+            await cancelBillingConfig(config.id);
+            onDone();
+        });
+    };
+
+    return (
+        <div className="flex gap-2 pt-2">
+            {config.status === 'active' ? (
+                <button
+                    onClick={handlePause}
+                    disabled={isPending}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold hover:bg-amber-50 transition-all disabled:opacity-50"
+                >
+                    <Pause className="w-3.5 h-3.5" />
+                    Pause
+                </button>
+            ) : config.status === 'paused' ? (
+                <button
+                    onClick={handleResume}
+                    disabled={isPending}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-50 transition-all disabled:opacity-50"
+                >
+                    <Play className="w-3.5 h-3.5" />
+                    Resume
+                </button>
+            ) : null}
+            {config.status !== 'cancelled' && (
+                <button
+                    onClick={handleCancel}
+                    disabled={isPending}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all disabled:opacity-50"
+                >
+                    <X className="w-3.5 h-3.5" />
+                    Cancel
+                </button>
+            )}
+        </div>
+    );
+}
+
+// ─── Main card ────────────────────────────────────────────────────────────────
+
+export default function BillingSettingsCard({
+    childId,
+    parentId,
+    centreId,
+    orgId,
+    siblings,
+    existingConfig,
+}: Props) {
+    const [isEditing, setIsEditing] = useState(false);
+
+    const handleSaved = () => {
+        setIsEditing(false);
+        // Page will revalidate via server action's revalidatePath
+    };
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center">
+                        <PoundSterling className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-black text-gray-900">Billing</p>
+                        <p className="text-[11px] text-gray-400 font-semibold">Family billing settings</p>
                     </div>
                 </div>
+                {existingConfig && !isEditing && (
+                    <StatusBadge status={existingConfig.status} />
+                )}
+            </div>
 
-                <div>
-                    <label className={labelClass}>Notes <span className="text-gray-400 font-normal normal-case">(optional)</span></label>
-                    <textarea
-                        value={notes}
-                        onChange={e => setNotes(e.target.value)}
-                        rows={2}
-                        placeholder="e.g. Parent requested paper invoices. Agreed £180 discount from Sep."
-                        className="w-full px-3 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
+            <div className="mx-4 border-t border-gray-100" />
+
+            {/* Body */}
+            <div className="px-4 py-4">
+                {isEditing ? (
+                    <EditForm
+                        childId={childId}
+                        parentId={parentId}
+                        centreId={centreId}
+                        orgId={orgId}
+                        siblings={siblings}
+                        existingConfig={existingConfig}
+                        onCancel={() => setIsEditing(false)}
+                        onSaved={handleSaved}
                     />
-                </div>
-
-                {/* Danger zone — cancel billing */}
-                {existingConfig && existingConfig.status !== 'cancelled' && (
-                    <div className="pt-2 border-t border-gray-100">
+                ) : existingConfig ? (
+                    <>
+                        <CollapsedView config={existingConfig} onEdit={() => setIsEditing(true)} />
+                        <StatusControls config={existingConfig} onDone={handleSaved} />
+                    </>
+                ) : (
+                    <div className="text-center py-4">
+                        <div className="w-10 h-10 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                            <PoundSterling className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-600 mb-0.5">No billing set up</p>
+                        <p className="text-xs text-gray-400 mb-3">Set an agreed monthly fee for this family</p>
                         <button
-                            type="button"
-                            onClick={() => {
-                                if (confirm('Cancel billing for this student? This will stop future invoice generation. You can set up a new config later.')) {
-                                    startTransition(async () => {
-                                        await cancelBillingConfig(existingConfig.id);
-                                        toast({ title: 'Billing cancelled', variant: 'success' });
-                                    });
-                                }
-                            }}
-                            className="flex items-center gap-1.5 text-xs text-red-500 font-bold hover:text-red-700 transition-colors"
+                            onClick={() => setIsEditing(true)}
+                            className="w-full h-10 rounded-xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                         >
-                            <Ban className="w-3.5 h-3.5" />
-                            Cancel billing for this student
+                            <PoundSterling className="w-4 h-4" />
+                            Set Up Family Billing
                         </button>
                     </div>
                 )}

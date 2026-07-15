@@ -32,6 +32,10 @@ import { useToast } from '@/components/ui/ToastProvider';
 import BillingSettingsCard from '@/components/billing/BillingSettingsCard';
 
 
+import type { StudentBillingConfig } from '@/features/billing/queries';
+
+interface Sibling { id: string; firstName: string; lastName: string; }
+
 interface AssessmentProfileProps {
     student: {
         id: string;
@@ -80,23 +84,11 @@ interface AssessmentProfileProps {
     }>;
     currentUserId?: string;
     currentUserRole?: string;
-    billingConfig?: {
-        id: string;
-        billingType: 'non_uc' | 'uc';
-        sessionsPerWeek: number | null;
-        agreedRatePence: number | null;
-        ucPeriodStartDay: number | null;
-        ucAgreedAmountPence: number | null;
-        billingAnchorDate: string;
-        billingEndDate: string | null;
-        invoiceLeadDays: number;
-        status: 'active' | 'paused' | 'cancelled';
-        notes: string | null;
-    } | null;
-
+    billingConfig?: StudentBillingConfig | null;
+    siblings?: Sibling[];
 }
 
-export default function StudentProfile({ student, initialNotes, currentUserId, currentUserRole, billingConfig }: AssessmentProfileProps) {
+export default function StudentProfile({ student, initialNotes, currentUserId, currentUserRole, billingConfig, siblings = [] }: AssessmentProfileProps) {
 
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
@@ -464,9 +456,11 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                             childId={student.id}
                             parentId={student.parent.id}
                             centreId={(student as any).centreId ?? ''}
-                            organisationId={(student as any).organisationId ?? ''}
+                            orgId={(student as any).organisationId ?? ''}
+                            siblings={siblings}
                             existingConfig={billingConfig ?? null}
                         />
+
 
 
                     </div>

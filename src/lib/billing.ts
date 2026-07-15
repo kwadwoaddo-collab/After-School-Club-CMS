@@ -2,242 +2,131 @@
  * billing.ts
  * Pure, side-effect-free business logic for billing calculations.
  * No DB access — all inputs are plain values.
+ *
+ * Simplified model: one agreed monthly fee per family per centre.
+ * A billing period is simply the calendar month anchored on the first invoice date.
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type BillingType = 'non_uc' | 'uc';
-
-export interface RateRow {
-    sessionsPerWeek: number;
-    monthlyRatePence: number;
-    extraSessionRatePence: number | null;
-}
-
 export interface BillingPeriod {
     periodStart: Date;
-    periodEnd: Date;
+    periodEnd:   Date;
     invoiceDate: Date;
-    dueDate: Date;
-    periodLabel: string;     // e.g. "June 2025" or "29 May – 28 Jun 2025"
+    dueDate:     Date;
+    periodLabel: string;   // e.g. "August 2025"
 }
 
-export interface NonUcBillingConfig {
-    billingAnchorDate: Date;
-    invoiceLeadDays: number;
-    sessionsPerWeek: number;
-    agreedRatePence: number | null;
-}
-
-export interface UcBillingConfig {
-    ucPeriodStartDay: number;
-    invoiceLeadDays: number;
-    ucAgreedAmountPence: number;
+export interface BillingConfig {
+    billingAnchorDate: Date;  // date of the first invoice / first period start
+    invoiceLeadDays:   number;
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 /**
  * Clamp a day number to the last valid day of the given month.
- * Handles Feb 28/29 (leap year), 30-day months, 31 in short months.
+ * Handles Feb 28/29 (leap year), 30-day months, etc.
  */
 export function clampToMonthEnd(year: number, month: number, day: number): number {
-    const lastDay = new Date(year, month, 0).getDate(); // day 0 of next month = last day of this month
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate(); // month is 1-indexed here
     return Math.min(day, lastDay);
 }
 
-/** Return a date at midnight UTC for a given year/month/day */
+/** Create a UTC midnight Date from year/month/day (month is 1-indexed) */
 function utcDate(year: number, month: number, day: number): Date {
     return new Date(Date.UTC(year, month - 1, day));
 }
 
-const MONTH_NAMES = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
+/** Format a date as "1 Aug 2025" */
 function fmtDate(d: Date): string {
-    return `${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    return d.toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+    });
 }
 
-// ─── Non-UC rate computation ──────────────────────────────────────────────────
+// ─── Core billing period calculation ─────────────────────────────────────────
 
 /**
- * Compute the monthly rate in pence for a Non-UC student.
- * Priority: agreedRatePence (override) → rate table lookup → throw.
+ * Compute the next billing period for a family billing config.
+ *
+ * Logic:
+ * - Period start = the anchor date if in the future (or the next month's anchor day if already past)
+ * - Period end = last day of the anchor month (always a full calendar month)
+ * - Invoice date = period start - invoiceLeadDays
+ * - Due date = period start (invoice due on the first of the period)
+ *
+ * Example: anchorDate = 2025-08-01, invoiceLeadDays = 7
+ *   → Period: 1 Aug – 31 Aug
+ *   → Invoice issued: 25 Jul
+ *   → Due: 1 Aug
  */
-export function computeNonUcRate(
-    sessionsPerWeek: number,
-    agreedRatePence: number | null,
-    rateTable: RateRow[],
-): { ratePence: number; source: 'agreed_override' | 'standard_table' } {
-    if (agreedRatePence !== null && agreedRatePence > 0) {
-        return { ratePence: agreedRatePence, source: 'agreed_override' };
-    }
-
-    // Sort ascending so we can find the right tier
-    const sorted = [...rateTable].sort((a, b) => a.sessionsPerWeek - b.sessionsPerWeek);
-    const maxRow = sorted[sorted.length - 1];
-
-    // Exact match
-    const exact = sorted.find(r => r.sessionsPerWeek === sessionsPerWeek);
-    if (exact) {
-        return { ratePence: exact.monthlyRatePence, source: 'standard_table' };
-    }
-
-    // Over the max tier — apply extra-session surcharge
-    if (sessionsPerWeek > maxRow.sessionsPerWeek && maxRow.extraSessionRatePence !== null) {
-        const extra = (sessionsPerWeek - maxRow.sessionsPerWeek) * maxRow.extraSessionRatePence;
-        return { ratePence: maxRow.monthlyRatePence + extra, source: 'standard_table' };
-    }
-
-    throw new Error(`No rate table entry covers ${sessionsPerWeek} sessions/week`);
-}
-
-/** Default Non-UC rate table (Sydenham After School Club defaults) */
-export const DEFAULT_NON_UC_RATES: RateRow[] = [
-    { sessionsPerWeek: 1, monthlyRatePence:  8000, extraSessionRatePence: null },
-    { sessionsPerWeek: 2, monthlyRatePence: 14000, extraSessionRatePence: null },
-    { sessionsPerWeek: 3, monthlyRatePence: 20000, extraSessionRatePence: null },
-    { sessionsPerWeek: 4, monthlyRatePence: 24000, extraSessionRatePence: null },
-    { sessionsPerWeek: 5, monthlyRatePence: 28000, extraSessionRatePence: 4000 },
-];
-
-// ─── Non-UC billing dates ─────────────────────────────────────────────────────
-
-/**
- * Compute the NEXT Non-UC billing period starting from today (or a reference date).
- * The anchor day is the day-of-month the student's billing recurs on.
- * Assessment period = full billing month (e.g. 1 Aug – 31 Aug).
- */
-export function computeNextNonUcBillingDates(
-    config: NonUcBillingConfig,
-    referenceDate: Date = new Date(),
+export function computeNextBillingPeriod(
+    config: BillingConfig,
+    now: Date = new Date(),
 ): BillingPeriod {
     const anchorDay = config.billingAnchorDate.getUTCDate();
-    const today = new Date(Date.UTC(
-        referenceDate.getUTCFullYear(),
-        referenceDate.getUTCMonth(),
-        referenceDate.getUTCDate(),
-    ));
 
-    // Find the next occurrence of anchorDay at or after today
-    let year  = today.getUTCFullYear();
-    let month = today.getUTCMonth() + 1; // 1-indexed
+    let year  = now.getUTCFullYear();
+    let month = now.getUTCMonth() + 1; // 1-indexed
 
-    // Try current month first
-    const clampedThisMonth = clampToMonthEnd(year, month, anchorDay);
-    const candidateThisMonth = utcDate(year, month, clampedThisMonth);
+    // Compute invoice issue date for this month's anchor
+    const thisMonthAnchor  = utcDate(year, month, clampToMonthEnd(year, month, anchorDay));
+    const thisMonthInvoice = new Date(thisMonthAnchor.getTime() - config.invoiceLeadDays * 86_400_000);
 
-    let dueDate: Date;
-    if (candidateThisMonth >= today) {
-        dueDate = candidateThisMonth;
+    // If the invoice date for this month is still in the future, use this month
+    // Otherwise advance to next month
+    let periodStart: Date;
+    if (thisMonthInvoice > now) {
+        periodStart = thisMonthAnchor;
     } else {
         // Move to next month
         month += 1;
         if (month > 12) { month = 1; year += 1; }
-        const clampedNextMonth = clampToMonthEnd(year, month, anchorDay);
-        dueDate = utcDate(year, month, clampedNextMonth);
+        periodStart = utcDate(year, month, clampToMonthEnd(year, month, anchorDay));
     }
 
-    // Period: from dueDate to (anchorDay - 1) next month
-    const periodStart = dueDate;
-    let pEndMonth = month + 1;
-    let pEndYear  = year;
-    if (pEndMonth > 12) { pEndMonth = 1; pEndYear += 1; }
-    const periodEndDay = clampToMonthEnd(pEndYear, pEndMonth, anchorDay - 1);
-    const periodEnd    = utcDate(pEndYear, pEndMonth, periodEndDay);
+    // Period end = last day of the period month
+    const periodMonth = periodStart.getUTCMonth() + 1; // 1-indexed
+    const periodYear  = periodStart.getUTCFullYear();
+    const lastDay     = new Date(Date.UTC(periodYear, periodMonth, 0)).getUTCDate();
+    const periodEnd   = utcDate(periodYear, periodMonth, lastDay);
 
-    const invoiceDate = new Date(dueDate.getTime() - config.invoiceLeadDays * 86400000);
+    const dueDate     = periodStart;
+    const invoiceDate = new Date(dueDate.getTime() - config.invoiceLeadDays * 86_400_000);
 
-    return {
-        periodStart,
-        periodEnd,
-        invoiceDate,
-        dueDate,
-        periodLabel: `${MONTH_NAMES[periodStart.getUTCMonth()]} ${periodStart.getUTCFullYear()}`,
-    };
-}
+    const periodLabel = periodStart.toLocaleDateString('en-GB', {
+        month: 'long', year: 'numeric', timeZone: 'UTC',
+    });
 
-// ─── UC billing dates ─────────────────────────────────────────────────────────
-
-/**
- * Compute the current or next UC assessment period.
- * Pattern: period starts on ucPeriodStartDay, ends on (ucPeriodStartDay - 1) of next month.
- * Example: startDay=29 → 29 May – 28 Jun, 29 Jun – 28 Jul, …
- */
-export function computeUcPeriodDates(
-    config: UcBillingConfig,
-    referenceDate: Date = new Date(),
-): BillingPeriod {
-    const startDay = config.ucPeriodStartDay;
-    const today    = new Date(Date.UTC(
-        referenceDate.getUTCFullYear(),
-        referenceDate.getUTCMonth(),
-        referenceDate.getUTCDate(),
-    ));
-
-    let year  = today.getUTCFullYear();
-    let month = today.getUTCMonth() + 1; // 1-indexed
-
-    // Compute period start for current month
-    const clampedStart = clampToMonthEnd(year, month, startDay);
-    const candidateStart = utcDate(year, month, clampedStart);
-
-    let periodStart: Date;
-    if (candidateStart >= today) {
-        // We're before or on the period start — this period is upcoming
-        periodStart = candidateStart;
-    } else {
-        // Period has already started — the NEXT period is next month
-        month += 1;
-        if (month > 12) { month = 1; year += 1; }
-        const clampedNext = clampToMonthEnd(year, month, startDay);
-        periodStart = utcDate(year, month, clampedNext);
-    }
-
-    // Period end = (startDay - 1) of the month after period start
-    let endMonth = month + 1;
-    let endYear  = year;
-    if (endMonth > 12) { endMonth = 1; endYear += 1; }
-    const endDay  = clampToMonthEnd(endYear, endMonth, startDay - 1);
-    const periodEnd = utcDate(endYear, endMonth, endDay);
-
-    const dueDate     = periodStart; // UC: due on period start
-    const invoiceDate = new Date(dueDate.getTime() - config.invoiceLeadDays * 86400000);
-
-    const label = `${fmtDate(periodStart)} – ${fmtDate(periodEnd)}`;
-
-    return { periodStart, periodEnd, invoiceDate, dueDate, periodLabel: label };
+    return { periodStart, periodEnd, invoiceDate, dueDate, periodLabel };
 }
 
 /**
- * Generate a human-readable live preview of 2 upcoming UC periods.
- * Used in the BillingSettingsCard UI.
+ * Generate a human-readable preview of upcoming billing periods.
+ * Used in the BillingSettingsCard UI live preview.
  */
-export function previewUcPeriods(startDay: number, count = 2): string {
+export function previewBillingPeriods(anchorDate: Date, count = 3): string[] {
     const results: string[] = [];
-    const now = new Date();
-    let ref = now;
-
+    let ref = new Date();
     for (let i = 0; i < count; i++) {
-        const period = computeUcPeriodDates(
-            { ucPeriodStartDay: startDay, invoiceLeadDays: 7, ucAgreedAmountPence: 0 },
-            ref,
+        const period = computeNextBillingPeriod({ billingAnchorDate: anchorDate, invoiceLeadDays: 7 }, ref);
+        results.push(
+            `${fmtDate(period.periodStart)} – ${fmtDate(period.periodEnd)}` +
+            ` (invoice by ${fmtDate(period.invoiceDate)})`
         );
-        results.push(`${fmtDate(period.periodStart)} → ${fmtDate(period.periodEnd)}`);
-        // Advance ref past this period to compute the next one
-        ref = new Date(period.periodEnd.getTime() + 86400000);
+        // Advance ref past this period to compute the next
+        ref = new Date(period.periodEnd.getTime() + 86_400_000);
     }
-    return results.join(' · ');
+    return results;
 }
 
-/** Format pence as a £ string */
+/** Format pence as a £ string, e.g. 42000 → "£420.00" */
 export function penceToPounds(pence: number): string {
     return `£${(pence / 100).toFixed(2)}`;
 }
 
-/** Parse a £ string to pence */
+/** Parse a £ string to pence, e.g. "420.00" → 42000 */
 export function poundsToPence(pounds: string): number {
-    return Math.round(parseFloat(pounds.replace('£', '').trim()) * 100);
+    return Math.round(parseFloat(pounds.replace(/[^0-9.]/g, '')) * 100);
 }
