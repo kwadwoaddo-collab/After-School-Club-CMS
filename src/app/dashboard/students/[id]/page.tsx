@@ -1,11 +1,12 @@
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
-import { children, parents, bookings, centres, bookingAttendees, registrationChildren } from '@/db/schema';
+import { children, parents, bookings, centres, bookingAttendees, registrationChildren, billingConfigs } from '@/db/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+
 
 export default async function StudentProfilePage(
     props: {
@@ -29,7 +30,8 @@ export default async function StudentProfilePage(
     const isOwner = userRole === 'ORG_OWNER';
 
     // Consolidated parallel database queries to avoid round-trip latency overhead
-    const [studentData, bookingsRaw, initialNotes, [attendanceResults]] = await Promise.all([
+    const [studentData, bookingsRaw, initialNotes, [attendanceResults], billingConfig] = await Promise.all([
+
         db.select({
             id: children.id,
             firstName: children.firstName,
@@ -91,7 +93,14 @@ export default async function StudentProfilePage(
         })
         .from(bookingAttendees)
         .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(eq(bookingAttendees.childId, id))
+        .where(eq(bookingAttendees.childId, id)),
+
+        db.query.billingConfigs.findFirst({
+            where: and(
+                eq(billingConfigs.childId, id),
+                eq(billingConfigs.status, 'active'),
+            ),
+        }),
     ]);
 
     if (studentData.length === 0) return notFound();
@@ -124,6 +133,7 @@ export default async function StudentProfilePage(
                 initialNotes={initialNotes}
                 currentUserId={session.user.id}
                 currentUserRole={userRole}
+                billingConfig={billingConfig ?? null}
             />
         </div>
     );

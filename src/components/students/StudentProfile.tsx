@@ -29,6 +29,8 @@ import { resolveAttendanceStatus, getAttendanceColorClass, countAttendance } fro
 import type { AttendanceStatus } from '@/lib/attendance';
 import { updateStudentSchedule } from '@/features/students/student-actions';
 import { useToast } from '@/components/ui/ToastProvider';
+import BillingSettingsCard from '@/components/billing/BillingSettingsCard';
+
 
 interface AssessmentProfileProps {
     student: {
@@ -78,9 +80,24 @@ interface AssessmentProfileProps {
     }>;
     currentUserId?: string;
     currentUserRole?: string;
+    billingConfig?: {
+        id: string;
+        billingType: 'non_uc' | 'uc';
+        sessionsPerWeek: number | null;
+        agreedRatePence: number | null;
+        ucPeriodStartDay: number | null;
+        ucAgreedAmountPence: number | null;
+        billingAnchorDate: string;
+        billingEndDate: string | null;
+        invoiceLeadDays: number;
+        status: 'active' | 'paused' | 'cancelled';
+        notes: string | null;
+    } | null;
+
 }
 
-export default function StudentProfile({ student, initialNotes, currentUserId, currentUserRole }: AssessmentProfileProps) {
+export default function StudentProfile({ student, initialNotes, currentUserId, currentUserRole, billingConfig }: AssessmentProfileProps) {
+
     const fullName = `${student.firstName} ${student.lastName}`;
     const parentFullName = `${student.parent.firstName} ${student.parent.lastName}`;
 
@@ -441,6 +458,17 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                 <p className="text-sm font-semibold text-red-800 leading-relaxed">{student.notes}</p>
                             </div>
                         )}
+
+                        {/* Billing Settings */}
+                        <BillingSettingsCard
+                            childId={student.id}
+                            parentId={student.parent.id}
+                            centreId={(student as any).centreId ?? ''}
+                            organisationId={(student as any).organisationId ?? ''}
+                            existingConfig={billingConfig ?? null}
+                        />
+
+
                     </div>
 
                     {/* ── Right: Progress Notes + Attendance ────────────── */}

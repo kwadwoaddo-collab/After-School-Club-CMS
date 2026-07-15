@@ -19,6 +19,9 @@ import Link from 'next/link';
 import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import { normalizeString } from '@/lib/search-params';
+import BillingCyclesTab from '@/components/billing/BillingCyclesTab';
+import { listBillingCycles } from '@/features/billing/actions';
+
 
 export default async function FinancePage(props: {
     searchParams: Promise<{
@@ -70,6 +73,10 @@ export default async function FinancePage(props: {
     });
     
     const orgStudents = students.filter(s => s.parent?.organisationId === session.user.organisationId);
+
+    // Fetch billing cycles for the Billing Cycles tab
+    const billingCycles = await listBillingCycles(activeCentreId);
+
 
     // Calculate real stats with database-level aggregations
     const orgId = session.user.organisationId;
@@ -312,9 +319,24 @@ export default async function FinancePage(props: {
 
             {/* Main Content Sections */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
                 {/* Recent Invoices */}
                 <div className="lg:col-span-2 space-y-6">
                     <InvoiceAgingSummary buckets={agingBuckets} />
+
+                    {/* Billing Cycles */}
+                    <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
+                        <div className="flex items-center justify-between mb-6 px-2">
+                            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                <CreditCard className="w-5 h-5 text-primary" />
+                                Billing Cycles
+                            </h3>
+                        </div>
+                        <BillingCyclesTab
+                            cycles={billingCycles as any}
+                            centreId={activeCentreId}
+                        />
+                    </div>
 
                     {parentBalancesResult.length > 0 && (
                         <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">

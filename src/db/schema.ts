@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ==================== DISCOUNT RULE TYPE ====================
@@ -784,5 +784,92 @@ export const sessionCreditsRelations = relations(sessionCredits, ({ one }) => ({
   admin: one(users, {
     fields: [sessionCredits.adminId],
     references: [users.id],
+  }),
+}));
+
+// ==================== BILLING ====================
+export const billingTypeEnum   = pgEnum('billing_type',   ['non_uc', 'uc']);
+export const billingStatusEnum = pgEnum('billing_status', ['active', 'paused', 'cancelled']);
+
+export const billingConfigs = pgTable('billing_configs', {
+  id:             uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').notNull(),
+  centreId:       uuid('centre_id').notNull(),
+  parentId:       uuid('parent_id').notNull(),
+  childId:        uuid('child_id'),  // nullable for UC family configs
+
+  billingType: billingTypeEnum('billing_type').notNull().default('non_uc'),
+
+  // Non-UC fields
+  sessionsPerWeek: integer('sessions_per_week'),
+  agreedRatePence: integer('agreed_rate_pence'),
+
+  // UC fields
+  ucPeriodStartDay:     integer('uc_period_start_day'),
+  ucAgreedAmountPence:  integer('uc_agreed_amount_pence'),
+
+  // Shared
+  billingAnchorDate: date('billing_anchor_date').notNull(),
+  billingEndDate:    date('billing_end_date'),
+  invoiceLeadDays:   integer('invoice_lead_days').notNull().default(7),
+  status:            billingStatusEnum('status').notNull().default('active'),
+  notes:             text('notes'),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  orgIdx:    index('billing_configs_org_idx').on(table.organisationId),
+  centreIdx: index('billing_configs_centre_idx').on(table.centreId),
+  parentIdx: index('billing_configs_parent_idx').on(table.parentId),
+  childIdx:  index('billing_configs_child_idx').on(table.childId),
+}));
+
+export const billingRuns = pgTable('billing_runs', {
+  id:              uuid('id').defaultRandom().primaryKey(),
+  billingConfigId: uuid('billing_config_id').references(() => billingConfigs.id, { onDelete: 'restrict' }).notNull(),
+
+  periodStart: date('period_start').notNull(),
+  periodEnd:   date('period_end').notNull(),
+  invoiceId:   uuid('invoice_id'),  // soft ref — no FK, to avoid coupling with manual invoices
+
+  rateAppliedPence: integer('rate_applied_pence').notNull(),
+  rateSource:       text('rate_source').notNull(),  // 'standard_table' | 'agreed_override' | 'uc_agreed'
+
+  runAt:  timestamp('run_at').defaultNow().notNull(),
+  runBy:  uuid('run_by'),  // null = automated, set = staff userId
+
+  success:  boolean('success').notNull().default(true),
+  errorLog: text('error_log'),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  configIdx:  index('billing_runs_config_idx').on(table.billingConfigId),
+  periodIdx:  index('billing_runs_period_idx').on(table.periodStart),
+  invoiceIdx: index('billing_runs_invoice_idx').on(table.invoiceId),
+}));
+
+export const nonUcRateTable = pgTable('non_uc_rate_table', {
+  id:                     uuid('id').defaultRandom().primaryKey(),
+  organisationId:         uuid('organisation_id').notNull(),
+  sessionsPerWeek:        integer('sessions_per_week').notNull(),
+  monthlyRatePence:       integer('monthly_rate_pence').notNull(),
+  extraSessionRatePence:  integer('extra_session_rate_pence'),
+  effectiveFrom:          date('effective_from').notNull(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('non_uc_rate_org_idx').on(table.organisationId),
+  uniqueRate: unique('non_uc_rate_unique').on(table.organisationId, table.sessionsPerWeek, table.effectiveFrom),
+}));
+
+// ── Billing Relations ─────────────────────────────────────────────────────────
+export const billingConfigsRelations = relations(billingConfigs, ({ many }) => ({
+  runs: many(billingRuns),
+}));
+
+export const billingRunsRelations = relations(billingRuns, ({ one }) => ({
+  config: one(billingConfigs, {
+    fields: [billingRuns.billingConfigId],
+    references: [billingConfigs.id],
   }),
 }));
