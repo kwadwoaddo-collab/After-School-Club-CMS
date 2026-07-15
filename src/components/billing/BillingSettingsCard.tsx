@@ -189,10 +189,10 @@ function EditForm({
         });
     };
 
-    // All siblings at this centre (including current child)
+    // Sort: current child first, then others. siblings already includes the current child.
     const allSiblings = [
-        { id: childId, firstName: siblings.find(s => s.id === childId)?.firstName ?? '', lastName: siblings.find(s => s.id === childId)?.lastName ?? '' },
-        ...siblings.filter(s => s.id !== childId),
+        ...siblings.filter(s => s.id === childId),   // current child first
+        ...siblings.filter(s => s.id !== childId),   // then other siblings
     ];
 
     return (
