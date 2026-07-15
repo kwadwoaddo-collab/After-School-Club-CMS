@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, ArrowRight, Download, CheckCircle2, AlertCircle, RefreshCw, ChevronLeft, Calendar } from 'lucide-react';
+import { Upload, ArrowRight, Download, CheckCircle2, AlertCircle, RefreshCw, ChevronLeft, FileSpreadsheet, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { importStudentsAction, StudentImportRow, ImportResult } from '@/features/students/import-actions';
 
@@ -16,11 +16,11 @@ function parseCSV(text: string): string[][] {
   let row: string[] = [];
   let inQuotes = false;
   let currentField = '';
-  
+
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     const nextChar = text[i + 1];
-    
+
     if (char === '"') {
       if (inQuotes && nextChar === '"') {
         currentField += '"';
@@ -32,27 +32,21 @@ function parseCSV(text: string): string[][] {
       row.push(currentField.trim());
       currentField = '';
     } else if ((char === '\r' || char === '\n') && !inQuotes) {
-      if (char === '\r' && nextChar === '\n') {
-        i++;
-      }
+      if (char === '\r' && nextChar === '\n') i++;
       row.push(currentField.trim());
-      if (row.length > 0 && row.some(field => field !== '')) {
-        lines.push(row);
-      }
+      if (row.length > 0 && row.some(field => field !== '')) lines.push(row);
       row = [];
       currentField = '';
     } else {
       currentField += char;
     }
   }
-  
+
   if (currentField || row.length > 0) {
     row.push(currentField.trim());
-    if (row.some(field => field !== '')) {
-      lines.push(row);
-    }
+    if (row.some(field => field !== '')) lines.push(row);
   }
-  
+
   return lines;
 }
 
@@ -71,285 +65,299 @@ const OPTIONAL_FIELDS = {
   parentPhone: 'Parent Phone Number',
 };
 
+// ─── Step indicator ────────────────────────────────────────────────────────────
+function StepIndicator({ current }: { current: number }) {
+  const steps = ['Upload', 'Map Fields', 'Review'];
+  return (
+    <div className="flex items-center gap-0">
+      {steps.map((label, i) => {
+        const num = i + 1;
+        const active = num === current;
+        const done = num < current;
+        return (
+          <div key={label} className="flex items-center">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+              active ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' :
+              done   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                       'text-gray-400'
+            }`}>
+              {done
+                ? <CheckCircle2 className="w-3.5 h-3.5" />
+                : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${active ? 'bg-white/20' : 'bg-gray-200 text-gray-500'}`}>{num}</span>
+              }
+              {label}
+            </div>
+            {i < steps.length - 1 && (
+              <ArrowRight className={`w-3.5 h-3.5 mx-1 ${done ? 'text-emerald-400' : 'text-gray-300'}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ImportStudentsClient({ centres }: { centres: Centre[] }) {
   const [step, setStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [csvRows, setCsvRows] = useState<string[][]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [centreId, setCentreId] = useState<string>('');
-  
-  // Mapping state: maps REQUIRED/OPTIONAL field keys to CSV header indices
   const [mappings, setMappings] = useState<Record<string, string>>({});
-  
   const [isImporting, setIsImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  // Download simple sample CSV
   const handleDownloadTemplate = () => {
     const headerRow = [
-      'Student First Name', 'Student Last Name', 'Student Date of Birth (DD/MM/YYYY)', 'Student School Year', 'Student Notes',
-      'Parent First Name', 'Parent Last Name', 'Parent Email', 'Parent Phone'
+      'Student First Name', 'Student Last Name', 'Student Date of Birth (DD/MM/YYYY)',
+      'Student School Year', 'Student Notes',
+      'Parent First Name', 'Parent Last Name', 'Parent Email', 'Parent Phone',
     ];
     const sampleRows = [
       ['John', 'Doe', '12/04/2016', 'Year 3', 'Peanut allergy', 'Jane', 'Doe', 'jane.doe@example.com', '07700900077'],
-      ['Alice', 'Smith', '05/09/2018', 'Year 1', 'Needs visual aids', 'Bob', 'Smith', 'bob.smith@example.com', '07700900088']
+      ['Alice', 'Smith', '05/09/2018', 'Year 1', 'Needs visual aids', 'Bob', 'Smith', 'bob.smith@example.com', '07700900088'],
     ];
-    
-    const csvString = [
-      headerRow.join(','),
-      ...sampleRows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'student_import_template.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csv = [headerRow, ...sampleRows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = 'student_import_template.csv';
+    a.click();
   };
 
-  // Handle file select and parse headers
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
+  const processFile = (selectedFile: File) => {
     setFile(selectedFile);
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
+    reader.onload = e => {
+      const text = e.target?.result as string;
       const parsed = parseCSV(text);
       if (parsed.length > 0) {
         setHeaders(parsed[0]);
         setCsvRows(parsed.slice(1));
-        
-        // Auto match headers based on string similarity
-        const autoMappings: Record<string, string> = {};
-        const allFieldKeys = [...Object.keys(REQUIRED_FIELDS), ...Object.keys(OPTIONAL_FIELDS)];
-        
-        allFieldKeys.forEach(fieldKey => {
-          const fieldLabel = (REQUIRED_FIELDS as any)[fieldKey] || (OPTIONAL_FIELDS as any)[fieldKey];
-          const matchedIndex = parsed[0].findIndex(h => {
-            const cleanHeader = h.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const cleanLabel = fieldLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return cleanHeader.includes(cleanLabel) || cleanLabel.includes(cleanHeader) ||
-                   (fieldKey.toLowerCase().includes('dob') && cleanHeader.includes('dob')) ||
-                   (fieldKey.toLowerCase().includes('phone') && cleanHeader.includes('phone')) ||
-                   (fieldKey.toLowerCase().includes('notes') && cleanHeader.includes('notes'));
+        const auto: Record<string, string> = {};
+        Object.entries({ ...REQUIRED_FIELDS, ...OPTIONAL_FIELDS }).forEach(([key, label]) => {
+          const idx = parsed[0].findIndex(h => {
+            const ch = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cl = label.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return ch.includes(cl) || cl.includes(ch) ||
+              (key.toLowerCase().includes('dob') && ch.includes('dob')) ||
+              (key.toLowerCase().includes('phone') && ch.includes('phone')) ||
+              (key.toLowerCase().includes('notes') && ch.includes('notes'));
           });
-          if (matchedIndex !== -1) {
-            autoMappings[fieldKey] = matchedIndex.toString();
-          }
+          if (idx !== -1) auto[key] = idx.toString();
         });
-        setMappings(autoMappings);
+        setMappings(auto);
         setStep(2);
       }
     };
     reader.readAsText(selectedFile);
   };
 
-  const handleMappingChange = (fieldKey: string, value: string) => {
-    setMappings(prev => ({ ...prev, [fieldKey]: value }));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) processFile(f);
   };
 
-  const isMappingValid = () => {
-    return Object.keys(REQUIRED_FIELDS).every(key => mappings[key] !== undefined && mappings[key] !== '');
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f && f.name.endsWith('.csv')) processFile(f);
   };
+
+  const isMappingValid = () => Object.keys(REQUIRED_FIELDS).every(k => mappings[k] !== undefined && mappings[k] !== '');
 
   const handleStartImport = async () => {
     if (!isMappingValid()) return;
     setIsImporting(true);
     setStep(3);
-
-    // Convert CSV rows into StudentImportRow objects based on mappings
-    const importRows: StudentImportRow[] = csvRows.map(row => {
-      const getVal = (key: string) => {
-        const indexStr = mappings[key];
-        if (indexStr === undefined || indexStr === '') return undefined;
-        const index = parseInt(indexStr, 10);
-        return row[index] || undefined;
-      };
-
-      return {
-        studentFirstName: getVal('studentFirstName') || '',
-        studentLastName: getVal('studentLastName') || '',
-        studentDoB: getVal('studentDoB'),
-        studentSchoolYear: getVal('studentSchoolYear') || '1',
-        studentNotes: getVal('studentNotes'),
-        parentFirstName: getVal('parentFirstName') || '',
-        parentLastName: getVal('parentLastName') || '',
-        parentEmail: getVal('parentEmail') || '',
-        parentPhone: getVal('parentPhone'),
-      };
-    });
-
+    const getVal = (row: string[], key: string) => {
+      const i = mappings[key];
+      return i !== undefined && i !== '' ? row[parseInt(i, 10)] || undefined : undefined;
+    };
+    const importRows: StudentImportRow[] = csvRows.map(row => ({
+      studentFirstName: getVal(row, 'studentFirstName') || '',
+      studentLastName: getVal(row, 'studentLastName') || '',
+      studentDoB: getVal(row, 'studentDoB'),
+      studentSchoolYear: getVal(row, 'studentSchoolYear') || '1',
+      studentNotes: getVal(row, 'studentNotes'),
+      parentFirstName: getVal(row, 'parentFirstName') || '',
+      parentLastName: getVal(row, 'parentLastName') || '',
+      parentEmail: getVal(row, 'parentEmail') || '',
+      parentPhone: getVal(row, 'parentPhone'),
+    }));
     try {
-      const actionResult = await importStudentsAction(importRows, centreId || null);
-      setResult(actionResult);
+      const res = await importStudentsAction(importRows, centreId || null);
+      setResult(res);
     } catch (err: any) {
       setResult({
         success: false,
         stats: { totalRows: csvRows.length, createdParents: 0, matchedParents: 0, createdStudents: 0, skippedStudents: 0 },
-        errors: [{ row: 0, message: err.message || 'An unexpected error occurred during import.' }],
+        errors: [{ row: 0, message: err.message || 'An unexpected error occurred.' }],
       });
     } finally {
       setIsImporting(false);
     }
   };
 
-  const resetImporter = () => {
-    setStep(1);
-    setFile(null);
-    setCsvRows([]);
-    setHeaders([]);
-    setMappings({});
-    setResult(null);
-  };
+  const reset = () => { setStep(1); setFile(null); setCsvRows([]); setHeaders([]); setMappings({}); setResult(null); };
+
+  // ── Shared card shell ────────────────────────────────────────────────────────
+  const card = 'bg-white border border-gray-200 rounded-3xl shadow-sm';
+  const label = 'block text-xs font-semibold text-gray-700 mb-1.5';
+  const input = 'w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Steps Indicator */}
-      <div className="flex items-center gap-2 px-1">
-        <span className={`text-xs font-bold uppercase tracking-wider ${step >= 1 ? 'text-primary' : 'text-slate-500'}`}>1. Upload</span>
-        <ArrowRight className="w-3.5 h-3.5 text-slate-600" />
-        <span className={`text-xs font-bold uppercase tracking-wider ${step >= 2 ? 'text-primary' : 'text-slate-500'}`}>2. Map Fields</span>
-        <ArrowRight className="w-3.5 h-3.5 text-slate-600" />
-        <span className={`text-xs font-bold uppercase tracking-wider ${step >= 3 ? 'text-primary' : 'text-slate-500'}`}>3. Review</span>
-      </div>
+    <div className="max-w-3xl space-y-5">
+      {/* Step indicator */}
+      <StepIndicator current={step} />
 
-      {/* Step 1: Upload File & Pick Centre */}
+      {/* ── Step 1: Upload ───────────────────────────────────────────────────── */}
       {step === 1 && (
-        <div className="glassmorphic-card rounded-3xl p-8 border border-white/5 shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-            <div>
-              <h3 className="font-bold text-white text-base">Download Template</h3>
-              <p className="text-xs text-[#8c909f] mt-0.5">Use our premade structure to align your columns automatically.</p>
+        <div className={`${card} p-8 space-y-6`}>
+          {/* Download template */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-blue-50 border border-blue-100">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FileSpreadsheet className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">Download Template</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Use our premade structure to align your columns automatically.</p>
+              </div>
             </div>
             <button
               onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-bold transition-all active:scale-95 duration-100 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-50 transition-all shadow-sm flex-shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
               Download template.csv
             </button>
           </div>
 
-          <div className="space-y-4">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#8c909f]">
-              Default Centre Assignment
-            </label>
-            <select
-              value={centreId}
-              onChange={(e) => setCentreId(e.target.value)}
-              className="w-full bg-[#14161b] text-white border border-[#424754]/20 rounded-xl px-4 py-3 text-sm focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-colors"
-            >
+          {/* Centre assignment */}
+          <div>
+            <label className={label}>Default Centre Assignment</label>
+            <select value={centreId} onChange={e => setCentreId(e.target.value)} className={input}>
               <option value="">No Centre Assignment (Assign later)</option>
-              {centres.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <p className="text-[10px] text-[#8c909f] mt-1">
-              Select which centre all imported students should belong to by default. You can change this on individual student records later.
+            <p className="text-xs text-gray-400 mt-2">
+              Select which centre all imported students should belong to by default. You can change this on individual records later.
             </p>
           </div>
 
-          <div className="border-2 border-dashed border-white/10 hover:border-primary/40 rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-all bg-white/[0.01]">
-            <Upload className="w-10 h-10 text-[#8c909f] mb-4" />
-            <h4 className="font-bold text-white mb-1">Upload your CSV spreadsheet</h4>
-            <p className="text-xs text-[#8c909f] max-w-sm mb-6 leading-relaxed">
-              Drag and drop your spreadsheet file here, or click to browse. Max size 5MB.
+          {/* Drop zone */}
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all ${
+              dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-blue-100' : 'bg-gray-100'}`}>
+              <Upload className={`w-6 h-6 ${dragOver ? 'text-blue-600' : 'text-gray-400'}`} />
+            </div>
+            <h4 className="font-bold text-gray-900 text-base mb-1">Upload your CSV spreadsheet</h4>
+            <p className="text-sm text-gray-500 max-w-xs mb-6 leading-relaxed">
+              Drag and drop your spreadsheet here, or click to browse. Max size 5MB.
             </p>
-            <label className="px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-blue-600 cursor-pointer transition-colors active:scale-95 duration-100">
+            <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-blue-200">
+              <Upload className="w-4 h-4" />
               Browse Files
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+              <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
             </label>
           </div>
         </div>
       )}
 
-      {/* Step 2: Map Columns */}
+      {/* ── Step 2: Map Fields ───────────────────────────────────────────────── */}
       {step === 2 && (
-        <div className="glassmorphic-card rounded-3xl p-8 border border-white/5 shadow-2xl space-y-6">
-          <div className="flex items-center justify-between">
+        <div className={`${card} p-8 space-y-7`}>
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-white text-lg">Map Spreadsheet Fields</h3>
-              <p className="text-xs text-[#8c909f] mt-0.5">Map each required field in the app to a column in your CSV.</p>
+              <h3 className="font-bold text-gray-900 text-lg">Map Spreadsheet Fields</h3>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Match each app field to a column in your CSV. We've pre-matched what we could.
+              </p>
             </div>
             <button
-              onClick={resetImporter}
-              className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 active:scale-95 duration-100"
+              onClick={reset}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-all flex-shrink-0"
             >
               <ChevronLeft className="w-3.5 h-3.5" /> Back
             </button>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="text-xs font-black uppercase tracking-wider text-[#8c909f] border-b border-white/5 pb-2">Required Fields</h4>
+          {/* File info banner */}
+          {file && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-sm font-semibold text-emerald-800">{file.name}</span>
+              <span className="text-xs text-emerald-600 ml-auto">{csvRows.length} data rows detected</span>
+            </div>
+          )}
+
+          {/* Required fields */}
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">Required Fields</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(REQUIRED_FIELDS).map(([key, label]) => (
-                <div key={key} className="space-y-1.5">
-                  <label className="text-xs font-semibold text-white flex items-center gap-1">
-                    {label} <span className="text-rose-500">*</span>
+              {Object.entries(REQUIRED_FIELDS).map(([key, lbl]) => (
+                <div key={key}>
+                  <label className={label}>
+                    {lbl} <span className="text-red-500 font-black">*</span>
                   </label>
                   <select
                     value={mappings[key] || ''}
-                    onChange={(e) => handleMappingChange(key, e.target.value)}
-                    className="w-full bg-[#14161b] text-white border border-[#424754]/25 rounded-xl px-3 py-2 text-xs focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none"
+                    onChange={e => setMappings(p => ({ ...p, [key]: e.target.value }))}
+                    className={`${input} ${mappings[key] ? 'border-emerald-300 bg-emerald-50' : ''}`}
                   >
-                    <option value="">-- Select Column --</option>
-                    {headers.map((h, idx) => (
-                      <option key={idx} value={idx.toString()}>{h}</option>
-                    ))}
+                    <option value="">— Select Column —</option>
+                    {headers.map((h, i) => <option key={i} value={i.toString()}>{h}</option>)}
                   </select>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="text-xs font-black uppercase tracking-wider text-[#8c909f] border-b border-white/5 pb-2">Optional Fields</h4>
+          {/* Optional fields */}
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">Optional Fields</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(OPTIONAL_FIELDS).map(([key, label]) => (
-                <div key={key} className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[#c4c7d0]">
-                    {label}
-                  </label>
+              {Object.entries(OPTIONAL_FIELDS).map(([key, lbl]) => (
+                <div key={key}>
+                  <label className={label}>{lbl}</label>
                   <select
                     value={mappings[key] || ''}
-                    onChange={(e) => handleMappingChange(key, e.target.value)}
-                    className="w-full bg-[#14161b] text-white border border-[#424754]/25 rounded-xl px-3 py-2 text-xs focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none"
+                    onChange={e => setMappings(p => ({ ...p, [key]: e.target.value }))}
+                    className={`${input} ${mappings[key] ? 'border-blue-200 bg-blue-50' : ''}`}
                   >
-                    <option value="">-- Ignore / Skip --</option>
-                    {headers.map((h, idx) => (
-                      <option key={idx} value={idx.toString()}>{h}</option>
-                    ))}
+                    <option value="">— Ignore / Skip —</option>
+                    {headers.map((h, i) => <option key={i} value={i.toString()}>{h}</option>)}
                   </select>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Row mapping preview */}
+          {/* Row 1 preview */}
           {csvRows.length > 0 && (
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-2">
-              <h5 className="text-[10px] font-black uppercase tracking-wider text-[#8c909f]">Mapped Row 1 Preview</h5>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
-                {Object.entries({ ...REQUIRED_FIELDS, ...OPTIONAL_FIELDS }).map(([key, label]) => {
-                  const headerIdxStr = mappings[key];
-                  const value = headerIdxStr !== undefined && headerIdxStr !== ''
-                    ? csvRows[0][parseInt(headerIdxStr, 10)]
-                    : <span className="text-[#8c909f]/40 italic">Not mapped</span>;
+            <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Row 1 Preview
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                {Object.entries({ ...REQUIRED_FIELDS, ...OPTIONAL_FIELDS }).map(([key, lbl]) => {
+                  const i = mappings[key];
+                  const val = i !== undefined && i !== '' ? csvRows[0][parseInt(i, 10)] : null;
                   return (
                     <div key={key} className="min-w-0">
-                      <span className="text-[10px] text-[#8c909f] block truncate">{label}</span>
-                      <span className="text-white font-bold block truncate mt-0.5">{value}</span>
+                      <span className="text-gray-400 text-[10px] block truncate">{lbl}</span>
+                      <span className={`font-semibold block truncate mt-0.5 ${val ? 'text-gray-900' : 'text-gray-300 italic'}`}>
+                        {val || 'Not mapped'}
+                      </span>
                     </div>
                   );
                 })}
@@ -357,126 +365,122 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             </div>
           )}
 
-          <div className="pt-4 border-t border-white/5 flex items-center justify-between gap-4">
-            <span className="text-[10px] text-[#8c909f] font-semibold">
-              Ready to import {csvRows.length} rows of student data.
+          {/* Footer */}
+          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-4">
+            <span className="text-xs text-gray-500 font-medium">
+              Ready to import <strong className="text-gray-900">{csvRows.length} rows</strong> of student data
             </span>
             <button
               onClick={handleStartImport}
               disabled={!isMappingValid()}
-              className="px-6 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-blue-600 transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer shadow-lg shadow-primary/20 glow-btn"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-sm shadow-blue-200"
             >
               Confirm and Start Import
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Step 3: Importing / Results */}
+      {/* ── Step 3: Results ──────────────────────────────────────────────────── */}
       {step === 3 && (
-        <div className="glassmorphic-card rounded-3xl p-8 border border-white/5 shadow-2xl space-y-6">
+        <div className={`${card} p-8 space-y-6`}>
           {isImporting ? (
-            <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-              <RefreshCw className="w-10 h-10 text-primary animate-spin" />
-              <h3 className="text-lg font-bold text-white">Importing Students...</h3>
-              <p className="text-xs text-[#8c909f] max-w-sm">
-                Parsing rows, deduplicating parent records, and building attendance structures. Please don't refresh the page.
-              </p>
+            <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                <RefreshCw className="w-7 h-7 text-blue-600 animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Importing Students…</h3>
+                <p className="text-sm text-gray-500 max-w-sm mt-1">
+                  Parsing rows, deduplicating parent records, and building attendance structures. Please don't refresh.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Header */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-bold text-white text-lg">Import Results</h3>
-                  <p className="text-xs text-[#8c909f] mt-0.5">Summary of your student roster migration</p>
+                  <h3 className="font-bold text-gray-900 text-lg">Import Results</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">Summary of your student roster migration</p>
                 </div>
                 <button
-                  onClick={resetImporter}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-xs font-bold active:scale-95 duration-100 cursor-pointer"
+                  onClick={reset}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all flex-shrink-0"
                 >
                   Import Another File
                 </button>
               </div>
 
-              {/* Status Banner */}
+              {/* Status banner */}
               {result?.success ? (
-                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl">
-                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                  <div className="text-xs font-semibold">
-                    Roster migration completed successfully! All records were imported without errors.
-                  </div>
+                <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Roster migration completed successfully! All records imported without errors.
+                  </p>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div className="text-xs">
-                    <span className="font-bold block mb-0.5">Import completed with warnings / errors</span>
-                    Some student records could not be created because of formatting issues. See the error log below.
+                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-800">Import completed with warnings</p>
+                    <p className="text-xs text-red-600 mt-0.5">Some records could not be created. See the error log below.</p>
                   </div>
                 </div>
               )}
 
-              {/* Stats Counters */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-                  <p className="text-2xl font-black text-white">{result?.stats.totalRows || 0}</p>
-                  <p className="text-[9px] font-bold text-[#8c909f] uppercase tracking-wider mt-0.5">Rows Processed</p>
-                </div>
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-                  <p className="text-2xl font-black text-emerald-400">{result?.stats.createdStudents || 0}</p>
-                  <p className="text-[9px] font-bold text-[#8c909f] uppercase tracking-wider mt-0.5">Students Created</p>
-                </div>
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-                  <p className="text-2xl font-black text-[#adc6ff]">{result?.stats.createdParents || 0}</p>
-                  <p className="text-[9px] font-bold text-[#8c909f] uppercase tracking-wider mt-0.5">Parents Created</p>
-                </div>
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-                  <p className="text-2xl font-black text-amber-400">{result?.stats.matchedParents || 0}</p>
-                  <p className="text-[9px] font-bold text-[#8c909f] uppercase tracking-wider mt-0.5">Parents Matched</p>
-                </div>
+              {/* Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { value: result?.stats.totalRows || 0,      label: 'Rows Processed',  color: 'text-gray-900' },
+                  { value: result?.stats.createdStudents || 0, label: 'Students Created', color: 'text-emerald-600' },
+                  { value: result?.stats.createdParents || 0,  label: 'Parents Created',  color: 'text-blue-600' },
+                  { value: result?.stats.matchedParents || 0,  label: 'Parents Matched',  color: 'text-amber-600' },
+                ].map(({ value, label: lbl, color }) => (
+                  <div key={lbl} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+                    <p className={`text-2xl font-black ${color}`}>{value}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1">{lbl}</p>
+                  </div>
+                ))}
               </div>
 
-              {/* Duplicate/Skipped stats */}
-              {result?.stats.skippedStudents && result?.stats.skippedStudents > 0 ? (
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-[#8c909f] flex items-center justify-between">
-                  <span>Matched existing students (skipped duplicates):</span>
-                  <span className="font-bold text-white">{result.stats.skippedStudents}</span>
+              {/* Skipped */}
+              {(result?.stats.skippedStudents ?? 0) > 0 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+                  <span className="text-amber-800 font-medium">Skipped duplicates (already exist)</span>
+                  <span className="font-bold text-amber-900">{result!.stats.skippedStudents}</span>
                 </div>
-              ) : null}
+              )}
 
-              {/* Error Log */}
+              {/* Errors */}
               {result?.errors && result.errors.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-red-400">Error Log ({result.errors.length})</h4>
-                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-red-500/10 divide-y divide-red-500/10 bg-red-950/5">
-                    {result.errors.map((err, idx) => (
-                      <div key={idx} className="p-3.5 text-xs flex justify-between items-start gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-red-500 mb-2">Error Log ({result.errors.length})</p>
+                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-red-100 divide-y divide-red-100 bg-red-50/50">
+                    {result.errors.map((err, i) => (
+                      <div key={i} className="p-3.5 text-xs flex justify-between items-start gap-4">
                         <div>
-                          <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold">
-                            Row {err.row}
-                          </span>
-                          {err.name && (
-                            <span className="text-white font-bold ml-2">
-                              {err.name}
-                            </span>
-                          )}
-                          <p className="text-[#8c909f] mt-1">{err.message}</p>
+                          <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[10px] font-bold">Row {err.row}</span>
+                          {err.name && <span className="text-gray-900 font-bold ml-2">{err.name}</span>}
+                          <p className="text-gray-500 mt-1">{err.message}</p>
                         </div>
-                        {err.email && <span className="text-[10px] text-[#8c909f] font-mono">{err.email}</span>}
+                        {err.email && <span className="text-[10px] text-gray-400 font-mono">{err.email}</span>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Done button */}
-              <div className="pt-4 border-t border-white/5 flex justify-end">
+              {/* Done */}
+              <div className="pt-2 border-t border-gray-100 flex justify-end">
                 <Link
                   href="/dashboard/students"
-                  className="px-6 py-3 bg-[#adc6ff] hover:bg-[#c8d9ff] text-[#1a1d23] rounded-xl text-xs font-bold active:scale-95 duration-100"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-blue-200"
                 >
-                  Done, View Students
+                  <CheckCircle2 className="w-4 h-4" />
+                  Done — View Students
                 </Link>
               </div>
             </div>
