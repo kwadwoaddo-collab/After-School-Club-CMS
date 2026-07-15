@@ -79,17 +79,24 @@ function CollapsedView({
                 <StatusBadge status={config.status} />
             </div>
 
-            {/* Children covered */}
+            {/* Children covered — labelled so staff knows it's shared across siblings */}
             {config.coveredChildren.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                    {config.coveredChildren.map(c => (
-                        <span
-                            key={c.childId}
-                            className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold"
-                        >
-                            {c.childName}
-                        </span>
-                    ))}
+                <div>
+                    {config.coveredChildren.length > 1 && (
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">
+                            Shared family billing — {config.coveredChildren.length} children
+                        </p>
+                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                        {config.coveredChildren.map(c => (
+                            <span
+                                key={c.childId}
+                                className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold"
+                            >
+                                {c.childName}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -128,8 +135,11 @@ function EditForm({
     const [leadDays, setLeadDays]       = useState(existingConfig?.invoiceLeadDays ?? 7);
     const [notes, setNotes]             = useState(existingConfig?.notes ?? '');
     const [selectedChildIds, setSelected] = useState<Set<string>>(
-        new Set(existingConfig?.coveredChildren.map(c => c.childId) ?? [childId])
+        // If config exists, use its covered children.
+        // If new setup: pre-select ALL siblings at this centre — siblings registered together should all be covered.
+        new Set(existingConfig?.coveredChildren.map(c => c.childId) ?? siblings.map(s => s.id))
     );
+
     const [error, setError]   = useState('');
     const [isPending, start]  = useTransition();
 
