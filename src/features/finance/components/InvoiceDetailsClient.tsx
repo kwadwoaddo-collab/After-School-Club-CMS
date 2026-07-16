@@ -114,8 +114,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {isClient ? (
                         <div className="flex items-end gap-3">
                             {/* Invoice Buttons */}
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest pl-1">invoice</span>
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest">invoice</span>
                                 <div className="flex items-center rounded-xl overflow-hidden border border-border">
                                     <button 
                                         onClick={() => setPreviewType('invoice')}
@@ -140,8 +140,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             
                             {/* Receipt Buttons */}
                             {invoice.payments.length > 0 && (
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest pl-1">receipt</span>
+                                <div className="flex flex-col items-center gap-1">
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">receipt</span>
                                     <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
                                         <button 
                                             onClick={() => setPreviewType('receipt')}
@@ -166,8 +166,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             )}
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest pl-1">invoice</span>
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest">invoice</span>
                             <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-border rounded-xl text-sm font-bold text-muted-foreground opacity-50">
                                 <Download className="w-4 h-4" /> Loading...
                             </div>
