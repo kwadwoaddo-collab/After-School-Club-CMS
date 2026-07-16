@@ -11,6 +11,7 @@ import { billingConfigs, billingConfigChildren, billingRuns, invoices, children 
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
+import { nanoid } from 'nanoid';
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -231,19 +232,25 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     }));
 
     const result = await db.transaction(async (tx) => {
+        const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+
         // Create invoice
         const [invoice] = await tx.insert(invoices).values({
             organisationId:      orgId,
             centreId:            config.centreId,
             parentId:            config.parentId,
+            invoiceNumber:       invoiceNumber,
             amount:              String(input.amountPence / 100),
-            status:              'pending',
-            dueDate:             input.periodStartStr,
+            status:              'draft',
+            invoiceDate:         new Date(),
+            dueDate:             new Date(input.periodStartStr),
+            billingPeriodStart:  new Date(input.periodStartStr),
+            billingPeriodEnd:    new Date(input.periodEndStr),
             notes:               input.notes ?? `Monthly tuition — ${input.periodStartStr} to ${input.periodEndStr}`,
             billingConfigId:     config.id,
             billingPeriodLabel:  `${input.periodStartStr} to ${input.periodEndStr}`,
             coveredChildrenJson: coveredChildren,
-        } as any).returning();
+        }).returning();
 
         // Record the run
         await tx.insert(billingRuns).values({

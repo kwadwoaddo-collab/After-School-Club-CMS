@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid or expired prefill token' }, { status: 400 });
         }
 
-        const { parentId, centreId } = payload;
+        const { parentId, centreId, childIds } = payload;
         if (!parentId || !centreId) {
             return NextResponse.json({ error: 'Malformed token payload' }, { status: 400 });
         }
@@ -37,13 +37,19 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Parent record not found' }, { status: 404 });
         }
 
-        // 3. Fetch all children of this parent at this centre
-        const parentChildren = await db.query.children.findMany({
+        // 3. Fetch children of this parent at this centre
+        let parentChildren = await db.query.children.findMany({
             where: and(
                 eq(children.parentId, parentId),
                 eq(children.centreId, centreId),
             ),
         });
+
+        // Filter by selected childIds if specified in the token
+        if (childIds && Array.isArray(childIds)) {
+            parentChildren = parentChildren.filter(c => childIds.includes(c.id));
+        }
+
 
         // 4. Transform to match form expected schema
         const transformedParents = [{

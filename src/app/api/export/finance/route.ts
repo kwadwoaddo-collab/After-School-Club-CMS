@@ -96,7 +96,9 @@ export async function GET(req: NextRequest) {
                 : '';
             const studentName = inv.child
                 ? `${inv.child.firstName} ${inv.child.lastName}`
-                : '';
+                : (inv.coveredChildrenJson && Array.isArray(inv.coveredChildrenJson)
+                    ? (inv.coveredChildrenJson as any[]).map(c => c.name || c.childName || '').filter(Boolean).join('; ')
+                    : '');
             const invoiceDateStr = new Date(inv.invoiceDate).toISOString().split('T')[0];
             const paymentMethodStr = Array.from(methods).join('; ');
 

@@ -192,8 +192,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             <div className="flex-1 space-y-4">
                                 <h3 className="text-xs font-black text-foreground-variant uppercase tracking-widest">Student Information</h3>
                                 <div className="bg-secondary/60 rounded-3xl p-6 border border-border">
-                                    <div className="text-lg font-black text-foreground">{invoice.child.firstName} {invoice.child.lastName}</div>
-                                    <div className="text-sm font-medium text-foreground-variant">{invoice.centre.name}</div>
+                                    <div className="text-lg font-black text-foreground">
+                                        {invoice.child 
+                                            ? `${invoice.child.firstName} ${invoice.child.lastName}`
+                                            : (invoice.childDisplayName || 'Family Invoice')
+                                        }
+                                    </div>
+                                    <div className="text-sm font-medium text-foreground-variant">{invoice.centre?.name}</div>
                                 </div>
                             </div>
                             <div className="flex-1 space-y-4">

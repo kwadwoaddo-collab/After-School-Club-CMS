@@ -186,46 +186,7 @@ export default function ReportsClient() {
         document.body.removeChild(link);
     };
 
-    // ── Shared export row button ──────────────────────────────────────────────
-    function ExportRow({
-        label,
-        icon: Icon,
-        iconColor,
-        onExport,
-        isLoading,
-        isSuccess,
-    }: {
-        label: string;
-        icon: React.ElementType;
-        iconColor: string;
-        onExport: () => void;
-        isLoading: boolean;
-        isSuccess: boolean;
-    }) {
-        return (
-            <button
-                onClick={onExport}
-                disabled={isLoading}
-                className={cn(
-                    'w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-semibold transition-all border group disabled:opacity-60',
-                    isSuccess
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                        : 'bg-white border-gray-200 text-foreground hover:bg-gray-50 hover:border-gray-300 shadow-sm'
-                )}
-            >
-                <span className="flex items-center gap-3">
-                    <Icon className={cn('w-5 h-5 transition-transform group-hover:scale-110', isSuccess ? 'text-emerald-600' : iconColor)} />
-                    {label}
-                </span>
-                {isLoading
-                    ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-                    : isSuccess
-                    ? <Check className="w-4 h-4 text-emerald-600" />
-                    : <Download className="w-4 h-4 text-muted-foreground" />
-                }
-            </button>
-        );
-    }
+
 
     return (
         <div className="flex flex-col gap-6">
@@ -442,5 +403,46 @@ export default function ReportsClient() {
                 </div>
             )}
         </div>
+    );
+}
+
+// ── Shared export row button component ──────────────────────────────────────
+function ExportRow({
+    label,
+    icon: Icon,
+    iconColor,
+    onExport,
+    isLoading,
+    isSuccess,
+}: {
+    label: string;
+    icon: React.ElementType;
+    iconColor: string;
+    onExport: () => void;
+    isLoading: boolean;
+    isSuccess: boolean;
+}) {
+    return (
+        <button
+            onClick={onExport}
+            disabled={isLoading}
+            className={cn(
+                'w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-semibold transition-all border group disabled:opacity-60',
+                isSuccess
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-white border-gray-200 text-foreground hover:bg-gray-50 hover:border-gray-300 shadow-sm'
+            )}
+        >
+            <span className="flex items-center gap-3">
+                <Icon className={cn('w-5 h-5 transition-transform group-hover:scale-110', isSuccess ? 'text-emerald-600' : iconColor)} />
+                {label}
+            </span>
+            {isLoading
+                ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+                : isSuccess
+                ? <Check className="w-4 h-4 text-emerald-600" />
+                : <Download className="w-4 h-4 text-muted-foreground" />
+            }
+        </button>
     );
 }

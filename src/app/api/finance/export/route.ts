@@ -45,7 +45,11 @@ export async function GET() {
 
         for (const inv of allInvoices) {
             const parentName = inv.parent ? `${inv.parent.firstName} ${inv.parent.lastName}` : '';
-            const childName = inv.child ? `${inv.child.firstName} ${inv.child.lastName}` : '';
+            const childName = inv.child 
+                ? `${inv.child.firstName} ${inv.child.lastName}` 
+                : (inv.coveredChildrenJson && Array.isArray(inv.coveredChildrenJson)
+                    ? (inv.coveredChildrenJson as any[]).map(c => c.name || c.childName || '').filter(Boolean).join('; ')
+                    : '');
             const amount = Number(inv.amount) || 0;
 
             let paidAmount = 0;

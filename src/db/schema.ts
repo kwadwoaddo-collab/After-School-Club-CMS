@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ==================== DISCOUNT RULE TYPE ====================
@@ -499,6 +499,10 @@ export const invoices = pgTable('invoices', {
   billingPeriodEnd: timestamp('billing_period_end'),
   
   notes: text('notes'),
+
+  billingConfigId: uuid('billing_config_id'),
+  billingPeriodLabel: varchar('billing_period_label', { length: 100 }),
+  coveredChildrenJson: jsonb('covered_children_json'),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

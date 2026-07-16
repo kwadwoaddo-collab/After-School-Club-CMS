@@ -383,18 +383,7 @@ export default function WeeklyReportTab() {
         }
     }, [reportData]);
 
-    // ── Pill button ───────────────────────────────────────────────────────────
-    const PillBtn = ({ mode, label }: { mode: RangeMode; label: string }) => (
-        <button
-            onClick={() => { setRangeMode(mode); setReportData(null); setError(null); setPdfError(null); }}
-            className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${rangeMode === mode
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                : 'bg-white text-muted-foreground border-gray-200 hover:text-foreground hover:border-gray-300 hover:bg-gray-50'
-            }`}
-        >
-            {label}
-        </button>
-    );
+
 
     return (
         <div className="flex flex-col gap-6">
@@ -411,11 +400,22 @@ export default function WeeklyReportTab() {
                     </div>
                 </div>
 
-                {/* Range pills */}
                 <div className="flex flex-wrap gap-2">
-                    <PillBtn mode="this_week" label="This Week" />
-                    <PillBtn mode="last_week" label="Last Week" />
-                    <PillBtn mode="custom" label="Custom Range" />
+                    {(['this_week', 'last_week', 'custom'] as const).map((mode) => {
+                        const label = mode === 'this_week' ? 'This Week' : mode === 'last_week' ? 'Last Week' : 'Custom Range';
+                        return (
+                            <button
+                                key={mode}
+                                onClick={() => { setRangeMode(mode); setReportData(null); setError(null); setPdfError(null); }}
+                                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${rangeMode === mode
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                    : 'bg-white text-muted-foreground border-gray-200 hover:text-foreground hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* Custom range inputs */}

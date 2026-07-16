@@ -363,10 +363,13 @@ export async function getInvoiceDetails(invoiceId: string) {
 
     if (!result) return null;
 
-    // Derive childDisplayName: from child record if linked, otherwise parse from notes
+    // Derive childDisplayName: from child record if linked, otherwise covered children list or notes
     let childDisplayName: string | null = null;
     if (result.child) {
         childDisplayName = `${result.child.firstName} ${result.child.lastName}`.trim();
+    } else if (result.coveredChildrenJson && Array.isArray(result.coveredChildrenJson)) {
+        const covered = result.coveredChildrenJson as any[];
+        childDisplayName = covered.map(c => c.name || c.childName || '').filter(Boolean).join(', ');
     } else if (result.notes) {
         // Ad-hoc invoices store "Child: [name]" in notes
         const match = result.notes.match(/Child:\s*(.+)/);

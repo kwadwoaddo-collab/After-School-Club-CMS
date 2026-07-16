@@ -171,7 +171,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
     return { success: true };
 }
 
-export async function generateRegistrationLink(parentId: string, centreId: string) {
+export async function generateRegistrationLink(parentId: string, centreId: string, childIds?: string[]) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
@@ -208,10 +208,11 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     // Create secure prefill token
     const jose = await import('jose');
     const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
-    const token = await new jose.SignJWT({ parentId, centreId: targetCentreId })
+    const token = await new jose.SignJWT({ parentId, centreId: targetCentreId, childIds })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('30d') // prefill link expires in 30 days
         .sign(secret);
+
 
 
     // Build the absolute registration URL
