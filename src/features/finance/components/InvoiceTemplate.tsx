@@ -22,7 +22,7 @@ interface InvoiceTemplateProps {
 }
 
 export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplateProps) => {
-    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, childDisplayName } = invoice;
+    const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, childDisplayName, status, payments } = invoice;
     const safeFormatDate = (date: any, formatStr: string) => {
         if (!date) return '-';
         const d = new Date(date);
@@ -45,11 +45,17 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
         ? notes.trim()
         : '';
 
+    const verifiedPayments = (payments ?? []).filter((p: any) => p.status === 'verified');
+    const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const balanceRemaining = Math.max(0, Number(amount) - totalPaid);
+
     return (
         <Document title={`Invoice-${invoiceNumber}`}>
             <Page size="A4" style={styles.page}>
                 {/* Watermark */}
-                <Text style={styles.watermark}>{centre?.name?.toUpperCase() || 'HEATHWAY'}</Text>
+                <Text style={styles.watermark}>
+                    {status === 'paid' ? 'PAID' : (centre?.name?.toUpperCase() || 'HEATHWAY')}
+                </Text>
 
                 {/* Header */}
                 <View style={styles.header}>
@@ -72,6 +78,18 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>DUE DATE:</Text>
                             <Text style={styles.infoValue}>{safeFormatDate(dueDate, 'dd/MM/yyyy')}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>STATUS:</Text>
+                            <Text style={[
+                                styles.infoValue,
+                                {
+                                    color: status === 'paid' ? '#10b981' : 
+                                           status === 'partially_paid' ? '#d97706' : 
+                                           status === 'void' ? '#dc2626' : '#2563eb',
+                                    fontWeight: 'bold'
+                                }
+                            ]}>{(status || 'draft').toUpperCase()}</Text>
                         </View>
                     </View>
                 </View>
@@ -117,12 +135,35 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Grand Total */}
                 <View style={styles.totals}>
                     <View style={styles.totalsBox}>
-                        <View style={[styles.totalRow, styles.grandTotal]}>
-                            <Text>Total Amount Due</Text>
+                        <View style={styles.totalRow}>
+                            <Text>Subtotal</Text>
                             <Text>£{Number(amount).toFixed(2)}</Text>
+                        </View>
+                        {totalPaid > 0 && (
+                            <View style={styles.totalRow}>
+                                <Text>Payments Received</Text>
+                                <Text style={{ color: '#10b981' }}>-£{Number(totalPaid).toFixed(2)}</Text>
+                            </View>
+                        )}
+                        <View style={[styles.totalRow, styles.grandTotal]}>
+                            <Text>Balance Outstanding</Text>
+                            <Text>£{Number(balanceRemaining).toFixed(2)}</Text>
                         </View>
                     </View>
                 </View>
+
+                {/* Payments Table / Box */}
+                {verifiedPayments.length > 0 && (
+                    <View style={{ marginTop: 15, padding: 12, backgroundColor: '#f8fafc', borderLeftWidth: 3, borderLeftColor: '#10b981', borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#0f766e', marginBottom: 5 }}>PAYMENTS RECEIVED</Text>
+                        {verifiedPayments.map((p: any, idx: number) => (
+                            <View key={p.id || idx} style={{ flexDirection: 'row', justifyContent: 'space-between', fontSize: 8, color: '#475569', marginTop: 3 }}>
+                                <Text>Payment recorded on {safeFormatDate(p.recordedAt, 'dd/MM/yyyy')} via {p.method?.replace(/_/g, ' ')?.toUpperCase()}</Text>
+                                <Text style={{ fontWeight: 'bold', color: '#10b981' }}>£{Number(p.amount).toFixed(2)}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 {/* Bank Details */}
                 <View style={styles.bankDetails}>
