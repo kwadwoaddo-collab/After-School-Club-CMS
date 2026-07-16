@@ -7,6 +7,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 async function insertInvoiceAndLog(
     tx: any,
@@ -388,6 +389,22 @@ export async function recordPayment(data: {
 }) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const invoice = await db.query.invoices.findFirst({
+            where: and(
+                eq(invoices.id, data.invoiceId),
+                eq(invoices.organisationId, orgId)
+            ),
+            columns: { centreId: true }
+        });
+        if (!invoice || !accessibleCentreIds.includes(invoice.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
 
     // Link back to schema imports
     const { payments: paymentsTable } = await import('@/db/schema');
@@ -454,6 +471,7 @@ export async function deleteInvoice(invoiceId: string) {
         });
 
         if (!invoice) throw new Error('Invoice not found');
+        if (invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
 
         if (invoice.payments && invoice.payments.length > 0) {
             throw new Error('Please delete associated payments before deleting the invoice.');
@@ -529,6 +547,14 @@ export async function verifyPayment(paymentId: string) {
         if (payment.status === 'verified') throw new Error('Payment is already verified');
         if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
 
+        const userRole = (session.user as any).role;
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(payment.invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
+        }
+
         // 2. Mark payment as verified
         await tx.update(payments)
             .set({ status: 'verified', updatedAt: new Date() })
@@ -590,6 +616,14 @@ export async function failPayment(paymentId: string) {
 
     if (!payment || !payment.invoice) throw new Error('Payment not found');
     if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(payment.invoice.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
 
     await db.update(payments)
         .set({ status: 'failed', updatedAt: new Date() })
