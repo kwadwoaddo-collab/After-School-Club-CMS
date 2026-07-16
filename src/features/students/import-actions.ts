@@ -53,29 +53,65 @@ export async function importStudentsAction(
     const rowNumber = i + 1;
 
     try {
-      // Basic validations
-      const studentFirstName = row.studentFirstName?.trim();
-      const studentLastName = row.studentLastName?.trim();
-      const parentFirstName = row.parentFirstName?.trim();
-      const parentLastName = row.parentLastName?.trim();
-      const parentEmail = row.parentEmail?.trim().toLowerCase();
-      const parentPhone = row.parentPhone?.trim() || null;
+      // Basic sanitisation & fallbacks to force the information through
+      let studentFirstName = row.studentFirstName?.trim() || '';
+      let studentLastName = row.studentLastName?.trim() || '';
+      let parentFirstName = row.parentFirstName?.trim() || '';
+      let parentLastName = row.parentLastName?.trim() || '';
+      let parentEmail = row.parentEmail?.trim().toLowerCase() || '';
+      let parentPhone = row.parentPhone?.trim() || null;
       let schoolYear = row.studentSchoolYear?.trim() || '1';
 
-      if (!studentFirstName || !studentLastName) {
-        errors.push({ row: rowNumber, message: 'Student first and last names are required.' });
-        continue;
-      }
-      if (!parentFirstName || !parentLastName || !parentEmail) {
-        errors.push({ row: rowNumber, email: parentEmail, message: 'Parent first, last name, and email are required.' });
+      // If the row is completely empty, skip it to avoid importing garbage
+      if (!studentFirstName && !studentLastName && !parentFirstName && !parentLastName && !parentEmail && !parentPhone) {
         continue;
       }
 
-      // Normalize school year: extract number if it says "Year X"
+      // Fill missing student name parameters
+      if (!studentFirstName && !studentLastName) {
+        studentFirstName = 'Imported';
+        studentLastName = `Child ${rowNumber}`;
+      } else {
+        if (!studentFirstName) studentFirstName = 'Imported';
+        if (!studentLastName) studentLastName = 'Child';
+      }
+
+      // Fill missing parent name parameters
+      if (!parentFirstName && !parentLastName) {
+        parentFirstName = 'Imported';
+        parentLastName = `Parent ${rowNumber}`;
+      } else {
+        if (!parentFirstName) parentFirstName = 'Imported';
+        if (!parentLastName) parentLastName = 'Parent';
+      }
+
+      // Fill/format missing or invalid parent email
+      if (!parentEmail) {
+        parentEmail = `parent-${rowNumber}-${Date.now()}@asc-cms.local`;
+      } else if (!parentEmail.includes('@')) {
+        const cleanPart = parentEmail.replace(/[^a-z0-9._-]/g, '');
+        parentEmail = `${cleanPart || `parent-${rowNumber}`}@asc-cms.local`;
+      }
+
+      // Safeguard database length limits by truncating values
+      studentFirstName = studentFirstName.slice(0, 100);
+      studentLastName = studentLastName.slice(0, 100);
+      parentFirstName = parentFirstName.slice(0, 100);
+      parentLastName = parentLastName.slice(0, 100);
+      parentEmail = parentEmail.slice(0, 255);
+      
+      if (parentPhone) {
+        parentPhone = parentPhone.slice(0, 20);
+      }
+
+      // Normalize school year: extract number if it says "Year X", then clamp to database limits
       const yearMatch = schoolYear.match(/year\s*(\d+)/i);
       if (yearMatch) {
         schoolYear = yearMatch[1];
+      } else {
+        schoolYear = schoolYear.replace(/\s+/g, '');
       }
+      schoolYear = schoolYear.slice(0, 10) || '1';
 
       // Parse Date of Birth if provided
       let dob: Date | null = null;
