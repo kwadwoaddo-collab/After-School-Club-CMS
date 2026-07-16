@@ -447,12 +447,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
     const [studentSearchQuery, setStudentSearchQuery] = useState('');
     const [formChildFirst, setFormChildFirst] = useState('');
     const [formChildLast, setFormChildLast] = useState('');
+    const [formChildDob, setFormChildDob] = useState('');
     const [formYear, setFormYear] = useState('Reception');
     const [formSessionTime, setFormSessionTime] = useState('15:45');
     const [formParentFirst, setFormParentFirst] = useState('');
     const [formParentLast, setFormParentLast] = useState('');
     const [formParentEmail, setFormParentEmail] = useState('');
     const [formParentPhone, setFormParentPhone] = useState('');
+
 
     const handleWalkInSubmit = async () => {
         setIsSubmitting(true);
@@ -467,24 +469,26 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                 const childObj = allStudents.find(s => s.id === selectedChildId);
                 toast({ title: `${childObj?.firstName || 'Student'} added successfully`, message: "They have been added to today's session.", variant: 'success' });
             } else {
-                if (!formChildFirst || !formChildLast || !formParentFirst || !formParentLast || !formParentEmail) {
-                    toast({ title: 'Missing information', message: 'Please fill in all required fields before submitting.', variant: 'warning' });
+                if (!formChildFirst || !formChildLast || !formParentFirst || !formParentLast || !formParentEmail || !formChildDob) {
+                    toast({ title: 'Missing information', message: 'Please fill in all required fields (including Child DOB) before submitting.', variant: 'warning' });
                     setIsSubmitting(false);
                     return;
                 }
                 await registerWalkInChild({
                     centreId, dateStr,
                     childFirstName: formChildFirst, childLastName: formChildLast, schoolYear: formYear,
+                    dateOfBirth: formChildDob,
                     parentFirstName: formParentFirst, parentLastName: formParentLast,
                     parentEmail: formParentEmail, parentPhone: formParentPhone || undefined,
                     sessionTime: formSessionTime,
                 });
                 toast({ title: `${formChildFirst} registered successfully`, message: "They have been added to today's session.", variant: 'success' });
             }
-            setFormChildFirst(''); setFormChildLast('');
+            setFormChildFirst(''); setFormChildLast(''); setFormChildDob('');
             setFormParentFirst(''); setFormParentLast('');
             setFormParentEmail(''); setFormParentPhone('');
             setSelectedChildId(''); setStudentSearchQuery('');
+
             setShowWalkIn(false);
         } catch {
             toast({ title: 'Could not register student', message: 'Please check the details and try again.', variant: 'error' });
@@ -831,7 +835,11 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                     <input type="text" required value={formChildLast} onChange={e => setFormChildLast(e.target.value)} placeholder="e.g. Doe" className={formInput} />
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className={formLabel}>Date of Birth *</label>
+                                                    <input type="date" required value={formChildDob} onChange={e => setFormChildDob(e.target.value)} className={formInput} />
+                                                </div>
                                                 <div>
                                                     <label className={formLabel}>School Year</label>
                                                     <select value={formYear} onChange={e => setFormYear(e.target.value)} className={formInput}>

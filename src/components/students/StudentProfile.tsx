@@ -18,6 +18,8 @@ import {
     Edit2,
     Check,
     X,
+    Link2,
+    Copy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/components/ui/utils';
@@ -30,6 +32,8 @@ import type { AttendanceStatus } from '@/lib/attendance';
 import { updateStudentSchedule } from '@/features/students/student-actions';
 import { useToast } from '@/components/ui/ToastProvider';
 import BillingSettingsCard from '@/components/billing/BillingSettingsCard';
+import { generateRegistrationLink } from '@/app/dashboard/registrations/actions';
+
 
 
 import type { StudentBillingConfig } from '@/features/billing/queries';
@@ -46,6 +50,8 @@ interface AssessmentProfileProps {
         notes: string | null;
         registeredSessions?: string[] | null;
         registrationId?: string | null;
+        centreId?: string | null;
+        organisationId?: string | null;
         parent: {
             id: string;
             firstName: string;
@@ -96,7 +102,31 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
     const [selectedSchedules, setSelectedSchedules] = useState<string[]>(student.registeredSessions || []);
     const [isPending, startTransition] = useTransition();
+    const [isGeneratingLink, startLinkTransition] = useTransition();
     const { toast } = useToast();
+
+    const handleCopyPrefilledLink = () => {
+        if (!student.centreId) {
+            toast({ title: 'No centre assigned', message: 'This student must be assigned to a centre to generate a registration link.', variant: 'error' });
+            return;
+        }
+        startLinkTransition(async () => {
+            try {
+                const res = await generateRegistrationLink(student.parent.id, student.centreId!);
+                if (res.success && res.link) {
+                    await navigator.clipboard.writeText(res.link);
+                    toast({
+                        title: 'Link copied to clipboard!',
+                        message: 'Send this pre-filled registration link to the parent.',
+                        variant: 'success',
+                    });
+                }
+            } catch (err: any) {
+                toast({ title: 'Could not generate link', message: err.message || 'Please try again.', variant: 'error' });
+            }
+        });
+    };
+
 
     const handleToggleSession = (session: string) => {
         setSelectedSchedules(prev =>
@@ -323,7 +353,7 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                         View Family Account & Ledger
                                         <ChevronRight className="w-3.5 h-3.5" />
                                     </Link>
-                                    {student.registrationId && (
+                                    {student.registrationId ? (
                                         <Link
                                             href={`/dashboard/registrations/${student.registrationId}`}
                                             className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all"
@@ -331,7 +361,21 @@ export default function StudentProfile({ student, initialNotes, currentUserId, c
                                             View Registration Submission
                                             <ChevronRight className="w-3.5 h-3.5" />
                                         </Link>
+                                    ) : (
+                                        <button
+                                            onClick={handleCopyPrefilledLink}
+                                            disabled={isGeneratingLink}
+                                            className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 text-xs font-black rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
+                                        >
+                                            {isGeneratingLink ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                <Copy className="w-3.5 h-3.5" />
+                                            )}
+                                            {isGeneratingLink ? 'Generating Link…' : 'Copy Prefilled Registration Link'}
+                                        </button>
                                     )}
+
                                 </div>
                             </div>
                         </div>

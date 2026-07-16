@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
@@ -15,10 +15,12 @@ const SignaturePadWidget = dynamic(
 
 // ── Types ──────────────────────────────────────────────────────────
 interface ChildEntry {
+    childId?: string; // matched student identifier
     firstName: string; lastName: string; dateOfBirth: string; schoolYear: string;
     sessions: string[];
 }
 interface ParentEntry {
+    parentId?: string; // matched parent identifier
     firstName: string; lastName: string; relationship: string;
     phone: string; email: string;
     addressLine1: string; addressLine2: string; city: string; postcode: string;
@@ -79,6 +81,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function RegisterPage() {
     const params = useParams<{ slug: string[] }>();
+    const searchParams = useSearchParams();
+    const token = searchParams.get('token') || '';
+    const [isPrefilled, setIsPrefilled] = useState(false);
     const orgSlug = params?.slug?.[0] || '';
     const centreSlugFromUrl = params?.slug?.[1];
     const [orgInfo, setOrgInfo] = useState<{
@@ -136,6 +141,47 @@ export default function RegisterPage() {
             .catch(() => { setOrgNotFound(true); })
             .finally(() => setOrgLoading(false));
     }, [orgSlug, centreSlugFromUrl]);
+
+    // Fetch pre-fill data if token is provided
+    useEffect(() => {
+        if (!token) return;
+        fetch(`/api/register/prefill?token=${encodeURIComponent(token)}`)
+            .then(r => {
+                if (!r.ok) return null;
+                return r.json();
+            })
+            .then(data => {
+                if (data && data.success) {
+                    setIsPrefilled(true);
+                    if (data.centreId) setSelectedCentreId(data.centreId);
+                    if (data.parents && data.parents.length > 0) {
+                        setParentList(data.parents.map((p: any) => ({
+                            parentId: data.parentId,
+                            firstName: p.firstName,
+                            lastName: p.lastName,
+                            relationship: p.relationship,
+                            phone: p.phone,
+                            email: p.email,
+                            addressLine1: p.addressLine1,
+                            addressLine2: p.addressLine2,
+                            city: p.city,
+                            postcode: p.postcode,
+                        })));
+                    }
+                    if (data.children && data.children.length > 0) {
+                        setChildList(data.children.map((c: any) => ({
+                            childId: c.childId,
+                            firstName: c.firstName,
+                            lastName: c.lastName,
+                            dateOfBirth: c.dateOfBirth,
+                            schoolYear: c.schoolYear,
+                            sessions: c.sessions,
+                        })));
+                    }
+                }
+            })
+            .catch(err => console.error('[Prefill] Failed to load prefill details:', err));
+    }, [token]);
 
     // ── Child helpers ──────────────────────────────────────────────
     const updateChild = (i: number, field: keyof ChildEntry, v: string | string[]) =>
@@ -259,6 +305,7 @@ export default function RegisterPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     orgSlug,
+                    prefillToken: token || null,
                     centreId: selectedCentreId,
                     startDate: startDate ? new Date(startDate).toISOString() : null,
                     children: childList,
@@ -586,6 +633,18 @@ export default function RegisterPage() {
 
             <div className="max-w-2xl mx-auto px-6 py-10 pb-16">
                 <ProgressBar current={step} total={TOTAL_STEPS} />
+
+                {isPrefilled && (
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <p className="text-sm font-bold text-blue-800">Registration details pre-filled</p>
+                            <p className="text-xs text-blue-600 font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* ── STEP 1: Children ───────────────────────────────────── */}
                 {step === 1 && (

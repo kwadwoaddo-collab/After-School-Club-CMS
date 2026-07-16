@@ -431,6 +431,7 @@ export async function registerWalkInChild(params: {
     childFirstName: string;
     childLastName: string;
     schoolYear: string;
+    dateOfBirth?: string; // YYYY-MM-DD, optional but captured if parent fills it in
     parentFirstName: string;
     parentLastName: string;
     parentEmail: string;
@@ -449,6 +450,7 @@ export async function registerWalkInChild(params: {
         childFirstName,
         childLastName,
         schoolYear,
+        dateOfBirth,
         parentFirstName,
         parentLastName,
         parentEmail,
@@ -484,7 +486,9 @@ export async function registerWalkInChild(params: {
             organisationId: orgId,
             centreId: centreId,
             schoolYear: schoolYear,
+            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         });
+
 
         // Calculate booking start time
         // dateStr is YYYY-MM-DD, sessionTime is HH:MM

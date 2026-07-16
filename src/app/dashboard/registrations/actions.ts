@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { registrations, registrationChildren, registrationParents, parents, children, organisations } from '@/db/schema';
+import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
@@ -170,3 +170,40 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
     revalidatePath('/dashboard/registrations');
     return { success: true };
 }
+
+export async function generateRegistrationLink(parentId: string, centreId: string) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    // Fetch org slug and centre slug
+    const org = await db.query.organisations.findFirst({
+        where: eq(organisations.id, orgId),
+        columns: { slug: true },
+    });
+    if (!org) throw new Error('Organisation not found');
+
+    const centre = await db.query.centres.findFirst({
+        where: and(eq(centres.id, centreId), eq(centres.organisationId, orgId)),
+        columns: { slug: true },
+    });
+    if (!centre) throw new Error('Centre not found');
+
+    // Create secure prefill token
+    const jose = await import('jose');
+    const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
+    const token = await new jose.SignJWT({ parentId, centreId })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('30d') // prefill link expires in 30 days
+        .sign(secret);
+
+    // Build the absolute registration URL
+    const { headers } = await import('next/headers');
+    const host = (await headers()).get('host') || 'localhost:3000';
+    const proto = (await headers()).get('x-forwarded-proto') || 'http';
+    const baseUrl = `${proto}://${host}`;
+
+    const link = `${baseUrl}/register/${org.slug}/${centre.slug}?token=${encodeURIComponent(token)}`;
+    return { success: true, link };
+}
+

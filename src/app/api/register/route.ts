@@ -16,10 +16,9 @@ import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 // Helper: treat empty strings as null so optional/nullable fields don't fail
 const emptyToNull = (v: unknown) => (v === '' ? null : v);
 
-// Validation schema for the public registration form
 const registerSchema = z.object({
     orgSlug: z.string().min(1).max(100),
-    // Allow null (no centre selected) as well as undefined
+    prefillToken: z.preprocess(emptyToNull, z.string().optional().nullable()),
     centreId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
     startDate: z.preprocess(
         (v) => {
@@ -35,6 +34,7 @@ const registerSchema = z.object({
     termsAgreed: z.literal(true, { message: 'You must agree to the terms' }),
     parentSignature: z.preprocess(emptyToNull, z.string().optional().nullable()),
     children: z.array(z.object({
+        childId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
         firstName: z.string().min(1).max(100),
         lastName: z.string().min(1).max(100),
         dateOfBirth: z.preprocess(emptyToNull, z.string().optional().nullable()),
@@ -42,6 +42,7 @@ const registerSchema = z.object({
         sessions: z.array(z.string()).optional(),
     })).min(1),
     parents: z.array(z.object({
+        parentId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
         firstName: z.string().min(1).max(100),
         lastName: z.string().min(1).max(100),
         // Email: empty string -> null (avoids .email() failing on "")
@@ -68,6 +69,7 @@ const registerSchema = z.object({
         details: z.preprocess(emptyToNull, z.string().max(5000).optional().nullable()),
     }).optional(),
 });
+
 
 export async function POST(req: NextRequest) {
     try {
@@ -98,9 +100,10 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const body = parsed.data;
+                const body = parsed.data;
         const {
             orgSlug,
+            prefillToken,
             centreId,
             startDate,
             children: submittedChildren,
@@ -111,6 +114,19 @@ export async function POST(req: NextRequest) {
             termsAgreed,
             parentSignature,
         } = body;
+
+        // Verify prefillToken if present
+        let prefillParentId: string | null = null;
+        if (prefillToken) {
+            try {
+                const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
+                const { jwtVerify } = await import('jose');
+                const result = await jwtVerify(prefillToken, secret);
+                prefillParentId = (result.payload.parentId as string) || null;
+            } catch (err) {
+                console.error('[Registration API] Token verification failed:', err);
+            }
+        }
 
         // ── 1. Resolve organisation ──────────────────────────────────────
         const org = await db.query.organisations.findFirst({
@@ -209,13 +225,31 @@ export async function POST(req: NextRequest) {
             }).returning();
             
             registration = reg;
- 
-            // ── 3. Process each parent — match or create ─────────────────────
-            for (const p of submittedParents) {
+
+            for (let idx = 0; idx < submittedParents.length; idx++) {
+                const p = submittedParents[idx];
                 let matched = false;
                 let parentId: string;
  
-                if (p.email) {
+                // If this is the primary parent and we have a verified prefillParentId, use it directly
+                if (idx === 0 && prefillParentId) {
+                    matched = true;
+                    parentId = prefillParentId;
+
+                    // Update parent details with potentially updated registration fields
+                    await tx.update(parents).set({
+                        firstName: p.firstName,
+                        lastName: p.lastName,
+                        phone: p.phone || null,
+                        email: p.email || null,
+                        relationship: (p.relationship ?? null) as any,
+                        addressLine1: p.addressLine1 || null,
+                        addressLine2: p.addressLine2 || null,
+                        city: p.city || null,
+                        postcode: p.postcode || null,
+                        updatedAt: new Date(),
+                    }).where(eq(parents.id, parentId));
+                } else if (p.email) {
                     const existingBefore = await tx.query.parents.findFirst({
                         where: and(
                             ilike(parents.email, p.email.trim()),
@@ -224,7 +258,7 @@ export async function POST(req: NextRequest) {
                         columns: { id: true }
                     });
                     matched = !!existingBefore;
-
+ 
                     const resolvedParent = await resolveOrCreateParent(tx, {
                         firstName: p.firstName,
                         lastName: p.lastName,
@@ -264,8 +298,9 @@ export async function POST(req: NextRequest) {
                     wasMatched: matched,
                 });
             }
- 
             // ── 4. Process each child — match or create ──────────────────────
+
+
             const primaryParentId = resolvedParents[0]?.parentId;
  
             for (const c of submittedChildren) {
@@ -273,17 +308,29 @@ export async function POST(req: NextRequest) {
                 let childId: string | null = null;
  
                 if (c.firstName && c.lastName && primaryParentId) {
-                    const existing = await tx.query.children.findFirst({
-                        where: and(
-                            ilike(children.firstName, c.firstName.trim()),
-                            ilike(children.lastName, c.lastName.trim()),
-                            eq(children.parentId, primaryParentId)
-                        ),
-                        columns: { id: true }
-                    });
+                    let existing;
+                    if (c.childId) {
+                        existing = await tx.query.children.findFirst({
+                            where: and(
+                                eq(children.id, c.childId),
+                                eq(children.parentId, primaryParentId)
+                            ),
+                            columns: { id: true }
+                        });
+                    } else {
+                        existing = await tx.query.children.findFirst({
+                            where: and(
+                                ilike(children.firstName, c.firstName.trim()),
+                                ilike(children.lastName, c.lastName.trim()),
+                                eq(children.parentId, primaryParentId)
+                            ),
+                            columns: { id: true }
+                        });
+                    }
                     childMatched = !!existing;
-
+ 
                     const child = await resolveOrCreateChild(tx, {
+                        id: c.childId || existing?.id || null, // pass the prefill ID directly to CRM service
                         firstName: c.firstName,
                         lastName: c.lastName,
                         parentId: primaryParentId,
@@ -308,6 +355,7 @@ export async function POST(req: NextRequest) {
                     submittedSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                     wasMatched: childMatched,
                 });
+
             }
         });
 
