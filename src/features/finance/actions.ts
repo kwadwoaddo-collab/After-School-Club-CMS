@@ -22,9 +22,10 @@ async function insertInvoiceAndLog(
         dueDate: Date;
         billingPeriodStart?: Date;
         billingPeriodEnd?: Date;
-        notes: string;
+        notes: string | null;
         adhoc?: boolean;
         childName?: string;
+        coveredChildrenJson?: any;
     }
 ) {
     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
@@ -41,6 +42,7 @@ async function insertInvoiceAndLog(
         billingPeriodStart: params.billingPeriodStart,
         billingPeriodEnd: params.billingPeriodEnd,
         notes: params.notes,
+        coveredChildrenJson: params.coveredChildrenJson,
     }).returning();
 
     await tx.insert(auditEvents).values({
@@ -168,12 +170,9 @@ export async function createInvoice(data: {
 
     // Fetch child names for the description if multiple are selected
     const selectedChildren = await db.select().from(children).where(inArray(children.id, data.childIds));
-    const childNames = selectedChildren.map(c => `${c.firstName} ${c.lastName}`).join(', ');
     
-    const description = data.notes 
-        ? `${data.notes}${selectedChildren.length > 1 ? `\n(Includes: ${childNames})` : ''}`
-        : `After School Club Childcare Services${selectedChildren.length > 0 ? ` for ${childNames}` : ''}`;
-
+    const coveredChildren = selectedChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
+    
     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 
     // Execute database operations atomically in a transaction
@@ -187,7 +186,8 @@ export async function createInvoice(data: {
             dueDate: data.dueDate,
             billingPeriodStart: data.billingPeriodStart,
             billingPeriodEnd: data.billingPeriodEnd,
-            notes: description,
+            notes: data.notes || null,
+            coveredChildrenJson: coveredChildren,
         });
     });
 
@@ -259,11 +259,8 @@ export async function createLegacyFamilyAndInvoice(data: {
         }
 
         // 3. Create Invoice
-        const childNames = createdChildren.map(c => `${c.firstName} ${c.lastName}`).join(', ');
-        const description = data.invoice.notes 
-            ? `${data.invoice.notes}\n(Includes: ${childNames})`
-            : `After School Club Childcare Services for ${childNames}`;
-
+        const coveredChildren = createdChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
+ 
         const newInvoice = await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.invoice.centreId,
             parentId: newParent.id,
@@ -273,7 +270,8 @@ export async function createLegacyFamilyAndInvoice(data: {
             dueDate: data.invoice.dueDate,
             billingPeriodStart: data.invoice.billingPeriodStart,
             billingPeriodEnd: data.invoice.billingPeriodEnd,
-            notes: description,
+            notes: data.invoice.notes || null,
+            coveredChildrenJson: coveredChildren,
         });
 
         return { parent: newParent, children: createdChildren, invoice: newInvoice };
@@ -318,12 +316,10 @@ export async function createAdHocInvoice(data: {
             parentId = newParent.id;
         }
 
-        // 2. Build description — child name stored in notes so it prints on PDF
+        // 2. Build ad-hoc child details
         const childLabel = data.childName.trim();
-        const baseDescription = data.notes
-            ? `${data.notes}\nChild: ${childLabel}`
-            : `After School Club Childcare Services\nChild: ${childLabel}`;
-
+        const coveredChildren = [{ childName: childLabel }];
+ 
         const newInvoice = await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId,
@@ -333,9 +329,10 @@ export async function createAdHocInvoice(data: {
             dueDate: data.dueDate,
             billingPeriodStart: data.billingPeriodStart,
             billingPeriodEnd: data.billingPeriodEnd,
-            notes: baseDescription,
+            notes: data.notes || null,
             adhoc: true,
             childName: childLabel,
+            coveredChildrenJson: coveredChildren,
         });
 
         revalidatePath('/dashboard/finance');

@@ -4,8 +4,7 @@ import { billingStylesBase } from './billingPdfStyles';
 
 const styles = StyleSheet.create({
     ...billingStylesBase,
-    col1: { flex: 3 },
-    col2: { flex: 1, textAlign: 'right' },
+    col1: { flex: 4 },
     col3: { flex: 1, textAlign: 'right' },
     bankDetails: {
         marginTop: 40,
@@ -94,18 +93,15 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
                         <Text style={styles.col1}>Description</Text>
-                        <Text style={styles.col2}>Rate</Text>
                         <Text style={styles.col3}>Total</Text>
                     </View>
                     <View style={styles.tableRow}>
-                        <Text style={styles.col1}>After School Club Childcare Services</Text>
-                        <Text style={styles.col2}>£{Number(amount).toFixed(2)}</Text>
+                        <Text style={styles.col1}>Childcare services</Text>
                         <Text style={styles.col3}>£{Number(amount).toFixed(2)}</Text>
                     </View>
                     {notes && (
                         <View style={styles.tableRow}>
                             <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>Note: {notes}</Text>
-                            <Text style={styles.col2}></Text>
                             <Text style={styles.col3}></Text>
                         </View>
                     )}
@@ -115,14 +111,6 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Grand Total */}
                 <View style={styles.totals}>
                     <View style={styles.totalsBox}>
-                        <View style={styles.totalRow}>
-                            <Text>Subtotal</Text>
-                            <Text>£{Number(amount).toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.totalRow}>
-                            <Text>Tax (0%)</Text>
-                            <Text>£0.00</Text>
-                        </View>
                         <View style={[styles.totalRow, styles.grandTotal]}>
                             <Text>Total Amount Due</Text>
                             <Text>£{Number(amount).toFixed(2)}</Text>
@@ -133,14 +121,17 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Bank Details */}
                 <View style={styles.bankDetails}>
                     <Text style={{ fontSize: 9, fontWeight: 'bold', marginBottom: 5 }}>PAYMENT INFORMATION</Text>
-                    <Text style={{ fontSize: 8, color: '#64748b' }}>Please pay via bank transfer to the following account:</Text>
+                    <Text style={{ fontSize: 8, color: '#64748b' }}>Please pay via bank transfer using the invoice number or child's name as payment reference:</Text>
                     <View style={{ marginTop: 5, marginBottom: 5 }}>
                         <Text>Account Name: {centre?.bankName || 'N/A'}</Text>
                         <Text>Sort Code: {centre?.sortCode || 'N/A'}</Text>
                         <Text>Account No: {centre?.accountNo || 'N/A'}</Text>
-                        <Text>Reference: {invoiceNumber}</Text>
+                        <Text>Reference: {invoiceNumber} or child's name</Text>
                     </View>
                     <Text style={{ fontSize: 8, color: '#64748b', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 5, marginTop: 5 }}>
+                        Cash payments can also be made directly at the centre.
+                    </Text>
+                    <Text style={{ fontSize: 8, color: '#64748b', paddingTop: 3 }}>
                         Registered by Ofsted · Registration Number: {centre?.ofstedId || '—'}
                     </Text>
                 </View>

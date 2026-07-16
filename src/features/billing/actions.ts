@@ -246,7 +246,7 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             dueDate:             new Date(input.periodStartStr),
             billingPeriodStart:  new Date(input.periodStartStr),
             billingPeriodEnd:    new Date(input.periodEndStr),
-            notes:               input.notes ?? `Monthly tuition — ${input.periodStartStr} to ${input.periodEndStr}`,
+            notes:               input.notes ?? null,
             billingConfigId:     config.id,
             billingPeriodLabel:  `${input.periodStartStr} to ${input.periodEndStr}`,
             coveredChildrenJson: coveredChildren,
