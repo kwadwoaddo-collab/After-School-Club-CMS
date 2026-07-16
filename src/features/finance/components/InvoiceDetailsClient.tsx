@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2 } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -12,7 +12,8 @@ import { InvoiceTemplate } from './InvoiceTemplate';
 import { ReceiptTemplate } from './ReceiptTemplate';
 import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
-import { deleteInvoice, voidInvoice } from '../actions';
+import { deleteInvoice, voidInvoice, updateInvoiceDate } from '../actions';
+import { toast } from 'react-hot-toast';
 
 interface InvoiceDetailsClientProps {
     invoice: any;
@@ -25,7 +26,25 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
     const [isClient, setIsClient] = useState(false);
     const [confirmAction, setConfirmAction] = useState<'delete' | 'void' | null>(null);
     const [isPending, startTransition] = useTransition();
+    const [isEditingDate, setIsEditingDate] = useState(false);
+    const [newDateValue, setNewDateValue] = useState(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
+    const [isUpdatingDate, setIsUpdatingDate] = useState(false);
     const router = useRouter();
+
+    const handleSaveDate = async () => {
+        if (!newDateValue) return;
+        setIsUpdatingDate(true);
+        try {
+            await updateInvoiceDate(invoice.id, new Date(newDateValue));
+            setIsEditingDate(false);
+            router.refresh();
+            toast.success('Invoice issue date updated');
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to update date');
+        } finally {
+            setIsUpdatingDate(false);
+        }
+    };
 
     useEffect(() => {
         setIsClient(true);
@@ -171,20 +190,62 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 border-y border-border py-10">
                             <div>
-                                <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Issue Date</p>
-                                <p className="text-sm font-bold text-foreground">{format(new Date(invoice.invoiceDate), 'MMM d, yyyy')}</p>
+                                <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1 flex items-center gap-1">
+                                    Issue Date
+                                </p>
+                                {isEditingDate ? (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <input 
+                                            type="date"
+                                            value={newDateValue}
+                                            disabled={isUpdatingDate}
+                                            onChange={(e) => setNewDateValue(e.target.value)}
+                                            className="bg-surface-container-low border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                        />
+                                        <button 
+                                            onClick={handleSaveDate}
+                                            disabled={isUpdatingDate}
+                                            className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
+                                        >
+                                            <Check className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                setIsEditingDate(false);
+                                                setNewDateValue(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
+                                            }}
+                                            disabled={isUpdatingDate}
+                                            className="p-1 bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors"
+                                        >
+                                            <XIcon className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 mt-1 group/date">
+                                        <p className="text-sm font-bold text-foreground">
+                                            {invoice.invoiceDate ? format(new Date(invoice.invoiceDate), 'dd/MM/yyyy') : '-'}
+                                        </p>
+                                        <button 
+                                            onClick={() => setIsEditingDate(true)}
+                                            className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-foreground-variant hover:text-foreground"
+                                            title="Edit Issue Date"
+                                        >
+                                            <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Due Date</p>
-                                <p className="text-sm font-bold text-foreground">{format(new Date(invoice.dueDate), 'MMM d, yyyy')}</p>
+                                <p className="text-sm font-bold text-foreground">{format(new Date(invoice.dueDate), 'dd/MM/yyyy')}</p>
                             </div>
                             <div>
                                 <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Billing Start</p>
-                                <p className="text-sm font-bold text-foreground">{invoice.billingPeriodStart ? format(new Date(invoice.billingPeriodStart), 'MMM d, yyyy') : '-'}</p>
+                                <p className="text-sm font-bold text-foreground">{invoice.billingPeriodStart ? format(new Date(invoice.billingPeriodStart), 'dd/MM/yyyy') : '-'}</p>
                             </div>
                             <div>
                                 <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Billing End</p>
-                                <p className="text-sm font-bold text-foreground">{invoice.billingPeriodEnd ? format(new Date(invoice.billingPeriodEnd), 'MMM d, yyyy') : '-'}</p>
+                                <p className="text-sm font-bold text-foreground">{invoice.billingPeriodEnd ? format(new Date(invoice.billingPeriodEnd), 'dd/MM/yyyy') : '-'}</p>
                             </div>
                         </div>
 
@@ -199,6 +260,11 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                         }
                                     </div>
                                     <div className="text-sm font-medium text-foreground-variant">{invoice.centre?.name}</div>
+                                    {invoice.centre?.ofstedId && (
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-primary/80 mt-2">
+                                            Ofsted Reg No: {invoice.centre.ofstedId}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex-1 space-y-4">

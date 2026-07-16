@@ -85,7 +85,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={styles.sectionTitle}>Period Description</Text>
                         <Text style={{ fontWeight: 'bold' }}>Reference: {invoiceNumber}</Text>
                         {displayChildName && <Text>Child: {displayChildName}</Text>}
-                        <Text>Period: {safeFormatDate(billingPeriodStart, 'MMM d')} to {safeFormatDate(billingPeriodEnd, 'MMM d, yyyy')}</Text>
+                        <Text>Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
                         <Text>Centre: {centre?.name || 'HASC Centre'}</Text>
                     </View>
                 </View>
@@ -134,12 +134,15 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 <View style={styles.bankDetails}>
                     <Text style={{ fontSize: 9, fontWeight: 'bold', marginBottom: 5 }}>PAYMENT INFORMATION</Text>
                     <Text style={{ fontSize: 8, color: '#64748b' }}>Please pay via bank transfer to the following account:</Text>
-                    <View style={{ marginTop: 5 }}>
+                    <View style={{ marginTop: 5, marginBottom: 5 }}>
                         <Text>Account Name: {centre?.bankName || 'N/A'}</Text>
                         <Text>Sort Code: {centre?.sortCode || 'N/A'}</Text>
                         <Text>Account No: {centre?.accountNo || 'N/A'}</Text>
                         <Text>Reference: {invoiceNumber}</Text>
                     </View>
+                    <Text style={{ fontSize: 8, color: '#64748b', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 5, marginTop: 5 }}>
+                        Registered by Ofsted · Registration Number: {centre?.ofstedId || '—'}
+                    </Text>
                 </View>
 
                 {/* Manager Name */}
