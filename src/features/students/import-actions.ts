@@ -39,6 +39,30 @@ export async function importStudentsAction(
   }
 
   const organisationId = session.user.organisationId;
+
+  // ─── Deduplicate Rows in Memory ───
+  const uniqueRows: StudentImportRow[] = [];
+  const seenKeys = new Set<string>();
+
+  for (const row of rows) {
+    const sFirst = (row.studentFirstName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const sLast = (row.studentLastName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const pFirst = (row.parentFirstName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const pLast = (row.parentLastName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const pEmail = (row.parentEmail || '').trim().toLowerCase();
+
+    // Skip fully blank rows
+    if (!sFirst && !sLast && !pFirst && !pLast && !pEmail && !row.parentPhone) {
+      continue;
+    }
+
+    const key = `${sFirst}|${sLast}|${pFirst}|${pLast}|${pEmail}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueRows.push(row);
+    }
+  }
+
   const stats = {
     totalRows: rows.length,
     createdParents: 0,
@@ -48,24 +72,19 @@ export async function importStudentsAction(
   };
   const errors: ImportResult['errors'] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  for (let i = 0; i < uniqueRows.length; i++) {
+    const row = uniqueRows[i];
     const rowNumber = i + 1;
 
     try {
       // Basic sanitisation & fallbacks to force the information through
-      let studentFirstName = row.studentFirstName?.trim() || '';
-      let studentLastName = row.studentLastName?.trim() || '';
-      let parentFirstName = row.parentFirstName?.trim() || '';
-      let parentLastName = row.parentLastName?.trim() || '';
+      let studentFirstName = row.studentFirstName?.trim().replace(/\s+/g, ' ') || '';
+      let studentLastName = row.studentLastName?.trim().replace(/\s+/g, ' ') || '';
+      let parentFirstName = row.parentFirstName?.trim().replace(/\s+/g, ' ') || '';
+      let parentLastName = row.parentLastName?.trim().replace(/\s+/g, ' ') || '';
       let parentEmail = row.parentEmail?.trim().toLowerCase() || '';
       let parentPhone = row.parentPhone?.trim() || null;
       let schoolYear = row.studentSchoolYear?.trim() || '1';
-
-      // If the row is completely empty, skip it to avoid importing garbage
-      if (!studentFirstName && !studentLastName && !parentFirstName && !parentLastName && !parentEmail && !parentPhone) {
-        continue;
-      }
 
       // Fill missing student name parameters
       if (!studentFirstName && !studentLastName) {
@@ -86,11 +105,14 @@ export async function importStudentsAction(
       }
 
       // Fill/format missing or invalid parent email
+      let emailIsPlaceholder = false;
       if (!parentEmail) {
         parentEmail = `parent-${rowNumber}-${Date.now()}@asc-cms.local`;
+        emailIsPlaceholder = true;
       } else if (!parentEmail.includes('@')) {
         const cleanPart = parentEmail.replace(/[^a-z0-9._-]/g, '');
         parentEmail = `${cleanPart || `parent-${rowNumber}`}@asc-cms.local`;
+        emailIsPlaceholder = true;
       }
 
       // Safeguard database length limits by truncating values
@@ -143,19 +165,45 @@ export async function importStudentsAction(
       await db.transaction(async (tx) => {
         // 1. Resolve Parent
         let parentId: string;
-        const existingParent = await tx.query.parents.findFirst({
+        
+        // Match by email first (if email is NOT a generated placeholder)
+        let existingParent = emailIsPlaceholder ? null : await tx.query.parents.findFirst({
           where: and(
             eq(parents.organisationId, organisationId),
             ilike(parents.email, parentEmail)
           ),
         });
 
+        // Match by names if not found by email or if email is a placeholder
+        if (!existingParent) {
+          existingParent = await tx.query.parents.findFirst({
+            where: and(
+              eq(parents.organisationId, organisationId),
+              ilike(parents.firstName, parentFirstName),
+              ilike(parents.lastName, parentLastName)
+            ),
+          });
+        }
+
         if (existingParent) {
           parentId = existingParent.id;
           stats.matchedParents++;
-          // Optionally update phone if not set
+
+          const isExistingPlaceholder = existingParent.email?.endsWith('@asc-cms.local');
+          const isNewRealEmail = parentEmail && !parentEmail.endsWith('@asc-cms.local');
+          const updateData: Partial<typeof parents.$inferInsert> = {};
+
+          // Update parent's email if it was previously a placeholder and we now have a real email
+          if (isExistingPlaceholder && isNewRealEmail) {
+            updateData.email = parentEmail;
+          }
+          // Update parent's phone number if not set
           if (!existingParent.phone && parentPhone) {
-            await tx.update(parents).set({ phone: parentPhone }).where(eq(parents.id, parentId));
+            updateData.phone = parentPhone;
+          }
+
+          if (Object.keys(updateData).length > 0) {
+            await tx.update(parents).set(updateData).where(eq(parents.id, parentId));
           }
         } else {
           const [newParent] = await tx
