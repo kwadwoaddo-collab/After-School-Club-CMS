@@ -31,8 +31,15 @@ export async function GET(request: NextRequest) {
     // new Date('2026-03-22') parses as UTC midnight, but .getDay() uses LOCAL time.
     // On a BST (UTC+1) server, Sunday 00:00 UTC = Saturday 23:00 local → wrong day fetched.
     // Constructing Date from explicit year/month/day avoids UTC interpretation entirely.
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const localDate = new Date(year, month - 1, day); // month is 0-indexed in JS
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) {
+      return NextResponse.json({ error: 'date must be in YYYY-MM-DD format' }, { status: 400 });
+    }
+    const [year, month, day] = parts.map(Number);
+    const localDate = new Date(year, month - 1, day);
+    if (isNaN(localDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid date parameter' }, { status: 400 });
+    }
 
     const availabilityService = new AvailabilityService();
     const slots = await availabilityService.getAvailableSlots({

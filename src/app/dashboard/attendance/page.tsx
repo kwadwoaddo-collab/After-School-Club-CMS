@@ -22,7 +22,13 @@ export default async function AttendancePage(props: {
     const centreIds = orgCentres.map(c => c.id);
     const activeCentreId = await resolveActiveCentreId(rawParams.centre, centreIds);
 
-    const targetDate = rawParams.date ? new Date(rawParams.date) : new Date();
+    let targetDate = new Date();
+    if (rawParams.date) {
+        const parsed = new Date(rawParams.date);
+        if (!isNaN(parsed.getTime())) {
+            targetDate = parsed;
+        }
+    }
     const dayStart = startOfDay(targetDate);
     const dayEnd = endOfDay(targetDate);
     const prevDay = format(subDays(targetDate, 1), 'yyyy-MM-dd');
