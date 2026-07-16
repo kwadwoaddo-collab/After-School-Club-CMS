@@ -110,58 +110,67 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     </div>
                     Back to Ledger
                 </Link>
-                <div className="flex items-center gap-3">
+                <div className="flex items-end gap-3">
                     {isClient ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-end gap-3">
                             {/* Invoice Buttons */}
-                            <div className="flex items-center rounded-xl overflow-hidden border border-border">
-                                <button 
-                                    onClick={() => setPreviewType('invoice')}
-                                    className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-foreground hover:bg-surface-container-highest transition-all border-r border-border"
-                                >
-                                    <Eye className="w-3.5 h-3.5" /> Preview
-                                </button>
-                                <PDFDownloadLink
-                                    document={<InvoiceTemplate invoice={invoice} organisationName={organisationName} />}
-                                    fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
-                                    className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-foreground hover:bg-surface-container-highest transition-all"
-                                >
-                                    {({ loading }) => (
-                                        <>
-                                            <Download className="w-3.5 h-3.5 text-primary" />
-                                            {loading ? '...' : 'PDF'}
-                                        </>
-                                    )}
-                                </PDFDownloadLink>
-                            </div>
-                            
-                            {/* Receipt Buttons */}
-                            {invoice.payments.length > 0 && (
-                                <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest pl-1">invoice</span>
+                                <div className="flex items-center rounded-xl overflow-hidden border border-border">
                                     <button 
-                                        onClick={() => setPreviewType('receipt')}
-                                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
+                                        onClick={() => setPreviewType('invoice')}
+                                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-foreground hover:bg-surface-container-highest transition-all border-r border-border"
                                     >
-                                        <Eye className="w-3.5 h-3.5" /> Receipt
+                                        <Eye className="w-3.5 h-3.5" /> Preview
                                     </button>
                                     <PDFDownloadLink
-                                        document={<ReceiptTemplate invoice={invoice} organisationName={organisationName} />}
-                                        fileName={`Receipt-${invoice.invoiceNumber}.pdf`}
-                                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all"
+                                        document={<InvoiceTemplate invoice={invoice} organisationName={organisationName} />}
+                                        fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
+                                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-foreground hover:bg-surface-container-highest transition-all"
                                     >
                                         {({ loading }) => (
                                             <>
-                                                <Download className="w-3.5 h-3.5" />
+                                                <Download className="w-3.5 h-3.5 text-primary" />
                                                 {loading ? '...' : 'PDF'}
                                             </>
                                         )}
                                     </PDFDownloadLink>
                                 </div>
+                            </div>
+                            
+                            {/* Receipt Buttons */}
+                            {invoice.payments.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest pl-1">receipt</span>
+                                    <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
+                                        <button 
+                                            onClick={() => setPreviewType('receipt')}
+                                            className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
+                                        >
+                                            <Eye className="w-3.5 h-3.5" /> Receipt
+                                        </button>
+                                        <PDFDownloadLink
+                                            document={<ReceiptTemplate invoice={invoice} organisationName={organisationName} />}
+                                            fileName={`Receipt-${invoice.invoiceNumber}.pdf`}
+                                            className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all"
+                                        >
+                                            {({ loading }) => (
+                                                <>
+                                                    <Download className="w-3.5 h-3.5" />
+                                                    {loading ? '...' : 'PDF'}
+                                                </>
+                                            )}
+                                        </PDFDownloadLink>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-border rounded-xl text-sm font-bold text-muted-foreground opacity-50">
-                            <Download className="w-4 h-4" /> Loading...
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest pl-1">invoice</span>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-border rounded-xl text-sm font-bold text-muted-foreground opacity-50">
+                                <Download className="w-4 h-4" /> Loading...
+                            </div>
                         </div>
                     )}
                     {remainingBalance > 0 && (
