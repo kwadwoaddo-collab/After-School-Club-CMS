@@ -71,7 +71,12 @@ export default async function StudentsPage(props: {
     if (activeCentreId !== 'all') {
         conditions.push(eq(children.centreId, activeCentreId));
     } else {
-        conditions.push(inArray(children.centreId, accessibleCentreIds));
+        conditions.push(
+            or(
+                inArray(children.centreId, accessibleCentreIds),
+                sql`${children.centreId} IS NULL`
+            )!
+        );
     }
 
     if (searchParams.search) {

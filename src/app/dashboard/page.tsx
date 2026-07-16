@@ -7,7 +7,7 @@ import {
     bookings, bookingAttendees, registrations, registrationChildren,
 } from '@/db/schema';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import { eq, desc, asc, sql, and, gte, lt, lte, inArray } from 'drizzle-orm';
+import { eq, desc, asc, sql, and, gte, lt, lte, inArray, or } from 'drizzle-orm';
 import Link from 'next/link';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
@@ -78,7 +78,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const childrenCentreCondition = activeCentreId !== 'all'
         ? eq(children.centreId, activeCentreId)
-        : (hasCentres ? inArray(children.centreId, accessibleCentreIds) : sql`false`);
+        : (hasCentres 
+            ? or(
+                inArray(children.centreId, accessibleCentreIds),
+                sql`${children.centreId} IS NULL`
+              )
+            : sql`false`);
 
     const bookingsCentreCondition = activeCentreId !== 'all'
         ? eq(bookings.centreId, activeCentreId)

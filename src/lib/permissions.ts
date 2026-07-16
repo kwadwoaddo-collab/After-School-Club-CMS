@@ -10,7 +10,7 @@
 
 import { db } from '@/db';
 import { users, centres, centreMemberships, children } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, or, sql } from 'drizzle-orm';
 
 /**
  * Get all centres a user has access to
@@ -273,7 +273,10 @@ export async function getVisibleChildIds(
         .where(
             and(
                 eq(children.organisationId, orgId),
-                inArray(children.centreId, accessibleCentreIds)
+                or(
+                    inArray(children.centreId, accessibleCentreIds),
+                    sql`${children.centreId} IS NULL`
+                )
             )
         );
 
