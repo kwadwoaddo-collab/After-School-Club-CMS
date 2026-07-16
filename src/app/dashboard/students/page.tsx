@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
-import { eq, desc, sql, inArray, and, or, ilike } from 'drizzle-orm';
+import { eq, desc, asc, sql, inArray, and, or, ilike } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown, Upload } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
@@ -122,7 +122,7 @@ export default async function StudentsPage(props: {
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(and(...conditions))
-        .orderBy(desc(children.createdAt));
+        .orderBy(asc(children.firstName), asc(children.lastName));
 
     // ── Booking stats for visible students ──────────────────────────────────
     const bookingData = await db
