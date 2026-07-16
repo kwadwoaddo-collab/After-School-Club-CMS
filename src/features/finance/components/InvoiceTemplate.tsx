@@ -24,6 +24,13 @@ interface InvoiceTemplateProps {
 
 export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplateProps) => {
     const { parent, child, centre, amount, invoiceNumber, invoiceDate, dueDate, billingPeriodStart, billingPeriodEnd, notes, childDisplayName } = invoice;
+    const safeFormatDate = (date: any, formatStr: string) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return '-';
+        return format(d, formatStr);
+    };
+
     // Parse address into lines for multi-line display
     const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
     // Fallback to child.parent if parent relation is missing (legacy support)
@@ -55,11 +62,11 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>DATE:</Text>
-                            <Text style={styles.infoValue}>{format(new Date(invoiceDate), 'dd/MM/yyyy')}</Text>
+                            <Text style={styles.infoValue}>{safeFormatDate(invoiceDate, 'dd/MM/yyyy')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>DUE DATE:</Text>
-                            <Text style={styles.infoValue}>{format(new Date(dueDate), 'dd/MM/yyyy')}</Text>
+                            <Text style={styles.infoValue}>{safeFormatDate(dueDate, 'dd/MM/yyyy')}</Text>
                         </View>
                     </View>
                 </View>
@@ -78,7 +85,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={styles.sectionTitle}>Period Description</Text>
                         <Text style={{ fontWeight: 'bold' }}>Reference: {invoiceNumber}</Text>
                         {displayChildName && <Text>Child: {displayChildName}</Text>}
-                        <Text>Period: {billingPeriodStart ? format(new Date(billingPeriodStart), 'MMM d') : '-'} to {billingPeriodEnd ? format(new Date(billingPeriodEnd), 'MMM d, yyyy') : '-'}</Text>
+                        <Text>Period: {safeFormatDate(billingPeriodStart, 'MMM d')} to {safeFormatDate(billingPeriodEnd, 'MMM d, yyyy')}</Text>
                         <Text>Centre: {centre?.name || 'HASC Centre'}</Text>
                     </View>
                 </View>

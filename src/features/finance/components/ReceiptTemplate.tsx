@@ -26,10 +26,19 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
     // Parse address into lines for multi-line display
     const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
     
+    const safeFormatDate = (date: any, formatStr: string) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return '-';
+        return format(d, formatStr);
+    };
+
     // Sort payments by date desc (latest first)
-    const sortedPayments = [...(payments ?? [])].sort((a: any, b: any) => 
-        new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
-    );
+    const sortedPayments = [...(payments ?? [])].sort((a: any, b: any) => {
+        const tA = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+        const tB = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+        return tB - tA;
+    });
 
     const totalPaid = (payments ?? []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     const invoiceAmount = Number(invoice.amount);
@@ -57,7 +66,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>RECEIPT DATE:</Text>
-                            <Text style={styles.infoValue}>{format(new Date(), 'dd/MM/yyyy')}</Text>
+                            <Text style={styles.infoValue}>{safeFormatDate(new Date(), 'dd/MM/yyyy')}</Text>
                         </View>
                     </View>
                 </View>
@@ -102,7 +111,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     </View>
                     {sortedPayments.map((p: any, idx: number) => (
                         <View key={p.id || idx} style={styles.tableRow}>
-                            <Text style={styles.col1}>{format(new Date(p.recordedAt), 'dd MMMM yyyy')}</Text>
+                            <Text style={styles.col1}>{safeFormatDate(p.recordedAt, 'dd MMMM yyyy')}</Text>
                             <Text style={styles.col2}>{p.method?.replace(/_/g, ' ')?.toUpperCase() || 'N/A'}</Text>
                             <Text style={styles.col3}>£{Number(p.amount).toFixed(2)}</Text>
                         </View>
