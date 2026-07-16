@@ -95,7 +95,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                         type="text"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder="Search student or parent name, contact..."
+                        placeholder="Search by student, parent, family/last name, email, or contact..."
                         className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-secondary/50 border-border"
                     />
                     {search && (
