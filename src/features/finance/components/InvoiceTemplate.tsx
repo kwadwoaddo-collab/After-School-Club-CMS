@@ -39,6 +39,12 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
         ? `${child.firstName} ${child.lastName}`
         : (childDisplayName || null);
 
+    const displayNotes = notes && 
+        !notes.trim().startsWith('Monthly tuition') && 
+        !notes.trim().startsWith('After School Club Childcare Services')
+        ? notes.trim()
+        : '';
+
     return (
         <Document title={`Invoice-${invoiceNumber}`}>
             <Page size="A4" style={styles.page}>
@@ -99,12 +105,12 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={styles.col1}>Childcare services</Text>
                         <Text style={styles.col3}>£{Number(amount).toFixed(2)}</Text>
                     </View>
-                    {notes && (
+                    {displayNotes ? (
                         <View style={styles.tableRow}>
-                            <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>Note: {notes}</Text>
+                            <Text style={[styles.col1, { color: '#64748b', fontSize: 8 }]}>Note: {displayNotes}</Text>
                             <Text style={styles.col3}></Text>
                         </View>
-                    )}
+                    ) : null}
                 </View>
 
 

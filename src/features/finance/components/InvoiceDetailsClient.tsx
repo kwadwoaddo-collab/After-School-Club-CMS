@@ -12,7 +12,7 @@ import { InvoiceTemplate } from './InvoiceTemplate';
 import { ReceiptTemplate } from './ReceiptTemplate';
 import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
-import { deleteInvoice, voidInvoice, updateInvoiceDate } from '../actions';
+import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes } from '../actions';
 import { toast } from 'react-hot-toast';
 
 interface InvoiceDetailsClientProps {
@@ -43,6 +43,33 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             toast.error(err.message || 'Failed to update date');
         } finally {
             setIsUpdatingDate(false);
+        }
+    };
+
+    const getCleanNotes = (rawNotes: string | null) => {
+        if (!rawNotes) return '';
+        const n = rawNotes.trim();
+        if (n.startsWith('Monthly tuition') || n.startsWith('After School Club Childcare Services')) {
+            return '';
+        }
+        return n;
+    };
+
+    const [isEditingNotes, setIsEditingNotes] = useState(false);
+    const [notesValue, setNotesValue] = useState(getCleanNotes(invoice.notes));
+    const [isUpdatingNotes, setIsUpdatingNotes] = useState(false);
+
+    const handleSaveNotes = async () => {
+        setIsUpdatingNotes(true);
+        try {
+            await updateInvoiceNotes(invoice.id, notesValue || null);
+            setIsEditingNotes(false);
+            router.refresh();
+            toast.success('Invoice notes updated');
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to update notes');
+        } finally {
+            setIsUpdatingNotes(false);
         }
     };
 
@@ -268,11 +295,53 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 </div>
                             </div>
                             <div className="flex-1 space-y-4">
-                                <h3 className="text-xs font-black text-foreground-variant uppercase tracking-widest">Notes</h3>
-                                <div className="bg-secondary/60 rounded-3xl p-6 border border-border min-h-[100px]">
-                                    <p className="text-sm text-foreground-variant leading-relaxed">
-                                        {invoice.notes || 'No notes provided for this invoice.'}
-                                    </p>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-black text-foreground-variant uppercase tracking-widest">Notes</h3>
+                                    {!isEditingNotes && (
+                                        <button 
+                                            onClick={() => setIsEditingNotes(true)}
+                                            className="text-xs font-black text-primary hover:underline flex items-center gap-1"
+                                        >
+                                            <Edit2 className="w-3 h-3" /> Edit Note
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="bg-secondary/60 rounded-3xl p-6 border border-border min-h-[100px] relative">
+                                    {isEditingNotes ? (
+                                        <div className="space-y-4">
+                                            <textarea 
+                                                value={notesValue}
+                                                disabled={isUpdatingNotes}
+                                                onChange={(e) => setNotesValue(e.target.value)}
+                                                rows={3}
+                                                className="w-full bg-surface-container-low border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary scrollbar-hide"
+                                                placeholder="Add custom notes visible on the PDF..."
+                                            />
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button 
+                                                    onClick={() => {
+                                                        setIsEditingNotes(false);
+                                                        setNotesValue(getCleanNotes(invoice.notes));
+                                                    }}
+                                                    disabled={isUpdatingNotes}
+                                                    className="px-4 py-2 bg-secondary text-foreground-variant rounded-xl text-xs font-bold hover:text-foreground transition-all"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button 
+                                                    onClick={handleSaveNotes}
+                                                    disabled={isUpdatingNotes}
+                                                    className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-blue-600 transition-all text-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                                                >
+                                                    {isUpdatingNotes ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-foreground-variant leading-relaxed whitespace-pre-wrap">
+                                            {getCleanNotes(invoice.notes) || 'No notes provided for this invoice.'}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

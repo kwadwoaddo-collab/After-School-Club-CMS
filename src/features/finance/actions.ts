@@ -503,6 +503,53 @@ export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date)
     return result;
 }
 
+export async function updateInvoiceNotes(invoiceId: string, notes: string | null) {
+    const session = await auth();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const invoice = await db.query.invoices.findFirst({
+            where: and(
+                eq(invoices.id, invoiceId),
+                eq(invoices.organisationId, orgId)
+            ),
+            columns: { centreId: true }
+        });
+        if (!invoice || !accessibleCentreIds.includes(invoice.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
+
+    const result = await db.transaction(async (tx) => {
+        const [updatedInvoice] = await tx
+            .update(invoices)
+            .set({ notes: notes || null, updatedAt: new Date() })
+            .where(and(
+                eq(invoices.id, invoiceId),
+                eq(invoices.organisationId, orgId)
+            ))
+            .returning();
+
+        if (!updatedInvoice) throw new Error('Invoice not found');
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'invoice_notes_updated',
+            eventData: JSON.stringify({ invoiceId, notes })
+        });
+
+        return updatedInvoice;
+    });
+
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    revalidatePath('/dashboard/finance');
+    return result;
+}
+
 export async function deleteInvoice(invoiceId: string) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
