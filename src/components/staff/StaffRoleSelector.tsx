@@ -27,11 +27,11 @@ const ROLES: RoleOption[] = [
         description: 'Club staff with limited access to their sessions only.',
         permissions: ['View assigned sessions', 'Mark attendance', 'Add session feedback', 'Access kiosk'],
         icon: <GraduationCap className="w-5 h-5" />,
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/5',
-        border: 'border-[#424754]/20',
-        activeBg: 'bg-emerald-500/10',
-        activeBorder: 'border-emerald-500/40',
+        color: 'text-emerald-700',
+        bg: 'bg-emerald-50/30',
+        border: 'border-gray-200',
+        activeBg: 'bg-emerald-50',
+        activeBorder: 'border-emerald-200',
     },
     {
         value: 'FRONT_DESK',
@@ -39,11 +39,11 @@ const ROLES: RoleOption[] = [
         description: 'Reception staff who manage daily check-ins and bookings.',
         permissions: ['View & manage bookings', 'Check-in students', 'View students', 'Attendance & kiosk'],
         icon: <MonitorSmartphone className="w-5 h-5" />,
-        color: 'text-[#adc6ff]',
-        bg: 'bg-[#adc6ff]/5',
-        border: 'border-[#424754]/20',
-        activeBg: 'bg-[#adc6ff]/10',
-        activeBorder: 'border-[#adc6ff]/40',
+        color: 'text-blue-700',
+        bg: 'bg-blue-50/30',
+        border: 'border-gray-200',
+        activeBg: 'bg-blue-50',
+        activeBorder: 'border-blue-200',
     },
     {
         value: 'MANAGER',
@@ -51,11 +51,11 @@ const ROLES: RoleOption[] = [
         description: 'Senior staff with broad access to manage day-to-day operations.',
         permissions: ['Manage bookings & students', 'Attendance & kiosk', 'View registrations', 'View reports'],
         icon: <Briefcase className="w-5 h-5" />,
-        color: 'text-[#d0bcff]',
-        bg: 'bg-[#d0bcff]/5',
-        border: 'border-[#424754]/20',
-        activeBg: 'bg-[#d0bcff]/10',
-        activeBorder: 'border-[#d0bcff]/40',
+        color: 'text-violet-700',
+        bg: 'bg-violet-50/30',
+        border: 'border-gray-200',
+        activeBg: 'bg-violet-50',
+        activeBorder: 'border-violet-200',
     },
     {
         value: 'ORG_OWNER',
@@ -63,11 +63,11 @@ const ROLES: RoleOption[] = [
         description: 'Full administrative access to everything including billing and settings.',
         permissions: ['Full system access', 'Manage all centres & staff', 'Finance & billing', 'All reports & settings'],
         icon: <Crown className="w-5 h-5" />,
-        color: 'text-amber-400',
-        bg: 'bg-amber-500/5',
-        border: 'border-[#424754]/20',
-        activeBg: 'bg-amber-500/10',
-        activeBorder: 'border-amber-500/40',
+        color: 'text-amber-700',
+        bg: 'bg-amber-50/30',
+        border: 'border-gray-200',
+        activeBg: 'bg-amber-50',
+        activeBorder: 'border-amber-200',
     },
 ];
 
@@ -108,18 +108,18 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
     };
 
     return (
-        <div className="bg-[#1a1d23] rounded-[24px] p-6 border border-[#424754]/15 space-y-5">
+        <div className="bg-white rounded-[24px] p-6 border border-gray-200 space-y-5 shadow-sm">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <ShieldAlert className="w-5 h-5 text-[#adc6ff]" />
+                    <ShieldAlert className="w-5 h-5 text-blue-500" />
                     <div>
-                        <h2 className="font-bold text-[#e5e2e1]">Role & Access Level</h2>
-                        <p className="text-xs text-[#8c909f] mt-0.5">Select the role that matches this staff member&apos;s responsibilities</p>
+                        <h2 className="font-bold text-gray-900">Role & Access Level</h2>
+                        <p className="text-xs text-gray-500 font-semibold mt-0.5">Select the role that matches this staff member&apos;s responsibilities</p>
                     </div>
                 </div>
                 {saved && (
-                    <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold animate-in fade-in duration-300">
+                    <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold animate-in fade-in duration-300">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Saved
                     </span>
                 )}
@@ -137,7 +137,7 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
                             className={`relative text-left p-4 rounded-2xl border transition-all duration-200 ${
                                 isActive
                                     ? `${role.activeBg} ${role.activeBorder} ring-1 ${role.activeBorder}`
-                                    : `${role.bg} ${role.border} hover:border-[#adc6ff]/20 hover:bg-white/5`
+                                    : `bg-white ${role.border} hover:border-gray-300 hover:bg-gray-50`
                             }`}
                         >
                             {/* Selected checkmark */}
@@ -148,23 +148,23 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
                             )}
 
                             {/* Icon + Label */}
-                            <div className={`flex items-center gap-2 mb-2 ${isActive ? role.color : 'text-[#8c909f]'}`}>
+                            <div className={`flex items-center gap-2 mb-2 ${isActive ? role.color : 'text-gray-400'}`}>
                                 {role.icon}
-                                <span className={`text-sm font-bold ${isActive ? role.color : 'text-[#e5e2e1]'}`}>
+                                <span className={`text-sm font-bold ${isActive ? role.color : 'text-gray-900'}`}>
                                     {role.label}
                                 </span>
                             </div>
 
                             {/* Description */}
-                            <p className="text-[11px] text-[#8c909f] leading-relaxed mb-3">
+                            <p className="text-[11px] text-gray-500 font-semibold leading-relaxed mb-3">
                                 {role.description}
                             </p>
 
                             {/* Permissions list */}
                             <ul className="space-y-1">
                                 {role.permissions.map((perm) => (
-                                    <li key={perm} className={`flex items-center gap-1.5 text-[11px] font-medium ${isActive ? 'text-white/70' : 'text-[#8c909f]/60'}`}>
-                                        <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isActive ? role.color : 'bg-[#424754]'}`} />
+                                    <li key={perm} className={`flex items-center gap-1.5 text-[11px] font-medium ${isActive ? 'text-gray-700' : 'text-gray-400'}`}>
+                                        <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isActive ? role.color : 'bg-gray-300'}`} />
                                         {perm}
                                     </li>
                                 ))}
@@ -176,9 +176,9 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
 
             {/* Owner Warning */}
             {selectedRole === 'ORG_OWNER' && selectedRole !== currentRole && (
-                <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 animate-in fade-in duration-300">
-                    <Crown className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-400 leading-relaxed">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 animate-in fade-in duration-300">
+                    <Crown className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-700 font-semibold leading-relaxed">
                         <strong>Heads up:</strong> Granting Owner access gives this person full control over the organisation — including billing, settings, and the ability to manage other staff. Only do this for trusted administrators.
                     </p>
                 </div>
@@ -190,14 +190,14 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
                     <button
                         onClick={() => setSelectedRole(currentRole)}
                         disabled={isPending}
-                        className="px-4 py-2 rounded-xl bg-white/5 border border-[#424754]/20 text-white/60 hover:text-white text-sm font-bold transition-all"
+                        className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-bold transition-all"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={isPending}
-                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#adc6ff] to-[#4d8eff] hover:opacity-90 text-slate-950 text-sm font-black transition-all flex items-center gap-2 shadow-[0_4px_16px_rgba(77,142,255,0.25)]"
+                        className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-black transition-all flex items-center gap-2 shadow-sm shadow-blue-100"
                     >
                         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         Save Role Change

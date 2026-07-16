@@ -40,22 +40,22 @@ export default async function EditStaffPage({ params }: PageProps) {
     // Role badge style: Gold=Owner, Purple=Manager, Blue=FrontDesk, Green=Tutor
     const getRoleStyle = (role: string) => {
         const styles: Record<string, string> = {
-            ORG_OWNER:  'bg-amber-500/10  text-amber-400  border-amber-500/20',
-            MANAGER:    'bg-[#d0bcff]/10  text-[#d0bcff]  border-[#d0bcff]/20',
-            FRONT_DESK: 'bg-[#adc6ff]/10 text-[#adc6ff]  border-[#adc6ff]/20',
-            TUTOR:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            ORG_OWNER:  'bg-amber-50  text-amber-700  border-amber-200',
+            MANAGER:    'bg-violet-50 text-violet-700 border-violet-200',
+            FRONT_DESK: 'bg-blue-50   text-blue-700   border-blue-200',
+            TUTOR:      'bg-emerald-50 text-emerald-700 border-emerald-200',
         };
-        return styles[role] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+        return styles[role] || 'bg-gray-50 text-gray-700 border-gray-200';
     };
 
     const getRoleAvatarStyle = (role: string) => {
         const styles: Record<string, string> = {
-            ORG_OWNER:  'from-amber-500/40 to-amber-500/20 text-amber-400',
-            MANAGER:    'from-[#d0bcff]/40 to-[#d0bcff]/20 text-[#d0bcff]',
-            FRONT_DESK: 'from-[#adc6ff]/40 to-[#adc6ff]/20 text-[#adc6ff]',
-            TUTOR:      'from-emerald-500/40 to-emerald-500/20 text-emerald-400',
+            ORG_OWNER:  'from-amber-100 to-amber-50 text-amber-700 border border-amber-200',
+            MANAGER:    'from-violet-100 to-violet-50 text-violet-700 border border-violet-200',
+            FRONT_DESK: 'from-blue-100 to-blue-50 text-blue-700 border border-blue-200',
+            TUTOR:      'from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200',
         };
-        return styles[role] || 'from-gray-500/40 to-gray-500/20 text-gray-400';
+        return styles[role] || 'from-gray-100 to-gray-50 text-gray-700 border border-gray-200';
     };
 
     const getRoleIcon = (role: string, className?: string) => {
@@ -78,23 +78,27 @@ export default async function EditStaffPage({ params }: PageProps) {
         : staffMember.email.charAt(0).toUpperCase();
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Back Button */}
-            <Link href="/dashboard/staff" className="inline-flex items-center gap-2 text-[#8c909f] hover:text-white font-medium transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Team
-            </Link>
+            <div className="flex items-center justify-between">
+                <Link href="/dashboard/staff" className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                        <ArrowLeft className="w-4 h-4 text-gray-600" />
+                    </div>
+                    Back to Team
+                </Link>
+            </div>
 
             {/* Profile Header */}
-            <div className="bg-[#1a1d23] rounded-[32px] p-8 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className="bg-white rounded-[32px] p-8 border border-gray-200 shadow-sm">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     {/* Avatar */}
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center text-2xl font-bold flex-shrink-0 ${getRoleAvatarStyle(staffMember.role)}`}>
+                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center text-2xl font-black flex-shrink-0 ${getRoleAvatarStyle(staffMember.role)}`}>
                         {initials}
                     </div>
                     {/* Info */}
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-[#e5e2e1] tracking-tight mb-2">
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
                             {staffMember.name || 'Unnamed User'}
                         </h1>
                         <div className="flex flex-wrap items-center gap-3 mb-3">
@@ -103,15 +107,15 @@ export default async function EditStaffPage({ params }: PageProps) {
                                 {staffMember.role.replace(/_/g, ' ')}
                             </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-[#8c909f]">
-                            <span className="flex items-center gap-1.5"><Mail className="w-4 h-4" /> {staffMember.email}</span>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 font-semibold">
+                            <span className="flex items-center gap-1.5"><Mail className="w-4 h-4 text-gray-400" /> {staffMember.email}</span>
                             {staffMember.role === 'ORG_OWNER' ? (
-                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> All Centres</span>
+                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-gray-400" /> All Centres</span>
                             ) : (
-                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {staffMember.memberships.length} Centre{staffMember.memberships.length !== 1 ? 's' : ''} Assigned</span>
+                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-gray-400" /> {staffMember.memberships.length} Centre{staffMember.memberships.length !== 1 ? 's' : ''} Assigned</span>
                             )}
                             <span className="flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4" />
+                                <Calendar className="w-4 h-4 text-gray-400" />
                                 Joined {format(new Date(staffMember.createdAt), 'MMMM d, yyyy')}
                             </span>
                         </div>
@@ -128,19 +132,25 @@ export default async function EditStaffPage({ params }: PageProps) {
 
             {/* Centre Assignment */}
             {staffMember.role === 'ORG_OWNER' ? (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6">
-                    <h3 className="font-bold text-amber-400 mb-2">Organization Owner — Full Access</h3>
-                    <p className="text-sm text-amber-400/80 leading-relaxed">
-                        ORG_OWNER users automatically have full access to all centres. Centre assignments are not applicable.
-                    </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-3">
+                    <Crown className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <h3 className="font-bold text-amber-800 text-sm">Organization Owner — Full Access</h3>
+                        <p className="text-xs text-amber-700 font-medium leading-relaxed mt-1">
+                            ORG_OWNER users automatically have full access to all centres. Centre assignments are not applicable.
+                        </p>
+                    </div>
                 </div>
             ) : (
                 <>
-                    <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6">
-                        <h3 className="font-bold text-primary mb-2">Centre-Level Access Control</h3>
-                        <p className="text-sm text-primary/80 leading-relaxed">
-                            This staff member will only see bookings, students, and data from the centres you assign below.
-                        </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <h3 className="font-bold text-blue-800 text-sm">Centre-Level Access Control</h3>
+                            <p className="text-xs text-blue-600 font-medium leading-relaxed mt-1">
+                                This staff member will only see bookings, students, and data from the centres you assign below.
+                            </p>
+                        </div>
                     </div>
                     <StaffCentreAssignment
                         userId={userId}
