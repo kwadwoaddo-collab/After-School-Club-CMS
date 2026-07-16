@@ -175,6 +175,22 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
+    const userId = session.user.id;
+    const userRole = (session.user as any).role;
+
+    // Enforce centre-level boundaries: non-owners must only generate links for centres they can access
+    let targetCentreId = centreId;
+    if (userRole !== 'ORG_OWNER') {
+        const { canUserAccessCentre, getUserAccessibleCentreIds } = await import('@/lib/permissions');
+        const hasAccess = await canUserAccessCentre(userId, targetCentreId);
+        if (!hasAccess) {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
+            if (accessibleCentreIds.length === 0) {
+                throw new Error('Forbidden: You are not assigned to any centre');
+            }
+            targetCentreId = accessibleCentreIds[0];
+        }
+    }
 
     // Fetch org slug and centre slug
     const org = await db.query.organisations.findFirst({
@@ -184,7 +200,7 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     if (!org) throw new Error('Organisation not found');
 
     const centre = await db.query.centres.findFirst({
-        where: and(eq(centres.id, centreId), eq(centres.organisationId, orgId)),
+        where: and(eq(centres.id, targetCentreId), eq(centres.organisationId, orgId)),
         columns: { slug: true },
     });
     if (!centre) throw new Error('Centre not found');
@@ -192,10 +208,11 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     // Create secure prefill token
     const jose = await import('jose');
     const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
-    const token = await new jose.SignJWT({ parentId, centreId })
+    const token = await new jose.SignJWT({ parentId, centreId: targetCentreId })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('30d') // prefill link expires in 30 days
         .sign(secret);
+
 
     // Build the absolute registration URL
     const { headers } = await import('next/headers');
