@@ -602,7 +602,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         size="sm"
                                                     >
                                                         <div className="w-full h-full bg-accent-violet/10 flex items-center justify-center text-accent-violet font-bold">
-                                                            {b.childFirst[0]}{b.childLast[0]}
+                                                            {(b.childFirst || '')[0] || ''}{(b.childLast || '')[0] || ''}
                                                         </div>
                                                     </AttendanceRadial>
                                                     <div>
@@ -715,7 +715,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                        {r.childFirst[0]}{r.childLast[0]}
+                                                        {(r.childFirst || '')[0] || ''}{(r.childLast || '')[0] || ''}
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-2">

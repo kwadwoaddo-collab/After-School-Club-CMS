@@ -186,7 +186,7 @@ function StudentCard({
     };
 
     const hasAlert = !!attendee.notes;
-    const initials = `${attendee.firstName[0]}${attendee.lastName[0]}`.toUpperCase();
+    const initials = `${(attendee.firstName || '')[0] || ''}${(attendee.lastName || '')[0] || ''}`.toUpperCase() || '??';
 
     const statusStyle = {
         present: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },

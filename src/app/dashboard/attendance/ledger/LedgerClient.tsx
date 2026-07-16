@@ -148,7 +148,7 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                         entry.netBalance < 0 ? 'bg-red-50 text-red-600' :
                         entry.netBalance > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
                     }`}>
-                        {entry.firstName[0]}{entry.lastName[0]}
+                        {(entry.firstName || '')[0] || ''}{(entry.lastName || '')[0] || ''}
                     </div>
 
                     {/* Name & schedule */}

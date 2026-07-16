@@ -65,7 +65,7 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
                 </Link>
                 <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 text-2xl font-black">
-                        {parent.firstName[0]}{parent.lastName[0]}
+                        {(parent.firstName || '')[0] || ''}{(parent.lastName || '')[0] || ''}
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-white tracking-tight">

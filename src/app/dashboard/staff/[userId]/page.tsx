@@ -74,8 +74,8 @@ export default async function EditStaffPage({ params }: PageProps) {
 
 
     const initials = staffMember.name
-        ? staffMember.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-        : staffMember.email.charAt(0).toUpperCase();
+        ? staffMember.name.split(' ').map((n: string) => n ? n[0] : '').filter(Boolean).join('').toUpperCase().slice(0, 2)
+        : (staffMember.email || 'S').charAt(0).toUpperCase();
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">

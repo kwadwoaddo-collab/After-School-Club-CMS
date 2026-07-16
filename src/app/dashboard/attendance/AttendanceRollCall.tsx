@@ -199,7 +199,7 @@ function AttendeeCard({
         });
     };
 
-    const initials = `${attendee.firstName[0]}${attendee.lastName[0]}`.toUpperCase();
+    const initials = `${(attendee.firstName || '')[0] || ''}${(attendee.lastName || '')[0] || ''}`.toUpperCase() || '??';
 
     // ── Status-driven visual tokens ──────────────────────────────────────────
     // Left border bar + card background

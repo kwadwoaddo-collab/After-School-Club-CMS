@@ -73,10 +73,10 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
     const getStudentInfo = () => {
         if (booking.attendees && booking.attendees.length > 0) {
             const child = booking.attendees[0].child;
-            return { id: child.id, name: `${child.firstName} ${child.lastName}`, grade: child.schoolYear, dob: child.dateOfBirth, initials: `${child.firstName[0]}${child.lastName[0]}`.toUpperCase() };
+            return { id: child.id, name: `${child.firstName} ${child.lastName}`, grade: child.schoolYear, dob: child.dateOfBirth, initials: `${(child.firstName || '')[0] || ''}${(child.lastName || '')[0] || ''}`.toUpperCase() || '?' };
         }
         if (booking.child) {
-            return { id: booking.child.id, name: `${booking.child.firstName} ${booking.child.lastName}`, grade: booking.child.schoolYear, dob: booking.child.dateOfBirth, initials: `${booking.child.firstName[0]}${booking.child.lastName[0]}`.toUpperCase() };
+            return { id: booking.child.id, name: `${booking.child.firstName} ${booking.child.lastName}`, grade: booking.child.schoolYear, dob: booking.child.dateOfBirth, initials: `${(booking.child.firstName || '')[0] || ''}${(booking.child.lastName || '')[0] || ''}`.toUpperCase() || '?' };
         }
         return { id: '', name: 'Unknown Student', grade: null, dob: null, initials: '?' };
     };
@@ -157,7 +157,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 {booking.attendees && booking.attendees.length > 0 ? (
                     booking.attendees.map(attendee => {
                         const child = attendee.child;
-                        const initials = `${child.firstName[0]}${child.lastName[0]}`.toUpperCase();
+                        const initials = `${(child.firstName || '')[0] || ''}${(child.lastName || '')[0] || ''}`.toUpperCase() || '??';
                         return (
                             <div key={attendee.id} className="glassmorphic-card rounded-[32px] p-8">
                                 <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6">
