@@ -11,32 +11,32 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, icon: Icon, trend, trendType, color }: StatCardProps) {
     const colorClasses = {
-        violet: 'bg-purple-50 text-purple-600 border-purple-200',
-        cyan: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-        amber: 'bg-amber-50 text-amber-600 border-amber-200',
-        primary: 'bg-blue-50 text-blue-600 border-blue-200',
+        violet: 'bg-accent-violet/10 text-accent-violet border-border',
+        cyan: 'bg-accent-cyan/10 text-accent-cyan border-border',
+        amber: 'bg-accent-amber/10 text-accent-amber border-border',
+        primary: 'bg-primary/10 text-primary border-border',
     };
 
     const glowClasses = {
-        violet: 'border-purple-100 hover:shadow-purple-200/50',
-        cyan: 'border-cyan-100 hover:shadow-cyan-200/50',
-        amber: 'border-amber-100 hover:shadow-amber-200/50',
-        primary: 'border-blue-100 hover:shadow-blue-200/50',
+        violet: 'border-border hover:border-accent-violet/30 hover:shadow-md hover:shadow-accent-violet/10',
+        cyan: 'border-border hover:border-accent-cyan/30 hover:shadow-md hover:shadow-accent-cyan/10',
+        amber: 'border-border hover:border-accent-amber/30 hover:shadow-md hover:shadow-accent-amber/10',
+        primary: 'border-border hover:border-primary/30 hover:shadow-md hover:shadow-primary/10',
     };
 
     return (
         <div className={`glass-card p-6 rounded-3xl ${glowClasses[color]} border group hover:scale-[1.02] transition-all`}>
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm font-semibold text-slate-700 mb-1 uppercase tracking-wider">{title}</p>
-                    <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{value}</h3>
+                    <p className="text-sm font-semibold text-foreground mb-1 uppercase tracking-wider">{title}</p>
+                    <h3 className="text-3xl font-bold text-foreground tracking-tight">{value}</h3>
 
                     {trend && (
                         <div className="flex items-center gap-1 mt-3">
-                            <span className={`text-xs font-bold ${trendType === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            <span className={`text-xs font-bold ${trendType === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                 {trendType === 'up' ? '↑' : '↓'} {trend}
                             </span>
-                            <span className="text-xs text-slate-600 font-medium">vs last month</span>
+                            <span className="text-xs text-muted-foreground font-medium">vs last month</span>
                         </div>
                     )}
                 </div>

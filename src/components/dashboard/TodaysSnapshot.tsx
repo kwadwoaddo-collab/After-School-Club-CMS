@@ -4,6 +4,7 @@ import { eq, gte, lt, and, inArray, sql } from 'drizzle-orm';
 import { startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/components/ui/utils';
 import { CalendarCheck, Clock, UserCheck, UserX, Calendar } from 'lucide-react';
+import Link from 'next/link';
 
 interface TodaysSnapshotProps {
   activeCentreId: string;
@@ -96,30 +97,30 @@ export async function TodaysSnapshot({
       label: 'Confirmed',
       value: snapshot.confirmed,
       icon: CalendarCheck,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+      color: 'text-tertiary',
+      iconBg: 'bg-tertiary/10',
     },
     {
       label: 'Pending',
       value: snapshot.pending,
       icon: Clock,
-      color: 'text-amber-700 dark:text-amber-400',
-      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      color: 'text-accent-amber',
+      iconBg: 'bg-accent-amber/10',
     },
     {
       label: 'Checked In',
       value: snapshot.checkedIn,
       icon: UserCheck,
-      color: 'text-indigo-600 dark:text-indigo-400',
-      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+      color: 'text-primary',
+      iconBg: 'bg-primary/10',
     },
     {
       label: 'Not Arrived',
       value: snapshot.notArrived,
       icon: UserX,
       // Highlight in amber if there are unresolved confirmed bookings
-      color: snapshot.notArrived > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
-      iconBg: snapshot.notArrived > 0 ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'bg-secondary',
+      color: snapshot.notArrived > 0 ? 'text-accent-amber' : 'text-muted-foreground',
+      iconBg: snapshot.notArrived > 0 ? 'bg-accent-amber/10' : 'bg-secondary',
     },
   ];
 
@@ -134,44 +135,59 @@ export async function TodaysSnapshot({
           </span>
         </div>
         {/* Attendance rate — far more meaningful than capacity % */}
-        <div className="flex items-center gap-2">
-          {attendanceRate !== null ? (
-            <>
-              <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {attendanceRate !== null ? (
+              <>
                 <div
-                  className={cn(
-                    'h-full rounded-full transition-all duration-1000',
-                    attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 50 ? 'bg-amber-400' : 'bg-red-500'
-                  )}
-                  style={{ width: `${attendanceRate}%` }}
-                />
-              </div>
-              <span className="text-[10px] font-bold text-muted-foreground/80">
-                {attendanceRate}% attended
-              </span>
-            </>
-          ) : (
-            <span className="text-[10px] font-bold text-muted-foreground/60">No sessions yet</span>
-          )}
+                  className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden"
+                  title={`${snapshot.checkedIn} of ${snapshot.confirmed} attended`}
+                >
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all duration-1000',
+                      attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 50 ? 'bg-amber-400' : 'bg-red-500'
+                    )}
+                    style={{ width: `${attendanceRate}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground/80">
+                  {attendanceRate}% attended
+                </span>
+              </>
+            ) : (
+              <span className="text-[10px] font-bold text-muted-foreground/60">No sessions yet</span>
+            )}
+          </div>
+          <Link href="/dashboard/attendance" className="text-primary text-[11px] font-semibold hover:underline">
+            View Attendance →
+          </Link>
         </div>
       </div>
 
-      {/* Metrics grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
-        {items.map((item, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border rounded-xl hover:bg-secondary/40 transition-[background-color] duration-150 cursor-default">
-            <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
-              <item.icon className={cn('w-4 h-4', item.color)} />
+      {/* Metrics grid or empty state */}
+      {snapshot.total === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 px-6 text-center bg-card">
+          <Calendar className="w-8 h-8 text-muted-foreground/40 mb-2" />
+          <p className="text-sm font-medium text-muted-foreground">No sessions scheduled for today</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
+          {items.map((item, i) => (
+            <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border rounded-xl hover:bg-secondary/40 transition-[background-color] duration-150 cursor-default min-w-0">
+              <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
+                <item.icon className={cn('w-4 h-4', item.color)} />
+              </div>
+              <span className={cn('text-2xl font-black tabular-nums', item.color)}>
+                {item.value}
+              </span>
+              <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider leading-tight text-center truncate w-full">
+                {item.label}
+              </span>
             </div>
-            <span className={cn('text-2xl font-black tabular-nums', item.color)}>
-              {item.value}
-            </span>
-            <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider leading-tight text-center">
-              {item.label}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
