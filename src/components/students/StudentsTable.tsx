@@ -15,7 +15,7 @@ export interface StudentRow {
   firstName: string;
   lastName: string;
   dateOfBirth: string | null;
-  schoolYear: number | null;
+  schoolYear: string | null;
   isRegistered: boolean;
   source: string | null;
   parentId: string;
@@ -113,12 +113,21 @@ const columns: DataTableColumn<StudentRow>[] = [
   },
   {
     key: 'schoolYear',
-    header: 'School Year',
-    render: (student) => (
-      <span className="px-3 py-1 bg-secondary border border-border text-foreground text-xs font-bold rounded-full shadow-sm">
-        {student.schoolYear === 0 ? 'Reception' : student.schoolYear != null ? `Year ${student.schoolYear}` : '—'}
-      </span>
-    ),
+    header: 'Year Group',
+    render: (student) => {
+      const yr = student.schoolYear;
+      let colour = 'bg-secondary border-border text-foreground';
+      if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-blue-500/10 border-blue-500/30 text-blue-600';       // KS1
+      else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))   colour = 'bg-violet-500/10 border-violet-500/30 text-violet-600'; // KS2
+      else if (['Y7','Y8','Y9'].includes(yr ?? ''))         colour = 'bg-amber-500/10 border-amber-500/30 text-amber-600';   // KS3
+      else if (['Y10','Y11'].includes(yr ?? ''))            colour = 'bg-orange-500/10 border-orange-500/30 text-orange-600'; // KS4
+      else if (['Y12','Y13'].includes(yr ?? ''))            colour = 'bg-rose-500/10 border-rose-500/30 text-rose-600';      // Sixth form
+      return (
+        <span className={`px-3 py-1 border text-xs font-bold rounded-full shadow-sm ${colour}`}>
+          {yr ?? '—'}
+        </span>
+      );
+    },
   },
   {
     key: 'parentContact',

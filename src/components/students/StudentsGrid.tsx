@@ -95,11 +95,20 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                     {student.firstName} {student.lastName}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                    {student.schoolYear !== null && (
-                                        <span className="px-2 py-0.5 bg-secondary border border-border text-foreground text-[10px] font-bold rounded-full">
-                                            {student.schoolYear === 0 ? 'Reception' : `Year ${student.schoolYear}`}
-                                        </span>
-                                    )}
+                                    {(() => {
+                                        const yr = student.schoolYear;
+                                        let colour = 'bg-secondary border-border text-foreground';
+                                        if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-blue-500/10 border-blue-500/30 text-blue-600';
+                                        else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))    colour = 'bg-violet-500/10 border-violet-500/30 text-violet-600';
+                                        else if (['Y7','Y8','Y9'].includes(yr ?? ''))          colour = 'bg-amber-500/10 border-amber-500/30 text-amber-600';
+                                        else if (['Y10','Y11'].includes(yr ?? ''))             colour = 'bg-orange-500/10 border-orange-500/30 text-orange-600';
+                                        else if (['Y12','Y13'].includes(yr ?? ''))             colour = 'bg-rose-500/10 border-rose-500/30 text-rose-600';
+                                        return yr ? (
+                                            <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${colour}`}>
+                                                {yr}
+                                            </span>
+                                        ) : null;
+                                    })()}
                                     {student.isRegistered && (
                                         <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-[10px] font-bold text-emerald-600 uppercase tracking-wider whitespace-nowrap">
                                             Reg

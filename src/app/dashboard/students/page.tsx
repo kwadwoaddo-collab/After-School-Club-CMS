@@ -122,7 +122,7 @@ export default async function StudentsPage(props: {
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(and(...conditions))
-        .orderBy(asc(children.firstName), asc(children.lastName));
+        .orderBy(asc(children.lastName), asc(children.firstName));
 
     // ── Booking stats for visible students ──────────────────────────────────
     const bookingData = await db
@@ -186,7 +186,7 @@ export default async function StudentsPage(props: {
             firstName: student.firstName,
             lastName: student.lastName,
             dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
-            schoolYear: student.schoolYear ? Number(student.schoolYear) : null,
+            schoolYear: student.schoolYear ?? null,
             isRegistered: !!student.isRegistered,
             source: student.source,
             parentId: student.parentId,

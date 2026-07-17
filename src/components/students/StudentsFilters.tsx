@@ -23,9 +23,9 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
 
     const yearPills = [
         { value: 'all', label: 'All' },
-        { value: '0', label: 'Rec' },
+        { value: 'Reception', label: 'Rec' },
         ...Array.from({ length: 13 }, (_, i) => ({
-            value: String(i + 1),
+            value: `Y${i + 1}`,
             label: `Y${i + 1}`,
         })),
     ];
