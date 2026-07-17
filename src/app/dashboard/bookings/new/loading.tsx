@@ -3,8 +3,8 @@ export default function NewBookingLoading() {
         <div className="space-y-8 animate-pulse">
             {/* Header */}
             <div className="space-y-2">
-                <div className="h-9 w-44 bg-surface-container-high rounded-xl" />
-                <div className="h-4 w-56 bg-surface-container rounded-lg" />
+                <div className="h-9 w-44 bg-secondary rounded-xl" />
+                <div className="h-4 w-56 bg-muted/60 rounded-lg" />
             </div>
 
             {/* Full-width form card */}
@@ -15,8 +15,8 @@ export default function NewBookingLoading() {
                 {/* Input rows */}
                 {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="space-y-2">
-                        <div className="h-4 w-32 bg-surface-container rounded-lg" />
-                        <div className="h-11 w-full bg-surface-container-high rounded-2xl" />
+                        <div className="h-4 w-32 bg-muted/60 rounded-lg" />
+                        <div className="h-11 w-full bg-secondary rounded-2xl" />
                     </div>
                 ))}
 
@@ -24,8 +24,8 @@ export default function NewBookingLoading() {
                 <div className="grid grid-cols-2 gap-4">
                     {[1, 2].map((i) => (
                         <div key={i} className="space-y-2">
-                            <div className="h-4 w-24 bg-surface-container rounded-lg" />
-                            <div className="h-11 w-full bg-surface-container-high rounded-2xl" />
+                                <div className="h-4 w-24 bg-muted/60 rounded-lg" />
+                            <div className="h-11 w-full bg-secondary rounded-2xl" />
                         </div>
                     ))}
                 </div>

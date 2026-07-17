@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const SCHOOL_YEARS = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'] as const;
+const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'] as const;
 
 export const childSchema = z.object({
   id: z.string().uuid().optional(),
@@ -17,7 +17,7 @@ export const parentSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
   phone: z.string().regex(/^\+?[\d\s\-]{7,15}$/, 'Invalid phone format').optional().or(z.literal('')),
-  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  email: z.string().min(1, 'Email address is required').email('Please enter a valid email address'),
   // Task 1: preferredContact is now optional — no longer a required field
   preferredContact: z.enum(['phone', 'email']).optional(),
 });
