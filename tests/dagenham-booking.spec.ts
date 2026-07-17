@@ -1,12 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+// ⚠️  SAFETY GUARD: This test submits real booking forms into the database.
+// It must ONLY run against a dedicated test/staging environment.
+// To enable: set E2E_BASE_URL env var to your staging URL (not production).
+const isTestEnv = !!(process.env.E2E_BASE_URL && !process.env.E2E_BASE_URL.includes('production'));
+test.skip(!isTestEnv, 'Skipped on production — set E2E_BASE_URL to a staging URL to enable this test');
+
 test('E2E booking flow for child with multiple custom subjects', async ({ page }) => {
   // Navigate to Dagenham booking portal
   const url = '/book/sydenham-after-school-club-ltd/dagenham-after-school-club-okt16';
   console.log(`Navigating to: ${url}`);
   await page.goto(url);
   await page.waitForTimeout(5000);
-  
   // Step 1: Parent Details
   console.log('Step 1: Filling Parent Details');
   await page.fill('input[placeholder="Enter first name"]', 'Jane');

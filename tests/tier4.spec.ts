@@ -1,5 +1,11 @@
 import { test, expect, Page } from '@playwright/test';
 
+// ⚠️  SAFETY GUARD: This test submits real booking forms into the database.
+// It must ONLY run against a dedicated test/staging environment.
+// To enable: set E2E_BASE_URL env var to your staging URL (not production).
+const isTestEnv = !!(process.env.E2E_BASE_URL && !process.env.E2E_BASE_URL.includes('production'));
+test.skip(!isTestEnv, 'Skipped on production — set E2E_BASE_URL to a staging URL to enable this test');
+
 async function loginAsAdmin(page: Page) {
   await page.goto('/login');
   await page.waitForSelector('input#admin-email');
@@ -18,16 +24,16 @@ test.describe('Tier 4: Real-World Application Scenarios', () => {
     await page.waitForTimeout(2000);
     
     // Step 1: Parent Details
-    await page.fill('input[placeholder="Enter first name"]', 'John');
-    await page.fill('input[placeholder="Enter last name"]', 'Doe');
-    await page.fill('input[placeholder="email@example.com"]', `john.doe.${Date.now()}@example.com`);
+    await page.fill('input[placeholder="Enter first name"]', 'E2EParent');
+    await page.fill('input[placeholder="Enter last name"]', 'TestOnly');
+    await page.fill('input[placeholder="email@example.com"]', `e2e.parent.${Date.now()}@e2e-test.local`);
     await page.fill('input[placeholder="07xxx xxxxxx"]', '07700900077');
     await page.click('text="Email"');
     await page.click('text="Continue →"');
     
     // Step 2: Child Details
-    await page.fill('input[placeholder="Child\'s first name"]', 'Bobby');
-    await page.fill('input[placeholder="Child\'s last name"]', 'Doe');
+    await page.fill('input[placeholder="Child\'s first name"]', 'E2E');
+    await page.fill('input[placeholder="Child\'s last name"]', 'TestChild');
     await page.selectOption('select', { label: 'Y2' });
     await page.click('text="Science & Tech"');
     await page.click('text="Homework Help"');
