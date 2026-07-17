@@ -16,8 +16,8 @@ test.describe('Smoke Tests (Read-Only)', () => {
   });
 
   test('booking page loads (public route)', async ({ page }) => {
-    const response = await page.goto('/book/test-org');
-    // It might be 404 if test-org doesn't exist, so we just check it doesn't 500
+    const response = await page.goto('/book/bright-star-academy');
+    // It might be 404 if organization doesn't exist, so we just check it doesn't 500
     expect(response?.status()).not.toBe(500);
     await expect(page.locator('body')).toBeVisible();
   });

@@ -19,59 +19,30 @@
   --color-primary-foreground: hsl(var(--primary-foreground));
 
   --font-sans: var(--font-inter);
+  --line-height-display: 1.05;
+  --line-height-heading: 1.1;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.4;
 
   /* Midnight Luminary / SprintScale Dark Theme Tokens mapped to HIG variables */
-  --color-secondary-fixed-dim: hsl(var(--secondary));
-  --color-on-primary-container: hsl(var(--primary-foreground));
-  --color-outline: hsl(var(--border));
-  --color-surface-dim: hsl(var(--background));
   --color-surface-container-low: hsl(var(--background));
-  --color-on-tertiary-fixed: #004819;
-  --color-secondary-dim: hsl(var(--secondary));
-  --color-secondary-fixed: hsl(var(--secondary));
-  --color-on-error: #490006;
   --color-surface-container-highest: hsl(var(--secondary));
   --color-error-container: #9f0519;
   --color-on-primary: hsl(var(--primary-foreground));
-  --color-on-secondary: hsl(var(--secondary-foreground));
-  --color-on-surface: hsl(var(--card-foreground));
   --color-surface-container: hsl(var(--card));
-  --color-primary-fixed-dim: hsl(var(--primary));
-  --color-tertiary-dim: #4bee74;
   --color-tertiary-container: #5cfd80;
-  --color-on-secondary-fixed-variant: #6f08d0;
-  --color-on-primary-fixed-variant: #00276c;
   --color-primary: hsl(var(--primary));
   --color-on-surface-variant: hsl(var(--muted-foreground));
   --color-surface-bright: hsl(var(--card));
-  --color-on-tertiary-fixed-variant: #006827;
   --color-surface: hsl(var(--card));
-  --color-inverse-on-surface: hsl(var(--foreground));
   --color-background: hsl(var(--background));
-  --color-surface-variant: hsl(var(--secondary));
-  --color-surface-tint: hsl(var(--primary));
-  --color-on-secondary-container: hsl(var(--secondary-foreground));
   --color-tertiary: #b8ffbb;
   --color-surface-container-high: hsl(var(--secondary));
-  --color-on-background: hsl(var(--foreground));
   --color-error: #ff716c;
-  --color-error-dim: #d7383b;
-  --color-on-error-container: #ffa8a3;
   --color-surface-container-lowest: hsl(var(--background));
-  --color-on-tertiary: #006727;
-  --color-primary-dim: hsl(var(--primary));
-  --color-tertiary-fixed: #5cfd80;
-  --color-on-secondary-fixed: #4a0090;
-  --color-inverse-surface: hsl(var(--foreground));
   --color-secondary: hsl(var(--secondary));
-  --color-primary-container: hsl(var(--secondary));
-  --color-inverse-primary: hsl(var(--primary));
   --color-secondary-container: hsl(var(--secondary));
   --color-outline-variant: hsl(var(--border));
-  --color-on-tertiary-container: #005d22;
-  --color-on-primary-fixed: hsl(var(--primary-foreground));
-  --color-primary-fixed: hsl(var(--primary));
-  --color-tertiary-fixed-dim: #4bee74;
 }
 
 :root {
@@ -177,10 +148,47 @@
   --input-bg: rgba(255, 255, 255, 0.035);
 }
 
+:root[class~="light"], .light {
+  /* Light Mode - WCAG 2.1 AA Compliant Apple Colors */
+  --background: 240 24% 96%; /* #f5f5f7 (macOS grouped canvas background) */
+  --foreground: 240 4% 12%; /* #1d1d1f (primary text) */
+  --card: 0 0% 100%; /* #ffffff */
+  --card-foreground: 240 4% 12%; /* #1d1d1f */
+  --popover: 0 0% 100%; /* #ffffff */
+  --popover-foreground: 240 4% 12%; /* #1d1d1f */
+  --primary: 210 100% 45%; /* #0071e3 (Apple Store Blue - WCAG AA compliant) */
+  --primary-foreground: 0 0% 100%; /* #ffffff */
+  --secondary: 240 5% 96%; /* #f2f2f7 (macOS standard input fill) */
+  --secondary-foreground: 240 4% 12%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 3% 40%; /* #636366 (Apple Secondary Label) */
+  --border: 240 6% 90%; /* rgba(0, 0, 0, 0.08) */
+  
+  /* Glassmorphism settings for light mode */
+  --sidebar-bg: rgba(255, 255, 255, 0.45);
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --header-bg: rgba(245, 245, 247, 0.6);
+  --header-border: rgba(0, 0, 0, 0.06);
+  --dropdown-bg: rgba(255, 255, 255, 0.85);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.06);
+  --shadow-xl: 0 20px 40px rgba(0,0,0,0.08);
+  --shadow-focus: 0 0 0 3px rgba(0, 113, 227, 0.25);
+  --shadow-card: 0 8px 30px rgba(0,0,0,0.03);
+  --shadow-card-hover: 0 20px 40px rgba(0,0,0,0.05);
+  --card-border: rgba(0, 0, 0, 0.05);
+  
+  --input-bg: rgba(0, 0, 0, 0.025);
+}
+
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-sans);
+  font-feature-settings: "cv01", "ss01", "liga" 1;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -633,7 +641,30 @@ select:user-valid {
 .headline-lg {
   font-feature-settings: "ss01", "cv01";
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  line-height: 1.05; /* display tier line-height */
+}
+
+/* Explicit Line-Height per Text Size Tier Utilities */
+.leading-display,
+.display {
+  line-height: 1.05 !important;
+}
+
+.leading-heading,
+.heading {
+  line-height: 1.1 !important;
+}
+
+.leading-body,
+.body {
+  line-height: 1.5 !important;
+}
+
+.leading-caption,
+.caption,
+caption,
+figcaption {
+  line-height: 1.4 !important;
 }
 
 /* Animated eyebrow label — respects prefers-reduced-motion */
@@ -674,28 +705,44 @@ body:not(.landing-page-active) :is(.text-white, .text-slate-100, .text-zinc-100)
 }
 
 /* Typography & Titles override */
-body:not(.landing-page-active) :is(h1, h2, h3, .h1, .h2, .h3):not(.keep-typography) {
+body:not(.landing-page-active) :is(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6):not(.keep-typography) {
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   font-weight: 700 !important;
-  letter-spacing: -0.03em !important;
   color: hsl(var(--foreground)) !important;
+  line-height: 1.1 !important;
 }
 
-body:not(.landing-page-active) h1 {
+body:not(.landing-page-active) :is(h1, .h1) {
   letter-spacing: -0.04em !important;
+}
+
+body:not(.landing-page-active) :is(h2, .h2) {
+  letter-spacing: -0.03em !important;
+}
+
+body:not(.landing-page-active) :is(h3, .h3) {
+  letter-spacing: -0.02em !important;
+}
+
+body:not(.landing-page-active) :is(h4, h5, h6, .h4, .h5, .h6) {
+  letter-spacing: -0.01em !important;
 }
 
 /* Card & Panels override - Soft Squircles & Shadows */
 body:not(.landing-page-active) :is(
   .card,
-  [class*="card"],
   .glassmorphic-card,
+  .kpi-card,
   .bg-card,
   .bg-surface,
-  [class*="bg-surface-container"],
-  .bg-[#1a1d23],
-  .bg-[#1c1c1e]
-):not(body, html, main, aside, header) {
+  .bg-surface-container,
+  .bg-surface-container-high,
+  .bg-surface-container-low,
+  .bg-surface-container-highest,
+  .bg-surface-container-lowest,
+  .bg-\[\#1a1d23\],
+  .bg-\[\#1c1c1e\]
+):not(body, html, main, aside, header, .keep-shape) {
   border-radius: 24px !important; /* rounded-3xl (Apple squircle) */
   border: 1px solid var(--card-border) !important;
   box-shadow: var(--shadow-card) !important;
@@ -705,24 +752,36 @@ body:not(.landing-page-active) :is(
 /* Apple Micro-Interactions on hover/active */
 body:not(.landing-page-active) :is(
   .card,
-  [class*="card"],
   .glassmorphic-card,
+  .kpi-card,
   .bg-card,
   .bg-surface,
-  [class*="bg-surface-container"]
-):not(body, html, main, aside, header):hover {
+  .bg-surface-container,
+  .bg-surface-container-high,
+  .bg-surface-container-low,
+  .bg-surface-container-highest,
+  .bg-surface-container-lowest,
+  .bg-\[\#1a1d23\],
+  .bg-\[\#1c1c1e\]
+):not(body, html, main, aside, header, .keep-shape):hover {
   transform: scale(1.012) !important;
   box-shadow: var(--shadow-card-hover) !important;
 }
 
 body:not(.landing-page-active) :is(
   .card,
-  [class*="card"],
   .glassmorphic-card,
+  .kpi-card,
   .bg-card,
   .bg-surface,
-  [class*="bg-surface-container"]
-):not(body, html, main, aside, header):active {
+  .bg-surface-container,
+  .bg-surface-container-high,
+  .bg-surface-container-low,
+  .bg-surface-container-highest,
+  .bg-surface-container-lowest,
+  .bg-\[\#1a1d23\],
+  .bg-\[\#1c1c1e\]
+):not(body, html, main, aside, header, .keep-shape):active {
   transform: scale(0.988) !important;
 }
 
@@ -736,7 +795,29 @@ body:not(.landing-page-active) :is(
   a[class*="bg-secondary"],
   a[class*="btn-"],
   input[type="submit"]
-):not(.keep-shape, [role="gridcell"] *, [role="row"] *) {
+):not(
+  .keep-shape,
+  table *,
+  [role="gridcell"] *,
+  [role="row"] *,
+  [class*="pagination"] *,
+  [aria-label*="pagination"] *,
+  [aria-label*="Pagination"] *,
+  [role="combobox"],
+  [role="combobox"] *,
+  [role="menu"] *,
+  [role="menuitem"] *,
+  [role="option"] *,
+  [class*="select"] *,
+  select *,
+  [class*="dropdown"] *,
+  [class*="calendar"] *,
+  [class*="picker"] *,
+  [class*="rdp"] *,
+  [class*="icon"] *,
+  .icon-button,
+  [aria-label*="icon"]
+) {
   border-radius: 9999px !important; /* rounded-full pill shape */
 }
 
@@ -832,6 +913,11 @@ body:not(.landing-page-active) :is(
 ) {
   color: hsl(var(--foreground)) !important;
 }
+
+body:not(.landing-page-active) .keep-shape {
+  border-radius: 12px !important;
+}
+
 
 
 

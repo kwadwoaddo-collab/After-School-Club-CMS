@@ -1,0 +1,449 @@
+
+> after-school-club-cms@0.1.0 start
+> next start
+
+▲ Next.js 16.2.9
+- Local:         http://localhost:3007
+- Network:       http://192.168.1.176:3007
+✓ Ready in 130ms
+[StripeService] Created customer cus_UtpYpm4Yu4hu73 for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Initialized successfully
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtpgRDf10v9pS3 for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtpnFWppSKDYU2 for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtprSql56H3oDI for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtpvsxAk5sOMJ3 for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtpzCYRLULDvKd for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_Utq3CXQSv0gHgH for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_Utq7ywRMGOCJpN for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqAfnkSDh7bds for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqEr1vAt3kDHt for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqGe9DdcqzVGB for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqKkEt8etg7Ym for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Invalid 'To' Phone Number: 0770090XXXX
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 400,
+  code: 21211,
+  moreInfo: 'https://www.twilio.com/docs/errors/21211',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqN1wCqkvT2sV for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqRlTB2Joydxw for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqROexBSnQ793 for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqVrzb2QPrCTo for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqYHYb0lFMTqp for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqcjdypXyLQLG for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_UtqcKq955zTEA6 for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false
+[StripeService] Created customer cus_Utqgnxpk2F5NOV for org a2892c09-b0c5-4fbd-ba79-de542759df90
+[GoogleCalendarService] Service account file not found at ./credentials/google-service-account.json. Calendar integration disabled.
+[GoogleCalendarService] Cannot create event - not initialized
+[EmailService] Failed to send confirmation: {
+  statusCode: 401,
+  name: 'validation_error',
+  message: 'API key is invalid'
+}
+[SMSService] Error sending SMS: Error: Account AC86a0bd9e8483b62599faedf881bf320c exceeded the 50 daily messages limit
+    at r.throwException (.next/server/chunks/_0zgz-c6._.js:13:56740)
+    at <unknown> (.next/server/chunks/_0zgz-c6._.js:13:57168)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:4119)
+    at async Object.sendBookingConfirmation (.next/server/chunks/_0zgz-c6._.js:15:6437)
+    at async p.createBooking (.next/server/chunks/_0zgz-c6._.js:15:106315)
+    at async p (.next/server/chunks/_0zgz-c6._.js:15:109201)
+    at async d (.next/server/chunks/_0zgz-c6._.js:15:113042) {
+  status: 429,
+  code: 63038,
+  moreInfo: 'https://www.twilio.com/docs/errors/63038',
+  details: undefined
+}
+[NotificationService] Booking confirmation sent - Email: false, SMS: false

@@ -58,6 +58,37 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     const { selectedCentreId, setSelectedCentreId, centres } = useCentreFilter();
     const centreBtnRef = useRef<HTMLButtonElement>(null);
     const [dropdownAnchor, setDropdownAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
+    const sidebarScrollRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown on collapsed state change, window resize, or sidebar scroll
+    useEffect(() => {
+        setDropdownOpen(false);
+    }, [collapsed]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setDropdownOpen(false);
+        };
+        const handleScroll = () => {
+            setDropdownOpen(false);
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('scroll', handleScroll, { capture: true });
+
+        const sidebarScrollEl = sidebarScrollRef.current;
+        if (sidebarScrollEl) {
+            sidebarScrollEl.addEventListener('scroll', handleScroll);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('scroll', handleScroll, { capture: true });
+            if (sidebarScrollEl) {
+                sidebarScrollEl.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, []);
 
     const openCentreDropdown = () => {
         if (centreBtnRef.current) {
@@ -143,8 +174,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         <div
                             title={collapsed ? orgName : undefined}
                             className={`
-                            w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
-                            ring-1 ring-border shadow-sm
+                            w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
+                            ring-2 ring-primary/20 shadow-md shadow-primary/10
                             transition-all duration-300
                         `}>
                             {orgName.slice(0, 2).toUpperCase()}
@@ -168,7 +199,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         onClick={() => setQuickActionsOpen(o => !o)}
                                         className="flex items-center justify-between w-full px-2 mb-3 group"
                                     >
-                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors">
+                                        <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-[0.12em] group-hover:text-foreground transition-colors">
                                             Quick Links
                                         </p>
                                         <ChevronDown
@@ -243,6 +274,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         ref={centreBtnRef}
                                         onClick={openCentreDropdown}
                                         className={`
+                                            keep-shape
                                             flex items-center justify-between w-full px-3 py-2.5 rounded-xl
                                             transition-all group text-left
                                             ${isCentresPageActive
@@ -271,7 +303,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     <button
                                         ref={centreBtnRef}
                                         onClick={openCentreDropdown}
-                                        className={`flex items-center justify-center w-full px-4 py-2.5 rounded-xl transition-all group ${
+                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2.5 rounded-xl transition-all group ${
                                             isCentresPageActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                         }`}
                                         title={selectedCentreId === 'all' ? 'Combined View' : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
@@ -302,8 +334,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     })()}
 
                     {/* Navigation */}
-                    <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
-                    <nav className="space-y-0.5">
+                    <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
+                    <nav className="space-y-1">
                         {navItems.map((item) => {
                             const isActive = item.href === '/dashboard'
                                 ? pathname === item.href
@@ -319,19 +351,19 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                             }
                                         }}
                                         className={`
-                                            flex items-center gap-4 px-4 py-3 rounded-full
+                                            flex items-center gap-4 px-4 py-2.5 rounded-full
                                             transition-all duration-300 ease-out group relative overflow-hidden
                                             ${isActive
-                                                ? 'text-primary bg-primary/10 font-bold'
+                                                ? 'text-primary bg-primary/10 font-bold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:bg-primary before:rounded-r-full'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                             }
                                             ${collapsed ? 'justify-center' : ''}
                                         `}
-                                        title={collapsed ? item.name : undefined}
+                                        title={item.name}
                                     >
                                         <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-350 ease-out ${
                                             isActive ? 'scale-105 text-primary' : 'text-muted-foreground group-hover:scale-102 group-hover:text-primary'
-                                        }`} />
+                                        } ${collapsed ? 'mx-auto' : ''}`} />
                                         {!collapsed && (
                                             <span className="font-semibold text-sm tracking-tight">{item.name}</span>
                                         )}
@@ -364,6 +396,37 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         })}
 
                     </nav>
+                    </div>
+
+                    {/* Premium User Profile Footer */}
+                    <div className="mt-auto pt-4 flex-shrink-0">
+                        <div className="h-px bg-border/60 mb-4" />
+                        <div
+                            className={`
+                                flex items-center gap-3 p-2 rounded-xl transition-colors hover:bg-secondary/40
+                                ${collapsed ? 'justify-center px-0' : 'px-3'}
+                            `}
+                            title={collapsed ? `${userName || 'Staff'} (${(userRole || 'TUTOR').toLowerCase().replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())})` : undefined}
+                        >
+                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0 ring-1 ring-primary/20">
+                                {(userName || 'Staff')
+                                    .split(' ')
+                                    .map(n => n[0])
+                                    .join('')
+                                    .slice(0, 2)
+                                    .toUpperCase()}
+                            </div>
+                            {!collapsed && (
+                                <div className="flex flex-col min-w-0 flex-1">
+                                    <span className="text-sm font-bold text-foreground truncate leading-tight">
+                                        {userName || 'Staff Member'}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground truncate mt-0.5">
+                                        {(userRole || 'TUTOR').toLowerCase().replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
                 {/* Collapse Toggle Button */}

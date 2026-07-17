@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test('E2E booking flow for child with multiple custom subjects', async ({ page }) => {
   // Navigate to Dagenham booking portal
-  const url = 'http://127.0.0.1:3001/book/sydenham-after-school-club-ltd/dagenham-after-school-club-okt16';
+  const url = '/book/sydenham-after-school-club-ltd/dagenham-after-school-club-okt16';
   console.log(`Navigating to: ${url}`);
   await page.goto(url);
+  await page.waitForTimeout(5000);
   
   // Step 1: Parent Details
   console.log('Step 1: Filling Parent Details');
@@ -44,8 +45,10 @@ test('E2E booking flow for child with multiple custom subjects', async ({ page }
   
   // Step 4: Confirm Booking
   console.log('Step 4: Confirming Booking');
+  // Wait for consent checkbox to be visible
+  await page.waitForSelector('input[name="consent.communications"]', { timeout: 15000 });
   // Click consent checkbox
-  await page.locator('input[type="checkbox"]').check();
+  await page.locator('input[name="consent.communications"]').check();
   
   // Click Confirm Booking
   await page.click('button:has-text("Confirm Booking")');
@@ -54,10 +57,13 @@ test('E2E booking flow for child with multiple custom subjects', async ({ page }
   console.log('Verifying booking success');
   
   // We expect a confirmation message to load and the loading state to complete
-  await page.waitForTimeout(5000); // Wait for API response and render
+  const successHeader = page.locator('h2:has-text("Booking Confirmed!")');
+  try {
+    await successHeader.waitFor({ state: 'visible', timeout: 20000 });
+  } catch (e) {
+    console.log('Success header did not appear in 20 seconds');
+  }
   
-  // Check if we see Booking Confirmed or similar success indicator
-  const successHeader = page.locator('text="Booking Confirmed!"');
   const isSuccess = await successHeader.isVisible();
   
   // Ensure no error toast is showing

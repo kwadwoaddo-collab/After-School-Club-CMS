@@ -45,6 +45,59 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const searchInputRef = useRef<HTMLInputElement>(null);
     const searchContainerRef = useRef<HTMLDivElement>(null);
 
+    const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system');
+    const [themeMounted, setThemeMounted] = useState(false);
+
+    useEffect(() => {
+        setThemeMounted(true);
+        const savedTheme = localStorage.getItem('theme') as 'system' | 'light' | 'dark' | null;
+        if (savedTheme) {
+            setTheme(savedTheme);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!themeMounted) return;
+
+        const applyTheme = () => {
+            const root = document.documentElement;
+            if (theme === 'system') {
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (systemPrefersDark) {
+                    root.classList.add('dark');
+                    root.classList.remove('light');
+                } else {
+                    root.classList.add('light');
+                    root.classList.remove('dark');
+                }
+            } else if (theme === 'light') {
+                root.classList.add('light');
+                root.classList.remove('dark');
+            } else if (theme === 'dark') {
+                root.classList.add('dark');
+                root.classList.remove('light');
+            }
+        };
+
+        applyTheme();
+        localStorage.setItem('theme', theme);
+
+        if (theme === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleChange = () => applyTheme();
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+    }, [theme, themeMounted]);
+
+    const toggleTheme = () => {
+        setTheme(prev => {
+            if (prev === 'system') return 'light';
+            if (prev === 'light') return 'dark';
+            return 'system';
+        });
+    };
+
     const [showNotifications, setShowNotifications] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -193,8 +246,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     return (
         <header className={`h-16 sm:h-20 fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b transition-all duration-300 ${
             isScrolled
-                ? 'bg-header/80 backdrop-blur-2xl border-border shadow-sm'
-                : 'bg-header/45 backdrop-blur-xl border-border'
+                ? 'bg-header/80 backdrop-blur-2xl border-border/60 shadow-sm'
+                : 'bg-header/45 backdrop-blur-xl border-border/60'
         } ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
 
             {/* Hamburger — mobile only */}
@@ -231,7 +284,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 /* Search Bar */
                 !hideSearch && (
                     <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
-                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-secondary/40 border border-border rounded-xl transition-all hover:border-border/80 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30">
+                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-secondary/40 border border-border/60 rounded-2xl transition-all duration-200 hover:border-primary/40 hover:ring-1 hover:ring-primary/10 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40">
                             <Search className="ml-3.5 w-4 h-4 text-muted-foreground flex-shrink-0 transition-colors group-focus-within:text-primary pointer-events-none" />
                             <input
                                 suppressHydrationWarning
@@ -304,17 +357,32 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 {isListPage && (
                     <div id="header-right-actions" className="hidden md:flex items-center gap-2" />
                 )}
+                {/* Theme Toggle */}
+                <button
+                    suppressHydrationWarning
+                    onClick={toggleTheme}
+                    className="keep-shape p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground active:scale-95 transition-transform duration-200 flex items-center justify-center"
+                    aria-label={`Toggle theme (currently ${theme})`}
+                >
+                    {theme === 'system' && <Cloud className="w-5 h-5" />}
+                    {theme === 'light' && <Sun className="w-5 h-5" />}
+                    {theme === 'dark' && <Moon className="w-5 h-5" />}
+                </button>
+
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowNotifications(!showNotifications)}
-                        className="p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground relative transition-all duration-200"
+                        className="keep-shape p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground relative transition-all duration-200"
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-header badge-pulse" />
+                            <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-header" />
+                            </span>
                         )}
                     </button>
 
@@ -395,7 +463,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-3.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-all duration-200 mr-2"
+                        className="keep-shape flex items-center gap-3.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-all duration-200 mr-2 group"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block min-w-0">
@@ -404,14 +472,14 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             </p>
                             <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                         </div>
-                        <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary font-bold flex-shrink-0 text-sm shadow-[0_0_12px_hsl(var(--primary)/0.12)]">
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm tracking-tight flex-shrink-0 shadow-[0_0_12px_hsl(var(--primary)/0.12)] ring-2 ring-border group-hover:ring-primary/40 transition-all duration-200">
                             {userInitial || 'A'}
                         </div>
                         <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
                     </button>
 
                     {showUserMenu && (
-                        <div className="absolute right-0 mt-2 w-56 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute right-0 mt-2 w-56 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                             <div className="p-4 border-b border-border">
                                 <p className="font-bold text-foreground text-sm truncate">{userName || 'Admin User'}</p>
                                 <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">

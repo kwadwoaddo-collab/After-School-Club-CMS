@@ -12,6 +12,7 @@ test('test active centre dropdown on live site', async ({ page }) => {
 
   console.log('Navigating to live login page...');
   await page.goto('/login');
+  await page.waitForTimeout(5000);
   
   // Try logging in as kwadwoaddo@googlemail.com first
   console.log('Attempting login with kwadwoaddo@googlemail.com...');
@@ -27,6 +28,7 @@ test('test active centre dropdown on live site', async ({ page }) => {
   } catch (err) {
     console.log('Login failed or timed out with kwadwoaddo@googlemail.com, trying admin@example.com...');
     await page.goto('/login');
+    await page.waitForTimeout(5000);
     await page.waitForSelector('input#admin-email');
     await page.fill('input#admin-email', 'admin@example.com');
     await page.fill('input#admin-password', 'password123');
@@ -63,6 +65,14 @@ test('test active centre dropdown on live site', async ({ page }) => {
     const openPath = path.join(ARTIFACTS_DIR, 'dashboard_dropdown_open.png');
     await page.screenshot({ path: openPath });
     console.log(`Saved dropdown open screenshot to ${openPath}`);
+
+    // Close the dropdown to remove any backdrop overlay before clicking other elements
+    await page.keyboard.press('Escape');
+    const backdrop = page.locator('div.fixed.inset-0.z-\\[199\\]');
+    if (await backdrop.count() > 0 && await backdrop.isVisible()) {
+      await backdrop.click();
+    }
+    await page.waitForTimeout(1000);
 
     // Check if collapsed state is toggleable and how it behaves
     const collapseBtn = page.locator('aside button[aria-label*="sidebar"], aside button[aria-label*="Sidebar"]');

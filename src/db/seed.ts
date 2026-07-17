@@ -59,6 +59,26 @@ async function seed() {
 
   const centreId = demoCentre.id;
 
+  // 2b. Create/Update Second Centre
+  const [secondCentre] = await db.insert(centres).values({
+    organisationId: orgId,
+    name: 'Secondary Campus',
+    slug: 'secondary',
+    address: '456 Education Way, London',
+    timezone: 'Europe/London',
+    operatingHours: JSON.stringify({
+      monday: { start: '09:00', end: '18:00' },
+      tuesday: { start: '09:00', end: '18:00' },
+      wednesday: { start: '09:00', end: '18:00' },
+      thursday: { start: '09:00', end: '18:00' },
+      friday: { start: '09:00', end: '18:00' },
+    }),
+  }).onConflictDoUpdate({
+    target: centres.slug,
+    set: { name: 'Secondary Campus' }
+  }).returning();
+
+
   // 3. Ensure User exists
   const bcrypt = (await import('bcryptjs')).default;
   const passwordHash = await bcrypt.hash('password123', 10);
@@ -71,7 +91,7 @@ async function seed() {
     passwordHash,
   }).onConflictDoUpdate({
     target: users.email,
-    set: { passwordHash }
+    set: { passwordHash, organisationId: orgId, role: 'ORG_OWNER', name: 'Kwadwo Addo' }
   });
 
   // 4. Varied Test Data (10 Students)
