@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import fs from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,9 +101,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : '';
+    const logEntry = `[${new Date().toISOString()}] Booking API Error:\n  message: ${errorMessage}\n  stack: ${errorStack}\n---\n`;
     console.error('Booking API error:', error);
+    // Write to log file for easy debugging
+    try { fs.appendFileSync(process.cwd() + '/booking-error.log', logEntry); } catch {}
     return NextResponse.json(
-      { error: 'Failed to create booking' },
+      {
+        error: 'Failed to create booking',
+        ...(process.env.NODE_ENV !== 'production' && { debug: errorMessage }),
+      },
       { status: 500 }
     );
   }
