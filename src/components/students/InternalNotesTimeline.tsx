@@ -105,7 +105,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Type observation or note..."
-          className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
+          className="w-full bg-card border border-slate-200 text-slate-900 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
           disabled={isPending}
         />
         <div className="flex justify-end mt-2">
@@ -202,7 +202,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
               </div>
 
-              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+              <div className="bg-card rounded-2xl p-4 border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {note.category === 'Medical' ? (

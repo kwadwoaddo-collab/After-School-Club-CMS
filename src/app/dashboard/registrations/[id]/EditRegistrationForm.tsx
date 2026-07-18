@@ -219,7 +219,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 )}
                 <button
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/70 hover:text-white font-medium rounded-xl text-sm transition-all"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-card/5 hover:bg-card/10 border border-white/10 hover:border-white/20 text-white/70 hover:text-white font-medium rounded-xl text-sm transition-all"
                 >
                     <Pencil className="w-4 h-4" />
                     Edit Details
@@ -240,7 +240,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                     <button
                         onClick={handleCancel}
                         disabled={isPending}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-white/60 hover:text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-white/60 hover:text-white border border-white/10 hover:border-white/20 bg-card/5 hover:bg-card/10 transition-all"
                     >
                         <X className="w-3.5 h-3.5" /> Cancel
                     </button>
@@ -268,7 +268,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                     <h2 className="text-white font-bold mb-4">Children</h2>
                     <div className="space-y-6">
                         {childrenState.map((c, i) => (
-                            <div key={c.id} className="border border-white/5 rounded-xl p-4 bg-white/2">
+                            <div key={c.id} className="border border-white/5 rounded-xl p-4 bg-card/2">
                                 <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Child {i + 1}</p>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div>
@@ -295,7 +295,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     <p className={label}>Sessions</p>
                                     <div className="grid grid-cols-2 gap-2 mt-1">
                                         {slots.map(slot => (
-                                            <label key={slot} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${c.sessions.includes(slot) ? 'border-primary/50 bg-primary/10 text-white' : 'border-white/10 bg-white/3 text-white/50 hover:border-white/20'}`}>
+                                            <label key={slot} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${c.sessions.includes(slot) ? 'border-primary/50 bg-primary/10 text-white' : 'border-white/10 bg-card/3 text-white/50 hover:border-white/20'}`}>
                                                 <input
                                                     type="checkbox"
                                                     checked={c.sessions.includes(slot)}
@@ -440,7 +440,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 <button
                     onClick={handleCancel}
                     disabled={isPending}
-                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm text-white/60 hover:text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all"
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm text-white/60 hover:text-white border border-white/10 hover:border-white/20 bg-card/5 hover:bg-card/10 transition-all"
                 >
                     <X className="w-4 h-4" /> Cancel
                 </button>

@@ -44,7 +44,7 @@ export default function PortalError({
                     </button>
                     <Link
                         href="/portal"
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-card/5 border border-white/10 text-white text-xs font-bold uppercase tracking-wider hover:bg-card/10 transition-all"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Dashboard

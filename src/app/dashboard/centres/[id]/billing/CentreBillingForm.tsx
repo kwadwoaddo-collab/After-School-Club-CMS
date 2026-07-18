@@ -68,7 +68,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
 
     const inputClass = `
         w-full px-4 py-3 rounded-2xl text-sm font-medium text-white
-        bg-white/5 border border-white/10
+        bg-card/5 border border-white/10
         focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40
         placeholder:text-white/20 transition-all
     `;
@@ -81,7 +81,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard/centres"
-                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-on-surface-variant hover:text-white hover:bg-white/10 transition-all"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-card/5 border border-white/10 text-on-surface-variant hover:text-white hover:bg-card/10 transition-all"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </Link>

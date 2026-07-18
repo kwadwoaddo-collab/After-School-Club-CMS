@@ -63,7 +63,7 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
             <div className={className}>
                 <div
                     ref={containerRef}
-                    className={`relative rounded-xl overflow-hidden border-2 transition-colors ${invalid ? 'border-red-400' : 'border-slate-200'} bg-white`}
+                    className={`relative rounded-xl overflow-hidden border-2 transition-colors ${invalid ? 'border-red-400' : 'border-slate-200'} bg-card`}
                     style={{ height: 140 }}
                 >
                     {dimensions.width > 0 && (

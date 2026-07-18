@@ -220,7 +220,7 @@ export default async function StudentsPage(props: {
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Students</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
                         {totalCount}
                     </span>
                 </div>

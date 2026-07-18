@@ -28,7 +28,7 @@ export default function BookingLinkCard({ bookingLink }: BookingLinkCardProps) {
 
             <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-card/10 border border-white/20 flex items-center justify-center">
                         <Share2 className="w-5 h-5 text-primary" />
                     </div>
                     <div>
@@ -37,7 +37,7 @@ export default function BookingLinkCard({ bookingLink }: BookingLinkCardProps) {
                     </div>
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 mb-6 group/link transition-colors hover:bg-white/10 cursor-pointer" onClick={handleCopy}>
+                <div className="bg-card/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 mb-6 group/link transition-colors hover:bg-card/10 cursor-pointer" onClick={handleCopy}>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Registration URL</p>
                     <div className="font-mono text-sm text-slate-300 break-all select-all">
                         {bookingLink}

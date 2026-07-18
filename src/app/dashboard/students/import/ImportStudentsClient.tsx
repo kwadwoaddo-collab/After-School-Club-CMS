@@ -79,11 +79,11 @@ function StepIndicator({ current }: { current: number }) {
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${
               active ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' :
               done   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                       'text-gray-400'
+                       'text-muted-foreground'
             }`}>
               {done
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
-                : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${active ? 'bg-white/20' : 'bg-gray-200 text-gray-500'}`}>{num}</span>
+                : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${active ? 'bg-card/20' : 'bg-secondary text-muted-foreground'}`}>{num}</span>
               }
               {label}
             </div>
@@ -203,9 +203,9 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
   const reset = () => { setStep(1); setFile(null); setCsvRows([]); setHeaders([]); setMappings({}); setResult(null); };
 
   // ── Shared card shell ────────────────────────────────────────────────────────
-  const card = 'bg-white border border-gray-200 rounded-3xl shadow-sm';
-  const label = 'block text-xs font-semibold text-gray-700 mb-1.5';
-  const input = 'w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
+  const card = 'bg-card border border-border rounded-3xl shadow-sm';
+  const label = 'block text-xs font-semibold text-foreground mb-1.5';
+  const input = 'w-full bg-card text-foreground border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -222,13 +222,13 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                 <FileSpreadsheet className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 text-sm">Download Template</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Use our premade structure to align your columns automatically.</p>
+                <h3 className="font-bold text-foreground text-sm">Download Template</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Use our premade structure to align your columns automatically.</p>
               </div>
             </div>
             <button
               onClick={handleDownloadTemplate}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-50 transition-all shadow-sm flex-shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-blue-200 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-50 transition-all shadow-sm flex-shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
               Download template.csv
@@ -242,7 +242,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               <option value="">No Centre Assignment (Assign later)</option>
               {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Select which centre all imported students should belong to by default. You can change this on individual records later.
             </p>
           </div>
@@ -253,14 +253,14 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all ${
-              dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+              dragOver ? 'border-blue-400 bg-blue-50' : 'border-border hover:border-blue-300 hover:bg-secondary/40'
             }`}
           >
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-blue-100' : 'bg-gray-100'}`}>
-              <Upload className={`w-6 h-6 ${dragOver ? 'text-blue-600' : 'text-gray-400'}`} />
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-blue-100' : 'bg-secondary/60'}`}>
+              <Upload className={`w-6 h-6 ${dragOver ? 'text-blue-600' : 'text-muted-foreground'}`} />
             </div>
-            <h4 className="font-bold text-gray-900 text-base mb-1">Upload your CSV spreadsheet</h4>
-            <p className="text-sm text-gray-500 max-w-xs mb-6 leading-relaxed">
+            <h4 className="font-bold text-foreground text-base mb-1">Upload your CSV spreadsheet</h4>
+            <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
               Drag and drop your spreadsheet here, or click to browse. Max size 5MB.
             </p>
             <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-blue-200">
@@ -278,14 +278,14 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-gray-900 text-lg">Map Spreadsheet Fields</h3>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <h3 className="font-bold text-foreground text-lg">Map Spreadsheet Fields</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Match each app field to a column in your CSV. We've pre-matched what we could.
               </p>
             </div>
             <button
               onClick={reset}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-all flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-secondary/60 hover:bg-secondary text-foreground rounded-xl text-xs font-semibold transition-all flex-shrink-0"
             >
               <ChevronLeft className="w-3.5 h-3.5" /> Back
             </button>
@@ -302,7 +302,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
           {/* Required fields */}
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">Required Fields</p>
+            <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Required Fields</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(REQUIRED_FIELDS).map(([key, lbl]) => (
                 <div key={key}>
@@ -324,7 +324,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
           {/* Optional fields */}
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">Optional Fields</p>
+            <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Optional Fields</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(OPTIONAL_FIELDS).map(([key, lbl]) => (
                 <div key={key}>
@@ -344,8 +344,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
           {/* Row 1 preview */}
           {csvRows.length > 0 && (
-            <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="p-5 bg-secondary/40 rounded-2xl border border-border">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Row 1 Preview
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
@@ -354,8 +354,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                   const val = i !== undefined && i !== '' ? csvRows[0][parseInt(i, 10)] : null;
                   return (
                     <div key={key} className="min-w-0">
-                      <span className="text-gray-400 text-[10px] block truncate">{lbl}</span>
-                      <span className={`font-semibold block truncate mt-0.5 ${val ? 'text-gray-900' : 'text-gray-300 italic'}`}>
+                      <span className="text-muted-foreground text-[10px] block truncate">{lbl}</span>
+                      <span className={`font-semibold block truncate mt-0.5 ${val ? 'text-foreground' : 'text-gray-300 italic'}`}>
                         {val || 'Not mapped'}
                       </span>
                     </div>
@@ -366,9 +366,9 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
           )}
 
           {/* Footer */}
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-4">
-            <span className="text-xs text-gray-500 font-medium">
-              Ready to import <strong className="text-gray-900">{csvRows.length} rows</strong> of student data
+          <div className="pt-2 border-t border-border flex items-center justify-between gap-4">
+            <span className="text-xs text-muted-foreground font-medium">
+              Ready to import <strong className="text-foreground">{csvRows.length} rows</strong> of student data
             </span>
             <button
               onClick={handleStartImport}
@@ -391,8 +391,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                 <RefreshCw className="w-7 h-7 text-blue-600 animate-spin" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Importing Students…</h3>
-                <p className="text-sm text-gray-500 max-w-sm mt-1">
+                <h3 className="text-lg font-bold text-foreground">Importing Students…</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mt-1">
                   Parsing rows, deduplicating parent records, and building attendance structures. Please don't refresh.
                 </p>
               </div>
@@ -402,12 +402,12 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               {/* Header */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">Import Results</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">Summary of your student roster migration</p>
+                  <h3 className="font-bold text-foreground text-lg">Import Results</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">Summary of your student roster migration</p>
                 </div>
                 <button
                   onClick={reset}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all flex-shrink-0"
+                  className="px-4 py-2 bg-secondary/60 hover:bg-secondary text-foreground rounded-xl text-xs font-bold transition-all flex-shrink-0"
                 >
                   Import Another File
                 </button>
@@ -434,14 +434,14 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { value: result?.stats.totalRows || 0,      label: 'Rows Processed',  color: 'text-gray-900' },
+                  { value: result?.stats.totalRows || 0,      label: 'Rows Processed',  color: 'text-foreground' },
                   { value: result?.stats.createdStudents || 0, label: 'Students Created', color: 'text-emerald-600' },
                   { value: result?.stats.createdParents || 0,  label: 'Parents Created',  color: 'text-blue-600' },
                   { value: result?.stats.matchedParents || 0,  label: 'Parents Matched',  color: 'text-amber-600' },
                 ].map(({ value, label: lbl, color }) => (
-                  <div key={lbl} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+                  <div key={lbl} className="bg-secondary/40 border border-border rounded-2xl p-4 text-center">
                     <p className={`text-2xl font-black ${color}`}>{value}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1">{lbl}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">{lbl}</p>
                   </div>
                 ))}
               </div>
@@ -463,10 +463,10 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                       <div key={i} className="p-3.5 text-xs flex justify-between items-start gap-4">
                         <div>
                           <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[10px] font-bold">Row {err.row}</span>
-                          {err.name && <span className="text-gray-900 font-bold ml-2">{err.name}</span>}
-                          <p className="text-gray-500 mt-1">{err.message}</p>
+                          {err.name && <span className="text-foreground font-bold ml-2">{err.name}</span>}
+                          <p className="text-muted-foreground mt-1">{err.message}</p>
                         </div>
-                        {err.email && <span className="text-[10px] text-gray-400 font-mono">{err.email}</span>}
+                        {err.email && <span className="text-[10px] text-muted-foreground font-mono">{err.email}</span>}
                       </div>
                     ))}
                   </div>
@@ -474,7 +474,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               )}
 
               {/* Done */}
-              <div className="pt-2 border-t border-gray-100 flex justify-end">
+              <div className="pt-2 border-t border-border flex justify-end">
                 <Link
                   href="/dashboard/students"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-blue-200"

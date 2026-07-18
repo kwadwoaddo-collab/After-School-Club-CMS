@@ -153,7 +153,7 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: () => voi
 
                 <button
                     onClick={onDismiss}
-                    className="flex-shrink-0 p-1 rounded-lg text-[#8c909f] hover:text-white hover:bg-white/5 transition-all"
+                    className="flex-shrink-0 p-1 rounded-lg text-[#8c909f] hover:text-white hover:bg-card/5 transition-all"
                     aria-label="Dismiss notification"
                 >
                     <X className="w-4 h-4" />
@@ -187,9 +187,9 @@ function ProgressBar({ duration }: { duration: number }) {
     }, [duration]);
 
     return (
-        <div className="h-0.5 bg-white/5 w-full">
+        <div className="h-0.5 bg-card/5 w-full">
             <div
-                className="h-full bg-white/20"
+                className="h-full bg-card/20"
                 style={{ width: `${width}%`, transition: 'none' }}
             />
         </div>

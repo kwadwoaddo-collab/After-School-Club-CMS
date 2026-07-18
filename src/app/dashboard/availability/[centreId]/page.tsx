@@ -69,7 +69,7 @@ export default async function EditAvailabilityPage({ params }: { params: Promise
     });
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-secondary/40">
             <AvailabilityForm
                 centreId={centreId}
                 centreName={centre.name}

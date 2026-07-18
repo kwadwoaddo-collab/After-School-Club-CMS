@@ -45,7 +45,7 @@ export default async function EditStaffPage({ params }: PageProps) {
             FRONT_DESK: 'bg-blue-50   text-blue-700   border-blue-200',
             TUTOR:      'bg-emerald-50 text-emerald-700 border-emerald-200',
         };
-        return styles[role] || 'bg-gray-50 text-gray-700 border-gray-200';
+        return styles[role] || 'bg-secondary/40 text-foreground border-border';
     };
 
     const getRoleAvatarStyle = (role: string) => {
@@ -55,7 +55,7 @@ export default async function EditStaffPage({ params }: PageProps) {
             FRONT_DESK: 'from-blue-100 to-blue-50 text-blue-700 border border-blue-200',
             TUTOR:      'from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200',
         };
-        return styles[role] || 'from-gray-100 to-gray-50 text-gray-700 border border-gray-200';
+        return styles[role] || 'from-gray-100 to-gray-50 text-foreground border border-border';
     };
 
     const getRoleIcon = (role: string, className?: string) => {
@@ -81,16 +81,16 @@ export default async function EditStaffPage({ params }: PageProps) {
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Back Button */}
             <div className="flex items-center justify-between">
-                <Link href="/dashboard/staff" className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                        <ArrowLeft className="w-4 h-4 text-gray-600" />
+                <Link href="/dashboard/staff" className="group inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-secondary/60 border border-border flex items-center justify-center group-hover:bg-secondary transition-all">
+                        <ArrowLeft className="w-4 h-4 text-muted-foreground" />
                     </div>
                     Back to Team
                 </Link>
             </div>
 
             {/* Profile Header */}
-            <div className="bg-white rounded-[32px] p-8 border border-gray-200 shadow-sm">
+            <div className="bg-card rounded-[32px] p-8 border border-border shadow-sm">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     {/* Avatar */}
                     <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center text-2xl font-black flex-shrink-0 ${getRoleAvatarStyle(staffMember.role)}`}>
@@ -98,7 +98,7 @@ export default async function EditStaffPage({ params }: PageProps) {
                     </div>
                     {/* Info */}
                     <div className="flex-1">
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
+                        <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">
                             {staffMember.name || 'Unnamed User'}
                         </h1>
                         <div className="flex flex-wrap items-center gap-3 mb-3">
@@ -107,15 +107,15 @@ export default async function EditStaffPage({ params }: PageProps) {
                                 {staffMember.role.replace(/_/g, ' ')}
                             </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 font-semibold">
-                            <span className="flex items-center gap-1.5"><Mail className="w-4 h-4 text-gray-400" /> {staffMember.email}</span>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground font-semibold">
+                            <span className="flex items-center gap-1.5"><Mail className="w-4 h-4 text-muted-foreground" /> {staffMember.email}</span>
                             {staffMember.role === 'ORG_OWNER' ? (
-                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-gray-400" /> All Centres</span>
+                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-muted-foreground" /> All Centres</span>
                             ) : (
-                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-gray-400" /> {staffMember.memberships.length} Centre{staffMember.memberships.length !== 1 ? 's' : ''} Assigned</span>
+                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-muted-foreground" /> {staffMember.memberships.length} Centre{staffMember.memberships.length !== 1 ? 's' : ''} Assigned</span>
                             )}
                             <span className="flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4 text-gray-400" />
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
                                 Joined {format(new Date(staffMember.createdAt), 'MMMM d, yyyy')}
                             </span>
                         </div>

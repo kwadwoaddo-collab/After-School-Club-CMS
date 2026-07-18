@@ -29,7 +29,7 @@ const ROLES: RoleOption[] = [
         icon: <GraduationCap className="w-5 h-5" />,
         color: 'text-emerald-700',
         bg: 'bg-emerald-50/30',
-        border: 'border-gray-200',
+        border: 'border-border',
         activeBg: 'bg-emerald-50',
         activeBorder: 'border-emerald-200',
     },
@@ -41,7 +41,7 @@ const ROLES: RoleOption[] = [
         icon: <MonitorSmartphone className="w-5 h-5" />,
         color: 'text-blue-700',
         bg: 'bg-blue-50/30',
-        border: 'border-gray-200',
+        border: 'border-border',
         activeBg: 'bg-blue-50',
         activeBorder: 'border-blue-200',
     },
@@ -53,7 +53,7 @@ const ROLES: RoleOption[] = [
         icon: <Briefcase className="w-5 h-5" />,
         color: 'text-violet-700',
         bg: 'bg-violet-50/30',
-        border: 'border-gray-200',
+        border: 'border-border',
         activeBg: 'bg-violet-50',
         activeBorder: 'border-violet-200',
     },
@@ -65,7 +65,7 @@ const ROLES: RoleOption[] = [
         icon: <Crown className="w-5 h-5" />,
         color: 'text-amber-700',
         bg: 'bg-amber-50/30',
-        border: 'border-gray-200',
+        border: 'border-border',
         activeBg: 'bg-amber-50',
         activeBorder: 'border-amber-200',
     },
@@ -108,14 +108,14 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
     };
 
     return (
-        <div className="bg-white rounded-[24px] p-6 border border-gray-200 space-y-5 shadow-sm">
+        <div className="bg-card rounded-[24px] p-6 border border-border space-y-5 shadow-sm">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <ShieldAlert className="w-5 h-5 text-blue-500" />
                     <div>
-                        <h2 className="font-bold text-gray-900">Role & Access Level</h2>
-                        <p className="text-xs text-gray-500 font-semibold mt-0.5">Select the role that matches this staff member&apos;s responsibilities</p>
+                        <h2 className="font-bold text-foreground">Role & Access Level</h2>
+                        <p className="text-xs text-muted-foreground font-semibold mt-0.5">Select the role that matches this staff member&apos;s responsibilities</p>
                     </div>
                 </div>
                 {saved && (
@@ -137,7 +137,7 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
                             className={`relative text-left p-4 rounded-2xl border transition-all duration-200 ${
                                 isActive
                                     ? `${role.activeBg} ${role.activeBorder} ring-1 ${role.activeBorder}`
-                                    : `bg-white ${role.border} hover:border-gray-300 hover:bg-gray-50`
+                                    : `bg-card ${role.border} hover:border-border hover:bg-secondary/40`
                             }`}
                         >
                             {/* Selected checkmark */}
@@ -148,22 +148,22 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
                             )}
 
                             {/* Icon + Label */}
-                            <div className={`flex items-center gap-2 mb-2 ${isActive ? role.color : 'text-gray-400'}`}>
+                            <div className={`flex items-center gap-2 mb-2 ${isActive ? role.color : 'text-muted-foreground'}`}>
                                 {role.icon}
-                                <span className={`text-sm font-bold ${isActive ? role.color : 'text-gray-900'}`}>
+                                <span className={`text-sm font-bold ${isActive ? role.color : 'text-foreground'}`}>
                                     {role.label}
                                 </span>
                             </div>
 
                             {/* Description */}
-                            <p className="text-[11px] text-gray-500 font-semibold leading-relaxed mb-3">
+                            <p className="text-[11px] text-muted-foreground font-semibold leading-relaxed mb-3">
                                 {role.description}
                             </p>
 
                             {/* Permissions list */}
                             <ul className="space-y-1">
                                 {role.permissions.map((perm) => (
-                                    <li key={perm} className={`flex items-center gap-1.5 text-[11px] font-medium ${isActive ? 'text-gray-700' : 'text-gray-400'}`}>
+                                    <li key={perm} className={`flex items-center gap-1.5 text-[11px] font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
                                         <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isActive ? role.color : 'bg-gray-300'}`} />
                                         {perm}
                                     </li>
@@ -190,7 +190,7 @@ export default function StaffRoleSelector({ userId, currentRole, staffName }: Pr
                     <button
                         onClick={() => setSelectedRole(currentRole)}
                         disabled={isPending}
-                        className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-bold transition-all"
+                        className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-secondary/40 text-sm font-bold transition-all"
                     >
                         Cancel
                     </button>

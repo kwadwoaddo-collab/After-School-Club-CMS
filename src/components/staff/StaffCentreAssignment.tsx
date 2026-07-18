@@ -99,11 +99,11 @@ export default function StaffCentreAssignment({
     };
 
     return (
-        <div className="bg-white rounded-[32px] overflow-hidden border border-gray-200 shadow-sm animate-in fade-in duration-500">
-            <div className="px-8 py-6 border-b border-gray-200">
+        <div className="bg-card rounded-[32px] overflow-hidden border border-border shadow-sm animate-in fade-in duration-500">
+            <div className="px-8 py-6 border-b border-border">
                 <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-gray-400" />
-                    <h2 className="text-lg font-bold text-gray-900">Centre Assignments</h2>
+                    <MapPin className="w-5 h-5 text-muted-foreground" />
+                    <h2 className="text-lg font-bold text-foreground">Centre Assignments</h2>
                 </div>
             </div>
 
@@ -124,8 +124,8 @@ export default function StaffCentreAssignment({
                 {allCentres.length === 0 ? (
                     <div className="text-center py-12">
                         <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">No centres available</h3>
-                        <p className="text-sm text-gray-500">Create centres first to assign staff members.</p>
+                        <h3 className="text-lg font-bold text-foreground mb-2">No centres available</h3>
+                        <p className="text-sm text-muted-foreground">Create centres first to assign staff members.</p>
                     </div>
                 ) : (
                     <>
@@ -137,7 +137,7 @@ export default function StaffCentreAssignment({
                                         key={centre.id}
                                         className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected
                                             ? 'border-blue-600 bg-blue-50/50'
-                                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                                            : 'border-border hover:border-border bg-card'
                                             }`}
                                     >
                                         <input
@@ -147,8 +147,8 @@ export default function StaffCentreAssignment({
                                             className="w-5 h-5 rounded focus:ring-2 focus:ring-blue-500/20 accent-blue-600"
                                         />
                                         <div className="flex-1">
-                                            <div className="font-bold text-gray-900">{centre.name}</div>
-                                            <div className="text-sm text-gray-500 font-semibold">{centre.slug}</div>
+                                            <div className="font-bold text-foreground">{centre.name}</div>
+                                            <div className="text-sm text-muted-foreground font-semibold">{centre.slug}</div>
                                         </div>
                                         {isSelected && (
                                             <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
@@ -161,10 +161,10 @@ export default function StaffCentreAssignment({
                         </div>
 
                         {/* Summary */}
-                        <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="mb-6 p-4 bg-secondary/40 rounded-xl border border-border">
                             <div className="text-sm font-medium">
-                                <span className="font-bold text-gray-900">Selected: </span>
-                                <span className="text-gray-500 font-semibold">
+                                <span className="font-bold text-foreground">Selected: </span>
+                                <span className="text-muted-foreground font-semibold">
                                     {selectedCentres.length === 0
                                         ? 'No centres selected - user will have no access'
                                         : selectedCentres.length === 1
@@ -188,7 +188,7 @@ export default function StaffCentreAssignment({
             </div>
 
             {/* Remove Staff Member */}
-            <div className="px-8 py-6 border-t border-gray-200">
+            <div className="px-8 py-6 border-t border-border">
                 {!showRemoveConfirm ? (
                     <button
                         onClick={() => setShowRemoveConfirm(true)}
@@ -224,7 +224,7 @@ export default function StaffCentreAssignment({
                             <button
                                 onClick={() => setShowRemoveConfirm(false)}
                                 disabled={removing}
-                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+                                className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -235,10 +235,10 @@ export default function StaffCentreAssignment({
 
             {/* Save / Cancel Buttons */}
             {allCentres.length > 0 && (
-                <div className="px-8 py-6 border-t border-gray-200 flex items-center justify-between">
+                <div className="px-8 py-6 border-t border-border flex items-center justify-between">
                     <button
                         onClick={() => router.push('/dashboard/staff')}
-                        className="px-6 py-3 text-gray-500 hover:text-gray-900 font-bold transition-colors cursor-pointer"
+                        className="px-6 py-3 text-muted-foreground hover:text-foreground font-bold transition-colors cursor-pointer"
                         disabled={loading}
                     >
                         Cancel
@@ -246,7 +246,7 @@ export default function StaffCentreAssignment({
                     <button
                         onClick={handleSave}
                         disabled={!hasChanges || loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 shadow-sm shadow-blue-100 cursor-pointer"
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:bg-secondary/60 disabled:text-muted-foreground disabled:border-border shadow-sm shadow-blue-100 cursor-pointer"
                     >
                         {loading ? (
                             <>

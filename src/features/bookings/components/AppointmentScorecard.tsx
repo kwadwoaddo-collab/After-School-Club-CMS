@@ -370,26 +370,26 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
             {/* Reschedule Modal Overlay */}
             {showReschedule && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-fadeIn">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Reschedule Session</h3>
+                    <div className="bg-card rounded-xl shadow-2xl max-w-md w-full p-6 animate-fadeIn">
+                        <h3 className="text-xl font-bold text-foreground mb-4">Reschedule Session</h3>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Select New Date</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Select New Date</label>
                                 <input
                                     type="date"
                                     value={rescheduleDate}
                                     onChange={(e) => setRescheduleDate(e.target.value)}
                                     min={new Date().toISOString().split('T')[0]}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
                             </div>
 
                             {rescheduleDate && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Available Times</label>
+                                    <label className="block text-sm font-medium text-foreground mb-2">Available Times</label>
                                     {loadingSlots ? (
-                                        <div className="flex justify-center py-4 text-gray-500">
+                                        <div className="flex justify-center py-4 text-muted-foreground">
                                             <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -397,7 +397,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                             Loading...
                                         </div>
                                     ) : rescheduleSlots.length === 0 ? (
-                                        <p className="text-sm text-gray-500 text-center py-2">No slots available for this date.</p>
+                                        <p className="text-sm text-muted-foreground text-center py-2">No slots available for this date.</p>
                                     ) : (
                                         <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                                             {rescheduleSlots.map((slot) => {
@@ -409,8 +409,8 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                                         onClick={() => setSelectedSlot(slot.startAt)}
                                                         disabled={!slot.available}
                                                         className={`py-2 px-1 text-xs rounded border transition-colors ${isSelected ? 'bg-indigo-600 text-white border-indigo-600' :
-                                                            !slot.available ? 'bg-gray-100 text-gray-400 cursor-not-allowed' :
-                                                                'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                                                            !slot.available ? 'bg-secondary/60 text-muted-foreground cursor-not-allowed' :
+                                                                'bg-card text-foreground border-border hover:border-indigo-300'
                                                             }`}
                                                     >
                                                         {time}
@@ -428,10 +428,10 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                 </div>
                             )}
 
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
+                            <div className="flex gap-3 mt-6 pt-4 border-t border-border">
                                 <button
                                     onClick={() => { setShowReschedule(false); setRescheduleDate(''); setSelectedSlot(null); }}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                    className="flex-1 px-4 py-2 text-sm font-medium text-foreground bg-secondary/60 hover:bg-secondary rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>

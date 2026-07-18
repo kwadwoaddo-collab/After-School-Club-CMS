@@ -58,7 +58,7 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
             <div className="flex items-center gap-4">
                 <Link
                     href={`/dashboard/bookings/${bookingId}`}
-                    className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                    className="p-2 hover:bg-card/10 rounded-xl transition-colors"
                 >
                     <ChevronLeft className="w-5 h-5 text-white/60 hover:text-white" />
                 </Link>

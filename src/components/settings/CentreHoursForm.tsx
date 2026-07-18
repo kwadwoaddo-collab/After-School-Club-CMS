@@ -199,7 +199,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                                         onClick={() => updateDay(day, 'open', !sch.open)}
                                         className={`relative w-10 h-5 rounded-full transition-colors ${sch.open ? 'bg-emerald-500' : 'bg-secondary'}`}
                                     >
-                                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${sch.open ? 'translate-x-5' : ''}`} />
+                                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-card rounded-full shadow transition-transform ${sch.open ? 'translate-x-5' : ''}`} />
                                     </button>
                                     <span className="text-sm font-semibold text-foreground">{DAY_LABELS[day]}</span>
                                 </div>

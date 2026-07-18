@@ -225,7 +225,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                             onClick={() => {
                                 setReceiptNo(generateReceiptNumber());
                             }}
-                            className="flex-1 h-11 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white text-xs font-bold transition-all"
+                            className="flex-1 h-11 rounded-2xl bg-card/5 border border-white/10 hover:bg-card/10 text-white text-xs font-bold transition-all"
                         >
                             Reset / Regenerate
                         </button>
@@ -253,7 +253,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                 {/* Printable Receipt Card */}
                 <div 
                     id="receipt-print-area"
-                    className="w-full max-w-xl bg-white border border-[#424754]/10 rounded-[32px] p-8 sm:p-10 shadow-2xl relative text-slate-800 overflow-hidden print-layout"
+                    className="w-full max-w-xl bg-card border border-[#424754]/10 rounded-[32px] p-8 sm:p-10 shadow-2xl relative text-slate-800 overflow-hidden print-layout"
                     style={{
                         minHeight: '620px',
                     }}

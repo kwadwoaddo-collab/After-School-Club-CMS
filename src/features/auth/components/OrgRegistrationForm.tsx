@@ -51,10 +51,10 @@ export default function OrgRegistrationForm() {
     }
 
     return (
-        <div className="w-full max-w-md mx-auto p-6 bg-white rounded-2xl shadow-xl">
+        <div className="w-full max-w-md mx-auto p-6 bg-card rounded-2xl shadow-xl">
             <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900">Create your Account</h2>
-                <p className="text-gray-500 mt-2">Start managing your tuition centre today</p>
+                <h2 className="text-3xl font-bold text-foreground">Create your Account</h2>
+                <p className="text-muted-foreground mt-2">Start managing your tuition centre today</p>
             </div>
 
             {error && (
@@ -67,68 +67,68 @@ export default function OrgRegistrationForm() {
 
                 {/* Organisation Details */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Organisation Name</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Organisation Name</label>
                     <input
                         name="orgName"
                         type="text"
                         required
                         placeholder="e.g. My Tuition Centre"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
                 {/* User Details */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
                         <input
                             name="firstName"
                             type="text"
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
                         <input
                             name="lastName"
                             type="text"
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
                     <input
                         name="email"
                         type="email"
                         required
                         placeholder="you@example.com"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Password</label>
                     <input
                         name="password"
                         type="password"
                         required
                         minLength={8}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Confirm Password</label>
                     <input
                         name="confirmPassword"
                         type="password"
                         required
                         minLength={8}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
@@ -141,7 +141,7 @@ export default function OrgRegistrationForm() {
                 </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
+            <p className="mt-6 text-center text-sm text-muted-foreground">
                 Already have an account?{' '}
                 <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
                     Sign in

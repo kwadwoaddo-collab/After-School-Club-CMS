@@ -6,7 +6,7 @@ export default function StorageUsage() {
     const percentage = (used / total) * 100;
 
     return (
-        <div className="glass-card p-6 rounded-[32px] bg-white border border-slate-100">
+        <div className="glass-card p-6 rounded-[32px] bg-card border border-slate-100">
             <div className="flex items-center gap-4 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white">
                     <Database className="w-5 h-5" />

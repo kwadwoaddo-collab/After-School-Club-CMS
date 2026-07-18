@@ -55,7 +55,7 @@ export default function DownloadButton(props: DownloadButtonProps) {
         return (
             <button
                 disabled
-                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 text-white/50 border border-white/10 rounded-xl text-sm font-semibold cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2.5 bg-card/5 text-white/50 border border-white/10 rounded-xl text-sm font-semibold cursor-not-allowed"
             >
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading PDF...

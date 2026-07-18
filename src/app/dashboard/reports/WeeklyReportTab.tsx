@@ -73,7 +73,7 @@ function SectionHeading({ icon: Icon, title, iconClass = 'text-blue-600', bgClas
 
 function EmptyState({ message }: { message: string }) {
     return (
-        <div className="py-10 text-center bg-gray-50 rounded-2xl border border-gray-100">
+        <div className="py-10 text-center bg-secondary/40 rounded-2xl border border-border">
             <p className="text-sm text-muted-foreground font-medium italic">{message}</p>
         </div>
     );
@@ -86,10 +86,10 @@ interface TableWrapperProps {
 
 function TableWrapper({ headers, children }: TableWrapperProps) {
     return (
-        <div className="overflow-x-auto rounded-2xl border border-gray-200">
+        <div className="overflow-x-auto rounded-2xl border border-border">
             <table className="w-full text-sm min-w-max">
                 <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
+                    <tr className="bg-secondary/40 border-b border-border">
                         {headers.map((h) => (
                             <th
                                 key={h}
@@ -100,7 +100,7 @@ function TableWrapper({ headers, children }: TableWrapperProps) {
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">{children}</tbody>
+                <tbody className="divide-y divide-gray-100 bg-card">{children}</tbody>
             </table>
         </div>
     );
@@ -119,7 +119,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, iconClass = 'text-blue-600', iconBg = 'bg-blue-50', valueClass = 'text-foreground' }: StatCardProps) {
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
                 <div className={`w-8 h-8 ${iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
@@ -183,7 +183,7 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                                 key={i}
                                 className={`transition-colors ${isOverdue
                                     ? 'border-l-2 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50'
-                                    : 'hover:bg-gray-50'
+                                    : 'hover:bg-secondary/40'
                                 }`}
                             >
                                 <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{r.childNames}</td>
@@ -229,7 +229,7 @@ function NewBookingsSection({ rows }: { rows: WeeklyReportData['newBookings'] })
             ) : (
                 <TableWrapper headers={headers}>
                     {rows.map((b, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <tr key={i} className="hover:bg-secondary/40 transition-colors">
                             <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">{b.childNames}</td>
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{b.parentName}</td>
                             <td className="px-4 py-3 text-muted-foreground text-xs">{b.parentEmail}</td>
@@ -261,7 +261,7 @@ function AttendanceSection({ rows }: { rows: WeeklyReportData['attendanceByCentr
             ) : (
                 <TableWrapper headers={headers}>
                     {rows.map((a) => (
-                        <tr key={a.centreId} className="hover:bg-gray-50 transition-colors">
+                        <tr key={a.centreId} className="hover:bg-secondary/40 transition-colors">
                             <td className="px-4 py-3 font-semibold text-foreground">{a.centre}</td>
                             <td className="px-4 py-3 text-foreground/80">{a.sessionsRun}</td>
                             <td className="px-4 py-3 text-foreground/80">{a.studentsExpected}</td>
@@ -301,7 +301,7 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
             ) : (
                 <TableWrapper headers={headers}>
                     {rows.map((p, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <tr key={i} className="hover:bg-secondary/40 transition-colors">
                             <td className="px-4 py-3 whitespace-nowrap">
                                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${PENDING_TYPE_COLORS[p.type]}`}>
                                     {PENDING_TYPE_LABELS[p.type]}
@@ -389,7 +389,7 @@ export default function WeeklyReportTab() {
         <div className="flex flex-col gap-6">
 
             {/* ── Date Range Card ──────────────────────────────────────────── */}
-            <div className="bg-white border border-gray-200 rounded-3xl p-8 flex flex-col gap-6 shadow-sm">
+            <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <FileText className="w-6 h-6 text-blue-600" />
@@ -409,7 +409,7 @@ export default function WeeklyReportTab() {
                                 onClick={() => { setRangeMode(mode); setReportData(null); setError(null); setPdfError(null); }}
                                 className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${rangeMode === mode
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                    : 'bg-white text-muted-foreground border-gray-200 hover:text-foreground hover:border-gray-300 hover:bg-gray-50'
+                                    : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-border hover:bg-secondary/40'
                                 }`}
                             >
                                 {label}
@@ -420,7 +420,7 @@ export default function WeeklyReportTab() {
 
                 {/* Custom range inputs */}
                 {rangeMode === 'custom' && (
-                    <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+                    <div className="p-5 bg-secondary/40 rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Date Range</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -429,7 +429,7 @@ export default function WeeklyReportTab() {
                                     type="date"
                                     value={customStart}
                                     onChange={(e) => setCustomStart(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                 />
                             </div>
                             <div>
@@ -438,7 +438,7 @@ export default function WeeklyReportTab() {
                                     type="date"
                                     value={customEnd}
                                     onChange={(e) => setCustomEnd(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                 />
                             </div>
                         </div>
@@ -467,7 +467,7 @@ export default function WeeklyReportTab() {
 
             {/* ── Loading ──────────────────────────────────────────────────── */}
             {isLoading && (
-                <div className="bg-white border border-gray-200 rounded-3xl p-16 flex flex-col items-center gap-4 shadow-sm">
+                <div className="bg-card border border-border rounded-3xl p-16 flex flex-col items-center gap-4 shadow-sm">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
                     <p className="text-sm text-muted-foreground font-medium">Fetching data for the selected period…</p>
                 </div>
@@ -475,10 +475,10 @@ export default function WeeklyReportTab() {
 
             {/* ── Report Preview ───────────────────────────────────────────── */}
             {reportData && !isLoading && (
-                <div className="bg-white border border-gray-200 rounded-3xl p-8 flex flex-col gap-8 shadow-sm animate-in fade-in duration-300">
+                <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-8 shadow-sm animate-in fade-in duration-300">
 
                     {/* Period header row */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
                         <div>
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Report Period</p>
                             <h2 className="text-lg font-bold text-foreground">
@@ -494,7 +494,7 @@ export default function WeeklyReportTab() {
                             <button
                                 onClick={handleDownloadPdf}
                                 disabled={isPdfLoading}
-                                className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 px-6 py-3 bg-card hover:bg-secondary/40 border border-border hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isPdfLoading ? (
                                     <><Loader2 className="w-4 h-4 text-blue-600 animate-spin" />Generating PDF…</>
@@ -511,22 +511,22 @@ export default function WeeklyReportTab() {
                     {/* 1. Summary */}
                     <SummarySection summary={reportData.summary} />
 
-                    <hr className="border-gray-100" />
+                    <hr className="border-border" />
 
                     {/* 2. New Registrations */}
                     <NewRegistrationsSection rows={reportData.newRegistrations} />
 
-                    <hr className="border-gray-100" />
+                    <hr className="border-border" />
 
                     {/* 3. New Bookings */}
                     <NewBookingsSection rows={reportData.newBookings} />
 
-                    <hr className="border-gray-100" />
+                    <hr className="border-border" />
 
                     {/* 4. Attendance by Centre */}
                     <AttendanceSection rows={reportData.attendanceByCentre} />
 
-                    <hr className="border-gray-100" />
+                    <hr className="border-border" />
 
                     {/* 5. Pending Actions */}
                     <PendingActionsSection rows={reportData.pendingActions} />

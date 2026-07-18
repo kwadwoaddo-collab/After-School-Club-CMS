@@ -249,7 +249,7 @@ export default async function BookingsPage(props: {
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg font-black text-white tracking-tight">Bookings</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
                         {isFiltered ? `${totalRecords} of ${totalAggCount}` : totalAggCount}
                     </span>
                 </div>
@@ -288,7 +288,7 @@ export default async function BookingsPage(props: {
                             >
                                 <span>{tab.label}</span>
                                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
-                                    isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-white/5 text-slate-400'}`
+                                    isActive ? 'bg-primary text-white shadow-sm' : `${tab.color || 'bg-card/5 text-slate-400'}`
                                 }`}>
                                     {tab.count}
                                 </span>
@@ -302,7 +302,7 @@ export default async function BookingsPage(props: {
                 {/* Today quick filter */}
                 <Link
                     href={isToday ? '/dashboard/bookings' : '/dashboard/bookings?today=true'}
-                    className={`flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2 bg-card/5 hover:bg-card/10 border rounded-xl text-xs font-bold transition-all ${
                         isToday
                             ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
                             : 'border-white/10 text-white'
@@ -313,7 +313,7 @@ export default async function BookingsPage(props: {
                 </Link>
                 <Link
                     href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all active:scale-95 duration-100"
+                    className="flex items-center gap-2 px-4 py-2 bg-card/5 hover:bg-card/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all active:scale-95 duration-100"
                 >
                     <Download className="w-3.5 h-3.5" />
                     <span>Export</span>

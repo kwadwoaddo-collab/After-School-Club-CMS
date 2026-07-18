@@ -289,7 +289,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 {reg.parentSignature && (
                     <div className="glassmorphic-card rounded-2xl p-6">
                         <h2 className="text-white font-bold mb-4">Parent Signature</h2>
-                        <div className="bg-white rounded-xl p-4 border border-outline-variant/10">
+                        <div className="bg-card rounded-xl p-4 border border-outline-variant/10">
                             <img
                                 src={reg.parentSignature}
                                 alt="Parent signature"

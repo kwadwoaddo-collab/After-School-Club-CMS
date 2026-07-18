@@ -59,7 +59,7 @@ export default function StudentNotesPanel({ childId, childName, notes, currentUs
                     <p className="text-sm text-slate-500 italic text-center py-4">No internal notes yet.</p>
                 ) : (
                     notes.map(note => (
-                        <div key={note.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative group">
+                        <div key={note.id} className="bg-card p-4 rounded-2xl border border-slate-100 shadow-sm relative group">
                             <p className="text-sm text-slate-700 whitespace-pre-wrap">{note.content}</p>
                             <div className="flex items-center justify-between mt-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 <span>Observation by {note.authorName} • {format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
@@ -84,7 +84,7 @@ export default function StudentNotesPanel({ childId, childName, notes, currentUs
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Add a new internal note..."
                     rows={2}
-                    className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
+                    className="flex-1 px-4 py-3 bg-card border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
                     disabled={isPending}
                 />
                 <button

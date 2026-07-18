@@ -49,14 +49,14 @@ export default function BookingList({ bookings }: BookingListProps) {
 
     if (bookings.length === 0) {
         return (
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
-                <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center py-16 bg-card rounded-2xl border border-border shadow-sm transition-all hover:shadow-md">
+                <div className="mx-auto w-16 h-16 bg-secondary/40 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">No appointments found</h3>
-                <p className="text-gray-500 max-w-xs mx-auto">Upcoming or past bookings will appear here once they are created.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-1">No appointments found</h3>
+                <p className="text-muted-foreground max-w-xs mx-auto">Upcoming or past bookings will appear here once they are created.</p>
             </div>
         );
     }

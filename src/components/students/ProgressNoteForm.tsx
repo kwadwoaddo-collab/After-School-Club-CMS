@@ -9,7 +9,7 @@ type NoteType = 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'att
 type Rating = 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
 
 const NOTE_TYPES: { value: NoteType; label: string; color: string; active: string }[] = [
-    { value: 'general',            label: 'General',            color: 'bg-gray-100 text-gray-600 hover:bg-gray-200',         active: 'bg-gray-700 text-white' },
+    { value: 'general',            label: 'General',            color: 'bg-secondary/60 text-muted-foreground hover:bg-secondary',         active: 'bg-gray-700 text-white' },
     { value: 'progress',           label: 'Progress',           color: 'bg-blue-50 text-blue-600 hover:bg-blue-100',          active: 'bg-blue-600 text-white' },
     { value: 'subject_feedback',   label: 'Activity Feedback',  color: 'bg-violet-50 text-violet-600 hover:bg-violet-100',    active: 'bg-violet-600 text-white' },
     { value: 'behaviour',          label: 'Behaviour',          color: 'bg-amber-50 text-amber-700 hover:bg-amber-100',       active: 'bg-amber-500 text-white' },
@@ -62,26 +62,26 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
             {/* Collapsed header */}
             <button
                 onClick={() => setIsExpanded(v => !v)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-secondary/40 transition-colors"
             >
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
                         <Plus className="w-4 h-4 text-blue-600" />
                     </div>
-                    <span className="text-sm font-bold text-gray-800">Add Progress Note</span>
+                    <span className="text-sm font-bold text-foreground">Add Progress Note</span>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
             </button>
 
             {isExpanded && (
-                <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+                <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
                     {/* Note type */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Note Type</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Note Type</label>
                         <div className="flex flex-wrap gap-2">
                             {NOTE_TYPES.map(type => (
                                 <button
@@ -100,11 +100,11 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                     {/* Subject */}
                     {needsSubject && (
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Activity / Club</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Activity / Club</label>
                             <select
                                 value={subject}
                                 onChange={e => setSubject(e.target.value)}
-                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                className="w-full bg-card border border-border text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                             >
                                 <option value="">Select activity…</option>
                                 {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -115,7 +115,7 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                     {/* Rating */}
                     {needsRating && (
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Performance Rating</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Performance Rating</label>
                             <div className="flex flex-wrap gap-2">
                                 {RATINGS.map(r => (
                                     <button
@@ -134,13 +134,13 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
 
                     {/* Content */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Note</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Note</label>
                         <textarea
                             value={content}
                             onChange={e => setContent(e.target.value)}
                             placeholder={`Add a ${NOTE_TYPES.find(t => t.value === noteType)?.label.toLowerCase()} note for ${childName}…`}
                             rows={3}
-                            className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                            className="w-full bg-card border border-border text-foreground rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                         />
                     </div>
 

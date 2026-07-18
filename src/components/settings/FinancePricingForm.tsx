@@ -183,15 +183,15 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="text-sm font-bold text-foreground mb-2 block">Standard Fee (Self-Finance)</label>
-                        <div className="flex rounded-2xl border border-gray-200 overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-                            <span className="flex items-center px-4 bg-gray-50 border-r border-gray-200 text-muted-foreground font-semibold text-sm select-none">£</span>
+                        <div className="flex rounded-2xl border border-border overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                            <span className="flex items-center px-4 bg-secondary/40 border-r border-border text-muted-foreground font-semibold text-sm select-none">£</span>
                             <input
                                 type="number"
                                 step="0.01"
                                 min="0"
                                 value={feeSelfFinance}
                                 onChange={(e) => setFeeSelfFinance(e.target.value)}
-                                className="flex-1 px-4 py-3 bg-white text-foreground text-sm focus:outline-none placeholder-gray-400"
+                                className="flex-1 px-4 py-3 bg-card text-foreground text-sm focus:outline-none placeholder-gray-400"
                                 placeholder="0.00"
                                 disabled={saving}
                             />
@@ -201,15 +201,15 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
 
                     <div>
                         <label className="text-sm font-bold text-foreground mb-2 block">Assisted Finance Fee</label>
-                        <div className="flex rounded-2xl border border-gray-200 overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-                            <span className="flex items-center px-4 bg-gray-50 border-r border-gray-200 text-muted-foreground font-semibold text-sm select-none">£</span>
+                        <div className="flex rounded-2xl border border-border overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                            <span className="flex items-center px-4 bg-secondary/40 border-r border-border text-muted-foreground font-semibold text-sm select-none">£</span>
                             <input
                                 type="number"
                                 step="0.01"
                                 min="0"
                                 value={feeAssistedFinance}
                                 onChange={(e) => setFeeAssistedFinance(e.target.value)}
-                                className="flex-1 px-4 py-3 bg-white text-foreground text-sm focus:outline-none placeholder-gray-400"
+                                className="flex-1 px-4 py-3 bg-card text-foreground text-sm focus:outline-none placeholder-gray-400"
                                 placeholder="0.00"
                                 disabled={saving}
                             />
@@ -218,7 +218,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                     </div>
                 </div>
 
-                <div className="h-px bg-gray-200 my-2" />
+                <div className="h-px bg-secondary my-2" />
 
                 <div className="space-y-6">
                     <h3 className="text-lg font-bold text-foreground">Bank Details</h3>
@@ -261,7 +261,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                     </div>
                 </div>
 
-                <div className="h-px bg-gray-200 my-2" />
+                <div className="h-px bg-secondary my-2" />
 
                 <div className="space-y-6">
                     <h3 className="text-lg font-bold text-foreground">Management & Regulatory</h3>

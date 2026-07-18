@@ -250,7 +250,7 @@ export default async function StudentAttendanceHistoryPage(
                                                 <span className="font-bold text-white text-base">
                                                     {formattedDate}
                                                 </span>
-                                                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/5 border border-outline-variant/10 text-on-surface-variant/80">
+                                                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-card/5 border border-outline-variant/10 text-on-surface-variant/80">
                                                     {sessionType}
                                                 </span>
                                             </div>

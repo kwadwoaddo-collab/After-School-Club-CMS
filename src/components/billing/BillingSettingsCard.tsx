@@ -68,12 +68,12 @@ function CollapsedView({
             {/* Fee + status row */}
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-2xl font-black text-gray-900 tracking-tight">
+                    <p className="text-2xl font-black text-foreground tracking-tight">
                         {penceToPounds(config.agreedMonthlyPence)}
-                        <span className="text-sm font-semibold text-gray-400 ml-1">/month</span>
+                        <span className="text-sm font-semibold text-muted-foreground ml-1">/month</span>
                     </p>
                     {preview[0] && (
-                        <p className="text-xs text-gray-400 font-medium mt-0.5">{preview[0]}</p>
+                        <p className="text-xs text-muted-foreground font-medium mt-0.5">{preview[0]}</p>
                     )}
                 </div>
                 <StatusBadge status={config.status} />
@@ -83,7 +83,7 @@ function CollapsedView({
             {config.coveredChildren.length > 0 && (
                 <div>
                     {config.coveredChildren.length > 1 && (
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-1.5">
                             Shared family billing — {config.coveredChildren.length} children
                         </p>
                     )}
@@ -91,7 +91,7 @@ function CollapsedView({
                         {config.coveredChildren.map(c => (
                             <span
                                 key={c.childId}
-                                className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold"
+                                className="px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-bold"
                             >
                                 {c.childName}
                             </span>
@@ -101,13 +101,13 @@ function CollapsedView({
             )}
 
             {config.notes && (
-                <p className="text-xs text-gray-400 italic">{config.notes}</p>
+                <p className="text-xs text-muted-foreground italic">{config.notes}</p>
             )}
 
             {/* Edit button */}
             <button
                 onClick={onEdit}
-                className="w-full h-9 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50 transition-all flex items-center justify-center gap-1.5"
+                className="w-full h-9 rounded-xl border border-border text-muted-foreground text-xs font-bold hover:border-primary/30 hover:text-primary hover:bg-primary/10 transition-all flex items-center justify-center gap-1.5"
             >
                 <Pencil className="w-3.5 h-3.5" />
                 Edit billing settings
@@ -209,11 +209,11 @@ function EditForm({
         <div className="space-y-4">
             {/* Monthly fee */}
             <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                     Agreed Monthly Fee
                 </label>
                 <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">£</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">£</span>
                     <input
                         type="number"
                         step="0.01"
@@ -221,26 +221,26 @@ function EditForm({
                         value={fee}
                         onChange={e => setFee(e.target.value)}
                         placeholder="0.00"
-                        className="w-full h-11 pl-7 pr-4 rounded-xl border border-gray-200 text-gray-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full h-11 pl-7 pr-4 rounded-xl border border-border text-foreground font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
                     />
                 </div>
             </div>
 
             {/* Billing start date */}
             <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                     First Billing Date
                 </label>
                 <input
                     type="date"
                     value={anchorDate}
                     onChange={e => setAnchorDate(e.target.value)}
-                    className="w-full h-11 px-4 rounded-xl border border-gray-200 text-gray-900 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-11 px-4 rounded-xl border border-border text-foreground font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
                 />
                 {periodPreview.length > 0 && (
                     <div className="mt-2 space-y-1">
                         {periodPreview.map((p, i) => (
-                            <p key={i} className="text-[11px] text-blue-600 font-semibold">
+                            <p key={i} className="text-[11px] text-primary font-semibold">
                                 {i === 0 ? '→ Next: ' : '→ Then: '}{p}
                             </p>
                         ))}
@@ -250,7 +250,7 @@ function EditForm({
 
             {/* Invoice lead days */}
             <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                     Invoice Lead Time
                 </label>
                 <div className="flex items-center gap-3">
@@ -260,15 +260,15 @@ function EditForm({
                         max="30"
                         value={leadDays}
                         onChange={e => setLeadDays(Number(e.target.value))}
-                        className="w-20 h-11 px-3 rounded-xl border border-gray-200 text-gray-900 font-bold text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-20 h-11 px-3 rounded-xl border border-border text-foreground font-bold text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
-                    <span className="text-sm text-gray-500 font-semibold">days before period start</span>
+                    <span className="text-sm text-muted-foreground font-semibold">days before period start</span>
                 </div>
             </div>
 
             {/* Children covered */}
             <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Children Covered
                 </label>
                 <div className="space-y-2">
@@ -277,17 +277,17 @@ function EditForm({
                             key={s.id}
                             className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                                 selectedChildIds.has(s.id)
-                                    ? 'border-blue-300 bg-blue-50'
-                                    : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-primary/30 bg-primary/5'
+                                    : 'border-border hover:border-border'
                             }`}
                         >
                             <input
                                 type="checkbox"
                                 checked={selectedChildIds.has(s.id)}
                                 onChange={() => toggleChild(s.id)}
-                                className="w-4 h-4 rounded accent-blue-600"
+                                className="w-4 h-4 rounded accent-primary"
                             />
-                            <span className={`text-sm font-bold ${selectedChildIds.has(s.id) ? 'text-blue-700' : 'text-gray-700'}`}>
+                            <span className={`text-sm font-bold ${selectedChildIds.has(s.id) ? 'text-primary' : 'text-foreground'}`}>
                                 {s.firstName} {s.lastName}
                             </span>
                         </label>
@@ -297,7 +297,7 @@ function EditForm({
 
             {/* Notes */}
             <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                     Notes (optional)
                 </label>
                 <textarea
@@ -305,7 +305,7 @@ function EditForm({
                     onChange={e => setNotes(e.target.value)}
                     rows={2}
                     placeholder="Any special agreements or notes..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-border text-foreground text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
                 />
             </div>
 
@@ -321,14 +321,14 @@ function EditForm({
                 <button
                     onClick={onCancel}
                     disabled={isPending}
-                    className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
+                    className="flex-1 h-11 rounded-xl border border-border text-muted-foreground text-sm font-bold hover:bg-secondary/40 transition-all disabled:opacity-50"
                 >
                     Cancel
                 </button>
                 <button
                     onClick={handleSave}
                     disabled={isPending}
-                    className="flex-1 h-11 rounded-xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 transition-all disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="flex-1 h-11 rounded-xl bg-primary text-white text-sm font-black hover:bg-primary/90 transition-all disabled:opacity-60 active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                     {isPending ? (
                         <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
@@ -415,16 +415,16 @@ export default function BillingSettingsCard({
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
             {/* Header */}
             <div className="px-4 pt-4 pb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center">
-                        <PoundSterling className="w-4 h-4 text-blue-600" />
+                    <div className="w-8 h-8 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-center">
+                        <PoundSterling className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                        <p className="text-sm font-black text-gray-900">Billing</p>
-                        <p className="text-[11px] text-gray-400 font-semibold">Family billing settings</p>
+                        <p className="text-sm font-black text-foreground">Billing</p>
+                        <p className="text-[11px] text-muted-foreground font-semibold">Family billing settings</p>
                     </div>
                 </div>
                 {existingConfig && !isEditing && (
@@ -432,7 +432,7 @@ export default function BillingSettingsCard({
                 )}
             </div>
 
-            <div className="mx-4 border-t border-gray-100" />
+            <div className="mx-4 border-t border-border" />
 
             {/* Body */}
             <div className="px-4 py-4">
@@ -454,14 +454,14 @@ export default function BillingSettingsCard({
                     </>
                 ) : (
                     <div className="text-center py-4">
-                        <div className="w-10 h-10 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                            <PoundSterling className="w-5 h-5 text-gray-400" />
+                        <div className="w-10 h-10 bg-secondary/60 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                            <PoundSterling className="w-5 h-5 text-muted-foreground" />
                         </div>
-                        <p className="text-sm font-bold text-gray-600 mb-0.5">No billing set up</p>
-                        <p className="text-xs text-gray-400 mb-3">Set an agreed monthly fee for this family</p>
+                        <p className="text-sm font-bold text-muted-foreground mb-0.5">No billing set up</p>
+                        <p className="text-xs text-muted-foreground mb-3">Set an agreed monthly fee for this family</p>
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="w-full h-10 rounded-xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                            className="w-full h-10 rounded-xl bg-primary text-white text-sm font-black hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                             <PoundSterling className="w-4 h-4" />
                             Set Up Family Billing

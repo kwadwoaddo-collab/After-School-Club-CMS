@@ -134,14 +134,14 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
 
     if (success) {
         return (
-            <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="text-center py-12 bg-card rounded-xl shadow-sm border border-border">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
                     <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Application Received!</h2>
-                <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+                <h2 className="text-3xl font-bold text-foreground mb-4">Application Received!</h2>
+                <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
                     Thanks for registering with {centreName}. We'll be in touch shortly to confirm your lesson schedule.
                 </p>
                 <button
@@ -162,14 +162,14 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                     {['Parent', 'Student', 'Preferences', 'Confirm'].map((label, i) => (
                         <span
                             key={label}
-                            className={`text-sm font-medium ${step > i + 1 ? 'text-green-600' : step === i + 1 ? 'text-indigo-600' : 'text-gray-400'
+                            className={`text-sm font-medium ${step > i + 1 ? 'text-green-600' : step === i + 1 ? 'text-indigo-600' : 'text-muted-foreground'
                                 }`}
                         >
                             {label}
                         </span>
                     ))}
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
                     <div
                         className="h-full bg-indigo-600 transition-all duration-500 ease-out"
                         style={{ width: `${(step / 4) * 100}%` }}
@@ -183,21 +183,21 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                 </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <form onSubmit={handleSubmit(onSubmit)} className="bg-card rounded-xl shadow-lg border border-border overflow-hidden">
                 {/* Step 1: Parent Details */}
                 {step === 1 && (
                     <div className="p-8 space-y-6 animate-fadeIn">
                         <div className="border-b pb-4 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Parent / Guardian Details</h2>
-                            <p className="text-gray-500">Who should we contact regarding updates?</p>
+                            <h2 className="text-2xl font-bold text-foreground">Parent / Guardian Details</h2>
+                            <p className="text-muted-foreground">Who should we contact regarding updates?</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
                                 <input
                                     {...register('parent.firstName')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     placeholder="e.g. John"
                                 />
                                 {errors.parent?.firstName && (
@@ -206,10 +206,10 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
                                 <input
                                     {...register('parent.lastName')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     placeholder="e.g. Smith"
                                 />
                                 {errors.parent?.lastName && (
@@ -218,11 +218,11 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
                                 <input
                                     type="email"
                                     {...register('parent.email')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     placeholder="john@example.com"
                                 />
                                 {errors.parent?.email && (
@@ -231,11 +231,11 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Phone Number</label>
                                 <input
                                     type="tel"
                                     {...register('parent.phone')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     placeholder="07700 900000"
                                 />
                                 {errors.parent?.phone && (
@@ -244,10 +244,10 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Relationship to Child</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Relationship to Child</label>
                                 <select
                                     {...register('parent.relationship')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 >
                                     <option value="Mother">Mother</option>
                                     <option value="Father">Father</option>
@@ -263,16 +263,16 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                 {step === 2 && (
                     <div className="p-8 space-y-6 animate-fadeIn">
                         <div className="border-b pb-4 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Student Details</h2>
-                            <p className="text-gray-500">Tell us about the student</p>
+                            <h2 className="text-2xl font-bold text-foreground">Student Details</h2>
+                            <p className="text-muted-foreground">Tell us about the student</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
                                 <input
                                     {...register('child.firstName')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 />
                                 {errors.child?.firstName && (
                                     <p className="mt-1 text-sm text-red-600">{errors.child.firstName.message}</p>
@@ -280,10 +280,10 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
                                 <input
                                     {...register('child.lastName')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 />
                                 {errors.child?.lastName && (
                                     <p className="mt-1 text-sm text-red-600">{errors.child.lastName.message}</p>
@@ -291,11 +291,11 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Date of Birth</label>
                                 <input
                                     type="date"
                                     {...register('child.dateOfBirth')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 />
                                 {errors.child?.dateOfBirth && (
                                     <p className="mt-1 text-sm text-red-600">{errors.child.dateOfBirth.message}</p>
@@ -303,10 +303,10 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">School Year</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">School Year</label>
                                 <select
                                     {...register('child.schoolYear')}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 >
                                     <option value="">Select Year Group</option>
                                     {SCHOOL_YEARS.map(year => (
@@ -319,7 +319,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Activities / Interests</label>
+                                <label className="block text-sm font-medium text-foreground mb-3">Activities / Interests</label>
                                 <div className="flex flex-wrap gap-3">
                                     {SUBJECTS.map((subject) => (
                                         <button
@@ -328,7 +328,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                             onClick={() => toggleSubject(subject)}
                                             className={`px-6 py-3 rounded-lg font-medium transition-all ${watchSubjects?.includes(subject)
                                                     ? 'brand-bg text-white shadow-md transform scale-105'
-                                                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                                    : 'bg-secondary/40 text-muted-foreground hover:bg-secondary/60'
                                                 }`}
                                         >
                                             {watchSubjects?.includes(subject) && '✓ '}
@@ -342,11 +342,11 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+                                <label className="block text-sm font-medium text-foreground mb-1">Additional Notes</label>
                                 <textarea
                                     {...register('child.notes')}
                                     rows={3}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-4 py-3 rounded-lg border border-border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     placeholder="Any learning difficulties, allergies, or specific goals?"
                                 />
                             </div>
@@ -358,13 +358,13 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                 {step === 3 && (
                     <div className="p-8 space-y-6 animate-fadeIn">
                         <div className="border-b pb-4 mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Session Preferences</h2>
-                            <p className="text-gray-500">When would you like sessions to take place?</p>
+                            <h2 className="text-2xl font-bold text-foreground">Session Preferences</h2>
+                            <p className="text-muted-foreground">When would you like sessions to take place?</p>
                         </div>
 
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Preferred Days</label>
+                                <label className="block text-sm font-medium text-foreground mb-3">Preferred Days</label>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {DAYS.map((day) => (
                                         <button
@@ -373,7 +373,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                             onClick={() => toggleDay(day)}
                                             className={`px-4 py-3 rounded-lg font-medium transition-all text-left ${watchDays?.includes(day)
                                                     ? 'brand-bg text-white shadow-md'
-                                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                    : 'bg-card border border-border text-muted-foreground hover:bg-secondary/40'
                                                 }`}
                                         >
                                             {watchDays?.includes(day) && '✓ '}
@@ -387,7 +387,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Session Format</label>
+                                <label className="block text-sm font-medium text-foreground mb-3">Session Format</label>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {[
                                         { val: 'Group', label: 'Group Session', desc: 'Learn and play with peers (Max 6)' },
@@ -398,7 +398,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                             key={type.val}
                                             className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${watchLessonType === type.val
                                                     ? 'border-indigo-600 bg-indigo-50 scale-[1.02]'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    : 'border-border hover:border-border'
                                                 }`}
                                         >
                                             <input
@@ -407,8 +407,8 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                                 {...register('preferences.lessonType')}
                                                 className="sr-only"
                                             />
-                                            <div className="font-bold text-gray-900">{type.label}</div>
-                                            <div className="text-sm text-gray-500">{type.desc}</div>
+                                            <div className="font-bold text-foreground">{type.label}</div>
+                                            <div className="text-sm text-muted-foreground">{type.desc}</div>
                                         </label>
                                     ))}
                                 </div>
@@ -421,44 +421,44 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                 {step === 4 && (
                     <div className="p-8 space-y-8 animate-fadeIn">
                         <div className="border-b pb-4">
-                            <h2 className="text-2xl font-bold text-gray-900">Review Application</h2>
-                            <p className="text-gray-500">Please verify your details before submitting.</p>
+                            <h2 className="text-2xl font-bold text-foreground">Review Application</h2>
+                            <p className="text-muted-foreground">Please verify your details before submitting.</p>
                         </div>
 
-                        <div className="bg-gray-50 rounded-xl p-6 space-y-4 text-sm">
-                            <div className="flex justify-between border-b border-gray-200 pb-2">
-                                <span className="text-gray-500">Parent</span>
+                        <div className="bg-secondary/40 rounded-xl p-6 space-y-4 text-sm">
+                            <div className="flex justify-between border-b border-border pb-2">
+                                <span className="text-muted-foreground">Parent</span>
                                 <span className="font-medium">{watchedParentFirstName} {watchedParentLastName}</span>
                             </div>
-                            <div className="flex justify-between border-b border-gray-200 pb-2">
-                                <span className="text-gray-500">Contact</span>
+                            <div className="flex justify-between border-b border-border pb-2">
+                                <span className="text-muted-foreground">Contact</span>
                                 <span className="font-medium">{watchedParentEmail}</span>
                             </div>
-                            <div className="flex justify-between border-b border-gray-200 pb-2">
-                                <span className="text-gray-500">Student</span>
+                            <div className="flex justify-between border-b border-border pb-2">
+                                <span className="text-muted-foreground">Student</span>
                                 <span className="font-medium">{watchedChildFirstName} ({watchedChildSchoolYear})</span>
                             </div>
-                            <div className="flex justify-between border-b border-gray-200 pb-2">
-                                <span className="text-gray-500">Activities / Interests</span>
+                            <div className="flex justify-between border-b border-border pb-2">
+                                <span className="text-muted-foreground">Activities / Interests</span>
                                 <span className="font-medium">{watchSubjects?.join(', ')}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Preferences</span>
+                                <span className="text-muted-foreground">Preferences</span>
                                 <span className="font-medium text-right">
                                     {watchLessonType}<br />
-                                    <span className="text-gray-500 font-normal">{watchDays?.join(', ')}</span>
+                                    <span className="text-muted-foreground font-normal">{watchDays?.join(', ')}</span>
                                 </span>
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer">
+                            <label className="flex items-start gap-3 p-4 bg-secondary/40 rounded-lg cursor-pointer">
                                 <input
                                     type="checkbox"
                                     {...register('consent.terms')}
-                                    className="mt-1 h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                    className="mt-1 h-5 w-5 text-indigo-600 rounded border-border focus:ring-indigo-500"
                                 />
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-muted-foreground">
                                     I agree to the <a href="#" className="underline text-indigo-600">Terms & Conditions</a> and consent to the processing of personal data for the purpose of this registration.
                                 </span>
                             </label>
@@ -466,13 +466,13 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                                 <p className="text-sm text-red-600 px-4">{errors.consent.terms.message}</p>
                             )}
 
-                            <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer">
+                            <label className="flex items-start gap-3 p-4 bg-secondary/40 rounded-lg cursor-pointer">
                                 <input
                                     type="checkbox"
                                     {...register('consent.marketing')}
-                                    className="mt-1 h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                    className="mt-1 h-5 w-5 text-indigo-600 rounded border-border focus:ring-indigo-500"
                                 />
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-muted-foreground">
                                     I would like to receive updates about holiday clubs and resources (optional).
                                 </span>
                             </label>
@@ -480,12 +480,12 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
                     </div>
                 )}
 
-                <div className="bg-gray-50 px-8 py-6 flex justify-between gap-4">
+                <div className="bg-secondary/40 px-8 py-6 flex justify-between gap-4">
                     {step > 1 ? (
                         <button
                             type="button"
                             onClick={() => setStep(s => s - 1)}
-                            className="px-6 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                            className="px-6 py-2.5 rounded-lg border border-border bg-card text-foreground font-medium hover:bg-secondary/40 transition-colors"
                         >
                             Back
                         </button>

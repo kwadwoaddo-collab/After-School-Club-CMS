@@ -43,13 +43,13 @@ function PortalLoginForm() {
     };
 
     return (
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="w-full max-w-md bg-card rounded-2xl shadow-xl overflow-hidden">
             <div className="p-8 text-center">
                 <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
                     👋
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Parent Portal</h1>
-                <p className="text-gray-500 mb-8">Access your bookings and children's progress.</p>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Parent Portal</h1>
+                <p className="text-muted-foreground mb-8">Access your bookings and children's progress.</p>
 
                 {errorParam === 'ExpiredOrInvalid' && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6">
@@ -65,14 +65,14 @@ function PortalLoginForm() {
                 {!isSent ? (
                     <form onSubmit={handleSubmit} className="space-y-4 text-left">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="parent@example.com"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                             />
                         </div>
                         {error && (
@@ -102,16 +102,16 @@ function PortalLoginForm() {
                         </button>
 
                         {debugLink && (
-                            <div className="mt-6 p-4 bg-gray-100 rounded text-left overflow-hidden">
-                                <p className="text-xs font-mono text-gray-500 mb-1">DEV MODE LINK:</p>
+                            <div className="mt-6 p-4 bg-secondary/60 rounded text-left overflow-hidden">
+                                <p className="text-xs font-mono text-muted-foreground mb-1">DEV MODE LINK:</p>
                                 <a href={debugLink} className="text-indigo-600 text-xs break-all hover:underline">{debugLink}</a>
                             </div>
                         )}
                     </div>
                 )}
             </div>
-            <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center">
-                <p className="text-xs text-gray-500">
+            <div className="bg-secondary/40 px-8 py-4 border-t border-border text-center">
+                <p className="text-xs text-muted-foreground">
                     Not a parent? <Link href="/login" className="text-indigo-600 hover:underline">Staff Login</Link>
                 </p>
             </div>
@@ -121,13 +121,13 @@ function PortalLoginForm() {
 
 export default function PortalLoginPage() {
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-secondary/40 flex flex-col items-center justify-center p-4">
             <Suspense fallback={
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+                <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 text-center">
                     <div className="animate-pulse flex flex-col items-center">
-                        <div className="rounded-full bg-gray-200 h-16 w-16 mb-6"></div>
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="rounded-full bg-secondary h-16 w-16 mb-6"></div>
+                        <div className="h-4 bg-secondary rounded w-3/4 mb-4"></div>
+                        <div className="h-4 bg-secondary rounded w-1/2"></div>
                     </div>
                 </div>
             }>

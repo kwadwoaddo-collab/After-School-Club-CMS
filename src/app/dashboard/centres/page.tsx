@@ -153,7 +153,7 @@ export default async function CentresPage() {
                                 <div className="flex items-center gap-2">
                                     <Link
                                         href={`/dashboard/centres/${centre.id}/billing`}
-                                        className="px-3 py-2 bg-white/5 border border-white/10 text-on-surface-variant text-xs font-bold rounded-xl hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all"
+                                        className="px-3 py-2 bg-card/5 border border-white/10 text-on-surface-variant text-xs font-bold rounded-xl hover:bg-card/10 hover:text-white flex items-center gap-1.5 transition-all"
                                     >
                                         Billing
                                     </Link>

@@ -192,13 +192,13 @@ export default function ReportsClient() {
         <div className="flex flex-col gap-6">
 
             {/* ── Tab Switcher ─────────────────────────────────────────────── */}
-            <div className="inline-flex bg-gray-100 p-1 rounded-2xl gap-1">
+            <div className="inline-flex bg-secondary/60 p-1 rounded-2xl gap-1">
                 <button
                     onClick={() => setActiveTab('exports')}
                     className={cn(
                         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                         activeTab === 'exports'
-                            ? 'bg-white text-foreground shadow-sm'
+                            ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
                     )}
                 >
@@ -210,7 +210,7 @@ export default function ReportsClient() {
                     className={cn(
                         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                         activeTab === 'ceo'
-                            ? 'bg-white text-foreground shadow-sm'
+                            ? 'bg-card text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
                     )}
                 >
@@ -227,7 +227,7 @@ export default function ReportsClient() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     {/* ── Booking Export Card ───────────────────────────────── */}
-                    <div className="bg-white border border-gray-200 rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                                 <FileText className="w-6 h-6 text-blue-600" />
@@ -260,7 +260,7 @@ export default function ReportsClient() {
                                     <button
                                         onClick={() => setShowCustomRangeBooking(true)}
                                         disabled={isExportingBookings}
-                                        className="w-full flex items-center justify-between px-5 py-4 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
+                                        className="w-full flex items-center justify-between px-5 py-4 bg-card border border-border hover:bg-secondary/40 hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
                                     >
                                         <span className="flex items-center gap-3">
                                             <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-blue-600 transition-colors" />
@@ -270,7 +270,7 @@ export default function ReportsClient() {
                                     </button>
                                 </>
                             ) : (
-                                <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+                                <div className="p-5 bg-secondary/40 rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Range</h4>
                                         <button onClick={() => setShowCustomRangeBooking(false)} className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">Cancel</button>
@@ -281,7 +281,7 @@ export default function ReportsClient() {
                                             type="date"
                                             value={startDateBooking}
                                             onChange={(e) => setStartDateBooking(e.target.value)}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -290,7 +290,7 @@ export default function ReportsClient() {
                                             type="date"
                                             value={endDateBooking}
                                             onChange={(e) => setEndDateBooking(e.target.value)}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                         />
                                     </div>
                                     <button
@@ -314,7 +314,7 @@ export default function ReportsClient() {
                     </div>
 
                     {/* ── Student Export Card ───────────────────────────────── */}
-                    <div className="bg-white border border-gray-200 rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow duration-300">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-violet-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                                 <Users className="w-6 h-6 text-violet-600" />
@@ -347,7 +347,7 @@ export default function ReportsClient() {
                                     <button
                                         onClick={() => setShowCustomRangeStudent(true)}
                                         disabled={isExportingStudents}
-                                        className="w-full flex items-center justify-between px-5 py-4 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
+                                        className="w-full flex items-center justify-between px-5 py-4 bg-card border border-border hover:bg-secondary/40 hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm group disabled:opacity-60"
                                     >
                                         <span className="flex items-center gap-3">
                                             <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-violet-600 transition-colors" />
@@ -357,7 +357,7 @@ export default function ReportsClient() {
                                     </button>
                                 </>
                             ) : (
-                                <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+                                <div className="p-5 bg-secondary/40 rounded-2xl border border-border animate-in fade-in zoom-in-95 duration-200 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Range</h4>
                                         <button onClick={() => setShowCustomRangeStudent(false)} className="text-xs font-semibold text-violet-600 hover:text-violet-700 transition-colors">Cancel</button>
@@ -368,7 +368,7 @@ export default function ReportsClient() {
                                             type="date"
                                             value={startDateStudent}
                                             onChange={(e) => setStartDateStudent(e.target.value)}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-foreground font-mono outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -377,7 +377,7 @@ export default function ReportsClient() {
                                             type="date"
                                             value={endDateStudent}
                                             onChange={(e) => setEndDateStudent(e.target.value)}
-                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-foreground font-mono outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                                         />
                                     </div>
                                     <button
@@ -430,7 +430,7 @@ function ExportRow({
                 'w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-semibold transition-all border group disabled:opacity-60',
                 isSuccess
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-white border-gray-200 text-foreground hover:bg-gray-50 hover:border-gray-300 shadow-sm'
+                    : 'bg-card border-border text-foreground hover:bg-secondary/40 hover:border-border shadow-sm'
             )}
         >
             <span className="flex items-center gap-3">

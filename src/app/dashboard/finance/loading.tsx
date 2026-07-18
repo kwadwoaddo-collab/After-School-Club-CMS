@@ -17,7 +17,7 @@ export default function FinanceLoading() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="glassmorphic-card rounded-2xl p-6 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-white/5 flex-shrink-0" />
+                        <div className="w-12 h-12 rounded-xl bg-card/5 flex-shrink-0" />
                         <div className="space-y-2 flex-1">
                             <div className="h-8 w-20 bg-card rounded-lg" />
                             <div className="h-3 w-24 bg-card rounded" />
