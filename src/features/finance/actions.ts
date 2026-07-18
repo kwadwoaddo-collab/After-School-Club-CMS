@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { notifyOwners } from '@/lib/db-notifications';
 
 async function insertInvoiceAndLog(
     tx: any,
@@ -453,6 +454,15 @@ export async function recordPayment(data: {
 
     revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
     revalidatePath('/dashboard/finance');
+
+    // In-app notification: payment recorded (fire-and-forget)
+    notifyOwners({
+        orgId,
+        type: 'system',
+        title: 'Payment Recorded',
+        message: `A £${Number(data.amount).toFixed(2)} payment (${data.method.replace('_', ' ')}) has been recorded.`,
+    }).catch(() => {});
+
     return result;
 }
 

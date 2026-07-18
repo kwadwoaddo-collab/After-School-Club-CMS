@@ -6,6 +6,7 @@ import { resolveOrCreateParent, resolveOrCreateChild } from './crm';
 import { nanoid } from 'nanoid';
 import { googleCalendarService, buildBookingEventDetails } from './google-calendar';
 import { notificationService } from './notifications';
+import { notifyOwners } from '@/lib/db-notifications';
 import { stripeService } from './stripe';
 import { generateMagicLinkToken, hashToken } from '../magic-link';
 
@@ -228,6 +229,17 @@ export class BookingService {
     } catch (error) {
       console.error('[BookingService] Failed to send notifications:', error);
     }
+
+    // Write in-app dashboard notification (fire-and-forget)
+    const orgId = centre.organisationId;
+    const childNames = createdChildren.map((c) => c.firstName).join(', ');
+    notifyOwners({
+      orgId,
+      type: 'booking_created',
+      title: 'New Booking',
+      message: `Assessment booked for ${childNames} at ${centreDetails?.name ?? 'the centre'} on ${new Date(input.appointment.startAt).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}.`,
+      bookingId: booking.id,
+    }).catch(() => {});
 
     return {
       bookingId: booking.id,

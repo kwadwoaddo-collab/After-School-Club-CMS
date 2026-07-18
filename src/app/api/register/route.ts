@@ -12,6 +12,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
 import { z } from 'zod';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { notifyOwners } from '@/lib/db-notifications';
 
 // Helper: treat empty strings as null so optional/nullable fields don't fail
 const emptyToNull = (v: unknown) => (v === '' ? null : v);
@@ -400,6 +401,14 @@ export async function POST(req: NextRequest) {
                 parentSignature: parentSignature ?? null,
             });
         }
+
+        // In-app dashboard notification (fire-and-forget)
+        notifyOwners({
+            orgId: org.id,
+            type: 'system',
+            title: 'New Registration Submitted',
+            message: `A registration form has been submitted and is awaiting your review.`,
+        }).catch(() => {});
 
         return NextResponse.json({ success: true, registrationId: registration.id }, { status: 201 });
     } catch (err) {
