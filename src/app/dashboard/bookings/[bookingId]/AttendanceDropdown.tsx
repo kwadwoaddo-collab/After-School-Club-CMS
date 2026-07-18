@@ -85,7 +85,7 @@ export default function AttendanceDropdown({
                         setSelectedStatus(val === '' ? 'pending' : val);
                         setSuccess(false);
                     }}
-                    className="w-full bg-[#1a1c23] border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white font-medium focus:border-primary/50 outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full bg-secondary border border-border rounded-xl px-4 py-2.5 text-sm text-foreground font-medium focus:border-primary/50 outline-none transition-colors appearance-none cursor-pointer"
                 >
                     {availableStatuses.map(s => (
                         <option key={s.value || 'pending'} value={s.value || ''}>{s.label}</option>
@@ -98,7 +98,7 @@ export default function AttendanceDropdown({
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                             placeholder="Add an optional note (e.g. reason for absence)"
-                            className="w-full bg-[#1a1c23] border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-primary/50 outline-none transition-colors min-h-[80px] resize-none"
+                            className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 outline-none transition-colors min-h-[80px] resize-none"
                         />
                     </div>
                 )}
@@ -122,7 +122,7 @@ export default function AttendanceDropdown({
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
                     >
                         {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                         Save Record
