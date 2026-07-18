@@ -35,7 +35,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg font-bold text-white">{child.firstName} {child.lastName}</h1>
+                        <h1 className="text-lg font-bold text-foreground">{child.firstName} {child.lastName}</h1>
                         <p className="text-xs text-on-surface-variant">Student Profile</p>
                     </div>
                 </div>
@@ -46,7 +46,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/10 pb-4">
                         <User className="w-5 h-5 text-primary" />
-                        <h2 className="text-lg font-bold text-white">Basic Information</h2>
+                        <h2 className="text-lg font-bold text-foreground">Basic Information</h2>
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div>
@@ -74,7 +74,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/10 pb-4">
                         <ShieldAlert className="w-5 h-5 text-rose-500" />
-                        <h2 className="text-lg font-bold text-white">Medical & Dietary Needs</h2>
+                        <h2 className="text-lg font-bold text-foreground">Medical & Dietary Needs</h2>
                     </div>
 
                     <div className="space-y-4">

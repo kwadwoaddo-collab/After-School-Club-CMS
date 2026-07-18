@@ -12,8 +12,8 @@ import { InvoiceTemplate } from './InvoiceTemplate';
 import { ReceiptTemplate } from './ReceiptTemplate';
 import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
-import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes } from '../actions';
-import { toast } from 'react-hot-toast';
+import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail } from '../actions';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface InvoiceDetailsClientProps {
     invoice: any;
@@ -29,7 +29,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
     const [isEditingDate, setIsEditingDate] = useState(false);
     const [newDateValue, setNewDateValue] = useState(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
     const [isUpdatingDate, setIsUpdatingDate] = useState(false);
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
     const router = useRouter();
+    const { toast } = useToast();
 
     const handleSaveDate = async () => {
         if (!newDateValue) return;
@@ -38,9 +40,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             await updateInvoiceDate(invoice.id, new Date(newDateValue));
             setIsEditingDate(false);
             router.refresh();
-            toast.success('Invoice issue date updated');
+            toast({ title: 'Date updated', message: 'Invoice issue date updated.', variant: 'success' });
         } catch (err: any) {
-            toast.error(err.message || 'Failed to update date');
+            toast({ title: 'Update failed', message: err.message || 'Failed to update date', variant: 'error' });
         } finally {
             setIsUpdatingDate(false);
         }
@@ -65,9 +67,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             await updateInvoiceNotes(invoice.id, notesValue || null);
             setIsEditingNotes(false);
             router.refresh();
-            toast.success('Invoice notes updated');
+            toast({ title: 'Notes saved', message: 'Invoice notes updated.', variant: 'success' });
         } catch (err: any) {
-            toast.error(err.message || 'Failed to update notes');
+            toast({ title: 'Update failed', message: err.message || 'Failed to update notes', variant: 'error' });
         } finally {
             setIsUpdatingNotes(false);
         }
@@ -180,6 +182,30 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <CreditCard className="w-4 h-4" /> Record Payment
+                        </button>
+                    )}
+                    {/* Send to Parent button */}
+                    {invoice.status !== 'paid' && invoice.status !== 'void' && (
+                        <button
+                            type="button"
+                            disabled={isPending || isSendingEmail}
+                            onClick={async () => {
+                                setIsSendingEmail(true);
+                                try {
+                                    const result = await resendInvoiceEmail(invoice.id);
+                                    if (result.success) {
+                                        toast({ title: 'Email sent', message: 'Invoice email sent to parent.', variant: 'success' });
+                                    } else {
+                                        toast({ title: 'Email failed', message: result.error || 'Could not send email.', variant: 'error' });
+                                    }
+                                } finally {
+                                    setIsSendingEmail(false);
+                                }
+                            }}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            {isSendingEmail ? 'Sending…' : 'Send to Parent'}
                         </button>
                     )}
                     {invoice.status !== 'void' && (

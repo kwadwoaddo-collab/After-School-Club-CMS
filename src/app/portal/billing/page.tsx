@@ -42,7 +42,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg font-bold text-white">Billing & Invoices</h1>
+                        <h1 className="text-lg font-bold text-foreground">Billing & Invoices</h1>
                         <p className="text-xs text-on-surface-variant">Manage your payments and vouchers</p>
                     </div>
                 </div>
@@ -57,7 +57,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                         </div>
                         <div>
                             <p className="text-sm text-primary font-medium">Total Outstanding Balance</p>
-                            <h2 className="text-3xl font-bold text-white">£{totalOutstanding.toFixed(2)}</h2>
+                            <h2 className="text-3xl font-bold text-foreground">£{totalOutstanding.toFixed(2)}</h2>
                         </div>
                     </div>
                 </section>
@@ -80,7 +80,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="w-5 h-5 text-secondary" />
-                        <h2 className="text-lg font-bold text-white">Outstanding Invoices</h2>
+                        <h2 className="text-lg font-bold text-foreground">Outstanding Invoices</h2>
                     </div>
 
                     {outstandingInvoices.length === 0 ? (
@@ -150,7 +150,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                     <section>
                         <div className="flex items-center gap-2 mb-4">
                             <Receipt className="w-5 h-5 text-on-surface-variant" />
-                            <h2 className="text-lg font-bold text-white opacity-80">Payment History</h2>
+                            <h2 className="text-lg font-bold text-foreground opacity-80">Payment History</h2>
                         </div>
                         <div className="space-y-3 opacity-80">
                             {pastInvoices.map(inv => (

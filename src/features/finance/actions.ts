@@ -743,3 +743,55 @@ export async function failPayment(paymentId: string) {
     revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
     return { success: true };
 }
+
+// ─── Resend Invoice Email ───────────────────────────────────────────────────
+
+/**
+ * Manually resend the invoice notification email to the parent.
+ * Only allowed for invoices that are not already paid or voided.
+ */
+export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
+    const session = await auth();
+    if (!session?.user?.organisationId) return { success: false, error: 'Unauthorized' };
+    if ((session.user as any).role !== 'ORG_OWNER') return { success: false, error: 'Insufficient permissions' };
+
+    const invoice = await db.query.invoices.findFirst({
+        where: and(
+            eq(invoices.id, invoiceId),
+            eq(invoices.organisationId, session.user.organisationId)
+        ),
+        with: {
+            parent: { columns: { firstName: true, email: true } },
+            centre: { columns: { name: true } },
+        },
+    });
+
+    if (!invoice) return { success: false, error: 'Invoice not found' };
+    if (invoice.status === 'paid') return { success: false, error: 'This invoice is already marked as paid.' };
+    if (invoice.status === 'void') return { success: false, error: 'Cannot send a voided invoice.' };
+
+    const parentEmail = invoice.parent?.email;
+    const parentName = invoice.parent?.firstName ?? 'Parent';
+    const centreName = invoice.centre?.name ?? 'After School Club';
+    const portalUrl = `${process.env.NEXTAUTH_URL || ''}/portal/billing`;
+
+    if (!parentEmail) {
+        return { success: false, error: 'No email address on file for this parent.' };
+    }
+
+    const result = await emailService.sendInvoiceCreated({
+        parentFirstName: parentName,
+        parentEmail,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: Number(invoice.amount),
+        dueDate: invoice.dueDate ?? new Date(),
+        centreName,
+        portalUrl,
+    });
+
+    if (!result.success) {
+        return { success: false, error: result.error ?? 'Email could not be sent. Check RESEND_API_KEY.' };
+    }
+
+    return { success: true };
+}
