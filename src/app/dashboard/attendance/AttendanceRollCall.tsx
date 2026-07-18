@@ -214,7 +214,7 @@ function AttendeeCard({
     const avatarClass = isAbsent
         ? 'bg-red-200 text-red-700'
         : (isIn && isOut)
-        ? 'bg-blue-200 text-blue-700'
+        ? 'bg-primary/20 text-primary'
         : isIn
         ? 'bg-emerald-200 text-emerald-800'
         : 'bg-secondary/60 text-muted-foreground';
@@ -325,7 +325,7 @@ function AttendeeCard({
                                     disabled={isPending}
                                     className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
                                         isOut
-                                            ? 'bg-blue-100 border-blue-300 text-blue-800'
+                                            ? 'bg-primary/15 border-primary/30 text-primary'
                                             : 'bg-card border-border text-foreground hover:bg-blue-50 hover:border-blue-300 hover:text-blue-800'
                                     }`}
                                 >
@@ -408,7 +408,7 @@ function SlotProgressBar({ marked, total }: { marked: number; total: number }) {
     return (
         <div className="h-1.5 w-full bg-secondary/60 rounded-full overflow-hidden">
             <div
-                className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
                 style={{ width: `${pct}%` }}
             />
         </div>
@@ -543,7 +543,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                 <div className="flex gap-2">
                     <button
                         onClick={() => setShowWalkIn(true)}
-                        className="flex-1 sm:flex-none h-12 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-200 active:scale-95"
+                        className="flex-1 sm:flex-none h-12 px-5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm shadow-primary/20 active:scale-95"
                     >
                         <Plus className="w-4 h-4 stroke-[2.5]" />
                         Walk-In

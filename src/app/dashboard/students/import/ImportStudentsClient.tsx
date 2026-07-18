@@ -77,7 +77,7 @@ function StepIndicator({ current }: { current: number }) {
         return (
           <div key={label} className="flex items-center">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${
-              active ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' :
+              active ? 'bg-primary text-white shadow-sm shadow-primary/20' :
               done   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                        'text-muted-foreground'
             }`}>
@@ -218,7 +218,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
           {/* Download template */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-blue-50 border border-blue-100">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                 <FileSpreadsheet className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -256,14 +256,14 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               dragOver ? 'border-blue-400 bg-blue-50' : 'border-border hover:border-blue-300 hover:bg-secondary/40'
             }`}
           >
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-blue-100' : 'bg-secondary/60'}`}>
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-primary/10' : 'bg-secondary/60'}`}>
               <Upload className={`w-6 h-6 ${dragOver ? 'text-blue-600' : 'text-muted-foreground'}`} />
             </div>
             <h4 className="font-bold text-foreground text-base mb-1">Upload your CSV spreadsheet</h4>
             <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
               Drag and drop your spreadsheet here, or click to browse. Max size 5MB.
             </p>
-            <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-blue-200">
+            <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-primary/20">
               <Upload className="w-4 h-4" />
               Browse Files
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
@@ -373,7 +373,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             <button
               onClick={handleStartImport}
               disabled={!isMappingValid()}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-sm shadow-blue-200"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-sm shadow-primary/20"
             >
               Confirm and Start Import
               <ArrowRight className="w-4 h-4" />
@@ -477,7 +477,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               <div className="pt-2 border-t border-border flex justify-end">
                 <Link
                   href="/dashboard/students"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-blue-200"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-primary/20"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   Done — View Students

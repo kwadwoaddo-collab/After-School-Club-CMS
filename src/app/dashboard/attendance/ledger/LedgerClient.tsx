@@ -114,7 +114,7 @@ function ForgivModal({
                     <button
                         onClick={submit}
                         disabled={isPending}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
                     >
                         {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <Shield className="w-3.5 h-3.5" />
