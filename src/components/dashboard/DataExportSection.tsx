@@ -71,14 +71,14 @@ export function DataExportSection() {
   };
 
   return (
-    <div className="bg-[#1a1d23] rounded-[32px] p-8 flex flex-col gap-6 border border-[#424754]/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+    <div className="bg-card rounded-[32px] p-8 flex flex-col gap-6 border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-[#2a2a2a] rounded-xl flex items-center justify-center">
-          <FileSpreadsheet className="w-5 h-5 text-[#adc6ff]" />
+        <div className="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center">
+          <FileSpreadsheet className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h2 className="font-bold text-[#e5e2e1] text-lg leading-tight">Quick Data Export</h2>
-          <p className="text-sm text-[#8c909f] mt-0.5">Download complete datasets as CSV</p>
+          <h2 className="font-bold text-foreground text-lg leading-tight">Quick Data Export</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Download complete datasets as CSV</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export function DataExportSection() {
             key={item.endpoint}
             onClick={() => handleDownload(item)}
             disabled={loading !== null}
-            className="w-full flex items-center justify-between px-5 py-4 bg-[#2a2a2a] hover:bg-[#353535] rounded-2xl text-sm font-bold text-[#e5e2e1] transition-all border border-[#424754]/15 shadow-sm group disabled:opacity-50"
+            className="w-full flex items-center justify-between px-5 py-4 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-bold text-foreground transition-all border border-border shadow-sm group disabled:opacity-50"
           >
             <span className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${item.iconBg}`}>
@@ -96,13 +96,13 @@ export function DataExportSection() {
               </div>
               <div className="text-left">
                 <p className="font-bold">{item.label}</p>
-                <p className="text-[11px] text-[#8c909f] font-normal mt-0.5">{item.description}</p>
+                <p className="text-[11px] text-muted-foreground font-normal mt-0.5">{item.description}</p>
               </div>
             </span>
             {loading === item.endpoint ? (
-              <div className="w-4 h-4 border-2 border-[#adc6ff]/30 border-t-[#adc6ff] rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             ) : (
-              <Download className="w-4 h-4 text-[#8c909f] group-hover:text-[#adc6ff] transition-colors" />
+              <Download className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             )}
           </button>
         ))}

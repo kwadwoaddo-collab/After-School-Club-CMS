@@ -29,7 +29,7 @@ export default function CopyRegistrationLink({ url }: { url: string }) {
             className={`inline-flex items-center gap-1.5 px-5 py-2.5 border text-sm font-bold rounded-2xl transition-all cursor-pointer ${
                 copied
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                    : 'bg-[#2a2a2a] border-[#424754]/15 text-[#adc6ff] hover:bg-[#353535] hover:text-[#e5e2e1]'
+                    : 'bg-secondary border-border text-primary hover:bg-secondary/80 hover:text-foreground'
             }`}
         >
             {copied ? (
@@ -41,7 +41,7 @@ export default function CopyRegistrationLink({ url }: { url: string }) {
                 </>
             ) : (
                 <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#adc6ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                     Copy Link

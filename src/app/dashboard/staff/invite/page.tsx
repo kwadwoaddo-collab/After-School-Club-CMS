@@ -134,7 +134,7 @@ export default function InviteStaffPage() {
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full pl-12 pr-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                className="w-full pl-12 pr-4 py-3 bg-secondary border border-border rounded-2xl text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                 placeholder="staff@example.com"
                                 required
                             />
@@ -154,7 +154,7 @@ export default function InviteStaffPage() {
                                 type="text"
                                 value={formData.firstName}
                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                 placeholder="John"
                             />
                         </div>
@@ -166,7 +166,7 @@ export default function InviteStaffPage() {
                                 type="text"
                                 value={formData.lastName}
                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                 placeholder="Doe"
                             />
                         </div>
@@ -184,7 +184,7 @@ export default function InviteStaffPage() {
                             <select
                                 value={formData.centreId}
                                 onChange={(e) => setFormData({ ...formData, centreId: e.target.value })}
-                                className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&>option]:bg-card"
+                                className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&>option]:bg-card"
                             >
                                 <option value="" className="text-slate-500">Select a centre (optional)</option>
                                 {centres.map((centre) => (
@@ -263,7 +263,7 @@ export default function InviteStaffPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:bg-secondary disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
                     >
                         {loading ? (
                             <>

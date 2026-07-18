@@ -23,7 +23,7 @@ const SESSION_SLOTS = [
     'Saturday 10:00–11:20 am', 'Saturday 11:30–12:50 pm', 'Saturday 1:00–2:20 pm',
 ];
 
-const input = 'w-full px-3 py-2 rounded-lg bg-[#14161b] border border-[#2a2a2a] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-primary/60 text-sm';
+const input = 'w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 text-sm';
 const label = 'text-xs text-white/50 uppercase tracking-wide mb-1 block';
 
 interface RegParent {

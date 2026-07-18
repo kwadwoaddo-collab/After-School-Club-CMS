@@ -83,7 +83,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                                         type="checkbox"
                                         checked={rule.isOpen}
                                         onChange={() => handleToggleOpen(rule.dayOfWeek)}
-                                        className="w-5 h-5 rounded border-outline-variant/20 text-primary focus:ring-primary/20 bg-[#13151a] cursor-pointer"
+                                        className="w-5 h-5 rounded border-outline-variant/20 text-primary focus:ring-primary/20 bg-secondary cursor-pointer"
                                     />
                                     <span className={cn("font-bold", rule.isOpen ? "text-white" : "text-slate-500 line-through")}>
                                         {DAYS[rule.dayOfWeek]}
@@ -101,7 +101,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                                                 type="time"
                                                 value={rule.startTime}
                                                 onChange={(e) => handleTimeChange(rule.dayOfWeek, 'startTime', e.target.value)}
-                                                className="block w-32 rounded-xl bg-[#13151a] text-white border-[#2a2d35] shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
+                                                className="block w-32 rounded-xl bg-secondary text-white border-border shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
                                             />
                                         </div>
                                         <span className="text-slate-500 font-bold">→</span>
@@ -111,7 +111,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                                                 type="time"
                                                 value={rule.endTime}
                                                 onChange={(e) => handleTimeChange(rule.dayOfWeek, 'endTime', e.target.value)}
-                                                className="block w-32 rounded-xl bg-[#13151a] text-white border-[#2a2d35] shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
+                                                className="block w-32 rounded-xl bg-secondary text-white border-border shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
                                             />
                                         </div>
                                     </>
@@ -136,7 +136,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                         disabled={isPending}
                         className={cn(
                             "px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 glow-btn hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/20 transition-all",
-                            isPending && "opacity-50 cursor-wait bg-[#2a2d35] shadow-none"
+                            isPending && "opacity-50 cursor-wait bg-secondary shadow-none"
                         )}
                     >
                         {isPending ? 'Saving...' : 'Save Changes'}
