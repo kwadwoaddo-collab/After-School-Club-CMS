@@ -291,7 +291,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                         <button
                             type="submit"
                             disabled={!newSlot.trim()}
-                            className="px-4 py-2.5 bg-secondary hover:bg-[#353535] border border-border text-foreground rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
+                            className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
                         >
                             <Plus className="w-4 h-4" />
                             Add

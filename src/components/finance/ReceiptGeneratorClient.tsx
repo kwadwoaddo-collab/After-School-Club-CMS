@@ -88,13 +88,13 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
             {/* Form Column - Hidden during printing */}
             <div className="lg:col-span-5 space-y-6 no-print">
-                <div className="bg-[#1a1d23] border border-[#424754]/15 rounded-3xl p-6 shadow-xl space-y-6">
+                <div className="bg-card border border-border rounded-3xl p-6 shadow-xl space-y-6">
                     <div>
-                        <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-[#adc6ff]" />
+                        <h2 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-primary" />
                             Receipt Details
                         </h2>
-                        <p className="text-xs text-[#8c909f] mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Fill in details below to customize the official receipt.
                         </p>
                     </div>
@@ -102,36 +102,36 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     {/* Receipt Number & Date */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Receipt No</label>
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Receipt No</label>
                             <input
                                 type="text"
                                 value={receiptNo}
                                 onChange={(e) => setReceiptNo(e.target.value.toUpperCase())}
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Payment Date</label>
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Date</label>
                             <input
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
                     </div>
 
                     {/* Student Selector */}
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Select Student (Optional)</label>
+                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Select Student (Optional)</label>
                         <select
                             value={selectedChildId}
                             onChange={(e) => handleStudentChange(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                            className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                         >
-                            <option value="" className="bg-[#1a1d23] text-[#8c909f]">-- Select an existing student --</option>
+                            <option value="" className="bg-card text-muted-foreground">-- Select an existing student --</option>
                             {children.map(child => (
-                                <option key={child.id} value={child.id} className="bg-[#1a1d23] text-white">
+                                <option key={child.id} value={child.id} className="bg-card text-foreground">
                                     {child.firstName} {child.lastName} (Yr {child.schoolYear} · {child.parent.firstName} {child.parent.lastName})
                                 </option>
                             ))}
@@ -141,23 +141,23 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     {/* Manual Override Info */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Parent / Payer Name</label>
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Parent / Payer Name</label>
                             <input
                                 type="text"
                                 value={parentName}
                                 onChange={(e) => setParentName(e.target.value)}
                                 placeholder="Payer Full Name"
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Student Full Name</label>
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Student Full Name</label>
                             <input
                                 type="text"
                                 value={studentName}
                                 onChange={(e) => setStudentName(e.target.value)}
                                 placeholder="Student Full Name"
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
                     </div>
@@ -165,57 +165,57 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     {/* Amount & Method */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Amount Paid (£)</label>
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Amount Paid (£)</label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#8c909f]">£</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">£</span>
                                 <input
                                     type="number"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
                                     step="0.01"
                                     min="0"
-                                    className="w-full h-10 pl-7 pr-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                    className="w-full h-10 pl-7 pr-3 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                                 />
                             </div>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Payment Method</label>
+                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Method</label>
                             <select
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value as any)}
-                                className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             >
-                                <option value="Cash" className="bg-[#1a1d23]">Cash</option>
-                                <option value="Card" className="bg-[#1a1d23]">Debit/Credit Card</option>
-                                <option value="Bank Transfer" className="bg-[#1a1d23]">Bank Transfer</option>
-                                <option value="Childcare Vouchers" className="bg-[#1a1d23]">Childcare Vouchers</option>
+                                <option value="Cash" className="bg-card">Cash</option>
+                                <option value="Card" className="bg-card">Debit/Credit Card</option>
+                                <option value="Bank Transfer" className="bg-card">Bank Transfer</option>
+                                <option value="Childcare Vouchers" className="bg-card">Childcare Vouchers</option>
                             </select>
                         </div>
                     </div>
 
                     {/* Centre Selector */}
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Club Centre</label>
+                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Club Centre</label>
                         <select
                             value={selectedCentreId}
                             onChange={(e) => setSelectedCentreId(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                            className="w-full h-10 px-3 rounded-xl bg-secondary/40 border border-border text-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                         >
                             {centres.map(c => (
-                                <option key={c.id} value={c.id} className="bg-[#1a1d23]">{c.name}</option>
+                                <option key={c.id} value={c.id} className="bg-card">{c.name}</option>
                             ))}
                         </select>
                     </div>
 
                     {/* Description */}
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-[#8c909f] uppercase tracking-wider">Payment Description / Notes</label>
+                        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Description / Notes</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={3}
                             placeholder="e.g. Booking deposit, Weekly club tuition fee..."
-                            className="w-full p-3 rounded-xl bg-[#2a2d35]/40 border border-[#424754]/25 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors resize-none"
+                            className="w-full p-3 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors resize-none"
                         />
                     </div>
 
@@ -225,7 +225,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                             onClick={() => {
                                 setReceiptNo(generateReceiptNumber());
                             }}
-                            className="flex-1 h-11 rounded-2xl bg-card/5 border border-white/10 hover:bg-card/10 text-white text-xs font-bold transition-all"
+                            className="flex-1 h-11 rounded-2xl bg-card/5 border border-white/10 hover:bg-card/10 text-foreground text-xs font-bold transition-all"
                         >
                             Reset / Regenerate
                         </button>
@@ -237,13 +237,13 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
             <div className="lg:col-span-7 flex flex-col items-center w-full">
                 {/* Print Control Header (no-print) */}
                 <div className="w-full max-w-xl flex items-center justify-between gap-4 mb-4 no-print">
-                    <span className="text-xs text-[#8c909f] font-semibold flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 text-[#adc6ff]" />
+                    <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-primary" />
                         Fits exactly on standard A4/letter paper.
                     </span>
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-foreground text-xs font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         <Printer className="w-4 h-4" />
                         Print / Save PDF
@@ -253,7 +253,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                 {/* Printable Receipt Card */}
                 <div 
                     id="receipt-print-area"
-                    className="w-full max-w-xl bg-card border border-[#424754]/10 rounded-[32px] p-8 sm:p-10 shadow-2xl relative text-slate-800 overflow-hidden print-layout"
+                    className="w-full max-w-xl bg-card border border-border rounded-[32px] p-8 sm:p-10 shadow-2xl relative text-slate-800 overflow-hidden print-layout"
                     style={{
                         minHeight: '620px',
                     }}
@@ -270,7 +270,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-100">
                         <div>
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-slate-900 text-foreground font-extrabold text-xs flex items-center justify-center">
                                     {organisation.name.slice(0, 2).toUpperCase()}
                                 </div>
                                 <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">{organisation.name}</h2>

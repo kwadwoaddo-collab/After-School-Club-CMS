@@ -540,7 +540,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             type="button"
                             onClick={() => { if (s < step) setStep(s); }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all
-                  ${step >= s ? 'brand-bg text-white' : 'bg-secondary text-muted-foreground'}
+                  ${step >= s ? 'brand-bg text-foreground' : 'bg-secondary text-muted-foreground'}
                   ${s < step ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
                         >
                             {step > s ? '✓' : s}
@@ -582,7 +582,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     setParentChildrenList([]);
                                     setValue('children', []);
                                 }}
-                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-[#adc6ff]/20 border-[#adc6ff]/50 text-[#adc6ff]' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
+                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
                             >
                                 New Family
                             </button>
@@ -601,7 +601,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     setParentChildrenList([]);
                                     setValue('children', []);
                                 }}
-                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-[#adc6ff]/20 border-[#adc6ff]/50 text-[#adc6ff]' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
+                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
                             >
                                 Existing Family
                             </button>
@@ -738,7 +738,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                                                 : [...(selectField.value || []), subject];
                                                                                             selectField.onChange(newValue);
                                                                                         }}
-                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-white' : 'bg-card border-border text-slate-700 hover:border-gray-400'}`}
+                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-slate-700 hover:border-gray-400'}`}
                                                                                     >
                                                                                         {isSubSelected && '✓ '}{subject}
                                                                                     </button>
@@ -819,7 +819,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                             const newValue = isSelected ? field.value?.filter((s) => s !== subject) : [...(field.value || []), subject];
                                                                             field.onChange(newValue);
                                                                         }}
-                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-white' : 'bg-card border-border text-slate-800 hover:border-gray-400'}`}
+                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-slate-800 hover:border-gray-400'}`}
                                                                     >
                                                                         {isSelected && '✓ '}{subject}
                                                                     </button>

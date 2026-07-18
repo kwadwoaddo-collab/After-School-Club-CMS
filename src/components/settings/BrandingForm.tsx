@@ -214,7 +214,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                                         key={color.value}
                                         onClick={() => setPrimaryColor(color.value)}
                                         className={`p-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98] ${primaryColor === color.value
-                                            ? 'border-[#adc6ff] bg-secondary/60 shadow-lg shadow-black/40'
+                                            ? 'border-primary bg-secondary/60 shadow-lg shadow-black/40'
                                             : 'border-border hover:border-border bg-secondary/60/30 text-muted-foreground'
                                             }`}
                                     >

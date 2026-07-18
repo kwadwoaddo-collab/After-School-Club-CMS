@@ -64,7 +64,7 @@ export default function RegistrationTermsForm() {
                         href={`/register/${orgSlug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-[#353535] border border-border text-foreground rounded-2xl transition-all text-sm hover:scale-[1.01] active:scale-[0.99]"
+                        className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-2xl transition-all text-sm hover:scale-[1.01] active:scale-[0.99]"
                     >
                         <ExternalLink className="w-4 h-4" /> Preview form
                     </a>
