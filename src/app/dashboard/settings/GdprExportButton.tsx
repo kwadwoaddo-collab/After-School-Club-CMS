@@ -1,23 +1,21 @@
 'use client';
- 
+
 import { useState } from 'react';
 import { exportOrganisationData } from './gdpr.actions';
 import { Download, Loader2, ShieldCheck } from 'lucide-react';
-import { toast } from 'react-hot-toast';
- 
+import { useToast } from '@/components/ui/ToastProvider';
+
 export default function GdprExportButton() {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
- 
+    const { toast } = useToast();
+
     const handleExport = async () => {
         setLoading(true);
-        setError('');
         try {
             const result = await exportOrganisationData();
             if (!result.ok || !result.json) {
                 const errMsg = result.error || 'Export failed.';
-                setError(errMsg);
-                toast.error(errMsg);
+                toast({ title: 'Export failed', message: errMsg, variant: 'error' });
                 return;
             }
             const blob = new Blob([result.json], { type: 'application/json' });
@@ -27,37 +25,34 @@ export default function GdprExportButton() {
             a.download = `data-export-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            toast.success('GDPR data export downloaded successfully!');
+            toast({ title: 'Export ready', message: 'GDPR data export downloaded successfully.', variant: 'success' });
         } catch {
-            const errMsg = 'Something went wrong. Please try again.';
-            setError(errMsg);
-            toast.error(errMsg);
+            toast({ title: 'Export failed', message: 'Something went wrong. Please try again.', variant: 'error' });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="bg-[#1a1d23] rounded-2xl border border-[#424754]/15 p-6">
+        <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#adc6ff]/10 border border-[#adc6ff]/20 flex items-center justify-center flex-shrink-0">
-                    <ShieldCheck className="w-5 h-5 text-[#adc6ff]" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
                 </div>
-                <div className="flex-1">
-                    <h3 className="text-white font-bold text-sm">GDPR Data Export</h3>
-                    <p className="text-[#8c909f] text-xs mt-1">
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-foreground font-bold text-sm">GDPR Data Export</h3>
+                    <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
                         Download all personal data stored by your organisation (parents, students, registrations, bookings)
                         as a JSON file. Use this to fulfil Subject Access Requests.
                     </p>
-                    {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
                 </div>
                 <button
                     onClick={handleExport}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#2a2a2a] border border-[#424754]/30 text-[#e5e2e1] hover:bg-[#353535] rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex-shrink-0"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-secondary border border-border text-foreground hover:bg-secondary/80 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex-shrink-0"
                 >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    {loading ? 'Exporting...' : 'Export Data'}
+                    {loading ? 'Exporting…' : 'Export Data'}
                 </button>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
-import { children, parents, bookings, centres, bookingAttendees, registrationChildren } from '@/db/schema';
+import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents } from '@/db/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
 import StudentProfile from '@/components/students/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
@@ -126,7 +126,81 @@ export default async function StudentProfilePage(
             ))
         : [];
 
-    // Fetch family billing config — plain query, no serialization issues
+    // Fetch full registration detail (for the Registration tab)
+    let registrationDetail: {
+        id: string;
+        status: string;
+        startDate: Date | null;
+        sessions: string[] | null;
+        fundingTypes: string[] | null;
+        emergencyContactName: string | null;
+        emergencyContactPhone: string | null;
+        emergencyContactRelationship: string | null;
+        hasSpecialNeeds: boolean | null;
+        specialNeedsDetails: string | null;
+        parentEmail: string | null;
+        parentPhone: string | null;
+        parentName: string | null;
+        submittedAt: Date | null;
+    } | null = null;
+
+    if (student.registrationId) {
+        try {
+            const [reg, regChildren, regParents] = await Promise.all([
+                db.query.registrations.findFirst({
+                    where: eq(registrations.id, student.registrationId),
+                    columns: {
+                        id: true, status: true, startDate: true,
+                        fundingTypes: true, emergencyContactName: true,
+                        emergencyContactPhone: true, emergencyContactRelationship: true,
+                        hasSpecialNeeds: true, specialNeedsDetails: true, submittedAt: true,
+                    },
+                }),
+                db.query.registrationChildren.findMany({
+                    where: and(
+                        eq(registrationChildren.registrationId, student.registrationId),
+                        eq(registrationChildren.childId, id)
+                    ),
+                    columns: { submittedSessions: true },
+                    limit: 1,
+                }),
+                db.query.registrationParents.findMany({
+                    where: and(
+                        eq(registrationParents.registrationId, student.registrationId),
+                        eq(registrationParents.isPrimary, true)
+                    ),
+                    columns: {
+                        submittedEmail: true, submittedPhone: true,
+                        submittedFirstName: true, submittedLastName: true,
+                    },
+                    limit: 1,
+                }),
+            ]);
+
+            if (reg) {
+                const primaryParent = regParents[0] ?? null;
+                registrationDetail = {
+                    id: reg.id,
+                    status: reg.status,
+                    startDate: reg.startDate ?? null,
+                    sessions: regChildren[0]?.submittedSessions ?? null,
+                    fundingTypes: reg.fundingTypes ?? null,
+                    emergencyContactName: reg.emergencyContactName ?? null,
+                    emergencyContactPhone: reg.emergencyContactPhone ?? null,
+                    emergencyContactRelationship: reg.emergencyContactRelationship ?? null,
+                    hasSpecialNeeds: reg.hasSpecialNeeds ?? null,
+                    specialNeedsDetails: reg.specialNeedsDetails ?? null,
+                    parentEmail: primaryParent?.submittedEmail ?? null,
+                    parentPhone: primaryParent?.submittedPhone ?? null,
+                    parentName: primaryParent ? `${primaryParent.submittedFirstName} ${primaryParent.submittedLastName}` : null,
+                    submittedAt: reg.submittedAt ?? null,
+                };
+            }
+        } catch (err) {
+            console.error('[student-profile] registration detail fetch failed:', err);
+        }
+    }
+
     let billingConfig = null as import('@/features/billing/queries').StudentBillingConfig | null;
     try {
         billingConfig = await fetchStudentBillingConfig(id, student.parentId, session.user.organisationId);
@@ -147,7 +221,9 @@ export default async function StudentProfilePage(
                 currentUserRole={userRole}
                 billingConfig={billingConfig}
                 siblings={siblings}
+                registrationDetail={registrationDetail}
             />
+
         </div>
     );
 }
