@@ -10,7 +10,6 @@ const inter = Inter({
   display: "swap",
 });
 
-import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
   title: "After School Club CMS",
@@ -51,7 +50,6 @@ export default function RootLayout({
       >
         <SessionProvider>
             {children}
-            <Toaster position="bottom-right" />
         </SessionProvider>
       </body>
     </html>

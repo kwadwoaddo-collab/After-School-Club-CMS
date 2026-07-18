@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CalendarDays, Clock, User, CheckCircle2, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
-import { createPortalBooking } from './actions';
+import { createPortalBooking, reschedulePortalBooking } from './actions';
 
 interface Child {
     id: string;
@@ -22,6 +22,13 @@ interface Centre {
 interface BookingFlowProps {
     registeredChildren: Child[];
     centres: Centre[];
+    rescheduleBooking?: {
+        id: string;
+        startAt: Date;
+        childId: string;
+        centreId: string;
+        confirmationCode: string | null;
+    } | null;
 }
 
 const DURATION_OPTIONS = [30, 60, 90];
@@ -61,11 +68,19 @@ function buildStartAt(date: Date, timeSlot: string): string {
     return dt.toISOString();
 }
 
-export function BookingFlow({ registeredChildren: childList, centres }: BookingFlowProps) {
+export function BookingFlow({ registeredChildren: childList, centres, rescheduleBooking }: BookingFlowProps) {
+    const isRescheduling = !!rescheduleBooking;
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const { toast } = useToast();
-    const [selectedChild, setSelectedChild] = useState<Child | null>(null);
-    const [selectedCentre, setSelectedCentre] = useState<Centre | null>(centres.length === 1 ? centres[0] : null);
+    // Pre-select child and centre when rescheduling
+    const preselectedChild = rescheduleBooking
+        ? childList.find(c => c.id === rescheduleBooking.childId) ?? null
+        : null;
+    const preselectedCentre = rescheduleBooking
+        ? centres.find(c => c.id === rescheduleBooking.centreId) ?? (centres.length === 1 ? centres[0] : null)
+        : (centres.length === 1 ? centres[0] : null);
+    const [selectedChild, setSelectedChild] = useState<Child | null>(preselectedChild);
+    const [selectedCentre, setSelectedCentre] = useState<Centre | null>(preselectedCentre);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [selectedDuration, setSelectedDuration] = useState<number>(60);
@@ -81,14 +96,26 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
         setLoading(true);
         setError(null);
         try {
-            const result = await createPortalBooking({
-                childId: selectedChild.id,
-                centreId: selectedCentre.id,
-                startAt: buildStartAt(selectedDate, selectedSlot),
-                duration: selectedDuration,
-            });
+            let result;
+            if (isRescheduling && rescheduleBooking) {
+                result = await reschedulePortalBooking({
+                    oldBookingId: rescheduleBooking.id,
+                    childId: selectedChild.id,
+                    centreId: selectedCentre.id,
+                    startAt: buildStartAt(selectedDate, selectedSlot),
+                    duration: selectedDuration,
+                });
+            } else {
+                result = await createPortalBooking({
+                    childId: selectedChild.id,
+                    centreId: selectedCentre.id,
+                    startAt: buildStartAt(selectedDate, selectedSlot),
+                    duration: selectedDuration,
+                });
+            }
             if (result.success && result.confirmationCode) {
-                toast({ title: 'Success', message: 'Booking confirmed successfully!', variant: 'success' });
+                const msg = isRescheduling ? 'Booking rescheduled successfully!' : 'Booking confirmed successfully!';
+                toast({ title: 'Success', message: msg, variant: 'success' });
                 setSuccess({ confirmationCode: result.confirmationCode });
             } else {
                 const errMsg = result.error || 'Something went wrong.';
@@ -96,7 +123,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                 toast({ title: 'Error', message: errMsg, variant: 'error' });
             }
         } catch (err) {
-            const errMsg = err instanceof Error ? err.message : 'An error occurred during booking.';
+            const errMsg = err instanceof Error ? err.message : 'An error occurred.';
             setError(errMsg);
             toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
@@ -111,8 +138,14 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                 <div className="w-20 h-20 rounded-full bg-tertiary/10 border border-tertiary/30 flex items-center justify-center mb-6 animate-bounce-once">
                     <CheckCircle2 className="w-10 h-10 text-tertiary" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h2>
-                <p className="text-on-surface-variant mb-8">A confirmation email has been sent. Please save your code.</p>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                    {isRescheduling ? 'Booking Rescheduled!' : 'Booking Confirmed!'}
+                </h2>
+                <p className="text-on-surface-variant mb-8">
+                    {isRescheduling
+                        ? 'Your old booking has been cancelled and a new one created. Check your email.'
+                        : 'A confirmation email has been sent. Please save your code.'}
+                </p>
                 <div className="bg-primary/10 border-2 border-dashed border-primary/40 rounded-2xl px-8 py-6 mb-8">
                     <p className="text-xs uppercase font-bold text-primary tracking-widest mb-2">Confirmation Code</p>
                     <p className="text-3xl font-black text-white tracking-widest font-mono">{success.confirmationCode}</p>
@@ -148,6 +181,20 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                     </div>
                 ))}
             </div>
+
+            {/* Reschedule context banner */}
+            {isRescheduling && rescheduleBooking && (
+                <div className="mb-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3">
+                    <span className="text-amber-400 text-lg mt-0.5">📅</span>
+                    <div>
+                        <p className="text-sm font-bold text-amber-400">Rescheduling Booking</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                            Original date: <strong className="text-white">{new Date(rescheduleBooking.startAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</strong>
+                        </p>
+                        <p className="text-xs text-on-surface-variant">Pick a new date and time below. Your original booking will be cancelled automatically.</p>
+                    </div>
+                </div>
+            )}
 
             {/* ─── STEP 1: Pick child (and centre if multiple) ─── */}
             {step === 1 && (

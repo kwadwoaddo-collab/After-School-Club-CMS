@@ -126,3 +126,105 @@ export async function createPortalBooking({
         return { success: false, error: 'An error occurred while creating the booking.' };
     }
 }
+export async function reschedulePortalBooking({
+    oldBookingId,
+    childId,
+    centreId,
+    startAt,
+    duration,
+}: {
+    oldBookingId: string;
+    childId: string;
+    centreId: string;
+    startAt: string;
+    duration: number;
+}): Promise<{ success: boolean; confirmationCode?: string; error?: string }> {
+    try {
+        const parent = await getCurrentParent();
+        if (!parent) return { success: false, error: 'Unauthorized' };
+
+        // Verify the booking being rescheduled belongs to this parent
+        const oldBooking = await db.query.bookings.findFirst({
+            where: and(eq(bookings.id, oldBookingId), eq(bookings.parentId, parent.id)),
+        });
+        if (!oldBooking) return { success: false, error: 'Booking not found' };
+        if (oldBooking.status === 'cancelled') return { success: false, error: 'Booking is already cancelled' };
+
+        // Verify child belongs to this parent
+        const child = await db.query.children.findFirst({
+            where: and(eq(children.id, childId), eq(children.parentId, parent.id)),
+        });
+        if (!child) return { success: false, error: 'Child not found' };
+
+        // Verify centre
+        const centre = await db.query.centres.findFirst({
+            where: and(eq(centres.id, centreId), eq(centres.organisationId, parent.organisationId)),
+        });
+        if (!centre) return { success: false, error: 'Centre not found' };
+
+        const newStartDate = new Date(startAt);
+        if (isNaN(newStartDate.getTime())) return { success: false, error: 'Invalid date' };
+
+        // Must be in the future
+        if (newStartDate <= new Date()) return { success: false, error: 'New date must be in the future' };
+
+        let confirmationCode: string;
+        const oldStartAt = oldBooking.startAt;
+
+        try {
+            confirmationCode = await db.transaction(async (tx) => {
+                // 1. Cancel old booking
+                await tx
+                    .update(bookings)
+                    .set({ status: 'cancelled', updatedAt: new Date() })
+                    .where(eq(bookings.id, oldBookingId));
+
+                // 2. Create new booking
+                const code = Date.now().toString(36).toUpperCase();
+                const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
+
+                const [newBooking] = await tx.insert(bookings).values({
+                    parentId: parent.id,
+                    centreId,
+                    startAt: newStartDate,
+                    duration,
+                    modality: 'in_person',
+                    status: 'confirmed',
+                    confirmationCode: code,
+                    magicLinkToken,
+                    communicationsConsent: false,
+                }).returning();
+
+                // 3. Create attendee record
+                await tx.insert(bookingAttendees).values({
+                    bookingId: newBooking.id,
+                    childId,
+                });
+
+                return code;
+            });
+        } catch (e: any) {
+            return { success: false, error: e.message || 'Failed to reschedule booking.' };
+        }
+
+        revalidatePath('/portal');
+
+        // Fire-and-forget reschedule email
+        if (parent.email) {
+            emailService.sendBookingReschedule({
+                parentFirstName: parent.firstName,
+                parentEmail: parent.email,
+                childrenNames: `${child.firstName} ${child.lastName}`,
+                centreName: centre.name,
+                oldStartAt,
+                newStartAt: newStartDate,
+                confirmationCode,
+            }).catch((e: unknown) => console.error('[Email] Failed to send reschedule email:', e));
+        }
+
+        return { success: true, confirmationCode };
+    } catch (e) {
+        console.error('Failed to reschedule portal booking:', e);
+        return { success: false, error: 'An error occurred while rescheduling.' };
+    }
+}

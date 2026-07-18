@@ -1,15 +1,21 @@
 import { getCurrentParent } from '@/lib/parent-auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CalendarPlus } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, CalendarClock } from 'lucide-react';
 import { db } from '@/db';
-import { centres } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { bookings, bookingAttendees, centres, children } from '@/db/schema';
+import { eq, inArray, and } from 'drizzle-orm';
 import { BookingFlow } from './BookingFlow';
 
-export default async function PortalBookPage() {
+interface Props {
+    searchParams: Promise<{ reschedule?: string }>;
+}
+
+export default async function PortalBookPage({ searchParams }: Props) {
     const parent = await getCurrentParent();
     if (!parent) redirect('/portal/login');
+
+    const { reschedule: rescheduleBookingId } = await searchParams;
 
     // Find unique centre IDs from parent's existing booking history
     const bookingCentreIds = Array.from(
@@ -28,7 +34,6 @@ export default async function PortalBookPage() {
     }[] = [];
 
     if (bookingCentreIds.length > 0) {
-        // Load centres the parent has previously booked at
         parentCentres = await db
             .select({
                 id: centres.id,
@@ -39,7 +44,6 @@ export default async function PortalBookPage() {
             .from(centres)
             .where(inArray(centres.id, bookingCentreIds));
     } else {
-        // Fallback: load all centres in the parent's org
         parentCentres = await db
             .select({
                 id: centres.id,
@@ -58,6 +62,48 @@ export default async function PortalBookPage() {
         schoolYear: c.schoolYear,
     }));
 
+    // ── Resolve booking being rescheduled ─────────────────────────────────────
+    let rescheduleBooking: {
+        id: string;
+        startAt: Date;
+        childId: string;
+        centreId: string;
+        confirmationCode: string | null;
+    } | null = null;
+
+    if (rescheduleBookingId) {
+        const [existingBooking] = await db
+            .select({
+                id: bookings.id,
+                startAt: bookings.startAt,
+                centreId: bookings.centreId,
+                confirmationCode: bookings.confirmationCode,
+            })
+            .from(bookings)
+            .where(and(
+                eq(bookings.id, rescheduleBookingId),
+                eq(bookings.parentId, parent.id), // Security: only this parent's bookings
+            ))
+            .limit(1);
+
+        if (existingBooking && existingBooking.centreId) {
+            // Find the child from the booking attendees
+            const [attendee] = await db
+                .select({ childId: bookingAttendees.childId })
+                .from(bookingAttendees)
+                .where(eq(bookingAttendees.bookingId, existingBooking.id))
+                .limit(1);
+
+            rescheduleBooking = {
+                ...existingBooking,
+                centreId: existingBooking.centreId, // narrowed to string
+                childId: attendee?.childId ?? '',
+            };
+        }
+    }
+
+    const isRescheduling = !!rescheduleBooking;
+
     return (
         <div className="min-h-screen bg-surface text-on-surface pb-12">
             {/* Header */}
@@ -71,8 +117,10 @@ export default async function PortalBookPage() {
                     </Link>
                     <div>
                         <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                            <CalendarPlus className="w-5 h-5 text-primary" />
-                            Book a Session
+                            {isRescheduling
+                                ? <><CalendarClock className="w-5 h-5 text-amber-400" /> Reschedule Booking</>
+                                : <><CalendarPlus className="w-5 h-5 text-primary" /> Book a Session</>
+                            }
                         </h1>
                         <p className="text-xs text-on-surface-variant">
                             {parent.firstName} · {parentCentres.length === 1 ? parentCentres[0].name : `${parentCentres.length} centres available`}
@@ -91,6 +139,7 @@ export default async function PortalBookPage() {
                     <BookingFlow
                         registeredChildren={childList}
                         centres={parentCentres}
+                        rescheduleBooking={rescheduleBooking}
                     />
                 )}
             </main>

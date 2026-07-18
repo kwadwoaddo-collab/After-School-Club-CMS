@@ -146,12 +146,12 @@ export default async function PortalDashboard() {
                                             const orgSlug = (booking as any).centre?.organisation?.slug;
                                             const centreSlug = (booking as any).centre?.slug;
 
-                                            if (canReschedule && orgSlug && centreSlug) {
+                                            if (canReschedule) {
                                                 return (
                                                     <>
                                                         <CancelBookingButton bookingId={booking.id} />
                                                         <Link
-                                                            href={`/book/${orgSlug}/${centreSlug}?reschedule=${booking.id}`}
+                                                            href={`/portal/book?reschedule=${booking.id}`}
                                                             className="px-4 py-2 bg-secondary/40 border border-outline-variant/10 text-primary text-sm font-bold rounded-lg hover:bg-card transition-colors flex items-center justify-center"
                                                         >
                                                             Reschedule
