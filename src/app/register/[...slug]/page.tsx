@@ -56,8 +56,8 @@ const emptyParent = (): ParentEntry => ({
 });
 
 // ── Shared input styles ────────────────────────────────────────────
-const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 text-sm transition-colors';
-const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-white border border-red-400 ring-2 ring-red-400/20 text-gray-900 placeholder-gray-400 focus:outline-none text-sm';
+const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-white border border-gray-200 text-gray-900 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50/40 focus:border-primary/50 text-sm transition-colors';
+const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-white border border-red-400 ring-2 ring-red-400/20 text-gray-900 placeholder:text-muted-foreground focus:outline-none text-sm';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
 const sectionTitle = 'text-gray-900 font-bold text-xl mb-5';
 

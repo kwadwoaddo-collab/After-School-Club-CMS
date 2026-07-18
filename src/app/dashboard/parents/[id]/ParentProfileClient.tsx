@@ -40,7 +40,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                         activeTab === 'overview' 
                         ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                        : 'text-on-surface-variant hover:text-white'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
                     Overview
@@ -50,7 +50,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                         activeTab === 'finance' 
                         ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                        : 'text-on-surface-variant hover:text-white'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
                     Finance / Ledger
@@ -65,7 +65,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                             <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2">Contact Details</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-card/5 flex items-center justify-center text-primary">
+                                    <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
                                         <Mail className="w-5 h-5" />
                                     </div>
                                     <div>
@@ -74,7 +74,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-card/5 flex items-center justify-center text-primary">
+                                    <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
                                         <Phone className="w-5 h-5" />
                                     </div>
                                     <div>
@@ -83,7 +83,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 md:col-span-2">
-                                    <div className="w-10 h-10 rounded-xl bg-card/5 flex items-center justify-center text-primary">
+                                    <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
                                         <MapPin className="w-5 h-5" />
                                     </div>
                                     <div>
@@ -104,10 +104,10 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                     <Link 
                                         key={child.id}
                                         href={`/dashboard/students/${child.id}`}
-                                        className="flex items-center justify-between p-4 bg-card/5 border border-outline-variant/5 rounded-2xl hover:bg-primary/5 hover:border-primary/20 transition-all group"
+                                        className="flex items-center justify-between p-4 bg-secondary/40 border border-outline-variant/5 rounded-2xl hover:bg-primary/5 hover:border-primary/20 transition-all group"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-card-low flex items-center justify-center text-emerald-400">
+                                            <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-emerald-400">
                                                 <Baby className="w-5 h-5" />
                                             </div>
                                             <div>
@@ -179,7 +179,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
 
                     {/* Full Ledger Table */}
                     <div className="glassmorphic-card rounded-[40px] overflow-hidden">
-                        <div className="px-8 py-6 border-b border-outline-variant/5 bg-card-low/50">
+                        <div className="px-8 py-6 border-b border-outline-variant/5 bg-secondary/40/50">
                             <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Transaction History</h3>
                             <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mt-1">Consolidated family invoices and payments</p>
                         </div>

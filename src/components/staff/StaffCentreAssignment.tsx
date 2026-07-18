@@ -144,7 +144,7 @@ export default function StaffCentreAssignment({
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={() => handleToggleCentre(centre.id)}
-                                            className="w-5 h-5 rounded focus:ring-2 focus:ring-blue-500/20 accent-blue-600"
+                                            className="w-5 h-5 rounded focus:ring-2 focus:ring-primary/20 accent-blue-600"
                                         />
                                         <div className="flex-1">
                                             <div className="font-bold text-foreground">{centre.name}</div>

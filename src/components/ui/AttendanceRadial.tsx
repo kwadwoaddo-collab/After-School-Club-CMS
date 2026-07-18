@@ -77,7 +77,7 @@ export function AttendanceRadial({ percentage, size = 'md', children, className 
             <div className={cn(
                 "relative z-10 rounded-2xl flex items-center justify-center overflow-hidden transition-all duration-300",
                 size === 'lg' ? "w-[104px] h-[104px] rounded-[32px]" : "w-[calc(100%-8px)] h-[calc(100%-8px)]",
-                "bg-card-low group-hover:scale-95"
+                "bg-secondary/40 group-hover:scale-95"
             )}>
                 {children}
             </div>

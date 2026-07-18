@@ -190,7 +190,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                             Assign to Centre <span className="text-rose-500">*</span>
                         </label>
                         {accessibleCentres.length === 0 ? (
-                            <p className="text-on-surface-variant text-sm p-3 bg-card-low rounded-xl border border-outline-variant/10">
+                            <p className="text-on-surface-variant text-sm p-3 bg-secondary/40 rounded-xl border border-outline-variant/10">
                                 You have no accessible centres. Contact your organisation owner.
                             </p>
                         ) : (

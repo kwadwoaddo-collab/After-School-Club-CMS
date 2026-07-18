@@ -141,7 +141,7 @@ export default async function StudentAttendanceHistoryPage(
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Total Sessions */}
-                    <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
+                    <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
                         <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Total Sessions</span>
                         <div className="flex items-end justify-between">
                             <span className="text-4xl font-black text-white">{totalSessions}</span>
@@ -150,7 +150,7 @@ export default async function StudentAttendanceHistoryPage(
                     </div>
 
                     {/* Attendance Rate */}
-                    <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
+                    <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
                         <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Attendance Rate</span>
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
@@ -171,7 +171,7 @@ export default async function StudentAttendanceHistoryPage(
                     </div>
 
                     {/* Status Breakdown */}
-                    <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-6">
+                    <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-6">
                         <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Breakdown</span>
                         <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                             <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
@@ -209,7 +209,7 @@ export default async function StudentAttendanceHistoryPage(
                 </div>
 
                 {/* Detailed Logs */}
-                <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-8">
+                <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-8">
                     <h2 className="text-lg font-black text-white tracking-tight uppercase tracking-wider mb-6 flex items-center gap-2">
                         <ClipboardCheck className="w-5 h-5 text-primary" /> Session History Log
                     </h2>

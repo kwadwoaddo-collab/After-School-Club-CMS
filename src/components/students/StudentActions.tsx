@@ -51,7 +51,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                             <button
                                 onClick={() => setShowConfirm(false)}
                                 disabled={isDeleting}
-                                className="flex-1 px-4 py-2.5 bg-card-low hover:bg-surface-bright border border-outline-variant/20 rounded-2xl text-sm font-semibold text-on-surface transition-all"
+                                className="flex-1 px-4 py-2.5 bg-secondary/40 hover:bg-card border border-outline-variant/20 rounded-2xl text-sm font-semibold text-on-surface transition-all"
                             >
                                 Keep Student
                             </button>

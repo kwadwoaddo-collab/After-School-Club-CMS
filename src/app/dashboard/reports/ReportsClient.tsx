@@ -281,7 +281,7 @@ export default function ReportsClient() {
                                             type="date"
                                             value={startDateBooking}
                                             onChange={(e) => setStartDateBooking(e.target.value)}
-                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -290,13 +290,13 @@ export default function ReportsClient() {
                                             type="date"
                                             value={endDateBooking}
                                             onChange={(e) => setEndDateBooking(e.target.value)}
-                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-sm text-foreground font-mono outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                                         />
                                     </div>
                                     <button
                                         onClick={() => handleExportBookings('custom')}
                                         disabled={isExportingBookings}
-                                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
+                                        className="w-full py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
                                     >
                                         {isExportingBookings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                         Export Selection
@@ -383,7 +383,7 @@ export default function ReportsClient() {
                                     <button
                                         onClick={() => handleExportStudents('custom')}
                                         disabled={isExportingStudents}
-                                        className="w-full py-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
+                                        className="w-full py-3 bg-accent-violet hover:bg-accent-violet/90 active:bg-accent-violet/80 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50"
                                     >
                                         {isExportingStudents ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                         Export Selection

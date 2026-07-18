@@ -7,7 +7,7 @@ type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 const OPTIONS: { value: Status; label: string; cls: string }[] = [
     { value: 'awaiting_confirmation', label: 'Awaiting Confirmation', cls: 'text-amber-400 hover:bg-amber-500/10' },
     { value: 'signed_up', label: 'Signed Up', cls: 'text-emerald-400 hover:bg-emerald-500/10' },
-    { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-400 hover:bg-surface-bright' },
+    { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-400 hover:bg-card' },
 ];
 
 export default function RegistrationStatusUpdater({
@@ -50,7 +50,7 @@ export default function RegistrationStatusUpdater({
                 disabled={saving}
                 aria-haspopup="listbox"
                 aria-expanded={open}
-                className="px-4 py-2 rounded-lg bg-card-low text-white text-sm font-medium hover:bg-surface-bright transition-colors disabled:opacity-50 border border-outline-variant/10"
+                className="px-4 py-2 rounded-lg bg-secondary/40 text-white text-sm font-medium hover:bg-card transition-colors disabled:opacity-50 border border-outline-variant/10"
             >
                 {saving ? 'Saving…' : 'Update Status ▾'}
             </button>

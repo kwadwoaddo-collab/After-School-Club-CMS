@@ -225,7 +225,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                 </button>
 
                 {/* Progress Header */}
-                <div className="p-10 pb-6 border-b border-border ring-1 ring-white/5 bg-card-low/50">
+                <div className="p-10 pb-6 border-b border-border ring-1 ring-white/5 bg-secondary/40/50">
                     <div className="flex items-center gap-4 mb-2">
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                             <Receipt className="w-6 h-6" />
@@ -253,7 +253,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                     placeholder="Search by Child Name or Parent Name..."
                                     value={parentSearch}
                                     onChange={(e) => setParentSearch(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-card-low border border-border rounded-2xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                    className="w-full pl-12 pr-4 py-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                                 />
                                 {isLoading && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />}
                             </div>
@@ -287,7 +287,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                                 className="ml-8 w-[calc(100%-2rem)] flex items-center justify-between p-3 bg-card border border-border rounded-xl hover:bg-primary/5 hover:border-primary/20 transition-all text-left group"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-card-low flex items-center justify-center text-muted-foreground border border-border">
+                                                    <div className="w-8 h-8 rounded-lg bg-secondary/40 flex items-center justify-center text-muted-foreground border border-border">
                                                         <Baby className="w-4 h-4" />
                                                     </div>
                                                     <div>
@@ -312,13 +312,13 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                             <div className="pt-4 border-t border-border space-y-3">
                                 <button 
                                     onClick={() => setStep('legacy-onboarding')}
-                                    className="w-full flex items-center justify-center gap-2 py-4 bg-card-low border border-primary/20 rounded-2xl text-primary font-black uppercase tracking-widest text-xs hover:bg-primary/5 transition-all"
+                                    className="w-full flex items-center justify-center gap-2 py-4 bg-secondary/40 border border-primary/20 rounded-2xl text-primary font-black uppercase tracking-widest text-xs hover:bg-primary/5 transition-all"
                                 >
                                     <UserPlus className="w-4 h-4" /> Create New Family
                                 </button>
                                 <button 
                                     onClick={() => setStep('adhoc-invoice')}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-card-low border border-border rounded-2xl text-muted-foreground font-black uppercase tracking-widest text-xs hover:bg-secondary/60 hover:text-foreground transition-all"
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-secondary/40 border border-border rounded-2xl text-muted-foreground font-black uppercase tracking-widest text-xs hover:bg-secondary/60 hover:text-foreground transition-all"
                                 >
                                     <Baby className="w-4 h-4" /> Ad-Hoc Invoice (child not in system)
                                 </button>
@@ -344,7 +344,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                             type="text"
                                             value={legacyParent.firstName}
                                             onChange={(e) => setLegacyParent({...legacyParent, firstName: e.target.value})}
-                                            className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold"
+                                            className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -353,7 +353,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                             type="text"
                                             value={legacyParent.lastName}
                                             onChange={(e) => setLegacyParent({...legacyParent, lastName: e.target.value})}
-                                            className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold"
+                                            className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                                         />
                                     </div>
                                 </div>
@@ -364,7 +364,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                             type="email"
                                             value={legacyParent.email}
                                             onChange={(e) => setLegacyParent({...legacyParent, email: e.target.value})}
-                                            className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold"
+                                            className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -373,7 +373,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                             type="text"
                                             value={legacyParent.phone}
                                             onChange={(e) => setLegacyParent({...legacyParent, phone: e.target.value})}
-                                            className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold"
+                                            className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                                         />
                                     </div>
                                 </div>
@@ -390,7 +390,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                     </button>
                                 </div>
                                 {legacyChildren.map((child, idx) => (
-                                    <div key={idx} className="bg-card-low border border-border rounded-2xl p-6 relative group/child">
+                                    <div key={idx} className="bg-secondary/40 border border-border rounded-2xl p-6 relative group/child">
                                         {legacyChildren.length > 1 && (
                                             <button onClick={() => handleRemoveLegacyChild(idx)} className="absolute top-4 right-4 text-rose-500 opacity-0 group-hover/child:opacity-100 transition-opacity p-2 hover:bg-rose-500/10 rounded-lg">
                                                 <Trash2 className="w-4 h-4" />
@@ -485,7 +485,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         value={adhocChildName}
                                         onChange={(e) => setAdhocChildName(e.target.value)}
                                         placeholder="e.g. Jamie Smith"
-                                        className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
                                         autoFocus
                                     />
                                 </div>
@@ -526,7 +526,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                                 placeholder="Search parent name or email..."
                                                 value={adhocParentSearch}
                                                 onChange={(e) => { setAdhocParentSearch(e.target.value); setAdhocSelectedParent(null); }}
-                                                className="w-full pl-10 pr-4 py-3 bg-card-low border border-border rounded-xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                                className="w-full pl-10 pr-4 py-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
                                             />
                                         </div>
                                         {adhocSelectedParent ? (
@@ -545,7 +545,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                                     <button
                                                         key={p.id}
                                                         onClick={() => { setAdhocSelectedParent(p); setAdhocParentSearch(''); setAdhocParentResults([]); }}
-                                                        className="w-full flex items-center gap-3 p-3 bg-card-low border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 transition-all text-left"
+                                                        className="w-full flex items-center gap-3 p-3 bg-secondary/40 border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 transition-all text-left"
                                                     >
                                                         <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center font-bold text-primary text-xs">
                                                             {p.firstName[0]}{p.lastName[0]}
@@ -563,19 +563,19 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">First Name *</label>
-                                            <input type="text" value={adhocNewParent.firstName} onChange={(e) => setAdhocNewParent({...adhocNewParent, firstName: e.target.value})} className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold" />
+                                            <input type="text" value={adhocNewParent.firstName} onChange={(e) => setAdhocNewParent({...adhocNewParent, firstName: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Last Name</label>
-                                            <input type="text" value={adhocNewParent.lastName} onChange={(e) => setAdhocNewParent({...adhocNewParent, lastName: e.target.value})} className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold" />
+                                            <input type="text" value={adhocNewParent.lastName} onChange={(e) => setAdhocNewParent({...adhocNewParent, lastName: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Email</label>
-                                            <input type="email" value={adhocNewParent.email} onChange={(e) => setAdhocNewParent({...adhocNewParent, email: e.target.value})} className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold" />
+                                            <input type="email" value={adhocNewParent.email} onChange={(e) => setAdhocNewParent({...adhocNewParent, email: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Phone</label>
-                                            <input type="tel" value={adhocNewParent.phone} onChange={(e) => setAdhocNewParent({...adhocNewParent, phone: e.target.value})} className="w-full p-3 bg-card-low border border-border rounded-xl text-foreground font-bold" />
+                                            <input type="tel" value={adhocNewParent.phone} onChange={(e) => setAdhocNewParent({...adhocNewParent, phone: e.target.value})} className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-foreground font-bold" />
                                         </div>
                                     </div>
                                 )}
@@ -644,7 +644,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                     <select 
                                         value={invoiceData.centreId}
                                         onChange={(e) => setInvoiceData({...invoiceData, centreId: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-bold"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-bold"
                                     >
                                         {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
@@ -668,7 +668,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         placeholder="0.00"
                                         value={invoiceData.amount}
                                         onChange={(e) => setInvoiceData({...invoiceData, amount: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-black text-xl"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-black text-xl"
                                     />
                                 </div>
 
@@ -678,7 +678,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         type="date"
                                         value={invoiceData.invoiceDate}
                                         onChange={(e) => setInvoiceData({...invoiceData, invoiceDate: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-bold"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-bold"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -687,7 +687,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         type="date"
                                         value={invoiceData.dueDate}
                                         onChange={(e) => setInvoiceData({...invoiceData, dueDate: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-bold"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-bold"
                                     />
                                 </div>
 
@@ -697,7 +697,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         type="date"
                                         value={invoiceData.billingPeriodStart}
                                         onChange={(e) => setInvoiceData({...invoiceData, billingPeriodStart: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-medium"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-medium"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -706,7 +706,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         type="date"
                                         value={invoiceData.billingPeriodEnd}
                                         onChange={(e) => setInvoiceData({...invoiceData, billingPeriodEnd: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-medium"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-medium"
                                     />
                                 </div>
 
@@ -716,7 +716,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                                         rows={3}
                                         value={invoiceData.notes}
                                         onChange={(e) => setInvoiceData({...invoiceData, notes: e.target.value})}
-                                        className="w-full p-4 bg-card-low border border-border rounded-2xl text-foreground font-medium scrollbar-hide"
+                                        className="w-full p-4 bg-secondary/40 border border-border rounded-2xl text-foreground font-medium scrollbar-hide"
                                         placeholder="Enter any additional details..."
                                     />
                                 </div>

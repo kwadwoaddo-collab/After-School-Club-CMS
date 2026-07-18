@@ -511,7 +511,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
         .filter(slot => slot.regulars.length > 0 || slot.catchups.length > 0);
 
     // ── shared form input style ───────────────────────────────────────────────
-    const formInput = 'w-full h-11 px-3 rounded-xl bg-card border border-border text-foreground placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors';
+    const formInput = 'w-full h-11 px-3 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors';
     const formLabel = 'block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5';
 
     return (
@@ -527,7 +527,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder="Search students or parents…"
-                        className="w-full h-12 pl-10 pr-10 rounded-xl bg-secondary/40 border border-border text-foreground placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                        className="w-full h-12 pl-10 pr-10 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
                     />
                     {searchQuery && (
                         <button
@@ -562,7 +562,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             {filteredSlots.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-3xl border-2 border-dashed border-border">
                     <div className="w-16 h-16 rounded-2xl bg-secondary/60 flex items-center justify-center mb-4">
-                        <Users className="w-7 h-7 text-gray-300" />
+                        <Users className="w-7 h-7 text-muted-foreground/60" />
                     </div>
                     <h3 className="text-foreground font-bold text-base mb-2">No students found</h3>
                     <p className="text-muted-foreground text-sm max-w-xs px-4">
@@ -657,7 +657,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     </div>
 
                                     {slot.regulars.length === 0 ? (
-                                        <p className="text-center text-gray-300 text-xs py-8 italic border-2 border-dashed border-border rounded-2xl">
+                                        <p className="text-center text-muted-foreground/60 text-xs py-8 italic border-2 border-dashed border-border rounded-2xl">
                                             No regular students scheduled for this slot.
                                         </p>
                                     ) : (
@@ -692,7 +692,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     </div>
 
                                     {slot.catchups.length === 0 ? (
-                                        <p className="text-center text-gray-300 text-xs py-8 italic border-2 border-dashed border-border rounded-2xl">
+                                        <p className="text-center text-muted-foreground/60 text-xs py-8 italic border-2 border-dashed border-border rounded-2xl">
                                             No catch-ups or walk-ins registered.
                                         </p>
                                     ) : (

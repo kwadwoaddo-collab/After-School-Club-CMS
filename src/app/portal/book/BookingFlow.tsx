@@ -304,7 +304,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                     <div className="flex justify-between mt-6">
                         <button
                             onClick={() => setStep(1)}
-                            className="flex items-center gap-2 text-on-surface-variant hover:text-white font-bold px-4 py-3 rounded-xl hover:bg-surface-bright transition-colors"
+                            className="flex items-center gap-2 text-on-surface-variant hover:text-white font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" /> Back
                         </button>
@@ -364,7 +364,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                     <div className="flex justify-between">
                         <button
                             onClick={() => setStep(2)}
-                            className="flex items-center gap-2 text-on-surface-variant hover:text-white font-bold px-4 py-3 rounded-xl hover:bg-surface-bright transition-colors"
+                            className="flex items-center gap-2 text-on-surface-variant hover:text-white font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" /> Back
                         </button>

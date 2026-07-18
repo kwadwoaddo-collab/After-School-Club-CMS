@@ -23,7 +23,7 @@ export function RegistrationFunnel({ data, className }: RegistrationFunnelProps)
             </div>
 
             {/* Funnel Bar — 2 real stages: Pending → Approved */}
-            <div className="h-4 w-full flex rounded-full overflow-hidden bg-card-low border border-outline-variant/10 p-0.5">
+            <div className="h-4 w-full flex rounded-full overflow-hidden bg-secondary/40 border border-outline-variant/10 p-0.5">
                 <div 
                     className="h-full bg-error rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(255,113,108,0.4)]"
                     style={{ width: `${newPerc}%` }}

@@ -102,7 +102,7 @@ function ForgivModal({
                             onChange={e => setNote(e.target.value)}
                             rows={3}
                             placeholder="e.g. Parent agreement on 14/07/26 — illness period waived"
-                            className="w-full px-4 py-3 rounded-2xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                            className="w-full px-4 py-3 rounded-2xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
                         />
                     </div>
                     <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
@@ -343,14 +343,14 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                 <select
                     value={selectedCentreId}
                     onChange={e => handleCentreChange(e.target.value)}
-                    className="w-full sm:w-auto h-10 px-3 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full sm:w-auto h-10 px-3 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
                 >
                     {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <select
                     value={selectedYear}
                     onChange={e => handleYearChange(e.target.value)}
-                    className="w-full sm:w-auto h-10 px-3 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full sm:w-auto h-10 px-3 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
                 >
                     {academicYears.map(y => <option key={y} value={y}>{y} Academic Year</option>)}
                 </select>
@@ -360,7 +360,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         placeholder="Search students..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full h-10 pl-4 pr-4 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full h-10 pl-4 pr-4 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
                     />
                 </div>
             </div>

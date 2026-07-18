@@ -135,7 +135,7 @@ export default async function CentresPage() {
                             )}
 
                             {/* Load Forecast Visualization */}
-                            <div className="mb-6 p-4 rounded-2xl bg-card-low/50 border border-outline-variant/5">
+                            <div className="mb-6 p-4 rounded-2xl bg-secondary/40/50 border border-outline-variant/5">
                                 <div className="flex items-center gap-2 mb-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                                     <BarChart3 className="w-3.5 h-3.5" />
                                     7-Day Load Forecast
@@ -145,7 +145,7 @@ export default async function CentresPage() {
 
                             <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
                                 <div className="flex items-center gap-4 text-xs text-on-surface-variant font-medium">
-                                    <div className="flex items-center gap-1.5 bg-card-low px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1.5 bg-secondary/40 px-2 py-1 rounded-lg">
                                         <Calendar className="w-3.5 h-3.5" />
                                         <span>{centre.todayCount} today</span>
                                     </div>

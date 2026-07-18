@@ -33,7 +33,7 @@ export default async function BillingDashboard() {
         <div className="min-h-screen bg-surface text-on-surface pb-12">
             <header className="bg-card border-b border-outline-variant/10 sticky top-0 z-20">
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-                    <Link href="/portal" className="p-2 -ml-2 rounded-lg hover:bg-surface-bright transition-colors text-on-surface-variant">
+                    <Link href="/portal" className="p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-on-surface-variant">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
@@ -88,7 +88,7 @@ export default async function BillingDashboard() {
                                                     {inv.status.replace('_', ' ')}
                                                 </span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4 mt-4 bg-card-low p-4 rounded-lg">
+                                            <div className="grid grid-cols-2 gap-4 mt-4 bg-secondary/40 p-4 rounded-lg">
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Total Amount</p>
                                                     <p className="font-medium text-white">£{Number(inv.amount).toFixed(2)}</p>
@@ -127,7 +127,7 @@ export default async function BillingDashboard() {
                         </div>
                         <div className="space-y-3 opacity-80">
                             {pastInvoices.map(inv => (
-                                <div key={inv.id} className="bg-card-low p-4 rounded-xl border border-outline-variant/5 flex justify-between items-center">
+                                <div key={inv.id} className="bg-secondary/40 p-4 rounded-xl border border-outline-variant/5 flex justify-between items-center">
                                     <div className="flex gap-4 items-center">
                                         <span className="text-on-surface-variant font-mono text-sm">
                                             {new Date(inv.invoiceDate).toLocaleDateString('en-GB')}

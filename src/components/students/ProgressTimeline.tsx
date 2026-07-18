@@ -202,7 +202,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                         <textarea
                                             value={editingContent}
                                             onChange={e => setEditingContent(e.target.value)}
-                                            className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-y min-h-[80px] transition-all"
+                                            className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 resize-y min-h-[80px] transition-all"
                                             disabled={isPending}
                                         />
                                         <div className="flex justify-end gap-2">

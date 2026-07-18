@@ -58,7 +58,7 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
             <div>
                 <Link 
                     href="/dashboard/students"
-                    className="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors font-bold group mb-2 text-xs uppercase tracking-widest"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group mb-2 text-xs uppercase tracking-widest"
                 >
                     <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
                     Back to Directory
@@ -68,10 +68,10 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
                         {(parent.firstName || '')[0] || ''}{(parent.lastName || '')[0] || ''}
                     </div>
                     <div>
-                        <h1 className="text-4xl font-black text-white tracking-tight">
+                        <h1 className="text-4xl font-black text-foreground tracking-tight">
                             {parent.firstName} {parent.lastName}
                         </h1>
-                        <p className="text-on-surface-variant font-medium mt-1">
+                        <p className="text-muted-foreground font-medium mt-1">
                             Family Account Profile & Ledger
                         </p>
                     </div>

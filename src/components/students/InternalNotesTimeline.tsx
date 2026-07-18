@@ -92,7 +92,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
             <input 
               type="radio" 
               name="noteCategory" 
-              className="text-blue-500 focus:ring-blue-500"
+              className="text-blue-500 focus:ring-primary/50"
               checked={category === 'Safeguarding'} 
               onChange={() => setCategory('Safeguarding')} 
             />

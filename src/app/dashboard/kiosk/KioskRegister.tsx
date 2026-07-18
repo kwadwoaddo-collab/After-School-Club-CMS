@@ -283,7 +283,7 @@ function StudentCard({
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 placeholder="Add custom notes..."
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                             />
                         </div>
                         <div className="w-full sm:w-28">
@@ -294,7 +294,7 @@ function StudentCard({
                                 onChange={(e) => setLateMinutes(e.target.value)}
                                 placeholder="Minutes"
                                 min="0"
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder-gray-400 text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
                             />
                         </div>
                     </div>
@@ -502,7 +502,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search students by name or parent..."
-                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-card/80 backdrop-blur-md border border-border text-foreground placeholder-gray-400 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300"
+                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-card/80 backdrop-blur-md border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300"
                         />
                         {searchQuery && (
                             <button

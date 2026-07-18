@@ -79,7 +79,7 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
       value: revenue.overdueCount.toString(),
       icon: AlertCircle,
       color: revenue.overdueCount > 0 ? 'text-red-400' : 'text-on-surface-variant',
-      iconBg: revenue.overdueCount > 0 ? 'bg-red-500/10' : 'bg-card-low',
+      iconBg: revenue.overdueCount > 0 ? 'bg-red-500/10' : 'bg-secondary/40',
       description: 'Past due date',
     },
   ];

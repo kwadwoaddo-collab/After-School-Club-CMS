@@ -110,7 +110,7 @@ function ResetPasswordForm() {
                                     type={showPassword ? 'text' : 'password'}
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full px-4 py-3 pr-12 rounded-lg bg-white border border-blue-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 pr-12 rounded-lg bg-white border border-blue-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     placeholder="Min 8 characters"
                                     required
                                     autoFocus
@@ -153,7 +153,7 @@ function ResetPasswordForm() {
                                 type={showPassword ? 'text' : 'password'}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className={`w-full px-4 py-3 rounded-lg bg-white border text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${confirmPassword && newPassword !== confirmPassword ? 'border-red-400' : 'border-blue-200'}`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 ${confirmPassword && newPassword !== confirmPassword ? 'border-red-400' : 'border-blue-200'}`}
                                 placeholder="Re-enter new password"
                                 required
                             />

@@ -65,7 +65,7 @@ export default async function PortalBookPage() {
                 <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
                     <Link
                         href="/portal"
-                        className="p-2 -ml-2 rounded-lg hover:bg-surface-bright transition-colors text-on-surface-variant"
+                        className="p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-on-surface-variant"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </Link>

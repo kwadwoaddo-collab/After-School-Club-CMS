@@ -236,7 +236,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                             value={newDateValue}
                                             disabled={isUpdatingDate}
                                             onChange={(e) => setNewDateValue(e.target.value)}
-                                            className="bg-card-low border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                            className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
                                         />
                                         <button 
                                             onClick={handleSaveDate}
@@ -323,7 +323,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                                 disabled={isUpdatingNotes}
                                                 onChange={(e) => setNotesValue(e.target.value)}
                                                 rows={3}
-                                                className="w-full bg-card-low border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary scrollbar-hide"
+                                                className="w-full bg-secondary/40 border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary scrollbar-hide"
                                                 placeholder="Add custom notes visible on the PDF..."
                                             />
                                             <div className="flex items-center justify-end gap-2">

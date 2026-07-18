@@ -104,7 +104,7 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                             <select
                                 value={subject}
                                 onChange={e => setSubject(e.target.value)}
-                                className="w-full bg-card border border-border text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                className="w-full bg-card border border-border text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                             >
                                 <option value="">Select activity…</option>
                                 {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -140,7 +140,7 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                             onChange={e => setContent(e.target.value)}
                             placeholder={`Add a ${NOTE_TYPES.find(t => t.value === noteType)?.label.toLowerCase()} note for ${childName}…`}
                             rows={3}
-                            className="w-full bg-card border border-border text-foreground rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                            className="w-full bg-card border border-border text-foreground rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
                         />
                     </div>
 

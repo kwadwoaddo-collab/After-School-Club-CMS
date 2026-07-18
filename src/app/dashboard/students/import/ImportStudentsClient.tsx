@@ -205,7 +205,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
   // ── Shared card shell ────────────────────────────────────────────────────────
   const card = 'bg-card border border-border rounded-3xl shadow-sm';
   const label = 'block text-xs font-semibold text-foreground mb-1.5';
-  const input = 'w-full bg-card text-foreground border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
+  const input = 'w-full bg-card text-foreground border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all';
 
   return (
     <div className="max-w-3xl space-y-5">

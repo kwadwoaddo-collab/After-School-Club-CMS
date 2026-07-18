@@ -419,10 +419,10 @@ export default async function FinancePage(props: {
                                 <span>Export Ledger (CSV)</span>
                                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                             </a>
-                            <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
+                            <Link href="/dashboard/reports" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Tax Summary Report</span>
                                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>

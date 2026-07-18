@@ -32,7 +32,7 @@ export function AddMedicalNoteForm({ childId }: { childId: string }) {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 required
-                className="w-full bg-card-low border border-outline-variant/20 rounded-xl p-3 text-white placeholder:text-on-surface-variant focus:outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-secondary/40 border border-outline-variant/20 rounded-xl p-3 text-white placeholder:text-on-surface-variant focus:outline-none focus:border-primary/50 transition-colors"
                 rows={3}
             />
             <div className="flex justify-end">

@@ -94,7 +94,7 @@ export default function RecordPaymentModal({
                             required
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full bg-card-low border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-3xl font-black text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                         />
                         <p className="text-xs text-muted-foreground font-medium">Remaining Balance: £{remainingBalance.toFixed(2)}</p>
                     </div>
@@ -113,7 +113,7 @@ export default function RecordPaymentModal({
                                     className={`relative flex items-center gap-3 p-4 rounded-2xl border transition-all ${
                                         formData.method === m.id 
                                         ? 'bg-primary/10 border-primary ring-1 ring-primary' 
-                                        : 'bg-card-low border-border hover:bg-secondary/60'
+                                        : 'bg-secondary/40 border-border hover:bg-secondary/60'
                                     }`}
                                 >
                                     <m.icon className={`w-5 h-5 ${m.color}`} />
@@ -138,7 +138,7 @@ export default function RecordPaymentModal({
                             required
                             value={formData.recordedAt}
                             onChange={(e) => setFormData({ ...formData, recordedAt: e.target.value })}
-                            className="w-full bg-card-low border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
                         />
                     </div>
 
@@ -152,7 +152,7 @@ export default function RecordPaymentModal({
                             placeholder="e.g. Bank Ref, Receipt #"
                             value={formData.reference}
                             onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                            className="w-full bg-card-low border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                            className="w-full bg-secondary/40 border border-border rounded-2xl px-5 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
                         />
                     </div>
                 </form>

@@ -206,7 +206,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                     <select
                                         value={selectedCentre}
                                         onChange={(e) => setSelectedCentre(e.target.value)}
-                                        className="w-full h-11 pl-4 pr-10 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none"
+                                        className="w-full h-11 pl-4 pr-10 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all appearance-none"
                                     >
                                         <option value="">All Centres (Shows selector to parents)</option>
                                         {centres.map(c => (
@@ -287,7 +287,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                         type="number"
                                         value={customHeight}
                                         onChange={(e) => setCustomHeight(e.target.value)}
-                                        className="w-24 h-8 px-3 rounded-lg bg-card border border-border text-foreground text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                                        className="w-24 h-8 px-3 rounded-lg bg-card border border-border text-foreground text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
                                         min="200"
                                         max="3000"
                                     />

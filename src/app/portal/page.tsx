@@ -44,7 +44,7 @@ export default async function PortalDashboard() {
                         </Link>
                         <a
                             href="/api/portal/logout"
-                            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-surface-bright"
+                            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-card"
                         >
                             <LogOut className="w-4 h-4" />
                             Sign Out
@@ -152,7 +152,7 @@ export default async function PortalDashboard() {
                                                         <CancelBookingButton bookingId={booking.id} />
                                                         <Link
                                                             href={`/book/${orgSlug}/${centreSlug}?reschedule=${booking.id}`}
-                                                            className="px-4 py-2 bg-card-low border border-outline-variant/10 text-primary text-sm font-bold rounded-lg hover:bg-surface-bright transition-colors flex items-center justify-center"
+                                                            className="px-4 py-2 bg-secondary/40 border border-outline-variant/10 text-primary text-sm font-bold rounded-lg hover:bg-card transition-colors flex items-center justify-center"
                                                         >
                                                             Reschedule
                                                         </Link>
@@ -161,7 +161,7 @@ export default async function PortalDashboard() {
                                             }
                                             return null;
                                         })()}
-                                        <button className="px-4 py-2 bg-card-low border border-outline-variant/10 text-on-surface-variant text-sm font-bold rounded-lg hover:bg-surface-bright hover:text-white transition-colors flex items-center gap-1">
+                                        <button className="px-4 py-2 bg-secondary/40 border border-outline-variant/10 text-on-surface-variant text-sm font-bold rounded-lg hover:bg-card hover:text-white transition-colors flex items-center gap-1">
                                             Details <ChevronRight className="w-3 h-3" />
                                         </button>
                                     </div>
@@ -176,7 +176,7 @@ export default async function PortalDashboard() {
                     <h2 className="text-xl font-bold text-white mb-4 opacity-60">Past Sessions</h2>
                     <div className="space-y-3 opacity-60">
                         {pastBookings.slice(0, 3).map(booking => (
-                            <div key={booking.id} className="bg-card-low p-4 rounded-xl border border-outline-variant/5 flex justify-between items-center">
+                            <div key={booking.id} className="bg-secondary/40 p-4 rounded-xl border border-outline-variant/5 flex justify-between items-center">
                                 <div className="flex gap-4 items-center">
                                     <span className="text-on-surface-variant font-mono text-sm">
                                         {new Date(booking.startAt).toLocaleDateString()}

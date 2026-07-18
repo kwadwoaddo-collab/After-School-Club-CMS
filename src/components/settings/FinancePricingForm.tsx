@@ -191,7 +191,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                                 min="0"
                                 value={feeSelfFinance}
                                 onChange={(e) => setFeeSelfFinance(e.target.value)}
-                                className="flex-1 px-4 py-3 bg-card text-foreground text-sm focus:outline-none placeholder-gray-400"
+                                className="flex-1 px-4 py-3 bg-card text-foreground text-sm focus:outline-none placeholder:text-muted-foreground"
                                 placeholder="0.00"
                                 disabled={saving}
                             />
@@ -209,7 +209,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                                 min="0"
                                 value={feeAssistedFinance}
                                 onChange={(e) => setFeeAssistedFinance(e.target.value)}
-                                className="flex-1 px-4 py-3 bg-card text-foreground text-sm focus:outline-none placeholder-gray-400"
+                                className="flex-1 px-4 py-3 bg-card text-foreground text-sm focus:outline-none placeholder:text-muted-foreground"
                                 placeholder="0.00"
                                 disabled={saving}
                             />

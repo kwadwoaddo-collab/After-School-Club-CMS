@@ -75,7 +75,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
 
                 <div className="divide-y divide-border">
                     {rules.map((rule) => (
-                        <div key={rule.dayOfWeek} className={cn("p-4 flex items-center gap-4 transition-colors", rule.isOpen ? "bg-card-low" : "bg-transparent")}>
+                        <div key={rule.dayOfWeek} className={cn("p-4 flex items-center gap-4 transition-colors", rule.isOpen ? "bg-secondary/40" : "bg-transparent")}>
                             {/* Day Checkbox */}
                             <div className="w-40 flex items-center gap-3">
                                 <label className="flex items-center gap-3 cursor-pointer select-none">
