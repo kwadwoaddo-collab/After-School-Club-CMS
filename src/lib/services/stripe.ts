@@ -193,25 +193,78 @@ export class StripeService {
   }
 
   /**
-   * Construct webhook event from request
+   * Create a one-time payment checkout session for a parent invoice.
+   * Used in the parent portal so parents can pay by card online.
    */
-  constructWebhookEvent(payload: string, signature: string): Stripe.Event | null {
+  async createInvoicePaymentSession(input: {
+    invoiceId: string;
+    invoiceNumber: string;
+    amountPence: number;           // in pence, e.g. 15000 = £150.00
+    parentEmail: string;
+    description: string;           // e.g. "Invoice #INV-ABC123 — Sydenham Centre"
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<CheckoutResult> {
+    if (!stripe) {
+      return { success: false, error: 'Stripe not configured' };
+    }
+
+    try {
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        customer_email: input.parentEmail,
+        line_items: [
+          {
+            price_data: {
+              currency: 'gbp',
+              unit_amount: input.amountPence,
+              product_data: {
+                name: input.description,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: input.successUrl,
+        cancel_url: input.cancelUrl,
+        metadata: {
+          invoiceId: input.invoiceId,
+          invoiceNumber: input.invoiceNumber,
+          source: 'portal_invoice_payment',
+        },
+      });
+
+      return { success: true, sessionUrl: session.url || undefined };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[StripeService] Failed to create invoice payment session:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Construct and verify an incoming Stripe webhook event for invoice payments.
+   * Uses STRIPE_INVOICE_WEBHOOK_SECRET (separate from subscription webhook secret).
+   */
+  constructInvoiceWebhookEvent(payload: string, signature: string): Stripe.Event | null {
     if (!stripe) return null;
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = process.env.STRIPE_INVOICE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error('[StripeService] Webhook secret not configured');
+      console.error('[StripeService] Invoice webhook secret not configured');
       return null;
     }
 
     try {
       return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
     } catch (error) {
-      console.error('[StripeService] Webhook signature verification failed:', error);
+      console.error('[StripeService] Invoice webhook signature verification failed:', error);
       return null;
     }
   }
 }
+
 
 // Export singleton
 export const stripeService = new StripeService();

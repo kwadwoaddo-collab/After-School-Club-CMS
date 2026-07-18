@@ -4,12 +4,17 @@ import { invoices } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Receipt, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { VoucherPaymentForm } from '@/components/portal/VoucherPaymentForm';
+import StripePayButton from '@/components/portal/StripePayButton';
 
-export default async function BillingDashboard() {
+export default async function BillingDashboard(props: { searchParams: Promise<{ payment?: string }> }) {
+    const searchParams = await props.searchParams;
     const parent = await getCurrentParent();
     if (!parent) redirect('/portal/login');
+
+    // Check Stripe is available server-side (avoids exposing secret key to client)
+    const stripeEnabled = !!(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_xxx'));
 
     const parentInvoices = await db.query.invoices.findMany({
         where: eq(invoices.parentId, parent.id),
@@ -56,6 +61,20 @@ export default async function BillingDashboard() {
                         </div>
                     </div>
                 </section>
+
+                {/* Payment success/cancel banner */}
+                {searchParams.payment === 'success' && (
+                    <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                        <p className="text-sm font-bold text-emerald-400">Payment received — your invoice has been marked as paid.</p>
+                    </div>
+                )}
+                {searchParams.payment === 'cancelled' && (
+                    <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
+                        <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                        <p className="text-sm font-bold text-amber-400">Payment was cancelled. Your invoice is still outstanding.</p>
+                    </div>
+                )}
 
                 {/* Outstanding Invoices */}
                 <section>
@@ -108,8 +127,16 @@ export default async function BillingDashboard() {
                                             </div>
                                         </div>
                                         
-                                        <div className="w-full md:w-72 flex flex-col justify-center border-t md:border-t-0 md:border-l border-outline-variant/10 pt-4 md:pt-0 md:pl-6">
-                                            <VoucherPaymentForm invoiceId={inv.id} amountDue={remaining} />
+                                        <div className="w-full md:w-72 flex flex-col justify-center gap-3 border-t md:border-t-0 md:border-l border-outline-variant/10 pt-4 md:pt-0 md:pl-6">
+                                            {stripeEnabled && (
+                                                <StripePayButton invoiceId={inv.id} amountDue={remaining} />
+                                            )}
+                                            <div className={stripeEnabled ? 'border-t border-outline-variant/10 pt-3' : ''}>
+                                                <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider mb-2">
+                                                    {stripeEnabled ? 'Or pay by childcare voucher' : 'Pay by childcare voucher'}
+                                                </p>
+                                                <VoucherPaymentForm invoiceId={inv.id} amountDue={remaining} />
+                                            </div>
                                         </div>
                                     </div>
                                 );
