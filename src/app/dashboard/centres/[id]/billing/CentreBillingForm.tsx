@@ -67,10 +67,10 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
     };
 
     const inputClass = `
-        w-full px-4 py-3 rounded-2xl text-sm font-medium text-white
-        bg-card/5 border border-white/10
+        w-full px-4 py-3 rounded-2xl text-sm font-medium text-foreground
+        bg-secondary/50 border border-border
         focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40
-        placeholder:text-white/20 transition-all
+        placeholder:text-muted-foreground transition-all
     `;
 
     const labelClass = 'text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-2';
@@ -81,12 +81,12 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard/centres"
-                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-card/5 border border-white/10 text-on-surface-variant hover:text-white hover:bg-card/10 transition-all"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight">Billing Settings</h1>
+                    <h1 className="text-2xl font-black text-foreground tracking-tight">Billing Settings</h1>
                     <p className="text-sm text-on-surface-variant mt-0.5">{centre.name}</p>
                 </div>
             </div>
@@ -97,7 +97,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                     <ShieldCheck className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                    <p className="text-sm font-bold text-white">These details appear on all invoices and receipts</p>
+                    <p className="text-sm font-bold text-foreground">These details appear on all invoices and receipts</p>
                     <p className="text-xs text-on-surface-variant mt-1">
                         Address, bank details, Ofsted/reference number, approval date, manager name, and contact info are printed on every PDF generated for this centre.
                     </p>
@@ -112,7 +112,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                             <MapPin className="w-5 h-5 text-violet-400" />
                         </div>
                         <div>
-                            <h2 className="text-base font-black text-white">Centre Address</h2>
+                            <h2 className="text-base font-black text-foreground">Centre Address</h2>
                             <p className="text-xs text-on-surface-variant">Printed in the invoice footer and header</p>
                         </div>
                     </div>
@@ -139,7 +139,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                             <CreditCard className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <h2 className="text-base font-black text-white">Bank Details</h2>
+                            <h2 className="text-base font-black text-foreground">Bank Details</h2>
                             <p className="text-xs text-on-surface-variant">Printed in the payment information section of invoices</p>
                         </div>
                     </div>
@@ -193,7 +193,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                             <ShieldCheck className="w-5 h-5 text-emerald-400" />
                         </div>
                         <div>
-                            <h2 className="text-base font-black text-white">Centre Identity</h2>
+                            <h2 className="text-base font-black text-foreground">Centre Identity</h2>
                             <p className="text-xs text-on-surface-variant">Official registration and management info</p>
                         </div>
                     </div>
@@ -247,7 +247,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                             <Phone className="w-5 h-5 text-accent-cyan" />
                         </div>
                         <div>
-                            <h2 className="text-base font-black text-white">Billing Contact</h2>
+                            <h2 className="text-base font-black text-foreground">Billing Contact</h2>
                             <p className="text-xs text-on-surface-variant">Shown in the footer of all invoices and receipts</p>
                         </div>
                     </div>
@@ -300,7 +300,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-primary/30 disabled:opacity-60"
+                        className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-black transition-all shadow-lg shadow-primary/30 disabled:opacity-60"
                     >
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
