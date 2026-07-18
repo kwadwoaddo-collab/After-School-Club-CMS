@@ -68,11 +68,11 @@ const columns: DataTableColumn<StudentRow>[] = [
               )}
               {hasMedicalNote && (
                 <div className="relative group/tooltip flex items-center outline-none">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
-                    <AlertTriangle className="w-3.5 h-3.5 text-error" />
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                   </div>
                   <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                    <div className="font-bold text-error mb-1 border-b border-error/20 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
+                    <div className="font-bold text-rose-500 mb-1 border-b border-rose-500/20 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
                     {medicalNotesContent}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
                   </div>
@@ -213,7 +213,7 @@ function StudentsEmptyState() {
       </p>
       <Link
         href="/dashboard/students/add"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
       >
         <Plus className="w-4 h-4" /> Add New Student
       </Link>

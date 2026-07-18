@@ -414,7 +414,7 @@ export default function RegisterPage() {
                                         <p className="text-gray-900 font-semibold mb-0.5">{centre.name}</p>
                                         <p className="text-gray-500 text-sm">{centre.address || 'After School provisions'}</p>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-600 transition-colors flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
                                         <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                         </svg>

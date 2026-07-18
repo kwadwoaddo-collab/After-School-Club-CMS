@@ -309,7 +309,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                     <button
                         onClick={handleSaveSlots}
                         disabled={savingSlots}
-                        className="px-6 py-3 bg-primary text-foreground rounded-2xl text-sm font-bold hover:bg-blue-600 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-3 bg-primary text-foreground rounded-2xl text-sm font-bold hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
                         {savingSlots ? 'Saving...' : 'Save Session Slots'}

@@ -108,7 +108,7 @@ export default function InviteStaffPage() {
             </div>
 
             {/* Invitation Form */}
-            <form onSubmit={handleSubmit} className="bg-surface-container-high rounded-[32px] overflow-hidden border border-outline-variant/10 shadow-xl">
+            <form onSubmit={handleSubmit} className="bg-card rounded-[32px] overflow-hidden border border-outline-variant/10 shadow-xl">
                 <div className="px-8 py-6 border-b border-outline-variant/10">
                     <div className="flex items-center gap-2">
                         <UserPlus className="w-5 h-5 text-on-surface-variant" />
@@ -118,7 +118,7 @@ export default function InviteStaffPage() {
 
                 <div className="p-8 space-y-6">
                     {error && (
-                        <div className="p-4 bg-error-container/10 border border-error/20 rounded-xl text-error font-bold text-sm">
+                        <div className="p-4 bg-error-container/10 border border-rose-500/20 rounded-xl text-rose-500 font-bold text-sm">
                             {error}
                         </div>
                     )}
@@ -184,7 +184,7 @@ export default function InviteStaffPage() {
                             <select
                                 value={formData.centreId}
                                 onChange={(e) => setFormData({ ...formData, centreId: e.target.value })}
-                                className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&>option]:bg-surface-container-high"
+                                className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&>option]:bg-card"
                             >
                                 <option value="" className="text-slate-500">Select a centre (optional)</option>
                                 {centres.map((centre) => (
@@ -263,7 +263,7 @@ export default function InviteStaffPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
                     >
                         {loading ? (
                             <>

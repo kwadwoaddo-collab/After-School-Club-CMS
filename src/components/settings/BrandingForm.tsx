@@ -94,7 +94,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-foreground hover:bg-blue-600 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saveSuccess ? (
                         <>

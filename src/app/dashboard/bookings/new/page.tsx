@@ -19,11 +19,11 @@ export default async function NewBookingPage() {
 
     if (orgCentres.length === 0) {
         return (
-            <div className="min-h-screen bg-surface-container flex items-center justify-center p-4">
+            <div className="min-h-screen bg-card flex items-center justify-center p-4">
                 <div className="glassmorphic-card p-12 rounded-[40px] text-center max-w-md">
                     <h2 className="text-2xl font-black text-white mb-4">No Centres Found</h2>
                     <p className="text-on-surface-variant font-medium mb-8">You need to create a centre before you can book sessions.</p>
-                    <a href="/dashboard/centres" className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all inline-block glow-btn">
+                    <a href="/dashboard/centres" className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all inline-block glow-btn">
                         Go to Centres
                     </a>
                 </div>

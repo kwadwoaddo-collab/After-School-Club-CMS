@@ -29,7 +29,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
 
     return (
         <div className="min-h-screen bg-surface text-on-surface pb-12">
-            <header className="bg-surface-container-high border-b border-outline-variant/10 sticky top-0 z-20">
+            <header className="bg-card border-b border-outline-variant/10 sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
                     <Link href="/portal" className="p-2 -ml-2 rounded-lg hover:bg-surface-bright transition-colors text-on-surface-variant">
                         <ArrowLeft className="w-5 h-5" />
@@ -43,7 +43,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
 
             <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
                 {/* Basic Details */}
-                <section className="bg-surface-container-high p-6 rounded-2xl border border-outline-variant/10">
+                <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/10 pb-4">
                         <User className="w-5 h-5 text-primary" />
                         <h2 className="text-lg font-bold text-white">Basic Information</h2>
@@ -71,22 +71,22 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 </section>
 
                 {/* Medical & Dietary Notes */}
-                <section className="bg-surface-container-high p-6 rounded-2xl border border-outline-variant/10">
+                <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/10 pb-4">
-                        <ShieldAlert className="w-5 h-5 text-error" />
+                        <ShieldAlert className="w-5 h-5 text-rose-500" />
                         <h2 className="text-lg font-bold text-white">Medical & Dietary Needs</h2>
                     </div>
 
                     <div className="space-y-4">
                         {child.notes.length === 0 ? (
-                            <div className="bg-surface-container-low p-6 rounded-xl border border-dashed border-outline-variant/20 text-center">
+                            <div className="bg-card-low p-6 rounded-xl border border-dashed border-outline-variant/20 text-center">
                                 <p className="text-sm text-on-surface-variant">No medical or dietary notes on file.</p>
                             </div>
                         ) : (
                             child.notes.map(note => (
-                                <div key={note.id} className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                                <div key={note.id} className="bg-card-low p-4 rounded-xl border border-outline-variant/5">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${note.category === 'Medical' || note.category === 'Safeguarding' ? 'bg-error/10 text-error border border-error/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
+                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${note.category === 'Medical' || note.category === 'Safeguarding' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
                                             {note.category}
                                         </span>
                                         <span className="text-xs text-on-surface-variant">

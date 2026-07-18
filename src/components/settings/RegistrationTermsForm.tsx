@@ -123,7 +123,7 @@ export default function RegistrationTermsForm() {
                             id="save-registration-terms"
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex items-center gap-2 px-6 py-3 bg-primary text-foreground text-sm font-bold rounded-2xl hover:bg-blue-600 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:bg-secondary"
+                            className="flex items-center gap-2 px-6 py-3 bg-primary text-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:bg-secondary"
                         >
                             <Save className="w-4 h-4" />
                             {saving ? 'Saving…' : 'Save Terms'}

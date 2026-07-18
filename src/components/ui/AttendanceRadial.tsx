@@ -26,7 +26,7 @@ export function AttendanceRadial({ percentage, size = 'md', children, className 
     const getColorClass = (p: number) => {
         if (p >= 80) return 'text-tertiary shadow-[0_0_12px_rgba(184,255,187,0.4)]';
         if (p >= 50) return 'text-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)]';
-        return 'text-error shadow-[0_0_12px_rgba(255,113,108,0.4)]';
+        return 'text-rose-500 shadow-[0_0_12px_rgba(255,113,108,0.4)]';
     };
 
     const getStrokeColor = (p: number) => {
@@ -77,7 +77,7 @@ export function AttendanceRadial({ percentage, size = 'md', children, className 
             <div className={cn(
                 "relative z-10 rounded-2xl flex items-center justify-center overflow-hidden transition-all duration-300",
                 size === 'lg' ? "w-[104px] h-[104px] rounded-[32px]" : "w-[calc(100%-8px)] h-[calc(100%-8px)]",
-                "bg-surface-container-low group-hover:scale-95"
+                "bg-card-low group-hover:scale-95"
             )}>
                 {children}
             </div>
@@ -88,7 +88,7 @@ export function AttendanceRadial({ percentage, size = 'md', children, className 
                     "absolute -bottom-2 right-0 px-2 py-1 rounded-lg text-[10px] font-black italic border shadow-lg z-20",
                     percentage >= 80 ? "bg-tertiary/10 text-tertiary border-tertiary/20" :
                     percentage >= 50 ? "bg-amber-400/10 text-amber-400 border-amber-400/20" :
-                    "bg-error/10 text-error border-error/20"
+                    "bg-rose-500/10 text-rose-500 border-rose-500/20"
                 )}>
                     {Math.round(percentage)}%
                 </div>

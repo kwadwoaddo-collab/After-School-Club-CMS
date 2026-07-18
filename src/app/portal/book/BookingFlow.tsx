@@ -137,12 +137,12 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                                 ? 'bg-primary text-white border-primary'
                                 : step > s
                                 ? 'bg-tertiary/20 text-tertiary border-tertiary/40'
-                                : 'bg-surface-container-high text-on-surface-variant border-outline-variant/20'
+                                : 'bg-card text-on-surface-variant border-outline-variant/20'
                         }`}>
                             {step > s ? '✓' : s}
                         </div>
                         {s < 3 && (
-                            <div className={`flex-1 h-0.5 rounded transition-all ${step > s ? 'bg-tertiary/40' : 'bg-outline-variant/10'}`} />
+                            <div className={`flex-1 h-0.5 rounded transition-all ${step > s ? 'bg-tertiary/40' : 'bg-border/30'}`} />
                         )}
                     </div>
                 ))}
@@ -157,7 +157,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                     </div>
 
                     {childList.length === 0 ? (
-                        <div className="bg-surface-container-high p-8 rounded-xl border border-dashed border-outline-variant/20 text-center">
+                        <div className="bg-card p-8 rounded-xl border border-dashed border-outline-variant/20 text-center">
                             <p className="text-on-surface-variant">No children registered on your account.</p>
                         </div>
                     ) : (
@@ -169,7 +169,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                                     className={`p-5 rounded-xl border text-left transition-all ${
                                         selectedChild?.id === child.id
                                             ? 'bg-primary/10 border-primary/40 text-white'
-                                            : 'bg-surface-container-high border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
+                                            : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -197,7 +197,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                                         className={`p-4 rounded-xl border text-left transition-all ${
                                             selectedCentre?.id === centre.id
                                                 ? 'bg-primary/10 border-primary/40'
-                                                : 'bg-surface-container-high border-outline-variant/10 hover:border-primary/20'
+                                                : 'bg-card border-outline-variant/10 hover:border-primary/20'
                                         }`}
                                     >
                                         <p className="font-bold text-white">{centre.name}</p>
@@ -241,7 +241,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                                     className={`p-2 rounded-xl border text-center transition-all ${
                                         selectedDate?.toDateString() === d.toDateString()
                                             ? 'bg-primary/20 border-primary/50 text-white'
-                                            : 'bg-surface-container-high border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
+                                            : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
                                     }`}
                                 >
                                     <p className="text-[10px] uppercase font-bold">{d.toLocaleDateString('en-GB', { weekday: 'short' })}</p>
@@ -267,7 +267,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                                             className={`flex items-center gap-2 p-3 rounded-xl border transition-all text-sm font-medium ${
                                                 selectedSlot === slot
                                                     ? 'bg-primary/20 border-primary/50 text-white'
-                                                    : 'bg-surface-container-high border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
+                                                    : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
                                             }`}
                                         >
                                             <Clock className="w-3.5 h-3.5 shrink-0" />
@@ -291,7 +291,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                                         className={`px-5 py-2 rounded-xl border text-sm font-bold transition-all ${
                                             selectedDuration === d
                                                 ? 'bg-secondary/20 border-secondary/50 text-white'
-                                                : 'bg-surface-container-high border-outline-variant/10 text-on-surface-variant hover:border-secondary/20 hover:text-white'
+                                                : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-secondary/20 hover:text-white'
                                         }`}
                                     >
                                         {d} min
@@ -324,7 +324,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                 <section className="space-y-6">
                     <h2 className="text-xl font-bold text-white mb-2">Confirm Your Booking</h2>
 
-                    <div className="bg-surface-container-high rounded-2xl border border-outline-variant/10 divide-y divide-outline-variant/10">
+                    <div className="bg-card rounded-2xl border border-outline-variant/10 divide-y divide-border/10">
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Child</span>
                             <span className="font-bold text-white">{selectedChild.firstName} {selectedChild.lastName}</span>
@@ -356,7 +356,7 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                     </div>
 
                     {error && (
-                        <div className="bg-error/10 border border-error/30 text-error rounded-xl p-4 text-sm font-medium">
+                        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl p-4 text-sm font-medium">
                             {error}
                         </div>
                     )}

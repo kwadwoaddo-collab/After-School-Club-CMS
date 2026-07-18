@@ -66,7 +66,7 @@ export default async function BookingsPage(props: {
                     </div>
                     <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">No centres found</h3>
                     <p className="text-slate-500 mb-6">Please set up a centre first before creating bookings</p>
-                    <Link href="/dashboard/centres/add" className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all">
+                    <Link href="/dashboard/centres/add" className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all">
                         <Plus className="w-4 h-4" /> Add Centre
                     </Link>
                 </div>
@@ -320,7 +320,7 @@ export default async function BookingsPage(props: {
                 </Link>
                 <Link
                     href="/dashboard/bookings/new"
-                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     <span>New Booking</span>

@@ -83,7 +83,7 @@ export default async function CentresPage() {
                 </div>
                 <Link
                     href="/dashboard/centres/add"
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                 >
                     <Plus className="w-4 h-4" /> Add Centre
                 </Link>
@@ -101,7 +101,7 @@ export default async function CentresPage() {
                     </p>
                     <Link
                         href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg glow-btn shadow-primary/30"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg glow-btn shadow-primary/30"
                     >
                         <Plus className="w-4 h-4" /> Add Your First Centre
                     </Link>
@@ -135,7 +135,7 @@ export default async function CentresPage() {
                             )}
 
                             {/* Load Forecast Visualization */}
-                            <div className="mb-6 p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/5">
+                            <div className="mb-6 p-4 rounded-2xl bg-card-low/50 border border-outline-variant/5">
                                 <div className="flex items-center gap-2 mb-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                                     <BarChart3 className="w-3.5 h-3.5" />
                                     7-Day Load Forecast
@@ -145,7 +145,7 @@ export default async function CentresPage() {
 
                             <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
                                 <div className="flex items-center gap-4 text-xs text-on-surface-variant font-medium">
-                                    <div className="flex items-center gap-1.5 bg-surface-container-low px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1.5 bg-card-low px-2 py-1 rounded-lg">
                                         <Calendar className="w-3.5 h-3.5" />
                                         <span>{centre.todayCount} today</span>
                                     </div>
@@ -159,7 +159,7 @@ export default async function CentresPage() {
                                     </Link>
                                     <Link
                                         href={`/dashboard/bookings?centre=${centre.id}`}
-                                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-blue-600 flex items-center gap-2 transition-all shadow-md shadow-primary/20"
+                                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 flex items-center gap-2 transition-all shadow-md shadow-primary/20"
                                     >
                                         Manage <ArrowRight className="w-3.5 h-3.5" />
                                     </Link>

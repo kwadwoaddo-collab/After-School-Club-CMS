@@ -141,7 +141,7 @@ export default async function StudentAttendanceHistoryPage(
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Total Sessions */}
-                    <div className="bg-surface-container-low border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
+                    <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
                         <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Total Sessions</span>
                         <div className="flex items-end justify-between">
                             <span className="text-4xl font-black text-white">{totalSessions}</span>
@@ -150,13 +150,13 @@ export default async function StudentAttendanceHistoryPage(
                     </div>
 
                     {/* Attendance Rate */}
-                    <div className="bg-surface-container-low border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
+                    <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
                         <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Attendance Rate</span>
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                                 <span className={cn(
                                     "text-4xl font-black",
-                                    totalSessions === 0 ? 'text-on-surface-variant' : attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 60 ? 'text-amber-400' : 'text-error'
+                                    totalSessions === 0 ? 'text-on-surface-variant' : attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 60 ? 'text-amber-400' : 'text-rose-500'
                                 )}>
                                     {totalSessions > 0 ? `${attendanceRate}%` : 'N/A'}
                                 </span>
@@ -171,7 +171,7 @@ export default async function StudentAttendanceHistoryPage(
                     </div>
 
                     {/* Status Breakdown */}
-                    <div className="bg-surface-container-low border border-outline-variant/10 rounded-[32px] p-6">
+                    <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-6">
                         <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Breakdown</span>
                         <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                             <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
@@ -188,13 +188,13 @@ export default async function StudentAttendanceHistoryPage(
                             </div>
                             <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
                                 <span className="text-on-surface-variant/80 flex items-center gap-1.5">
-                                    <XCircle className="w-3.5 h-3.5 text-error" /> Absent
+                                    <XCircle className="w-3.5 h-3.5 text-rose-500" /> Absent
                                 </span>
                                 <span className="font-bold text-white">{absentCount}</span>
                             </div>
                             <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
                                 <span className="text-on-surface-variant/80 flex items-center gap-1.5">
-                                    <MinusCircle className="w-3.5 h-3.5 text-error/70" /> No Show
+                                    <MinusCircle className="w-3.5 h-3.5 text-rose-500/70" /> No Show
                                 </span>
                                 <span className="font-bold text-white">{noShowCount}</span>
                             </div>
@@ -209,7 +209,7 @@ export default async function StudentAttendanceHistoryPage(
                 </div>
 
                 {/* Detailed Logs */}
-                <div className="bg-surface-container-low border border-outline-variant/10 rounded-[32px] p-8">
+                <div className="bg-card-low border border-outline-variant/10 rounded-[32px] p-8">
                     <h2 className="text-lg font-black text-white tracking-tight uppercase tracking-wider mb-6 flex items-center gap-2">
                         <ClipboardCheck className="w-5 h-5 text-primary" /> Session History Log
                     </h2>
@@ -292,7 +292,7 @@ export default async function StudentAttendanceHistoryPage(
                             })}
                         </div>
                     ) : (
-                        <div className="text-center py-12 bg-surface-container-high/30 rounded-2xl border border-dashed border-outline-variant/10">
+                        <div className="text-center py-12 bg-card/30 rounded-2xl border border-dashed border-outline-variant/10">
                             <Calendar className="w-12 h-12 text-on-surface-variant/30 mx-auto mb-3" />
                             <p className="text-sm text-on-surface-variant">No attendance records found for this student.</p>
                         </div>

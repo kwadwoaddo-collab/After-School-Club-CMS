@@ -985,7 +985,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                         Mark Signed-up
                     </button>
-                    <div className="w-px h-6 bg-outline-variant/10 mx-1"></div>
+                    <div className="w-px h-6 bg-border/30 mx-1"></div>
                     <button
                         onClick={() => setConfirmBulkDelete(true)}
                         disabled={isProcessingBulk}

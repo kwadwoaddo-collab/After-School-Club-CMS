@@ -55,7 +55,7 @@ export default function MarkAttendedButton({ bookingId, initialStatus }: MarkAtt
             <button
                 onClick={handleClick}
                 disabled={loading}
-                className="px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
             >
                 {loading ? (
                     <>

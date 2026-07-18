@@ -113,7 +113,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
     const inputClass = (field: string) =>
         `w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
             errors[field]
-                ? 'border-error/50 bg-error/5 ring-2 ring-error/20 focus:border-error'
+                ? 'border-rose-500/50 bg-rose-500/5 ring-2 ring-error/20 focus:border-rose-500'
                 : 'border-[#2a2d35] focus:border-primary'
         }`;
 
@@ -132,7 +132,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 <div className="flex items-center gap-3">
                     <Link
                         href={`/dashboard/students/${createdStudentId}`}
-                        className="px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         View Student Profile →
                     </Link>
@@ -151,7 +151,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                                 centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
                             });
                         }}
-                        className="px-6 py-3 bg-surface-container-high border border-outline-variant/10 text-white font-bold rounded-2xl hover:bg-surface-container transition-all"
+                        className="px-6 py-3 bg-card border border-outline-variant/10 text-white font-bold rounded-2xl hover:bg-card transition-all"
                     >
                         Add Another
                     </button>
@@ -164,7 +164,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Global Error Summary */}
             {serverError && (
-                <div className="p-4 bg-error-container/10 text-error rounded-xl text-sm border border-error/20 font-bold">
+                <div className="p-4 bg-error-container/10 text-rose-500 rounded-xl text-sm border border-rose-500/20 font-bold">
                     ⚠️ {serverError}
                 </div>
             )}
@@ -187,10 +187,10 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                     <h3 className="text-lg font-bold text-white mb-4">Centre Assignment</h3>
                     <div>
                         <label className="block text-sm font-bold text-slate-300 mb-1">
-                            Assign to Centre <span className="text-error">*</span>
+                            Assign to Centre <span className="text-rose-500">*</span>
                         </label>
                         {accessibleCentres.length === 0 ? (
-                            <p className="text-on-surface-variant text-sm p-3 bg-surface-container-low rounded-xl border border-outline-variant/10">
+                            <p className="text-on-surface-variant text-sm p-3 bg-card-low rounded-xl border border-outline-variant/10">
                                 You have no accessible centres. Contact your organisation owner.
                             </p>
                         ) : (
@@ -209,7 +209,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                                 ))}
                             </select>
                         )}
-                        {errors.centreId && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.centreId}</p>}
+                        {errors.centreId && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.centreId}</p>}
                     </div>
                 </div>
 
@@ -220,22 +220,22 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
                             <input name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} className={inputClass('firstName')} />
-                            {errors.firstName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.firstName}</p>}
+                            {errors.firstName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.firstName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
                             <input name="lastName" id="lastName" value={formData.lastName} onChange={handleChange} className={inputClass('lastName')} />
-                            {errors.lastName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.lastName}</p>}
+                            {errors.lastName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.lastName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Date of Birth</label>
                             <input type="date" name="dateOfBirth" id="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={inputClass('dateOfBirth')} />
-                            {errors.dateOfBirth && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.dateOfBirth}</p>}
+                            {errors.dateOfBirth && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.dateOfBirth}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">School Year</label>
                             <input name="schoolYear" id="schoolYear" value={formData.schoolYear} onChange={handleChange} className={inputClass('schoolYear')} placeholder="e.g. Year 5" />
-                            {errors.schoolYear && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.schoolYear}</p>}
+                            {errors.schoolYear && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.schoolYear}</p>}
                         </div>
                     </div>
                 </div>
@@ -247,22 +247,22 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
                             <input name="parentFirstName" id="parentFirstName" value={formData.parentFirstName} onChange={handleChange} className={inputClass('parentFirstName')} />
-                            {errors.parentFirstName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentFirstName}</p>}
+                            {errors.parentFirstName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentFirstName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
                             <input name="parentLastName" id="parentLastName" value={formData.parentLastName} onChange={handleChange} className={inputClass('parentLastName')} />
-                            {errors.parentLastName && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentLastName}</p>}
+                            {errors.parentLastName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentLastName}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Email</label>
                             <input type="email" name="parentEmail" id="parentEmail" value={formData.parentEmail} onChange={handleChange} className={inputClass('parentEmail')} />
-                            {errors.parentEmail && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentEmail}</p>}
+                            {errors.parentEmail && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentEmail}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">Phone</label>
                             <input type="tel" name="parentPhone" id="parentPhone" value={formData.parentPhone} onChange={handleChange} className={inputClass('parentPhone')} />
-                            {errors.parentPhone && <p className="text-error text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentPhone}</p>}
+                            {errors.parentPhone && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentPhone}</p>}
                         </div>
                     </div>
                 </div>
@@ -272,7 +272,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 <button
                     type="submit"
                     disabled={isSubmitting || accessibleCentres.length === 0}
-                    className="px-10 py-4 bg-primary text-white font-bold text-lg rounded-2xl hover:bg-blue-600 shadow-xl shadow-primary/30 glow-btn active:scale-95 transition-all disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed"
+                    className="px-10 py-4 bg-primary text-white font-bold text-lg rounded-2xl hover:bg-primary/90 shadow-xl shadow-primary/30 glow-btn active:scale-95 transition-all disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? 'Saving...' : 'Add Student'}
                 </button>

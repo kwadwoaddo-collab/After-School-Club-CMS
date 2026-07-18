@@ -271,7 +271,7 @@ export default async function FinancePage(props: {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-foreground tracking-tight">Finance Ledger</h1>
-                    <p className="text-foreground-variant font-medium mt-1">
+                    <p className="text-muted-foreground font-medium mt-1">
                         Manage invoices, payments, and financial health
                     </p>
                 </div>
@@ -313,7 +313,7 @@ export default async function FinancePage(props: {
                                 {stat.change}
                             </div>
                         </div>
-                        <p className="text-sm font-bold text-foreground-variant uppercase tracking-wider">{stat.name}</p>
+                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{stat.name}</p>
                         <h3 className="text-3xl font-black text-foreground mt-1">{stat.value}</h3>
                         
                         {/* Decorative background pulse */}
@@ -356,14 +356,14 @@ export default async function FinancePage(props: {
                     )}
 
                     {overdueCount > 0 && (
-                        <div className="bg-error/5 border border-error/20 rounded-[32px] p-6 relative overflow-hidden">
-                            <div className="absolute -right-12 -top-12 w-40 h-40 bg-error/10 rounded-full blur-3xl" />
+                        <div className="bg-rose-500/5 border border-rose-500/20 rounded-[32px] p-6 relative overflow-hidden">
+                            <div className="absolute -right-12 -top-12 w-40 h-40 bg-rose-500/10 rounded-full blur-3xl" />
                             <div className="flex items-center justify-between mb-6 px-2 relative z-10">
-                                <h3 className="text-xl font-bold text-error flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-rose-500 flex items-center gap-2">
                                     <AlertCircle className="w-5 h-5" />
                                     Overdue Invoices Action Required
                                 </h3>
-                                <Link href="/dashboard/finance/invoices" className="text-sm font-bold text-error hover:underline">
+                                <Link href="/dashboard/finance/invoices" className="text-sm font-bold text-rose-500 hover:underline">
                                     View All
                                 </Link>
                             </div>
@@ -396,7 +396,7 @@ export default async function FinancePage(props: {
                             <CreditCard className="w-5 h-5 text-primary" />
                             Billing Settings
                         </h3>
-                        <p className="text-sm text-foreground-variant mb-6 leading-relaxed">
+                        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                             Configure your bank details and fee structures to ensure professional invoice generation.
                         </p>
                         <Link 
@@ -413,15 +413,15 @@ export default async function FinancePage(props: {
                         <div className="space-y-2">
                             <Link href="/dashboard/finance/receipt" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Cash Receipt Tool</span>
-                                <ArrowUpRight className="w-4 h-4 text-foreground-variant group-hover:text-primary transition-colors" />
+                                <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                             </Link>
                             <a href={`/api/export/finance?from=${monthStart}&to=${todayStr}`} download={`finance-${monthStart}-to-${todayStr}.csv`} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Export Ledger (CSV)</span>
-                                <ArrowUpRight className="w-4 h-4 text-foreground-variant group-hover:text-primary transition-colors" />
+                                <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                             </a>
                             <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Tax Summary Report</span>
-                                <ArrowUpRight className="w-4 h-4 text-foreground-variant group-hover:text-primary transition-colors" />
+                                <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                             </button>
                         </div>
                     </div>

@@ -15,7 +15,7 @@ export default function DashboardError({
     }, [error]);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-surface-container-high rounded-[32px] border border-outline-variant/10 shadow-xl m-4">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-card rounded-[32px] border border-outline-variant/10 shadow-xl m-4">
             <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">
                 <AlertCircle className="w-8 h-8 text-red-400" />
             </div>

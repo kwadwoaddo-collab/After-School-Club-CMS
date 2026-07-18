@@ -61,7 +61,7 @@ export default async function PortalBookPage() {
     return (
         <div className="min-h-screen bg-surface text-on-surface pb-12">
             {/* Header */}
-            <header className="bg-surface-container-high border-b border-outline-variant/10 sticky top-0 z-20">
+            <header className="bg-card border-b border-outline-variant/10 sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
                     <Link
                         href="/portal"
@@ -83,7 +83,7 @@ export default async function PortalBookPage() {
 
             <main className="max-w-3xl mx-auto px-4 py-8">
                 {parentCentres.length === 0 ? (
-                    <div className="bg-surface-container-high p-10 rounded-2xl border border-dashed border-outline-variant/20 text-center">
+                    <div className="bg-card p-10 rounded-2xl border border-dashed border-outline-variant/20 text-center">
                         <p className="text-on-surface-variant mb-2">No centres are associated with your account yet.</p>
                         <p className="text-xs text-on-surface-variant">Please contact your club admin to get set up.</p>
                     </div>

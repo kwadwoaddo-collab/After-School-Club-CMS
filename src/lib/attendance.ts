@@ -94,11 +94,11 @@ export function getAttendanceColorClass(
       return 'bg-amber-500/20 text-amber-400';
     case 'absent':
     case 'no_show':
-      return 'bg-error/20 text-error';
+      return 'bg-rose-500/20 text-rose-500';
     case 'excused':
       return 'bg-primary/20 text-primary';
     case 'cancelled':
-      return 'bg-error/20 text-error';
+      return 'bg-rose-500/20 text-rose-500';
     case 'rescheduled':
       return 'bg-amber-500/20 text-amber-400';
     case 'pending':

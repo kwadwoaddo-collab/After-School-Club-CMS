@@ -103,7 +103,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <Link 
                     href="/dashboard/finance"
-                    className="flex items-center gap-2 text-foreground-variant hover:text-foreground transition-colors font-bold group"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group"
                 >
                     <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
                         <ArrowLeft className="w-4 h-4" />
@@ -115,18 +115,18 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         <div className="flex items-end gap-3">
                             {/* Invoice Buttons */}
                             <div className="flex flex-col items-center gap-1">
-                                <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest">invoice</span>
+                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">invoice</span>
                                 <div className="flex items-center rounded-xl overflow-hidden border border-border">
                                     <button 
                                         onClick={() => setPreviewType('invoice')}
-                                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-foreground hover:bg-surface-container-highest transition-all border-r border-border"
+                                        className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-foreground hover:bg-secondary/80 transition-all border-r border-border"
                                     >
                                         <Eye className="w-3.5 h-3.5" /> Preview
                                     </button>
                                     <PDFDownloadLink
                                         document={<InvoiceTemplate invoice={invoice} organisationName={organisationName} />}
                                         fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
-                                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-foreground hover:bg-surface-container-highest transition-all"
+                                        className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-foreground hover:bg-secondary/80 transition-all"
                                     >
                                         {({ loading }) => (
                                             <>
@@ -145,14 +145,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                     <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
                                         <button 
                                             onClick={() => setPreviewType('receipt')}
-                                            className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
+                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Receipt
                                         </button>
                                         <PDFDownloadLink
                                             document={<ReceiptTemplate invoice={invoice} organisationName={organisationName} />}
                                             fileName={`Receipt-${invoice.invoiceNumber}.pdf`}
-                                            className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all"
+                                            className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all"
                                         >
                                             {({ loading }) => (
                                                 <>
@@ -167,8 +167,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-1">
-                            <span className="text-[10px] font-black text-foreground-variant uppercase tracking-widest">invoice</span>
-                            <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-border rounded-xl text-sm font-bold text-muted-foreground opacity-50">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">invoice</span>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-bold text-muted-foreground opacity-50">
                                 <Download className="w-4 h-4" /> Loading...
                             </div>
                         </div>
@@ -177,7 +177,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         <button 
                             disabled={isPending}
                             onClick={() => setIsPaymentModalOpen(true)}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-foreground hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <CreditCard className="w-4 h-4" /> Record Payment
                         </button>
@@ -197,7 +197,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             type="button"
                             disabled={isPending}
                             onClick={() => setConfirmAction('delete')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-error/10 border border-error/20 rounded-xl text-sm font-bold text-error hover:bg-error/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Trash2 className="w-4 h-4" /> Delete
                         </button>
@@ -209,7 +209,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 {/* Main Details */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Invoice Card */}
-                    <div className="bg-surface-container-high border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
+                    <div className="bg-card border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
                         
                         <div className="relative flex flex-col md:flex-row justify-between gap-8 mb-12">
@@ -219,14 +219,14 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 {getStatusBadge(invoice.status)}
                             </div>
                             <div className="text-right flex flex-col items-end">
-                                <div className="text-foreground-variant font-black tracking-widest text-xs uppercase mb-2">Total Amount</div>
+                                <div className="text-muted-foreground font-black tracking-widest text-xs uppercase mb-2">Total Amount</div>
                                 <div className="text-5xl font-black text-foreground">£{Number(invoice.amount).toFixed(2)}</div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 border-y border-border py-10">
                             <div>
-                                <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">
                                     Issue Date
                                 </p>
                                 {isEditingDate ? (
@@ -236,7 +236,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                             value={newDateValue}
                                             disabled={isUpdatingDate}
                                             onChange={(e) => setNewDateValue(e.target.value)}
-                                            className="bg-surface-container-low border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                            className="bg-card-low border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
                                         />
                                         <button 
                                             onClick={handleSaveDate}
@@ -251,7 +251,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                                 setNewDateValue(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
                                             }}
                                             disabled={isUpdatingDate}
-                                            className="p-1 bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors"
+                                            className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-colors"
                                         >
                                             <XIcon className="w-3.5 h-3.5" />
                                         </button>
@@ -263,7 +263,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                         </p>
                                         <button 
                                             onClick={() => setIsEditingDate(true)}
-                                            className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-foreground-variant hover:text-foreground"
+                                            className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
                                             title="Edit Issue Date"
                                         >
                                             <Edit2 className="w-3.5 h-3.5" />
@@ -272,22 +272,22 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 )}
                             </div>
                             <div>
-                                <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Due Date</p>
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Due Date</p>
                                 <p className="text-sm font-bold text-foreground">{format(new Date(invoice.dueDate), 'dd/MM/yyyy')}</p>
                             </div>
                             <div>
-                                <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Billing Start</p>
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Billing Start</p>
                                 <p className="text-sm font-bold text-foreground">{invoice.billingPeriodStart ? format(new Date(invoice.billingPeriodStart), 'dd/MM/yyyy') : '-'}</p>
                             </div>
                             <div>
-                                <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Billing End</p>
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Billing End</p>
                                 <p className="text-sm font-bold text-foreground">{invoice.billingPeriodEnd ? format(new Date(invoice.billingPeriodEnd), 'dd/MM/yyyy') : '-'}</p>
                             </div>
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-8">
                             <div className="flex-1 space-y-4">
-                                <h3 className="text-xs font-black text-foreground-variant uppercase tracking-widest">Student Information</h3>
+                                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Student Information</h3>
                                 <div className="bg-secondary/60 rounded-3xl p-6 border border-border">
                                     <div className="text-lg font-black text-foreground">
                                         {invoice.child 
@@ -295,7 +295,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                             : (invoice.childDisplayName || 'Family Invoice')
                                         }
                                     </div>
-                                    <div className="text-sm font-medium text-foreground-variant">{invoice.centre?.name}</div>
+                                    <div className="text-sm font-medium text-muted-foreground">{invoice.centre?.name}</div>
                                     {invoice.centre?.ofstedId && (
                                         <div className="text-[10px] font-black uppercase tracking-widest text-primary/80 mt-2">
                                             Ofsted Reg No: {invoice.centre.ofstedId}
@@ -305,7 +305,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             </div>
                             <div className="flex-1 space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-black text-foreground-variant uppercase tracking-widest">Notes</h3>
+                                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Notes</h3>
                                     {!isEditingNotes && (
                                         <button 
                                             onClick={() => setIsEditingNotes(true)}
@@ -323,7 +323,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                                 disabled={isUpdatingNotes}
                                                 onChange={(e) => setNotesValue(e.target.value)}
                                                 rows={3}
-                                                className="w-full bg-surface-container-low border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary scrollbar-hide"
+                                                className="w-full bg-card-low border border-border rounded-2xl p-4 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary scrollbar-hide"
                                                 placeholder="Add custom notes visible on the PDF..."
                                             />
                                             <div className="flex items-center justify-end gap-2">
@@ -333,21 +333,21 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                                         setNotesValue(getCleanNotes(invoice.notes));
                                                     }}
                                                     disabled={isUpdatingNotes}
-                                                    className="px-4 py-2 bg-secondary text-foreground-variant rounded-xl text-xs font-bold hover:text-foreground transition-all"
+                                                    className="px-4 py-2 bg-secondary text-muted-foreground rounded-xl text-xs font-bold hover:text-foreground transition-all"
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button 
                                                     onClick={handleSaveNotes}
                                                     disabled={isUpdatingNotes}
-                                                    className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-blue-600 transition-all text-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                                                    className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-primary/90 transition-all text-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
                                                 >
                                                     {isUpdatingNotes ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Save</>}
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-foreground-variant leading-relaxed whitespace-pre-wrap">
+                                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                             {getCleanNotes(invoice.notes) || 'No notes provided for this invoice.'}
                                         </p>
                                     )}
@@ -365,24 +365,24 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
 
                 {/* Sidebar Summary */}
                 <div className="space-y-6">
-                    <div className="bg-surface-container-highest border border-border rounded-[40px] p-8 shadow-2xl relative overflow-hidden">
+                    <div className="bg-secondary/80 border border-border rounded-[40px] p-8 shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[60px]" />
                         
                         <h3 className="text-xl font-black text-foreground mb-8">Summary</h3>
                         
                         <div className="space-y-6">
                             <div className="flex justify-between items-center text-sm font-bold">
-                                <span className="text-foreground-variant">Total Billed</span>
+                                <span className="text-muted-foreground">Total Billed</span>
                                 <span className="text-foreground">£{Number(invoice.amount).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold">
-                                <span className="text-foreground-variant">Total Paid</span>
+                                <span className="text-muted-foreground">Total Paid</span>
                                 <span className="text-emerald-600">£{totalPaid.toFixed(2)}</span>
                             </div>
-                            <div className="h-px bg-outline-variant/10 my-6" />
+                            <div className="h-px bg-border/30 my-6" />
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <p className="text-xs font-black text-foreground-variant uppercase tracking-widest mb-1">Balance Remaining</p>
+                                    <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Balance Remaining</p>
                                     <h4 className={`text-3xl font-black ${remainingBalance <= 0 ? 'text-emerald-600' : 'text-foreground'}`}>
                                         £{remainingBalance.toFixed(2)}
                                     </h4>
@@ -399,7 +399,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             <button 
                                 disabled={isPending}
                                 onClick={() => setIsPaymentModalOpen(true)}
-                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-foreground hover:bg-blue-600 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-white hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Record Received Payment
                             </button>
@@ -459,7 +459,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             {/* Transition Blocker Overlay */}
             {isPending && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-[250] animate-in fade-in duration-150">
-                    <div className="flex items-center gap-3 bg-surface-container-high border border-border px-6 py-4 rounded-2xl text-base font-bold text-foreground shadow-2xl animate-in zoom-in-95 duration-150">
+                    <div className="flex items-center gap-3 bg-card border border-border px-6 py-4 rounded-2xl text-base font-bold text-foreground shadow-2xl animate-in zoom-in-95 duration-150">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
                         Updating Invoice...
                     </div>

@@ -51,7 +51,7 @@ export default async function StudentsPage(props: {
                     </div>
                     <Link
                         href="/dashboard/students/add"
-                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         <Plus className="w-4 h-4" /> Add Student
                     </Link>
@@ -236,7 +236,7 @@ export default async function StudentsPage(props: {
                 </Link>
                 <Link
                     href="/dashboard/students/add"
-                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100 cursor-pointer"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Student</span>
@@ -285,9 +285,9 @@ export default async function StudentsPage(props: {
                 </div>
 
                 {/* Medical Alerts */}
-                <div className="bg-card border border-error/20 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-card border border-rose-500/20 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-error/10 text-error flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500 flex-shrink-0">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>

@@ -48,7 +48,7 @@ export default function BookingLinkCard({ bookingLink }: BookingLinkCardProps) {
                     onClick={handleCopy}
                     className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${copied
                             ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                            : 'bg-primary text-white hover:bg-blue-600 shadow-lg shadow-primary/20'
+                            : 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20'
                         }`}
                 >
                     {copied ? (

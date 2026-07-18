@@ -1,21 +1,21 @@
-# BRIEFING — 2026-07-17T00:00:14+01:00
+# BRIEFING — 2026-07-17T14:47:10+01:00
 
 ## Mission
-Coordinate the team of agents to audit and upgrade global UI elements (sidebar, header, typography system, global CSS) of the After-School Club CMS codebase, ensuring it passes all quality checks, linting, and tests.
+Audit and upgrade the Dashboard homepage elements per the follow-up requirements in ORIGINAL_REQUEST.md.
 
 ## 🔒 My Identity
 - Archetype: self
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/.agents/orchestrator
-- Original parent: Sentinel
-- Original parent conversation ID: 32c29663-2deb-4eaa-ac9e-cc7c2f2d62a9
+- Original parent: parent
+- Original parent conversation ID: b5b0400e-34d7-4b68-af2d-2704984ce622
 
 ## 🔒 My Workflow
 - **Pattern**: Project
-- **Scope document**: /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/PROJECT.md
-1. **Decompose**: Decompose the project into milestones (Typography, Sidebar, Header, Global CSS, and Final E2E Test Verification).
+- **Scope document**: /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/.agents/orchestrator/SCOPE.md
+1. **Decompose**: Decompose the dashboard homepage upgrade into milestones (Hero, KpiGrid, StatCard, TodaysSnapshot, Skeletons, and Verification).
 2. **Dispatch & Execute**:
-   - **Delegate (sub-orchestrator)**: Spawn sub-orchestrators for milestones or execute the Explorer -> Worker -> Reviewer -> Challenger -> Forensic Auditor iteration loop.
+   - **Direct (iteration loop)**: Spawn Explorer to analyze, Worker to implement, Reviewer to check, Challenger to verify, and Auditor to run final integrity checks.
 3. **On failure** (in this order):
    - Retry: nudge stuck agent or re-send task
    - Replace: spawn fresh agent with partial progress
@@ -25,63 +25,60 @@ Coordinate the team of agents to audit and upgrade global UI elements (sidebar, 
    - Escalate: report to parent (sub-orchestrators only, last resort)
 4. **Succession**: Self-succeed at 16 spawns, write handoff.md, spawn successor.
 - **Work items**:
-  1. Initialize scope and decompose [pending]
-  2. Decompose E2E tests [pending]
-  3. Milestone 1: Typography System [pending]
-  4. Milestone 2: Sidebar Polish [pending]
-  5. Milestone 3: Header Polish [pending]
-  6. Milestone 4: Global CSS Cleanup & Consistency [pending]
-  7. Milestone 5: E2E and Adversarial Verification [pending]
-- **Current phase**: 1
-- **Current focus**: Decompose and plan project
+  1. Initialize scope and decompose [done]
+  2. Run baseline verification and explore dashboard homepage components [done]
+  3. Implement R1 (DashboardHero) & R2 (KpiGrid) & R3 (StatCard) [done]
+  4. Implement R4 (TodaysSnapshot) & R5 (DashboardSkeletons) [done]
+  5. Run tests, Challenger checks, and Forensic Audit [in-progress]
+- **Current phase**: 4
+- **Current focus**: Verify visual layout, run test suite, tsc, lint, and execute forensic audit
 
 ## 🔒 Key Constraints
-- Project Sentinel parent conversation ID: 32c29663-2deb-4eaa-ac9e-cc7c2f2d62a9
-- Do not report completion to the user directly; report only to the Sentinel.
+- Project Sentinel parent conversation ID: b5b0400e-34d7-4b68-af2d-2704984ce622
+- Do not report completion to the user directly; report only to the parent.
 - Never reuse a subagent after it has delivered its handoff — always spawn fresh.
 - Zero tolerance for integrity violations.
 - Forensic Auditor verdict is a binary veto.
 
 ## Current Parent
-- Conversation ID: 32c29663-2deb-4eaa-ac9e-cc7c2f2d62a9
+- Conversation ID: b5b0400e-34d7-4b68-af2d-2704984ce622
 - Updated: not yet
 
 ## Key Decisions Made
-- Initial plan created to decompose the requirements into 5 implementation milestones and a parallel E2E testing track.
+- Initialized briefing and scope for Dashboard homepage upgrade.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| explorer_1 | teamwork_preview_explorer | Initial codebase exploration & baseline | completed | d154f2ca-6ad1-40d0-ba52-25bb7ed4f3a6 |
-| e2e_testing_orchestrator | self | E2E Testing Track Setup | completed | 59ab196b-478e-4d49-b2ab-31e5bf195f2f |
-| worker_typography | teamwork_preview_worker | Typography Upgrade (Milestone 2) | completed | a202b718-dc44-4620-af8b-0d86624532fb |
-| worker_sidebar | teamwork_preview_worker | Sidebar Polish (Milestone 3) | completed | 9b505b18-04cd-4787-b238-6bc0a5925e17 |
-| worker_header | teamwork_preview_worker | Header Polish (Milestone 4) | completed | 95f0de21-72cc-49e0-b172-4904a112d888 |
-| worker_css_cleanup | teamwork_preview_worker | Global CSS & Overrides Cleanup (Milestone 5) | completed | c922435a-c7e1-4100-9519-b575adc7cf31 |
-| challenger_1 | teamwork_preview_challenger | Tier 5 Adversarial Coverage | failed (hung) | 80f3507f-e746-4065-b283-285888137139 |
-| challenger_2 | teamwork_preview_challenger | Tier 5 Adversarial Coverage | completed | 3bdfe0f5-a7a6-4440-951b-dc650fc33bcb |
-| challenger_1_gen2 | teamwork_preview_challenger | Tier 5 Adversarial Coverage | completed | c2432824-2f46-4646-8335-aa1c62ef77bd |
-| worker_adversarial_fix | teamwork_preview_worker | Adversarial Gaps Fixes | completed | 533df697-66b1-46f5-85c2-1303e2386797 |
-| auditor_milestone_final | teamwork_preview_auditor | Forensic Integrity Audit | completed | 78b2ccb2-a8b4-4090-9c0f-8e468014e4b8 |
-| worker_e2e_fixes | teamwork_preview_worker | E2E & Responsive Test Fixes | completed | fb0be4c3-b159-4e9b-98d7-a0358d5c6bd4 |
-| auditor_final_v2 | teamwork_preview_auditor | Forensic Integrity Audit v2 | completed | a82bbcac-c479-4ca1-bc5c-a74e6b58e9ce |
-| worker_final_polish | teamwork_preview_worker | Final Test Polish | completed | a2d48348-7be1-478d-bf1c-8b0e60ac6375 |
+| explorer_explore_dashboard | teamwork_preview_explorer | Run baseline verification and explore dashboard homepage components | completed | 2ffa14de-13a1-4d07-a26d-10dd913cbd7f |
+| worker_implement_dashboard_upgrade | teamwork_preview_worker | Implement dashboard homepage upgrades | completed | 23d67fda-566f-4448-a6be-856fcd1a5599 |
+| reviewer_verification | teamwork_preview_reviewer | Verify visual layout and correctness of upgraded files | completed | 238fcdab-5b02-4a1e-abb2-461cea3606de |
+| challenger_verification | teamwork_preview_challenger | Run all tests (133 tests), compile with TypeScript, and check linting | completed | e3f39d9c-fd9b-4ccf-b6d0-5a6fe09c1e5a |
+| auditor_verification | teamwork_preview_auditor | Verify implementation integrity | completed | 924c75be-9f3c-4c19-8f92-9ff332caf6f4 |
+| worker_fix_glow | teamwork_preview_worker | Fix Bookings card glowClass mismatch in KpiGrid.tsx | completed | de88291c-7f4b-491c-8f13-533020ebd513 |
+| reviewer_verification_round2 | teamwork_preview_reviewer | Verify KpiGrid.tsx fix and other component visual layout | completed | b3dc2a25-3bd1-4820-baaa-9176474a7206 |
+| challenger_verification_round2 | teamwork_preview_challenger | Run lint/tsc/tests on the final codebase | completed | 4921aceb-5b1b-433c-8023-22d1ad071b2e |
+| auditor_verification_round2 | teamwork_preview_auditor | Verify final implementation integrity | completed | c3527e1f-c118-4703-a0af-c5a3efb5daef |
+| worker_verification_fixes | teamwork_preview_worker | Fix color glows, sticky layout, bookings sparkline, and skeleton CLS | completed | eb80fd05-4282-488e-8eb8-1d96d1ebcf4e |
+| reviewer_verification_round3 | teamwork_preview_reviewer | Verify all final fixes and layout correctness | completed | aaf90749-fb10-4d58-8864-054896487ae9 |
+| challenger_verification_round3 | teamwork_preview_challenger | Run final regression test suite, lint, and tsc | completed | 7347468b-b3f2-40cd-ac44-d288c755eb6d |
+| auditor_verification_round3 | teamwork_preview_auditor | Verify final integrity and verify no facades | completed | 29a12cdb-9952-4312-a53a-ff601faf23cf |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 14 / 16
+- Spawn count: 11 / 16
 - Pending subagents: none
-- Predecessor: none
+- Predecessor: c0400f14-dd0d-4f8d-9fb7-448a7f8a5c10
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-15
+- Heartbeat cron: 4d6932be-6a26-4645-a0cb-bcff98c6ff1f/task-29
 - Safety timer: none
 - On succession: kill all timers before spawning successor
 - On context truncation: run `manage_task(Action="list")` — re-create if missing
 
 ## Artifact Index
-- /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/PROJECT.md — Overall project architecture and milestones
 - /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/.agents/orchestrator/progress.md — Execution heartbeat and progress tracking
+- /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/.agents/orchestrator/SCOPE.md — Milestone scope document
 - /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/.agents/orchestrator/plan.md — Specific detailed steps for each milestone
 - /Users/kwadwo/Ai-lab/agent-os/After-School-Club-CMS/.agents/orchestrator/context.md — Context and details of the current environment

@@ -130,7 +130,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                             <input id="org-name" type="text" value={name} onChange={e => setName(e.target.value)}
                                 className={inp} autoFocus disabled={saving} />
                             <button onClick={handleSaveName} disabled={saving}
-                                className="p-2 text-foreground bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
+                                className="p-2 text-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => { setIsEditingName(false); setName(org.name); setError(null); }}
@@ -161,7 +161,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                 className={`${inp} font-mono`} autoFocus disabled={saving} />
                             <button onClick={handleSaveSlug} disabled={saving}
-                                className="p-2 text-foreground bg-primary hover:bg-blue-600 rounded-xl transition-all disabled:opacity-50">
+                                className="p-2 text-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => { setIsEditingSlug(false); setSlug(org.slug); setError(null); }}
@@ -224,7 +224,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 Cancel
                             </button>
                             <button onClick={handleSaveContact} disabled={saving}
-                                className="px-4 py-1.5 text-xs font-bold bg-primary text-foreground rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50">
+                                className="px-4 py-1.5 text-xs font-bold bg-primary text-foreground rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50">
                                 {saving ? 'Saving…' : 'Save'}
                             </button>
                         </div>

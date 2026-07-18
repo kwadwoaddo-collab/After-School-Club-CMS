@@ -72,7 +72,7 @@ function RuleCard({
  
     return (
         <div
-            className={`bg-surface-container-high border rounded-2xl p-4 transition-all ${
+            className={`bg-card border rounded-2xl p-4 transition-all ${
                 rule.active
                     ? 'border-border'
                     : 'border-border opacity-60'
@@ -93,7 +93,7 @@ function RuleCard({
                             placeholder="Discount label"
                             className="bg-transparent text-sm font-semibold text-foreground border-b border-border focus:border-primary outline-none pb-0.5 w-48 transition-colors"
                         />
-                        <span className="text-xs text-foreground-variant bg-secondary/60 border border-border rounded-lg px-2 py-0.5">
+                        <span className="text-xs text-muted-foreground bg-secondary/60 border border-border rounded-lg px-2 py-0.5">
                             {meta.label}
                         </span>
                     </div>
@@ -102,7 +102,7 @@ function RuleCard({
                     <div className="flex items-center gap-2">
                         <div className="relative">
                             {rule.valueType === 'fixed' && (
-                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-variant text-sm">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                                     £
                                 </span>
                             )}
@@ -120,7 +120,7 @@ function RuleCard({
                                 }`}
                             />
                             {rule.valueType === 'percent' && (
-                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-variant text-sm">
+                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                                     %
                                 </span>
                             )}
@@ -134,7 +134,7 @@ function RuleCard({
                                 className={`px-3 py-1.5 transition-colors ${
                                     rule.valueType === 'percent'
                                         ? 'bg-primary text-foreground font-bold'
-                                        : 'text-foreground-variant hover:text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
                                 %
@@ -145,14 +145,14 @@ function RuleCard({
                                 className={`px-3 py-1.5 transition-colors ${
                                     rule.valueType === 'fixed'
                                         ? 'bg-primary text-foreground font-bold'
-                                        : 'text-foreground-variant hover:text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
                                 £
                             </button>
                         </div>
  
-                        <p className="text-xs text-foreground-variant hidden sm:block">
+                        <p className="text-xs text-muted-foreground hidden sm:block">
                             {meta.description}
                         </p>
                     </div>
@@ -169,7 +169,7 @@ function RuleCard({
                         {rule.active ? (
                             <ToggleRight className="w-5 h-5 text-primary" />
                         ) : (
-                            <ToggleLeft className="w-5 h-5 text-foreground-variant" />
+                            <ToggleLeft className="w-5 h-5 text-muted-foreground" />
                         )}
                     </button>
                     <button
@@ -178,7 +178,7 @@ function RuleCard({
                         className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors group"
                         title="Delete rule"
                     >
-                        <Trash2 className="w-4 h-4 text-foreground-variant group-hover:text-red-600 transition-colors" />
+                        <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-red-600 transition-colors" />
                     </button>
                 </div>
             </div>
@@ -252,7 +252,7 @@ export default function DiscountsForm() {
             <div className="flex items-center gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground tracking-tight">Discount Rules</h1>
-                    <p className="text-sm text-foreground-variant mt-0.5">
+                    <p className="text-sm text-muted-foreground mt-0.5">
                         Configure discounts applied when generating invoices
                     </p>
                 </div>
@@ -272,17 +272,17 @@ export default function DiscountsForm() {
  
             {/* Rules list */}
             {loading ? (
-                <div className="flex items-center gap-2 text-foreground-variant py-8 justify-center">
+                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Loading rules…</span>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {rules.length === 0 && (
-                        <div className="bg-surface-container-high border border-border rounded-2xl p-8 text-center">
-                            <Tag className="w-8 h-8 text-foreground-variant mx-auto mb-2 opacity-50" />
-                            <p className="text-sm text-foreground-variant">No discount rules yet.</p>
-                            <p className="text-xs text-foreground-variant mt-1 opacity-70">
+                        <div className="bg-card border border-border rounded-2xl p-8 text-center">
+                            <Tag className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+                            <p className="text-sm text-muted-foreground">No discount rules yet.</p>
+                            <p className="text-xs text-muted-foreground mt-1 opacity-70">
                                 Add a rule below to get started.
                             </p>
                         </div>
@@ -306,7 +306,7 @@ export default function DiscountsForm() {
  
             {/* Add rule buttons */}
             <div>
-                <h2 className="text-xs font-bold text-foreground-variant uppercase tracking-widest mb-3">
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
                     Add Rule
                 </h2>
                 <div className="grid grid-cols-2 gap-2">
@@ -318,7 +318,7 @@ export default function DiscountsForm() {
                                 key={type}
                                 type="button"
                                 onClick={() => addRule(type)}
-                                className="bg-surface-container-high border border-border rounded-xl p-3 flex items-center gap-2.5 hover:border-border transition-all group text-left"
+                                className="bg-card border border-border rounded-xl p-3 flex items-center gap-2.5 hover:border-border transition-all group text-left"
                             >
                                 <div className="w-7 h-7 rounded-lg bg-secondary/60 border border-border flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                                     <Icon className={`w-3.5 h-3.5 ${meta.color}`} />
@@ -327,11 +327,11 @@ export default function DiscountsForm() {
                                     <p className="text-xs font-bold text-foreground leading-tight truncate">
                                         {meta.label}
                                     </p>
-                                    <p className="text-xs text-foreground-variant truncate">
+                                    <p className="text-xs text-muted-foreground truncate">
                                         {meta.description}
                                     </p>
                                 </div>
-                                <Plus className="w-3.5 h-3.5 text-foreground-variant ml-auto flex-shrink-0 group-hover:text-primary transition-colors" />
+                                <Plus className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0 group-hover:text-primary transition-colors" />
                             </button>
                         );
                     })}
@@ -343,7 +343,7 @@ export default function DiscountsForm() {
                 <button
                     onClick={handleSave}
                     disabled={saving || loading}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-foreground text-sm font-bold rounded-xl hover:bg-blue-600 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-foreground text-sm font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all"
                 >
                     {saving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -115,7 +115,7 @@ export function CentreSelector({ className = '' }: { className?: string }) {
       value={selectedCentreId}
       onChange={e => setSelectedCentreId(e.target.value)}
       className={`
-        !bg-surface-container-low !text-white !border-outline-variant/20
+        !bg-card-low !text-white !border-outline-variant/20
         text-sm font-bold rounded-xl px-4 py-2
         focus:!border-primary focus:ring-1 focus:ring-primary/30
         cursor-pointer appearance-none

@@ -105,7 +105,7 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
     const today = new Date().toISOString().split('T')[0];
 
     return (
-        <div className="bg-surface-container-high border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
+        <div className="bg-card border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
             <h3 className="text-lg font-bold text-white mb-6">Select New Date & Time</h3>
 
             {success ? (
@@ -179,7 +179,7 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                     <button
                         type="submit"
                         disabled={loading || !newDate || !newTime || (daySchedule ? !daySchedule.open : false)}
-                        className="w-full py-4 bg-primary hover:bg-blue-600 disabled:bg-[#2a2d35] disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl text-white font-bold transition-all shadow-lg shadow-primary/30 disabled:shadow-none flex items-center justify-center gap-2 glow-btn disabled:opacity-50"
+                        className="w-full py-4 bg-primary hover:bg-primary/90 disabled:bg-[#2a2d35] disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl text-white font-bold transition-all shadow-lg shadow-primary/30 disabled:shadow-none flex items-center justify-center gap-2 glow-btn disabled:opacity-50"
                     >
                         {loading ? (
                             <>

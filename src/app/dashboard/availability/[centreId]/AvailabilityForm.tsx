@@ -68,14 +68,14 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                 </Link>
             </header>
 
-            <div className="bg-surface-container-high rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
-                <div className="p-6 border-b border-outline-variant/10 bg-surface-container/50">
+            <div className="bg-card rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
+                <div className="p-6 border-b border-outline-variant/10 bg-card/50">
                     <h2 className="text-sm font-bold text-white uppercase tracking-wider">Weekly Schedule</h2>
                 </div>
 
-                <div className="divide-y divide-outline-variant/5">
+                <div className="divide-y divide-border">
                     {rules.map((rule) => (
-                        <div key={rule.dayOfWeek} className={cn("p-4 flex items-center gap-4 transition-colors", rule.isOpen ? "bg-surface-container-low" : "bg-transparent")}>
+                        <div key={rule.dayOfWeek} className={cn("p-4 flex items-center gap-4 transition-colors", rule.isOpen ? "bg-card-low" : "bg-transparent")}>
                             {/* Day Checkbox */}
                             <div className="w-40 flex items-center gap-3">
                                 <label className="flex items-center gap-3 cursor-pointer select-none">
@@ -124,7 +124,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-6 bg-surface-container flex items-center justify-end gap-3 border-t border-outline-variant/10">
+                <div className="p-6 bg-card flex items-center justify-end gap-3 border-t border-outline-variant/10">
                     {isSuccess && (
                         <span className="text-sm text-emerald-400 font-bold flex items-center gap-1 mr-2 animate-pulse">
                             <CheckCircle className="w-5 h-5" />
@@ -135,7 +135,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                         onClick={handleSave}
                         disabled={isPending}
                         className={cn(
-                            "px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 glow-btn hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/20 transition-all",
+                            "px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 glow-btn hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/20 transition-all",
                             isPending && "opacity-50 cursor-wait bg-[#2a2d35] shadow-none"
                         )}
                     >

@@ -535,9 +535,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                             {/* Unified Stats Grid — 2 real data-backed stages */}
                             <div className="grid grid-cols-2 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-error/5 rounded-xl border border-error/20 flex flex-col justify-center hover:bg-error/10 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-error">{pipelineCounts.new}</p>
-                                    <p className="text-[10px] sm:text-xs text-error font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
+                                <div className="p-3 bg-rose-500/5 rounded-xl border border-rose-500/20 flex flex-col justify-center hover:bg-rose-500/10 transition-all">
+                                    <p className="text-xl sm:text-2xl font-bold text-rose-500">{pipelineCounts.new}</p>
+                                    <p className="text-[10px] sm:text-xs text-rose-500 font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
                                 </div>
                                 <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/25 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
                                     <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
@@ -630,11 +630,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                             })()}
                                                             {b.hasMedicalNote && (
                                                                 <div className="relative group/tooltip flex items-center outline-none">
-                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
-                                                                        <AlertTriangle className="w-3 h-3 text-error" />
+                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
+                                                                        <AlertTriangle className="w-3 h-3 text-rose-500" />
                                                                     </div>
                                                                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                        <div className="font-bold text-error mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                        <div className="font-bold text-rose-500 mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
                                                                         {b.medicalNotesContent}
                                                                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
                                                                     </div>
@@ -726,7 +726,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                         <div className="flex items-center gap-2">
                                                             <p className="text-sm font-bold text-foreground">{r.childFirst} {r.childLast}</p>
                                                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                                r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-error border border-error/20' :
+                                                                r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-rose-500 border border-rose-500/20' :
                                                                 r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
                                                                 'bg-neutral-800 text-neutral-400 border border-neutral-700'
                                                             }`}>

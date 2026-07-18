@@ -34,7 +34,7 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
 
     return ReactDom.createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="relative w-full max-w-5xl h-[90vh] bg-surface-container rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-5xl h-[90vh] bg-card rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-bottom border-border bg-surface">
                     <div className="flex items-center gap-3">
@@ -43,7 +43,7 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-foreground">{title}</h3>
-                            <p className="text-xs text-foreground-variant font-mono">{fileName}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{fileName}</p>
                         </div>
                     </div>
                     
@@ -63,7 +63,7 @@ export default function PDFPreviewModal({ isOpen, onClose, pdfContent, title, fi
                         
                         <button 
                             onClick={onClose}
-                            className="p-2 hover:bg-surface-container-highest rounded-lg transition-colors text-foreground-variant"
+                            className="p-2 hover:bg-secondary/80 rounded-lg transition-colors text-muted-foreground"
                         >
                             <X className="w-5 h-5" />
                         </button>

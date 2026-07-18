@@ -11,7 +11,7 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-primary/30 text-lg font-bold text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed glow-btn transition-all"
+            className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-primary/30 text-lg font-bold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed glow-btn transition-all"
         >
             {pending ? "Creating..." : "Create Centre"}
         </button>
@@ -69,7 +69,7 @@ export default function AddCentreForm() {
                     </div>
  
                     {state?.message && (
-                        <div className="text-error bg-error-container/10 border border-error/20 p-3 rounded-lg text-sm text-center font-bold">
+                        <div className="text-rose-500 bg-error-container/10 border border-rose-500/20 p-3 rounded-lg text-sm text-center font-bold">
                             {state.message}
                         </div>
                     )}

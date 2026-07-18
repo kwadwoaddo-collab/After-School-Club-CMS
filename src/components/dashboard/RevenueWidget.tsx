@@ -79,7 +79,7 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
       value: revenue.overdueCount.toString(),
       icon: AlertCircle,
       color: revenue.overdueCount > 0 ? 'text-red-400' : 'text-on-surface-variant',
-      iconBg: revenue.overdueCount > 0 ? 'bg-red-500/10' : 'bg-surface-container-low',
+      iconBg: revenue.overdueCount > 0 ? 'bg-red-500/10' : 'bg-card-low',
       description: 'Past due date',
     },
   ];
@@ -93,7 +93,7 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-outline-variant/10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/10">
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-4 p-6">
             <div className={cn('p-3 rounded-xl flex-shrink-0', item.iconBg)}>

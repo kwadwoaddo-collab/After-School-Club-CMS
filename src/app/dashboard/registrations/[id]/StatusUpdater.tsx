@@ -50,7 +50,7 @@ export default function RegistrationStatusUpdater({
                 disabled={saving}
                 aria-haspopup="listbox"
                 aria-expanded={open}
-                className="px-4 py-2 rounded-lg bg-surface-container-low text-white text-sm font-medium hover:bg-surface-bright transition-colors disabled:opacity-50 border border-outline-variant/10"
+                className="px-4 py-2 rounded-lg bg-card-low text-white text-sm font-medium hover:bg-surface-bright transition-colors disabled:opacity-50 border border-outline-variant/10"
             >
                 {saving ? 'Saving…' : 'Update Status ▾'}
             </button>
@@ -58,7 +58,7 @@ export default function RegistrationStatusUpdater({
                 <div
                     role="listbox"
                     aria-label="Registration status"
-                    className="absolute right-0 top-full mt-1 w-52 bg-surface-container-high border border-outline-variant/10 rounded-xl shadow-lg shadow-black/50 z-10 overflow-hidden"
+                    className="absolute right-0 top-full mt-1 w-52 bg-card border border-outline-variant/10 rounded-xl shadow-lg shadow-black/50 z-10 overflow-hidden"
                 >
                     {OPTIONS.map(o => (
                         <button key={o.value} onClick={() => update(o.value)}

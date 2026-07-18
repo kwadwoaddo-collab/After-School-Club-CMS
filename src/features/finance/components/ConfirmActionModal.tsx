@@ -30,7 +30,7 @@ export default function ConfirmActionModal({
     const config = isDelete
         ? {
               icon: <Trash2 className="w-6 h-6" />,
-              iconBg: 'bg-error/10 text-error border-error/20',
+              iconBg: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
               title: 'Delete Invoice',
               confirmLabel: 'Delete Permanently',
               confirmClass:
@@ -64,12 +64,12 @@ export default function ConfirmActionModal({
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
-            <div className="bg-surface-container-high border border-border rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
+            <div className="bg-card border border-border rounded-[40px] shadow-2xl w-full max-w-md p-10 relative animate-in zoom-in-95 duration-200">
                 {/* Close */}
                 <button
                     onClick={onClose}
                     disabled={isLoading}
-                    className="absolute top-6 right-6 w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-foreground-variant hover:text-foreground hover:bg-secondary transition-all"
+                    className="absolute top-6 right-6 w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
                 >
                     <X className="w-4 h-4" />
                 </button>
@@ -87,15 +87,15 @@ export default function ConfirmActionModal({
                 </h2>
 
                 {/* Description */}
-                <p className="text-sm text-foreground-variant leading-relaxed mb-8">
+                <p className="text-sm text-muted-foreground leading-relaxed mb-8">
                     {config.description}
                 </p>
 
                 {/* Error */}
                 {error && (
-                    <div className="flex items-start gap-3 bg-error/5 border border-error/20 rounded-2xl p-4 mb-6">
-                        <AlertTriangle className="w-4 h-4 text-error mt-0.5 shrink-0" />
-                        <p className="text-sm font-bold text-error">{error}</p>
+                    <div className="flex items-start gap-3 bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 mb-6">
+                        <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                        <p className="text-sm font-bold text-rose-500">{error}</p>
                     </div>
                 )}
 
@@ -104,7 +104,7 @@ export default function ConfirmActionModal({
                     <button
                         onClick={onClose}
                         disabled={isLoading}
-                        className="flex-1 py-3.5 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-foreground-variant hover:bg-secondary hover:text-foreground transition-all"
+                        className="flex-1 py-3.5 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
                     >
                         Cancel
                     </button>

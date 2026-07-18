@@ -116,7 +116,7 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !selectedCentreId || selectedCentreId === currentCentreId || availableCentres.length === 0}
-                            className="flex-1 px-4 py-3 bg-primary hover:bg-blue-600 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-primary/20 glow-btn"
+                            className="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-primary/20 glow-btn"
                         >
                             {isSaving ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : 'Save Changes'}
                         </button>

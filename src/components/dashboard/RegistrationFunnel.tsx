@@ -23,7 +23,7 @@ export function RegistrationFunnel({ data, className }: RegistrationFunnelProps)
             </div>
 
             {/* Funnel Bar — 2 real stages: Pending → Approved */}
-            <div className="h-4 w-full flex rounded-full overflow-hidden bg-surface-container-low border border-outline-variant/10 p-0.5">
+            <div className="h-4 w-full flex rounded-full overflow-hidden bg-card-low border border-outline-variant/10 p-0.5">
                 <div 
                     className="h-full bg-error rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(255,113,108,0.4)]"
                     style={{ width: `${newPerc}%` }}
@@ -37,7 +37,7 @@ export function RegistrationFunnel({ data, className }: RegistrationFunnelProps)
             {/* Legend — 2 columns only */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                    <span className="flex items-center gap-1.5 text-[9px] font-black uppercase text-error tracking-widest">
+                    <span className="flex items-center gap-1.5 text-[9px] font-black uppercase text-rose-500 tracking-widest">
                         <span className="w-1.5 h-1.5 rounded-full bg-error" />
                         Pending Review
                     </span>

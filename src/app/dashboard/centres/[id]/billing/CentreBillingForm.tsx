@@ -282,9 +282,9 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
 
                 {/* Error / Success */}
                 {error && (
-                    <div className="flex items-center gap-3 bg-error/5 border border-error/20 rounded-2xl p-4">
-                        <AlertTriangle className="w-4 h-4 text-error shrink-0" />
-                        <p className="text-sm font-bold text-error">{error}</p>
+                    <div className="flex items-center gap-3 bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4">
+                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                        <p className="text-sm font-bold text-rose-500">{error}</p>
                     </div>
                 )}
 
@@ -300,7 +300,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-blue-600 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-primary/30 disabled:opacity-60"
+                        className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-primary/30 disabled:opacity-60"
                     >
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

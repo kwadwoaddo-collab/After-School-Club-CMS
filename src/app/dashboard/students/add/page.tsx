@@ -45,7 +45,7 @@ export default async function AddStudentPage() {
                         <p className="text-on-surface-variant body-md mt-2">Register a new student to your centre</p>
                     </div>
                 </header>
-                <div className="bg-surface-container-high rounded-2xl shadow-xl border border-outline-variant/10 p-6">
+                <div className="bg-card rounded-2xl shadow-xl border border-outline-variant/10 p-6">
                     <StudentForm accessibleCentres={accessibleCentres} />
                 </div>
             </div>

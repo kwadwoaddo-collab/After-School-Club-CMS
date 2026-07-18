@@ -190,7 +190,7 @@ function StudentCard({
 
     const statusStyle = {
         present: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },
-        absent:  { ring: 'border-error/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-error' },
+        absent:  { ring: 'border-rose-500/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-rose-500' },
         late:    { ring: 'border-amber-500/30 bg-amber-500/5 ring-2 ring-amber-500/10 glow-hover-warning',     avatar: 'bg-amber-500/20 text-amber-400' },
         excused: { ring: 'border-secondary/30 bg-secondary-container/5 ring-2 ring-secondary/10 glow-hover-secondary',   avatar: 'bg-secondary-container/20 text-secondary' },
     };
@@ -258,7 +258,7 @@ function StudentCard({
                         {([
                             { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-tertiary hover:border-tertiary/20' },
                             { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-400 text-slate-950 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-amber-400/20',   inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-amber-400 hover:border-amber-400/20'   },
-                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-slate-950 shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-error hover:border-error/20'     },
+                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-slate-950 shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-rose-500/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-rose-500 hover:border-rose-500/20'     },
                         ]).map(({ s, icon, label, active, inactive }) => (
                             <button
                                 key={s}
@@ -447,7 +447,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     { label: 'Total',    value: totalCount,    color: 'text-foreground' },
                     { label: 'Present',  value: presentCount,  color: 'text-tertiary' },
                     { label: 'Late',     value: lateCount,     color: 'text-amber-400' },
-                    { label: 'Absent',   value: absentCount,   color: 'text-error' },
+                    { label: 'Absent',   value: absentCount,   color: 'text-rose-500' },
                     { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-orange-400' : 'text-muted-foreground/50' },
                 ].map((stat, i) => (
                     <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-border' : ''}`}>

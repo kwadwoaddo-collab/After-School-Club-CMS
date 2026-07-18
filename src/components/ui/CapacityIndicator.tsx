@@ -18,7 +18,7 @@ export function CapacityIndicator({ current, max = 10, size = 'sm', className, s
     const activeSegments = Math.ceil((percentage / 100) * 5);
 
     const getSegmentColor = (index: number) => {
-        if (index > activeSegments) return 'bg-outline-variant/20';
+        if (index > activeSegments) return 'bg-border/20';
         
         // Dynamic color based on total percentage
         if (percentage >= 90) return 'bg-error shadow-[0_0_8px_rgba(255,113,108,0.4)]';
@@ -32,7 +32,7 @@ export function CapacityIndicator({ current, max = 10, size = 'sm', className, s
                 <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                     <span>Capacity</span>
                     <span className={cn(
-                        percentage >= 90 ? "text-error" : 
+                        percentage >= 90 ? "text-rose-500" : 
                         percentage >= 70 ? "text-amber-400" : 
                         "text-primary"
                     )}>
@@ -56,7 +56,7 @@ export function CapacityIndicator({ current, max = 10, size = 'sm', className, s
                 {!showLabel && (
                     <span className={cn(
                         "ml-2 text-[10px] font-black tabular-nums",
-                        percentage >= 90 ? "text-error" : 
+                        percentage >= 90 ? "text-rose-500" : 
                         percentage >= 70 ? "text-amber-400" : 
                         "text-on-surface-variant"
                     )}>

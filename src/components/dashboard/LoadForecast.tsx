@@ -43,7 +43,7 @@ export function LoadForecast({ data, max = 20, className }: LoadForecastProps) {
                     return (
                         <div key={i} className="flex flex-col items-center gap-2 flex-1 group">
                             {/* Bar */}
-                            <div className="w-full relative bg-surface-container-low rounded-t-lg overflow-hidden h-full">
+                            <div className="w-full relative bg-card-low rounded-t-lg overflow-hidden h-full">
                                 <div 
                                     className={cn(
                                         "absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-1000 ease-out",

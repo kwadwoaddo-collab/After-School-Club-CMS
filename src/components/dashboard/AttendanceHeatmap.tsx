@@ -52,7 +52,7 @@ export async function AttendanceHeatmap({
   const maxCount = Math.max(...dailyCounts.map(d => d.count), 1);
 
   const getCellColor = (count: number) => {
-    if (count === 0) return 'bg-surface-container-low border-outline-variant/10';
+    if (count === 0) return 'bg-card-low border-outline-variant/10';
     const pct = count / maxCount;
     if (pct >= 0.75) return 'bg-red-500/70 border-red-500/30';
     if (pct >= 0.5) return 'bg-amber-400/70 border-amber-400/30';
@@ -105,7 +105,7 @@ export async function AttendanceHeatmap({
               const day = days[dayIndex];
               if (!day) {
                 return (
-                  <div key={`empty-${dow}-${week}`} className="h-8 rounded-md bg-surface-container-low/30" />
+                  <div key={`empty-${dow}-${week}`} className="h-8 rounded-md bg-card-low/30" />
                 );
               }
               const dateStr = format(day, 'yyyy-MM-dd');

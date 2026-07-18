@@ -87,7 +87,7 @@ export default function TeamMembersList({
                             </div>
                             <h3 className="text-lg font-bold text-foreground mb-2">No team members yet</h3>
                             <p className="text-sm text-muted-foreground mb-6">Invite your first staff member to get started.</p>
-                            <Link href="/dashboard/staff/invite" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-blue-600 transition-colors">
+                            <Link href="/dashboard/staff/invite" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-colors">
                                 <Users className="w-4 h-4" /> Invite Staff Member
                             </Link>
                         </div>

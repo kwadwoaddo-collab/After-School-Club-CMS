@@ -28,7 +28,7 @@ export function CancelBookingButton({ bookingId, className }: { bookingId: strin
         <button 
             onClick={handleCancel}
             disabled={isCancelling}
-            className={`px-4 py-2 border border-error/20 text-error text-sm font-bold rounded-lg hover:bg-error/10 transition-colors flex items-center gap-1.5 disabled:opacity-50 ${className || ''}`}
+            className={`px-4 py-2 border border-rose-500/20 text-rose-500 text-sm font-bold rounded-lg hover:bg-rose-500/10 transition-colors flex items-center gap-1.5 disabled:opacity-50 ${className || ''}`}
         >
             <XCircle className="w-3.5 h-3.5" /> {isCancelling ? 'Cancelling...' : 'Cancel'}
         </button>

@@ -4,8 +4,8 @@ export default function CentreDetailLoading() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div className="space-y-2">
-                    <div className="h-9 w-52 bg-surface-container-high rounded-xl" />
-                    <div className="h-4 w-40 bg-surface-container rounded-lg" />
+                    <div className="h-9 w-52 bg-card rounded-xl" />
+                    <div className="h-4 w-40 bg-card rounded-lg" />
                 </div>
                 <div className="h-11 w-28 bg-primary/20 rounded-2xl" />
             </div>
@@ -16,11 +16,11 @@ export default function CentreDetailLoading() {
                 <div className="lg:col-span-2 space-y-6">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="glassmorphic-card rounded-3xl p-6 space-y-4">
-                            <div className="h-5 w-1/3 bg-surface-container-high rounded-xl" />
+                            <div className="h-5 w-1/3 bg-card rounded-xl" />
                             <div className="space-y-2">
-                                <div className="h-4 w-full bg-surface-container rounded-lg" />
-                                <div className="h-4 w-5/6 bg-surface-container rounded-lg" />
-                                <div className="h-4 w-2/3 bg-surface-container rounded-lg" />
+                                <div className="h-4 w-full bg-card rounded-lg" />
+                                <div className="h-4 w-5/6 bg-card rounded-lg" />
+                                <div className="h-4 w-2/3 bg-card rounded-lg" />
                             </div>
                         </div>
                     ))}
@@ -28,10 +28,10 @@ export default function CentreDetailLoading() {
 
                 {/* Right column – 1 tall card */}
                 <div className="glassmorphic-card rounded-3xl p-6 space-y-4 min-h-[28rem]">
-                    <div className="h-5 w-1/2 bg-surface-container-high rounded-xl" />
+                    <div className="h-5 w-1/2 bg-card rounded-xl" />
                     <div className="space-y-3">
                         {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="h-4 w-full bg-surface-container rounded-lg" />
+                            <div key={i} className="h-4 w-full bg-card rounded-lg" />
                         ))}
                     </div>
                     <div className="h-10 w-full bg-primary/20 rounded-2xl mt-auto" />

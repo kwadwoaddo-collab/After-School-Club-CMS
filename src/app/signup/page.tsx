@@ -217,7 +217,7 @@ export default function SignupPage() {
                   }
                 }}
                 disabled={googleLoading}
-                className="w-full py-3 px-4 rounded-lg bg-surface-container-low text-white border border-outline-variant/20 font-semibold hover:bg-surface-bright transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 rounded-lg bg-card-low text-white border border-outline-variant/20 font-semibold hover:bg-surface-bright transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {googleLoading ? (
                   <>
@@ -262,7 +262,7 @@ export default function SignupPage() {
                       autoComplete="given-name"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Jane"
                       required
                       autoFocus
@@ -276,7 +276,7 @@ export default function SignupPage() {
                       autoComplete="family-name"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Smith"
                       required
                     />
@@ -291,7 +291,7 @@ export default function SignupPage() {
                     autoComplete="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="jane@yourcentre.com"
                     required
                   />
@@ -325,7 +325,7 @@ export default function SignupPage() {
                     autoComplete="new-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Min. 8 characters"
                     required
                     autoFocus
@@ -340,7 +340,7 @@ export default function SignupPage() {
                     autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="••••••••"
                     required
                   />

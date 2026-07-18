@@ -28,12 +28,12 @@ export default function FinanceDashboardClient({ students, recentInvoices = [], 
         <div className="flex flex-col gap-8">
             {/* Header Actions */}
             <div className="flex items-center gap-3 self-end">
-                <button className="flex items-center gap-2 px-4 py-2 bg-surface-container-high border border-border rounded-xl text-sm font-bold text-foreground hover:bg-surface-container-highest transition-all">
+                <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-bold text-foreground hover:bg-secondary/80 transition-all">
                     <Filter className="w-4 h-4" /> Filter
                 </button>
                 <button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-foreground hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
                 >
                     <Plus className="w-4 h-4" /> Create Invoice
                 </button>
@@ -62,7 +62,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                     <FileText className="w-8 h-8 text-muted-foreground/80/40" />
                 </div>
                 <h4 className="text-lg font-bold text-foreground">No invoices yet</h4>
-                <p className="text-sm text-foreground-variant max-w-xs mt-1">
+                <p className="text-sm text-muted-foreground max-w-xs mt-1">
                     Start by creating an invoice for a student.
                 </p>
             </div>
@@ -74,7 +74,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
             <div className="relative overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
                 {isPending && (
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
-                        <div className="flex items-center gap-2 bg-surface-container-high border border-border px-4 py-2 rounded-xl text-sm font-bold text-foreground shadow-xl animate-in zoom-in-95 duration-150">
+                        <div className="flex items-center gap-2 bg-card border border-border px-4 py-2 rounded-xl text-sm font-bold text-foreground shadow-xl animate-in zoom-in-95 duration-150">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             Updating Ledger...
                         </div>
@@ -83,14 +83,14 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                 <table className="w-full">
                     <thead>
                         <tr className="text-left border-b border-border">
-                            <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
-                            <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Student</th>
-                            <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Status</th>
-                            <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
-                            {isOwner && <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Actions</th>}
+                            <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Invoice #</th>
+                            <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Student</th>
+                            <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Status</th>
+                            <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Amount</th>
+                            {isOwner && <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Actions</th>}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-outline-variant/5">
+                    <tbody className="divide-y divide-border">
                         {invoices.map((invoice: any) => {
                             const hasPayments = (invoice.payments?.length ?? 0) > 0;
                             return (
@@ -111,7 +111,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                                 {invoice.child?.firstName} {invoice.child?.lastName}
                                                 {!invoice.child && invoice.parent && `${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
                                             </span>
-                                            <span className="text-xs text-foreground-variant">{invoice.centre?.name}</span>
+                                            <span className="text-xs text-muted-foreground">{invoice.centre?.name}</span>
                                         </div>
                                     </td>
                                     <td className="py-4 px-4">
@@ -146,7 +146,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'delete' })}
-                                                        className="p-2 bg-error/10 text-error hover:bg-error/20 rounded-lg transition-colors border border-error/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="p-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         title="Delete Invoice"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -196,16 +196,16 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-border">
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Invoice #</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Parent</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Amount</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Paid</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Due Date</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Status</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Invoice #</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Amount</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Paid</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Balance</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Due Date</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Status</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/5">
+                <tbody className="divide-y divide-border">
                     {invoices.map((invoice: any) => {
                         const paid = invoice.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
                         const balance = Number(invoice.amount) - paid;
@@ -231,10 +231,10 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
                                     <span className="text-sm font-medium text-emerald-600">£{paid.toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 text-right px-4">
-                                    <span className="text-sm font-black text-error">£{balance.toFixed(2)}</span>
+                                    <span className="text-sm font-black text-rose-500">£{balance.toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 px-4">
-                                    <span className="text-sm text-error font-medium">{new Date(invoice.dueDate).toLocaleDateString('en-GB')}</span>
+                                    <span className="text-sm text-rose-500 font-medium">{new Date(invoice.dueDate).toLocaleDateString('en-GB')}</span>
                                 </td>
                                 <td className="py-4 px-4">
                                     <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
@@ -267,14 +267,14 @@ export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
     const totalOverdueAmount = items.slice(1).reduce((acc, curr) => acc + curr.data.amount, 0);
 
     return (
-        <div className="bg-surface-container-high border border-border rounded-[32px] p-6">
+        <div className="bg-card border border-border rounded-[32px] p-6">
             <div className="flex items-center justify-between mb-6 px-2">
                 <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <FileText className="w-5 h-5 text-primary" />
                     Accounts Receivable Aging
                 </h3>
                 {totalOverdueAmount > 0 && (
-                    <span className="text-sm font-bold text-error bg-error/10 px-3 py-1 rounded-lg">
+                    <span className="text-sm font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-lg">
                         £{totalOverdueAmount.toFixed(2)} Overdue
                     </span>
                 )}
@@ -301,14 +301,14 @@ export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-border">
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider px-4 select-none">Parent</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-center px-4 select-none">Unpaid Invoices</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Total Invoiced</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Total Paid</th>
-                        <th className="sticky top-0 z-10 bg-surface-container border-b border-border pb-4 pt-4 text-xs font-bold text-foreground-variant uppercase tracking-wider text-right px-4 select-none">Balance</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center px-4 select-none">Unpaid Invoices</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Total Invoiced</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Total Paid</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Balance</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/5">
+                <tbody className="divide-y divide-border">
                     {balances.map((row: any) => (
                         <tr key={row.parent_id} className="group hover:bg-secondary/60 transition-colors">
                             <td className="py-4 px-4">
@@ -316,7 +316,7 @@ export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
                                     <span className="text-sm font-bold text-foreground">
                                         {row.first_name} {row.last_name}
                                     </span>
-                                    {row.email ? <span className="text-xs text-foreground-variant">{row.email}</span> : null}
+                                    {row.email ? <span className="text-xs text-muted-foreground">{row.email}</span> : null}
                                 </div>
                             </td>
                             <td className="py-4 text-center px-4">
@@ -329,7 +329,7 @@ export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
                                 <span className="text-sm font-medium text-emerald-600">£{Number(row.total_paid).toFixed(2)}</span>
                             </td>
                             <td className="py-4 text-right px-4">
-                                <span className="text-sm font-black text-error">£{Number(row.balance).toFixed(2)}</span>
+                                <span className="text-sm font-black text-rose-500">£{Number(row.balance).toFixed(2)}</span>
                             </td>
                         </tr>
                     ))}

@@ -97,8 +97,8 @@ export default function OnboardingForm() {
     };
 
     return (
-        <div className="w-full max-w-lg mx-auto bg-surface-container-high rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
-            <div className="bg-surface-container-low px-8 py-6 border-b border-outline-variant/10">
+        <div className="w-full max-w-lg mx-auto bg-card rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
+            <div className="bg-card-low px-8 py-6 border-b border-outline-variant/10">
                 <h2 className="text-2xl font-bold text-white">Let&apos;s get you set up</h2>
                 <p className="text-on-surface-variant mt-1">Create your organisation and first centre.</p>
             </div>
@@ -122,7 +122,7 @@ export default function OnboardingForm() {
                                 <img
                                     src={watchedLogo}
                                     alt="Logo preview"
-                                    className="w-12 h-12 rounded-lg object-contain bg-surface-container-lowest border border-outline-variant/10"
+                                    className="w-12 h-12 rounded-lg object-contain bg-card-lowest border border-outline-variant/10"
                                 />
                             )}
                             <input
@@ -147,7 +147,7 @@ export default function OnboardingForm() {
                         <label className="block text-sm font-medium text-on-surface-variant mb-1">Organisation Name</label>
                         <input
                             {...register('organisationName')}
-                            className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
+                            className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. Bright Stars Academy"
                         />
                         {errors.organisationName && <p className="text-red-400 text-sm mt-1" role="alert">{errors.organisationName.message}</p>}
@@ -158,7 +158,7 @@ export default function OnboardingForm() {
                         <label className="block text-sm font-medium text-on-surface-variant mb-1">First Centre Name</label>
                         <input
                             {...register('centreName')}
-                            className="w-full px-4 py-3 bg-surface-container-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
+                            className="w-full px-4 py-3 bg-card-lowest text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. London Campus"
                         />
                         <p className="text-xs text-on-surface-variant mt-1">You can add more centres later.</p>
@@ -171,7 +171,7 @@ export default function OnboardingForm() {
                             <input
                                 type="color"
                                 {...register('brandColor')}
-                                className="w-12 h-12 rounded-lg cursor-pointer border border-outline-variant/20 p-1 bg-surface-container-lowest shadow-sm"
+                                className="w-12 h-12 rounded-lg cursor-pointer border border-outline-variant/20 p-1 bg-card-lowest shadow-sm"
                             />
                             <div className="flex-1">
                                 <div

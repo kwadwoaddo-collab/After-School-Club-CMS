@@ -145,7 +145,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                 {step.date && step.done && <p className="text-[10px] text-slate-500">{step.date}</p>}
                             </div>
                             {i < timelineSteps.length - 1 && (
-                                <div className={`h-px flex-1 mx-2 ${step.done ? 'bg-outline-variant/30' : 'bg-white/5'}`} />
+                                <div className={`h-px flex-1 mx-2 ${step.done ? 'bg-border/30' : 'bg-white/5'}`} />
                             )}
                         </div>
                     ))}

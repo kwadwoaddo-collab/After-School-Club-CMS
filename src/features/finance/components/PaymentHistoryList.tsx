@@ -25,9 +25,9 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
     if (payments.length === 0) {
         return (
             <div className="py-12 flex flex-col items-center justify-center text-center bg-secondary/60 rounded-[32px] border border-dashed border-border">
-                <CreditCard className="w-12 h-12 text-foreground-variant/20 mb-4" />
+                <CreditCard className="w-12 h-12 text-muted-foreground/20 mb-4" />
                 <h4 className="text-lg font-bold text-foreground">No payments yet</h4>
-                <p className="text-sm text-foreground-variant">Payments recorded for this invoice will appear here.</p>
+                <p className="text-sm text-muted-foreground">Payments recorded for this invoice will appear here.</p>
             </div>
         );
     }
@@ -74,19 +74,19 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
     };
 
     return (
-        <div className="overflow-hidden bg-surface-container-high border border-border rounded-[32px]">
+        <div className="overflow-hidden bg-card border border-border rounded-[32px]">
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b border-border">
-                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Date</th>
-                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Method</th>
-                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Reference</th>
-                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-4 text-xs font-black text-foreground-variant uppercase tracking-widest text-right">Amount</th>
+                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Date</th>
+                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Method</th>
+                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Reference</th>
+                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-4 text-xs font-black text-muted-foreground uppercase tracking-widest text-right">Amount</th>
                         <th className="px-6 py-4"></th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/5">
+                <tbody className="divide-y divide-border">
                     {payments.map((payment) => (
                         <tr key={payment.id} className="group hover:bg-secondary/60 transition-colors">
                             <td className="px-6 py-5">
@@ -105,7 +105,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                                 </div>
                             </td>
                             <td className="px-6 py-5">
-                                <span className="text-sm font-medium text-foreground-variant">
+                                <span className="text-sm font-medium text-muted-foreground">
                                     {payment.transactionReference || '-'}
                                 </span>
                             </td>
@@ -115,7 +115,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                                         <Clock className="w-3.5 h-3.5" /> Pending
                                     </span>
                                 ) : payment.status === 'failed' ? (
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-error/10 text-error rounded-full text-xs font-bold ring-1 ring-error/20 w-fit">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 text-rose-500 rounded-full text-xs font-bold ring-1 ring-error/20 w-fit">
                                         <AlertCircle className="w-3.5 h-3.5" /> Failed
                                     </span>
                                 ) : (
@@ -125,7 +125,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                                 )}
                             </td>
                             <td className="px-6 py-5 text-right">
-                                <span className={`text-sm font-black ${payment.status === 'failed' ? 'text-foreground-variant line-through' : 'text-foreground'}`}>
+                                <span className={`text-sm font-black ${payment.status === 'failed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                     £{Number(payment.amount).toFixed(2)}
                                 </span>
                             </td>
@@ -143,7 +143,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                                         <button 
                                             onClick={() => handleFail(payment.id)}
                                             disabled={processingId === payment.id}
-                                            className="p-2 rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors disabled:opacity-50"
+                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors disabled:opacity-50"
                                             title="Reject Payment"
                                         >
                                             <X className="w-4 h-4" />

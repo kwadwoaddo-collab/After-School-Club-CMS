@@ -10,7 +10,7 @@ export default function NewBookingLoading() {
             {/* Full-width form card */}
             <div className="glassmorphic-card rounded-3xl p-8 space-y-8">
                 {/* Section title */}
-                <div className="h-5 w-1/4 bg-surface-container-high rounded-xl" />
+                <div className="h-5 w-1/4 bg-card rounded-xl" />
 
                 {/* Input rows */}
                 {[1, 2, 3, 4, 5].map((i) => (

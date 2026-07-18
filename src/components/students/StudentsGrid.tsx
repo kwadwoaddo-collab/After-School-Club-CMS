@@ -40,7 +40,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                 </p>
                 <Link
                     href="/dashboard/students/add"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                 >
                     <Plus className="w-4 h-4" /> Add New Student
                 </Link>
@@ -68,10 +68,10 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                             <div className="absolute top-3 right-3 flex items-center gap-1.5">
                                 {hasMedical && (
                                     <div
-                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-error/10 border border-error/20 shadow-[0_0_8px_rgba(255,113,108,0.15)]"
+                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-500/10 border border-rose-500/20 shadow-[0_0_8px_rgba(255,113,108,0.15)]"
                                         title={`Medical: ${student.medicalNotes.join(' | ')}`}
                                     >
-                                        <AlertTriangle className="w-3.5 h-3.5 text-error" />
+                                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                                     </div>
                                 )}
                                 {hasSafeguarding && (
@@ -144,7 +144,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                 {student.bookingCount} booking{student.bookingCount !== 1 ? 's' : ''}
                             </div>
                             {student.bookingCount > 0 && (
-                                <span className={`text-[11px] font-bold ${student.attendanceRate >= 80 ? 'text-emerald-600' : student.attendanceRate >= 50 ? 'text-amber-600' : 'text-error'}`}>
+                                <span className={`text-[11px] font-bold ${student.attendanceRate >= 80 ? 'text-emerald-600' : student.attendanceRate >= 50 ? 'text-amber-600' : 'text-rose-500'}`}>
                                     {Math.round(student.attendanceRate)}% att.
                                 </span>
                             )}
@@ -152,9 +152,9 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
 
                         {/* Medical alert preview strip */}
                         {hasMedical && (
-                            <div className="bg-error/5 border border-error/15 rounded-xl px-3 py-2 flex items-center gap-2">
-                                <AlertTriangle className="w-3.5 h-3.5 text-error flex-shrink-0" />
-                                <p className="text-[11px] text-error font-semibold line-clamp-1">
+                            <div className="bg-rose-500/5 border border-rose-500/15 rounded-xl px-3 py-2 flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                                <p className="text-[11px] text-rose-500 font-semibold line-clamp-1">
                                     {student.medicalNotes[0]}
                                 </p>
                             </div>
