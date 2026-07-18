@@ -16,7 +16,7 @@ import { LoadForecast } from '@/components/dashboard/LoadForecast';
 import { DashboardFilter } from '@/components/dashboard/DashboardFilter';
 import { Suspense } from 'react';
 import { startOfDay, endOfDay, addDays, isSameDay, subDays, eachWeekOfInterval } from 'date-fns';
-import { RegistrationFunnel } from '@/components/dashboard/RegistrationFunnel';
+// RegistrationFunnel deprecated — replaced by inline JSX in Activity tab
 import { GrowthSparkline } from '@/components/dashboard/GrowthSparkline';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 import {
@@ -78,7 +78,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const childrenCentreCondition = activeCentreId !== 'all'
         ? eq(children.centreId, activeCentreId)
-        : (hasCentres 
+        : (hasCentres
             ? or(
                 inArray(children.centreId, accessibleCentreIds),
                 sql`${children.centreId} IS NULL`
@@ -98,8 +98,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const targetDate = targetDateStr ? parseISO(targetDateStr) : now;
     const currentView = normalizeString(searchParams.view) === 'monthly' ? 'monthly' : 'weekly';
 
-    const activeStartDate = currentView === 'weekly' 
-        ? startOfWeek(targetDate, { weekStartsOn: 1 }) 
+    const activeStartDate = currentView === 'weekly'
+        ? startOfWeek(targetDate, { weekStartsOn: 1 })
         : startOfMonth(targetDate);
     const activeEndDate = currentView === 'weekly'
         ? endOfWeek(targetDate, { weekStartsOn: 1 })
@@ -147,7 +147,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 weeklyRegistrations,
             ] = await Promise.all([
                 // consolidated Students
-                db.select({ 
+                db.select({
                     total: sql<number>`count(distinct ${children.id})::int`,
                     activePeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${activeStartDate.toISOString()} and ${children.createdAt} <= ${activeEndDate.toISOString()})::int`,
                     prevPeriod: sql<number>`count(distinct ${children.id}) filter (where ${children.createdAt} >= ${prevStartDate.toISOString()} and ${children.createdAt} <= ${prevEndDate.toISOString()})::int`
@@ -163,7 +163,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                 // consolidated bookings
                 hasCentres
-                    ? db.select({ 
+                    ? db.select({
                         totalAll: sql<number>`count(*)::int`,
                         thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
                         thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
@@ -173,7 +173,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
 
                 // consolidated Registrations
-                db.select({ 
+                db.select({
                     total: sql<number>`count(*)::int`,
                     pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
                     thisMonth: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetMonthStart.toISOString()} and ${registrations.createdAt} <= ${targetMonthEnd.toISOString()})::int`,
@@ -284,7 +284,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 ).groupBy(registrations.status),
 
                 // consolidated Registrations
-                db.select({ 
+                db.select({
                     total: sql<number>`count(*)::int`,
                     pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
                     thisMonth: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetMonthStart.toISOString()} and ${registrations.createdAt} <= ${targetMonthEnd.toISOString()})::int`,
@@ -300,7 +300,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
                 // consolidated bookings
                 hasCentres
-                    ? db.select({ 
+                    ? db.select({
                         totalAll: sql<number>`count(*)::int`,
                         thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
                         thisWeek: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetWeekStart.toISOString()} and ${bookings.startAt} <= ${targetWeekEnd.toISOString()})::int`,
@@ -339,7 +339,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     });
 
     const recentBookingsChildIds = uniqueRecentBookings.map(b => b.childId);
-    
+
     // Fetch medical and safeguarding notes with idiomatic Drizzle Relational API
     const safetyNotes = (activeTab === 'activity' && recentBookingsChildIds.length > 0)
         ? await db.query.studentNotes.findMany({
@@ -355,7 +355,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         const studentSafetyNotes = safetyNotes.filter(n => n.childId === b.childId);
         const medNotes = studentSafetyNotes.filter(n => n.category === 'Medical');
         const safeguardNotes = studentSafetyNotes.filter(n => n.category === 'Safeguarding');
-        
+
         // Defensive handling of attendanceStats subquery result
         let stats = { total: 0, completed: 0 };
         try {
@@ -406,12 +406,40 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         approved: Number(registrationPipelineData.find((d: any) => d.status === 'signed_up')?.count || 0),
     };
 
+    // ── Activity Tab derived values ───────────────────────────────────────────
+    const relativeTime = (dateStr: string | null | undefined): string => {
+        if (!dateStr) return '—';
+        const diffMs = Date.now() - new Date(dateStr).getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) return 'in the future';
+        if (diffDays === 0) return 'today';
+        if (diffDays === 1) return 'yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 14) return '1 week ago';
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        return `${Math.floor(diffDays / 30)} months ago`;
+    };
+
+    const pendingRate = totalRegistrations > 0
+        ? Math.round((pipelineCounts.new / totalRegistrations) * 100)
+        : 0;
+
+    const approvalRate = (pipelineCounts.new + pipelineCounts.approved) > 0
+        ? Math.round((pipelineCounts.approved / (pipelineCounts.new + pipelineCounts.approved)) * 100)
+        : 0;
+
+    const oldestPending = (recentRegistrations as any[])
+        .filter((r: any) => r.status === 'awaiting_confirmation')
+        .reduce((oldest: any, r: any) =>
+            !oldest || new Date(r.submittedAt) < new Date(oldest.submittedAt) ? r : oldest
+        , null);
+
     // Format Weekly Growth (last 8 weeks)
     const weeks = eachWeekOfInterval({
         start: subDays(now, 49),
         end: now
     }, { weekStartsOn: 1 });
-    
+
     const growthStats = weeks.map(w => {
         const match = weeklyRegistrations.find((d: any) => isSameDay(new Date(d.weekStart), w));
         return Number(match?.count || 0);
@@ -463,7 +491,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             {/* ── Collapsible Sticky Welcome Banner Hero ───────────────────────── */}
             <DashboardHero firstName={firstName} orgName={org.name}>
                 <Suspense fallback={<div role="status" className="w-auto min-w-[140px] h-[44px] bg-secondary rounded-xl animate-pulse" aria-label="Loading date filter" />}>
-                    <DashboardFilter 
+                    <DashboardFilter
                         currentView={currentView}
                         currentDateIso={targetDate.toISOString()}
                         dateLabel={dateLabel}
@@ -511,102 +539,258 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     </div>
                 </div>
             ) : (
-                <div key="activity-tab" className="space-y-8 animate-in fade-in duration-500 slide-in-from-bottom-2">
+                <div key="activity-tab" className="space-y-6 animate-in fade-in duration-500 slide-in-from-bottom-2">
+
+                    {/* ── Orientation header ────────────────────────────────────── */}
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                            Activity — {dateLabel}
+                        </p>
+                        {pipelineCounts.new > 0 && (
+                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                                </span>
+                                {pipelineCounts.new} pending review
+                            </span>
+                        )}
+                    </div>
+
                     {/* ── Feature Module Cards ─────────────────────────────────── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                        {/* Registration Pipeline (Unified Visual Structure) */}
-                        <div className="glassmorphic-card p-8 rounded-3xl border border-tertiary/20 relative overflow-hidden group hover:border-tertiary/40 glow-hover-tertiary transition-all flex flex-col gap-8">
-                            {/* Backdrop light aura */}
-                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-tertiary/5 rounded-full blur-3xl group-hover:bg-tertiary/10 transition-colors pointer-events-none" />
+                        {/* ── Card 1: Registration Funnel ──────────────────────── */}
+                        <div className={cn(
+                            "glassmorphic-card p-6 rounded-3xl relative overflow-hidden flex flex-col gap-6",
+                            "transition-all duration-300 md:col-span-2 lg:col-span-1",
+                            pipelineCounts.new > 0
+                                ? "border border-amber-500/30 hover:border-amber-500/50"
+                                : "border border-border hover:border-primary/30"
+                        )}>
+                            {/* Backdrop aura */}
+                            <div className={cn(
+                                "absolute -right-4 -top-4 w-32 h-32 rounded-full blur-3xl pointer-events-none transition-colors",
+                                pipelineCounts.new > 0 ? "bg-amber-500/[0.08]" : "bg-primary/5"
+                            )} />
 
-                            {/* Header: Matches Bookings & Registrations */}
-                            <div className="flex items-start justify-between relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center">
-                                        <BarChart3 className="w-6 h-6 text-tertiary" />
+                            {/* Header */}
+                            <div className="flex items-center justify-between relative z-10">
+                                <div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                        Registration Funnel
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                                        Pipeline health
+                                    </p>
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                                    {totalRegistrations} total
+                                </span>
+                            </div>
+
+                            {/* Vertical stepped funnel */}
+                            <div className="flex flex-col items-center gap-0 relative z-10 w-full">
+
+                                {/* Stage 1: Submitted (full width) */}
+                                <div className="w-full">
+                                    <div className="w-full rounded-xl p-4 border bg-secondary border-border transition-all duration-300">
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                                    Submitted
+                                                </p>
+                                                <p className="text-3xl font-black text-foreground tabular-nums leading-none mt-1">
+                                                    {totalRegistrations}
+                                                </p>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground font-medium">All time</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="font-extrabold text-foreground text-lg leading-tight tracking-tight">Registration Funnel</h2>
-                                        <p className="text-xs text-muted-foreground font-medium mt-1">Funnel stages & processing health</p>
+                                </div>
+
+                                {/* Connector 1→2 */}
+                                <div className="flex flex-col items-center py-1.5 gap-1">
+                                    <div className="w-px h-2 bg-border" />
+                                    <span className="px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                                        ↓{' '}
+                                        {totalRegistrations > 0
+                                            ? Math.round(((pipelineCounts.new + pipelineCounts.approved) / totalRegistrations) * 100)
+                                            : 0}% active
+                                    </span>
+                                    <div className="w-px h-2 bg-border" />
+                                </div>
+
+                                {/* Stage 2: Pending Review (88% width) */}
+                                <div className="w-[88%]">
+                                    <div className={cn(
+                                        "w-full rounded-xl p-4 border transition-all duration-300",
+                                        pipelineCounts.new > 0
+                                            ? "bg-amber-500/10 border-amber-500/30"
+                                            : "bg-secondary border-border"
+                                    )}>
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <p className={cn(
+                                                    "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5",
+                                                    pipelineCounts.new > 0
+                                                        ? "text-amber-700 dark:text-amber-400"
+                                                        : "text-muted-foreground"
+                                                )}>
+                                                    Pending Review
+                                                    {pipelineCounts.new > 0 && (
+                                                        <span className="relative flex h-1.5 w-1.5">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
+                                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                                                        </span>
+                                                    )}
+                                                </p>
+                                                <p className={cn(
+                                                    "text-3xl font-black tabular-nums leading-none mt-1",
+                                                    pipelineCounts.new > 0
+                                                        ? "text-amber-700 dark:text-amber-400"
+                                                        : "text-foreground"
+                                                )}>
+                                                    {pipelineCounts.new}
+                                                </p>
+                                            </div>
+                                            {oldestPending && pipelineCounts.new > 0 && (
+                                                <div className="text-right">
+                                                    <p className="text-[10px] text-muted-foreground font-medium">Oldest</p>
+                                                    <p className="text-xs font-black text-amber-700 dark:text-amber-400 tabular-nums">
+                                                        {relativeTime(oldestPending.submittedAt)}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Unified Stats Grid — 2 real data-backed stages */}
-                            <div className="grid grid-cols-2 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-rose-500/5 rounded-xl border border-rose-500/20 flex flex-col justify-center hover:bg-rose-500/10 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-rose-500">{pipelineCounts.new}</p>
-                                    <p className="text-[10px] sm:text-xs text-rose-500 font-bold mt-1 uppercase tracking-wider leading-tight">Pending Review</p>
+                                {/* Connector 2→3 */}
+                                <div className="flex flex-col items-center py-1.5 gap-1">
+                                    <div className="w-px h-2 bg-border" />
+                                    <span className="px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                                        ↓ {approvalRate}% approved
+                                    </span>
+                                    <div className="w-px h-2 bg-border" />
                                 </div>
-                                <div className="p-3 bg-tertiary/10 rounded-xl border border-tertiary/25 flex flex-col justify-center hover:bg-tertiary/20 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-tertiary">{pipelineCounts.approved}</p>
-                                    <p className="text-[10px] sm:text-xs text-tertiary font-bold mt-1 uppercase tracking-wider leading-tight">Approved</p>
+
+                                {/* Stage 3: Approved (72% width) */}
+                                <div className="w-[72%]">
+                                    <div className="w-full rounded-xl p-4 border bg-emerald-500/10 border-emerald-500/20 transition-all duration-300">
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+                                                    Approved
+                                                </p>
+                                                <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums leading-none mt-1">
+                                                    {pipelineCounts.approved}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
                             </div>
 
-                            {/* Funnel display */}
-                            <div className="flex flex-col flex-1 relative z-10 justify-center">
-                                <RegistrationFunnel data={pipelineCounts} />
-                            </div>
-
-                            {/* Bottom Action */}
-                            <Link
-                                href="/dashboard/registrations"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-tertiary/10 text-tertiary text-sm font-semibold hover:bg-tertiary/20 transition-colors border border-tertiary/20 relative z-10 group/btn"
-                            >
-                                Manage Pipeline <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                            </Link>
+                            {/* CTA — urgency conditional */}
+                            {pipelineCounts.new > 0 ? (
+                                <Link
+                                    href="/dashboard/registrations?status=awaiting_confirmation"
+                                    className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm font-semibold hover:bg-amber-500/20 transition-colors border border-amber-500/20 relative z-10 group/btn"
+                                >
+                                    Review {pipelineCounts.new} Pending
+                                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                                </Link>
+                            ) : (
+                                <Link
+                                    href="/dashboard/registrations"
+                                    className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary text-muted-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border relative z-10 group/btn"
+                                >
+                                    View Pipeline
+                                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                                </Link>
+                            )}
                         </div>
 
-                        {/* Sessions & Bookings (Unified Card Structure) */}
-                        <div className="glassmorphic-card p-8 rounded-3xl border border-accent-violet/20 relative overflow-hidden group hover:border-accent-violet/40 glow-hover-accent-violet transition-all flex flex-col gap-8">
-                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-accent-violet/5 rounded-full blur-3xl group-hover:bg-accent-violet/10 transition-colors pointer-events-none"></div>
+                        {/* ── Card 2: Sessions & Bookings ──────────────────────── */}
+                        <div className={cn(
+                            "glassmorphic-card p-6 rounded-3xl border border-border relative overflow-hidden",
+                            "hover:border-violet-500/30 transition-all duration-300 flex flex-col gap-6"
+                        )}>
+                            {/* Subtle aura */}
+                            <div className="absolute -right-4 -top-4 w-28 h-28 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
 
-                            <div className="flex items-start justify-between relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-accent-violet/10 rounded-xl flex items-center justify-center">
-                                        <CalendarCheck className="w-6 h-6 text-accent-violet" />
-                                    </div>
-                                    <div>
-                                        <h2 className="font-extrabold text-foreground text-lg leading-tight tracking-tight">Sessions & Bookings</h2>
-                                        <p className="text-xs text-muted-foreground font-medium mt-1">Manage schedules and attendance</p>
-                                    </div>
+                            {/* Header */}
+                            <div className="flex items-center justify-between relative z-10">
+                                <div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                        Sessions &amp; Bookings
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                                        {dateLabel}
+                                    </p>
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-[10px] font-black text-muted-foreground tabular-nums">
+                                    {recentBookingsWithNotes.length} shown
+                                </span>
+                            </div>
+
+                            {/* Week-on-week trend headline */}
+                            <div className="flex items-end justify-between relative z-10 p-4 rounded-xl bg-secondary/40 border border-border">
+                                <div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                        {currentView === 'weekly' ? 'This Week' : 'This Month'}
+                                    </p>
+                                    <p className="text-3xl font-black text-foreground tabular-nums leading-none mt-1">
+                                        {currentView === 'weekly' ? bookingsThisWeek : bookingsThisMonth}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-medium mt-1">bookings</p>
+                                </div>
+                                <div className="text-right">
+                                    {bookingsTrend.type !== 'neutral' && (
+                                        <div className={cn(
+                                            "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border",
+                                            bookingsTrend.type === 'positive'
+                                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                                                : "bg-error/10 text-error border-error/20"
+                                        )}>
+                                            {bookingsTrend.type === 'positive'
+                                                ? <ArrowUpRight className="w-3 h-3" />
+                                                : <ArrowDownRight className="w-3 h-3" />
+                                            }
+                                            {bookingsTrend.text} vs last {currentView === 'weekly' ? 'week' : 'month'}
+                                        </div>
+                                    )}
+                                    {bookingsTrend.type === 'neutral' && (
+                                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border bg-secondary text-muted-foreground border-border">
+                                            <Minus className="w-3 h-3" />
+                                            No change
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-secondary/20 rounded-xl border border-border flex flex-col justify-center hover:bg-secondary/30 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-foreground">{totalBookingsAll}</p>
-                                    <p className="text-[10px] sm:text-xs text-foreground/60 font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
-                                </div>
-                                <div className="p-3 bg-accent-violet/10 rounded-xl border border-accent-violet/20 flex flex-col justify-center hover:bg-accent-violet/15 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-accent-violet">{bookingsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-accent-violet font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
-                                </div>
-                                <div className="p-3 bg-accent-violet/10 rounded-xl border border-accent-violet/20 flex flex-col justify-center hover:bg-accent-violet/15 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-accent-violet">{bookingsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-accent-violet font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
-                                </div>
-                            </div>
-
-                            {/* Recent preview */}
+                            {/* Recent bookings list */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-foreground/60 mb-4 uppercase tracking-wider">Bookings: {dateLabel}</h3>
+                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Bookings: {dateLabel}</p>
                                 {recentBookingsWithNotes.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentBookingsWithNotes.map((b: any) => (
                                             <Link
                                                 key={b.id}
                                                 href={`/dashboard/bookings/${b.id}`}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-card hover:bg-secondary/60 border border-border transition-[background-color,transform,opacity] duration-150 active:scale-[0.99] active:opacity-80 cursor-pointer group"
+                                                className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-secondary/60 border border-border transition-colors duration-150 active:scale-[0.99] cursor-pointer group"
                                             >
-                                                <div className="flex items-center gap-4">
-                                                    <AttendanceRadial 
+                                                <div className="flex items-center gap-3">
+                                                    <AttendanceRadial
                                                         percentage={b.attendanceStats.total > 0 ? (b.attendanceStats.completed / b.attendanceStats.total) * 100 : 0}
                                                         size="sm"
+                                                        title={b.attendanceStats.total === 0
+                                                            ? "No attendance data yet"
+                                                            : `${b.attendanceStats.completed}/${b.attendanceStats.total} sessions attended`}
                                                     >
-                                                        <div className="w-full h-full bg-accent-violet/10 flex items-center justify-center text-accent-violet font-bold">
+                                                        <div className="w-full h-full bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold text-xs">
                                                             {(b.childFirst || '')[0] || ''}{(b.childLast || '')[0] || ''}
                                                         </div>
                                                     </AttendanceRadial>
@@ -622,7 +806,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                                     <span className={cn(
                                                                         "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
                                                                         getAttendanceColorClass(resolved.status),
-                                                                        resolved.status === 'pending' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' : 'border-current/20'
+                                                                        resolved.status === 'pending' ? 'bg-secondary text-muted-foreground border-border' : 'border-current/20'
                                                                     )}>
                                                                         {resolved.label}
                                                                     </span>
@@ -630,11 +814,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                             })()}
                                                             {b.hasMedicalNote && (
                                                                 <div className="relative group/tooltip flex items-center outline-none">
-                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
-                                                                        <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-error/10 border border-error/20 cursor-help">
+                                                                        <AlertTriangle className="w-3 h-3 text-error" />
                                                                     </div>
                                                                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                                        <div className="font-bold text-rose-500 mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
+                                                                        <div className="font-bold text-error mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical Alert</div>
                                                                         {b.medicalNotesContent}
                                                                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
                                                                     </div>
@@ -642,7 +826,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                             )}
                                                             {b.hasSafeguardingNote && (
                                                                 <div className="relative group/tooltip flex items-center outline-none">
-                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
+                                                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20 cursor-help">
                                                                         <Shield className="w-3 h-3 text-primary" />
                                                                     </div>
                                                                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
@@ -653,115 +837,143 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground font-medium mt-0.5">{b.centreName} · {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</p>
+                                                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                                                            {b.startAt ? new Date(b.startAt).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}
+                                                            {b.centreName ? ` · ${b.centreName}` : ''}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent-violet transition-colors" />
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
                                             </Link>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center gap-2 py-8 text-center">
-                                        <CalendarCheck className="w-8 h-8 text-muted-foreground/25" />
-                                        <p className="text-sm text-muted-foreground italic">No bookings this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                    <div className="flex flex-col items-center gap-3 py-10 text-center">
+                                        <CalendarCheck className="w-8 h-8 text-muted-foreground/20" />
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">
+                                                No bookings for this period
+                                            </p>
+                                            <p className="text-xs text-muted-foreground/60 mt-1">
+                                                Schedule a session to see it here
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href="/dashboard/bookings/new"
+                                            className="mt-1 text-xs font-semibold text-primary hover:underline"
+                                        >
+                                            Create a booking →
+                                        </Link>
                                     </div>
                                 )}
                             </div>
 
                             <Link
                                 href="/dashboard/bookings"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-accent-violet/10 text-accent-violet text-sm font-semibold hover:bg-accent-violet/20 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-accent-violet/20 relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-secondary text-muted-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border relative z-10 group/btn"
                             >
                                 View All Bookings <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>
                         </div>
 
-                        {/* Registrations (Unified Card Structure) */}
-                        <div className="glassmorphic-card p-8 rounded-3xl border border-primary/20 relative overflow-hidden group hover:border-primary/40 glow-hover-primary transition-all flex flex-col gap-8">
-                            <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none"></div>
+                        {/* ── Card 3: Registrations Feed ─────────────────────────── */}
+                        <div className={cn(
+                            "glassmorphic-card p-6 rounded-3xl border border-border relative overflow-hidden",
+                            "hover:border-primary/30 transition-all duration-300 flex flex-col gap-6"
+                        )}>
+                            {/* Subtle backdrop */}
+                            <div className="absolute -right-4 -top-4 w-28 h-28 bg-primary/[0.04] rounded-full blur-3xl pointer-events-none" />
 
-                            <div className="flex items-start justify-between relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                                        <ClipboardList className="w-6 h-6 text-primary" />
-                                    </div>
-                                    <div>
-                                        <h2 className="font-extrabold text-foreground text-lg leading-tight tracking-tight">Registrations</h2>
-                                        <p className="text-xs text-muted-foreground font-medium mt-1">Student sign-ups</p>
-                                    </div>
+                            {/* Header */}
+                            <div className="flex items-center justify-between relative z-10">
+                                <div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                        Registrations
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                                        {dateLabel}
+                                    </p>
                                 </div>
+                                <span className={cn(
+                                    "px-2.5 py-1 rounded-full text-[10px] font-black tabular-nums border",
+                                    pipelineCounts.new > 0
+                                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                                        : "bg-secondary text-muted-foreground border-border"
+                                )}>
+                                    {recentRegistrations.length} shown
+                                </span>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4 relative z-10">
-                                <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/10 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-primary">{totalRegistrations}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary font-bold mt-1 uppercase tracking-wider leading-tight">Total</p>
-                                </div>
-                                <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex flex-col justify-center hover:bg-primary/15 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisMonth}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary font-bold mt-1 uppercase tracking-wider leading-tight">Month</p>
-                                </div>
-                                <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 flex flex-col justify-center hover:bg-primary/15 transition-all">
-                                    <p className="text-xl sm:text-2xl font-bold text-primary">{registrationsThisWeek}</p>
-                                    <p className="text-[10px] sm:text-xs text-primary font-bold mt-1 uppercase tracking-wider leading-tight">Week</p>
-                                </div>
-                            </div>
-
-                            {/* Recent preview */}
+                            {/* Recent registrations list */}
                             <div className="flex flex-col flex-1 relative z-10">
-                                <h3 className="text-xs font-bold text-foreground/60 mb-4 uppercase tracking-wider">Registrations: {dateLabel}</h3>
                                 {recentRegistrations.length > 0 ? (
                                     <div className="space-y-2">
                                         {recentRegistrations.map((r: any, i: any) => (
                                             <Link
                                                 key={`${r.registrationId}-${i}`}
                                                 href={`/dashboard/registrations/${r.registrationId}`}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-secondary/40 hover:bg-secondary/60 border border-border transition-all duration-300 active:scale-[0.99] active:opacity-80 cursor-pointer group"
+                                                className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-secondary/60 border border-border transition-colors duration-150 active:scale-[0.99] cursor-pointer group"
                                             >
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs shrink-0">
                                                         {(r.childFirst || '')[0] || ''}{(r.childLast || '')[0] || ''}
                                                     </div>
                                                     <div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-2 flex-wrap">
                                                             <p className="text-sm font-bold text-foreground">{r.childFirst} {r.childLast}</p>
-                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                                r.status === 'awaiting_confirmation' ? 'bg-error-container/10 text-rose-500 border border-rose-500/20' :
-                                                                r.status === 'signed_up' ? 'bg-tertiary-container/10 text-tertiary border border-tertiary/20' :
-                                                                'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                                                            }`}>
-                                                                {r.status === 'awaiting_confirmation' ? 'Pending Review' : 
-                                                                 r.status === 'signed_up' ? 'Approved' : 'Pending'}
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border",
+                                                                r.status === 'awaiting_confirmation'
+                                                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                                                                    : r.status === 'signed_up'
+                                                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                                                                    : "bg-secondary text-muted-foreground border-border"
+                                                            )}>
+                                                                {r.status === 'awaiting_confirmation' ? 'Pending' :
+                                                                 r.status === 'signed_up' ? 'Approved' : 'Other'}
                                                             </span>
                                                         </div>
                                                         <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                                                            Starts: {r.startDate ? new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}
+                                                            Submitted {r.submittedAt ? relativeTime(r.submittedAt) : '—'}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                                             </Link>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center gap-2 py-8 text-center">
-                                        <ClipboardList className="w-8 h-8 text-muted-foreground/25" />
-                                        <p className="text-sm text-muted-foreground italic">No registrations this {currentView === 'weekly' ? 'week' : 'month'}.</p>
+                                    <div className="flex flex-col items-center gap-3 py-10 text-center">
+                                        <ClipboardList className="w-8 h-8 text-muted-foreground/20" />
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">
+                                                No registrations for this period
+                                            </p>
+                                            <p className="text-xs text-muted-foreground/60 mt-1">
+                                                Share your registration link to get started
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href={registrationLink}
+                                            className="mt-1 text-xs font-semibold text-primary hover:underline"
+                                        >
+                                            Open registration form →
+                                        </Link>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex flex-col gap-2 mt-2 relative z-10">
-                                <div className="flex items-center justify-between mb-1">
-                                    <p className="text-xs font-bold text-primary uppercase tracking-wider">Public Link</p>
-                                    <p className="text-[10px] text-muted-foreground">{registrationsActivePeriod} new {currentView === 'weekly' ? 'this week' : 'this month'}</p>
-                                </div>
+                            {/* Public link section */}
+                            <div className="flex flex-col gap-2 relative z-10">
+                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                    Public Registration Link
+                                </p>
                                 <CopyableLink link={registrationLink} />
                             </div>
 
                             <Link
                                 href="/dashboard/registrations"
-                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all duration-300 active:scale-[0.985] cursor-pointer border border-primary/20 relative z-10 group/btn"
+                                className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors border border-primary/20 relative z-10 group/btn"
                             >
                                 View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                             </Link>
