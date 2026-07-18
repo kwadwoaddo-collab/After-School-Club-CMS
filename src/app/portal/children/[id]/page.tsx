@@ -1,11 +1,23 @@
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
-import { children } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { children, bookings, bookingAttendees, centres } from '@/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShieldAlert, FileText, User } from 'lucide-react';
+import {
+    ArrowLeft, ShieldAlert, FileText, User,
+    CalendarDays, CheckCircle2, XCircle, Clock, MapPin, CalendarClock,
+} from 'lucide-react';
 import { AddMedicalNoteForm } from '@/components/portal/AddMedicalNoteForm';
+
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+    confirmed: { label: 'Upcoming', className: 'bg-primary/10 text-primary border-primary/20' },
+    completed: { label: 'Attended', className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    cancelled: { label: 'Cancelled', className: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+    rescheduled: { label: 'Rescheduled', className: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+    pending: { label: 'Pending', className: 'bg-secondary text-muted-foreground border-border' },
+    signed_up: { label: 'Signed Up', className: 'bg-violet-500/10 text-violet-400 border-violet-500/20' },
+};
 
 export default async function ChildDetailsPage(props: { params: Promise<{ id: string }> }) {
     const parent = await getCurrentParent();
@@ -27,6 +39,29 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
 
     if (!child) redirect('/portal');
 
+    // Fetch booking history for this child via bookingAttendees
+    const attendeeRows = await db
+        .select({
+            bookingId: bookingAttendees.bookingId,
+            attendanceStatus: bookingAttendees.attendanceStatus,
+            bookingStartAt: bookings.startAt,
+            bookingDuration: bookings.duration,
+            bookingStatus: bookings.status,
+            bookingConfirmationCode: bookings.confirmationCode,
+            bookingModality: bookings.modality,
+            centreName: centres.name,
+            centreAddress: centres.address,
+        })
+        .from(bookingAttendees)
+        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
+        .innerJoin(centres, eq(bookings.centreId, centres.id))
+        .where(eq(bookingAttendees.childId, id))
+        .orderBy(desc(bookings.startAt));
+
+    const now = new Date();
+    const upcomingBookings = attendeeRows.filter(b => new Date(b.bookingStartAt) >= now && b.bookingStatus !== 'cancelled');
+    const pastBookings = attendeeRows.filter(b => new Date(b.bookingStartAt) < now || b.bookingStatus === 'cancelled');
+
     return (
         <div className="min-h-screen bg-surface text-on-surface pb-12">
             <header className="bg-card border-b border-outline-variant/10 sticky top-0 z-20">
@@ -36,12 +71,15 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                     </Link>
                     <div>
                         <h1 className="text-lg font-bold text-foreground">{child.firstName} {child.lastName}</h1>
-                        <p className="text-xs text-on-surface-variant">Student Profile</p>
+                        <p className="text-xs text-on-surface-variant">
+                            {child.schoolYear} · {attendeeRows.length} session{attendeeRows.length !== 1 ? 's' : ''} total
+                        </p>
                     </div>
                 </div>
             </header>
 
             <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+
                 {/* Basic Details */}
                 <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/10 pb-4">
@@ -69,6 +107,113 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                         </div>
                     </div>
                 </section>
+
+                {/* Upcoming Bookings */}
+                <section className="bg-card rounded-2xl border border-outline-variant/10 overflow-hidden">
+                    <div className="flex items-center gap-2 px-6 py-5 border-b border-outline-variant/10">
+                        <CalendarClock className="w-5 h-5 text-primary" />
+                        <h2 className="text-lg font-bold text-foreground">Upcoming Sessions</h2>
+                        <span className="ml-auto text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
+                            {upcomingBookings.length}
+                        </span>
+                    </div>
+                    {upcomingBookings.length === 0 ? (
+                        <div className="px-6 py-10 text-center">
+                            <p className="text-sm text-on-surface-variant">No upcoming sessions booked.</p>
+                            <Link href="/portal/book" className="inline-block mt-4 text-xs font-bold text-primary hover:text-primary/80 transition-colors">
+                                Book a session →
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-outline-variant/10">
+                            {upcomingBookings.map(b => {
+                                const cfg = STATUS_CONFIG[b.bookingStatus ?? 'pending'] ?? STATUS_CONFIG.pending;
+                                const date = new Date(b.bookingStartAt);
+                                return (
+                                    <div key={b.bookingId} className="px-6 py-4 flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-12 h-12 bg-primary/10 border border-primary/20 rounded-xl flex flex-col items-center justify-center">
+                                            <span className="text-[10px] font-black text-primary uppercase">
+                                                {date.toLocaleDateString('en-GB', { month: 'short' })}
+                                            </span>
+                                            <span className="text-lg font-black text-primary leading-none">
+                                                {date.getDate()}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                <p className="font-bold text-white text-sm">
+                                                    {date.toLocaleDateString('en-GB', { weekday: 'long' })} · {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${cfg.className}`}>
+                                                    {cfg.label}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-on-surface-variant flex items-center gap-1">
+                                                <MapPin className="w-3 h-3" /> {b.centreName}
+                                                {b.centreAddress && <span className="truncate"> · {b.centreAddress}</span>}
+                                            </p>
+                                            <p className="text-xs text-on-surface-variant mt-0.5">
+                                                {b.bookingDuration} min · {b.bookingModality === 'online' ? 'Online' : 'In Person'}
+                                                {b.bookingConfirmationCode && <span className="ml-2 font-mono font-bold text-primary/60">#{b.bookingConfirmationCode}</span>}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                {/* Past Bookings */}
+                {pastBookings.length > 0 && (
+                    <section className="bg-card rounded-2xl border border-outline-variant/10 overflow-hidden">
+                        <div className="flex items-center gap-2 px-6 py-5 border-b border-outline-variant/10">
+                            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                            <h2 className="text-lg font-bold text-foreground">Past Sessions</h2>
+                            <span className="ml-auto text-xs font-bold text-muted-foreground bg-secondary border border-border px-2.5 py-1 rounded-lg">
+                                {pastBookings.length}
+                            </span>
+                        </div>
+                        <div className="divide-y divide-outline-variant/10">
+                            {pastBookings.map(b => {
+                                const cfg = STATUS_CONFIG[b.bookingStatus ?? 'pending'] ?? STATUS_CONFIG.pending;
+                                const date = new Date(b.bookingStartAt);
+                                const attended = b.attendanceStatus === 'present';
+                                const absent = b.attendanceStatus === 'absent';
+                                return (
+                                    <div key={b.bookingId} className="px-6 py-4 flex items-start gap-4 opacity-80">
+                                        <div className="flex-shrink-0 w-12 h-12 bg-secondary border border-border rounded-xl flex flex-col items-center justify-center">
+                                            <span className="text-[10px] font-black text-muted-foreground uppercase">
+                                                {date.toLocaleDateString('en-GB', { month: 'short' })}
+                                            </span>
+                                            <span className="text-lg font-black text-muted-foreground leading-none">
+                                                {date.getDate()}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                <p className="font-bold text-white text-sm">
+                                                    {date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </p>
+                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${cfg.className}`}>
+                                                    {cfg.label}
+                                                </span>
+                                                {attended && <span title="Attended"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /></span>}
+                                                {absent && <span title="Absent"><XCircle className="w-3.5 h-3.5 text-rose-400" /></span>}
+                                            </div>
+                                            <p className="text-xs text-on-surface-variant flex items-center gap-1">
+                                                <MapPin className="w-3 h-3" /> {b.centreName}
+                                            </p>
+                                            {b.bookingConfirmationCode && (
+                                                <p className="text-xs font-mono font-bold text-primary/40 mt-0.5">#{b.bookingConfirmationCode}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                )}
 
                 {/* Medical & Dietary Notes */}
                 <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
