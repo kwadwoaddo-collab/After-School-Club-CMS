@@ -37,7 +37,7 @@ export default function PortalError({
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <button
                         onClick={reset}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#adc6ff] text-slate-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-blue-500/10"
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-slate-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-blue-500/10"
                     >
                         <RefreshCw className="w-4 h-4" />
                         Reload Page

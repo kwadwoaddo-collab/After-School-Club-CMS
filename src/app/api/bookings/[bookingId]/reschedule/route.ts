@@ -4,6 +4,8 @@ import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { notificationService } from '@/lib/services/notifications';
+import { notifyOwners } from '@/lib/db-notifications';
 
 export async function POST(
     request: Request,
@@ -29,27 +31,28 @@ export async function POST(
             return NextResponse.json({ error: 'Cannot reschedule to a past date' }, { status: 400 });
         }
 
-        // ── Ownership check — fetch booking with its centre ────────────────────
-        // Previously this was missing entirely: any authenticated user could
-        // reschedule any booking in the system by guessing an ID.
+        // ── Ownership check — fetch booking with centre, parent & attendees ─────
         const booking = await db.query.bookings.findFirst({
             where: eq(bookings.id, bookingId),
-            with: { centre: true },
+            with: {
+                centre: true,
+                parent: true,
+                attendees: {
+                    with: { child: true },
+                },
+            },
         });
 
         if (!booking || !booking.centre) {
             return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
         }
 
-        // Org-level check: booking must belong to the user's organisation
+        // Org-level check
         if (booking.centre.organisationId !== session.user.organisationId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // ── Centre membership check for non-ORG_OWNER users ───────────────────
-        // ORG_OWNER has implicit access to all centres within their org.
-        // MANAGER / FRONT_DESK / TUTOR must be explicitly assigned to the
-        // booking's centre — knowing a bookingId is not sufficient.
         const userRole = (session.user as any).role as string | undefined;
         if (userRole !== 'ORG_OWNER' && booking.centreId) {
             const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
@@ -58,9 +61,12 @@ export async function POST(
             }
         }
 
-        // Update the booking — always reset status to 'confirmed' (Booked) on reschedule
-        // so the student appears in Upcoming with a blue Booked badge, even if they
-        // previously had 'completed' (Attended) status on the old date.
+        // Capture old date before overwriting
+        const oldStartAt = booking.startAt;
+
+        // ── Update the booking ─────────────────────────────────────────────────
+        // Always reset to 'confirmed' so the student appears in Upcoming with
+        // a blue Booked badge, even if they previously had 'completed' status.
         await db
             .update(bookings)
             .set({
@@ -69,6 +75,34 @@ export async function POST(
                 updatedAt: new Date(),
             })
             .where(eq(bookings.id, bookingId));
+
+        // ── Fire-and-forget: parent reschedule email + in-app bell ────────────
+        const orgId = session.user.organisationId;
+        const childrenNames = booking.attendees
+            .map((a: any) => `${a.child.firstName} ${a.child.lastName}`)
+            .join(', ') || 'your child';
+
+        void notificationService.sendBookingReschedule({
+            parentFirstName: booking.parent?.firstName ?? 'Parent',
+            parentEmail: booking.parent?.email ?? undefined,
+            parentPhone: booking.parent?.phone ?? undefined,
+            childrenNames,
+            centreName: booking.centre.name,
+            oldStartAt,
+            newStartAt: newStartDate,
+            confirmationCode: booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase(),
+        }).catch(e => console.error('[reschedule] notification error:', e));
+
+        const newDateStr = newStartDate.toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric',
+        });
+        void notifyOwners({
+            orgId,
+            type: 'booking_rescheduled',
+            title: 'Booking Rescheduled',
+            message: `Booking for ${childrenNames} at ${booking.centre.name} moved to ${newDateStr}.`,
+            bookingId,
+        }).catch(e => console.error('[reschedule] db-notify error:', e));
 
         return NextResponse.json({ success: true });
     } catch (error) {

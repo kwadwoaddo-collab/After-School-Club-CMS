@@ -143,6 +143,51 @@ export class NotificationService {
   }
 
   /**
+   * Send booking reschedule notifications (email + SMS)
+   */
+  async sendBookingReschedule(data: {
+    parentFirstName: string;
+    parentEmail?: string;
+    parentPhone?: string;
+    childrenNames: string;
+    centreName: string;
+    oldStartAt: Date;
+    newStartAt: Date;
+    confirmationCode: string;
+  }): Promise<NotificationResult> {
+    const result: NotificationResult = { emailSent: false, smsSent: false };
+
+    if (data.parentEmail) {
+      const emailResult = await emailService.sendBookingReschedule({
+        parentFirstName: data.parentFirstName,
+        parentEmail: data.parentEmail,
+        childrenNames: data.childrenNames,
+        centreName: data.centreName,
+        oldStartAt: data.oldStartAt,
+        newStartAt: data.newStartAt,
+        confirmationCode: data.confirmationCode,
+      });
+      result.emailSent = emailResult.success;
+      if (!emailResult.success) result.emailError = emailResult.error;
+    }
+
+    if (data.parentPhone) {
+      // Reuse cancellation SMS template for reschedule (new date as startAt)
+      const smsResult = await smsService.sendBookingCancellation({
+        parentPhone: data.parentPhone,
+        parentFirstName: data.parentFirstName,
+        childrenNames: data.childrenNames,
+        startAt: data.newStartAt,
+        confirmationCode: data.confirmationCode,
+      }).catch(() => ({ success: false }));
+      result.smsSent = (smsResult as any).success ?? false;
+    }
+
+    console.log(`[NotificationService] Reschedule sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    return result;
+  }
+
+  /**
    * Send reminder notifications (typically 24h and 1h before)
    */
   async sendReminder(data: {

@@ -611,6 +611,92 @@ export class EmailService {
   }
 
   /**
+   * Send booking reschedule notification to parent
+   */
+  async sendBookingReschedule(data: {
+    parentFirstName: string;
+    parentEmail: string;
+    childrenNames: string;
+    oldStartAt: Date;
+    newStartAt: Date;
+    confirmationCode: string;
+    centreName: string;
+  }): Promise<EmailResult> {
+    if (!resend) {
+      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const fmt = (d: Date) => new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }).format(d);
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #F59E0B; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
+    .date-row { display: flex; gap: 16px; margin: 12px 0; }
+    .date-box { flex: 1; padding: 12px; border-radius: 6px; }
+    .date-old { background: #fee2e2; border: 1px solid #fca5a5; }
+    .date-new { background: #d1fae5; border: 1px solid #6ee7b7; }
+    .label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📅 Booking Rescheduled</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${data.parentFirstName},</p>
+      <p>Your assessment booking for <strong>${data.childrenNames}</strong> at <strong>${data.centreName}</strong> has been rescheduled.</p>
+      <div class="date-row">
+        <div class="date-box date-old">
+          <div class="label">Previous Date</div>
+          <strong>${fmt(data.oldStartAt)}</strong>
+        </div>
+        <div class="date-box date-new">
+          <div class="label">New Date</div>
+          <strong>${fmt(data.newStartAt)}</strong>
+        </div>
+      </div>
+      <p>Your reference code remains: <strong>${data.confirmationCode}</strong></p>
+      <p>If you did not request this change or have any questions, please contact us directly.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      const { data: result, error } = await resend.emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.parentEmail,
+        subject: `Booking Rescheduled: ${data.confirmationCode}`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('[EmailService] Failed to send reschedule email:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log(`[EmailService] Reschedule email sent: ${result?.id}`);
+      return { success: true, messageId: result?.id };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[EmailService] Error sending reschedule email:', error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
    * Send magic login link to returning staff
    */
   async sendMagicLink(data: {

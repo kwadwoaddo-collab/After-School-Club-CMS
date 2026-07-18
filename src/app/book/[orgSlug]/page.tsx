@@ -57,7 +57,7 @@ export default async function OrgBookingPage({
 
     return (
         <div className="min-h-screen sidebar-gradient flex flex-col items-center justify-center p-4">
-            <div className="max-w-md w-full glass-card !bg-[#1a1c23]/80 !border-[#2a2d35] rounded-[32px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
+            <div className="max-w-md w-full glass-card !bg-secondary/80 !border-border rounded-[32px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
                 {org.logoUrl ? (
                      
                     <img

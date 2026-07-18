@@ -53,7 +53,7 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-[#1a1c23] border border-outline-variant/10 rounded-[32px] shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="bg-secondary border border-outline-variant/10 rounded-[32px] shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 overflow-hidden">
                 <div className="p-8">
                     <div className="flex justify-between items-start mb-6">
                         <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center">
@@ -82,15 +82,15 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
                                 <select
                                     value={selectedCentreId}
                                     onChange={(e) => setSelectedCentreId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-foreground font-medium focus:ring-2 focus:ring-primary/20 appearance-none outline-none"
+                                    className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-foreground font-medium focus:ring-2 focus:ring-primary/20 appearance-none outline-none"
                                 >
-                                    <option value="" disabled className="bg-[#1a1c23]">Select a new centre</option>
-                                    <optgroup label="Current Centre" className="bg-[#1a1c23]">
+                                    <option value="" disabled className="bg-secondary">Select a new centre</option>
+                                    <optgroup label="Current Centre" className="bg-secondary">
                                         <option value={currentCentreId} disabled>
                                             {centres.find(c => c.id === currentCentreId)?.name || 'Unknown'} (Current)
                                         </option>
                                     </optgroup>
-                                    <optgroup label="Available Centres" className="bg-[#1a1c23]">
+                                    <optgroup label="Available Centres" className="bg-secondary">
                                         {availableCentres.map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
                                         ))}
@@ -109,7 +109,7 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
                         <button
                             onClick={onClose}
                             disabled={isSaving}
-                            className="flex-1 px-4 py-3 bg-secondary hover:bg-[#343843] rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm"
+                            className="flex-1 px-4 py-3 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm"
                         >
                             Cancel
                         </button>

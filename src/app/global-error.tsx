@@ -26,7 +26,7 @@ export default function GlobalError({
                 </p>
                 <button
                     onClick={reset}
-                    className="px-6 py-3.5 rounded-2xl bg-[#adc6ff] text-slate-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all"
+                    className="px-6 py-3.5 rounded-2xl bg-primary text-slate-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all"
                 >
                     Refresh Application
                 </button>

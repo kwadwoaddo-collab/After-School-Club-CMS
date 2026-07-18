@@ -27,7 +27,7 @@ export default function RegistrationsLoading() {
             </div>
 
             {/* Filter Bar - matches the sticky full-bleed container in page.tsx */}
-            <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-2 bg-[#0d1117]/80 border-b border-white/5">
+            <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-2 bg-secondary/80 border-b border-white/5">
                 <div className="flex items-center gap-2">
                     <div className="h-9 w-52 bg-card rounded-xl" />
                     <div className="h-9 w-40 bg-card rounded-xl" />

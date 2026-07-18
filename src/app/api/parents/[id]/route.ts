@@ -12,7 +12,7 @@ const patchSchema = z.object({
     lastName: z.string().min(1).max(100).optional(),
     phone: z.string().max(20).nullable().optional(),
     email: z.string().email().max(255).nullable().optional(),
-    preferredContact: z.enum(['email', 'phone', 'sms']).optional(),
+    preferredContact: z.enum(['email', 'phone']).optional(),
     relationship: z.enum(['mother', 'father', 'guardian', 'other']).nullable().optional(),
     addressLine1: z.string().max(255).nullable().optional(),
     addressLine2: z.string().max(255).nullable().optional(),

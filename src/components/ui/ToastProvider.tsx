@@ -104,9 +104,9 @@ const VARIANT_CONFIG: Record<ToastVariant, {
     },
     info: {
         icon: Info,
-        iconClass: 'text-[#adc6ff]',
-        border: 'border-[#adc6ff]/25',
-        titleClass: 'text-[#adc6ff]',
+        iconClass: 'text-primary',
+        border: 'border-primary/25',
+        titleClass: 'text-primary',
     },
 };
 

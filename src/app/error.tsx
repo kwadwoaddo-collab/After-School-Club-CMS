@@ -27,7 +27,7 @@ export default function RootError({
             <div className="flex flex-col sm:flex-row gap-3">
                 <button
                     onClick={reset}
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#adc6ff] text-slate-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all"
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-slate-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all"
                 >
                     <RefreshCw className="w-4 h-4" />
                     Reload Page

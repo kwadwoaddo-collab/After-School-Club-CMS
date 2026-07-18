@@ -65,7 +65,7 @@ export default function AttendanceDropdown({
     };
 
     return (
-        <div className="bg-[#2a2d35] rounded-2xl p-4 border border-slate-700/50 mt-4">
+        <div className="bg-secondary rounded-2xl p-4 border border-slate-700/50 mt-4">
             <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Attendance Status</label>
