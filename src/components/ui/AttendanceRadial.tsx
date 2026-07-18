@@ -7,9 +7,11 @@ interface AttendanceRadialProps {
     size?: 'sm' | 'md' | 'lg';
     children: React.ReactNode;
     className?: string;
+    /** Accessible label shown as aria-label on the root element */
+    title?: string;
 }
 
-export function AttendanceRadial({ percentage, size = 'md', children, className }: AttendanceRadialProps) {
+export function AttendanceRadial({ percentage, size = 'md', children, className, title }: AttendanceRadialProps) {
     // Standard sizes for the radial chip
     const strokeWidth = size === 'lg' ? 6 : 3;
     const radius = 50; // We'll use a viewBox of 120x120, so 50 is a good radius
@@ -36,7 +38,7 @@ export function AttendanceRadial({ percentage, size = 'md', children, className 
     };
 
     return (
-        <div className={cn("relative flex items-center justify-center shrink-0 group", dimensions, className)}>
+        <div className={cn("relative flex items-center justify-center shrink-0 group", dimensions, className)} aria-label={title}>
             {/* The SVG Ring */}
             <svg 
                 className="absolute inset-0 w-full h-full -rotate-90 transform z-0" 
