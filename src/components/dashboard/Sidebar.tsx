@@ -8,6 +8,7 @@ import {
     LayoutGrid,
     School,
     Users,
+    UserRound,
     Settings,
     ChevronLeft,
     ChevronRight,
@@ -36,8 +37,8 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Reports'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Reports'],
     FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance', 'Kiosk'],
     TUTOR: ['Dashboard', 'Attendance', 'Kiosk'],
 };
@@ -123,6 +124,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
+        { name: 'Parents', icon: UserRound, href: '/dashboard/parents' },
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
         { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', children: [
             { name: 'Session Ledger', href: '/dashboard/attendance/ledger' },
