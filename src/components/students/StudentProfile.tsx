@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Phone, Mail, Calendar, GraduationCap, AlertTriangle, Clock, User,
     ChevronLeft, ChevronRight, CheckCircle, XCircle, MinusCircle,
@@ -167,7 +168,44 @@ export default function StudentProfile({
     const [selectedSchedules, setSelectedSchedules] = useState<string[]>(student.registeredSessions || []);
     const [isPending, startTransition] = useTransition();
     const [isGeneratingLink, startLinkTransition] = useTransition();
+    const router = useRouter();
     const { toast } = useToast();
+    const [isEditingDetails, setIsEditingDetails] = useState(false);
+    const [isSavingDetails, setIsSavingDetails] = useState(false);
+    const [editForm, setEditForm] = useState({
+        firstName: student.firstName,
+        lastName: student.lastName,
+        dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : '',
+        schoolYear: student.schoolYear,
+        notes: student.notes ?? '',
+    });
+
+    const handleSaveDetails = async () => {
+        setIsSavingDetails(true);
+        try {
+            const res = await fetch(`/api/students/${student.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firstName: editForm.firstName,
+                    lastName: editForm.lastName,
+                    dateOfBirth: editForm.dateOfBirth || null,
+                    schoolYear: editForm.schoolYear,
+                    notes: editForm.notes || null,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update');
+            setIsEditingDetails(false);
+            toast({ title: 'Student updated', message: 'Details saved successfully.', variant: 'success' });
+            router.refresh();
+        } catch (err: any) {
+            toast({ title: 'Update failed', message: err.message || 'Please try again.', variant: 'error' });
+        } finally {
+            setIsSavingDetails(false);
+        }
+    };
+
 
     const generateLinkForSiblings = async (ids: string[]) => {
         if (!student.centreId) {
@@ -570,8 +608,119 @@ export default function StudentProfile({
                             )}
                         </div>
 
-                        {/* Right column — progress notes */}
+                        {/* Right column — details editor + progress notes */}
                         <div className="space-y-5">
+
+                            {/* Student Details (editable) */}
+                            <div className="bg-secondary/50 border border-border rounded-2xl p-5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <User className="w-4 h-4 text-primary" />
+                                        <p className={sL}>Student Details</p>
+                                    </div>
+                                    {!isEditingDetails ? (
+                                        <button
+                                            onClick={() => setIsEditingDetails(true)}
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                                        >
+                                            <Edit2 className="w-3.5 h-3.5" /> Edit
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => setIsEditingDetails(false)}
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                                <X className="w-3.5 h-3.5" /> Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleSaveDetails}
+                                                disabled={isSavingDetails}
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-500 transition-colors disabled:opacity-50"
+                                            >
+                                                {isSavingDetails ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                                Save
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isEditingDetails ? (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1.5">First Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={editForm.firstName}
+                                                    onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))}
+                                                    className="w-full px-3 py-2 bg-card border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1.5">Last Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={editForm.lastName}
+                                                    onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))}
+                                                    className="w-full px-3 py-2 bg-card border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1.5">Date of Birth</label>
+                                                <input
+                                                    type="date"
+                                                    value={editForm.dateOfBirth}
+                                                    onChange={e => setEditForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                                                    className="w-full px-3 py-2 bg-card border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1.5">School Year</label>
+                                                <select
+                                                    value={editForm.schoolYear}
+                                                    onChange={e => setEditForm(f => ({ ...f, schoolYear: e.target.value }))}
+                                                    className="w-full px-3 py-2 bg-card border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                >
+                                                    {['Reception','Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8'].map(y => (
+                                                        <option key={y} value={y}>{y}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1.5">Medical / Safety Notes</label>
+                                            <textarea
+                                                value={editForm.notes}
+                                                rows={3}
+                                                onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                                                placeholder="Allergies, medical conditions, safeguarding notes…"
+                                                className="w-full px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                            <span className="text-xs text-muted-foreground font-semibold">Full Name</span>
+                                            <span className="text-sm font-bold text-foreground">{student.firstName} {student.lastName}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                            <span className="text-xs text-muted-foreground font-semibold">Date of Birth</span>
+                                            <span className="text-sm font-bold text-foreground">
+                                                {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : '—'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-xs text-muted-foreground font-semibold">School Year</span>
+                                            <span className="text-sm font-bold text-foreground">{student.schoolYear}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <div>
                                 <p className={`${sL} mb-3`}>Progress & Notes</p>
                                 <div className="space-y-4">

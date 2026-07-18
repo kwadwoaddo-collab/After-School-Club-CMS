@@ -41,7 +41,7 @@ export default async function AddStudentPage() {
             <div className="max-w-2xl mx-auto">
                 <header className="flex justify-between items-start mb-8">
                     <div>
-                        <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight headline-lg">Add New Student</h1>
+                        <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight headline-lg">Add New Student</h1>
                         <p className="text-on-surface-variant body-md mt-2">Register a new student to your centre</p>
                     </div>
                 </header>

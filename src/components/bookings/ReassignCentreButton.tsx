@@ -24,7 +24,7 @@ export default function ReassignCentreButton({ bookingId, currentCentreId, centr
                     e.preventDefault();
                     setIsOpen(true);
                 }}
-                className="ml-2 p-1.5 hover:bg-[#2a2d35] rounded-xl text-slate-400 hover:text-primary transition-colors inline-flex items-center justify-center translate-y-[-2px]"
+                className="ml-2 p-1.5 hover:bg-secondary rounded-xl text-slate-400 hover:text-primary transition-colors inline-flex items-center justify-center translate-y-[-2px]"
                 title="Reassign Centre"
             >
                 <Edit2 className="w-3.5 h-3.5" />

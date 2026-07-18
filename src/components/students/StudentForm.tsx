@@ -111,10 +111,10 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
     };
 
     const inputClass = (field: string) =>
-        `w-full px-4 py-3 bg-[#13151a] border rounded-2xl text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
+        `w-full px-4 py-3 bg-secondary border rounded-2xl text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
             errors[field]
                 ? 'border-rose-500/50 bg-rose-500/5 ring-2 ring-error/20 focus:border-rose-500'
-                : 'border-[#2a2d35] focus:border-primary'
+                : 'border-border focus:border-primary'
         }`;
 
     if (createdStudentId) {
@@ -126,13 +126,13 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                     </svg>
                 </div>
                 <div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Student Added!</h3>
+                    <h3 className="text-2xl font-bold text-foreground mb-2">Student Added!</h3>
                     <p className="text-on-surface-variant font-medium">The student has been successfully registered to your centre.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Link
                         href={`/dashboard/students/${createdStudentId}`}
-                        className="px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                     >
                         View Student Profile →
                     </Link>
@@ -151,7 +151,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                                 centreId: accessibleCentres.length === 1 ? accessibleCentres[0].id : '',
                             });
                         }}
-                        className="px-6 py-3 bg-card border border-outline-variant/10 text-white font-bold rounded-2xl hover:bg-card transition-all"
+                        className="px-6 py-3 bg-card border border-outline-variant/10 text-foreground font-bold rounded-2xl hover:bg-card transition-all"
                     >
                         Add Another
                     </button>
@@ -184,7 +184,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Centre Assignment */}
                 <div className="md:col-span-2">
-                    <h3 className="text-lg font-bold text-white mb-4">Centre Assignment</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-4">Centre Assignment</h3>
                     <div>
                         <label className="block text-sm font-bold text-slate-300 mb-1">
                             Assign to Centre <span className="text-rose-500">*</span>
@@ -215,7 +215,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
 
                 {/* Student Details */}
                 <div className="md:col-span-2 border-t border-outline-variant/10 pt-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Student Details</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-4">Student Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
@@ -242,7 +242,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
 
                 {/* Parent Details */}
                 <div className="md:col-span-2 border-t border-outline-variant/10 pt-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Parent / Guardian Details</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-4">Parent / Guardian Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
@@ -272,7 +272,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 <button
                     type="submit"
                     disabled={isSubmitting || accessibleCentres.length === 0}
-                    className="px-10 py-4 bg-primary text-white font-bold text-lg rounded-2xl hover:bg-primary/90 shadow-xl shadow-primary/30 glow-btn active:scale-95 transition-all disabled:opacity-50 disabled:bg-[#2a2d35] disabled:shadow-none disabled:cursor-not-allowed"
+                    className="px-10 py-4 bg-primary text-primary-foreground font-bold text-lg rounded-2xl hover:bg-primary/90 shadow-xl shadow-primary/30 glow-btn active:scale-95 transition-all disabled:opacity-50 disabled:bg-secondary disabled:shadow-none disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? 'Saving...' : 'Add Student'}
                 </button>

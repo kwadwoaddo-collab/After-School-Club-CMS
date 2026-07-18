@@ -134,7 +134,7 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                                 }}
                                 min={today}
                                 required
-                                className="w-full pl-12 pr-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                className="w-full pl-12 pr-4 py-3 bg-secondary border border-border rounded-2xl text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                             />
                         </div>
                     </div>
@@ -153,7 +153,7 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                                 min={daySchedule?.start || '00:00'}
                                 max={daySchedule?.end || '23:59'}
                                 required
-                                className="w-full pl-12 pr-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                className="w-full pl-12 pr-4 py-3 bg-secondary border border-border rounded-2xl text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                             />
                         </div>
                         {daySchedule && daySchedule.open && (
@@ -179,7 +179,7 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                     <button
                         type="submit"
                         disabled={loading || !newDate || !newTime || (daySchedule ? !daySchedule.open : false)}
-                        className="w-full py-4 bg-primary hover:bg-primary/90 disabled:bg-[#2a2d35] disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl text-white font-bold transition-all shadow-lg shadow-primary/30 disabled:shadow-none flex items-center justify-center gap-2 glow-btn disabled:opacity-50"
+                        className="w-full py-4 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl text-white font-bold transition-all shadow-lg shadow-primary/30 disabled:shadow-none flex items-center justify-center gap-2 glow-btn disabled:opacity-50"
                     >
                         {loading ? (
                             <>

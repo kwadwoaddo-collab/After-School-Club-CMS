@@ -21,7 +21,7 @@ const FUNDING_LABELS: Record<string, string> = {
 const STATUS_BADGE: Record<string, string> = {
     awaiting_confirmation: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
     signed_up: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-    not_interested: 'bg-[#2a2d35] text-slate-400 border border-outline-variant/10',
+    not_interested: 'bg-secondary text-slate-400 border border-outline-variant/10',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -89,7 +89,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     return (
         <div className="p-4 sm:p-6 max-w-4xl mx-auto">
             {/* Back link */}
-            <Link href="/dashboard/registrations" className="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-white text-sm font-medium transition-colors mb-8 group">
+            <Link href="/dashboard/registrations" className="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-foreground text-sm font-medium transition-colors mb-8 group">
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                 All Registrations
             </Link>
@@ -97,7 +97,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
             {/* Header */}
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white">
+                    <h1 className="text-2xl font-black text-foreground">
                         {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Registration'}
                     </h1>
                     <p className="text-on-surface-variant text-sm mt-1">
@@ -195,13 +195,13 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
                 {/* Children */}
                 <div className="md:col-span-2 glassmorphic-card rounded-2xl p-6">
-                    <h2 className="text-white font-bold mb-4">Children ({kids.length})</h2>
+                    <h2 className="text-foreground font-bold mb-4">Children ({kids.length})</h2>
                     <div className="space-y-3">
                         {kids.map((k) => (
                             <div key={k.id} className="py-4 border-b border-outline-variant/10 last:border-0">
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <p className="text-white font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
+                                        <p className="text-foreground font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
                                         <p className="text-on-surface-variant text-sm">{k.submittedSchoolYear}</p>
                                         {k.submittedDateOfBirth && (
                                             <p className="text-slate-400 text-xs mt-0.5">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>
@@ -233,12 +233,12 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 {/* Parents */}
                 {pars.map((p) => (
                     <div key={p.id} className="glassmorphic-card rounded-2xl p-6">
-                        <h2 className="text-white font-bold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
+                        <h2 className="text-foreground font-bold mb-4">{p.isPrimary ? 'Primary ' : ''}Parent / Carer</h2>
                         <dl className="space-y-3 text-sm">
                             {p.parentId ? (
                                 <div className="flex justify-between gap-4">
                                     <dt className="text-on-surface-variant flex-shrink-0">Name</dt>
-                                    <dd className="text-white text-right font-medium">
+                                    <dd className="text-foreground text-right font-medium">
                                         <Link href={`/dashboard/parents/${p.parentId}`} className="text-primary hover:text-blue-400 hover:underline transition-colors">
                                             {p.submittedFirstName} {p.submittedLastName}
                                         </Link>
@@ -264,7 +264,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
                 {/* Emergency Contact */}
                 <div className="glassmorphic-card rounded-2xl p-6">
-                    <h2 className="text-white font-bold mb-4">Emergency Contact</h2>
+                    <h2 className="text-foreground font-bold mb-4">Emergency Contact</h2>
                     <dl className="space-y-3 text-sm">
                         <DetailRow label="Name" value={reg.emergencyContactName ?? '—'} />
                         <DetailRow label="Relationship" value={reg.emergencyContactRelationship ?? '—'} />
@@ -274,7 +274,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
 
                 {/* Funding & Details */}
                 <div className="glassmorphic-card rounded-2xl p-6">
-                    <h2 className="text-white font-bold mb-4">Funding &amp; Details</h2>
+                    <h2 className="text-foreground font-bold mb-4">Funding &amp; Details</h2>
                     <dl className="space-y-3 text-sm">
                         <DetailRow label="Start Date" value={reg.startDate ? new Date(reg.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not specified'} />
                         <DetailRow label="Funding" value={reg.fundingTypes?.map(t => FUNDING_LABELS[t] ?? t).join(', ') || 'Not specified'} />
@@ -288,7 +288,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                 {/* Signature */}
                 {reg.parentSignature && (
                     <div className="glassmorphic-card rounded-2xl p-6">
-                        <h2 className="text-white font-bold mb-4">Parent Signature</h2>
+                        <h2 className="text-foreground font-bold mb-4">Parent Signature</h2>
                         <div className="bg-card rounded-xl p-4 border border-outline-variant/10">
                             <img
                                 src={reg.parentSignature}
@@ -309,7 +309,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex justify-between gap-4">
             <dt className="text-on-surface-variant flex-shrink-0">{label}</dt>
-            <dd className="text-white text-right font-medium">{value}</dd>
+            <dd className="text-foreground text-right font-medium">{value}</dd>
         </div>
     );
 }

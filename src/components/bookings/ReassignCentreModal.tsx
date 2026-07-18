@@ -59,12 +59,12 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
                         <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center">
                             <MapPin className="w-7 h-7 text-indigo-400" />
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-[#2a2d35] rounded-full transition-colors">
+                        <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full transition-colors">
                             <X className="w-5 h-5 text-slate-400" />
                         </button>
                     </div>
 
-                    <h3 className="text-xl font-bold text-white mb-2">Reassign Centre</h3>
+                    <h3 className="text-xl font-bold text-foreground mb-2">Reassign Centre</h3>
                     <p className="text-sm text-slate-400 mb-6 font-medium">
                         Move this booking to a different centre. Only centres you have access to are shown.
                     </p>
@@ -82,7 +82,7 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
                                 <select
                                     value={selectedCentreId}
                                     onChange={(e) => setSelectedCentreId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-white font-medium focus:ring-2 focus:ring-primary/20 appearance-none outline-none"
+                                    className="w-full px-4 py-3 bg-[#13151a] border border-[#2a2d35] rounded-2xl text-foreground font-medium focus:ring-2 focus:ring-primary/20 appearance-none outline-none"
                                 >
                                     <option value="" disabled className="bg-[#1a1c23]">Select a new centre</option>
                                     <optgroup label="Current Centre" className="bg-[#1a1c23]">
@@ -109,14 +109,14 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
                         <button
                             onClick={onClose}
                             disabled={isSaving}
-                            className="flex-1 px-4 py-3 bg-[#2a2d35] hover:bg-[#343843] rounded-2xl text-sm font-semibold text-white transition-all shadow-sm"
+                            className="flex-1 px-4 py-3 bg-secondary hover:bg-[#343843] rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !selectedCentreId || selectedCentreId === currentCentreId || availableCentres.length === 0}
-                            className="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-primary/20 glow-btn"
+                            className="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 rounded-2xl text-sm font-bold text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-primary/20 glow-btn"
                         >
                             {isSaving ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : 'Save Changes'}
                         </button>
