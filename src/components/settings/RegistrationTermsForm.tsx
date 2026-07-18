@@ -1,12 +1,13 @@
 'use client';
  
 import { useEffect, useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { FileText, Save, ArrowLeft, ExternalLink } from 'lucide-react';
-import { toast } from 'react-hot-toast';
  
 export default function RegistrationTermsForm() {
     const [terms, setTerms] = useState('');
+    const { toast } = useToast();
     const [orgSlug, setOrgSlug] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -34,12 +35,12 @@ export default function RegistrationTermsForm() {
             });
             if (!res.ok) throw new Error('Failed to save');
             setSaved(true);
-            toast.success('Registration terms & conditions saved successfully!');
+            toast({ title: 'Success', message: 'Registration terms & conditions saved successfully!', variant: 'success' });
             setTimeout(() => setSaved(false), 3000);
         } catch {
             const errMsg = 'Failed to save terms. Please try again.';
             setError(errMsg);
-            toast.error(errMsg);
+            toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
             setSaving(false);
         }

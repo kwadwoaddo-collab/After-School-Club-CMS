@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { Upload, Palette, Save, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
 
 interface BrandingFormProps {
     initialColor: string;
@@ -14,6 +14,7 @@ interface BrandingFormProps {
 export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProps) {
     const router = useRouter();
     const [primaryColor, setPrimaryColor] = useState(initialColor);
+    const { toast } = useToast();
     const [logoPreview, setLogoPreview] = useState<string | null>(logoUrl || null);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -47,7 +48,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             }
  
             setSaveSuccess(true);
-            toast.success('Branding settings saved successfully!');
+            toast({ title: 'Success', message: 'Branding settings saved successfully!', variant: 'success' });
  
             // Refresh the page to show updated branding
             router.refresh();
@@ -58,7 +59,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             console.error('Save error:', error);
             const errMsg = 'Failed to save branding settings. Please try again.';
             setSaveError(errMsg);
-            toast.error(errMsg);
+            toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
             setSaving(false);
         }

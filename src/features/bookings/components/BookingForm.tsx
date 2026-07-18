@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
 import {
     bookingSchema,
     parentSchema,
@@ -72,6 +72,7 @@ const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8
 export default function BookingForm({ centreId, centreName, operatingHours, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
     // ... state ...
     const [step, setStep] = useState(1);
+    const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [confirmationCode, setConfirmationCode] = useState('');
@@ -117,12 +118,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         setParentSearchResults([]);
         setParentSearchQuery('');
         
-        const fetchToast = toast.loading('Fetching parent and child details...');
+        // Loading state managed by isFetchingParent boolean (no loading toast needed)
         try {
             const res = await fetch(`/api/parents/${parentId}`);
             if (res.ok) {
                 const data = await res.json();
-                toast.success('Parent details loaded!', { id: fetchToast });
+                toast({ title: 'Parent details loaded', message: 'Existing children and bookings fetched.', variant: 'success' });
                 
                 // Auto-fill parent contact info
                 setValue('parent.firstName', data.parent.firstName);
@@ -143,11 +144,11 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 });
                 setSelectedChildrenStatus(statusMap);
             } else {
-                toast.error('Failed to load parent details.', { id: fetchToast });
+                toast({ title: 'Error', message: 'Failed to load parent details.', variant: 'error' });
             }
         } catch (err) {
             console.error(err);
-            toast.error('Error loading parent details.', { id: fetchToast });
+            toast({ title: 'Error', message: 'Error loading parent details.', variant: 'error' });
         }
     };
 
@@ -356,7 +357,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             });
 
             setError('Please correct the red fields below to continue.');
-            toast.error('Please correct the highlighted fields.');
+            toast({ title: 'Error', message: 'Please correct the highlighted fields.', variant: 'error' });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -374,7 +375,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     message: errorMsg
                 });
                 setError(errorMsg);
-                toast.error(errorMsg);
+                toast({ title: 'Error', message: errorMsg, variant: 'error' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
@@ -402,13 +403,13 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             }
 
             const result = await response.json();
-            toast.success('Booking Confirmed!');
+            toast({ title: 'Success', message: 'Booking Confirmed!', variant: 'success' });
             setConfirmationCode(result.confirmationCode);
             setSuccess(true);
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Booking failed. Please try again.';
             setError(msg);
-            toast.error(msg);
+            toast({ title: 'Error', message: msg, variant: 'error' });
         } finally {
             setIsSubmitting(false);
         }

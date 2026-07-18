@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { addMedicalNote } from '@/app/portal/children/[id]/actions';
 import { Plus } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export function AddMedicalNoteForm({ childId }: { childId: string }) {
     const [content, setContent] = useState('');
+    const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -18,10 +19,10 @@ export function AddMedicalNoteForm({ childId }: { childId: string }) {
         setIsSubmitting(false);
 
         if (res.success) {
-            toast.success('Medical note added successfully');
+            toast({ title: 'Success', message: 'Medical note added successfully', variant: 'success' });
             setContent('');
         } else {
-            toast.error(res.error || 'Failed to add medical note');
+            toast({ title: 'Error', message: res.error || 'Failed to add medical note', variant: 'error' });
         }
     };
 

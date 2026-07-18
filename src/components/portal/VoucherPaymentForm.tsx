@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { submitVoucherPayment } from '@/app/portal/billing/actions';
 import { CreditCard } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export function VoucherPaymentForm({ invoiceId, amountDue }: { invoiceId: string, amountDue: number }) {
     const [reference, setReference] = useState('');
+    const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -18,10 +19,10 @@ export function VoucherPaymentForm({ invoiceId, amountDue }: { invoiceId: string
         setIsSubmitting(false);
 
         if (res.success) {
-            toast.success('Voucher payment logged. Pending staff verification.');
+            toast({ title: 'Success', message: 'Voucher payment logged. Pending staff verification.', variant: 'success' });
             setReference('');
         } else {
-            toast.error(res.error || 'Failed to log payment');
+            toast({ title: 'Error', message: res.error || 'Failed to log payment', variant: 'error' });
         }
     };
 

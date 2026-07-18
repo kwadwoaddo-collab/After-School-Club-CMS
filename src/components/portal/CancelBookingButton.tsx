@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { cancelBookingByParent } from '@/app/portal/actions';
 import { XCircle } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export function CancelBookingButton({ bookingId, className }: { bookingId: string, className?: string }) {
     const [isCancelling, setIsCancelling] = useState(false);
+    const { toast } = useToast();
 
     const handleCancel = async () => {
         if (!confirm('Are you sure you want to cancel this booking? This cannot be undone.')) {
@@ -18,9 +19,9 @@ export function CancelBookingButton({ bookingId, className }: { bookingId: strin
         setIsCancelling(false);
 
         if (res.success) {
-            toast.success('Booking cancelled successfully');
+            toast({ title: 'Success', message: 'Booking cancelled successfully', variant: 'success' });
         } else {
-            toast.error(res.error || 'Failed to cancel booking');
+            toast({ title: 'Error', message: res.error || 'Failed to cancel booking', variant: 'error' });
         }
     };
 

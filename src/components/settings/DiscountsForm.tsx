@@ -1,6 +1,7 @@
 'use client';
  
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useRouter } from 'next/navigation';
 import { nanoid } from 'nanoid';
 import {
@@ -17,7 +18,6 @@ import {
     Users,
     GraduationCap,
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
  
 type DiscountRule = {
     id: string;
@@ -189,6 +189,7 @@ function RuleCard({
 export default function DiscountsForm() {
     const router = useRouter();
     const [rules, setRules] = useState<DiscountRule[]>([]);
+    const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -236,12 +237,12 @@ export default function DiscountsForm() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to save');
             setSuccess(true);
-            toast.success('Discount rules saved successfully!');
+            toast({ title: 'Success', message: 'Discount rules saved successfully!', variant: 'success' });
             setTimeout(() => setSuccess(false), 3000);
         } catch (e: any) {
             const errMsg = e.message || 'Failed to save discount rules';
             setError(errMsg);
-            toast.error(errMsg);
+            toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
             setSaving(false);
         }

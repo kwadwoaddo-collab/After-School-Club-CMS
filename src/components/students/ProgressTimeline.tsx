@@ -1,10 +1,10 @@
 'use client';
 
 import { format } from 'date-fns';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useState, useTransition } from 'react';
 import { deleteStudentNote, toggleStudentNotePin, editStudentNote } from '@/features/students/notes.actions';
 import { Pin, Trash2, Edit3, BookOpen, Users, Star, Stethoscope, Clock, Smile, ThumbsUp, Meh, ThumbsDown, AlertTriangle, TrendingUp } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 type NoteType = 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'attendance_concern' | 'medical' | null;
 type Rating   = 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory' | null;
@@ -49,6 +49,7 @@ const FILTER_OPTIONS = ['All', 'General', 'Progress', 'Activity', 'Behaviour', '
 
 export default function ProgressTimeline({ notes, currentUserId, currentUserRole }: ProgressTimelineProps) {
     const [filter, setFilter] = useState('All');
+    const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingContent, setEditingContent] = useState('');
@@ -70,22 +71,22 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
     const handlePin = (noteId: string, currentlyPinned: boolean) => {
         startTransition(async () => {
             try { await toggleStudentNotePin(noteId, !currentlyPinned); }
-            catch (e: any) { toast.error(e.message || 'Failed to pin note'); }
+            catch (e: any) { toast({ title: 'Error', message: e.message || 'Failed to pin note', variant: 'error' }); }
         });
     };
 
     const handleDelete = (noteId: string) => {
         startTransition(async () => {
-            try { await deleteStudentNote(noteId); toast.success('Note deleted'); }
-            catch (e: any) { toast.error(e.message || 'Failed to delete note'); }
+            try { await deleteStudentNote(noteId); toast({ title: 'Success', message: 'Note deleted', variant: 'success' }); }
+            catch (e: any) { toast({ title: 'Error', message: e.message || 'Failed to delete note', variant: 'error' }); }
         });
     };
 
     const handleSaveEdit = (noteId: string) => {
         if (!editingContent.trim()) return;
         startTransition(async () => {
-            try { await editStudentNote(noteId, editingContent); setEditingId(null); toast.success('Note updated'); }
-            catch (e: any) { toast.error(e.message || 'Failed to update note'); }
+            try { await editStudentNote(noteId, editingContent); setEditingId(null); toast({ title: 'Success', message: 'Note updated', variant: 'success' }); }
+            catch (e: any) { toast({ title: 'Error', message: e.message || 'Failed to update note', variant: 'error' }); }
         });
     };
 

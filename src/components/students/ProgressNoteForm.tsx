@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { addStudentNote } from '@/features/students/notes.actions';
 import { BookOpen, Smile, Meh, ThumbsUp, ThumbsDown, AlertTriangle, Loader2, ChevronDown, Plus } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 type NoteType = 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'attendance_concern' | 'medical';
 type Rating = 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
@@ -34,6 +34,7 @@ interface ProgressNoteFormProps {
 
 export default function ProgressNoteForm({ childId, childName }: ProgressNoteFormProps) {
     const [content, setContent] = useState('');
+    const { toast } = useToast();
     const [noteType, setNoteType] = useState<NoteType>('general');
     const [subject, setSubject] = useState('');
     const [rating, setRating] = useState<Rating | null>(null);
@@ -54,9 +55,9 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                 });
                 setContent(''); setRating(null); setSubject(''); setNoteType('general');
                 setIsExpanded(false);
-                toast.success('Progress note saved.');
+                toast({ title: 'Success', message: 'Progress note saved.', variant: 'success' });
             } catch (e: any) {
-                toast.error(e.message || 'Failed to save note');
+                toast({ title: 'Error', message: e.message || 'Failed to save note', variant: 'error' });
             }
         });
     };

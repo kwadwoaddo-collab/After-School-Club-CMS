@@ -1,10 +1,10 @@
 'use client';
  
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { Pencil, Check, X, AlertCircle, Phone, Mail, MapPin, Link2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '../ui/ConfirmModal';
-import { toast } from 'react-hot-toast';
  
 interface OrganisationInfoFormProps {
     org: {
@@ -21,6 +21,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
     const router = useRouter();
  
     const [isEditingName, setIsEditingName] = useState(false);
+    const { toast } = useToast();
     const [name, setName] = useState(org.name);
  
     const [isEditingSlug, setIsEditingSlug] = useState(false);
@@ -56,12 +57,12 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
         try { 
             await patchOrg({ name: name.trim() }); 
             setIsEditingName(false); 
-            toast.success('Organisation name updated successfully!');
+            toast({ title: 'Success', message: 'Organisation name updated successfully!', variant: 'success' });
             router.refresh(); 
         }
         catch (e: any) { 
             setError(e.message); 
-            toast.error(e.message || 'Failed to update organisation name');
+            toast({ title: 'Error', message: e.message || 'Failed to update organisation name', variant: 'error' });
         }
         finally { setSaving(false); }
     };
@@ -78,12 +79,12 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
         try { 
             await patchOrg({ slug: pendingSlug }); 
             setIsEditingSlug(false); 
-            toast.success('Slug updated successfully!');
+            toast({ title: 'Success', message: 'Slug updated successfully!', variant: 'success' });
             router.refresh(); 
         }
         catch (e: any) { 
             setError(e.message); 
-            toast.error(e.message || 'Failed to update slug');
+            toast({ title: 'Error', message: e.message || 'Failed to update slug', variant: 'error' });
         }
         finally { setSaving(false); setShowConfirmSlug(false); }
     };
@@ -93,11 +94,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
         try {
             await patchOrg({ contactEmail: contactEmail.trim(), contactPhone: contactPhone.trim(), address: address.trim() });
             setIsEditingContact(false); 
-            toast.success('Contact details updated successfully!');
+            toast({ title: 'Success', message: 'Contact details updated successfully!', variant: 'success' });
             router.refresh();
         } catch (e: any) { 
             setError(e.message); 
-            toast.error(e.message || 'Failed to update contact details');
+            toast({ title: 'Error', message: e.message || 'Failed to update contact details', variant: 'error' });
         }
         finally { setSaving(false); }
     };

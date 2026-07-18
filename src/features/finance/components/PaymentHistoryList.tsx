@@ -1,10 +1,10 @@
 'use client';
 
 import { format } from 'date-fns';
+import { useToast } from '@/components/ui/ToastProvider';
 import { CreditCard, Landmark, Ticket, HelpCircle, Check, X, Clock, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { verifyPayment, failPayment } from '../actions';
-import { toast } from 'react-hot-toast';
 
 interface Payment {
     id: string;
@@ -21,6 +21,7 @@ interface PaymentHistoryListProps {
 
 export default function PaymentHistoryList({ payments }: PaymentHistoryListProps) {
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const { toast } = useToast();
 
     if (payments.length === 0) {
         return (
@@ -50,10 +51,10 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
         try {
             const res = await verifyPayment(paymentId);
             if (res.success) {
-                toast.success('Payment verified successfully.');
+                toast({ title: 'Success', message: 'Payment verified successfully.', variant: 'success' });
             }
         } catch (e: any) {
-            toast.error(e.message || 'Failed to verify payment');
+            toast({ title: 'Error', message: e.message || 'Failed to verify payment', variant: 'error' });
         } finally {
             setProcessingId(null);
         }
@@ -64,10 +65,10 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
         try {
             const res = await failPayment(paymentId);
             if (res.success) {
-                toast.success('Payment marked as failed.');
+                toast({ title: 'Success', message: 'Payment marked as failed.', variant: 'success' });
             }
         } catch (e: any) {
-            toast.error(e.message || 'Failed to update payment');
+            toast({ title: 'Error', message: e.message || 'Failed to update payment', variant: 'error' });
         } finally {
             setProcessingId(null);
         }

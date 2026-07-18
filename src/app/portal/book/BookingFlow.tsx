@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { CalendarDays, Clock, User, CheckCircle2, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { createPortalBooking } from './actions';
-import toast from 'react-hot-toast';
 
 interface Child {
     id: string;
@@ -63,6 +63,7 @@ function buildStartAt(date: Date, timeSlot: string): string {
 
 export function BookingFlow({ registeredChildren: childList, centres }: BookingFlowProps) {
     const [step, setStep] = useState<1 | 2 | 3>(1);
+    const { toast } = useToast();
     const [selectedChild, setSelectedChild] = useState<Child | null>(null);
     const [selectedCentre, setSelectedCentre] = useState<Centre | null>(centres.length === 1 ? centres[0] : null);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -87,17 +88,17 @@ export function BookingFlow({ registeredChildren: childList, centres }: BookingF
                 duration: selectedDuration,
             });
             if (result.success && result.confirmationCode) {
-                toast.success('Booking confirmed successfully!');
+                toast({ title: 'Success', message: 'Booking confirmed successfully!', variant: 'success' });
                 setSuccess({ confirmationCode: result.confirmationCode });
             } else {
                 const errMsg = result.error || 'Something went wrong.';
                 setError(errMsg);
-                toast.error(errMsg);
+                toast({ title: 'Error', message: errMsg, variant: 'error' });
             }
         } catch (err) {
             const errMsg = err instanceof Error ? err.message : 'An error occurred during booking.';
             setError(errMsg);
-            toast.error(errMsg);
+            toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
             setLoading(false);
         }

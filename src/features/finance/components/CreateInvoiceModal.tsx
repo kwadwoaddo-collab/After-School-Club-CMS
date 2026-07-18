@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { 
     X, 
     Search, 
@@ -19,7 +20,6 @@ import {
 } from 'lucide-react';
 import { getParents, getChildrenByParent, createInvoice, createLegacyFamilyAndInvoice, createAdHocInvoice } from '../actions';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
 
 interface CreateInvoiceModalProps {
     centres: any[];
@@ -31,6 +31,7 @@ type Step = 'select-parent' | 'legacy-onboarding' | 'adhoc-invoice' | 'invoice-d
 export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceModalProps) {
     const router = useRouter();
     const [step, setStep] = useState<Step>('select-parent');
+    const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -172,7 +173,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                     notes: invoiceData.notes,
                     centreId: invoiceData.centreId
                 });
-                toast.success('Invoice created successfully');
+                toast({ title: 'Success', message: 'Invoice created successfully', variant: 'success' });
             } else if (step === 'legacy-onboarding') {
                 // New Family + Invoice
                 await createLegacyFamilyAndInvoice({
@@ -188,7 +189,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                         centreId: invoiceData.centreId
                     }
                 });
-                toast.success('Family onboarded and invoice created');
+                toast({ title: 'Success', message: 'Family onboarded and invoice created', variant: 'success' });
             } else if (step === 'adhoc-invoice' || (step === 'invoice-details' && !selectedParent && adhocChildName)) {
                 // Ad-Hoc Invoice — child not in system
                 await createAdHocInvoice({
@@ -203,13 +204,13 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                     notes: invoiceData.notes,
                     centreId: invoiceData.centreId
                 });
-                toast.success('Ad-hoc invoice created');
+                toast({ title: 'Success', message: 'Ad-hoc invoice created', variant: 'success' });
             }
             router.refresh();
             onClose();
         } catch (err) {
             console.error(err);
-            toast.error('Failed to create invoice');
+            toast({ title: 'Error', message: 'Failed to create invoice', variant: 'error' });
         } finally {
             setIsSaving(false);
         }

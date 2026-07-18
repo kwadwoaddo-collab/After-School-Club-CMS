@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Building2, Palette, Clock, FileText, Wallet, Tag, ShieldCheck, GraduationCap, RefreshCw } from 'lucide-react';
 import OrganisationInfoForm from './OrganisationInfoForm';
@@ -11,7 +12,6 @@ import RegistrationTermsForm from './RegistrationTermsForm';
 import DiscountsForm from './DiscountsForm';
 import GdprExportButton from '@/app/dashboard/settings/GdprExportButton';
 import { rollSchoolYearsAction } from '@/features/students/roll-actions';
-import { toast } from 'react-hot-toast';
 
 interface SettingsTabsProps {
     org: {
@@ -36,6 +36,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
     const activeTabParam = searchParams.get('tab') as TabType | null;
 
     const [activeTab, setActiveTab] = useState<TabType>(activeTabParam || 'general');
+    const { toast } = useToast();
     const [isRolling, setIsRolling] = useState(false);
 
     const handleRollSchoolYears = async () => {
@@ -50,12 +51,12 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
         try {
             const res = await rollSchoolYearsAction();
             if (res.success) {
-                toast.success(res.message);
+                toast({ title: 'School Years Rolled', message: res.message, variant: 'success' });
             } else {
-                toast.error(res.message);
+                toast({ title: 'Error', message: res.message, variant: 'error' });
             }
         } catch (err: any) {
-            toast.error(err.message || 'Failed to roll school years.');
+            toast({ title: 'Error', message: err.message || 'Failed to roll school years.', variant: 'error' });
         } finally {
             setIsRolling(false);
         }

@@ -71,7 +71,7 @@ export default function CentreHoursTab({ centres }: Props) {
                 >
                     <ArrowLeft className="w-4 h-4" /> Back to Centres List
                 </button>
-                <div className="bg-[#1a1c23] border border-border rounded-3xl p-6 shadow-xl">
+                <div className="bg-secondary border border-border rounded-3xl p-6 shadow-xl">
                     <h2 className="text-xl font-bold text-foreground mb-2">Edit Operating Hours</h2>
                     <p className="text-xs text-muted-foreground mb-6">Configuring timings and slots for <strong className="text-foreground">{activeCentre.name}</strong></p>
                     <CentreHoursForm centre={activeCentre} />
@@ -111,7 +111,7 @@ export default function CentreHoursTab({ centres }: Props) {
                         }
 
                         return (
-                            <div key={centre.id} className="bg-card border border-border rounded-[32px] p-6 hover:border-[#adc6ff]/20 hover:shadow-2xl transition-all duration-300 group">
+                            <div key={centre.id} className="bg-card border border-border rounded-[32px] p-6 hover:border-primary/20 hover:shadow-2xl transition-all duration-300 group">
                                 <div className="flex items-start justify-between gap-4 mb-5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-secondary border border-border rounded-2xl flex items-center justify-center">
@@ -124,7 +124,7 @@ export default function CentreHoursTab({ centres }: Props) {
                                     </div>
                                     <button
                                         onClick={() => setEditingCentreId(centre.id)}
-                                        className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-[#adc6ff]/25 text-primary rounded-2xl text-xs font-bold transition-all hover:scale-[1.01]"
+                                        className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary rounded-2xl text-xs font-bold transition-all hover:scale-[1.01]"
                                     >
                                         <Edit2 className="w-3.5 h-3.5" />
                                         Edit Hours
@@ -155,10 +155,10 @@ export default function CentreHoursTab({ centres }: Props) {
                                                 <p className="text-xl font-black text-foreground">{slotCount} Slots</p>
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {(JSON.parse(centre.sessionSlots!) as string[]).slice(0, 3).map(s => (
-                                                        <span key={s} className="text-[10px] bg-secondary/60 text-primary px-2 py-0.5 rounded-md border border-[#adc6ff]/10 font-bold">{s}</span>
+                                                        <span key={s} className="text-[10px] bg-secondary/60 text-primary px-2 py-0.5 rounded-md border border-primary/10 font-bold">{s}</span>
                                                     ))}
                                                     {slotCount > 3 && (
-                                                        <span className="text-[10px] bg-secondary/60 text-primary px-2 py-0.5 rounded-md border border-[#adc6ff]/10 font-bold">+{slotCount - 3} more</span>
+                                                        <span className="text-[10px] bg-secondary/60 text-primary px-2 py-0.5 rounded-md border border-primary/10 font-bold">+{slotCount - 3} more</span>
                                                     )}
                                                 </div>
                                             </>

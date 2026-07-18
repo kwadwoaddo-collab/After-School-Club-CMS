@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useRouter } from 'next/navigation';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 interface Centre {
     id: string;
@@ -27,6 +27,7 @@ interface FinancePricingFormProps {
 export default function FinancePricingForm({ centres }: FinancePricingFormProps) {
     const router = useRouter();
     const [selectedCentreId, setSelectedCentreId] = useState<string>(centres[0]?.id || '');
+    const { toast } = useToast();
     
     // Find selected centre data
     const selectedCentre = centres.find(c => c.id === selectedCentreId);
@@ -114,7 +115,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
             }
  
             setSuccess(true);
-            toast.success('Pricing & Billing settings saved successfully!');
+            toast({ title: 'Success', message: 'Pricing & Billing settings saved successfully!', variant: 'success' });
             router.refresh(); // triggers a server refresh to get updated data
             
             // Hide success message after 3 seconds
@@ -126,7 +127,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
             console.error('Save error:', err);
             const errMsg = err instanceof Error ? err.message : 'Failed to save changes';
             setError(errMsg);
-            toast.error(errMsg);
+            toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {
             setSaving(false);
         }
