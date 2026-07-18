@@ -39,7 +39,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     onClick={() => setActiveTab('overview')}
                     className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                         activeTab === 'overview' 
-                        ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -49,7 +49,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     onClick={() => setActiveTab('finance')}
                     className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                         activeTab === 'finance' 
-                        ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
