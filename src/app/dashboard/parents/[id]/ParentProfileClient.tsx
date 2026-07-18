@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
     CreditCard, 
     Users, 
@@ -11,11 +12,16 @@ import {
     MapPin,
     Baby,
     TrendingUp,
-    AlertCircle
+    AlertCircle,
+    Edit2,
+    Loader2,
+    Check,
+    X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { InvoiceTable } from '@/features/finance/components/FinanceDashboardClient';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface ParentProfileClientProps {
     parent: any;
@@ -30,6 +36,47 @@ interface ParentProfileClientProps {
 
 export default function ParentProfileClient({ parent, invoices, stats, isOwner }: ParentProfileClientProps) {
     const [activeTab, setActiveTab] = useState<'overview' | 'finance'>('finance'); // Default to finance as per Task 73
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isEditingContact, setIsEditingContact] = useState(false);
+    const [isSavingContact, setIsSavingContact] = useState(false);
+    const [contactForm, setContactForm] = useState({
+        firstName: parent.firstName ?? '',
+        lastName: parent.lastName ?? '',
+        email: parent.email ?? '',
+        phone: parent.phone ?? '',
+        addressLine1: parent.addressLine1 ?? '',
+        city: parent.city ?? '',
+        postcode: parent.postcode ?? '',
+    });
+
+    const handleSaveContact = async () => {
+        setIsSavingContact(true);
+        try {
+            const res = await fetch(`/api/parents/${parent.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firstName: contactForm.firstName || undefined,
+                    lastName: contactForm.lastName || undefined,
+                    email: contactForm.email || null,
+                    phone: contactForm.phone || null,
+                    addressLine1: contactForm.addressLine1 || null,
+                    city: contactForm.city || null,
+                    postcode: contactForm.postcode || null,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update');
+            setIsEditingContact(false);
+            toast({ title: 'Contact updated', message: 'Parent details saved successfully.', variant: 'success' });
+            router.refresh();
+        } catch (err: any) {
+            toast({ title: 'Update failed', message: err.message || 'Please try again.', variant: 'error' });
+        } finally {
+            setIsSavingContact(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -62,38 +109,139 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     {/* Contact Info */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="glassmorphic-card rounded-[40px] p-8 space-y-6">
-                            <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2">Contact Details</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
-                                        <Mail className="w-5 h-5" />
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em]">Contact Details</h3>
+                                {!isEditingContact ? (
+                                    <button
+                                        onClick={() => setIsEditingContact(true)}
+                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                                    >
+                                        <Edit2 className="w-3.5 h-3.5" /> Edit
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setIsEditingContact(false)}
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-white/60 hover:text-white transition-colors"
+                                        >
+                                            <X className="w-3.5 h-3.5" /> Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveContact}
+                                            disabled={isSavingContact}
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+                                        >
+                                            {isSavingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                            Save
+                                        </button>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Email Address</p>
-                                        <p className="font-bold text-white">{parent.email || 'Not provided'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
-                                        <Phone className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Phone Number</p>
-                                        <p className="font-bold text-white">{parent.phone || 'Not provided'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 md:col-span-2">
-                                    <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
-                                        <MapPin className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Billing Address</p>
-                                        <p className="font-bold text-white">
-                                            {parent.addressLine1 ? `${parent.addressLine1}, ${parent.city || ''} ${parent.postcode || ''}` : 'No address on file'}
-                                        </p>
-                                    </div>
-                                </div>
+                                )}
                             </div>
+
+                            {isEditingContact ? (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">First Name</label>
+                                            <input
+                                                type="text"
+                                                value={contactForm.firstName}
+                                                onChange={e => setContactForm(f => ({ ...f, firstName: e.target.value }))}
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Last Name</label>
+                                            <input
+                                                type="text"
+                                                value={contactForm.lastName}
+                                                onChange={e => setContactForm(f => ({ ...f, lastName: e.target.value }))}
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Email</label>
+                                            <input
+                                                type="email"
+                                                value={contactForm.email}
+                                                onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Phone</label>
+                                            <input
+                                                type="tel"
+                                                value={contactForm.phone}
+                                                onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Address</label>
+                                            <input
+                                                type="text"
+                                                value={contactForm.addressLine1}
+                                                onChange={e => setContactForm(f => ({ ...f, addressLine1: e.target.value }))}
+                                                placeholder="Street address"
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">City</label>
+                                                <input
+                                                    type="text"
+                                                    value={contactForm.city}
+                                                    onChange={e => setContactForm(f => ({ ...f, city: e.target.value }))}
+                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Postcode</label>
+                                                <input
+                                                    type="text"
+                                                    value={contactForm.postcode}
+                                                    onChange={e => setContactForm(f => ({ ...f, postcode: e.target.value }))}
+                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
+                                            <Mail className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Email Address</p>
+                                            <p className="font-bold text-white">{parent.email || 'Not provided'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
+                                            <Phone className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Phone Number</p>
+                                            <p className="font-bold text-white">{parent.phone || 'Not provided'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 md:col-span-2">
+                                        <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
+                                            <MapPin className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Billing Address</p>
+                                            <p className="font-bold text-white">
+                                                {parent.addressLine1 ? `${parent.addressLine1}, ${parent.city || ''} ${parent.postcode || ''}` : 'No address on file'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Children List */}
