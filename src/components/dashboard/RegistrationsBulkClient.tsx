@@ -123,6 +123,31 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
         }
     };
 
+    const bulkSendEmail = async () => {
+        if (selected.size === 0) return;
+        setBulkLoading(true);
+        setBulkMessage('');
+        try {
+            const ids = Array.from(selected);
+            const res = await fetch('/api/register/bulk-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ registrationIds: ids }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send emails');
+            const parts = [`✓ Sent: ${data.sent}`];
+            if (data.skipped > 0) parts.push(`Skipped (no email): ${data.skipped}`);
+            if (data.failed > 0) parts.push(`Failed: ${data.failed}`);
+            setBulkMessage(parts.join(' · '));
+            setSelected(new Set());
+        } catch (err: any) {
+            setBulkMessage(err.message || 'Email sending failed.');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
     const exportCSV = () => {
         const selectedRows = rows.filter(r => selected.has(r.id));
         const header = [
@@ -214,13 +239,13 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                     </button>
 
                     <button
-                        disabled={true}
-                        title="Email sending coming soon"
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/5 border border-blue-500/10 text-blue-400/40 rounded-xl text-sm font-semibold cursor-not-allowed opacity-50"
+                        onClick={bulkSendEmail}
+                        disabled={bulkLoading}
+                        title="Send status notification email to selected parents"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                     >
-                        <Mail className="w-3.5 h-3.5" />
+                        {bulkLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
                         Send Email
-                        <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-500/20 px-1.5 py-0.5 rounded-full">Soon</span>
                     </button>
 
                     <button

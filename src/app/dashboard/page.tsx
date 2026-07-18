@@ -437,7 +437,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             id: 'registration-terms',
             label: 'Write your registration T&Cs',
             description: 'Parents will see these before signing the registration form.',
-            href: '/dashboard/settings/registration',
+            href: '/dashboard/settings?tab=registration',
             done: !!(org.registrationTerms),
         },
         {
