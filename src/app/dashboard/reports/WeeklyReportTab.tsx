@@ -55,7 +55,7 @@ function attendanceBadgeClass(rate: number): string {
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SectionHeading({ icon: Icon, title, iconClass = 'text-blue-600', bgClass = 'bg-blue-50' }: {
+function SectionHeading({ icon: Icon, title, iconClass = 'text-primary', bgClass = 'bg-primary/10' }: {
     icon: React.ElementType;
     title: string;
     iconClass?: string;
@@ -100,7 +100,7 @@ function TableWrapper({ headers, children }: TableWrapperProps) {
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 bg-card">{children}</tbody>
+                <tbody className="divide-y divide-border bg-card">{children}</tbody>
             </table>
         </div>
     );
@@ -117,7 +117,7 @@ interface StatCardProps {
     valueClass?: string;
 }
 
-function StatCard({ label, value, icon: Icon, iconClass = 'text-blue-600', iconBg = 'bg-blue-50', valueClass = 'text-foreground' }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, iconClass = 'text-primary', iconBg = 'bg-primary/10', valueClass = 'text-foreground' }: StatCardProps) {
     return (
         <div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ function SummarySection({ summary }: { summary: WeeklyReportData['summary'] }) {
     const rateIconClass = rate != null ? attendanceColor(rate) : 'text-muted-foreground';
 
     const stats: StatCardProps[] = [
-        { label: 'New Registrations', value: summary.newRegistrations, icon: Users, iconClass: 'text-blue-600', iconBg: 'bg-blue-50' },
+        { label: 'New Registrations', value: summary.newRegistrations, icon: Users, iconClass: 'text-primary', iconBg: 'bg-primary/10' },
         { label: 'New Bookings', value: summary.newBookings, icon: BookOpen, iconClass: 'text-violet-600', iconBg: 'bg-violet-50' },
         { label: 'Sessions Run', value: summary.sessionsRun, icon: CalendarCheck, iconClass: 'text-emerald-600', iconBg: 'bg-emerald-50' },
         {
@@ -408,7 +408,7 @@ export default function WeeklyReportTab() {
                                 key={mode}
                                 onClick={() => { setRangeMode(mode); setReportData(null); setError(null); setPdfError(null); }}
                                 className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 border ${rangeMode === mode
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                    ? 'bg-primary text-white border-primary shadow-sm'
                                     : 'bg-card text-muted-foreground border-border hover:text-foreground hover:border-border hover:bg-secondary/40'
                                 }`}
                             >
@@ -449,7 +449,7 @@ export default function WeeklyReportTab() {
                 <button
                     onClick={handlePreview}
                     disabled={isLoading || (rangeMode === 'custom' && (!customStart || !customEnd))}
-                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isLoading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Generating Report…</>
@@ -468,7 +468,7 @@ export default function WeeklyReportTab() {
             {/* ── Loading ──────────────────────────────────────────────────── */}
             {isLoading && (
                 <div className="bg-card border border-border rounded-3xl p-16 flex flex-col items-center gap-4 shadow-sm">
-                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
                     <p className="text-sm text-muted-foreground font-medium">Fetching data for the selected period…</p>
                 </div>
             )}
@@ -497,7 +497,7 @@ export default function WeeklyReportTab() {
                                 className="flex items-center gap-2 px-6 py-3 bg-card hover:bg-secondary/40 border border-border hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isPdfLoading ? (
-                                    <><Loader2 className="w-4 h-4 text-blue-600 animate-spin" />Generating PDF…</>
+                                    <><Loader2 className="w-4 h-4 text-primary animate-spin" />Generating PDF…</>
                                 ) : (
                                     <><Download className="w-4 h-4 text-blue-600" />Download PDF</>
                                 )}

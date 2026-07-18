@@ -283,7 +283,7 @@ function StudentCard({
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 placeholder="Add custom notes..."
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
                         <div className="w-full sm:w-28">
@@ -294,7 +294,7 @@ function StudentCard({
                                 onChange={(e) => setLateMinutes(e.target.value)}
                                 placeholder="Minutes"
                                 min="0"
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-[#adc6ff]/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
                             />
                         </div>
                     </div>
@@ -308,7 +308,7 @@ function StudentCard({
                         <button
                             onClick={saveDetails}
                             disabled={isPending}
-                            className="px-3.5 py-1.5 rounded-xl bg-primary/10 border border-[#adc6ff]/20 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1.5"
                         >
                             {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
                             Save Details
@@ -401,7 +401,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     });
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] bg-[#f5f5f7] -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-64px)] bg-secondary/20 -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
 
             {/* ── TOP BAR ─────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-4 bg-card/80 backdrop-blur-md border-b border-border flex-shrink-0">
