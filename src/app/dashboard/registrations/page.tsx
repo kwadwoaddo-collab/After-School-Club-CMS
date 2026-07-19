@@ -15,9 +15,9 @@ import { FileText, Clock, CheckCircle2, AlertTriangle, Share2 } from 'lucide-rea
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-    signed_up: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-    not_interested: 'bg-red-500/10 text-red-400 border border-red-500/20',
+    awaiting_confirmation: 'bg-warning/10 text-warning border-warning/20',
+    signed_up: 'bg-success/10 text-success border-success/20',
+    not_interested: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -180,9 +180,9 @@ export default async function RegistrationsPage(props: {
                 <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
                     {[
                         { value: 'all', label: 'All', count: totalCount },
-                        { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-amber-600 bg-amber-500/10' },
-                        { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-emerald-600 bg-emerald-500/10' },
-                        { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-red-600 bg-red-500/10' },
+                        { value: 'awaiting_confirmation', label: 'Awaiting Conf.', count: awaitingConfirmationCount, color: 'text-warning bg-warning/10' },
+                        { value: 'signed_up', label: 'Signed Up', count: signedUpCount, color: 'text-success bg-success/10' },
+                        { value: 'not_interested', label: 'Not Interested', count: notInterestedCount, color: 'text-destructive bg-destructive/10' },
                     ].map((tab) => {
                         const isActive = (searchParams.status || 'all') === tab.value;
                         const query = new URLSearchParams();
@@ -246,7 +246,7 @@ export default async function RegistrationsPage(props: {
 
             {/* Empty state or list */}
             {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border border-dashed rounded-2xl animate-in fade-in duration-300">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-2xl animate-in fade-in duration-300">
                     <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4 text-3xl">📋</div>
                     <h3 className="text-foreground font-bold mb-2">
                         {isFiltered ? 'No matching registrations' : 'No registrations yet'}

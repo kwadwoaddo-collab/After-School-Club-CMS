@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useTransition } from 'react';
 import { Search, X, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -18,6 +18,7 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [isPending, startTransition] = useTransition();
 
     const statusOptions = [
         { value: 'all', label: 'All Statuses' },
@@ -65,7 +66,9 @@ export default function RegistrationsFilters({ centres, resultsCount = 0 }: Regi
         setSearch(val);
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            router.push(buildUrl({ newSearch: val }));
+            startTransition(() => {
+                router.push(buildUrl({ newSearch: val }));
+            });
         }, 400);
     };
 
