@@ -20,8 +20,9 @@ import type { AttendanceStatus } from '@/lib/attendance';
 import { updateStudentSchedule } from '@/features/students/student-actions';
 import { useToast } from '@/components/ui/ToastProvider';
 import BillingSettingsCard from '@/components/billing/BillingSettingsCard';
-import { generateRegistrationLink } from '@/app/dashboard/registrations/actions';
+import { generateRegistrationLink, updateRegistrationStatus } from '@/app/dashboard/registrations/actions';
 import type { StudentBillingConfig } from '@/features/billing/queries';
+import { formatDistanceToNow } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -122,10 +123,10 @@ const FUNDING_LABELS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-    awaiting_confirmation: { label: 'Awaiting Confirmation', cls: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    signed_up: { label: 'Confirmed', cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-    not_interested: { label: 'Not Interested', cls: 'bg-muted text-muted-foreground border-border' },
-    pending: { label: 'Pending', cls: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+    awaiting_confirmation: { label: 'Awaiting Confirmation', cls: 'bg-warning/10 text-warning border-warning/20' },
+    signed_up: { label: 'Confirmed', cls: 'bg-success/10 text-success border-success/20' },
+    not_interested: { label: 'Not Interested', cls: 'bg-secondary text-muted-foreground border-border' },
+    pending: { label: 'Pending', cls: 'bg-primary/10 text-primary border-primary/20' },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ export default function StudentProfile({
     const [selectedSchedules, setSelectedSchedules] = useState<string[]>(student.registeredSessions || []);
     const [isPending, startTransition] = useTransition();
     const [isGeneratingLink, startLinkTransition] = useTransition();
+    const [isUpdatingStatus, startStatusTransition] = useTransition();
     const router = useRouter();
     const { toast } = useToast();
     const [isEditingDetails, setIsEditingDetails] = useState(false);
@@ -233,6 +235,19 @@ export default function StudentProfile({
         } else {
             generateLinkForSiblings([student.id]);
         }
+    };
+
+    const handleUpdateRegistrationStatus = (status: 'signed_up' | 'not_interested' | 'awaiting_confirmation') => {
+        if (!registrationDetail) return;
+        startStatusTransition(async () => {
+            try {
+                await updateRegistrationStatus(registrationDetail.id, status);
+                toast({ title: 'Status updated', message: `Registration marked as "${STATUS_CONFIG[status]?.label ?? status}".`, variant: 'success' });
+                router.refresh();
+            } catch (err: any) {
+                toast({ title: 'Update failed', message: err.message || 'Please try again.', variant: 'error' });
+            }
+        });
     };
 
     const handleToggleSession = (session: string) => {
@@ -338,14 +353,14 @@ export default function StudentProfile({
                                     <div
                                         className={cn(
                                             'h-full rounded-full transition-all duration-700',
-                                            completenessScore >= 80 ? 'bg-emerald-500' : completenessScore >= 50 ? 'bg-amber-400' : 'bg-rose-500'
+                                            completenessScore >= 80 ? 'bg-success' : completenessScore >= 50 ? 'bg-warning' : 'bg-destructive'
                                         )}
                                         style={{ width: `${completenessScore}%` }}
                                     />
                                 </div>
                                 <span className={cn(
                                     'text-xs font-bold',
-                                    completenessScore >= 80 ? 'text-emerald-600' : completenessScore >= 50 ? 'text-amber-600' : 'text-rose-500'
+                                    completenessScore >= 80 ? 'text-success' : completenessScore >= 50 ? 'text-warning' : 'text-destructive'
                                 )}>
                                     {completenessScore}% complete
                                 </span>
@@ -366,7 +381,7 @@ export default function StudentProfile({
                             <span className={sL}>Attendance Rate</span>
                             <span className={cn(
                                 'text-xl font-black',
-                                attendanceRate >= 80 ? 'text-emerald-600' : attendanceRate >= 60 ? 'text-amber-500' : 'text-rose-500'
+                                attendanceRate >= 80 ? 'text-success' : attendanceRate >= 60 ? 'text-warning' : 'text-destructive'
                             )}>
                                 {attendanceBreakdown.total > 0 ? `${attendanceRate}%` : 'N/A'}
                             </span>
@@ -378,17 +393,17 @@ export default function StudentProfile({
                             <span className={sL}>Breakdown</span>
                             <div className="flex flex-wrap items-center gap-2 mt-0.5">
                                 {attendanceBreakdown.attended > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+                                    <span className="flex items-center gap-1 text-xs font-bold text-success">
                                         <CheckCircle className="w-3 h-3" />{attendanceBreakdown.attended}
                                     </span>
                                 )}
                                 {attendanceBreakdown.absent > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-rose-500">
+                                    <span className="flex items-center gap-1 text-xs font-bold text-destructive">
                                         <XCircle className="w-3 h-3" />{attendanceBreakdown.absent} abs
                                     </span>
                                 )}
                                 {attendanceBreakdown.late > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
+                                    <span className="flex items-center gap-1 text-xs font-bold text-warning">
                                         <Clock className="w-3 h-3" />{attendanceBreakdown.late} late
                                     </span>
                                 )}
@@ -596,14 +611,78 @@ export default function StudentProfile({
 
                             {/* Medical notes */}
                             {student.notes && (
-                                <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5">
+                                <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <AlertTriangle className="w-4 h-4 text-rose-600" />
-                                        <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Medical & Safety Notes</p>
+                                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                                        <p className="text-[10px] font-black text-destructive uppercase tracking-widest">Medical & Safety Notes</p>
                                     </div>
-                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-400 leading-relaxed">
+                                    <p className="text-sm font-semibold text-destructive/80 leading-relaxed">
                                         {student.notes}
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Registration status summary */}
+                            {registrationDetail && (
+                                <div className={cn(
+                                    'rounded-2xl border p-4 flex items-center justify-between gap-3',
+                                    registrationDetail.status === 'awaiting_confirmation'
+                                        ? 'bg-warning/5 border-warning/20'
+                                        : registrationDetail.status === 'signed_up'
+                                        ? 'bg-success/5 border-success/20'
+                                        : 'bg-secondary border-border'
+                                )}>
+                                    <div className="flex items-center gap-2">
+                                        <ClipboardList className="w-4 h-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Registration</p>
+                                            <span className={cn(
+                                                'inline-flex items-center gap-1 text-xs font-bold',
+                                                STATUS_CONFIG[registrationDetail.status]?.cls.includes('text-') ? '' : 'text-foreground'
+                                            )}>
+                                                {STATUS_CONFIG[registrationDetail.status]?.label ?? registrationDetail.status}
+                                                {registrationDetail.status === 'awaiting_confirmation' && registrationDetail.submittedAt && (
+                                                    <span className="text-muted-foreground font-normal">
+                                                        — {formatDistanceToNow(new Date(registrationDetail.submittedAt), { addSuffix: true })}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setActiveTab('registration')}
+                                        className="text-xs font-bold text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+                                    >
+                                        View →
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Siblings */}
+                            {siblings && siblings.length > 1 && (
+                                <div>
+                                    <p className={`${sL} mb-3`}>Family</p>
+                                    <div className="bg-secondary/50 border border-border rounded-2xl overflow-hidden divide-y divide-border">
+                                        {siblings.filter(s => s.id !== student.id).map(sib => (
+                                            <Link
+                                                key={sib.id}
+                                                href={`/dashboard/students/${sib.id}`}
+                                                className="flex items-center justify-between px-4 py-3 hover:bg-secondary transition-colors group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-[10px] font-black text-primary">
+                                                            {sib.firstName[0]}{sib.lastName[0]}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-foreground">
+                                                        {sib.firstName} {sib.lastName}
+                                                    </span>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                                            </Link>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -806,19 +885,51 @@ export default function StudentProfile({
 
                         {student.registrationId && registrationDetail ? (
                             <>
-                                {/* Status badge */}
-                                <div className="flex items-center justify-between">
-                                    <div className={cn(
-                                        'inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold',
-                                        STATUS_CONFIG[registrationDetail.status]?.cls ?? 'bg-secondary border-border text-foreground'
-                                    )}>
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                        {STATUS_CONFIG[registrationDetail.status]?.label ?? registrationDetail.status}
+                                {/* Status badge + inline actions */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            'inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold',
+                                            STATUS_CONFIG[registrationDetail.status]?.cls ?? 'bg-secondary border-border text-foreground'
+                                        )}>
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                            {STATUS_CONFIG[registrationDetail.status]?.label ?? registrationDetail.status}
+                                        </div>
+                                        {registrationDetail.submittedAt && (
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatDistanceToNow(new Date(registrationDetail.submittedAt), { addSuffix: true })}
+                                            </span>
+                                        )}
                                     </div>
-                                    {registrationDetail.submittedAt && (
-                                        <span className="text-xs text-muted-foreground">
-                                            Submitted {new Date(registrationDetail.submittedAt).toLocaleDateString('en-GB')}
-                                        </span>
+                                    {/* Inline approve / reject actions */}
+                                    {registrationDetail.status === 'awaiting_confirmation' && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleUpdateRegistrationStatus('signed_up')}
+                                                disabled={isUpdatingStatus}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success/10 hover:bg-success/20 text-success border border-success/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                            >
+                                                {isUpdatingStatus ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateRegistrationStatus('not_interested')}
+                                                disabled={isUpdatingStatus}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                            >
+                                                {isUpdatingStatus ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                                                Reject
+                                            </button>
+                                        </div>
+                                    )}
+                                    {registrationDetail.status === 'signed_up' && (
+                                        <button
+                                            onClick={() => handleUpdateRegistrationStatus('awaiting_confirmation')}
+                                            disabled={isUpdatingStatus}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-muted-foreground border border-border rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                        >
+                                            Revert to Pending
+                                        </button>
                                     )}
                                 </div>
 
@@ -863,10 +974,10 @@ export default function StudentProfile({
 
                                 {/* Emergency contact */}
                                 {registrationDetail.emergencyContactName && (
-                                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl overflow-hidden">
-                                        <div className="px-5 py-4 border-b border-amber-500/10 flex items-center gap-2">
-                                            <HeartHandshake className="w-4 h-4 text-amber-600" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-500">Emergency Contact</p>
+                                    <div className="bg-warning/5 border border-warning/20 rounded-2xl overflow-hidden">
+                                        <div className="px-5 py-4 border-b border-warning/10 flex items-center gap-2">
+                                            <HeartHandshake className="w-4 h-4 text-warning" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-warning">Emergency Contact</p>
                                         </div>
                                         <div className="px-5 divide-y divide-amber-500/10">
                                             <InfoRow label="Name" value={registrationDetail.emergencyContactName} icon={User} />
@@ -878,13 +989,13 @@ export default function StudentProfile({
 
                                 {/* Special needs */}
                                 {registrationDetail.hasSpecialNeeds && (
-                                    <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5">
+                                    <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <ShieldAlert className="w-4 h-4 text-rose-600" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-rose-600">Additional Needs Declared</p>
+                                            <ShieldAlert className="w-4 h-4 text-destructive" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-destructive">Additional Needs Declared</p>
                                         </div>
                                         {registrationDetail.specialNeedsDetails && (
-                                            <p className="text-sm text-rose-700 dark:text-rose-400 font-semibold leading-relaxed">
+                                            <p className="text-sm text-destructive/80 font-semibold leading-relaxed">
                                                 {registrationDetail.specialNeedsDetails}
                                             </p>
                                         )}
@@ -902,13 +1013,13 @@ export default function StudentProfile({
                             </>
                         ) : student.registrationId ? (
                             // Has ID but detail failed to load
-                            <div className="bg-emerald-500/[0.08] border border-emerald-500/20 rounded-2xl p-5 space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
-                                    <Check className="w-4 h-4 text-emerald-600" /> Registration Form Submitted
+                            <div className="bg-success/5 border border-success/20 rounded-2xl p-5 space-y-3">
+                                <div className="flex items-center gap-2 text-success font-bold text-sm">
+                                    <Check className="w-4 h-4" /> Registration Form Submitted
                                 </div>
                                 <Link
                                     href={`/dashboard/registrations/${student.registrationId}`}
-                                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-card border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-secondary text-xs font-bold rounded-xl transition-all"
+                                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-card border border-success/20 text-success hover:bg-secondary text-xs font-bold rounded-xl transition-all"
                                 >
                                     View Form Submission <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
@@ -935,7 +1046,44 @@ export default function StudentProfile({
 
                 {/* Billing tab */}
                 {activeTab === 'billing' && (
-                    <div className="max-w-xl mx-auto animate-in fade-in duration-200">
+                    <div className="max-w-xl mx-auto space-y-5 animate-in fade-in duration-200">
+                        {/* Status banner */}
+                        {billingConfig ? (
+                            <div className={cn(
+                                'flex items-center justify-between gap-4 rounded-2xl border p-4',
+                                billingConfig.status === 'active'
+                                    ? 'bg-success/5 border-success/20'
+                                    : billingConfig.status === 'paused'
+                                    ? 'bg-warning/5 border-warning/20'
+                                    : 'bg-secondary border-border'
+                            )}>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Billing Plan</p>
+                                    <p className={cn(
+                                        'text-sm font-bold capitalize mt-0.5',
+                                        billingConfig.status === 'active' ? 'text-success' :
+                                        billingConfig.status === 'paused' ? 'text-warning' : 'text-muted-foreground'
+                                    )}>
+                                        {billingConfig.status === 'active' ? '✓ Active' :
+                                         billingConfig.status === 'paused' ? '⏸ Paused' : '✕ Cancelled'}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Monthly Rate</p>
+                                    <p className="text-sm font-bold text-foreground mt-0.5">
+                                        £{(Number(billingConfig.agreedMonthlyPence ?? 0) / 100).toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-secondary/50 border border-dashed border-border rounded-2xl p-5 text-center space-y-3">
+                                <CreditCard className="w-8 h-8 text-muted-foreground mx-auto" />
+                                <div>
+                                    <p className="text-sm font-bold text-foreground">No Billing Plan Set Up</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Configure a monthly billing plan below to start invoicing this family.</p>
+                                </div>
+                            </div>
+                        )}
                         <BillingSettingsCard
                             childId={student.id}
                             parentId={student.parent.id}

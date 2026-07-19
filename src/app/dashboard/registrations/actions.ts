@@ -225,3 +225,37 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     return { success: true, link };
 }
 
+
+// ─── Update a single registration status (approve / reject / revert) ──────────
+
+export async function updateRegistrationStatus(
+    registrationId: string,
+    newStatus: 'signed_up' | 'not_interested' | 'awaiting_confirmation'
+) {
+    const session = await auth();
+    if (!session?.user) throw new Error('Unauthorized');
+
+    const orgId = (session.user as any).organisationId as string | undefined;
+    if (!orgId) throw new Error('No organisation found');
+
+    // Verify the registration belongs to this org
+    const [existing] = await db
+        .select({ id: registrations.id, organisationId: registrations.organisationId })
+        .from(registrations)
+        .where(eq(registrations.id, registrationId))
+        .limit(1);
+
+    if (!existing || existing.organisationId !== orgId) {
+        throw new Error('Registration not found');
+    }
+
+    await db
+        .update(registrations)
+        .set({ status: newStatus })
+        .where(eq(registrations.id, registrationId));
+
+    revalidatePath('/dashboard/registrations');
+    revalidatePath('/dashboard/students');
+
+    return { success: true };
+}
