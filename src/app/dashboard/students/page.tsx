@@ -10,7 +10,6 @@ import StudentsTable from '@/components/students/StudentsTable';
 import type { StudentRow } from '@/components/students/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import StudentsFilters from '@/components/students/StudentsFilters';
-import StudentsGrid from '@/components/students/StudentsGrid';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 export default async function StudentsPage(props: {
@@ -19,7 +18,6 @@ export default async function StudentsPage(props: {
         search?: string;
         year?: string;
         status?: string;
-        view?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -220,7 +218,7 @@ export default async function StudentsPage(props: {
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Students</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-white/10 text-[#8c909f] text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-white/10 text-muted-foreground text-[10px] font-bold">
                         {totalCount}
                     </span>
                 </div>
@@ -261,7 +259,7 @@ export default async function StudentsPage(props: {
                 {/* Registered */}
                 <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-600 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-success/10 text-success flex-shrink-0">
                             <GraduationCap className="w-5 h-5" />
                         </div>
                         <div>
@@ -274,7 +272,7 @@ export default async function StudentsPage(props: {
                 {/* Leads */}
                 <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-600 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-warning/10 text-warning flex-shrink-0">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
@@ -285,9 +283,9 @@ export default async function StudentsPage(props: {
                 </div>
 
                 {/* Medical Alerts */}
-                <div className="bg-card border border-rose-500/20 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-card border border-destructive/20 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-destructive/10 text-destructive flex-shrink-0">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>
@@ -300,14 +298,14 @@ export default async function StudentsPage(props: {
                 {/* Low Attendance */}
                 <Link
                     href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'}
-                    className={`rounded-2xl p-5 transition-all bg-card border ${showLowAttendance ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-border hover:border-amber-500/30 hover:shadow-md'} shadow-sm`}
+                    className={`rounded-2xl p-5 transition-all bg-card border ${showLowAttendance ? 'border-warning/40 ring-1 ring-warning/20' : 'border-border hover:border-warning/30 hover:shadow-md'} shadow-sm`}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-600 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-warning/10 text-warning flex-shrink-0">
                             <TrendingDown className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-amber-500' : 'text-foreground'}`}>{lowAttendanceCount}</p>
+                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-warning' : 'text-foreground'}`}>{lowAttendanceCount}</p>
                             <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
                         </div>
                     </div>
@@ -319,15 +317,10 @@ export default async function StudentsPage(props: {
                 <StudentsFilters
                     centres={accessibleCentres}
                     resultsCount={visibleStudents.length}
-                    currentView={searchParams.view === 'grid' ? 'grid' : 'table'}
                 />
             </div>
 
-            {searchParams.view === 'grid' ? (
-                <StudentsGrid students={visibleStudents} />
-            ) : (
-                <StudentsTable students={visibleStudents} />
-            )}
+            <StudentsTable students={visibleStudents} />
         </div>
     );
 }

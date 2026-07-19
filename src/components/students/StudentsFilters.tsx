@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Search, Filter, X, LayoutGrid, Table2 } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
 interface StudentsFiltersProps {
     centres: { id: string; name: string }[];
     resultsCount?: number;
-    currentView?: 'table' | 'grid';
 }
 
-export default function StudentsFilters({ centres, resultsCount = 0, currentView = 'table' }: StudentsFiltersProps) {
+export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { selectedCentreId, setSelectedCentreId } = useCentreFilter();
@@ -51,7 +50,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
         router.push('/dashboard/students');
     };
 
-    const applyFilters = useCallback((overrides?: { newSearch?: string; newYear?: string; newStatus?: string; newView?: string }) => {
+    const applyFilters = useCallback((overrides?: { newSearch?: string; newYear?: string; newStatus?: string }) => {
         const params = new URLSearchParams();
 
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
@@ -65,12 +64,9 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
 
         if (selectedCentreId !== 'all') params.set('centre', selectedCentreId);
 
-        const newView = overrides?.newView !== undefined ? overrides.newView : currentView;
-        if (newView === 'grid') params.set('view', 'grid');
-
         const queryString = params.toString();
         router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
-    }, [search, year, status, selectedCentreId, currentView, router]);
+    }, [search, year, status, selectedCentreId, router]);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
@@ -127,23 +123,7 @@ export default function StudentsFilters({ centres, resultsCount = 0, currentView
                     <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
                 </div>
 
-                {/* View Toggle */}
-                <div className="flex items-center bg-secondary/50 border border-border rounded-2xl p-1 gap-1">
-                    <button
-                        onClick={() => applyFilters({ newView: 'table' })}
-                        className={`p-2 rounded-xl transition-all ${currentView === 'table' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
-                        title="Table view"
-                    >
-                        <Table2 className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => applyFilters({ newView: 'grid' })}
-                        className={`p-2 rounded-xl transition-all ${currentView === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
-                        title="Card grid view"
-                    >
-                        <LayoutGrid className="w-4 h-4" />
-                    </button>
-                </div>
+
 
                 {/* Clear Filters */}
                 {hasActiveFilters && (

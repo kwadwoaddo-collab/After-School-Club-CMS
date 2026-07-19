@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, Shield, Mail, Phone, Users, Plus, TrendingDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ShieldAlert, Mail, Phone, Users, Plus, TrendingDown } from 'lucide-react';
 import DataTable, { DataTableColumn } from '@/components/ui/DataTable';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import StudentActions from '@/components/students/StudentActions';
@@ -41,75 +42,37 @@ const columns: DataTableColumn<StudentRow>[] = [
     key: 'student',
     header: 'Student',
     render: (student) => {
-      const hasMedicalNote = student.medicalNotes.length > 0;
-      const medicalNotesContent = student.medicalNotes.join('\n\n');
-      const hasSafeguardingNote = student.safeguardingNotes.length > 0;
-      const safeguardingNotesContent = student.safeguardingNotes.join('\n\n');
-
       return (
         <div className="flex items-center gap-3">
           <AttendanceRadial percentage={student.attendanceRate} size="sm">
-            <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+            <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
               {student.firstName[0]}{student.lastName[0]}
             </div>
           </AttendanceRadial>
           <div>
             <div className="flex items-center gap-2">
-              <Link 
-                href={`/dashboard/students/${student.id}`}
-                className="font-bold text-foreground hover:text-primary transition-colors hover:underline decoration-primary/30"
-              >
+              <span className="font-bold text-foreground">
                 {student.firstName} {student.lastName}
-              </Link>
+              </span>
               {student.isRegistered && (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-[10px] font-bold text-emerald-600 uppercase tracking-wider ml-1 whitespace-nowrap" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
+                <span className="px-2 py-0.5 rounded-full bg-success/10 border border-success/40 text-[10px] font-bold text-success uppercase tracking-wider ml-1 whitespace-nowrap" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
                   Registered
                 </span>
               )}
-              {hasMedicalNote && (
-                <div className="relative group/tooltip flex items-center outline-none">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-500/10 border border-rose-500/20 cursor-help shadow-[0_0_8px_rgba(255,113,108,0.2)]">
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-                  </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                    <div className="font-bold text-rose-500 mb-1 border-b border-rose-500/20 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
-                    {medicalNotesContent}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
-                  </div>
-                </div>
-              )}
-              {hasSafeguardingNote && (
-                <div className="relative group/tooltip flex items-center outline-none">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-[0_0_8px_rgba(142,171,255,0.2)]">
-                    <Shield className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                    <div className="font-bold text-primary mb-1 border-b border-primary/20 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
-                    {safeguardingNotesContent}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
-                  </div>
-                </div>
-              )}
-              {student.lowAttendance && (
-                <div className="relative group/tooltip flex items-center outline-none">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/30 cursor-help shadow-[0_0_8px_rgba(251,191,36,0.2)]">
-                    <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
-                  </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] leading-relaxed font-medium">
-                    <div className="font-bold text-amber-500 mb-1 border-b border-amber-500/20 pb-1 flex items-center gap-1.5"><TrendingDown className="w-3 h-3"/>Low Attendance</div>
-                    {Math.round(student.attendanceRate)}% attendance rate — below 75% threshold
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border"></div>
-                  </div>
-                </div>
-              )}
             </div>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5">
-              DOB: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}
-            </p>
           </div>
         </div>
       );
     },
+  },
+  {
+    key: 'dob',
+    header: 'DOB',
+    render: (student) => (
+      <span className="text-sm font-medium text-foreground">
+        {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}
+      </span>
+    ),
   },
   {
     key: 'schoolYear',
@@ -134,12 +97,9 @@ const columns: DataTableColumn<StudentRow>[] = [
     header: 'Parent Contact',
     render: (student) => (
       <div className="space-y-1">
-        <Link
-          href={`/dashboard/parents/${student.parentId}`}
-          className="font-semibold text-sm text-foreground hover:text-primary transition-colors hover:underline underline-offset-4 decoration-primary/30"
-        >
+        <span className="font-semibold text-sm text-foreground">
           {student.parentFirstName} {student.parentLastName}
-        </Link>
+        </span>
         {student.parentEmail && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Mail className="w-3 h-3 text-muted-foreground/60" />
@@ -159,30 +119,55 @@ const columns: DataTableColumn<StudentRow>[] = [
     key: 'bookings',
     header: 'Bookings',
     render: (student) => (
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-secondary border border-border flex flex-col items-center justify-center">
-          <span className="font-bold text-foreground text-xs leading-none">
-            {student.bookingCount}
-          </span>
-        </div>
-        <div>
-          {student.nextAssessment ? (
-            <>
-              <span className="font-semibold text-foreground text-xs block">Next Booking</span>
-              <span className="text-xs text-muted-foreground block">
-                {new Date(student.nextAssessment).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-            </>
-          ) : (
-            <span className="text-xs text-muted-foreground italic">No upcoming</span>
-          )}
-        </div>
+      <div className="w-8 h-8 rounded-lg bg-secondary border border-border flex flex-col items-center justify-center">
+        <span className="font-bold text-foreground text-xs leading-none">
+          {student.bookingCount}
+        </span>
       </div>
     ),
+  },
+  {
+    key: 'nextBooking',
+    header: 'Next Booking',
+    render: (student) => (
+      <div>
+        {student.nextAssessment ? (
+          <span className="text-sm font-medium text-foreground block">
+            {new Date(student.nextAssessment).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground italic">No upcoming</span>
+        )}
+      </div>
+    ),
+  },
+  {
+    key: 'alerts',
+    header: 'Alerts',
+    render: (student) => {
+      const hasMedicalNote = student.medicalNotes.length > 0;
+      const hasSafeguardingNote = student.safeguardingNotes.length > 0;
+      return (
+        <div className="flex flex-col gap-1.5 items-start">
+          {(hasMedicalNote || hasSafeguardingNote) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-bold">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              Safeguarding / Medical
+            </span>
+          )}
+          {student.lowAttendance && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-warning/10 text-warning text-xs font-bold">
+              <TrendingDown className="w-3.5 h-3.5" />
+              Low Attendance
+            </span>
+          )}
+        </div>
+      );
+    },
   },
   {
     key: 'actions',
@@ -230,6 +215,8 @@ interface StudentsTableProps {
 }
 
 export default function StudentsTable({ students }: StudentsTableProps) {
+  const router = useRouter();
+
   return (
     <DataTable<StudentRow>
       columns={columns}
@@ -237,6 +224,7 @@ export default function StudentsTable({ students }: StudentsTableProps) {
       rowKey={(s) => s.id}
       emptyState={<StudentsEmptyState />}
       caption="Students list"
+      onRowClick={(student) => router.push(`/dashboard/students/${student.id}`)}
     />
   );
 }

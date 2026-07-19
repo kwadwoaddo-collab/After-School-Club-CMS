@@ -67,7 +67,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                 </div>
             )}
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                 <Link
                     href={`/dashboard/students/${studentId}`}
                     className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg inline-flex items-center gap-2 transition-all"
