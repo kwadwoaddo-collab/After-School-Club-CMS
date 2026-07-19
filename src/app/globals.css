@@ -43,6 +43,16 @@
   --color-secondary: hsl(var(--secondary));
   --color-secondary-container: hsl(var(--secondary));
   --color-outline-variant: hsl(var(--border));
+
+  /* ─── Semantic Status Tokens ──────────────────────────────────────────────── */
+  /* Apple System Green — matches globals.css:262 valid-input border already */
+  --color-success:     #30d158;
+  /* Apple System Amber */
+  --color-warning:     #ff9f0a;
+  /* Apple System Blue (matches dark-mode primary) */
+  --color-info:        #0a84ff;
+  /* destructive already exists via shadcn --destructive HSL var; map it */
+  --color-destructive: hsl(var(--destructive));
 }
 
 :root {

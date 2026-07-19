@@ -40,9 +40,9 @@ interface Props {
 
 function StatusBadge({ status }: { status: 'active' | 'paused' | 'cancelled' }) {
     const map = {
-        active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-        paused:    { label: 'Paused',    cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-        cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
+        active:    { label: 'Active',    cls: 'bg-success/10 text-success border-success/20' },
+        paused:    { label: 'Paused',    cls: 'bg-warning/10 text-warning border-warning/20' },
+        cancelled: { label: 'Cancelled', cls: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
     const { label, cls } = map[status];
     return (
@@ -310,9 +310,9 @@ function EditForm({
             </div>
 
             {error && (
-                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
-                    <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-red-600 font-semibold">{error}</p>
+                <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl">
+                    <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-destructive font-semibold">{error}</p>
                 </div>
             )}
 
@@ -368,7 +368,7 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
                 <button
                     onClick={handlePause}
                     disabled={isPending}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold hover:bg-amber-50 transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-warning/20 text-warning text-xs font-bold hover:bg-warning/10 transition-all disabled:opacity-50"
                 >
                     <Pause className="w-3.5 h-3.5" />
                     Pause
@@ -377,7 +377,7 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
                 <button
                     onClick={handleResume}
                     disabled={isPending}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-50 transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-success/20 text-success text-xs font-bold hover:bg-success/10 transition-all disabled:opacity-50"
                 >
                     <Play className="w-3.5 h-3.5" />
                     Resume
@@ -387,7 +387,7 @@ function StatusControls({ config, onDone }: { config: StudentBillingConfig; onDo
                 <button
                     onClick={handleCancel}
                     disabled={isPending}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-destructive/20 text-destructive text-xs font-bold hover:bg-destructive/10 transition-all disabled:opacity-50"
                 >
                     <X className="w-3.5 h-3.5" />
                     Cancel

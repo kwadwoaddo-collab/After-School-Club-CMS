@@ -5,18 +5,18 @@ import { invoices, centres, children, payments } from '@/db/schema';
 import { eq, desc, and, sum, count, ne, lt, sql } from 'drizzle-orm';
 import { 
     TrendingUp, 
-    CreditCard, 
     Clock, 
     FileText, 
-    ArrowUpRight,
-    ArrowDownRight,
     AlertCircle,
     Download,
+    ArrowUpRight,
+    CreditCard,
 } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import FinanceDashboardClient, { InvoiceTable, OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
+import FinanceDashboardClient, { OverdueInvoiceTable, InvoiceAgingSummary, ParentBalanceTable } from '@/features/finance/components/FinanceDashboardClient';
+import FilterableInvoiceSection from '@/features/finance/components/FilterableInvoiceSection';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import { normalizeString } from '@/lib/search-params';
 import BillingCyclesTab from '@/components/billing/BillingCyclesTab';
@@ -258,11 +258,42 @@ export default async function FinancePage(props: {
     `);
 
     const stats = [
-        { name: 'Total Billed', value: `£${totalRevenue.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: TrendingUp },
-        { name: 'Collections', value: `£${collections.toLocaleString()}`, change: '+0%', changeType: 'increase', icon: CreditCard },
-        { name: 'Outstanding', value: `£${outstandingBalance.toLocaleString()}`, change: '0', changeType: 'neutral', icon: FileText },
-        { name: 'Pending', value: pendingInvoices.toString(), change: '0', changeType: 'neutral', icon: Clock },
-        { name: 'Overdue', value: overdueCount.toString(), change: overdueCount > 0 ? 'Action Req' : '0', changeType: overdueCount > 0 ? 'decrease' : 'neutral', icon: AlertCircle },
+        { 
+            name: 'Total Billed', 
+            value: `£${totalRevenue.toLocaleString()}`, 
+            sublabel: 'all time', 
+            icon: TrendingUp,
+            variant: 'default' as const,
+        },
+        { 
+            name: 'Collections', 
+            value: `£${collections.toLocaleString()}`, 
+            sublabel: 'payments received', 
+            icon: CreditCard,
+            variant: 'default' as const,
+        },
+        { 
+            name: 'Outstanding Balance', 
+            value: `£${outstandingBalance.toLocaleString()}`, 
+            sublabel: `${pendingInvoices} unpaid invoice${pendingInvoices !== 1 ? 's' : ''}`, 
+            icon: FileText,
+            variant: outstandingBalance > 0 ? 'destructive' as const : 'default' as const,
+            hero: true,
+        },
+        { 
+            name: 'Pending Invoices', 
+            value: pendingInvoices.toString(), 
+            sublabel: 'awaiting payment', 
+            icon: Clock,
+            variant: 'default' as const,
+        },
+        { 
+            name: 'Overdue', 
+            value: overdueCount.toString(), 
+            sublabel: overdueCount > 0 ? 'action required' : 'none overdue', 
+            icon: AlertCircle,
+            variant: overdueCount > 0 ? 'destructive' as const : 'default' as const,
+        },
     ];
 
     return (
@@ -283,7 +314,7 @@ export default async function FinancePage(props: {
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm font-bold hover:bg-emerald-500/20 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-success/10 border border-success/20 text-success text-sm font-bold hover:bg-success/20 transition-all"
                         title="Download finance CSV for current month"
                     >
                         <Download className="w-4 h-4" />
@@ -299,27 +330,44 @@ export default async function FinancePage(props: {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                {stats.map((stat) => (
-                    <div key={stat.name} className="bg-card border border-border shadow-sm rounded-[32px] p-6 relative overflow-hidden group">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform">
-                                <stat.icon className="w-6 h-6 text-primary" />
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                {stats.map((stat) => {
+                    const isDestructive = stat.variant === 'destructive';
+                    return (
+                        <div
+                            key={stat.name}
+                            className={`relative overflow-hidden group shadow-sm rounded-[32px] p-6 border transition-colors ${
+                                stat.hero ? 'lg:col-span-2' : ''
+                            } ${
+                                isDestructive
+                                    ? 'bg-destructive/5 border-destructive/20'
+                                    : 'bg-card border-border'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-transform ${
+                                    isDestructive
+                                        ? 'bg-destructive/10 border-destructive/20'
+                                        : 'bg-primary/10 border-primary/20'
+                                }`}>
+                                    <stat.icon className={`w-6 h-6 ${isDestructive ? 'text-destructive' : 'text-primary'}`} />
+                                </div>
                             </div>
-                            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
-                                stat.changeType === 'increase' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-500/10 text-muted-foreground'
-                            }`}>
-                                {stat.changeType === 'increase' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                {stat.change}
-                            </div>
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{stat.name}</p>
+                            <h3 className={`font-black mt-1 ${stat.hero ? 'text-4xl' : 'text-3xl'} ${isDestructive ? 'text-destructive' : 'text-foreground'}`}>
+                                {stat.value}
+                            </h3>
+                            <p className="text-xs font-medium text-muted-foreground mt-1">{stat.sublabel}</p>
+
+                            {/* Decorative background pulse */}
+                            <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full blur-3xl transition-colors ${
+                                isDestructive
+                                    ? 'bg-destructive/5 group-hover:bg-destructive/10'
+                                    : 'bg-primary/5 group-hover:bg-primary/10'
+                            }`} />
                         </div>
-                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{stat.name}</p>
-                        <h3 className="text-3xl font-black text-foreground mt-1">{stat.value}</h3>
-                        
-                        {/* Decorative background pulse */}
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Main Content Sections */}
@@ -329,19 +377,28 @@ export default async function FinancePage(props: {
                 <div className="lg:col-span-2 space-y-6">
                     <InvoiceAgingSummary buckets={agingBuckets} />
 
-                    {/* Billing Cycles */}
-                    <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
-                        <div className="flex items-center justify-between mb-6 px-2">
-                            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                                <CreditCard className="w-5 h-5 text-primary" />
-                                Billing Cycles
-                            </h3>
+                    {overdueCount > 0 && (
+                        <div className="bg-destructive/5 border border-destructive/20 rounded-[32px] p-6 relative overflow-hidden">
+                            <div className="absolute -right-12 -top-12 w-40 h-40 bg-destructive/10 rounded-full blur-3xl" />
+                            <div className="flex items-center justify-between mb-6 px-2 relative z-10">
+                                <h3 className="text-xl font-bold text-destructive flex items-center gap-2">
+                                    <AlertCircle className="w-5 h-5" />
+                                    Overdue Invoices — Action Required
+                                </h3>
+                                <Link href="/dashboard/finance/invoices?status=overdue" className="text-sm font-bold text-destructive hover:underline">
+                                    View All
+                                </Link>
+                            </div>
+                            <div className="relative z-10 bg-secondary/50 rounded-2xl overflow-hidden backdrop-blur-sm border border-border">
+                                <OverdueInvoiceTable invoices={overdueInvoices} />
+                            </div>
                         </div>
-                        <BillingCyclesTab
-                            cycles={billingCycles as any}
-                            centreId={activeCentreId}
-                        />
-                    </div>
+                    )}
+
+                    <FilterableInvoiceSection
+                        initialInvoices={recentInvoices}
+                        isOwner={userRole === 'ORG_OWNER'}
+                    />
 
                     {parentBalancesResult.length > 0 && (
                         <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
@@ -355,36 +412,18 @@ export default async function FinancePage(props: {
                         </div>
                     )}
 
-                    {overdueCount > 0 && (
-                        <div className="bg-rose-500/5 border border-rose-500/20 rounded-[32px] p-6 relative overflow-hidden">
-                            <div className="absolute -right-12 -top-12 w-40 h-40 bg-rose-500/10 rounded-full blur-3xl" />
-                            <div className="flex items-center justify-between mb-6 px-2 relative z-10">
-                                <h3 className="text-xl font-bold text-rose-500 flex items-center gap-2">
-                                    <AlertCircle className="w-5 h-5" />
-                                    Overdue Invoices Action Required
-                                </h3>
-                                <Link href="/dashboard/finance/invoices" className="text-sm font-bold text-rose-500 hover:underline">
-                                    View All
-                                </Link>
-                            </div>
-                            <div className="relative z-10 bg-secondary/50 rounded-2xl overflow-hidden backdrop-blur-sm border border-border">
-                                <OverdueInvoiceTable invoices={overdueInvoices} />
-                            </div>
-                        </div>
-                    )}
-
+                    {/* Billing Cycles — weekly task, placed last */}
                     <div className="bg-card border border-border shadow-sm rounded-[32px] p-6">
                         <div className="flex items-center justify-between mb-6 px-2">
                             <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-primary" />
-                                Recent Invoices
+                                <CreditCard className="w-5 h-5 text-primary" />
+                                Billing Cycles
                             </h3>
-                            <Link href="/dashboard/finance/invoices" className="text-sm font-bold text-primary hover:underline">
-                                View All
-                            </Link>
                         </div>
-
-                        <InvoiceTable invoices={recentInvoices} isOwner={userRole === 'ORG_OWNER'} />
+                        <BillingCyclesTab
+                            cycles={billingCycles as any}
+                            centreId={activeCentreId}
+                        />
                     </div>
                 </div>
 
@@ -415,10 +454,6 @@ export default async function FinancePage(props: {
                                 <span>Cash Receipt Tool</span>
                                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                             </Link>
-                            <a href={`/api/export/finance?from=${monthStart}&to=${todayStr}`} download={`finance-${monthStart}-to-${todayStr}.csv`} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
-                                <span>Export Ledger (CSV)</span>
-                                <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </a>
                             <Link href="/dashboard/reports" className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-secondary/60 transition-all text-sm font-medium text-foreground group">
                                 <span>Tax Summary Report</span>
                                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />

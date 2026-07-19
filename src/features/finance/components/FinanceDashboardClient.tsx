@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Plus, Filter, FileText, Trash2, Ban, Loader2 } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Ban, Loader2, ChevronDown } from 'lucide-react';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import ConfirmActionModal from './ConfirmActionModal';
 import { useRouter } from 'next/navigation';
@@ -14,32 +14,25 @@ interface FinanceDashboardClientProps {
     isOwner?: boolean;
 }
 
+type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue' | 'partially_paid';
+
 export default function FinanceDashboardClient({ students, recentInvoices = [], centres, isOwner }: FinanceDashboardClientProps) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
-
-    const filteredInvoices = (recentInvoices || []).filter(invoice => 
-        invoice.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        `${invoice.parent?.firstName} ${invoice.parent?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
         <div className="flex flex-col gap-8">
             {/* Header Actions */}
-            <div className="flex items-center gap-3 self-end">
-                <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-bold text-foreground hover:bg-secondary/80 transition-all">
-                    <Filter className="w-4 h-4" /> Filter
-                </button>
+            <div className="flex items-center gap-3 self-end flex-wrap">
+                {/* Create invoice */}
                 <button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
+                    className="flex items-center gap-2 px-6 py-2.5 h-[44px] bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
                 >
                     <Plus className="w-4 h-4" /> Create Invoice
                 </button>
             </div>
 
-            {/* Modal */}
             {isCreateModalOpen && (
                 <CreateInvoiceModal 
                     centres={centres}
@@ -50,7 +43,15 @@ export default function FinanceDashboardClient({ students, recentInvoices = [], 
     );
 }
 
-export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: any[], isOwner?: boolean }) {
+export function InvoiceTable({ 
+    invoices = [], 
+    isOwner = false,
+    onCreateInvoice,
+}: { 
+    invoices?: any[];
+    isOwner?: boolean;
+    onCreateInvoice?: () => void;
+}) {
     const router = useRouter();
     const [confirmTarget, setConfirmTarget] = useState<{ id: string; invoiceNumber: string; hasPayments: boolean; action: 'delete' | 'void' } | null>(null);
     const [isPending, startTransition] = useTransition();
@@ -58,13 +59,22 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
     if (!invoices || invoices.length === 0) {
         return (
             <div className="py-12 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-slate-500/5 rounded-full flex items-center justify-center mb-4 border border-slate-500/10">
-                    <FileText className="w-8 h-8 text-muted-foreground/80/40" />
+                <div className="w-16 h-16 bg-secondary/40 rounded-full flex items-center justify-center mb-4 border border-border">
+                    <FileText className="w-8 h-8 text-muted-foreground/40" />
                 </div>
                 <h4 className="text-lg font-bold text-foreground">No invoices yet</h4>
-                <p className="text-sm text-muted-foreground max-w-xs mt-1">
-                    Start by creating an invoice for a student.
+                <p className="text-sm text-muted-foreground max-w-xs mt-1 mb-4">
+                    Create your first invoice to get started.
                 </p>
+                {isOwner && onCreateInvoice && (
+                    <button
+                        onClick={onCreateInvoice}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Invoice
+                    </button>
+                )}
             </div>
         );
     }
@@ -85,6 +95,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                         <tr className="text-left border-b border-border">
                             <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Invoice #</th>
                             <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Student</th>
+                            <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Due Date</th>
                             <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Status</th>
                             <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Amount</th>
                             {isOwner && <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Actions</th>}
@@ -93,14 +104,20 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                     <tbody className="divide-y divide-border">
                         {invoices.map((invoice: any) => {
                             const hasPayments = (invoice.payments?.length ?? 0) > 0;
+                            const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : null;
+                            const todayMidnight = new Date();
+                            todayMidnight.setHours(0, 0, 0, 0);
+                            const isOverdue = dueDate && dueDate < todayMidnight && invoice.status !== 'paid' && invoice.status !== 'void';
+
                             return (
                                 <tr 
                                     key={invoice.id} 
-                                    onClick={() => {
-                                        if (isPending) return;
-                                        router.push(`/dashboard/finance/invoices/${invoice.id}`);
-                                    }}
-                                    className={`group hover:bg-secondary/60 transition-colors ${isPending ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
+                                    onClick={() => { if (isPending) return; router.push(`/dashboard/finance/invoices/${invoice.id}`); }}
+                                    className={`group transition-colors border-l-2 ${
+                                        isOverdue
+                                            ? 'bg-destructive/5 border-l-destructive hover:bg-destructive/10'
+                                            : 'border-l-transparent hover:bg-secondary/60'
+                                    } ${isPending ? 'cursor-wait opacity-60' : 'cursor-pointer'}`}
                                 >
                                     <td className="py-4 px-4">
                                         <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
@@ -115,13 +132,24 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                         </div>
                                     </td>
                                     <td className="py-4 px-4">
+                                        {dueDate ? (
+                                            <span className={`text-sm font-medium ${isOverdue ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                                                {dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm text-muted-foreground">—</span>
+                                        )}
+                                    </td>
+                                    <td className="py-4 px-4">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                            invoice.status === 'paid' ? 'bg-emerald-500/10 text-emerald-600' : 
-                                            invoice.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-600' :
-                                            invoice.status === 'sent' ? 'bg-blue-500/10 text-blue-400' :
-                                            invoice.status === 'void' ? 'bg-neutral-500/10 text-neutral-400 line-through' : 'bg-slate-500/10 text-muted-foreground'
+                                            invoice.status === 'paid'           ? 'bg-success/10 text-success' : 
+                                            invoice.status === 'partially_paid' ? 'bg-warning/10 text-warning' :
+                                            invoice.status === 'sent'           ? 'bg-info/10 text-info' :
+                                            invoice.status === 'void'           ? 'bg-secondary/60 text-muted-foreground' : 
+                                            isOverdue                           ? 'bg-destructive/10 text-destructive' :
+                                                                                  'bg-secondary/60 text-muted-foreground'
                                         }`}>
-                                            {invoice.status.replace('_', ' ')}
+                                            {invoice.status.replace(/_/g, ' ')}
                                         </span>
                                     </td>
                                     <td className="py-4 text-right px-4">
@@ -135,7 +163,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'void' })}
-                                                        className="p-2 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="p-2 bg-warning/10 text-warning hover:bg-warning/20 rounded-lg transition-colors border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         title="Void Invoice"
                                                     >
                                                         <Ban className="w-4 h-4" />
@@ -146,7 +174,7 @@ export function InvoiceTable({ invoices = [], isOwner = false }: { invoices?: an
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'delete' })}
-                                                        className="p-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         title="Delete Invoice"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -198,6 +226,7 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
                     <tr className="text-left border-b border-border">
                         <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Invoice #</th>
                         <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Parent</th>
+                        <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider px-4 select-none">Child</th>
                         <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Amount</th>
                         <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Paid</th>
                         <th className="sticky top-0 z-10 bg-card border-b border-border pb-4 pt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right px-4 select-none">Balance</th>
@@ -224,24 +253,32 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
                                         {invoice.parent?.firstName} {invoice.parent?.lastName}
                                     </span>
                                 </td>
+                                <td className="py-4 px-4">
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                        {invoice.child ? `${invoice.child.firstName} ${invoice.child.lastName}` : '—'}
+                                    </span>
+                                </td>
                                 <td className="py-4 text-right px-4">
                                     <span className="text-sm font-medium text-foreground">£{Number(invoice.amount).toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 text-right px-4">
-                                    <span className="text-sm font-medium text-emerald-600">£{paid.toFixed(2)}</span>
+                                    <span className="text-sm font-medium text-success">£{paid.toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 text-right px-4">
-                                    <span className="text-sm font-black text-rose-500">£{balance.toFixed(2)}</span>
+                                    <span className="text-sm font-black text-destructive">£{balance.toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 px-4">
-                                    <span className="text-sm text-rose-500 font-medium">{new Date(invoice.dueDate).toLocaleDateString('en-GB')}</span>
+                                    <span className="text-sm text-destructive font-bold">
+                                        {new Date(invoice.dueDate).toLocaleDateString('en-GB')}
+                                    </span>
                                 </td>
                                 <td className="py-4 px-4">
                                     <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                        invoice.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-600' :
-                                        invoice.status === 'sent' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-500/10 text-muted-foreground'
+                                        invoice.status === 'partially_paid' ? 'bg-warning/10 text-warning' :
+                                        invoice.status === 'sent'           ? 'bg-info/10 text-info' :
+                                                                              'bg-secondary/60 text-muted-foreground'
                                     }`}>
-                                        {invoice.status.replace('_', ' ')}
+                                        {invoice.status.replace(/_/g, ' ')}
                                     </span>
                                 </td>
                             </tr>
@@ -257,11 +294,11 @@ export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
     if (!buckets) return null;
     
     const items = [
-        { label: 'Current', data: buckets.current, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-        { label: '1-7 Days', data: buckets.days_1_7, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-        { label: '8-30 Days', data: buckets.days_8_30, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
-        { label: '31-60 Days', data: buckets.days_31_60, color: 'bg-red-500/10 text-red-400 border-red-500/20' },
-        { label: '60+ Days', data: buckets.days_60_plus, color: 'bg-rose-600/10 text-rose-500 border-rose-600/20' },
+        { label: 'Current',    data: buckets.current,      color: 'bg-success/10 text-success border-success/20' },
+        { label: '1–7 Days',   data: buckets.days_1_7,     color: 'bg-warning/10 text-warning border-warning/20' },
+        { label: '8–30 Days',  data: buckets.days_8_30,    color: 'bg-warning/20 text-warning border-warning/30' },
+        { label: '31–60 Days', data: buckets.days_31_60,   color: 'bg-destructive/10 text-destructive border-destructive/20' },
+        { label: '60+ Days',   data: buckets.days_60_plus, color: 'bg-destructive/15 text-destructive border-destructive/30' },
     ];
 
     const totalOverdueAmount = items.slice(1).reduce((acc, curr) => acc + curr.data.amount, 0);
@@ -274,18 +311,18 @@ export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
                     Accounts Receivable Aging
                 </h3>
                 {totalOverdueAmount > 0 && (
-                    <span className="text-sm font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-lg">
+                    <span className="text-sm font-bold text-destructive bg-destructive/10 px-3 py-1 rounded-lg border border-destructive/20">
                         £{totalOverdueAmount.toFixed(2)} Overdue
                     </span>
                 )}
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="flex flex-row gap-3 overflow-x-auto pb-1 -mx-1 px-1">
                 {items.map((item, index) => (
-                    <div key={index} className={`border rounded-2xl p-4 flex flex-col items-center justify-center text-center ${item.color}`}>
-                        <span className="text-xs font-bold uppercase tracking-wider mb-2">{item.label}</span>
+                    <div key={index} className={`border rounded-2xl p-4 flex flex-col flex-shrink-0 min-w-[140px] ${item.color}`}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-70">{item.label}</span>
                         <span className="text-xl font-black mb-1">£{item.data.amount.toFixed(2)}</span>
-                        <span className="text-xs font-medium opacity-80">{item.data.count} invoice{item.data.count !== 1 ? 's' : ''}</span>
+                        <span className="text-xs font-medium opacity-70">{item.data.count} invoice{item.data.count !== 1 ? 's' : ''}</span>
                     </div>
                 ))}
             </div>
@@ -326,10 +363,10 @@ export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
                                 <span className="text-sm font-medium text-foreground">£{Number(row.total_invoiced).toFixed(2)}</span>
                             </td>
                             <td className="py-4 text-right px-4">
-                                <span className="text-sm font-medium text-emerald-600">£{Number(row.total_paid).toFixed(2)}</span>
+                                <span className="text-sm font-medium text-success">£{Number(row.total_paid).toFixed(2)}</span>
                             </td>
                             <td className="py-4 text-right px-4">
-                                <span className="text-sm font-black text-rose-500">£{Number(row.balance).toFixed(2)}</span>
+                                <span className="text-sm font-black text-destructive">£{Number(row.balance).toFixed(2)}</span>
                             </td>
                         </tr>
                     ))}

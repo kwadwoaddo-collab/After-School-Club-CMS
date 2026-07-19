@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Users } from 'lucide-react';
+import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Users, Loader2 } from 'lucide-react';
 import GenerateInvoiceModal from './GenerateInvoiceModal';
 import { useRouter } from 'next/navigation';
 import type { BillingCycleRow } from '@/features/billing/queries';
@@ -10,9 +10,9 @@ import type { BillingCycleRow } from '@/features/billing/queries';
 
 function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
     const map = {
-        ready:        { label: 'Ready',        cls: 'bg-primary/15 text-primary border-primary/30' },
-        needs_setup:  { label: 'Needs Setup',  cls: 'bg-amber-100 text-amber-700 border-amber-200' },
-        invoice_sent: { label: 'Invoice Sent', cls: 'bg-secondary/60 text-muted-foreground border-border' },
+        ready:        { label: 'Ready',        cls: 'bg-primary/10 text-primary border-primary/20' },
+        needs_setup:  { label: 'Needs Setup',  cls: 'bg-warning/10 text-warning border-warning/20' },
+        invoice_sent: { label: 'Invoice Sent', cls: 'bg-success/10 text-success border-success/20' },
         paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border' },
     };
     const { label, cls } = map[status];
@@ -46,7 +46,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
         <>
             <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${
                 cycle.cycleStatus === 'paused'      ? 'opacity-60' :
-                cycle.cycleStatus === 'needs_setup' ? 'border-amber-200' : 'border-border'
+                cycle.cycleStatus === 'needs_setup' ? 'border-warning/30 bg-warning/5' : 'border-border'
             }`}>
                 {/* Card header */}
                 <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2">
@@ -94,7 +94,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         </div>
                     )}
                     {cycle.cycleStatus === 'needs_setup' && (
-                        <p className="text-xs text-amber-600 font-bold flex items-center gap-1.5">
+                        <p className="text-xs text-warning font-bold flex items-center gap-1.5">
                             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                             Set a monthly fee on the student's profile
                         </p>
@@ -157,8 +157,31 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [filter, setFilter] = useState<'all' | 'ready' | 'needs_setup' | 'invoice_sent'>('all');
+    const [isGeneratingAll, setIsGeneratingAll] = useState(false);
 
     const handleGenerated = () => startTransition(() => router.refresh());
+
+    const handleGenerateAll = async () => {
+        setIsGeneratingAll(true);
+        try {
+            const readyCycles = cycles.filter(c => c.cycleStatus === 'ready');
+            for (const cycle of readyCycles) {
+                await fetch('/api/finance/invoices', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        billingConfigId: cycle.config.id,
+                        familyId: cycle.config.parentId,
+                        amountPence: cycle.config.agreedMonthlyPence,
+                        periodLabel: cycle.periodLabel,
+                        dueDate: cycle.dueDateStr
+                    })
+                });
+            }
+            startTransition(() => router.refresh());
+        } finally {
+            setIsGeneratingAll(false);
+        }
+    };
 
     const filtered = filter === 'all' ? cycles : cycles.filter(c => c.cycleStatus === filter);
 
@@ -191,8 +214,12 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                 </div>
 
                 {counts.ready > 1 && (
-                    <button className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97]">
-                        <RefreshCw className="w-3.5 h-3.5" />
+                    <button 
+                        disabled={isGeneratingAll}
+                        onClick={handleGenerateAll}
+                        className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97] disabled:opacity-50"
+                    >
+                        {isGeneratingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                         Generate All ({counts.ready} ready)
                     </button>
                 )}
