@@ -216,6 +216,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 registrationPipelineData,
                 [registrationKpis],
                 [bookingKpis],
+                [oldestPendingRegistrationData],
             ] = await Promise.all([
                 // Recent bookings preview
                 hasCentres
@@ -308,6 +309,19 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         prevPeriod: sql<number>`count(*) filter (where ${bookings.startAt} >= ${prevStartDate.toISOString()} and ${bookings.startAt} <= ${prevEndDate.toISOString()})::int`
                     }).from(bookings).where(bookingsCentreCondition)
                     : Promise.resolve([{ totalAll: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
+
+                // Oldest pending registration for safeguarding alert
+                db.select({ submittedAt: registrations.submittedAt })
+                    .from(registrations)
+                    .where(
+                        and(
+                            eq(registrations.organisationId, org.id),
+                            registrationsCentreCondition,
+                            eq(registrations.status, 'awaiting_confirmation')
+                        )
+                    )
+                    .orderBy(asc(registrations.submittedAt))
+                    .limit(1)
             ]);
 
             dashboardData = {
@@ -315,6 +329,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 recentBookings,
                 recentRegistrations,
                 registrationPipelineData,
+                oldestPendingRegistrationData,
                 registrations: { total: Number(registrationKpis.total), pending: Number(registrationKpis.pending), month: Number(registrationKpis.thisMonth), week: Number(registrationKpis.thisWeek), active: Number(registrationKpis.activePeriod), prev: Number(registrationKpis.prevPeriod) },
                 bookings: { total: Number(bookingKpis.totalAll), month: Number(bookingKpis.thisMonth), week: Number(bookingKpis.thisWeek), active: Number(bookingKpis.activePeriod), prev: Number(bookingKpis.prevPeriod) },
             };
@@ -326,7 +341,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     // Assign variables back for the rest of the logic
     const { total: totalStudents, active: studentsActivePeriod, prev: studentsPrevPeriod } = dashboardData.students;
     const { total: totalBookingsAll, month: bookingsThisMonth, week: bookingsThisWeek, active: bookingsActivePeriod, prev: bookingsPrevPeriod } = dashboardData.bookings;
-    const { recentBookings, recentRegistrations, weeklyRegistrations, registrationPipelineData } = dashboardData;
+    const { recentBookings, recentRegistrations, weeklyRegistrations, registrationPipelineData, oldestPendingRegistrationData } = dashboardData;
     const { total: totalRegistrations, pending: pendingRegistrations, month: registrationsThisMonth, week: registrationsThisWeek, active: registrationsActivePeriod, prev: registrationsPrevPeriod } = dashboardData.registrations;
 
     // Deduplicate by booking ID — the query JOINs bookingAttendees so one booking
@@ -420,19 +435,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         return `${Math.floor(diffDays / 30)} months ago`;
     };
 
-    const pendingRate = totalRegistrations > 0
-        ? Math.round((pipelineCounts.new / totalRegistrations) * 100)
-        : 0;
-
     const approvalRate = (pipelineCounts.new + pipelineCounts.approved) > 0
         ? Math.round((pipelineCounts.approved / (pipelineCounts.new + pipelineCounts.approved)) * 100)
         : 0;
 
-    const oldestPending = (recentRegistrations as any[])
-        .filter((r: any) => r.status === 'awaiting_confirmation')
-        .reduce((oldest: any, r: any) =>
-            !oldest || new Date(r.submittedAt) < new Date(oldest.submittedAt) ? r : oldest
-        , null);
+    const oldestPending = oldestPendingRegistrationData || null;
 
     // Format Weekly Growth (last 8 weeks)
     const weeks = eachWeekOfInterval({
