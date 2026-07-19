@@ -74,8 +74,8 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
             <div className="flex items-center gap-4 flex-wrap lg:flex-nowrap">
                 {/* Search */}
                 <form onSubmit={handleSearch} className="flex-1 min-w-[280px]">
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <div className="relative flex items-center">
+                        <Search className="absolute left-4 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
                             value={search}
@@ -87,8 +87,14 @@ export default function BookingsFilters({ centres, resultsCount = 0 }: BookingsF
                                 }
                             }}
                             placeholder="Search parent name, child name..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            className="w-full pl-11 pr-24 py-2.5 bg-secondary/50 backdrop-blur-md border border-border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                         />
+                        <button 
+                            type="submit"
+                            className="absolute right-1.5 px-3 py-1.5 bg-background hover:bg-muted border border-border rounded-xl text-xs font-semibold text-foreground transition-all shadow-sm active:scale-95"
+                        >
+                            Search
+                        </button>
                     </div>
                 </form>
 

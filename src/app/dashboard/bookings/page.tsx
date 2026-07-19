@@ -64,8 +64,8 @@ export default async function BookingsPage(props: {
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Calendar className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">No centres found</h3>
-                    <p className="text-slate-500 mb-6">Please set up a centre first before creating bookings</p>
+                    <h3 className="text-xl font-bold text-foreground mb-2">No centres found</h3>
+                    <p className="text-muted-foreground mb-6">Please set up a centre first before creating bookings</p>
                     <Link href="/dashboard/centres/add" className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all">
                         <Plus className="w-4 h-4" /> Add Centre
                     </Link>

@@ -225,12 +225,12 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         // DB enum: confirmed | cancelled | rescheduled | completed | pending | signed_up
         // confirmed → Booked (blue), completed → Attended (violet), signed_up → Signed-up (emerald)
         const styles: Record<string, string> = {
-            confirmed:   'bg-blue-500/20 text-blue-400 ring-blue-500/30',
-            pending:     'bg-amber-500/20 text-amber-400 ring-amber-500/30',
-            signed_up:   'bg-emerald-500/20 text-emerald-400 ring-emerald-500/30',
-            completed:   'bg-violet-500/20 text-violet-400 ring-violet-500/30',
-            cancelled:   'bg-slate-500/20 text-slate-400 ring-slate-500/30',
-            rescheduled: 'bg-indigo-500/20 text-indigo-400 ring-indigo-500/30',
+            confirmed:   'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+            completed:   'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+            signed_up:   'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+            pending:     'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+            cancelled:   'bg-destructive/10 text-destructive border-destructive/20',
+            rescheduled: 'bg-secondary text-muted-foreground border-border',
         };
         const labels: Record<string, string> = {
             confirmed: 'Booked',
@@ -240,7 +240,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         const label = labels[status] ?? status;
 
         return (
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 whitespace-nowrap ${styles[status] || styles.pending}`}>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${styles[status] || styles.pending}`}>
                 {label}
             </span>
         );
@@ -370,8 +370,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         if (isFiltered) {
         return (
             <div className="rounded-3xl border border-border bg-card/50 p-16 text-center shadow-sm">
-                <div className="w-20 h-20 bg-amber-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-amber-500/30">
-                    <SearchX className="w-10 h-10 text-amber-500" />
+                <div className="w-20 h-20 bg-secondary border border-border rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <SearchX className="w-10 h-10 text-muted-foreground" />
                 </div>
                 <h3 className="text-2xl font-bold text-foreground mb-3">No results found</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">
@@ -596,9 +596,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     ? format(new Date(booking.startAt), 'h:mm a')
                                                     : 'Time TBD'
                                             }
-                                        </span>
-                                        <span className="text-xs text-muted-foreground/60 mt-1 whitespace-nowrap">
-                                            Booked: {booking.createdAt ? format(new Date(booking.createdAt), 'dd/MM/yy') : 'N/A'}
                                         </span>
                                     </div>
                                 </td>
@@ -913,7 +910,91 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </p>
                                 </div>
                             </div>
-                            {getStatusBadge(booking.status)}
+                            <div className="flex items-center gap-2">
+                                {getStatusBadge(booking.status)}
+                                <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        suppressHydrationWarning
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveDropdown(activeDropdown === `mobile-${booking.id}` ? null : `mobile-${booking.id}`);
+                                        }}
+                                        className="p-1.5 hover:bg-secondary rounded-lg transition-colors -mr-1"
+                                    >
+                                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                                    </button>
+                                    
+                                    {activeDropdown === `mobile-${booking.id}` && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-10"
+                                                onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}
+                                            />
+                                            <div className="absolute right-0 top-full mt-2 w-52 bg-popover/90 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-20">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors w-full text-left"
+                                                >
+                                                    <CalendarIcon className="w-4 h-4" />
+                                                    Reschedule
+                                                </button>
+                                                {centres.length > 1 && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors w-full text-left"
+                                                    >
+                                                        <MapPin className="w-4 h-4 text-indigo-500" />
+                                                        Reassign Centre
+                                                    </button>
+                                                )}
+                                                <div className="mx-3 my-1 border-t border-border" />
+                                                <p className="px-4 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Quick Status</p>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
+                                                    disabled={updatingStatus === booking.id}
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-blue-500 transition-colors w-full text-left disabled:opacity-50"
+                                                >
+                                                    <BookOpen className="w-4 h-4" />
+                                                    Mark as Booked
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
+                                                    disabled={updatingStatus === booking.id}
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-emerald-500 transition-colors w-full text-left disabled:opacity-50"
+                                                >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    Mark as Signed-up
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
+                                                    disabled={updatingStatus === booking.id}
+                                                    title="Marks entire booking as attended (applies to all children)"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-violet-500 transition-colors w-full text-left disabled:opacity-50"
+                                                >
+                                                    <GraduationCap className="w-4 h-4" />
+                                                    Mark as Attended
+                                                </button>
+                                                <div className="mx-3 my-1 border-t border-border" />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-sm font-medium text-red-500 transition-colors w-full text-left"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                    Cancel Booking
+                                                </button>
+                                                <div className="mx-3 my-1 border-t border-border" />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-sm font-medium text-red-600 transition-colors w-full text-left"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Delete Booking
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 mb-3 pl-8">
@@ -925,30 +1006,18 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 <Clock className="w-4 h-4 text-muted-foreground/60 mt-0.5" />
                                 <div className="flex flex-col gap-0.5">
                                     <span>{booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}</span>
-                                    <span className="text-xs text-muted-foreground/60">Booked: {booking.createdAt ? format(new Date(booking.createdAt), 'dd/MM/yy') : 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex gap-2 mt-3 pl-8">
+                        <div className="flex mt-3 pl-8">
                             <Link
                                 href={`/dashboard/bookings/${booking.id}`}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-xl text-sm font-semibold text-foreground transition-all border border-border"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-xl text-sm font-semibold text-foreground transition-all border border-border"
                             >
                                 <Eye className="w-4 h-4" />
                                 View Details
                             </Link>
-                            <button
-                                suppressHydrationWarning
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setConfirmDelete(booking.id);
-                                }}
-                                className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all"
-                                title="Delete Booking"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
                         </div>
                     </div>
                 ))}
@@ -1007,8 +1076,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 aria-labelledby="bulk-delete-dialog-title"
             >
                 <div className="bg-popover/90 backdrop-blur-md border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-red-500/30">
-                        <Trash2 className="w-7 h-7 text-red-650 dark:text-red-400" />
+                    <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-destructive/20">
+                        <Trash2 className="w-7 h-7 text-destructive" />
                     </div>
                     <h3 id="bulk-delete-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">
                         Delete {selectedBookings.size} Booking{selectedBookings.size !== 1 ? 's' : ''}?
