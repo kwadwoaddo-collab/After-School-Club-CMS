@@ -814,6 +814,55 @@ export default function StudentProfile({
                 {/* Sessions tab */}
                 {activeTab === 'bookings' && (
                     <div className="space-y-5 animate-in fade-in duration-200">
+
+                        {/* ── Attendance stats strip ──────────────────────── */}
+                        {attendanceBreakdown.total > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {[
+                                    {
+                                        label: 'Attended',
+                                        value: attendanceBreakdown.attended,
+                                        total: attendanceBreakdown.total,
+                                        colour: 'bg-success/10 border-success/20 text-success',
+                                        icon: CheckCircle,
+                                    },
+                                    {
+                                        label: 'Absent',
+                                        value: attendanceBreakdown.absent,
+                                        total: attendanceBreakdown.total,
+                                        colour: 'bg-destructive/10 border-destructive/20 text-destructive',
+                                        icon: XCircle,
+                                    },
+                                    {
+                                        label: 'Late',
+                                        value: attendanceBreakdown.late,
+                                        total: attendanceBreakdown.total,
+                                        colour: 'bg-warning/10 border-warning/20 text-warning',
+                                        icon: Clock,
+                                    },
+                                    {
+                                        label: 'No-show',
+                                        value: attendanceBreakdown.noShow,
+                                        total: attendanceBreakdown.total,
+                                        colour: 'bg-secondary border-border text-muted-foreground',
+                                        icon: MinusCircle,
+                                    },
+                                ].map(({ label, value, total, colour, icon: Icon }) => (
+                                    <div key={label} className={cn('rounded-2xl border p-4 flex flex-col gap-1', colour)}>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-70">{label}</span>
+                                            <Icon className="w-3.5 h-3.5 opacity-60" />
+                                        </div>
+                                        <span className="text-2xl font-black">{value}</span>
+                                        <span className="text-[10px] font-semibold opacity-60">
+                                            {total > 0 ? `${Math.round((value / total) * 100)}%` : '—'} of {total}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ── Session history list ────────────────────────── */}
                         <div className="bg-secondary/50 border border-border rounded-2xl p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <p className={sL}>Session History</p>
@@ -863,6 +912,7 @@ export default function StudentProfile({
                         </div>
                     </div>
                 )}
+
 
                 {/* Registration tab */}
                 {activeTab === 'registration' && (
