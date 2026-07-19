@@ -640,8 +640,22 @@ export default function RegisterPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                            <p className="text-sm font-bold text-blue-800">Registration details pre-filled</p>
-                            <p className="text-xs text-blue-600 font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
+                            {childList.length > 1 ? (
+                                <>
+                                    <p className="text-sm font-bold text-blue-800">
+                                        Registration pre-filled for {childList.length} children
+                                    </p>
+                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">
+                                        This link covers: {childList.map(c => `${c.firstName} ${c.lastName}`.trim()).filter(Boolean).join(', ')}.
+                                        Parent and shared details have been pre-filled — please review and complete any remaining fields.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm font-bold text-blue-800">Registration details pre-filled</p>
+                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

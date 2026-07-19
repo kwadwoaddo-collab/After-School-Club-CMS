@@ -1113,6 +1113,9 @@ export default function StudentProfile({
                             Select the siblings to include in this prefilled registration link.
                             Common details like parent contact and address will be shared to avoid duplication.
                         </p>
+                        <p className="text-[10px] text-muted-foreground bg-secondary border border-border rounded-lg px-3 py-2">
+                            ⏱ Links are valid for <strong>30 days</strong> from generation.
+                        </p>
                         <div className="space-y-2.5">
                             <p className={sL}>Select Children</p>
                             <div className="divide-y divide-border border border-border rounded-2xl overflow-hidden bg-secondary/50">
