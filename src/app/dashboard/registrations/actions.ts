@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { emailService } from '@/lib/services/email';
 
 export async function deleteRegistrations(ids: string[]) {
     const session = await auth();
@@ -240,7 +241,7 @@ export async function updateRegistrationStatus(
 
     // Verify the registration belongs to this org
     const [existing] = await db
-        .select({ id: registrations.id, organisationId: registrations.organisationId })
+        .select({ id: registrations.id, organisationId: registrations.organisationId, centreId: registrations.centreId })
         .from(registrations)
         .where(eq(registrations.id, registrationId))
         .limit(1);
@@ -256,6 +257,77 @@ export async function updateRegistrationStatus(
 
     revalidatePath('/dashboard/registrations');
     revalidatePath('/dashboard/students');
+
+    // ── Fire status email for approve / reject (not for revert-to-pending) ──
+    if (newStatus === 'signed_up' || newStatus === 'not_interested') {
+        try {
+            // Fetch registration parent contact
+            const [regParent] = await db
+                .select({ parentId: registrationParents.parentId })
+                .from(registrationParents)
+                .where(eq(registrationParents.registrationId, registrationId))
+                .limit(1);
+
+            // Fetch registered children names
+            const regChildren = await db
+                .select({ childId: registrationChildren.childId })
+                .from(registrationChildren)
+                .where(eq(registrationChildren.registrationId, registrationId));
+
+            // Fetch org name
+            const [org] = await db
+                .select({ name: organisations.name })
+                .from(organisations)
+                .where(eq(organisations.id, orgId))
+                .limit(1);
+
+            // Fetch centre name (optional)
+            let centreName: string | null = null;
+            if (existing.centreId) {
+                const [centre] = await db
+                    .select({ name: centres.name })
+                    .from(centres)
+                    .where(eq(centres.id, existing.centreId))
+                    .limit(1);
+                centreName = centre?.name ?? null;
+            }
+
+            if (regParent?.parentId) {
+                const [parent] = await db
+                    .select({ firstName: parents.firstName, email: parents.email })
+                    .from(parents)
+                    .where(eq(parents.id, regParent.parentId))
+                    .limit(1);
+
+                // Resolve child names
+                const childNames: string[] = [];
+                if (regChildren.length > 0) {
+                    const childIds = regChildren.map(c => c.childId).filter(Boolean) as string[];
+                    if (childIds.length > 0) {
+                        const childRecords = await db
+                            .select({ firstName: children.firstName, lastName: children.lastName })
+                            .from(children)
+                            .where(inArray(children.id, childIds));
+                        childRecords.forEach(c => childNames.push(`${c.firstName} ${c.lastName}`));
+                    }
+                }
+
+                if (parent?.email) {
+                    await emailService.sendRegistrationStatusUpdate({
+                        orgName: org?.name ?? 'The Club',
+                        centreName,
+                        parentFirstName: parent.firstName ?? 'there',
+                        parentEmail: parent.email,
+                        childNames: childNames.length > 0 ? childNames : ['Your child'],
+                        newStatus,
+                    });
+                }
+            }
+        } catch (emailErr) {
+            // Non-fatal — log but don't block the status update
+            console.error('[updateRegistrationStatus] Email send failed:', emailErr);
+        }
+    }
 
     return { success: true };
 }
