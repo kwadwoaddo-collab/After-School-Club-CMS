@@ -4,9 +4,10 @@ import { useState, useTransition, useEffect } from 'react';
 import { markAttendeeAttendance } from '@/features/bookings/actions';
 import {
     CheckCircle2, XCircle, Clock, AlertTriangle,
-    Loader2, ChevronLeft, ChevronRight, Users,
+    Loader2, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Users,
     Maximize2, Minimize2, RefreshCw, Stethoscope, Edit2, Sparkles, Search
 } from 'lucide-react';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -190,15 +191,15 @@ function StudentCard({
 
     const statusStyle = {
         present: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },
-        absent:  { ring: 'border-rose-500/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-rose-500' },
-        late:    { ring: 'border-amber-500/30 bg-amber-500/5 ring-2 ring-amber-500/10 glow-hover-warning',     avatar: 'bg-amber-500/20 text-amber-400' },
+        absent:  { ring: 'border-error/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-error' },
+        late:    { ring: 'border-warning/30 bg-warning/5 ring-2 ring-warning/10 glow-hover-warning',     avatar: 'bg-warning/20 text-warning' },
         excused: { ring: 'border-secondary/30 bg-secondary-container/5 ring-2 ring-secondary/10 glow-hover-secondary',   avatar: 'bg-secondary-container/20 text-secondary' },
     };
 
     const style = status ? statusStyle[status] : { ring: 'bg-card border border-border shadow-sm hover:border-primary/30 glow-hover-primary', avatar: 'bg-secondary/60 text-muted-foreground' };
     const pad = isLarge ? 'p-5' : 'p-4';
     const avatarSize = isLarge ? 'w-14 h-14 text-xl' : 'w-11 h-11 text-base';
-    const btnSize = isLarge ? 'h-14 text-sm gap-2 px-4' : 'h-11 text-xs gap-1.5 px-3';
+    const btnSize = isLarge ? 'h-16 text-sm gap-2 px-4 min-w-[88px]' : 'h-11 text-xs gap-1.5 px-3 min-w-[72px]';
 
     return (
         <div className="space-y-2">
@@ -216,18 +217,18 @@ function StudentCard({
                             <p className={`font-bold text-foreground truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
                                 {attendee.firstName} {attendee.lastName}
                             </p>
-                            {attendee.isCatchUp && (
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/20 text-amber-400 text-[10px] font-bold">
-                                    <Sparkles className="w-2.5 h-2.5" /> Catch-Up
+                            {lateMinutes && parseInt(lateMinutes) > 0 && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-warning/15 border border-warning/20 text-warning text-[10px] font-bold">
+                                    <Sparkles className="w-2.5 h-2.5" /> Late
                                 </span>
                             )}
                             {hasAlert && (
                                 <span title={attendee.notes!} className="flex-shrink-0">
-                                    <Stethoscope className="w-4 h-4 text-red-400" />
+                                    <Stethoscope className="w-4 h-4 text-error" />
                                 </span>
                             )}
-                            {(note || lateMinutes) && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Has notes/late minutes" />
+                            {(hasAlert || (lateMinutes && parseInt(lateMinutes) > 0)) && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-warning" title="Has notes/late minutes" />
                             )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
@@ -237,7 +238,7 @@ function StudentCard({
                             {note && ` · "${note}"`}
                         </p>
                         {hasAlert && (
-                            <p className="text-xs text-red-400 mt-1.5 font-medium">⚠ {attendee.notes}</p>
+                            <p className="text-xs text-error mt-1.5 font-medium">⚠ {attendee.notes}</p>
                         )}
                     </div>
                 </div>
@@ -257,13 +258,13 @@ function StudentCard({
                         </button>
                         {([
                             { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-tertiary hover:border-tertiary/20' },
-                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-400 text-slate-950 shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-amber-400/20',   inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-amber-400 hover:border-amber-400/20'   },
-                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-slate-950 shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-rose-500/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-rose-500 hover:border-rose-500/20'     },
+                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-warning text-background shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-warning/20',   inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-warning hover:border-warning/20'   },
+                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-background shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-error hover:border-error/20'     },
                         ]).map(({ s, icon, label, active, inactive }) => (
                             <button
                                 key={s}
                                 onClick={() => mark(s)}
-                                className={`${btnSize} border rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 flex-1 sm:flex-initial ${status === s ? active : inactive}`}
+                                className={`${btnSize} border rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 flex-1 ${status === s ? active : inactive}`}
                             >
                                 {icon} <span className="ml-1">{label}</span>
                             </button>
@@ -329,6 +330,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
     const [clock, setClock] = useState(() => new Date());
     const [large, setLarge] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showUnmarkedOnly, setShowUnmarkedOnly] = useState(false);
 
     // Derive a dateStr from date prop if not passed separately
     const resolvedDateStr = dateStr || new Date().toISOString().slice(0, 10);
@@ -392,13 +394,28 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         );
     });
 
-    const displayAttendees = [...filteredAttendees].sort((a, b) => {
-        const aHasAlert = !!a.notes;
-        const bHasAlert = !!b.notes;
-        if (aHasAlert && !bHasAlert) return -1;
-        if (!aHasAlert && bHasAlert) return 1;
-        return 0;
-    });
+    const displayAttendees = [...filteredAttendees]
+        .filter(a => {
+            if (!showUnmarkedOnly) return true;
+            return a.attendanceStatus === null;
+        })
+        .sort((a, b) => {
+            const aUnmarked = a.attendanceStatus === null;
+            const bUnmarked = b.attendanceStatus === null;
+            const aAlert = !!a.notes;
+            const bAlert = !!b.notes;
+
+            // Tier 1 — Unmarked with medical alert (most urgent)
+            if (aUnmarked && aAlert && !(bUnmarked && bAlert)) return -1;
+            if (bUnmarked && bAlert && !(aUnmarked && aAlert)) return 1;
+
+            // Tier 2 — Unmarked without alert
+            if (aUnmarked && !bUnmarked) return -1;
+            if (!aUnmarked && bUnmarked) return 1;
+
+            // Tier 3 — Already marked, alphabetical
+            return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+        });
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] bg-secondary/20 -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
@@ -410,21 +427,20 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     <p className="text-muted-foreground text-xs mt-0.5 font-medium">{date} · {centreName}</p>
                 </div>
 
-                <div className="text-foreground font-black text-3xl tabular-nums tracking-tight">
+                <div className="text-foreground font-black text-4xl tabular-nums tracking-tight">
                     {format(clock, 'HH:mm')}
-                    <span className="text-muted-foreground/50 text-lg ml-1">{format(clock, ':ss')}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button onClick={() => router.refresh()} title="Refresh"
+                    <button onClick={() => router.refresh()} aria-label="Refresh register" title="Refresh"
                         className="p-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
                         <RefreshCw className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setLarge(v => !v)} title="Toggle size"
+                    <button onClick={() => setLarge(v => !v)} aria-label="Toggle card density" title="Toggle size"
                         className="p-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
-                        <Users className="w-4 h-4" />
+                        {large ? <LayoutGrid className="w-4 h-4" /> : <LayoutList className="w-4 h-4" />}
                     </button>
-                    <button onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                    <button onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                         className="p-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
                         {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
@@ -446,9 +462,9 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                 {[
                     { label: 'Total',    value: totalCount,    color: 'text-foreground' },
                     { label: 'Present',  value: presentCount,  color: 'text-tertiary' },
-                    { label: 'Late',     value: lateCount,     color: 'text-amber-400' },
-                    { label: 'Absent',   value: absentCount,   color: 'text-rose-500' },
-                    { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-orange-400' : 'text-muted-foreground/50' },
+                    { label: 'Late',     value: lateCount,     color: 'text-warning' },
+                    { label: 'Absent',   value: absentCount,   color: 'text-error' },
+                    { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-warning' : 'text-muted-foreground/50' },
                 ].map((stat, i) => (
                     <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-border' : ''}`}>
                         <p className={`text-xl font-black ${stat.color}`}>{stat.value}</p>
@@ -495,7 +511,8 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
             {/* ── SEARCH BAR ────────────────────────────────────────────── */}
             {slots.length > 0 && (
                 <div className="px-6 py-2.5 bg-secondary/20 border-b border-border flex items-center gap-3 flex-shrink-0">
-                    <div className="relative flex-1 max-w-md">
+                    {/* Search input — full width, no max-w-md */}
+                    <div className="relative flex-1">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                         <input
                             type="text"
@@ -513,8 +530,25 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                             </button>
                         )}
                     </div>
+
+                    {/* Unmarked Only chip */}
+                    <button
+                        onClick={() => setShowUnmarkedOnly(v => !v)}
+                        aria-pressed={showUnmarkedOnly}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                            showUnmarkedOnly
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-card border-border text-muted-foreground hover:border-primary/40'
+                        }`}
+                    >
+                        Unmarked only
+                        {showUnmarkedOnly && unmarkedCount > 0 && (
+                            <span className="ml-1.5 text-primary-foreground/70">{unmarkedCount}</span>
+                        )}
+                    </button>
+
                     {searchQuery && (
-                        <p className="text-xs text-muted-foreground font-medium">
+                        <p className="text-xs text-muted-foreground font-medium flex-shrink-0">
                             Found {displayAttendees.length} student{displayAttendees.length === 1 ? '' : 's'}
                         </p>
                     )}
@@ -526,12 +560,18 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                 {slots.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center px-8">
                         <div className="w-20 h-20 rounded-3xl bg-secondary/60 flex items-center justify-center mb-5">
-                            <Users className="w-9 h-9 text-muted-foreground/50" />
+                            <Users className="w-12 h-12 text-muted-foreground/50" />
                         </div>
-                        <h2 className="text-xl font-black text-foreground mb-2">No sessions today</h2>
-                        <p className="text-muted-foreground text-sm max-w-xs">
-                            No children are permanently scheduled for today. Use Attendance to add a catch-up.
+                        <h2 className="text-xl font-bold text-foreground mb-2">No sessions today</h2>
+                        <p className="text-muted-foreground text-sm max-w-xs mb-5">
+                            No children are scheduled for today. Check the correct centre is selected above.
                         </p>
+                        <Link
+                            href="/dashboard/attendance"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-all"
+                        >
+                            Go to Roll Call &rarr;
+                        </Link>
                     </div>
                 ) : displayAttendees.length === 0 ? (
                     <div className="flex items-center justify-center h-32 text-muted-foreground/50 text-sm">

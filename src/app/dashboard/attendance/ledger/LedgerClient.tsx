@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
-    AlertCircle, CheckCircle2, Award, Download, Shield, X, Loader2
+    AlertCircle, CheckCircle2, Award, Download, Shield, X, Loader2, Users
 } from 'lucide-react';
 import type { StudentLedgerEntry } from '@/features/attendance/actions';
 import { forgiveSessionsAction } from '@/features/attendance/actions';
@@ -21,13 +21,13 @@ interface Props {
 
 function BalancePill({ balance }: { balance: number }) {
     if (balance > 0) return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-success/10 text-success border border-success/20">
             <TrendingUp className="w-3 h-3" />
             +{balance} ahead
         </span>
     );
     if (balance < 0) return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-error-container/10 text-error border border-error/20">
             <TrendingDown className="w-3 h-3" />
             {balance} owed
         </span>
@@ -105,7 +105,7 @@ function ForgivModal({
                             className="w-full px-4 py-3 rounded-2xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
                         />
                     </div>
-                    <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                    <div className="p-3 rounded-2xl bg-warning/10 border border-warning/20 text-warning text-xs font-medium">
                         ⚠ This action is permanent and recorded in the audit log with your name.
                     </div>
                 </div>
@@ -126,15 +126,15 @@ function ForgivModal({
     );
 }
 
-function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
+function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh: () => void }) {
     const [expanded, setExpanded] = useState(false);
     const [showForgive, setShowForgive] = useState(false);
 
     const statusColor = entry.netBalance < 0
-        ? 'border-l-4 border-l-red-400'
+        ? 'border-l-4 border-l-error'
         : entry.netBalance > 0
-            ? 'border-l-4 border-l-emerald-400'
-            : 'border-l-4 border-l-gray-200';
+            ? 'border-l-4 border-l-tertiary'
+            : 'border-l-4 border-l-border';
 
     return (
         <>
@@ -145,8 +145,8 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                 >
                     {/* Avatar */}
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                        entry.netBalance < 0 ? 'bg-red-50 text-red-600' :
-                        entry.netBalance > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-secondary/60 text-muted-foreground'
+                        entry.netBalance < 0 ? 'bg-error-container/10 text-error' :
+                        entry.netBalance > 0 ? 'bg-tertiary-container/10 text-tertiary' : 'bg-secondary/60 text-muted-foreground'
                     }`}>
                         {(entry.firstName || '')[0] || ''}{(entry.lastName || '')[0] || ''}
                     </div>
@@ -165,12 +165,12 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground font-medium">Extras</p>
-                            <p className="text-sm font-bold text-emerald-600">+{entry.extraSessionsAttended}</p>
+                            <p className="text-sm font-bold text-tertiary">+{entry.extraSessionsAttended}</p>
                         </div>
                         {entry.forgivenSessions > 0 && (
                             <div>
                                 <p className="text-xs text-muted-foreground font-medium">Forgiven</p>
-                                <p className="text-sm font-bold text-blue-600">+{entry.forgivenSessions}</p>
+                                <p className="text-sm font-bold text-primary">+{entry.forgivenSessions}</p>
                             </div>
                         )}
                     </div>
@@ -193,12 +193,12 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground">Extras</p>
-                                <p className="text-sm font-bold text-emerald-600">+{entry.extraSessionsAttended}</p>
+                                <p className="text-sm font-bold text-tertiary">+{entry.extraSessionsAttended}</p>
                             </div>
                             {entry.forgivenSessions > 0 && (
                                 <div>
                                     <p className="text-xs text-muted-foreground">Forgiven</p>
-                                    <p className="text-sm font-bold text-blue-600">+{entry.forgivenSessions}</p>
+                                    <p className="text-sm font-bold text-primary">+{entry.forgivenSessions}</p>
                                 </div>
                             )}
                         </div>
@@ -209,7 +209,7 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Missed Sessions ({entry.missedDates.length})</p>
                                 <div className="flex flex-wrap gap-2">
                                     {entry.missedDates.map(d => (
-                                        <span key={d} className="px-2.5 py-1 rounded-lg bg-red-50 text-red-700 text-xs font-semibold border border-red-100">{d}</span>
+                                        <span key={d} className="px-2.5 py-1 rounded-lg bg-error-container/10 text-error text-xs font-semibold border border-error/15">{d}</span>
                                     ))}
                                 </div>
                             </div>
@@ -221,7 +221,7 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Extra Sessions ⭐ ({entry.extraDates.length})</p>
                                 <div className="flex flex-wrap gap-2">
                                     {entry.extraDates.map(d => (
-                                        <span key={d} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">{d}</span>
+                                        <span key={d} className="px-2.5 py-1 rounded-lg bg-tertiary-container/10 text-tertiary text-xs font-semibold border border-tertiary/15">{d}</span>
                                     ))}
                                 </div>
                             </div>
@@ -233,11 +233,11 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Admin Forgiveness</p>
                                 <div className="space-y-2">
                                     {entry.forgivenEntries.map((f, i) => (
-                                        <div key={i} className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-xs">
-                                            <span className="font-bold text-blue-700">+{f.amount} session{f.amount > 1 ? 's' : ''} forgiven</span>
-                                            <span className="text-blue-600"> on {f.date}</span>
-                                            {f.adminName && <span className="text-blue-500"> by {f.adminName}</span>}
-                                            {f.note && <p className="text-blue-600 mt-0.5 italic">"{f.note}"</p>}
+                                        <div key={i} className="px-3 py-2 rounded-xl bg-info/10 border border-info/20 text-xs">
+                                            <span className="font-bold text-info">+{f.amount} session{f.amount > 1 ? 's' : ''} forgiven</span>
+                                            <span className="text-info/80"> on {f.date}</span>
+                                            {f.adminName && <span className="text-info/70"> by {f.adminName}</span>}
+                                            {f.note && <p className="text-info/80 mt-0.5 italic">"{f.note}"</p>}
                                         </div>
                                     ))}
                                 </div>
@@ -251,7 +251,7 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
                             </p>
                             <button
                                 onClick={e => { e.stopPropagation(); setShowForgive(true); }}
-                                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all"
+                                className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-primary/8 transition-all"
                             >
                                 <Shield className="w-3.5 h-3.5" />
                                 Forgive Sessions
@@ -262,7 +262,7 @@ function LedgerRow({ entry }: { entry: StudentLedgerEntry }) {
             </div>
 
             {showForgive && (
-                <ForgivModal entry={entry} onClose={() => { setShowForgive(false); window.location.reload(); }} />
+                <ForgivModal entry={entry} onClose={() => { setShowForgive(false); onRefresh(); }} />
             )}
         </>
     );
@@ -274,10 +274,57 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
     const [tab, setTab] = useState<'all' | 'arrears' | 'ahead' | 'even'>('all');
     const [search, setSearch] = useState('');
 
+    type DatePreset = 'this_week' | 'this_month' | 'this_term';
+    const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
+
+    function getPresetRange(preset: 'this_week' | 'this_month' | 'this_term'): { from: Date; to: Date } {
+        const now = new Date();
+        if (preset === 'this_week') {
+            const day = now.getDay();
+            const mon = new Date(now);
+            mon.setDate(now.getDate() - ((day + 6) % 7));
+            mon.setHours(0, 0, 0, 0);
+            const sun = new Date(mon);
+            sun.setDate(mon.getDate() + 6);
+            sun.setHours(23, 59, 59, 999);
+            return { from: mon, to: sun };
+        }
+        if (preset === 'this_month') {
+            return {
+                from: new Date(now.getFullYear(), now.getMonth(), 1),
+                to:   new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
+            };
+        }
+        // UK terms: Autumn Sep-Dec, Spring Jan-Mar, Summer Apr-Jul
+        const m = now.getMonth();
+        const y = now.getFullYear();
+        if (m >= 8) return { from: new Date(y, 8, 1), to: new Date(y, 11, 31, 23, 59, 59) };
+        if (m <= 2) return { from: new Date(y, 0, 1), to: new Date(y, 2,  31, 23, 59, 59) };
+        return           { from: new Date(y, 3, 1), to: new Date(y, 6,  25, 23, 59, 59) };
+    }
+
+    const { from: presetFrom, to: presetTo } = getPresetRange(datePreset);
+
     const filtered = ledger.filter(e => {
-        const matchTab = tab === 'all' || (tab === 'arrears' && e.netBalance < 0) || (tab === 'ahead' && e.netBalance > 0) || (tab === 'even' && e.netBalance === 0);
-        const matchSearch = !search || `${e.firstName} ${e.lastName}`.toLowerCase().includes(search.toLowerCase());
-        return matchTab && matchSearch;
+        const matchTab =
+            tab === 'all' ||
+            (tab === 'arrears' && e.netBalance < 0) ||
+            (tab === 'ahead'   && e.netBalance > 0) ||
+            (tab === 'even'    && e.netBalance === 0);
+
+        const matchSearch = !search ||
+            `${e.firstName} ${e.lastName}`.toLowerCase().includes(search.toLowerCase());
+
+        // Date filter: include if ANY session date falls in the preset range.
+        // Entries with no date data always pass (they may have a balance from pre-loaded data).
+        const hasDateActivity = e.missedDates.length > 0 || e.extraDates.length > 0;
+        const matchDate = !hasDateActivity || [...e.missedDates, ...e.extraDates].some(d => {
+            // Handle ISO (YYYY-MM-DD) and most locale date strings
+            const dt = /^\d{2}\/\d{2}\/\d{4}$/.test(d) ? new Date(d.split('/').reverse().join('-')) : new Date(d);
+            return dt >= presetFrom && dt <= presetTo;
+        });
+
+        return matchTab && matchSearch && matchDate;
     });
 
     const arrearsCount = ledger.filter(e => e.netBalance < 0).length;
@@ -368,10 +415,10 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                    { label: 'Total Students', value: ledger.length, icon: <Award className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50 border-blue-100' },
-                    { label: 'In Arrears', value: arrearsCount, icon: <TrendingDown className="w-4 h-4" />, color: 'text-red-600 bg-red-50 border-red-100' },
+                    { label: 'Total Students', value: ledger.length, icon: <Award className="w-4 h-4" />, color: 'text-primary bg-primary/10 border-primary/20' },
+                    { label: 'In Arrears', value: arrearsCount, icon: <TrendingDown className="w-4 h-4" />, color: 'text-error bg-error-container/10 border-error/20' },
                     { label: 'All Even', value: evenCount, icon: <Minus className="w-4 h-4" />, color: 'text-muted-foreground bg-secondary/40 border-border' },
-                    { label: 'Ahead', value: aheadCount, icon: <TrendingUp className="w-4 h-4" />, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+                    { label: 'Ahead', value: aheadCount, icon: <TrendingUp className="w-4 h-4" />, color: 'text-tertiary bg-tertiary-container/10 border-tertiary/20' },
                 ].map(s => (
                     <div key={s.label} className={`p-4 rounded-2xl border ${s.color}`}>
                         <div className="flex items-center gap-2 mb-1">
@@ -380,6 +427,29 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         </div>
                         <p className="text-2xl font-black">{s.value}</p>
                     </div>
+                ))}
+            </div>
+
+            {/* Date-range preset chips — C-5 */}
+            <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Period:</span>
+                {([
+                    { id: 'this_week',  label: 'This Week'  },
+                    { id: 'this_month', label: 'This Month' },
+                    { id: 'this_term',  label: 'This Term'  },
+                ] as const).map(chip => (
+                    <button
+                        key={chip.id}
+                        onClick={() => setDatePreset(chip.id)}
+                        aria-pressed={datePreset === chip.id}
+                        className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                            datePreset === chip.id
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-card border-border text-muted-foreground hover:border-primary/40'
+                        }`}
+                    >
+                        {chip.label}
+                    </button>
                 ))}
             </div>
 
@@ -404,19 +474,19 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             <div className="space-y-2">
                 {filtered.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
-                        <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                        <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
                         <p className="font-semibold text-muted-foreground">No students found</p>
                         <p className="text-sm mt-1">Try changing the filter or selecting a different centre.</p>
                     </div>
                 ) : (
-                    filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} />)
+                    filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} onRefresh={() => router.refresh()} />)
                 )}
             </div>
 
             {arrearsCount > 0 && tab === 'all' && (
-                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-amber-800">
+                <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-2xl">
+                    <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-warning">
                         <strong>{arrearsCount} student{arrearsCount > 1 ? 's are' : ' is'}</strong> in arrears for the {selectedYear} academic year.
                         Switch to the <strong>In Arrears</strong> tab to see only these students and take action.
                     </p>

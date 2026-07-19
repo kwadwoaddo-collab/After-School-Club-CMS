@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
 import { updateAttendanceTimelog } from '@/features/attendance/actions';
@@ -204,19 +205,19 @@ function AttendeeCard({
     // ── Status-driven visual tokens ──────────────────────────────────────────
     // Left border bar + card background
     const cardClass = isAbsent
-        ? 'border-l-4 border-l-red-400 bg-red-50 border border-red-200 border-l-red-400'
+        ? 'border-l-4 border-l-error bg-error-container/10 border border-error/20'
         : (isIn && isOut)
-        ? 'border-l-4 border-l-blue-500 bg-blue-50 border border-blue-200'
+        ? 'border-l-4 border-l-primary bg-primary/8 border border-primary/20'
         : isIn
-        ? 'border-l-4 border-l-emerald-500 bg-emerald-50 border border-emerald-200'
-        : 'border-l-4 border-l-gray-200 bg-card border border-border';
+        ? 'border-l-4 border-l-tertiary bg-tertiary-container/10 border border-tertiary/20'
+        : 'border-l-4 border-l-border bg-card border border-border hover:border-primary/40';
 
     const avatarClass = isAbsent
-        ? 'bg-red-200 text-red-700'
+        ? 'bg-error-container/20 text-error'
         : (isIn && isOut)
         ? 'bg-primary/20 text-primary'
         : isIn
-        ? 'bg-emerald-200 text-emerald-800'
+        ? 'bg-tertiary-container/20 text-tertiary'
         : 'bg-secondary/60 text-muted-foreground';
 
     return (
@@ -235,27 +236,27 @@ function AttendeeCard({
                         <div className="flex items-center gap-2 flex-wrap">
                             <Link
                                 href={`/dashboard/students/${attendee.childId}`}
-                                className="font-bold text-foreground text-base hover:text-blue-600 transition-colors leading-tight"
+                                className="font-bold text-foreground text-base hover:text-primary transition-colors leading-tight"
                             >
                                 {attendee.firstName} {attendee.lastName}
                             </Link>
                             {isExtra && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning border border-warning/20">
                                     <Sparkles className="w-2.5 h-2.5" /> EXTRA
                                 </span>
                             )}
                             {attendee.flagHomework && (
-                                <span title={attendee.flagNote || 'Not bringing homework'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                <span title={attendee.flagNote || 'Not bringing homework'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning border border-warning/20">
                                     <BookOpen className="w-2.5 h-2.5" /> HW
                                 </span>
                             )}
                             {attendee.flagBehaviour && (
-                                <span title={attendee.flagNote || 'Behaviour concern'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                                <span title={attendee.flagNote || 'Behaviour concern'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-error-container/15 text-error border border-error/20">
                                     <AlertTriangle className="w-2.5 h-2.5" /> BEHAVIOUR
                                 </span>
                             )}
                             {derivedLate !== null && isIn && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning border border-warning/25">
                                     Late {derivedLate}m
                                 </span>
                             )}
@@ -269,13 +270,13 @@ function AttendeeCard({
 
                         {/* Status indicators */}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap min-h-[20px]">
-                            {saved && <span className="text-xs font-bold text-emerald-600 animate-pulse">Saved ✓</span>}
+                            {saved && <span className="text-xs font-bold text-success animate-pulse">Saved ✓</span>}
                             {isPending && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
                             {isIn && (
-                                <span className="text-xs font-semibold text-emerald-700">In {checkIn}{isOut ? ` → Out ${checkOut}` : ''}</span>
+                                <span className="text-xs font-semibold text-success">In {checkIn}{isOut ? ` → Out ${checkOut}` : ''}</span>
                             )}
                             {isAbsent && (
-                                <span className="text-xs font-semibold text-red-600">
+                                <span className="text-xs font-semibold text-error">
                                     Absent{absenceReason ? ` — ${absenceReason}` : ''}
                                 </span>
                             )}
@@ -287,9 +288,9 @@ function AttendeeCard({
                 {isAbsent ? (
                     /* Absent state — show undo */
                     <div className="mt-3 flex items-center gap-3">
-                        <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-100 border border-red-200">
-                            <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                            <span className="text-sm font-bold text-red-700">
+                        <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl bg-error-container/15 border border-error/20">
+                            <XCircle className="w-4 h-4 text-error flex-shrink-0" />
+                            <span className="text-sm font-bold text-error">
                                 Absent{absenceReason ? ` — ${absenceReason}` : ''}
                             </span>
                         </div>
@@ -310,8 +311,8 @@ function AttendeeCard({
                                 disabled={isPending}
                                 className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
                                     isIn
-                                        ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
-                                        : 'bg-card border-border text-foreground hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800'
+                                        ? 'bg-tertiary-container/15 border-tertiary/30 text-tertiary'
+                                        : 'bg-card border-border text-foreground hover:bg-tertiary-container/10 hover:border-tertiary/20 hover:text-tertiary'
                                 }`}
                             >
                                 <LogIn className="w-4 h-4 flex-shrink-0" />
@@ -326,7 +327,7 @@ function AttendeeCard({
                                     className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
                                         isOut
                                             ? 'bg-primary/15 border-primary/30 text-primary'
-                                            : 'bg-card border-border text-foreground hover:bg-blue-50 hover:border-blue-300 hover:text-blue-800'
+                                            : 'bg-card border-border text-foreground hover:bg-primary/8 hover:border-primary/25 hover:text-primary'
                                     }`}
                                 >
                                     <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -340,8 +341,8 @@ function AttendeeCard({
                                     onClick={() => setShowAbsenceSheet(v => !v)}
                                     className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
                                         showAbsenceSheet
-                                            ? 'bg-red-100 border-red-300 text-red-800'
-                                            : 'bg-card border-border text-foreground hover:bg-red-50 hover:border-red-300 hover:text-red-700'
+                                            ? 'bg-error-container/15 border-error/30 text-error'
+                                            : 'bg-card border-border text-foreground hover:bg-error-container/10 hover:border-error/30 hover:text-error'
                                     }`}
                                 >
                                     <XCircle className="w-4 h-4 flex-shrink-0" />
@@ -361,7 +362,7 @@ function AttendeeCard({
                                             type="time"
                                             value={checkIn}
                                             onChange={e => setCheckIn(e.target.value)}
-                                            className="h-9 px-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-blue-400"
+                                            className="h-9 px-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                                         />
                                     </label>
                                 )}
@@ -372,7 +373,7 @@ function AttendeeCard({
                                             type="time"
                                             value={checkOut}
                                             onChange={e => setCheckOut(e.target.value)}
-                                            className="h-9 px-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-blue-400"
+                                            className="h-9 px-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                                         />
                                     </label>
                                 )}
@@ -387,7 +388,8 @@ function AttendeeCard({
                                         key={r.key}
                                         onClick={() => handleMarkAbsent(r.key)}
                                         disabled={isPending}
-                                        className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl bg-card border-2 border-border hover:border-red-300 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50"
+                                        aria-label={r.label}
+                                        className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl bg-card border-2 border-border hover:border-error/30 hover:bg-error-container/10 active:scale-95 transition-all disabled:opacity-50"
                                     >
                                         <span className="text-2xl leading-none">{r.emoji}</span>
                                         <span className="text-sm font-bold text-foreground">{r.label}</span>
@@ -408,7 +410,7 @@ function SlotProgressBar({ marked, total }: { marked: number; total: number }) {
     return (
         <div className="h-1.5 w-full bg-secondary/60 rounded-full overflow-hidden">
             <div
-                className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
+                className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-success' : 'bg-primary'}`}
                 style={{ width: `${pct}%` }}
             />
         </div>
@@ -419,10 +421,12 @@ function SlotProgressBar({ marked, total }: { marked: number; total: number }) {
 type AttendeeStatus = { checkedIn: boolean; checkedOut: boolean; absent: boolean };
 
 export default function AttendanceRollCall({ slots, centreId, dateStr, allStudents = [] }: Props) {
+    const router = useRouter();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [showWalkIn, setShowWalkIn] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [bulkPendingSlot, setBulkPendingSlot] = useState<string | null>(null);
 
     const [markedStatus, setMarkedStatus] = useState<Record<string, AttendeeStatus>>(() => {
         const map: Record<string, AttendeeStatus> = {};
@@ -442,6 +446,42 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
         setMarkedStatus(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
     };
 
+    const handleMarkAllIn = async (slot: CompiledSlot) => {
+        const allAttendees = [...slot.regulars, ...slot.catchups];
+        const unmarked = allAttendees.filter(a => {
+            const s = markedStatus[a.id];
+            return s ? (!s.checkedIn && !s.absent) : (!a.checkInTime && a.attendanceStatus !== 'absent');
+        });
+        if (unmarked.length === 0) {
+            toast({ title: 'All students already marked', message: 'No unmarked students in this slot.', variant: 'warning' });
+            return;
+        }
+        setBulkPendingSlot(slot.time);
+        try {
+            await Promise.all(
+                unmarked.map(async (a) => {
+                    try {
+                        await markAttendeeAttendance({
+                            bookingId: a.bookingId, attendeeId: a.id,
+                            status: 'present', note: null, lateMinutes: null,
+                            childId: a.childId, dateStr, sessionTime: slot.time, centreId,
+                        });
+                        updateMarkedStatus(a.id, { checkedIn: true, absent: false });
+                    } catch { /* individual failure — continue */ }
+                })
+            );
+            toast({
+                title: `${unmarked.length} student${unmarked.length > 1 ? 's' : ''} marked In`,
+                message: `All unmarked students in the ${slot.timeLabel} slot have been checked in.`,
+                variant: 'success',
+            });
+        } catch {
+            toast({ title: 'Bulk mark failed', message: 'Some students could not be marked. Refresh and retry.', variant: 'error' });
+        } finally {
+            setBulkPendingSlot(null);
+        }
+    };
+
     const [walkInTab, setWalkInTab] = useState<'existing' | 'new'>('existing');
     const [selectedChildId, setSelectedChildId] = useState('');
     const [studentSearchQuery, setStudentSearchQuery] = useState('');
@@ -449,7 +489,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
     const [formChildLast, setFormChildLast] = useState('');
     const [formChildDob, setFormChildDob] = useState('');
     const [formYear, setFormYear] = useState('Reception');
-    const [formSessionTime, setFormSessionTime] = useState('15:45');
+    const [formSessionTime, setFormSessionTime] = useState(() => {
+        if (slots.length === 0) return '15:45';
+        const now = nowHHmm();
+        return slots.reduce((closest, s) => {
+            const diff = (t: string) => Math.abs(parseInt(t.replace(':', ''), 10) - parseInt(now.replace(':', ''), 10));
+            return diff(s.time) < diff(closest) ? s.time : closest;
+        }, slots[0].time);
+    });
     const [formParentFirst, setFormParentFirst] = useState('');
     const [formParentLast, setFormParentLast] = useState('');
     const [formParentEmail, setFormParentEmail] = useState('');
@@ -490,6 +537,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             setSelectedChildId(''); setStudentSearchQuery('');
 
             setShowWalkIn(false);
+            router.refresh();
         } catch {
             toast({ title: 'Could not register student', message: 'Please check the details and try again.', variant: 'error' });
         } finally {
@@ -603,7 +651,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-4">
                                         <div className="text-center">
-                                            <p className="text-blue-600 font-black text-xl leading-none">
+                                            <p className="text-primary font-black text-xl leading-none">
                                                 {slot.timeLabel.split(' ')[0]}
                                             </p>
                                             <p className="text-muted-foreground text-xs font-bold">
@@ -621,18 +669,31 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap justify-end">
+                                        {!allMarked && (
+                                            <button
+                                                onClick={() => handleMarkAllIn(slot)}
+                                                disabled={bulkPendingSlot === slot.time}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 disabled:opacity-60 bg-success/10 text-success border-success/20 hover:bg-success/20 hover:border-success/30"
+                                            >
+                                                {bulkPendingSlot === slot.time
+                                                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    : <CheckCircle2 className="w-3.5 h-3.5" />
+                                                }
+                                                {bulkPendingSlot === slot.time ? 'Marking...' : 'Mark All In'}
+                                            </button>
+                                        )}
                                         {missingOut > 0 && (
-                                            <span className="flex items-center gap-1.5 text-orange-600 text-xs font-bold px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200">
+                                            <span className="flex items-center gap-1.5 text-warning text-xs font-bold px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
                                                 <AlertCircle className="w-3.5 h-3.5" />
                                                 {missingOut} no check-out
                                             </span>
                                         )}
                                         {allMarked ? (
-                                            <span className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+                                            <span className="flex items-center gap-1.5 text-success text-xs font-bold px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
                                                 <CheckCircle2 className="w-3.5 h-3.5" /> Complete
                                             </span>
                                         ) : (
-                                            <span className="flex items-center gap-1.5 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
+                                            <span className="flex items-center gap-1.5 text-warning text-xs font-bold px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
                                                 <AlertCircle className="w-3.5 h-3.5" />
                                                 {markedCount}/{totalCount} marked
                                             </span>
@@ -644,7 +705,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                             </div>
 
                             {/* Two-column grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
                                 {/* Regular register */}
                                 <div className="p-5 space-y-3">
                                     <div className="flex items-center justify-between">
@@ -686,7 +747,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                 Catch-Ups & Walk-Ins
                                             </h4>
                                         </div>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 border border-amber-200">
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-warning/10 text-warning border border-warning/20">
                                             {slot.catchups.length} guest{slot.catchups.length !== 1 ? 's' : ''}
                                         </span>
                                     </div>
@@ -743,7 +804,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                         onClick={() => setWalkInTab(tab)}
                                         className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-all ${
                                             walkInTab === tab
-                                                ? 'border-blue-600 text-blue-600 bg-card'
+                                                ? 'border-primary text-primary bg-card'
                                                 : 'border-transparent text-muted-foreground hover:text-muted-foreground'
                                         }`}
                                     >
@@ -755,7 +816,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
                         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                             {centreId === 'all' ? (
-                                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-semibold">
+                                <div className="p-4 rounded-2xl bg-warning/10 border border-warning/20 text-warning text-sm font-semibold">
                                     ⚠ Please select a specific centre from the sidebar before registering a walk-in.
                                 </div>
                             ) : (
@@ -797,8 +858,8 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                                     onClick={() => setSelectedChildId(student.id)}
                                                                     className={`w-full text-left p-3.5 rounded-xl border text-sm flex justify-between items-center transition-all ${
                                                                         selectedChildId === student.id
-                                                                            ? 'bg-blue-50 border-blue-400 text-foreground font-bold'
-                                                                            : 'bg-secondary/40 border-border text-foreground hover:bg-secondary/60'
+                                                                            ? 'bg-primary/10 border-primary/50 ring-1 ring-primary/20'
+                                                                            : 'bg-card border-border hover:border-primary/30'
                                                                     }`}
                                                                 >
                                                                     <div>
@@ -807,7 +868,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                                             {student.parentFirstName} {student.parentLastName}
                                                                         </div>
                                                                     </div>
-                                                                    {selectedChildId === student.id && <UserCheck className="w-5 h-5 text-blue-600 flex-shrink-0" />}
+                                                                    {selectedChildId === student.id && <UserCheck className="w-5 h-5 text-primary" />}
                                                                 </button>
                                                             ))}
                                                         </div>

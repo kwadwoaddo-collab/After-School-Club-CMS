@@ -115,13 +115,17 @@ export default async function StudentAttendanceHistoryPage(
         : 0;
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto space-y-8">
+        <div className="max-w-5xl mx-auto space-y-8">
                 {/* Back Link */}
                 <div>
+                    <nav className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
+                        <Link href="/dashboard/attendance" className="hover:text-foreground transition-colors">Attendance</Link>
+                        <span>/</span>
+                        <span className="text-foreground font-semibold">{student.firstName} {student.lastName}</span>
+                    </nav>
                     <Link
                         href={`/dashboard/students/${student.id}`}
-                        className="inline-flex items-center gap-2 text-xs font-bold text-on-surface-variant hover:text-white transition-colors group"
+                        className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors group mt-2"
                     >
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                         Back to Student Profile
@@ -130,10 +134,10 @@ export default async function StudentAttendanceHistoryPage(
 
                 {/* Header */}
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-black text-white tracking-tight">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">
                         {student.firstName} {student.lastName}
                     </h1>
-                    <p className="text-sm text-on-surface-variant">
+                    <p className="text-sm text-muted-foreground">
                         Full Attendance & Session History • Year {student.schoolYear.replace('Y', '')}
                     </p>
                 </div>
@@ -141,76 +145,76 @@ export default async function StudentAttendanceHistoryPage(
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Total Sessions */}
-                    <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
-                        <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Total Sessions</span>
+                    <div className="bg-secondary/40 border border-border rounded-[32px] p-6 flex flex-col justify-between">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 block">Total Sessions</span>
                         <div className="flex items-end justify-between">
-                            <span className="text-4xl font-black text-white">{totalSessions}</span>
+                            <span className="text-4xl font-black text-foreground">{totalSessions}</span>
                             <Calendar className="w-8 h-8 text-primary opacity-60" />
                         </div>
                     </div>
 
                     {/* Attendance Rate */}
-                    <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-6 flex flex-col justify-between">
-                        <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Attendance Rate</span>
+                    <div className="bg-secondary/40 border border-border rounded-[32px] p-6 flex flex-col justify-between">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 block">Attendance Rate</span>
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                                 <span className={cn(
                                     "text-4xl font-black",
-                                    totalSessions === 0 ? 'text-on-surface-variant' : attendanceRate >= 80 ? 'text-emerald-400' : attendanceRate >= 60 ? 'text-amber-400' : 'text-rose-500'
+                                    totalSessions === 0 ? 'text-muted-foreground' : attendanceRate >= 80 ? 'text-success' : attendanceRate >= 60 ? 'text-warning' : 'text-error'
                                 )}>
                                     {totalSessions > 0 ? `${attendanceRate}%` : 'N/A'}
                                 </span>
-                                <span className="text-[10px] text-on-surface-variant/60 font-medium mt-1">
+                                <span className="text-[10px] text-muted-foreground/60 font-medium mt-1">
                                     {attendedCount + lateCount} present of {totalSessions} sessions
                                 </span>
                             </div>
                             <AttendanceRadial percentage={attendanceRate} size="sm">
-                                <User className="w-4 h-4 text-emerald-400" />
+                                <User className="w-4 h-4 text-success" />
                             </AttendanceRadial>
                         </div>
                     </div>
 
                     {/* Status Breakdown */}
-                    <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-6">
-                        <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4 block">Breakdown</span>
+                    <div className="bg-secondary/40 border border-border rounded-[32px] p-6">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 block">Breakdown</span>
                         <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                            <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
-                                <span className="text-on-surface-variant/80 flex items-center gap-1.5">
-                                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> Present
+                            <div className="flex items-center justify-between text-xs border-b border-border pb-1">
+                                <span className="text-muted-foreground/80 flex items-center gap-1.5">
+                                    <CheckCircle className="w-3.5 h-3.5 text-success" /> Present
                                 </span>
-                                <span className="font-bold text-white">{attendedCount}</span>
+                                <span className="font-bold text-foreground">{attendedCount}</span>
                             </div>
-                            <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
-                                <span className="text-on-surface-variant/80 flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-amber-400" /> Late
+                            <div className="flex items-center justify-between text-xs border-b border-border pb-1">
+                                <span className="text-muted-foreground/80 flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-warning" /> Late
                                 </span>
-                                <span className="font-bold text-white">{lateCount}</span>
+                                <span className="font-bold text-foreground">{lateCount}</span>
                             </div>
-                            <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
-                                <span className="text-on-surface-variant/80 flex items-center gap-1.5">
-                                    <XCircle className="w-3.5 h-3.5 text-rose-500" /> Absent
+                            <div className="flex items-center justify-between text-xs border-b border-border pb-1">
+                                <span className="text-muted-foreground/80 flex items-center gap-1.5">
+                                    <XCircle className="w-3.5 h-3.5 text-error" /> Absent
                                 </span>
-                                <span className="font-bold text-white">{absentCount}</span>
+                                <span className="font-bold text-foreground">{absentCount}</span>
                             </div>
-                            <div className="flex items-center justify-between text-xs border-b border-outline-variant/5 pb-1">
-                                <span className="text-on-surface-variant/80 flex items-center gap-1.5">
-                                    <MinusCircle className="w-3.5 h-3.5 text-rose-500/70" /> No Show
+                            <div className="flex items-center justify-between text-xs border-b border-border pb-1">
+                                <span className="text-muted-foreground/80 flex items-center gap-1.5">
+                                    <MinusCircle className="w-3.5 h-3.5 text-error/70" /> No Show
                                 </span>
-                                <span className="font-bold text-white">{noShowCount}</span>
+                                <span className="font-bold text-foreground">{noShowCount}</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
-                                <span className="text-on-surface-variant/80 flex items-center gap-1.5">
+                                <span className="text-muted-foreground/80 flex items-center gap-1.5">
                                     <AlertCircle className="w-3.5 h-3.5 text-primary" /> Excused
                                 </span>
-                                <span className="font-bold text-white">{excusedCount}</span>
+                                <span className="font-bold text-foreground">{excusedCount}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Detailed Logs */}
-                <div className="bg-secondary/40 border border-outline-variant/10 rounded-[32px] p-8">
-                    <h2 className="text-lg font-black text-white tracking-tight uppercase tracking-wider mb-6 flex items-center gap-2">
+                <div className="bg-secondary/40 border border-border rounded-[32px] p-8">
+                    <h2 className="text-lg font-bold text-foreground tracking-tight uppercase tracking-wider mb-6 flex items-center gap-2">
                         <ClipboardCheck className="w-5 h-5 text-primary" /> Session History Log
                     </h2>
 
@@ -243,19 +247,19 @@ export default async function StudentAttendanceHistoryPage(
                                 return (
                                     <div
                                         key={booking.id}
-                                        className="glassmorphic-card p-5 rounded-2xl hover:border-outline-variant/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                        className="glassmorphic-card p-5 rounded-2xl hover:border-primary/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                                     >
                                         <div className="space-y-1.5 min-w-0">
                                             <div className="flex items-center gap-2.5 flex-wrap">
-                                                <span className="font-bold text-white text-base">
+                                                <span className="font-bold text-foreground text-base">
                                                     {formattedDate}
                                                 </span>
-                                                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-card/5 border border-outline-variant/10 text-on-surface-variant/80">
+                                                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-secondary/60 border border-border text-muted-foreground">
                                                     {sessionType}
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-center gap-4 text-xs text-on-surface-variant flex-wrap">
+                                            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-3.5 h-3.5 opacity-70" />
                                                     {formattedTime}
@@ -265,15 +269,15 @@ export default async function StudentAttendanceHistoryPage(
                                                     {booking.centreName}
                                                 </span>
                                                 {booking.lateMinutes && booking.lateMinutes > 0 ? (
-                                                    <span className="font-bold text-amber-400">
+                                                    <span className="font-bold text-warning">
                                                         +{booking.lateMinutes} mins late
                                                     </span>
                                                 ) : null}
                                             </div>
 
                                             {booking.attendanceNote && (
-                                                <div className="mt-2 text-xs text-on-surface-variant/70 italic bg-black/10 rounded-lg p-2.5 border border-outline-variant/5">
-                                                    <span className="font-bold not-italic text-on-surface-variant/90 block mb-0.5">Staff Notes:</span>
+                                                <div className="mt-2 text-xs text-muted-foreground/70 italic bg-secondary/40 rounded-lg p-2.5 border border-border">
+                                                    <span className="font-bold not-italic text-muted-foreground block mb-0.5">Staff Notes:</span>
                                                     {booking.attendanceNote}
                                                 </div>
                                             )}
@@ -292,13 +296,12 @@ export default async function StudentAttendanceHistoryPage(
                             })}
                         </div>
                     ) : (
-                        <div className="text-center py-12 bg-card/30 rounded-2xl border border-dashed border-outline-variant/10">
-                            <Calendar className="w-12 h-12 text-on-surface-variant/30 mx-auto mb-3" />
-                            <p className="text-sm text-on-surface-variant">No attendance records found for this student.</p>
+                        <div className="text-center py-12 bg-card rounded-2xl border border-dashed border-border">
+                            <Calendar className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                            <p className="text-sm text-muted-foreground">No attendance records found for this student.</p>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
     );
 }
