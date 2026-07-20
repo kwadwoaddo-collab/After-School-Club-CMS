@@ -40,12 +40,12 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                     <div className="bg-card border border-outline-variant/20 rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                        <div className="w-14 h-14 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                            <Trash2 className="w-7 h-7 text-rose-500" />
+                        <div className="w-14 h-14 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                            <Trash2 className="w-7 h-7 text-destructive" />
                         </div>
                         <h3 className="text-lg font-bold text-white text-center mb-2">Delete Student?</h3>
                         <p className="text-sm text-on-surface-variant text-center mb-6">
-                            This will permanently remove <strong className="text-white">{studentName}</strong> and all their notes and attendance records. This action <strong className="text-rose-500">cannot be undone</strong>.
+                            This will permanently remove <strong className="text-white">{studentName}</strong> and all their notes and attendance records. This action <strong className="text-destructive">cannot be undone</strong>.
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -76,7 +76,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                 </Link>
                 <button
                     onClick={() => setShowConfirm(true)}
-                    className="p-2 text-on-surface-variant hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
+                    className="p-2 text-on-surface-variant hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                     title={`Delete ${studentName}`}
                 >
                     <Trash2 className="w-4 h-4" />

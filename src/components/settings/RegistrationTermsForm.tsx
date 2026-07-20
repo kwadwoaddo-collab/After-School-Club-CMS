@@ -74,7 +74,7 @@ export default function RegistrationTermsForm() {
  
             {loading ? (
                 <div className="flex items-center justify-center py-24">
-                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
             ) : (
                 <div className="space-y-5">
@@ -113,7 +113,7 @@ export default function RegistrationTermsForm() {
  
                     <div className="flex items-center justify-between">
                         {saved ? (
-                            <span className="text-emerald-600 text-sm flex items-center gap-2">
+                            <span className="text-success text-sm flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>

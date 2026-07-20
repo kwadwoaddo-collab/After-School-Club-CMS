@@ -112,11 +112,11 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
             </div>
 
             {saveSuccess && (
-                <div className="glass-card rounded-2xl p-4 bg-emerald-500/10 border border-emerald-500/20">
+                <div className="glass-card rounded-2xl p-4 bg-success/10 border border-success/20">
                     <div className="flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        <p className="text-sm font-semibold text-emerald-600">
-                            Brand color saved successfully!
+                        <CheckCircle2 className="w-5 h-5 text-success" />
+                        <p className="text-sm font-semibold text-success">
+                            Theme preferences saved
                         </p>
                     </div>
                 </div>

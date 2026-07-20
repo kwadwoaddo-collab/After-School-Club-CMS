@@ -47,13 +47,13 @@ export default async function AvailabilityPage() {
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard"
-                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                    className="p-2 hover:bg-secondary rounded-xl transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5 text-slate-600" />
+                    <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Centre Hours</h1>
-                    <p className="text-slate-500 font-medium mt-1">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Centre Hours</h1>
+                    <p className="text-muted-foreground font-medium mt-1">
                         Configure opening hours for each centre
                     </p>
                 </div>
@@ -65,13 +65,13 @@ export default async function AvailabilityPage() {
                     <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
                         <Clock className="w-10 h-10 text-primary" />
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-3">No centres found</h3>
-                    <p className="text-slate-500 max-w-md mx-auto mb-8">
+                    <h3 className="text-2xl font-bold text-foreground mb-3">No centres found</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-8">
                         Create a centre first, then configure its opening hours here.
                     </p>
                     <Link
                         href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
                     >
                         + Add Centre
                     </Link>
@@ -83,15 +83,15 @@ export default async function AvailabilityPage() {
                 {centresList.map(centre => (
                     <div key={centre.id} className="glass-card rounded-3xl overflow-hidden">
                         {/* Card Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
                                     <MapPin className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold text-slate-900 capitalize">{centre.name}</h2>
+                                    <h2 className="font-bold text-foreground capitalize">{centre.name}</h2>
                                     {centre.timezone && (
-                                        <p className="text-xs text-slate-500 font-medium">{centre.timezone}</p>
+                                        <p className="text-xs text-muted-foreground font-medium">{centre.timezone}</p>
                                     )}
                                 </div>
                             </div>
@@ -116,23 +116,23 @@ export default async function AvailabilityPage() {
                                             key={day}
                                             className={`rounded-2xl p-3 text-center ${
                                                 rule
-                                                    ? 'bg-emerald-50 border border-emerald-100'
+                                                    ? 'bg-success/10 border border-success/20'
                                                     : isWeekend
-                                                        ? 'bg-slate-50 border border-dashed border-slate-200'
-                                                        : 'bg-slate-50 border border-slate-100'
+                                                        ? 'bg-secondary border border-dashed border-border'
+                                                        : 'bg-secondary border border-border'
                                             }`}
                                         >
-                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
                                                 {day.slice(0, 3)}
                                             </p>
                                             {rule ? (
                                                 <>
-                                                    <p className="text-xs font-bold text-emerald-700">{rule.startTime}</p>
-                                                    <p className="text-[10px] text-slate-400">to</p>
-                                                    <p className="text-xs font-bold text-emerald-700">{rule.endTime}</p>
+                                                    <p className="text-xs font-bold text-success">{rule.startTime}</p>
+                                                    <p className="text-[10px] text-muted-foreground">to</p>
+                                                    <p className="text-xs font-bold text-success">{rule.endTime}</p>
                                                 </>
                                             ) : (
-                                                <p className="text-xs text-slate-400 italic">Closed</p>
+                                                <p className="text-xs text-muted-foreground italic">Closed</p>
                                             )}
                                         </div>
                                     );

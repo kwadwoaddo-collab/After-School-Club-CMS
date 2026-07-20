@@ -42,7 +42,7 @@ const RULE_TYPE_META: Record<
         label: 'Pupil Premium',
         description: 'For pupils eligible for pupil premium',
         icon: GraduationCap,
-        color: 'text-emerald-600',
+        color: 'text-success',
     },
     percentage: {
         label: 'Custom Percentage',
@@ -54,7 +54,7 @@ const RULE_TYPE_META: Record<
         label: 'Fixed Amount',
         description: 'Fixed £ amount off any invoice',
         icon: PoundSterling,
-        color: 'text-amber-600',
+        color: 'text-warning',
     },
 };
  
@@ -266,7 +266,7 @@ export default function DiscountsForm() {
                 </div>
             )}
             {success && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-600">
+                <div className="bg-success/10 border border-success/20 rounded-xl px-4 py-3 text-sm text-success">
                     Discount rules saved successfully.
                 </div>
             )}

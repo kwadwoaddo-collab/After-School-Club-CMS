@@ -9,9 +9,8 @@ import type { StudentRow } from './StudentsTable';
 /* ------------------------------------------------------------------ */
 function nameToColour(name: string): string {
     const colours = [
-        'bg-blue-600', 'bg-violet-600', 'bg-emerald-600', 'bg-amber-600',
-        'bg-rose-600', 'bg-cyan-600', 'bg-fuchsia-600', 'bg-teal-600',
-        'bg-orange-600', 'bg-indigo-600',
+        'bg-primary/20 text-primary', 'bg-secondary text-foreground', 'bg-success/20 text-success', 'bg-warning/20 text-warning',
+        'bg-destructive/20 text-destructive', 'bg-primary/40 text-primary', 'bg-success/40 text-success', 'bg-warning/40 text-warning',
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -40,7 +39,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                 </p>
                 <Link
                     href="/dashboard/students/add"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
                 >
                     <Plus className="w-4 h-4" /> Add New Student
                 </Link>
@@ -68,10 +67,10 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                             <div className="absolute top-3 right-3 flex items-center gap-1.5">
                                 {hasMedical && (
                                     <div
-                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-500/10 border border-rose-500/20 shadow-[0_0_8px_rgba(255,113,108,0.15)]"
+                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 shadow-[0_0_8px_rgba(var(--destructive-rgb),0.15)]"
                                         title={`Medical: ${student.medicalNotes.join(' | ')}`}
                                     >
-                                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                                        <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
                                     </div>
                                 )}
                                 {hasSafeguarding && (
@@ -87,7 +86,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
 
                         {/* Avatar + Name */}
                         <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-2xl ${avatarColour} flex items-center justify-center text-white font-black text-lg flex-shrink-0 shadow-lg`}>
+                            <div className={`w-12 h-12 rounded-2xl ${avatarColour} flex items-center justify-center font-black text-lg flex-shrink-0 shadow-lg`}>
                                 {initials}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -98,11 +97,11 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                     {(() => {
                                         const yr = student.schoolYear;
                                         let colour = 'bg-secondary border-border text-foreground';
-                                        if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-blue-500/10 border-blue-500/30 text-blue-600';
-                                        else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))    colour = 'bg-violet-500/10 border-violet-500/30 text-violet-600';
-                                        else if (['Y7','Y8','Y9'].includes(yr ?? ''))          colour = 'bg-amber-500/10 border-amber-500/30 text-amber-600';
-                                        else if (['Y10','Y11'].includes(yr ?? ''))             colour = 'bg-orange-500/10 border-orange-500/30 text-orange-600';
-                                        else if (['Y12','Y13'].includes(yr ?? ''))             colour = 'bg-rose-500/10 border-rose-500/30 text-rose-600';
+                                        if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-primary/10 border-primary/30 text-primary';
+                                        else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))    colour = 'bg-success/10 border-success/30 text-success';
+                                        else if (['Y7','Y8','Y9'].includes(yr ?? ''))          colour = 'bg-warning/10 border-warning/30 text-warning';
+                                        else if (['Y10','Y11'].includes(yr ?? ''))             colour = 'bg-destructive/10 border-destructive/30 text-destructive';
+                                        else if (['Y12','Y13'].includes(yr ?? ''))             colour = 'bg-destructive/10 border-destructive/30 text-destructive';
                                         return yr ? (
                                             <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${colour}`}>
                                                 {yr}
@@ -110,7 +109,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                         ) : null;
                                     })()}
                                     {student.isRegistered && (
-                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-[10px] font-bold text-emerald-600 uppercase tracking-wider whitespace-nowrap">
+                                        <span className="px-2 py-0.5 rounded-full bg-success/10 border border-success/40 text-[10px] font-bold text-success uppercase tracking-wider whitespace-nowrap">
                                             Reg
                                         </span>
                                     )}
@@ -144,7 +143,7 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                 {student.bookingCount} booking{student.bookingCount !== 1 ? 's' : ''}
                             </div>
                             {student.bookingCount > 0 && (
-                                <span className={`text-[11px] font-bold ${student.attendanceRate >= 80 ? 'text-emerald-600' : student.attendanceRate >= 50 ? 'text-amber-600' : 'text-rose-500'}`}>
+                                <span className={`text-[11px] font-bold ${student.attendanceRate >= 80 ? 'text-success' : student.attendanceRate >= 50 ? 'text-warning' : 'text-destructive'}`}>
                                     {Math.round(student.attendanceRate)}% att.
                                 </span>
                             )}
@@ -152,9 +151,9 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
 
                         {/* Medical alert preview strip */}
                         {hasMedical && (
-                            <div className="bg-rose-500/5 border border-rose-500/15 rounded-xl px-3 py-2 flex items-center gap-2">
-                                <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
-                                <p className="text-[11px] text-rose-500 font-semibold line-clamp-1">
+                            <div className="bg-destructive/5 border border-destructive/15 rounded-xl px-3 py-2 flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
+                                <p className="text-[11px] text-destructive font-semibold line-clamp-1">
                                     {student.medicalNotes[0]}
                                 </p>
                             </div>
@@ -162,9 +161,9 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
 
                         {/* Low attendance alert strip */}
                         {student.lowAttendance && (
-                            <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl px-3 py-2 flex items-center gap-2">
-                                <TrendingDown className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                                <p className="text-[11px] text-amber-400 font-semibold">
+                            <div className="bg-warning/5 border border-warning/15 rounded-xl px-3 py-2 flex items-center gap-2">
+                                <TrendingDown className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+                                <p className="text-[11px] text-warning font-semibold">
                                     Low attendance · {Math.round(student.attendanceRate)}%
                                 </p>
                             </div>

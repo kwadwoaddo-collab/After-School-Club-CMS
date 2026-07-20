@@ -154,7 +154,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                 <div>
                     <label htmlFor="org-slug" className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
                         Slug
-                        <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded border border-amber-500/20">URL ID</span>
+                        <span className="text-[10px] bg-warning/10 text-warning px-1 py-0.5 rounded border border-warning/20">URL ID</span>
                     </label>
                     {isEditingSlug ? (
                         <div className="flex gap-2">

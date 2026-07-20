@@ -151,7 +151,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
             )}
             
             {success && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3 text-emerald-600 animate-in fade-in slide-in-from-top-2">
+                <div className="p-4 bg-success/10 border border-success/20 rounded-2xl flex items-start gap-3 text-success animate-in fade-in slide-in-from-top-2">
                     <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" />
                     <p className="text-sm font-medium">Pricing updated successfully!</p>
                 </div>
@@ -184,7 +184,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="text-sm font-bold text-foreground mb-2 block">Standard Fee (Self-Finance)</label>
-                        <div className="flex rounded-2xl border border-border overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                        <div className="flex rounded-2xl border border-border overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
                             <span className="flex items-center px-4 bg-secondary/40 border-r border-border text-muted-foreground font-semibold text-sm select-none">£</span>
                             <input
                                 type="number"
@@ -202,7 +202,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
 
                     <div>
                         <label className="text-sm font-bold text-foreground mb-2 block">Assisted Finance Fee</label>
-                        <div className="flex rounded-2xl border border-border overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                        <div className="flex rounded-2xl border border-border overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
                             <span className="flex items-center px-4 bg-secondary/40 border-r border-border text-muted-foreground font-semibold text-sm select-none">£</span>
                             <input
                                 type="number"
@@ -332,7 +332,7 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold rounded-2xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground text-sm font-bold rounded-2xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
                         {saving ? 'Saving...' : 'Save Pricing'}

@@ -94,7 +94,7 @@ export default function CentreHoursTab({ centres }: Props) {
                     <p className="text-sm text-muted-foreground mb-6">Create a centre in the main dashboard before setting hours.</p>
                     <Link
                         href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-slate-950 rounded-2xl text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                     >
                         <Plus className="w-4 h-4" /> Create Centre
                     </Link>

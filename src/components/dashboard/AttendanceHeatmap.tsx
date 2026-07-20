@@ -54,10 +54,10 @@ export async function AttendanceHeatmap({
   const getCellColor = (count: number) => {
     if (count === 0) return 'bg-secondary/40 border-outline-variant/10';
     const pct = count / maxCount;
-    if (pct >= 0.75) return 'bg-red-500/70 border-red-500/30';
-    if (pct >= 0.5) return 'bg-amber-400/70 border-amber-400/30';
-    if (pct >= 0.25) return 'bg-emerald-500/50 border-emerald-500/20';
-    return 'bg-emerald-500/20 border-emerald-500/10';
+    if (pct >= 0.75) return 'bg-destructive/70 border-destructive/30';
+    if (pct >= 0.5) return 'bg-warning/70 border-warning/30';
+    if (pct >= 0.25) return 'bg-success/50 border-success/20';
+    return 'bg-success/20 border-success/10';
   };
 
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -70,7 +70,7 @@ export async function AttendanceHeatmap({
         </h3>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-on-surface-variant/50 font-medium">None</span>
-          {['bg-emerald-500/20', 'bg-emerald-500/50', 'bg-amber-400/70', 'bg-red-500/70'].map((c, i) => (
+          {['bg-success/20', 'bg-success/50', 'bg-warning/70', 'bg-destructive/70'].map((c, i) => (
             <div key={i} className={cn('w-3 h-3 rounded-sm border border-outline-variant/10', c)} />
           ))}
           <span className="text-[10px] text-on-surface-variant/50 font-medium">High</span>

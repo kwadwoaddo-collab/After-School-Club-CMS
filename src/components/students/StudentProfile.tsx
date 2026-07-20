@@ -95,20 +95,20 @@ function nameToGradient(name: string): string {
 function getKsBadge(year: string | null): { label: string; colour: string } {
     if (!year) return { label: '', colour: '' };
     const map: Record<string, string> = {
-        Reception: 'bg-blue-500/10 border-blue-500/30 text-blue-600',
-        Y1: 'bg-blue-500/10 border-blue-500/30 text-blue-600',
-        Y2: 'bg-blue-500/10 border-blue-500/30 text-blue-600',
-        Y3: 'bg-violet-500/10 border-violet-500/30 text-violet-600',
-        Y4: 'bg-violet-500/10 border-violet-500/30 text-violet-600',
-        Y5: 'bg-violet-500/10 border-violet-500/30 text-violet-600',
-        Y6: 'bg-violet-500/10 border-violet-500/30 text-violet-600',
-        Y7: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
-        Y8: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
-        Y9: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
-        Y10: 'bg-orange-500/10 border-orange-500/30 text-orange-600',
-        Y11: 'bg-orange-500/10 border-orange-500/30 text-orange-600',
-        Y12: 'bg-rose-500/10 border-rose-500/30 text-rose-600',
-        Y13: 'bg-rose-500/10 border-rose-500/30 text-rose-600',
+        Reception: 'bg-primary/10 border-primary/30 text-primary',
+        Y1: 'bg-primary/10 border-primary/30 text-primary',
+        Y2: 'bg-primary/10 border-primary/30 text-primary',
+        Y3: 'bg-success/10 border-success/30 text-success',
+        Y4: 'bg-success/10 border-success/30 text-success',
+        Y5: 'bg-success/10 border-success/30 text-success',
+        Y6: 'bg-success/10 border-success/30 text-success',
+        Y7: 'bg-warning/10 border-warning/30 text-warning',
+        Y8: 'bg-warning/10 border-warning/30 text-warning',
+        Y9: 'bg-warning/10 border-warning/30 text-warning',
+        Y10: 'bg-destructive/10 border-destructive/30 text-destructive',
+        Y11: 'bg-destructive/10 border-destructive/30 text-destructive',
+        Y12: 'bg-destructive/10 border-destructive/30 text-destructive',
+        Y13: 'bg-destructive/10 border-destructive/30 text-destructive',
     };
     return { label: year, colour: map[year] ?? 'bg-secondary border-border text-foreground' };
 }

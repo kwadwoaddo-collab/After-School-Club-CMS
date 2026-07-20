@@ -57,10 +57,10 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
         <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-700">
             <header className="mb-8 flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white mb-1">Edit Availability</h1>
-                    <p className="text-slate-400 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-foreground mb-1">Edit Availability</h1>
+                    <p className="text-muted-foreground flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-primary" />
-                        Setting hours for <span className="font-bold text-white">{centreName}</span>
+                        Setting hours for <span className="font-bold text-foreground">{centreName}</span>
                     </p>
                 </div>
                 <Link href="/dashboard/availability" className="text-sm font-bold text-primary hover:text-blue-400 transition-colors flex items-center gap-1">
@@ -70,7 +70,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
 
             <div className="bg-card rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
                 <div className="p-6 border-b border-outline-variant/10 bg-card/50">
-                    <h2 className="text-sm font-bold text-white uppercase tracking-wider">Weekly Schedule</h2>
+                    <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Weekly Schedule</h2>
                 </div>
 
                 <div className="divide-y divide-border">
@@ -85,7 +85,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                                         onChange={() => handleToggleOpen(rule.dayOfWeek)}
                                         className="w-5 h-5 rounded border-outline-variant/20 text-primary focus:ring-primary/20 bg-secondary cursor-pointer"
                                     />
-                                    <span className={cn("font-bold", rule.isOpen ? "text-white" : "text-slate-500 line-through")}>
+                                    <span className={cn("font-bold", rule.isOpen ? "text-foreground" : "text-muted-foreground line-through")}>
                                         {DAYS[rule.dayOfWeek]}
                                     </span>
                                 </label>
@@ -96,27 +96,27 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                                 {rule.isOpen ? (
                                     <>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-bold text-slate-400">From</span>
+                                            <span className="text-sm font-bold text-muted-foreground">From</span>
                                             <input
                                                 type="time"
                                                 value={rule.startTime}
                                                 onChange={(e) => handleTimeChange(rule.dayOfWeek, 'startTime', e.target.value)}
-                                                className="block w-32 rounded-xl bg-secondary text-white border-border shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
+                                                className="block w-32 rounded-xl bg-secondary text-foreground border-border shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
                                             />
                                         </div>
-                                        <span className="text-slate-500 font-bold">→</span>
+                                        <span className="text-muted-foreground font-bold">→</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-bold text-slate-400">To</span>
+                                            <span className="text-sm font-bold text-muted-foreground">To</span>
                                             <input
                                                 type="time"
                                                 value={rule.endTime}
                                                 onChange={(e) => handleTimeChange(rule.dayOfWeek, 'endTime', e.target.value)}
-                                                className="block w-32 rounded-xl bg-secondary text-white border-border shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
+                                                className="block w-32 rounded-xl bg-secondary text-foreground border-border shadow-sm focus:border-primary focus:ring-primary/20 sm:text-sm p-3 border transition-all"
                                             />
                                         </div>
                                     </>
                                 ) : (
-                                    <span className="text-sm text-slate-500 italic font-medium">Closed all day</span>
+                                    <span className="text-sm text-muted-foreground italic font-medium">Closed all day</span>
                                 )}
                             </div>
                         </div>
@@ -126,7 +126,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                 {/* Footer Actions */}
                 <div className="p-6 bg-card flex items-center justify-end gap-3 border-t border-outline-variant/10">
                     {isSuccess && (
-                        <span className="text-sm text-emerald-400 font-bold flex items-center gap-1 mr-2 animate-pulse">
+                        <span className="text-sm text-success font-bold flex items-center gap-1 mr-2 animate-pulse">
                             <CheckCircle className="w-5 h-5" />
                             Saved Successfully!
                         </span>
@@ -135,7 +135,7 @@ export default function AvailabilityForm({ centreId, centreName, initialRules }:
                         onClick={handleSave}
                         disabled={isPending}
                         className={cn(
-                            "px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 glow-btn hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/20 transition-all",
+                            "px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold shadow-lg shadow-primary/30 glow-btn hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/20 transition-all",
                             isPending && "opacity-50 cursor-wait bg-secondary shadow-none"
                         )}
                     >

@@ -80,11 +80,11 @@ const columns: DataTableColumn<StudentRow>[] = [
     render: (student) => {
       const yr = student.schoolYear;
       let colour = 'bg-secondary border-border text-foreground';
-      if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-blue-500/10 border-blue-500/30 text-blue-600';       // KS1
-      else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))   colour = 'bg-violet-500/10 border-violet-500/30 text-violet-600'; // KS2
-      else if (['Y7','Y8','Y9'].includes(yr ?? ''))         colour = 'bg-amber-500/10 border-amber-500/30 text-amber-600';   // KS3
-      else if (['Y10','Y11'].includes(yr ?? ''))            colour = 'bg-orange-500/10 border-orange-500/30 text-orange-600'; // KS4
-      else if (['Y12','Y13'].includes(yr ?? ''))            colour = 'bg-rose-500/10 border-rose-500/30 text-rose-600';      // Sixth form
+      if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-primary/10 border-primary/30 text-primary';       // KS1
+      else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))   colour = 'bg-success/10 border-success/30 text-success'; // KS2
+      else if (['Y7','Y8','Y9'].includes(yr ?? ''))         colour = 'bg-warning/10 border-warning/30 text-warning';   // KS3
+      else if (['Y10','Y11'].includes(yr ?? ''))            colour = 'bg-destructive/10 border-destructive/30 text-destructive'; // KS4
+      else if (['Y12','Y13'].includes(yr ?? ''))            colour = 'bg-destructive/10 border-destructive/30 text-destructive';      // Sixth form
       return (
         <span className={`px-3 py-1 border text-xs font-bold rounded-full shadow-sm ${colour}`}>
           {yr ?? '—'}
@@ -198,7 +198,7 @@ function StudentsEmptyState() {
       </p>
       <Link
         href="/dashboard/students/add"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
       >
         <Plus className="w-4 h-4" /> Add New Student
       </Link>

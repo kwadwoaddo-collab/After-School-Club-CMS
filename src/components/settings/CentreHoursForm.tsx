@@ -176,8 +176,8 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
             {/* ── Section 1: Opening Hours ─────────────────────────────── */}
             <div className="bg-card border border-border rounded-[32px] p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-secondary border border-border rounded-xl flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-success" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-foreground">Opening Hours</h2>
@@ -198,7 +198,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                                     <button
                                         type="button"
                                         onClick={() => updateDay(day, 'open', !sch.open)}
-                                        className={`relative w-10 h-5 rounded-full transition-colors ${sch.open ? 'bg-emerald-500' : 'bg-secondary'}`}
+                                        className={`relative w-10 h-5 rounded-full transition-colors ${sch.open ? 'bg-success' : 'bg-secondary'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-card rounded-full shadow transition-transform ${sch.open ? 'translate-x-5' : ''}`} />
                                     </button>
@@ -213,7 +213,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                                                 type="time"
                                                 value={sch.start}
                                                 onChange={e => updateDay(day, 'start', e.target.value)}
-                                                className="px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                                                className="px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-mono"
                                             />
                                         </div>
                                         <span className="text-muted-foreground/40 text-sm">–</span>
@@ -223,7 +223,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                                                 type="time"
                                                 value={sch.end}
                                                 onChange={e => updateDay(day, 'end', e.target.value)}
-                                                className="px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                                                className="px-3 py-1.5 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-mono"
                                             />
                                         </div>
                                         <span className="text-xs text-muted-foreground ml-1">{fmt12(sch.start)} – {fmt12(sch.end)}</span>
@@ -240,13 +240,13 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
 
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-border">
                     {hoursSuccess
-                        ? <span className="text-emerald-600 text-sm font-medium">✓ {hoursSuccess}</span>
+                        ? <span className="text-success text-sm font-medium">✓ {hoursSuccess}</span>
                         : <span className="text-muted-foreground text-sm">Changes apply immediately on save.</span>
                     }
                     <button
                         onClick={handleSaveHours}
                         disabled={savingHours}
-                        className="px-6 py-3 bg-emerald-600 text-foreground rounded-2xl text-sm font-bold hover:bg-emerald-500 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-3 bg-success text-success-foreground rounded-2xl text-sm font-bold hover:bg-success/90 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
                         {savingHours ? 'Saving...' : 'Save Opening Hours'}
@@ -269,7 +269,7 @@ export default function CentreHoursForm({ centre }: CentreHoursFormProps) {
                 <div className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                         {slots.map(slot => (
-                            <div key={slot} className="flex justify-between items-center p-3 rounded-xl border border-border bg-secondary/60 text-sm font-medium text-slate-200">
+                            <div key={slot} className="flex justify-between items-center p-3 rounded-xl border border-border bg-secondary/60 text-sm font-medium text-muted-foreground">
                                 <span>{slot}</span>
                                 <button
                                     onClick={() => removeSlot(slot)}

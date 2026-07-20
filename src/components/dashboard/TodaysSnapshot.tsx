@@ -129,7 +129,7 @@ export async function TodaysSnapshot({
       {/* Header bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+          <div className="w-2 h-2 rounded-full bg-success shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
           <span className="text-xs font-black uppercase tracking-[0.15em] text-muted-foreground">
             Today&apos;s Snapshot
           </span>
@@ -146,7 +146,7 @@ export async function TodaysSnapshot({
                   <div
                     className={cn(
                       'h-full rounded-full transition-all duration-1000',
-                      attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 50 ? 'bg-amber-400' : 'bg-red-500'
+                      attendanceRate >= 80 ? 'bg-success' : attendanceRate >= 50 ? 'bg-warning' : 'bg-destructive'
                     )}
                     style={{ width: `${attendanceRate}%` }}
                   />

@@ -125,7 +125,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                             
                             <div className="pt-6 border-t border-border/50 space-y-4">
                                 <div className="flex items-center gap-2 text-foreground">
-                                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                                    <ShieldCheck className="w-5 h-5 text-success" />
                                     <h3 className="font-bold text-sm uppercase tracking-wider">Privacy &amp; Compliance</h3>
                                 </div>
                                 <p className="text-xs text-muted-foreground">Export all stored records for GDPR portability requests.</p>
