@@ -7,9 +7,11 @@ import Link from 'next/link';
 import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling, Baby } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import DeleteParentButton from '@/components/parents/DeleteParentButton';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 
 interface Props {
-    searchParams: Promise<{ search?: string }>;
+    searchParams: Promise<{ search?: string; centre?: string }>;
 }
 
 function getInitials(firstName: string, lastName: string) {
@@ -32,11 +34,15 @@ function getAvatarGradient(name: string) {
 export default async function ParentsPage({ searchParams }: Props) {
     const rawParams = await searchParams;
     const search = rawParams.search?.trim() ?? '';
+    const centreParam = rawParams.centre;
 
     const session = await auth();
     if (!session?.user) return redirect('/login');
     const orgId = (session.user as any).organisationId;
     if (!orgId) return redirect('/onboarding');
+
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    const activeCentreId = await resolveActiveCentreId(centreParam, accessibleCentreIds);
 
     // Fetch parents with child counts and outstanding balance
     const allParents = await db.execute(sql`
@@ -44,6 +50,7 @@ export default async function ParentsPage({ searchParams }: Props) {
             SELECT parent_id, COUNT(*) as child_count
             FROM children
             WHERE organisation_id = ${orgId} AND deleted_at IS NULL
+            ${activeCentreId !== 'all' ? sql`AND centre_id = ${activeCentreId}` : sql``}
             GROUP BY parent_id
         ),
         InvoiceSummary AS (
@@ -59,6 +66,7 @@ export default async function ParentsPage({ searchParams }: Props) {
             ) p ON i.id = p.invoice_id
             WHERE i.organisation_id = ${orgId}
               AND i.status != 'void'
+              ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
             GROUP BY i.parent_id
         )
         SELECT
@@ -77,6 +85,7 @@ export default async function ParentsPage({ searchParams }: Props) {
         LEFT JOIN ChildCounts cc ON pa.id = cc.parent_id
         LEFT JOIN InvoiceSummary ins ON pa.id = ins.parent_id
         WHERE pa.organisation_id = ${orgId} AND pa.deleted_at IS NULL
+        ${activeCentreId !== 'all' ? sql`AND pa.id IN (SELECT parent_id FROM children WHERE centre_id = ${activeCentreId} AND deleted_at IS NULL)` : sql``}
         ${search ? sql`AND (
             pa.first_name ILIKE ${'%' + search + '%'} OR
             pa.last_name ILIKE ${'%' + search + '%'} OR
