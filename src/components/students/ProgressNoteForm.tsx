@@ -9,20 +9,20 @@ type NoteType = 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'att
 type Rating = 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
 
 const NOTE_TYPES: { value: NoteType; label: string; color: string; active: string }[] = [
-    { value: 'general',            label: 'General',            color: 'bg-secondary/60 text-muted-foreground hover:bg-secondary',         active: 'bg-gray-700 text-white' },
-    { value: 'progress',           label: 'Progress',           color: 'bg-blue-50 text-blue-600 hover:bg-blue-100',          active: 'bg-blue-600 text-white' },
-    { value: 'subject_feedback',   label: 'Activity Feedback',  color: 'bg-violet-50 text-violet-600 hover:bg-violet-100',    active: 'bg-violet-600 text-white' },
-    { value: 'behaviour',          label: 'Behaviour',          color: 'bg-amber-50 text-amber-700 hover:bg-amber-100',       active: 'bg-amber-500 text-white' },
-    { value: 'attendance_concern', label: 'Attendance Concern', color: 'bg-orange-50 text-orange-700 hover:bg-orange-100',    active: 'bg-orange-500 text-white' },
-    { value: 'medical',            label: 'Medical / Welfare',  color: 'bg-red-50 text-red-600 hover:bg-red-100',             active: 'bg-red-600 text-white' },
+    { value: 'general',            label: 'General',            color: 'bg-secondary/60 text-muted-foreground hover:bg-secondary',         active: 'bg-secondary text-foreground' },
+    { value: 'progress',           label: 'Progress',           color: 'bg-primary/10 text-primary hover:bg-primary/20',          active: 'bg-primary text-primary-foreground' },
+    { value: 'subject_feedback',   label: 'Activity Feedback',  color: 'bg-primary/15 text-primary hover:bg-primary/20',    active: 'bg-primary text-primary-foreground' },
+    { value: 'behaviour',          label: 'Behaviour',          color: 'bg-warning/10 text-warning hover:bg-warning/20',       active: 'bg-warning text-white' },
+    { value: 'attendance_concern', label: 'Attendance Concern', color: 'bg-warning/10 text-warning hover:bg-warning/20',    active: 'bg-warning text-white' },
+    { value: 'medical',            label: 'Medical / Welfare',  color: 'bg-destructive/10 text-destructive hover:bg-destructive/20',             active: 'bg-destructive text-white' },
 ];
 
 const RATINGS: { value: Rating; label: string; icon: React.ReactNode; color: string; active: string }[] = [
-    { value: 'excellent',         label: 'Excellent',         icon: <Smile className="w-3.5 h-3.5" />,         color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',  active: 'bg-emerald-500 text-white' },
-    { value: 'good',              label: 'Good',              icon: <ThumbsUp className="w-3.5 h-3.5" />,      color: 'bg-blue-50 text-blue-700 hover:bg-blue-100',           active: 'bg-blue-500 text-white' },
-    { value: 'satisfactory',      label: 'Satisfactory',      icon: <Meh className="w-3.5 h-3.5" />,           color: 'bg-amber-50 text-amber-700 hover:bg-amber-100',        active: 'bg-amber-500 text-white' },
-    { value: 'needs_improvement', label: 'Needs Improvement', icon: <ThumbsDown className="w-3.5 h-3.5" />,    color: 'bg-orange-50 text-orange-700 hover:bg-orange-100',     active: 'bg-orange-500 text-white' },
-    { value: 'unsatisfactory',    label: 'Unsatisfactory',    icon: <AlertTriangle className="w-3.5 h-3.5" />, color: 'bg-red-50 text-red-700 hover:bg-red-100',              active: 'bg-red-500 text-white' },
+    { value: 'excellent',         label: 'Excellent',         icon: <Smile className="w-3.5 h-3.5" />,         color: 'bg-success/10 text-success hover:bg-success/20',  active: 'bg-success text-white' },
+    { value: 'good',              label: 'Good',              icon: <ThumbsUp className="w-3.5 h-3.5" />,      color: 'bg-primary/10 text-primary hover:bg-primary/20',           active: 'bg-primary text-primary-foreground' },
+    { value: 'satisfactory',      label: 'Satisfactory',      icon: <Meh className="w-3.5 h-3.5" />,           color: 'bg-warning/10 text-warning hover:bg-warning/20',        active: 'bg-warning text-white' },
+    { value: 'needs_improvement', label: 'Needs Improvement', icon: <ThumbsDown className="w-3.5 h-3.5" />,    color: 'bg-warning/10 text-warning hover:bg-warning/20',     active: 'bg-warning text-white' },
+    { value: 'unsatisfactory',    label: 'Unsatisfactory',    icon: <AlertTriangle className="w-3.5 h-3.5" />, color: 'bg-destructive/10 text-destructive hover:bg-destructive/20',              active: 'bg-destructive text-white' },
 ];
 
 const SUBJECTS = ['Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech', 'Reading', 'Writing', 'Art', 'Music', 'Computing', 'Board Games', 'Other'];
@@ -70,8 +70,8 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-secondary/40 transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
-                        <Plus className="w-4 h-4 text-blue-600" />
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Plus className="w-4 h-4 text-primary" />
                     </div>
                     <span className="text-sm font-bold text-foreground">Add Progress Note</span>
                 </div>
@@ -149,7 +149,7 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                         <button
                             onClick={handleSubmit}
                             disabled={isPending || !content.trim()}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-sm shadow-blue-200"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-sm shadow-primary/20"
                         >
                             {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                             Save Note

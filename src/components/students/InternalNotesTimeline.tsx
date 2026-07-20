@@ -61,13 +61,13 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
     <>
     <div className="space-y-6 animate-fadeIn">
       {/* Form Area */}
-      <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+      <div className="bg-secondary rounded-2xl p-4 border border-border">
+        <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">
           Add New Note
         </label>
         
         <div className="flex items-center gap-4 mb-3">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-pointer">
             <input 
               type="radio" 
               name="noteCategory" 
@@ -77,22 +77,22 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
             />
             General Note
           </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-rose-600 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm font-medium text-destructive cursor-pointer">
             <input 
               type="radio" 
               name="noteCategory" 
-              className="text-rose-500 focus:ring-rose-500"
+              className="text-destructive focus:ring-destructive"
               checked={category === 'Medical'} 
               onChange={() => setCategory('Medical')} 
             />
             <AlertTriangle className="w-4 h-4" />
             Medical / Allergy
           </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-blue-600 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm font-medium text-primary cursor-pointer">
             <input 
               type="radio" 
               name="noteCategory" 
-              className="text-blue-500 focus:ring-primary/50"
+              className="text-primary focus:ring-primary/50"
               checked={category === 'Safeguarding'} 
               onChange={() => setCategory('Safeguarding')} 
             />
@@ -105,14 +105,15 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Type observation or note..."
-          className="w-full bg-card border border-slate-200 text-slate-900 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
+          className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
+          className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
           disabled={isPending}
         />
         <div className="flex justify-end mt-2">
           <button
             onClick={handleAddNote}
             disabled={!content.trim() || isPending}
-            className="px-4 py-2 bg-slate-900 text-white font-bold rounded-xl shadow-sm hover:bg-slate-800 transition-colors text-sm disabled:opacity-50"
+            className="px-4 py-2 bg-foreground text-background font-bold rounded-xl shadow-sm hover:bg-foreground/90 disabled:opacity-50 transition-all ml-auto"
           >
             {isPending ? 'Saving...' : 'Add Note'}
           </button>
@@ -123,14 +124,14 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
       {pinnedNotes.length > 0 && (
         <div className="mb-8 space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-sm font-bold text-amber-600 uppercase tracking-wider">High Priority</h3>
-            <div className="h-px bg-amber-200 flex-1" />
+            <h3 className="text-sm font-bold text-warning uppercase tracking-wider">High Priority</h3>
+            <div className="h-px bg-warning/20 flex-1" />
           </div>
           {pinnedNotes.map((note) => (
-            <div key={note.id} className="bg-amber-50/50 rounded-2xl p-4 border border-amber-200 shadow-sm relative overflow-hidden group">
-              {/* Thumbtack Decoration */}
-              <div className="absolute -top-3 -right-3 w-16 h-16 bg-amber-100 rounded-full opacity-50 pointer-events-none" />
-              <div className="absolute top-4 right-4 text-amber-500 opacity-20 pointer-events-none transform rotate-12">
+            <div key={note.id} className="bg-warning/5 rounded-2xl p-4 border border-warning/20 shadow-sm relative overflow-hidden group">
+              {/* Decorative background element */}
+              <div className="absolute -top-3 -right-3 w-16 h-16 bg-warning/20 rounded-full opacity-50 pointer-events-none" />
+              <div className="absolute top-4 right-4 text-warning opacity-20 pointer-events-none transform rotate-12">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16 3H8v2l2 2v5l-4 4v2h5v7l1 1 1-1v-7h5v-2l-4-4V7l2-2V3z"/></svg>
               </div>
 
@@ -138,22 +139,22 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
                 <div className="flex items-center gap-2">
                   {note.category === 'Medical' ? (
                     <>
-                      <AlertTriangle className="w-4 h-4 text-rose-500" />
-                      <span className="text-sm font-bold text-rose-700">{note.authorName}</span>
+                      <AlertTriangle className="w-4 h-4 text-destructive" />
+                      <span className="text-sm font-bold text-destructive">{note.authorName}</span>
                     </>
                   ) : note.category === 'Safeguarding' ? (
                     <>
-                      <Shield className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-bold text-blue-800">{note.authorName}</span>
+                      <Shield className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-bold text-primary">{note.authorName}</span>
                     </>
                   ) : (
                     <>
-                      <User className="w-4 h-4 text-amber-600" />
-                      <span className="text-sm font-bold text-amber-900">{note.authorName}</span>
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-bold text-foreground">{note.authorName}</span>
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-amber-700/70 text-xs">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <Clock className="w-3 h-3" />
                   <span title={format(new Date(note.createdAt), 'PPpp')}>
                     {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
@@ -162,7 +163,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
                   <button
                     onClick={() => handleTogglePin(note.id, false)}
                     disabled={isPending}
-                    className="ml-2 p-1 hover:bg-amber-200 text-amber-600 font-medium rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+                    className="ml-2 p-1 hover:bg-warning/20 text-warning font-medium rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
                     title="Unpin Note"
                   >
                     <PinOff className="w-3.5 h-3.5" />
@@ -171,14 +172,14 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
                   <button
                     onClick={() => handleDelete(note.id)}
                     disabled={isPending}
-                    className="ml-2 text-rose-500 hover:text-rose-700 font-medium disabled:opacity-50 transition-colors"
+                    className="ml-2 text-destructive hover:text-destructive/80 font-medium disabled:opacity-50 transition-colors"
                     title="Delete"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-amber-950 whitespace-pre-wrap leading-relaxed relative z-10 font-medium">
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed relative z-10 font-medium">
                 {note.content}
               </p>
             </div>
@@ -189,42 +190,42 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
       {/* Timeline */}
       <div className="space-y-4">
         {standardNotes.length === 0 ? (
-          <p className="text-sm text-slate-400 font-medium italic text-center py-4">
+          <p className="text-sm text-muted-foreground font-medium italic text-center py-4">
             No standard notes found.
           </p>
         ) : (
           standardNotes.map((note) => (
             <div key={note.id} className="relative pl-6 pb-2 group">
               {/* Timeline Connector */}
-              <div className="absolute left-1.5 top-2 bottom-0 w-0.5 bg-slate-100 group-last:bg-transparent" />
+              <div className="absolute left-1.5 top-2 bottom-0 w-0.5 bg-border group-last:bg-transparent" />
               {/* Timeline Dot */}
               <div className="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
               </div>
 
-              <div className="bg-card rounded-2xl p-4 border border-slate-100 shadow-sm">
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {note.category === 'Medical' ? (
                       <>
-                        <AlertTriangle className="w-4 h-4 text-rose-500" />
-                        <span className="text-sm font-bold text-rose-700">{note.authorName}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 font-bold uppercase tracking-wider ml-1">Medical</span>
+                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                        <span className="text-sm font-bold text-destructive">{note.authorName}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded border border-destructive/20 bg-destructive/10 text-destructive font-bold uppercase tracking-wider ml-1">Medical</span>
                       </>
                     ) : note.category === 'Safeguarding' ? (
                       <>
-                        <Shield className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-bold text-blue-800">{note.authorName}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-600 font-bold uppercase tracking-wider ml-1">Safeguarding</span>
+                        <Shield className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold text-primary">{note.authorName}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded border border-primary/20 bg-primary/10 text-primary font-bold uppercase tracking-wider ml-1">Safeguarding</span>
                       </>
                     ) : (
                       <>
-                        <User className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm font-bold text-slate-700">{note.authorName}</span>
+                        <User className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-bold text-foreground">{note.authorName}</span>
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-slate-400 text-xs">
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs">
                     <Clock className="w-3 h-3" />
                     <span title={format(new Date(note.createdAt), 'PPpp')}>
                       {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
@@ -233,7 +234,7 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
                     <button
                       onClick={() => handleTogglePin(note.id, !note.pinnedAt)}
                       disabled={isPending}
-                      className="ml-2 p-1.5 hover:bg-slate-100 text-slate-400 hover:text-amber-500 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+                      className="ml-2 p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
                       title={note.pinnedAt ? "Unpin Note" : "Pin Note"}
                     >
                       <Pin className="w-3.5 h-3.5" />
@@ -242,14 +243,14 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
                     <button
                       onClick={() => handleDelete(note.id)}
                       disabled={isPending}
-                      className="ml-1 text-rose-400 hover:text-rose-600 font-medium disabled:opacity-50 transition-colors"
+                      className="ml-1 text-destructive hover:text-destructive/80 font-medium disabled:opacity-50 transition-colors"
                       title="Delete"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                   {note.content}
                 </p>
               </div>

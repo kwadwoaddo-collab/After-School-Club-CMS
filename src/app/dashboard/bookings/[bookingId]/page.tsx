@@ -56,11 +56,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
     const getStatusBadge = (status: string) => {
         const styles: Record<string, { bg: string; text: string; ring: string; label: string }> = {
-            confirmed:   { bg: 'bg-blue-50',   text: 'text-blue-700',   ring: 'ring-blue-600/20',   label: 'Booked' },
-            pending:     { bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-600/20',  label: 'Pending' },
-            completed:   { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-600/20', label: 'Attended' },
-            rescheduled: { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-600/20', label: 'Rescheduled' },
-            cancelled:   { bg: 'bg-slate-100', text: 'text-slate-600',  ring: 'ring-slate-600/20',  label: 'Cancelled' },
+            confirmed:   { bg: 'bg-primary/10',   text: 'text-primary',   ring: 'ring-primary/20',   label: 'Booked' },
+            pending:     { bg: 'bg-warning/10',  text: 'text-warning',  ring: 'ring-warning/20',  label: 'Pending' },
+            completed:   { bg: 'bg-primary/15', text: 'text-primary', ring: 'ring-primary/20', label: 'Attended' },
+            rescheduled: { bg: 'bg-primary/10', text: 'text-primary', ring: 'ring-primary/20', label: 'Rescheduled' },
+            cancelled:   { bg: 'bg-secondary', text: 'text-muted-foreground',  ring: 'ring-border',  label: 'Cancelled' },
         };
         const style = styles[status] || styles.pending;
         return (
@@ -91,21 +91,21 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             date: booking.createdAt ? format(new Date(booking.createdAt), 'MMM d, yyyy') : null,
             done: true,
             icon: CheckCircle2,
-            colour: 'text-emerald-400',
+            colour: 'text-success',
         },
         {
             label: 'Confirmed',
             date: booking.status !== 'pending' && booking.createdAt ? format(new Date(booking.createdAt), 'MMM d, yyyy') : null,
             done: !['pending', 'cancelled'].includes(booking.status),
             icon: booking.status === 'cancelled' ? XCircle : CheckCircle2,
-            colour: booking.status === 'cancelled' ? 'text-slate-400' : 'text-blue-400',
+            colour: booking.status === 'cancelled' ? 'text-muted-foreground' : 'text-primary',
         },
         {
             label: booking.status === 'cancelled' ? 'Cancelled' : booking.status === 'rescheduled' ? 'Rescheduled' : 'Attended',
             date: booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : null,
             done: ['completed', 'cancelled', 'rescheduled'].includes(booking.status),
             icon: booking.status === 'cancelled' ? XCircle : booking.status === 'rescheduled' ? RefreshCw : CheckCircle2,
-            colour: booking.status === 'completed' ? 'text-violet-400' : booking.status === 'cancelled' ? 'text-slate-400' : booking.status === 'rescheduled' ? 'text-indigo-400' : 'text-slate-600',
+            colour: booking.status === 'completed' ? 'text-primary' : booking.status === 'cancelled' ? 'text-muted-foreground' : booking.status === 'rescheduled' ? 'text-primary' : 'text-muted-foreground',
         },
     ];
 
@@ -123,7 +123,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 </Link>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-white tracking-tight">Booking Details</h1>
-                    <p className="text-slate-400 font-medium mt-1">View and manage booking</p>
+                    <p className="text-muted-foreground font-medium mt-1">View and manage booking</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Link href={`/dashboard/bookings/${bookingId}/reschedule`} className="px-4 py-2.5 bg-card/5 border border-white/10 hover:bg-card/10 rounded-2xl text-sm font-semibold text-white transition-all">
@@ -135,14 +135,14 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
             {/* Booking Lifecycle Timeline */}
             <div className="glassmorphic-card rounded-3xl p-6">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Booking Lifecycle</h3>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Booking Lifecycle</h3>
                 <div className="flex items-center gap-0">
                     {timelineSteps.map((step, i) => (
                         <div key={step.label} className="flex items-center flex-1">
                             <div className="flex flex-col items-center gap-1.5 flex-1">
-                                <step.icon className={`w-5 h-5 ${step.done ? step.colour : 'text-slate-600'}`} />
-                                <p className={`text-xs font-bold ${step.done ? 'text-white' : 'text-slate-600'}`}>{step.label}</p>
-                                {step.date && step.done && <p className="text-[10px] text-slate-500">{step.date}</p>}
+                                <step.icon className={`w-5 h-5 ${step.done ? step.colour : 'text-muted-foreground'}`} />
+                                <p className={`text-xs font-bold ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>{step.label}</p>
+                                {step.date && step.done && <p className="text-[10px] text-muted-foreground">{step.date}</p>}
                             </div>
                             {i < timelineSteps.length - 1 && (
                                 <div className={`h-px flex-1 mx-2 ${step.done ? 'bg-border/30' : 'bg-card/5'}`} />
@@ -173,7 +173,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                             </h2>
                                             <div className="flex flex-wrap items-center gap-4">
                                                 <span className="px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold uppercase">{child.schoolYear || 'Grade N/A'}</span>
-                                                {child.dateOfBirth && <span className="text-sm text-slate-400 font-medium">Born: {format(new Date(child.dateOfBirth), 'MMM d, yyyy')}</span>}
+                                                {child.dateOfBirth && <span className="text-sm text-muted-foreground font-medium">Born: {format(new Date(child.dateOfBirth), 'MMM d, yyyy')}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -198,21 +198,21 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0"><Calendar className="w-6 h-6 text-primary" /></div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Session Date</p>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Session Date</p>
                                             <p className="text-lg font-bold text-white">{booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d, yyyy') : 'Date TBD'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-accent-violet/10 flex items-center justify-center flex-shrink-0"><Clock className="w-6 h-6 text-accent-violet" /></div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Time Slot</p>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Time Slot</p>
                                             <p className="text-lg font-bold text-white">{booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-accent-cyan/10 flex items-center justify-center flex-shrink-0"><MapPin className="w-6 h-6 text-accent-cyan" /></div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Location</p>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Location</p>
                                             <div className="flex items-center gap-2">
                                                 <p className="text-lg font-bold text-white">{booking.centre?.name || 'Unknown Location'}</p>
                                                 <ReassignCentreButton bookingId={booking.id} currentCentreId={booking.centreId || ''} centres={orgCentres} />
@@ -242,7 +242,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-card/5 border border-white/5 flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-white/60" /></div>
                         <div>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Parent Name</p>
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Parent Name</p>
                             <p className="text-base font-bold text-white">{booking.parent.firstName} {booking.parent.lastName}</p>
                             <p className="text-xs text-primary font-semibold mt-1">Primary Point of Contact</p>
                         </div>
@@ -252,7 +252,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-card/5 border border-white/5 flex items-center justify-center flex-shrink-0"><Phone className="w-6 h-6 text-white/60" /></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Phone</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Phone</p>
                                 <a href={`tel:${booking.parent.phone}`} className="text-base font-bold text-white hover:text-primary transition-colors">
                                     {booking.parent.phone}
                                 </a>
@@ -264,7 +264,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         <div className="flex items-center gap-4 md:col-span-2">
                             <div className="w-12 h-12 rounded-2xl bg-card/5 border border-white/5 flex items-center justify-center flex-shrink-0"><Mail className="w-6 h-6 text-white/60" /></div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Email</p>
                                 <a href={`mailto:${booking.parent.email}`} className="text-base font-bold text-white hover:text-primary transition-colors">
                                     {booking.parent.email}
                                 </a>
@@ -282,7 +282,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                 {student.id ? (
                     <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
                 ) : (
-                    <p className="text-sm text-slate-500 italic">No student associated with this booking to attach notes to.</p>
+                    <p className="text-sm text-muted-foreground italic">No student associated with this booking to attach notes to.</p>
                 )}
             </div>
         </div>

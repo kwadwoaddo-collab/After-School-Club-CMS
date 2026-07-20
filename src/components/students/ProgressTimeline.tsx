@@ -30,19 +30,19 @@ interface ProgressTimelineProps {
 
 const NOTE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeClass: string }> = {
     general:            { label: 'General',    icon: <BookOpen className="w-3 h-3" />,      badgeClass: 'bg-secondary/60 text-muted-foreground' },
-    progress:           { label: 'Progress',   icon: <TrendingUp className="w-3 h-3" />,    badgeClass: 'bg-blue-100 text-blue-700' },
-    subject_feedback:   { label: 'Activity',   icon: <Star className="w-3 h-3" />,          badgeClass: 'bg-violet-100 text-violet-700' },
-    behaviour:          { label: 'Behaviour',  icon: <Users className="w-3 h-3" />,         badgeClass: 'bg-amber-100 text-amber-700' },
-    attendance_concern: { label: 'Attendance', icon: <Clock className="w-3 h-3" />,         badgeClass: 'bg-orange-100 text-orange-700' },
-    medical:            { label: 'Medical',    icon: <Stethoscope className="w-3 h-3" />,   badgeClass: 'bg-red-100 text-red-700' },
+    progress:           { label: 'Progress',   icon: <TrendingUp className="w-3 h-3" />,    badgeClass: 'bg-primary/10 text-primary' },
+    subject_feedback:   { label: 'Activity',   icon: <Star className="w-3 h-3" />,          badgeClass: 'bg-primary/15 text-primary' },
+    behaviour:          { label: 'Behaviour',  icon: <Users className="w-3 h-3" />,         badgeClass: 'bg-warning/10 text-warning' },
+    attendance_concern: { label: 'Attendance', icon: <Clock className="w-3 h-3" />,         badgeClass: 'bg-warning/10 text-warning' },
+    medical:            { label: 'Medical',    icon: <Stethoscope className="w-3 h-3" />,   badgeClass: 'bg-destructive/10 text-destructive' },
 };
 
 const RATING_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeClass: string }> = {
-    excellent:         { label: 'Excellent',         icon: <Smile className="w-3 h-3" />,         badgeClass: 'bg-emerald-100 text-emerald-700' },
-    good:              { label: 'Good',              icon: <ThumbsUp className="w-3 h-3" />,       badgeClass: 'bg-blue-100 text-blue-700' },
-    satisfactory:      { label: 'Satisfactory',      icon: <Meh className="w-3 h-3" />,            badgeClass: 'bg-amber-100 text-amber-700' },
-    needs_improvement: { label: 'Needs Improvement', icon: <ThumbsDown className="w-3 h-3" />,     badgeClass: 'bg-orange-100 text-orange-700' },
-    unsatisfactory:    { label: 'Unsatisfactory',    icon: <AlertTriangle className="w-3 h-3" />,  badgeClass: 'bg-red-100 text-red-700' },
+    excellent:         { label: 'Excellent',         icon: <Smile className="w-3 h-3" />,         badgeClass: 'bg-success/10 text-success' },
+    good:              { label: 'Good',              icon: <ThumbsUp className="w-3 h-3" />,       badgeClass: 'bg-primary/10 text-primary' },
+    satisfactory:      { label: 'Satisfactory',      icon: <Meh className="w-3 h-3" />,            badgeClass: 'bg-warning/10 text-warning' },
+    needs_improvement: { label: 'Needs Improvement', icon: <ThumbsDown className="w-3 h-3" />,     badgeClass: 'bg-warning/10 text-warning' },
+    unsatisfactory:    { label: 'Unsatisfactory',    icon: <AlertTriangle className="w-3 h-3" />,  badgeClass: 'bg-destructive/10 text-destructive' },
 };
 
 const FILTER_OPTIONS = ['All', 'General', 'Progress', 'Activity', 'Behaviour', 'Medical'];
@@ -100,7 +100,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                         onClick={() => setFilter(opt)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                             filter === opt
-                                ? 'bg-blue-600 text-white shadow-sm'
+                                ? 'bg-primary text-primary-foreground shadow-sm'
                                 : 'bg-secondary/60 text-muted-foreground hover:bg-secondary'
                         }`}
                     >
@@ -114,7 +114,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
 
             {sortedNotes.length === 0 ? (
                 <div className="py-10 flex flex-col items-center text-center border-2 border-dashed border-border rounded-2xl bg-secondary/40">
-                    <BookOpen className="w-8 h-8 text-gray-300 mb-2" />
+                    <BookOpen className="w-8 h-8 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">No {filter !== 'All' ? filter.toLowerCase() + ' ' : ''}notes yet.</p>
                 </div>
             ) : (
@@ -133,13 +133,13 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                 key={note.id}
                                 className={`relative group border rounded-2xl p-4 transition-all ${
                                     isPinned
-                                        ? 'border-blue-200 bg-blue-50'
+                                        ? 'border-primary/20 bg-primary/10'
                                         : 'border-border bg-card hover:border-border'
                                 }`}
                             >
                                 {/* Pin dot */}
                                 {isPinned && (
-                                    <div className="absolute top-3.5 right-10 text-blue-500">
+                                    <div className="absolute top-3.5 right-10 text-primary">
                                         <Pin className="w-3 h-3 fill-current" />
                                     </div>
                                 )}
@@ -152,7 +152,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             disabled={isPending}
                                             title={isPinned ? 'Unpin' : 'Pin to top'}
                                             className={`p-1.5 rounded-lg transition-colors ${
-                                                isPinned ? 'text-blue-600 bg-blue-100' : 'text-muted-foreground hover:text-blue-600 hover:bg-blue-50'
+                                                isPinned ? 'text-primary bg-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-primary/20'
                                             }`}
                                         >
                                             <Pin className="w-3.5 h-3.5" />
@@ -163,7 +163,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             onClick={() => { setEditingId(note.id); setEditingContent(note.content); }}
                                             disabled={isPending}
                                             title="Edit note"
-                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/20 transition-colors"
                                         >
                                             <Edit3 className="w-3.5 h-3.5" />
                                         </button>
@@ -173,7 +173,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             onClick={() => handleDelete(note.id)}
                                             disabled={isPending}
                                             title="Delete note"
-                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/20 transition-colors"
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
@@ -217,7 +217,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             <button
                                                 onClick={() => handleSaveEdit(note.id)}
                                                 disabled={!editingContent.trim() || isPending}
-                                                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50"
+                                                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all disabled:opacity-50"
                                             >
                                                 {isPending ? 'Saving…' : 'Save'}
                                             </button>
