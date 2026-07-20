@@ -413,19 +413,21 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             </div>
 
             {/* Summary cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Students', value: ledger.length, icon: <Award className="w-4 h-4" />, color: 'text-primary bg-primary/10 border-primary/20' },
-                    { label: 'In Arrears', value: arrearsCount, icon: <TrendingDown className="w-4 h-4" />, color: 'text-error bg-error-container/10 border-error/20' },
-                    { label: 'All Even', value: evenCount, icon: <Minus className="w-4 h-4" />, color: 'text-muted-foreground bg-secondary/40 border-border' },
-                    { label: 'Ahead', value: aheadCount, icon: <TrendingUp className="w-4 h-4" />, color: 'text-tertiary bg-tertiary-container/10 border-tertiary/20' },
+                    { label: 'Total Students', value: ledger.length, icon: <Award className="w-4 h-4" />, iconBg: 'bg-primary/15 text-primary', valueColor: 'text-foreground' },
+                    { label: 'In Arrears', value: arrearsCount, icon: <TrendingDown className="w-4 h-4" />, iconBg: 'bg-error-container/15 text-error', valueColor: 'text-error' },
+                    { label: 'All Even', value: evenCount, icon: <Minus className="w-4 h-4" />, iconBg: 'bg-secondary text-muted-foreground', valueColor: 'text-foreground' },
+                    { label: 'Ahead', value: aheadCount, icon: <TrendingUp className="w-4 h-4" />, iconBg: 'bg-tertiary-container/15 text-tertiary', valueColor: 'text-tertiary' },
                 ].map(s => (
-                    <div key={s.label} className={`p-4 rounded-2xl border ${s.color}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                            {s.icon}
-                            <span className="text-xs font-bold uppercase tracking-wide">{s.label}</span>
+                    <div key={s.label} className="relative overflow-hidden p-5 rounded-2xl bg-card border border-border shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className={`p-2 rounded-xl ${s.iconBg}`}>
+                                {s.icon}
+                            </div>
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{s.label}</span>
                         </div>
-                        <p className="text-2xl font-black">{s.value}</p>
+                        <p className={`text-3xl font-black tabular-nums ${s.valueColor}`}>{s.value}</p>
                     </div>
                 ))}
             </div>
