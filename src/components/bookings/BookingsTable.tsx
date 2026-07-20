@@ -399,7 +399,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 </p>
                 <Link
                     href="/dashboard/bookings/new"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl text-sm font-bold transition-all shadow-lg shadow-primary/25"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-bold transition-all active:scale-95 duration-100 shadow-lg shadow-primary/25"
                 >
                     + Book Session
                 </Link>
@@ -429,14 +429,14 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         <button
                             onClick={() => setConfirmCancel(null)}
                             disabled={isCancelling}
-                        className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all border border-border"
+                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100 border border-border"
                         >
                             Keep Booking
                         </button>
                         <button
                             onClick={handleCancelConfirm}
                             disabled={isCancelling}
-                            className="flex-1 px-4 py-2.5 bg-warning hover:bg-warning/90 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-2.5 bg-warning hover:bg-warning/90 rounded-2xl text-sm font-bold text-primary-foreground transition-all active:scale-95 duration-100 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {isCancelling ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : 'Yes, Cancel'}
                         </button>
@@ -465,14 +465,14 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         <button
                             onClick={() => setConfirmDelete(null)}
                             disabled={isDeleting}
-                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all border border-border"
+                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100 border border-border"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleDelete}
                             disabled={isDeleting}
-                            className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-destructive-foreground transition-all active:scale-95 duration-100 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Yes, Delete'}
                         </button>
@@ -1041,7 +1041,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         onClick={() => handleBulkStatus('completed')}
                         disabled={isProcessingBulk}
                         title="Marks selected bookings as attended (applies to all children in each booking)"
-                        className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
                     >
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
                         Mark as Attended
@@ -1049,7 +1049,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <button
                         onClick={() => handleBulkStatus('signed_up')}
                         disabled={isProcessingBulk}
-                        className="flex items-center gap-2 px-4 py-2 bg-success/10 hover:bg-success/20 text-success rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-success/10 hover:bg-success/20 text-success rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
                     >
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                         Mark Signed-up
@@ -1058,7 +1058,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <button
                         onClick={() => setConfirmBulkDelete(true)}
                         disabled={isProcessingBulk}
-                        className="flex items-center gap-2 px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
                     >
                         {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         Delete
@@ -1088,13 +1088,13 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <div className="flex gap-3">
                         <button
                             onClick={() => setConfirmBulkDelete(false)}
-                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all border border-border"
+                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100 border border-border"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleBulkDelete}
-                            className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-destructive-foreground transition-all active:scale-95 duration-100 flex items-center justify-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" /> Delete All
                         </button>

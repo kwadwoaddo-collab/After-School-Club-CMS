@@ -68,7 +68,7 @@ export default async function NewBookingPage(props: {
                 {/* Back link */}
                 <Link
                     href="/dashboard/bookings"
-                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold mb-10 group"
+                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold mb-10 group active:scale-95 duration-100"
                 >
                     <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
                         <ArrowLeft className="w-4 h-4" />
@@ -90,7 +90,7 @@ export default async function NewBookingPage(props: {
                         <Link
                             key={centre.id}
                             href={`/dashboard/bookings/new?centre=${centre.id}`}
-                            className="group flex items-center justify-between bg-card border border-border hover:border-primary/40 hover:bg-secondary/40 p-6 rounded-2xl transition-all"
+                            className="group flex items-center justify-between bg-card border border-border hover:border-primary/40 hover:bg-secondary/40 p-6 rounded-2xl transition-all active:scale-[0.985] duration-100"
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
@@ -126,7 +126,7 @@ function BookingPageContent({ centre }: { centre: { id: string; name: string; op
                 <div className="mb-10">
                     <Link
                         href="/dashboard/bookings"
-                        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold group"
+                        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold group active:scale-95 duration-100"
                     >
                         <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
                             <ArrowLeft className="w-4 h-4" />

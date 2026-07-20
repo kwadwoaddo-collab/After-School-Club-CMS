@@ -118,15 +118,15 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link href="/dashboard/bookings" className="p-2 hover:bg-card/10 rounded-xl transition-colors">
-                    <ChevronLeft className="w-5 h-5 text-white/60 hover:text-white" />
+                <Link href="/dashboard/bookings" className="p-2 hover:bg-card/10 rounded-xl transition-all active:scale-90 duration-100">
+                    <ChevronLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Booking Details</h1>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Booking Details</h1>
                     <p className="text-muted-foreground font-medium mt-1">View and manage booking</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Link href={`/dashboard/bookings/${bookingId}/reschedule`} className="px-4 py-2.5 bg-card/5 border border-white/10 hover:bg-card/10 rounded-2xl text-sm font-semibold text-white transition-all">
+                    <Link href={`/dashboard/bookings/${bookingId}/reschedule`} className="px-4 py-2.5 bg-card hover:bg-secondary border border-border rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100">
                         Reschedule
                     </Link>
                     <MarkAttendedButton bookingId={bookingId} initialStatus={booking.status} />
@@ -162,11 +162,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                             <div key={attendee.id} className="glassmorphic-card rounded-[32px] p-8">
                                 <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-primary/20">
+                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-primary-foreground text-2xl font-bold shadow-lg shadow-primary/20">
                                             {initials}
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold text-white mb-2 hover:text-primary transition-colors">
+                                            <h2 className="text-2xl font-bold text-foreground mb-2 hover:text-primary transition-colors">
                                                 <Link href={`/dashboard/students/${child.id}`} className="hover:underline underline-offset-4 decoration-primary/30">
                                                     {child.firstName} {child.lastName}
                                                 </Link>
@@ -199,14 +199,14 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0"><Calendar className="w-6 h-6 text-primary" /></div>
                                         <div>
                                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Session Date</p>
-                                            <p className="text-lg font-bold text-white">{booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d, yyyy') : 'Date TBD'}</p>
+                                            <p className="text-lg font-bold text-foreground">{booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d, yyyy') : 'Date TBD'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-accent-violet/10 flex items-center justify-center flex-shrink-0"><Clock className="w-6 h-6 text-accent-violet" /></div>
                                         <div>
                                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Time Slot</p>
-                                            <p className="text-lg font-bold text-white">{booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}</p>
+                                            <p className="text-lg font-bold text-foreground">{booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
@@ -214,11 +214,11 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                                         <div>
                                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Location</p>
                                             <div className="flex items-center gap-2">
-                                                <p className="text-lg font-bold text-white">{booking.centre?.name || 'Unknown Location'}</p>
+                                                <p className="text-lg font-bold text-foreground">{booking.centre?.name || 'Unknown Location'}</p>
                                                 <ReassignCentreButton bookingId={booking.id} currentCentreId={booking.centreId || ''} centres={orgCentres} />
                                             </div>
                                             {mapLink && (
-                                                <a href={mapLink} target="_blank" rel="noopener noreferrer" className="text-xs text-[#adc6ff] hover:underline mt-1 inline-block">
+                                                <a href={mapLink} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
                                                     View on map →
                                                 </a>
                                             )}
@@ -237,23 +237,23 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
             {/* Parent Information */}
             <div className="glassmorphic-card rounded-3xl p-8">
-                <h3 className="text-xl font-bold text-white mb-6">Parent Information</h3>
+                <h3 className="text-xl font-bold text-foreground mb-6">Parent Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-card/5 border border-white/5 flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-white/60" /></div>
+                        <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-muted-foreground" /></div>
                         <div>
                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Parent Name</p>
-                            <p className="text-base font-bold text-white">{booking.parent.firstName} {booking.parent.lastName}</p>
+                            <p className="text-base font-bold text-foreground">{booking.parent.firstName} {booking.parent.lastName}</p>
                             <p className="text-xs text-primary font-semibold mt-1">Primary Point of Contact</p>
                         </div>
                     </div>
 
                     {booking.parent.phone && (
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-card/5 border border-white/5 flex items-center justify-center flex-shrink-0"><Phone className="w-6 h-6 text-white/60" /></div>
+                            <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center flex-shrink-0"><Phone className="w-6 h-6 text-muted-foreground" /></div>
                             <div>
                                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Phone</p>
-                                <a href={`tel:${booking.parent.phone}`} className="text-base font-bold text-white hover:text-primary transition-colors">
+                                <a href={`tel:${booking.parent.phone}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
                                     {booking.parent.phone}
                                 </a>
                             </div>
@@ -262,10 +262,10 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
                     {booking.parent.email && (
                         <div className="flex items-center gap-4 md:col-span-2">
-                            <div className="w-12 h-12 rounded-2xl bg-card/5 border border-white/5 flex items-center justify-center flex-shrink-0"><Mail className="w-6 h-6 text-white/60" /></div>
+                            <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center flex-shrink-0"><Mail className="w-6 h-6 text-muted-foreground" /></div>
                             <div>
                                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Email</p>
-                                <a href={`mailto:${booking.parent.email}`} className="text-base font-bold text-white hover:text-primary transition-colors">
+                                <a href={`mailto:${booking.parent.email}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
                                     {booking.parent.email}
                                 </a>
                             </div>
@@ -277,7 +277,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
             {/* Internal Notes Timeline */}
             <div className="glassmorphic-card rounded-3xl p-8">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-white">Internal Notes</h3>
+                    <h3 className="text-xl font-bold text-foreground">Internal Notes</h3>
                 </div>
                 {student.id ? (
                     <InternalNotesTimeline childId={student.id} initialNotes={initialNotes} />
