@@ -45,19 +45,20 @@ function PortalLoginForm() {
     return (
         <div className="w-full max-w-md bg-card rounded-2xl shadow-xl overflow-hidden">
             <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
                     👋
                 </div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Parent Portal</h1>
-                <p className="text-muted-foreground mb-8">Access your bookings and children's progress.</p>
+                <p className="text-muted-foreground mb-2">Access your bookings and children's progress.</p>
+                <p className="text-sm text-muted-foreground mb-8">No password needed — we'll email you a secure one-tap login link.</p>
 
                 {errorParam === 'ExpiredOrInvalid' && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6">
+                    <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-lg text-sm mb-6">
                         ⚠️ That link has expired or is invalid. Please try again.
                     </div>
                 )}
                 {errorParam === 'InvalidToken' && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6">
+                    <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-lg text-sm mb-6">
                         ⚠️ Invalid link. Please try again.
                     </div>
                 )}
@@ -72,39 +73,39 @@ function PortalLoginForm() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="parent@example.com"
-                                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                className="w-full px-4 py-3 border border-border rounded-lg outline-none transition-all"
                             />
                         </div>
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-lg text-sm mb-4">
+                            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-3 py-2.5 rounded-lg text-sm mb-4">
                                 {error}
                             </div>
                         )}
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                            className="w-full py-3 px-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
                         >
                             {isSubmitting ? 'Sending Link…' : 'Send Magic Link'}
                         </button>
                     </form>
                 ) : (
-                    <div className="bg-green-50 p-6 rounded-xl animate-fadeIn">
-                        <h3 className="text-lg font-semibold text-green-800 mb-2">Check your email!</h3>
-                        <p className="text-green-700 text-sm mb-4">
+                    <div className="bg-success/10 p-6 rounded-xl animate-fadeIn">
+                        <h3 className="text-lg font-semibold text-success mb-2">Check your email!</h3>
+                        <p className="text-success/80 text-sm mb-4">
                             We've sent a secure login link to <strong>{email}</strong>.
                         </p>
                         <button
                             onClick={() => setIsSent(false)}
-                            className="text-green-600 font-medium hover:underline text-sm"
+                            className="text-success font-medium hover:underline text-sm"
                         >
                             Try another email
                         </button>
 
-                        {debugLink && (
+                        {process.env.NODE_ENV !== 'production' && debugLink && (
                             <div className="mt-6 p-4 bg-secondary/60 rounded text-left overflow-hidden">
                                 <p className="text-xs font-mono text-muted-foreground mb-1">DEV MODE LINK:</p>
-                                <a href={debugLink} className="text-indigo-600 text-xs break-all hover:underline">{debugLink}</a>
+                                <a href={debugLink} className="text-primary text-xs break-all hover:underline">{debugLink}</a>
                             </div>
                         )}
                     </div>
@@ -112,7 +113,7 @@ function PortalLoginForm() {
             </div>
             <div className="bg-secondary/40 px-8 py-4 border-t border-border text-center">
                 <p className="text-xs text-muted-foreground">
-                    Not a parent? <Link href="/login" className="text-indigo-600 hover:underline">Staff Login</Link>
+                    Not a parent? <Link href="/login" className="text-primary hover:underline">Staff Login</Link>
                 </p>
             </div>
         </div>

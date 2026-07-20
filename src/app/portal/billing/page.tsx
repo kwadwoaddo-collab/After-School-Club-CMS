@@ -38,7 +38,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
         <div className="min-h-screen bg-surface text-on-surface pb-12">
             <header className="bg-card border-b border-outline-variant/10 sticky top-0 z-20">
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-                    <Link href="/portal" className="p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-on-surface-variant">
+                    <Link href="/portal" className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-on-surface-variant">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
@@ -60,24 +60,29 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                             <h2 className="text-3xl font-bold text-foreground">£{totalOutstanding.toFixed(2)}</h2>
                         </div>
                     </div>
+                    {totalOutstanding > 0 && (
+                        <a href="#outstanding-invoices" className="bg-primary text-primary-foreground rounded-xl px-6 py-3 font-bold w-full md:w-auto text-center hover:bg-primary/90 transition-colors">
+                            Pay All Outstanding →
+                        </a>
+                    )}
                 </section>
 
                 {/* Payment success/cancel banner */}
                 {searchParams.payment === 'success' && (
-                    <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                        <p className="text-sm font-bold text-emerald-400">Payment received — your invoice has been marked as paid.</p>
+                    <div className="flex items-center gap-3 bg-success/10 border border-success/20 p-4 rounded-xl">
+                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                        <p className="text-sm font-bold text-success">Payment received — your invoice has been marked as paid.</p>
                     </div>
                 )}
                 {searchParams.payment === 'cancelled' && (
-                    <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
-                        <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                        <p className="text-sm font-bold text-amber-400">Payment was cancelled. Your invoice is still outstanding.</p>
+                    <div className="flex items-center gap-3 bg-warning/10 border border-warning/20 p-4 rounded-xl">
+                        <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
+                        <p className="text-sm font-bold text-warning">Payment was cancelled. Your invoice is still outstanding.</p>
                     </div>
                 )}
 
                 {/* Outstanding Invoices */}
-                <section>
+                <section id="outstanding-invoices">
                     <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="w-5 h-5 text-secondary" />
                         <h2 className="text-lg font-bold text-foreground">Outstanding Invoices</h2>
@@ -92,25 +97,34 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                             {outstandingInvoices.map(inv => {
                                 const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
                                 const remaining = Number(inv.amount) - paidAmount;
+                                const isOverdue = new Date(inv.dueDate) < new Date() && remaining > 0;
+                                const STATUS_LABELS: Record<string, string> = { draft: 'Draft', sent: 'Sent', partially_paid: 'Partial', paid: 'Paid', void: 'Void' };
 
                                 return (
                                     <div key={inv.id} className="bg-card p-6 rounded-xl border border-outline-variant/10 flex flex-col md:flex-row gap-6">
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start mb-2">
                                                 <div>
-                                                    <h3 className="font-bold text-white">Invoice #{inv.invoiceNumber}</h3>
+                                                    <h3 className="font-bold text-foreground">Invoice #{inv.invoiceNumber}</h3>
                                                     <p className="text-sm text-on-surface-variant">
                                                         {inv.centre?.name} {inv.child ? `• ${inv.child.firstName} ${inv.child.lastName}` : ''}
                                                     </p>
                                                 </div>
-                                                <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-                                                    {inv.status.replace('_', ' ')}
-                                                </span>
+                                                <div className="flex gap-2">
+                                                    {isOverdue && (
+                                                        <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                                            Overdue
+                                                        </span>
+                                                    )}
+                                                    <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
+                                                        {STATUS_LABELS[inv.status] || inv.status}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4 mt-4 bg-secondary/40 p-4 rounded-lg">
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Total Amount</p>
-                                                    <p className="font-medium text-white">£{Number(inv.amount).toFixed(2)}</p>
+                                                    <p className="font-medium text-foreground">£{Number(inv.amount).toFixed(2)}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Amount Due</p>
@@ -118,11 +132,11 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Issued Date</p>
-                                                    <p className="font-medium text-white">{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</p>
+                                                    <p className="font-medium text-foreground">{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Due Date</p>
-                                                    <p className="font-medium text-rose-500">{new Date(inv.dueDate).toLocaleDateString('en-GB')}</p>
+                                                    <p className={`font-medium ${isOverdue ? 'text-destructive font-bold' : 'text-foreground'}`}>{new Date(inv.dueDate).toLocaleDateString('en-GB')}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -153,7 +167,9 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                             <h2 className="text-lg font-bold text-foreground opacity-80">Payment History</h2>
                         </div>
                         <div className="space-y-3 opacity-80">
-                            {pastInvoices.map(inv => (
+                            {pastInvoices.map(inv => {
+                                const STATUS_LABELS: Record<string, string> = { draft: 'Draft', sent: 'Sent', partially_paid: 'Partial', paid: 'Paid', void: 'Void' };
+                                return (
                                 <div key={inv.id} className="bg-secondary/40 p-4 rounded-xl border border-outline-variant/5 flex justify-between items-center">
                                     <div className="flex gap-4 items-center">
                                         <span className="text-on-surface-variant font-mono text-sm">
@@ -164,13 +180,17 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className="font-bold text-white">£{Number(inv.amount).toFixed(2)}</span>
+                                        {inv.status === 'void' ? (
+                                            <span className="line-through text-on-surface-variant">£{Number(inv.amount).toFixed(2)}</span>
+                                        ) : (
+                                            <span className="font-bold text-foreground">£{Number(inv.amount).toFixed(2)}</span>
+                                        )}
                                         <span className="text-xs px-2 py-1 bg-tertiary-container/10 text-tertiary border border-tertiary/20 rounded-full font-bold">
-                                            {inv.status.replace('_', ' ')}
+                                            {STATUS_LABELS[inv.status] || inv.status}
                                         </span>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </section>
                 )}

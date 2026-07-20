@@ -52,7 +52,7 @@ export default function StripePayButton({ invoiceId, amountDue }: StripePayButto
                 {loading ? 'Redirecting to payment…' : `Pay £${amountDue.toFixed(2)} Online`}
             </button>
             {error && (
-                <p className="text-xs text-rose-400 text-center font-medium">{error}</p>
+                <p className="text-xs text-destructive text-center font-medium">{error}</p>
             )}
             <p className="text-[10px] text-center text-on-surface-variant">
                 Secured by Stripe · No card details stored here

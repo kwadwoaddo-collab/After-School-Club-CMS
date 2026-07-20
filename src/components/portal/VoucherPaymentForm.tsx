@@ -37,7 +37,7 @@ export function VoucherPaymentForm({ invoiceId, amountDue }: { invoiceId: string
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 required
-                className="w-full bg-card border border-outline-variant/20 rounded-lg p-2.5 text-sm text-white placeholder:text-on-surface-variant focus:outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-card border border-outline-variant/20 rounded-lg p-2.5 text-sm text-foreground placeholder:text-on-surface-variant focus:outline-none focus:border-primary/50 transition-colors"
             />
             <button
                 type="submit"

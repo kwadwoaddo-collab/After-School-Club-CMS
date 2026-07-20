@@ -6,6 +6,9 @@ import {
     MapPin, Video, ArrowRight, LogOut
 } from 'lucide-react';
 import { CancelBookingButton } from '@/components/portal/CancelBookingButton';
+import { db } from '@/db';
+import { invoices } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function PortalDashboard() {
     const parent = await getCurrentParent();
@@ -13,6 +16,16 @@ export default async function PortalDashboard() {
     if (!parent) {
         redirect('/portal/login');
     }
+
+    const parentInvoices = await db.query.invoices.findMany({
+        where: eq(invoices.parentId, parent.id),
+        with: { payments: true }
+    });
+    const outstandingInvoices = parentInvoices.filter(inv => inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'draft');
+    const totalOutstanding = outstandingInvoices.reduce((sum, inv) => {
+        const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
+        return sum + (Number(inv.amount) - paidAmount);
+    }, 0);
 
     // Sort bookings
     const allBookings = parent.bookings || [];
@@ -54,8 +67,20 @@ export default async function PortalDashboard() {
             </header>
 
             <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+                {totalOutstanding > 0 && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-2xl px-5 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl font-black text-destructive">£{totalOutstanding.toFixed(2)}</span>
+                            <span className="text-sm font-semibold text-destructive">Overdue Balance</span>
+                        </div>
+                        <Link href="/portal/billing" className="bg-destructive text-white rounded-xl px-4 py-2.5 text-sm font-bold">
+                            Pay Now →
+                        </Link>
+                    </div>
+                )}
+
                 {/* Quick Actions */}
-                <section>
+                <section className={totalOutstanding > 0 ? "opacity-70" : ""}>
                     <Link
                         href="/portal/book"
                         className="flex items-center gap-4 bg-primary/10 border border-primary/30 hover:border-primary/60 hover:bg-primary/20 transition-all p-5 rounded-2xl group"
@@ -161,9 +186,9 @@ export default async function PortalDashboard() {
                                             }
                                             return null;
                                         })()}
-                                        <button className="px-4 py-2 bg-secondary/40 border border-outline-variant/10 text-on-surface-variant text-sm font-bold rounded-lg hover:bg-card hover:text-foreground transition-colors flex items-center gap-1">
-                                            Details <ChevronRight className="w-3 h-3" />
-                                        </button>
+                                        <Link href={`/portal/children/${booking.childId}`} className="text-xs font-bold text-primary hover:text-primary/80 transition-colors min-h-[44px] flex items-center">
+                                            Details ›
+                                        </Link>
                                     </div>
                                 </div>
                             ))}

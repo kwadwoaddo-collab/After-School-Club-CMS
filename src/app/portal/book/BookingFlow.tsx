@@ -42,15 +42,16 @@ function parseSessionSlots(raw: string | null): string[] {
     }
 }
 
-// Get next 28 days as selectable dates (skipping days with no slots configured at the centre level — no day-of-week filter for simplicity)
 function getSelectableDates(): Date[] {
     const dates: Date[] = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    for (let i = 1; i <= 28; i++) {
+    for (let i = 1; dates.length < 20 && i <= 56; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
-        dates.push(d);
+        if (d.getDay() !== 0 && d.getDay() !== 6) {
+            dates.push(d);
+        }
     }
     return dates;
 }
@@ -71,6 +72,10 @@ function buildStartAt(date: Date, timeSlot: string): string {
 export function BookingFlow({ registeredChildren: childList, centres, rescheduleBooking }: BookingFlowProps) {
     const isRescheduling = !!rescheduleBooking;
     const [step, setStep] = useState<1 | 2 | 3>(1);
+    const handleSetStep = (newStep: 1 | 2 | 3) => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setStep(newStep);
+    };
     const { toast } = useToast();
     // Pre-select child and centre when rescheduling
     const preselectedChild = rescheduleBooking
@@ -138,7 +143,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                 <div className="w-20 h-20 rounded-full bg-tertiary/10 border border-tertiary/30 flex items-center justify-center mb-6 animate-bounce-once">
                     <CheckCircle2 className="w-10 h-10 text-tertiary" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">
+                <h2 className="text-2xl font-bold text-foreground mb-2">
                     {isRescheduling ? 'Booking Rescheduled!' : 'Booking Confirmed!'}
                 </h2>
                 <p className="text-on-surface-variant mb-8">
@@ -148,11 +153,11 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                 </p>
                 <div className="bg-primary/10 border-2 border-dashed border-primary/40 rounded-2xl px-8 py-6 mb-8">
                     <p className="text-xs uppercase font-bold text-primary tracking-widest mb-2">Confirmation Code</p>
-                    <p className="text-3xl font-black text-white tracking-widest font-mono">{success.confirmationCode}</p>
+                    <p className="text-3xl font-black text-foreground tracking-widest font-mono">{success.confirmationCode}</p>
                 </div>
                 <a
                     href="/portal"
-                    className="bg-primary text-white font-bold px-8 py-3 rounded-xl hover:bg-primary/90 transition-colors"
+                    className="bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl hover:bg-primary/90 transition-colors"
                 >
                     Back to Portal
                 </a>
@@ -168,7 +173,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                     <div key={s} className="flex items-center gap-2 flex-1">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border transition-all ${
                             step === s
-                                ? 'bg-primary text-white border-primary'
+                                ? 'bg-primary text-primary-foreground border-primary'
                                 : step > s
                                 ? 'bg-tertiary/20 text-tertiary border-tertiary/40'
                                 : 'bg-card text-on-surface-variant border-outline-variant/20'
@@ -184,12 +189,12 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
 
             {/* Reschedule context banner */}
             {isRescheduling && rescheduleBooking && (
-                <div className="mb-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3">
-                    <span className="text-amber-400 text-lg mt-0.5">📅</span>
+                <div className="mb-6 flex items-start gap-3 bg-warning/10 border border-warning/20 rounded-2xl px-4 py-3">
+                    <span className="text-warning text-lg mt-0.5">📅</span>
                     <div>
-                        <p className="text-sm font-bold text-amber-400">Rescheduling Booking</p>
+                        <p className="text-sm font-bold text-warning">Rescheduling Booking</p>
                         <p className="text-xs text-on-surface-variant mt-0.5">
-                            Original date: <strong className="text-white">{new Date(rescheduleBooking.startAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</strong>
+                            Original date: <strong className="text-foreground">{new Date(rescheduleBooking.startAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</strong>
                         </p>
                         <p className="text-xs text-on-surface-variant">Pick a new date and time below. Your original booking will be cancelled automatically.</p>
                     </div>
@@ -201,7 +206,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                 <section className="space-y-4">
                     <div className="flex items-center gap-2 mb-6">
                         <User className="w-5 h-5 text-primary" />
-                        <h2 className="text-xl font-bold text-white">Who is this booking for?</h2>
+                        <h2 className="text-xl font-bold text-foreground">Who is this booking for?</h2>
                     </div>
 
                     {childList.length === 0 ? (
@@ -216,13 +221,13 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                     onClick={() => setSelectedChild(child)}
                                     className={`p-5 rounded-xl border text-left transition-all ${
                                         selectedChild?.id === child.id
-                                            ? 'bg-primary/10 border-primary/40 text-white'
-                                            : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
+                                            ? 'bg-primary/10 border-primary/40 text-foreground'
+                                            : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-foreground'
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="font-bold text-white">{child.firstName} {child.lastName}</p>
+                                            <p className="font-bold text-foreground">{child.firstName} {child.lastName}</p>
                                             <p className="text-xs text-on-surface-variant mt-0.5">{child.schoolYear}</p>
                                         </div>
                                         {selectedChild?.id === child.id && (
@@ -244,11 +249,11 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                         onClick={() => setSelectedCentre(centre)}
                                         className={`p-4 rounded-xl border text-left transition-all ${
                                             selectedCentre?.id === centre.id
-                                                ? 'bg-primary/10 border-primary/40'
-                                                : 'bg-card border-outline-variant/10 hover:border-primary/20'
+                                                ? 'bg-primary/10 border-primary/40 text-foreground'
+                                                : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-foreground'
                                         }`}
                                     >
-                                        <p className="font-bold text-white">{centre.name}</p>
+                                        <p className="font-bold">{centre.name}</p>
                                         {centre.address && (
                                             <p className="text-xs text-on-surface-variant mt-0.5">{centre.address}</p>
                                         )}
@@ -260,9 +265,9 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
 
                     <div className="flex justify-end mt-6">
                         <button
-                            onClick={() => setStep(2)}
+                            onClick={() => handleSetStep(2)}
                             disabled={!selectedChild || !selectedCentre}
-                            className="flex items-center gap-2 bg-primary text-white font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                         >
                             Next <ChevronRight className="w-4 h-4" />
                         </button>
@@ -275,7 +280,7 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                 <section className="space-y-6">
                     <div className="flex items-center gap-2 mb-2">
                         <CalendarDays className="w-5 h-5 text-primary" />
-                        <h2 className="text-xl font-bold text-white">Pick a Date & Time</h2>
+                        <h2 className="text-xl font-bold text-foreground">Pick a Date & Time</h2>
                     </div>
 
                     {/* Date picker */}
@@ -286,10 +291,10 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                 <button
                                     key={d.toISOString()}
                                     onClick={() => { setSelectedDate(d); setSelectedSlot(null); }}
-                                    className={`p-2 rounded-xl border text-center transition-all ${
+                                    className={`min-h-[48px] min-w-[44px] p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
                                         selectedDate?.toDateString() === d.toDateString()
-                                            ? 'bg-primary/20 border-primary/50 text-white'
-                                            : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
+                                            ? 'bg-primary border-primary text-primary-foreground'
+                                            : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-foreground'
                                     }`}
                                 >
                                     <p className="text-[10px] uppercase font-bold">{d.toLocaleDateString('en-GB', { weekday: 'short' })}</p>
@@ -314,8 +319,8 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                             onClick={() => setSelectedSlot(slot)}
                                             className={`flex items-center gap-2 p-3 rounded-xl border transition-all text-sm font-medium ${
                                                 selectedSlot === slot
-                                                    ? 'bg-primary/20 border-primary/50 text-white'
-                                                    : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-white'
+                                                    ? 'bg-primary border-primary text-primary-foreground'
+                                                    : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-primary/20 hover:text-foreground'
                                             }`}
                                         >
                                             <Clock className="w-3.5 h-3.5 shrink-0" />
@@ -338,8 +343,8 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                                         onClick={() => setSelectedDuration(d)}
                                         className={`px-5 py-2 rounded-xl border text-sm font-bold transition-all ${
                                             selectedDuration === d
-                                                ? 'bg-secondary/20 border-secondary/50 text-white'
-                                                : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-secondary/20 hover:text-white'
+                                                ? 'bg-secondary border-secondary text-secondary-foreground'
+                                                : 'bg-card border-outline-variant/10 text-on-surface-variant hover:border-secondary/20 hover:text-foreground'
                                         }`}
                                     >
                                         {d} min
@@ -351,15 +356,15 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
 
                     <div className="flex justify-between mt-6">
                         <button
-                            onClick={() => setStep(1)}
-                            className="flex items-center gap-2 text-on-surface-variant hover:text-white font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
+                            onClick={() => handleSetStep(1)}
+                            className="flex items-center gap-2 text-on-surface-variant hover:text-foreground font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" /> Back
                         </button>
                         <button
-                            onClick={() => setStep(3)}
+                            onClick={() => handleSetStep(3)}
                             disabled={!selectedDate || !selectedSlot}
-                            className="flex items-center gap-2 bg-primary text-white font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                         >
                             Review <ChevronRight className="w-4 h-4" />
                         </button>
@@ -370,32 +375,32 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
             {/* ─── STEP 3: Confirm & Book ─── */}
             {step === 3 && selectedChild && selectedCentre && selectedDate && selectedSlot && (
                 <section className="space-y-6">
-                    <h2 className="text-xl font-bold text-white mb-2">Confirm Your Booking</h2>
+                    <h2 className="text-xl font-bold text-foreground mb-2">Confirm Your Booking</h2>
 
                     <div className="bg-card rounded-2xl border border-outline-variant/10 divide-y divide-border/10">
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Child</span>
-                            <span className="font-bold text-white">{selectedChild.firstName} {selectedChild.lastName}</span>
+                            <span className="font-bold text-foreground">{selectedChild.firstName} {selectedChild.lastName}</span>
                         </div>
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Centre</span>
-                            <span className="font-bold text-white">{selectedCentre.name}</span>
+                            <span className="font-bold text-foreground">{selectedCentre.name}</span>
                         </div>
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Date</span>
-                            <span className="font-bold text-white">{formatDateLabel(selectedDate)}</span>
+                            <span className="font-bold text-foreground">{formatDateLabel(selectedDate)}</span>
                         </div>
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Time</span>
-                            <span className="font-bold text-white">{selectedSlot}</span>
+                            <span className="font-bold text-foreground">{selectedSlot}</span>
                         </div>
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Duration</span>
-                            <span className="font-bold text-white">{selectedDuration} minutes</span>
+                            <span className="font-bold text-foreground">{selectedDuration} minutes</span>
                         </div>
                         <div className="p-5 flex justify-between items-center">
                             <span className="text-on-surface-variant text-sm">Modality</span>
-                            <span className="font-bold text-white">In Person</span>
+                            <span className="font-bold text-foreground">In Person</span>
                         </div>
                     </div>
 
@@ -404,22 +409,22 @@ export function BookingFlow({ registeredChildren: childList, centres, reschedule
                     </div>
 
                     {error && (
-                        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl p-4 text-sm font-medium">
+                        <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl p-4 text-sm font-medium">
                             {error}
                         </div>
                     )}
 
                     <div className="flex justify-between">
                         <button
-                            onClick={() => setStep(2)}
-                            className="flex items-center gap-2 text-on-surface-variant hover:text-white font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
+                            onClick={() => handleSetStep(2)}
+                            className="flex items-center gap-2 text-on-surface-variant hover:text-foreground font-bold px-4 py-3 rounded-xl hover:bg-card transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" /> Back
                         </button>
                         <button
                             onClick={handleConfirm}
                             disabled={loading}
-                            className="flex items-center gap-2 bg-primary text-white font-bold px-8 py-3 rounded-xl disabled:opacity-60 hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl disabled:opacity-60 hover:bg-primary/90 transition-colors"
                         >
                             {loading ? (
                                 <><Loader2 className="w-4 h-4 animate-spin" /> Booking…</>
