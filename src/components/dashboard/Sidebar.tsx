@@ -124,7 +124,9 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
-        { name: 'Parents', icon: UserRound, href: '/dashboard/parents' },
+        { name: 'Parents', icon: UserRound, href: '/dashboard/parents', children: [
+            { name: 'Recovery Bin', href: '/dashboard/parents/bin' },
+        ] },
         { name: 'Bookings', icon: CalendarDays, href: '/dashboard/bookings' },
         { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', children: [
             { name: 'Session Ledger', href: '/dashboard/attendance/ledger' },

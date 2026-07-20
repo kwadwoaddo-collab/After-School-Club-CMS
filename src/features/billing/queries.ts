@@ -56,7 +56,7 @@ export async function fetchBillingCycles(
             eq(billingConfigs.status,         'active'),
         );
 
-    const configs = await db.query.billingConfigs.findMany({
+    const rawConfigs = await db.query.billingConfigs.findMany({
         where: whereClause,
         with: {
             children: {
@@ -68,23 +68,19 @@ export async function fetchBillingCycles(
                 orderBy: [desc(billingRuns.runAt)],
                 limit: 1,
             },
+            parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
+            centre: { columns: { name: true } },
         },
     });
+
+    // Filter out configs linked to soft-deleted parents
+    const configs = rawConfigs.filter(c => !c.parent?.deletedAt);
 
     if (configs.length === 0) return [];
 
     const enriched = await Promise.all(configs.map(async (config) => {
-        // Fetch parent name + email
-        const parent = await db.query.parents.findFirst({
-            where: eq(parents.id, config.parentId),
-            columns: { firstName: true, lastName: true, email: true },
-        });
-
-        // Fetch centre name
-        const centre = await db.query.centres.findFirst({
-            where: eq(centres.id, config.centreId),
-            columns: { name: true },
-        });
+        const parent = config.parent;
+        const centre = config.centre;
 
         // Compute next period (all dates as strings for serialisability)
         let periodLabel        = '';

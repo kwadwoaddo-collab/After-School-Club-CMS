@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
-import { eq, desc, asc, sql, inArray, and, or, ilike } from 'drizzle-orm';
+import { eq, desc, asc, sql, inArray, and, or, ilike, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown, Upload } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
@@ -63,7 +63,9 @@ export default async function StudentsPage(props: {
     const accessibleCentres = await getUserAccessibleCentres(session.user.id);
 
     const conditions = [
-        eq(children.organisationId, org.id)
+        eq(children.organisationId, org.id),
+        isNull(children.deletedAt),
+        isNull(parents.deletedAt)
     ];
 
     if (activeCentreId !== 'all') {

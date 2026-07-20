@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { bookings, children } from '@/db/schema';
-import { eq, and, gte, lte, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, inArray, isNull } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, format } from 'date-fns';
@@ -39,7 +39,7 @@ export default async function KioskPage(props: {
             : eq(children.centreId, 'no-centre');
 
     const allChildrenAtCentre = await db.query.children.findMany({
-        where: and(centreChildrenCondition, eq(children.isRegistered, true)),
+        where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
         with: { parent: true, centre: true },
     });
 

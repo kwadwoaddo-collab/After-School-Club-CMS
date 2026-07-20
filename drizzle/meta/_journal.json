@@ -78,6 +78,13 @@
       "when": 1783683502417,
       "tag": "0010_tiny_edwin_jarvis",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784570478739,
+      "tag": "0011_add_soft_delete",
+      "breakpoints": true
     }
   ]
 }

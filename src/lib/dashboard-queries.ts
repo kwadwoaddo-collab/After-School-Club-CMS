@@ -4,7 +4,7 @@ import {
     organisations, centres, parents, children,
     bookings, bookingAttendees, registrations, registrationChildren, studentNotes
 } from '@/db/schema';
-import { eq, desc, asc, sql, and, gte, lt, lte, inArray } from 'drizzle-orm';
+import { eq, desc, asc, sql, and, gte, lt, lte, inArray, isNull } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, isSameDay, subDays } from 'date-fns';
 
 export const getStudentKpis = cache(async (orgId: string, centreCondition: any, activeStart: string, activeEnd: string, prevStart: string, prevEnd: string) => {
@@ -15,7 +15,7 @@ export const getStudentKpis = cache(async (orgId: string, centreCondition: any, 
     })
     .from(children)
     .innerJoin(parents, eq(children.parentId, parents.id))
-    .where(and(eq(parents.organisationId, orgId), centreCondition));
+    .where(and(eq(parents.organisationId, orgId), centreCondition, isNull(parents.deletedAt), isNull(children.deletedAt)));
 });
 
 export const getBookingKpis = cache(async (hasCentres: boolean, centreCondition: any, activeStart: string, activeEnd: string, prevStart: string, prevEnd: string, targetMonthStart: string, targetMonthEnd: string, targetWeekStart: string, targetWeekEnd: string) => {

@@ -6,6 +6,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import ParentProfileClient from './ParentProfileClient';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import DeleteParentButton from '@/components/parents/DeleteParentButton';
 
 interface ParentPageProps {
     params: Promise<{ id: string }>;
@@ -76,6 +77,12 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
                         </p>
                     </div>
                 </div>
+                <DeleteParentButton 
+                    parentId={parent.id} 
+                    parentName={`${parent.firstName} ${parent.lastName}`} 
+                    childCount={parent.children.length} 
+                    variant="button" 
+                />
             </div>
 
             {/* Client Component for Tabs & Interaction */}

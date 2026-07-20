@@ -198,6 +198,7 @@ export const parents = pgTable('parents', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   orgIdx: index('parents_org_idx').on(table.organisationId),
   emailIdx: index('parents_email_idx').on(table.email),
@@ -234,6 +235,7 @@ export const children = pgTable('children', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 
 }, (table) => ({
   parentIdx: index('children_parent_idx').on(table.parentId),
@@ -870,7 +872,15 @@ export const billingRuns = pgTable('billing_runs', {
 }));
 
 // ── Billing Relations ─────────────────────────────────────────────────────────
-export const billingConfigsRelations = relations(billingConfigs, ({ many }) => ({
+export const billingConfigsRelations = relations(billingConfigs, ({ one, many }) => ({
+  parent: one(parents, {
+    fields: [billingConfigs.parentId],
+    references: [parents.id],
+  }),
+  centre: one(centres, {
+    fields: [billingConfigs.centreId],
+    references: [centres.id],
+  }),
   children: many(billingConfigChildren),
   runs:     many(billingRuns),
 }));

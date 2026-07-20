@@ -6,6 +6,7 @@ import { eq, and, desc, ilike, or, sum, count, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling, Baby } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import DeleteParentButton from '@/components/parents/DeleteParentButton';
 
 interface Props {
     searchParams: Promise<{ search?: string }>;
@@ -42,7 +43,7 @@ export default async function ParentsPage({ searchParams }: Props) {
         WITH ChildCounts AS (
             SELECT parent_id, COUNT(*) as child_count
             FROM children
-            WHERE organisation_id = ${orgId}
+            WHERE organisation_id = ${orgId} AND deleted_at IS NULL
             GROUP BY parent_id
         ),
         InvoiceSummary AS (
@@ -75,7 +76,7 @@ export default async function ParentsPage({ searchParams }: Props) {
         FROM parents pa
         LEFT JOIN ChildCounts cc ON pa.id = cc.parent_id
         LEFT JOIN InvoiceSummary ins ON pa.id = ins.parent_id
-        WHERE pa.organisation_id = ${orgId}
+        WHERE pa.organisation_id = ${orgId} AND pa.deleted_at IS NULL
         ${search ? sql`AND (
             pa.first_name ILIKE ${'%' + search + '%'} OR
             pa.last_name ILIKE ${'%' + search + '%'} OR
@@ -269,11 +270,12 @@ export default async function ParentsPage({ searchParams }: Props) {
                                                             <span className="text-xs text-muted-foreground font-medium">—</span>
                                                         )}
                                                     </td>
-                                                    <td className="py-4 px-4">
-                                                        <Link href={`/dashboard/parents/${parent.id}`}>
-                                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                        </Link>
-                                                    </td>
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <DeleteParentButton parentId={parent.id} parentName={fullName} childCount={childCount} />
+                                                            <Link href={`/dashboard/parents/${parent.id}`} className="p-2 text-muted-foreground hover:text-primary transition-colors">
+                                                                <ChevronRight className="w-4 h-4" />
+                                                            </Link>
+                                                        </div>
                                                 </tr>
                                             );
                                         })}
