@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { bookings, bookingAttendees } from '@/db/schema';
 import { eq, gte, lt, and, inArray, sql } from 'drizzle-orm';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, format } from 'date-fns';
 import { cn } from '@/components/ui/utils';
 import { CalendarCheck, Clock, UserCheck, UserX, Calendar } from 'lucide-react';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ export async function TodaysSnapshot({
   const now = new Date();
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
+  const todayIso = format(now, 'yyyy-MM-dd');
 
   const centreCondition =
     activeCentreId !== 'all'
@@ -113,6 +114,7 @@ export async function TodaysSnapshot({
       icon: UserCheck,
       color: 'text-primary',
       iconBg: 'bg-primary/10',
+      href: `/dashboard/attendance?date=${todayIso}`,
     },
     {
       label: 'Not Arrived',
@@ -121,6 +123,7 @@ export async function TodaysSnapshot({
       // Highlight in amber if there are unresolved confirmed bookings
       color: snapshot.notArrived > 0 ? 'text-accent-amber' : 'text-muted-foreground',
       iconBg: snapshot.notArrived > 0 ? 'bg-accent-amber/10' : 'bg-secondary',
+      href: `/dashboard/attendance?date=${todayIso}`,
     },
   ];
 
@@ -159,7 +162,7 @@ export async function TodaysSnapshot({
               <span className="text-[10px] font-bold text-muted-foreground/60">No sessions yet</span>
             )}
           </div>
-          <Link href="/dashboard/attendance" className="text-primary text-[11px] font-semibold hover:underline">
+          <Link href={`/dashboard/attendance?date=${todayIso}`} className="text-primary text-[11px] font-semibold hover:underline">
             View Attendance →
           </Link>
         </div>
@@ -173,19 +176,34 @@ export async function TodaysSnapshot({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
-          {items.map((item, i) => (
-            <div key={i} className="flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border rounded-xl hover:bg-secondary/40 transition-[background-color] duration-150 cursor-default min-w-0">
-              <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
-                <item.icon className={cn('w-4 h-4', item.color)} />
+          {items.map((item, i) => {
+            const innerContent = (
+              <>
+                <div className={cn('p-2 rounded-lg mb-1', item.iconBg)}>
+                  <item.icon className={cn('w-4 h-4', item.color)} />
+                </div>
+                <span className={cn('text-2xl font-black tabular-nums', item.color)}>
+                  {item.value}
+                </span>
+                <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider leading-tight text-center truncate w-full">
+                  {item.label}
+                </span>
+              </>
+            );
+
+            const className = "flex flex-col items-center gap-1 py-4 px-3 text-center bg-card border border-border rounded-xl min-w-0 " + 
+              (item.href ? "hover:bg-secondary/80 cursor-pointer transition-colors" : "cursor-default hover:bg-secondary/40 transition-[background-color] duration-150");
+
+            return item.href ? (
+              <Link key={i} href={item.href} className={className}>
+                {innerContent}
+              </Link>
+            ) : (
+              <div key={i} className={className}>
+                {innerContent}
               </div>
-              <span className={cn('text-2xl font-black tabular-nums', item.color)}>
-                {item.value}
-              </span>
-              <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider leading-tight text-center truncate w-full">
-                {item.label}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

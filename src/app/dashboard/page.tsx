@@ -23,7 +23,7 @@ import {
     Users, CalendarCheck, ClipboardList, UserCircle2,
     ArrowRight, ChevronRight, AlertTriangle, Shield,
     BarChart3, MapPin, ArrowUpRight, ArrowDownRight, Minus,
-    AlertCircle
+    AlertCircle, Calendar
 } from 'lucide-react';
 import { studentNotes } from '@/db/schema';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isValid, format, subWeeks, subMonths } from 'date-fns';
@@ -36,6 +36,7 @@ import { AttendanceHeatmap } from '@/components/dashboard/AttendanceHeatmap';
 import DashboardHero from '@/components/dashboard/DashboardHero';
 import { SegmentedTabControl } from '@/components/dashboard/SegmentedTabControl';
 import { CopyableLink } from '@/components/dashboard/CopyableLink';
+import { RevenueWidget } from '@/components/dashboard/RevenueWidget';
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -136,6 +137,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         recentRegistrations: [],
         weeklyRegistrations: [],
         registrationPipelineData: [],
+        todayBookings: [],
     };
 
     try {
@@ -145,6 +147,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 [bookingKpis],
                 [registrationKpis],
                 weeklyRegistrations,
+                todayBookings,
             ] = await Promise.all([
                 // consolidated Students
                 db.select({
@@ -200,6 +203,28 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                     )
                 )
                 .groupBy(sql`date_trunc('week', ${registrations.createdAt})`).orderBy(asc(sql`date_trunc('week', ${registrations.createdAt})`)),
+
+                // Today's schedule query
+                db.select({
+                    id: bookings.id,
+                    startAt: bookings.startAt,
+                    status: bookings.status,
+                    childName: sql<string>`concat(${children.firstName}, ' ', ${children.lastName})`,
+                    centreName: centres.name,
+                })
+                .from(bookings)
+                .leftJoin(bookingAttendees, eq(bookingAttendees.bookingId, bookings.id))
+                .leftJoin(children, eq(children.id, bookingAttendees.childId))
+                .leftJoin(centres, eq(centres.id, bookings.centreId))
+                .where(
+                    and(
+                        eq(bookings.organisationId, org.id),
+                        gte(bookings.startAt, startOfDay(now)),
+                        lt(bookings.startAt, endOfDay(now)),
+                    )
+                )
+                .orderBy(asc(bookings.startAt))
+                .limit(10),
             ]);
 
             dashboardData = {
@@ -208,6 +233,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 bookings: { total: Number(bookingKpis.totalAll), month: Number(bookingKpis.thisMonth), week: Number(bookingKpis.thisWeek), active: Number(bookingKpis.activePeriod), prev: Number(bookingKpis.prevPeriod) },
                 registrations: { total: Number(registrationKpis.total), pending: Number(registrationKpis.pending), month: Number(registrationKpis.thisMonth), week: Number(registrationKpis.thisWeek), active: Number(registrationKpis.activePeriod), prev: Number(registrationKpis.prevPeriod) },
                 weeklyRegistrations,
+                todayBookings,
             };
         } else {
             const [
@@ -341,7 +367,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     // Assign variables back for the rest of the logic
     const { total: totalStudents, active: studentsActivePeriod, prev: studentsPrevPeriod } = dashboardData.students;
     const { total: totalBookingsAll, month: bookingsThisMonth, week: bookingsThisWeek, active: bookingsActivePeriod, prev: bookingsPrevPeriod } = dashboardData.bookings;
-    const { recentBookings, recentRegistrations, weeklyRegistrations, registrationPipelineData, oldestPendingRegistrationData } = dashboardData;
+    const { recentBookings, recentRegistrations, weeklyRegistrations, registrationPipelineData, oldestPendingRegistrationData, todayBookings } = dashboardData;
     const { total: totalRegistrations, pending: pendingRegistrations, month: registrationsThisMonth, week: registrationsThisWeek, active: registrationsActivePeriod, prev: registrationsPrevPeriod } = dashboardData.registrations;
 
     // Deduplicate by booking ID — the query JOINs bookingAttendees so one booking
@@ -524,6 +550,43 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                         activeCentreId={activeCentreId}
                         accessibleCentreIds={accessibleCentreIds}
                     />
+
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                        <h3 className="font-bold text-foreground">Today's Schedule</h3>
+                        <span className="text-xs text-muted-foreground">{format(now, 'EEEE, d MMM')}</span>
+                      </div>
+                      {todayBookings.length === 0 ? (
+                        <div className="px-5 py-8 flex flex-col items-center gap-2 text-center">
+                          <Calendar className="w-8 h-8 text-muted-foreground/40" />
+                          <p className="text-sm text-muted-foreground">No sessions scheduled for today</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {todayBookings.map((booking: any) => (
+                            <Link key={booking.id} href={`/dashboard/bookings/${booking.id}`}
+                              className="flex items-center gap-3 px-5 py-3 hover:bg-secondary/40 transition-colors">
+                              <span className="text-xs font-mono text-muted-foreground w-10 flex-shrink-0">
+                                {format(new Date(booking.startAt), 'HH:mm')}
+                              </span>
+                              <span className="flex-1 text-sm font-medium text-foreground truncate">
+                                {booking.childName ?? 'Unknown'}
+                              </span>
+                              <span className="text-xs text-muted-foreground truncate hidden sm:block">{booking.centreName}</span>
+                              <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full border', {
+                                'bg-primary/10 text-primary border-primary/20': booking.status === 'confirmed',
+                                'bg-warning/10 text-warning border-warning/20': booking.status === 'pending',
+                                'bg-destructive/10 text-destructive border-destructive/20': booking.status === 'cancelled',
+                                'bg-secondary text-muted-foreground border-border': booking.status === 'completed',
+                              })}>{booking.status}</span>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <RevenueWidget organisationId={org.id} />
 
                     {/* ── Top-level stats row ──────────────────────────────────── */}
                     <div>

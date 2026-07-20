@@ -51,13 +51,11 @@ export async function AttendanceHeatmap({
   const days = eachDayOfInterval({ start: fourWeeksAgo, end: subDays(now, 1) });
   const maxCount = Math.max(...dailyCounts.map(d => d.count), 1);
 
-  const getCellColor = (count: number) => {
-    if (count === 0) return 'bg-secondary/40 border-outline-variant/10';
-    const pct = count / maxCount;
-    if (pct >= 0.75) return 'bg-destructive/70 border-destructive/30';
-    if (pct >= 0.5) return 'bg-warning/70 border-warning/30';
-    if (pct >= 0.25) return 'bg-success/50 border-success/20';
-    return 'bg-success/20 border-success/10';
+  const getCellColor = (count: number): string => {
+    if (count === 0) return 'bg-muted/30 border-border/30';
+    if (count <= 2) return 'bg-primary/20 border-primary/10';
+    if (count <= 5) return 'bg-primary/40 border-primary/20';
+    return 'bg-primary/70 border-primary/40';
   };
 
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -65,15 +63,15 @@ export async function AttendanceHeatmap({
   return (
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-[0.15em]">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em]">
           Attendance Heatmap · Last 4 Weeks
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-on-surface-variant/50 font-medium">None</span>
-          {['bg-success/20', 'bg-success/50', 'bg-warning/70', 'bg-destructive/70'].map((c, i) => (
+          <span className="text-[10px] text-muted-foreground/50 font-medium">Empty</span>
+          {['bg-primary/20', 'bg-primary/40', 'bg-primary/70'].map((c, i) => (
             <div key={i} className={cn('w-3 h-3 rounded-sm border border-outline-variant/10', c)} />
           ))}
-          <span className="text-[10px] text-on-surface-variant/50 font-medium">High</span>
+          <span className="text-[10px] text-muted-foreground/50 font-medium">Busy</span>
         </div>
       </div>
 
@@ -84,7 +82,7 @@ export async function AttendanceHeatmap({
         {days.map((day, i) => (
           <div
             key={i}
-            className="text-center text-[8px] font-bold text-on-surface-variant/40 uppercase"
+            className="text-center text-[8px] font-bold text-muted-foreground/40 uppercase"
           >
             {i % 7 === 0 ? format(day, 'd') : ''}
           </div>
@@ -96,7 +94,7 @@ export async function AttendanceHeatmap({
         {dayLabels.map((label, dow) => (
           <>
             <div key={`label-${dow}`} className="flex items-center justify-end pr-2">
-              <span className="text-[9px] font-bold text-on-surface-variant/50 uppercase">{label}</span>
+              <span className="text-[9px] font-bold text-muted-foreground/50 uppercase">{label}</span>
             </div>
             {Array.from({ length: 4 }, (_, week) => {
               // dow: 0=Mon, 6=Sun. days array starts from Monday (fourWeeksAgo)

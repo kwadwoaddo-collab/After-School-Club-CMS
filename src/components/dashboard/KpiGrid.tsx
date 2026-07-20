@@ -140,7 +140,7 @@ export function KpiGrid({
       borderColor: 'border-amber-500/20 hover:border-amber-500/40',
       iconBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
       glowClass: 'glow-hover-warning',
-      href: '/dashboard/registrations?status=pending',
+      href: '/dashboard/registrations?status=awaiting_confirmation',
     },
   ];
 

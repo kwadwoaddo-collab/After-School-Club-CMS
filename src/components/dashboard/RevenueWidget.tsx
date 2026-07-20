@@ -4,6 +4,7 @@ import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { cn } from '@/components/ui/utils';
 import { PoundSterling, AlertCircle, Clock } from 'lucide-react';
+import Link from 'next/link';
 
 interface RevenueWidgetProps {
   organisationId: string;
@@ -62,24 +63,24 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
       label: 'Revenue This Month',
       value: formatCurrency(revenue.thisMonth),
       icon: PoundSterling,
-      color: 'text-emerald-400',
-      iconBg: 'bg-emerald-500/10',
+      color: 'text-success',
+      iconBg: 'bg-success/10',
       description: 'Paid invoices',
     },
     {
       label: 'Outstanding',
       value: formatCurrency(revenue.outstanding),
       icon: Clock,
-      color: 'text-amber-400',
-      iconBg: 'bg-amber-500/10',
+      color: 'text-warning',
+      iconBg: 'bg-warning/10',
       description: 'Unpaid invoices',
     },
     {
       label: 'Overdue Invoices',
       value: revenue.overdueCount.toString(),
       icon: AlertCircle,
-      color: revenue.overdueCount > 0 ? 'text-red-400' : 'text-on-surface-variant',
-      iconBg: revenue.overdueCount > 0 ? 'bg-red-500/10' : 'bg-secondary/40',
+      color: revenue.overdueCount > 0 ? 'text-destructive' : 'text-muted-foreground',
+      iconBg: revenue.overdueCount > 0 ? 'bg-destructive/10' : 'bg-secondary/40',
       description: 'Past due date',
     },
   ];
@@ -87,8 +88,8 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
   return (
     <div className="glassmorphic-card rounded-2xl overflow-hidden">
       <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/10">
-        <PoundSterling className="w-4 h-4 text-emerald-400" />
-        <span className="text-xs font-black uppercase tracking-[0.15em] text-on-surface-variant">
+        <PoundSterling className="w-4 h-4 text-success" />
+        <span className="text-xs font-black uppercase tracking-[0.15em] text-muted-foreground">
           Finance Overview
         </span>
       </div>
@@ -100,13 +101,19 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
               <item.icon className={cn('w-5 h-5', item.color)} />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant/60 mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">
                 {item.label}
               </p>
-              <p className={cn('text-2xl font-black tabular-nums', item.color)}>
-                {item.value}
-              </p>
-              <p className="text-[10px] text-on-surface-variant/40 font-medium mt-0.5">
+              {item.label === 'Overdue Invoices' && revenue.overdueCount > 0 ? (
+                <Link href="/dashboard/finances?status=overdue" className={cn('text-2xl font-black tabular-nums hover:underline', item.color)}>
+                  {item.value}
+                </Link>
+              ) : (
+                <p className={cn('text-2xl font-black tabular-nums', item.color)}>
+                  {item.value}
+                </p>
+              )}
+              <p className="text-[10px] text-muted-foreground/40 font-medium mt-0.5">
                 {item.description}
               </p>
             </div>
