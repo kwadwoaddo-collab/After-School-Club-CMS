@@ -35,7 +35,7 @@ export default function DeleteParentButton({ parentId, parentName, childCount, v
             {variant === 'icon' ? (
                 <button
                     onClick={() => setShowConfirm(true)}
-                    className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all active:scale-90 duration-100"
                     title={`Delete ${parentName}`}
                 >
                     <Trash2 className="w-4 h-4" />
@@ -43,7 +43,7 @@ export default function DeleteParentButton({ parentId, parentName, childCount, v
             ) : (
                 <button
                     onClick={() => setShowConfirm(true)}
-                    className="px-4 py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 text-sm font-bold rounded-xl transition-all flex items-center gap-2"
+                    className="px-4 py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 text-sm font-bold rounded-xl transition-all flex items-center gap-2 active:scale-95 duration-100"
                 >
                     <Trash2 className="w-4 h-4" /> Delete Family
                 </button>
@@ -63,14 +63,14 @@ export default function DeleteParentButton({ parentId, parentName, childCount, v
                             <button
                                 onClick={() => setShowConfirm(false)}
                                 disabled={isDeleting}
-                                className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-2xl text-sm font-semibold text-foreground transition-all"
+                                className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDelete}
                                 disabled={isDeleting}
-                                className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-destructive-foreground transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-destructive-foreground transition-all active:scale-95 duration-100 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Move to Bin'}
                             </button>

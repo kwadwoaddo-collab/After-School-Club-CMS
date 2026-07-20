@@ -84,7 +84,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
             <div className="flex items-center gap-2 p-1 bg-card rounded-2xl w-fit border border-outline-variant/10">
                 <button 
                     onClick={() => setActiveTab('overview')}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 duration-100 ${
                         activeTab === 'overview' 
                         ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                         : 'text-muted-foreground hover:text-foreground'
@@ -94,7 +94,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                 </button>
                 <button 
                     onClick={() => setActiveTab('finance')}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 duration-100 ${
                         activeTab === 'finance' 
                         ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                         : 'text-muted-foreground hover:text-foreground'
@@ -122,14 +122,14 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={() => setIsEditingContact(false)}
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-white/60 hover:text-white transition-colors"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors active:scale-95 duration-100"
                                         >
                                             <X className="w-3.5 h-3.5" /> Cancel
                                         </button>
                                         <button
                                             onClick={handleSaveContact}
                                             disabled={isSavingContact}
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50 active:scale-95 duration-100"
                                         >
                                             {isSavingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                                             Save
@@ -147,7 +147,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                 type="text"
                                                 value={contactForm.firstName}
                                                 onChange={e => setContactForm(f => ({ ...f, firstName: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             />
                                         </div>
                                         <div>
@@ -156,7 +156,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                 type="text"
                                                 value={contactForm.lastName}
                                                 onChange={e => setContactForm(f => ({ ...f, lastName: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             />
                                         </div>
                                         <div>
@@ -165,7 +165,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                 type="email"
                                                 value={contactForm.email}
                                                 onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             />
                                         </div>
                                         <div>
@@ -174,7 +174,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                 type="tel"
                                                 value={contactForm.phone}
                                                 onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             />
                                         </div>
                                         <div>
@@ -184,7 +184,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                 value={contactForm.addressLine1}
                                                 onChange={e => setContactForm(f => ({ ...f, addressLine1: e.target.value }))}
                                                 placeholder="Street address"
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
@@ -194,7 +194,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                     type="text"
                                                     value={contactForm.city}
                                                     onChange={e => setContactForm(f => ({ ...f, city: e.target.value }))}
-                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                                 />
                                             </div>
                                             <div>
@@ -203,7 +203,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                                     type="text"
                                                     value={contactForm.postcode}
                                                     onChange={e => setContactForm(f => ({ ...f, postcode: e.target.value }))}
-                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                                                 />
                                             </div>
                                         </div>
@@ -217,7 +217,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Email Address</p>
-                                            <p className="font-bold text-white">{parent.email || 'Not provided'}</p>
+                                            <p className="font-bold text-foreground">{parent.email || 'Not provided'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
@@ -226,7 +226,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Phone Number</p>
-                                            <p className="font-bold text-white">{parent.phone || 'Not provided'}</p>
+                                            <p className="font-bold text-foreground">{parent.phone || 'Not provided'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 md:col-span-2">
@@ -235,7 +235,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Billing Address</p>
-                                            <p className="font-bold text-white">
+                                            <p className="font-bold text-foreground">
                                                 {parent.addressLine1 ? `${parent.addressLine1}, ${parent.city || ''} ${parent.postcode || ''}` : 'No address on file'}
                                             </p>
                                         </div>
@@ -252,14 +252,14 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                     <Link 
                                         key={child.id}
                                         href={`/dashboard/students/${child.id}`}
-                                        className="flex items-center justify-between p-4 bg-secondary/40 border border-outline-variant/5 rounded-2xl hover:bg-primary/5 hover:border-primary/20 transition-all group"
+                                        className="flex items-center justify-between p-4 bg-secondary/40 border border-outline-variant/5 rounded-2xl hover:bg-primary/5 hover:border-primary/20 active:scale-[0.985] active:opacity-95 transition-all group duration-100"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-emerald-400">
                                                 <Baby className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-white">{child.firstName} {child.lastName}</p>
+                                                <p className="font-bold text-foreground">{child.firstName} {child.lastName}</p>
                                                 <p className="text-xs text-on-surface-variant">Year {child.schoolYear}</p>
                                             </div>
                                         </div>
@@ -286,7 +286,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                         <div className="glassmorphic-card rounded-[40px] p-6 space-y-4">
                             <div className="flex items-center justify-between px-2">
                                 <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Invoiced</span>
-                                <span className="font-bold text-white">£{stats.totalOwed.toFixed(2)}</span>
+                                <span className="font-bold text-foreground">£{stats.totalOwed.toFixed(2)}</span>
                             </div>
                             <div className="h-px bg-border/30" />
                             <div className="flex items-center justify-between px-2">
@@ -305,7 +305,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                         <div className="glassmorphic-card p-6 rounded-3xl flex items-center justify-between">
                             <div>
                                 <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Family Billing</p>
-                                <p className="text-xl font-black text-white mt-1">£{stats.totalOwed.toFixed(2)}</p>
+                                <p className="text-xl font-black text-foreground mt-1">£{stats.totalOwed.toFixed(2)}</p>
                             </div>
                             <CreditCard className="w-8 h-8 text-primary/40" />
                         </div>
@@ -328,7 +328,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                     {/* Full Ledger Table */}
                     <div className="glassmorphic-card rounded-[40px] overflow-hidden">
                         <div className="px-8 py-6 border-b border-outline-variant/5 bg-secondary/40/50">
-                            <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Transaction History</h3>
+                            <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Transaction History</h3>
                             <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mt-1">Consolidated family invoices and payments</p>
                         </div>
                         <InvoiceTable invoices={invoices} isOwner={isOwner} />

@@ -58,8 +58,8 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
             {/* Header / Navigation */}
             <div>
                 <Link 
-                    href="/dashboard/students"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group mb-2 text-xs uppercase tracking-widest"
+                    href="/dashboard/parents"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group mb-2 text-xs uppercase tracking-widest active:scale-95 duration-100"
                 >
                     <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
                     Back to Directory

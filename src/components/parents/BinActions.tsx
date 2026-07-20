@@ -42,13 +42,13 @@ export default function BinActions({ parentId, parentName }: Props) {
         <div className="flex items-center gap-2">
             <button
                 onClick={() => setShowRestore(true)}
-                className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 active:scale-95 duration-100"
             >
                 <RefreshCcw className="w-3.5 h-3.5" /> Restore
             </button>
             <button
                 onClick={() => setShowDelete(true)}
-                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all active:scale-90 duration-100"
                 title="Delete Forever"
             >
                 <Trash2 className="w-4 h-4" />
@@ -66,8 +66,8 @@ export default function BinActions({ parentId, parentName }: Props) {
                             This will restore <strong>{parentName}</strong> and their children. They will reappear in all lists and rosters.
                         </p>
                         <div className="flex gap-3">
-                            <button onClick={() => setShowRestore(false)} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold transition-all">Cancel</button>
-                            <button onClick={handleRestore} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2">
+                            <button onClick={() => setShowRestore(false)} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold transition-all active:scale-95 duration-100">Cancel</button>
+                            <button onClick={handleRestore} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-bold transition-all active:scale-95 duration-100 flex items-center justify-center gap-2">
                                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Yes, Restore'}
                             </button>
                         </div>
@@ -87,8 +87,8 @@ export default function BinActions({ parentId, parentName }: Props) {
                             This will permanently destroy the record for <strong>{parentName}</strong> and their children. <strong className="text-destructive">This action cannot be undone.</strong>
                         </p>
                         <div className="flex gap-3">
-                            <button onClick={() => setShowDelete(false)} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold transition-all">Cancel</button>
-                            <button onClick={handleHardDelete} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2">
+                            <button onClick={() => setShowDelete(false)} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold transition-all active:scale-95 duration-100">Cancel</button>
+                            <button onClick={handleHardDelete} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-2xl text-sm font-bold transition-all active:scale-95 duration-100 flex items-center justify-center gap-2">
                                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete Forever'}
                             </button>
                         </div>

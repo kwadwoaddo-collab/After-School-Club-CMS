@@ -53,7 +53,7 @@ export default async function BinPage() {
         <div className="space-y-8 animate-in fade-in duration-700">
             <HeaderPortal targetId="header-right-actions">
                 <div className="flex items-center gap-4">
-                    <Link href="/dashboard/parents" className="p-2 bg-secondary text-muted-foreground hover:bg-secondary/80 rounded-xl transition-colors">
+                    <Link href="/dashboard/parents" className="p-2 bg-secondary text-muted-foreground hover:bg-secondary/80 rounded-xl transition-all active:scale-90 duration-100">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>

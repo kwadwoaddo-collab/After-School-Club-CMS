@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { parents, children, invoices, payments } from '@/db/schema';
 import { eq, and, desc, ilike, or, sum, count, sql } from 'drizzle-orm';
 import Link from 'next/link';
-import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling, Baby } from 'lucide-react';
+import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling, Baby, Archive } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import DeleteParentButton from '@/components/parents/DeleteParentButton';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -120,7 +120,6 @@ export default async function ParentsPage({ searchParams }: Props) {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
-            {/* Header portal */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Parents</h1>
@@ -128,6 +127,16 @@ export default async function ParentsPage({ searchParams }: Props) {
                         {totalFamilies}
                     </span>
                 </div>
+            </HeaderPortal>
+            
+            <HeaderPortal targetId="header-right-actions">
+                <Link
+                    href="/dashboard/parents/bin"
+                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-bold text-foreground transition-all active:scale-95 duration-100 cursor-pointer"
+                >
+                    <Archive className="w-3.5 h-3.5" />
+                    <span>Recovery Bin</span>
+                </Link>
             </HeaderPortal>
 
             {/* KPI row */}
@@ -231,7 +240,7 @@ export default async function ParentsPage({ searchParams }: Props) {
                                                     className="group hover:bg-secondary/40 transition-colors cursor-pointer"
                                                 >
                                                     <td className="py-4 px-6">
-                                                        <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3">
+                                                        <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3 active:scale-[0.985] transition-all duration-100">
                                                             <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-sm`}>
                                                                 {initials}
                                                             </div>
@@ -279,12 +288,14 @@ export default async function ParentsPage({ searchParams }: Props) {
                                                             <span className="text-xs text-muted-foreground font-medium">—</span>
                                                         )}
                                                     </td>
+                                                    <td className="py-4 px-4">
                                                         <div className="flex items-center justify-end gap-1">
                                                             <DeleteParentButton parentId={parent.id} parentName={fullName} childCount={childCount} />
-                                                            <Link href={`/dashboard/parents/${parent.id}`} className="p-2 text-muted-foreground hover:text-primary transition-colors">
+                                                            <Link href={`/dashboard/parents/${parent.id}`} className="p-2 text-muted-foreground hover:text-primary transition-colors active:scale-90 duration-100">
                                                                 <ChevronRight className="w-4 h-4" />
                                                             </Link>
                                                         </div>
+                                                    </td>
                                                 </tr>
                                             );
                                         })}
