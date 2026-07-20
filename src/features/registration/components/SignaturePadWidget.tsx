@@ -21,7 +21,7 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
         const padRef = useRef<SignaturePadType>(null);
         const containerRef = useRef<HTMLDivElement>(null);
         const [isEmpty, setIsEmpty] = useState(true);
-        const [dimensions, setDimensions] = useState({ width: 0, height: 120 });
+        const [dimensions, setDimensions] = useState({ width: 0, height: 200 });
 
         // Size the canvas to the container width
         useEffect(() => {
@@ -29,7 +29,7 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
                 if (containerRef.current) {
                     setDimensions({
                         width: containerRef.current.offsetWidth,
-                        height: 130,
+                        height: 200,
                     });
                 }
             };
@@ -63,15 +63,15 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
             <div className={className}>
                 <div
                     ref={containerRef}
-                    className={`relative rounded-xl overflow-hidden border-2 transition-colors ${invalid ? 'border-red-400' : 'border-slate-200'} bg-card`}
-                    style={{ height: 140 }}
+                    className={`relative rounded-xl overflow-hidden border-2 transition-colors ${invalid ? 'border-destructive' : 'border-border'} bg-card`}
+                    style={{ height: 200 }}
                 >
                     {dimensions.width > 0 && (
                         <SignaturePad
                             ref={padRef}
                             canvasProps={{
                                 width: dimensions.width,
-                                height: 140,
+                                height: 200,
                                 className: 'touch-none',
                             }}
                             penColor="#1e293b"
@@ -88,12 +88,12 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
                     <div className="absolute bottom-8 left-6 right-6 border-b border-dashed border-slate-300 pointer-events-none" />
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                    <p className="text-white/40 text-xs">Draw your signature above using your mouse or finger</p>
+                    <p className="text-muted-foreground text-xs">Draw your signature above using your mouse or finger</p>
                     {!isEmpty && (
                         <button
                             type="button"
                             onClick={handleClear}
-                            className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium"
+                            className="text-xs text-destructive hover:text-destructive/80 transition-colors font-medium min-h-[44px] px-3 py-2"
                         >
                             Clear
                         </button>
