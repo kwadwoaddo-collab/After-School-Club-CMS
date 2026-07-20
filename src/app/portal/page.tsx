@@ -6,6 +6,8 @@ import {
     MapPin, Video, ArrowRight, LogOut
 } from 'lucide-react';
 import { CancelBookingButton } from '@/components/portal/CancelBookingButton';
+import NotificationBell from '@/components/portal/NotificationBell';
+import { getNotifications } from '@/app/portal/notifications/actions';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -16,6 +18,9 @@ export default async function PortalDashboard() {
     if (!parent) {
         redirect('/portal/login');
     }
+
+    const notifications = await getNotifications();
+    const unreadCount = notifications.filter(n => !n.readAt).length;
 
     const parentInvoices = await db.query.invoices.findMany({
         where: eq(invoices.parentId, parent.id),
@@ -55,6 +60,7 @@ export default async function PortalDashboard() {
                         <Link href="/portal/billing" className="text-sm font-bold text-primary hover:text-primary-dim transition-colors bg-primary/10 px-4 py-2 rounded-lg border border-primary/20 hover:border-primary/40">
                             Billing & Vouchers
                         </Link>
+                        <NotificationBell notifications={notifications} unreadCount={unreadCount} />
                         <a
                             href="/api/portal/logout"
                             className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card"

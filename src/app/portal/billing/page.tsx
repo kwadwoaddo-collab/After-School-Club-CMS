@@ -7,11 +7,16 @@ import Link from 'next/link';
 import { ArrowLeft, CreditCard, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { VoucherPaymentForm } from '@/components/portal/VoucherPaymentForm';
 import StripePayButton from '@/components/portal/StripePayButton';
+import NotificationBell from '@/components/portal/NotificationBell';
+import { getNotifications } from '@/app/portal/notifications/actions';
 
 export default async function BillingDashboard(props: { searchParams: Promise<{ payment?: string }> }) {
     const searchParams = await props.searchParams;
     const parent = await getCurrentParent();
     if (!parent) redirect('/portal/login');
+
+    const notifications = await getNotifications();
+    const unreadCount = notifications.filter(n => !n.readAt).length;
 
     // Check Stripe is available server-side (avoids exposing secret key to client)
     const stripeEnabled = !!(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_xxx'));
@@ -41,9 +46,12 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                     <Link href="/portal" className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -ml-2 rounded-lg hover:bg-card transition-colors text-on-surface-variant">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-lg font-bold text-foreground">Billing & Invoices</h1>
                         <p className="text-xs text-on-surface-variant">Manage your payments and vouchers</p>
+                    </div>
+                    <div className="flex items-center">
+                        <NotificationBell notifications={notifications} unreadCount={unreadCount} />
                     </div>
                 </div>
             </header>

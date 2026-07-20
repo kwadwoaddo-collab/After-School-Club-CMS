@@ -6,6 +6,7 @@ import { registrations, registrationChildren, registrationParents, parents, chil
 import { eq, and, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
+import { createRegistrationNotification } from '@/app/portal/notifications/actions';
 
 export async function deleteRegistrations(ids: string[]) {
     const session = await auth();
@@ -322,6 +323,14 @@ export async function updateRegistrationStatus(
                         newStatus,
                     });
                 }
+
+                await createRegistrationNotification({
+                    parentId: regParent.parentId,
+                    organisationId: orgId,
+                    status: newStatus === 'signed_up' ? 'approved' : 'rejected',
+                    childName: childNames.length > 0 ? childNames.join(', ') : 'Your child',
+                    registrationId,
+                });
             }
         } catch (emailErr) {
             // Non-fatal — log but don't block the status update

@@ -893,4 +893,16 @@ export const billingRunsRelations = relations(billingRuns, ({ one }) => ({
   }),
 }));
 
+export const portalNotifications = pgTable('portal_notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  parentId: uuid('parent_id').notNull().references(() => parents.id, { onDelete: 'cascade' }),
+  organisationId: uuid('organisation_id').notNull(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  href: text('href'),
+  readAt: timestamp('read_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 
