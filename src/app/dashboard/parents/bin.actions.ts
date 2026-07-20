@@ -44,7 +44,7 @@ export async function softDeleteParent(parentId: string) {
 
     revalidatePath('/dashboard/parents');
     revalidatePath('/dashboard/students');
-    revalidatePath('/dashboard/bin');
+    revalidatePath('/dashboard/parents/bin');
     revalidatePath('/dashboard');
     return { success: true };
 }
@@ -72,7 +72,7 @@ export async function restoreParent(parentId: string) {
 
     revalidatePath('/dashboard/parents');
     revalidatePath('/dashboard/students');
-    revalidatePath('/dashboard/bin');
+    revalidatePath('/dashboard/parents/bin');
     revalidatePath('/dashboard');
     return { success: true };
 }
@@ -92,7 +92,7 @@ export async function hardDeleteParent(parentId: string) {
 
     revalidatePath('/dashboard/parents');
     revalidatePath('/dashboard/students');
-    revalidatePath('/dashboard/bin');
+    revalidatePath('/dashboard/parents/bin');
     revalidatePath('/dashboard');
     return { success: true };
 }
@@ -113,7 +113,4 @@ export async function purgeStaleBinItems() {
         AND deleted_at IS NOT NULL 
         AND deleted_at < NOW() - INTERVAL '30 days'
     `);
-
-    // Force revalidate
-    revalidatePath('/dashboard/bin');
 }
