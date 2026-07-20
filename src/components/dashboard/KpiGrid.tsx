@@ -154,6 +154,7 @@ export function KpiGrid({
             'relative group overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer block',
             'glassmorphic-card',
             'hover:scale-[1.015] hover:-translate-y-0.5',
+            'active:scale-[0.985] active:opacity-95',
             stat.glowClass || 'hover:border-outline-variant/30',
             'min-h-[148px] p-5 flex flex-col justify-between'
           )}

@@ -40,6 +40,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +231,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             }
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
                 setShowSearchResults(false);
+                setIsSearchFocused(false);
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
@@ -249,6 +251,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 ? 'bg-header/80 backdrop-blur-2xl border-border/60 shadow-sm'
                 : 'bg-header/45 backdrop-blur-xl border-border/60'
         } ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
+
+            {/* Spotlight-Style Search Focus Backdrop Overlay */}
+            {isSearchFocused && (
+                <div className="fixed inset-0 bg-black/15 dark:bg-black/40 backdrop-blur-[1.5px] z-[-1] pointer-events-none animate-in fade-in duration-200" />
+            )}
 
             {/* Hamburger — mobile only */}
             <button
@@ -296,6 +303,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     setShowSearchResults(true);
                                 }}
                                 onFocus={() => {
+                                    setIsSearchFocused(true);
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings…"
@@ -374,7 +382,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowNotifications(!showNotifications)}
-                        className="keep-shape p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground relative transition-all duration-200"
+                        aria-expanded={showNotifications}
+                        aria-haspopup="menu"
+                        aria-controls="notifications-menu"
+                        className="keep-shape p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground relative transition-all duration-200 active:scale-95"
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
@@ -387,7 +398,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     </button>
 
                     {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div
+                            id="notifications-menu"
+                            role="menu"
+                            className="absolute right-0 mt-2 w-80 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                        >
                             <div className="p-4 border-b border-border flex items-center justify-between">
                                 <div>
                                     <h3 className="font-bold text-foreground">Notifications</h3>
@@ -463,7 +478,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     <button
                         suppressHydrationWarning
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="keep-shape flex items-center gap-3.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-all duration-200 mr-2 group"
+                        aria-expanded={showUserMenu}
+                        aria-haspopup="menu"
+                        aria-controls="user-profile-menu"
+                        className="keep-shape flex items-center gap-3.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-all duration-200 mr-2 group active:scale-95"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block min-w-0">
@@ -479,7 +497,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     </button>
 
                     {showUserMenu && (
-                        <div className="absolute right-0 mt-2 w-56 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div
+                            id="user-profile-menu"
+                            role="menu"
+                            className="absolute right-0 mt-2 w-56 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                        >
                             <div className="p-4 border-b border-border">
                                 <p className="font-bold text-foreground text-sm truncate">{userName || 'Admin User'}</p>
                                 <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">

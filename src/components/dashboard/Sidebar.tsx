@@ -201,7 +201,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     <button
                                         suppressHydrationWarning
                                         onClick={() => setQuickActionsOpen(o => !o)}
-                                        className="flex items-center justify-between w-full px-2 mb-3 group"
+                                        aria-expanded={quickActionsOpen}
+                                        className="flex items-center justify-between w-full px-2 mb-3 group active:scale-[0.98] transition-transform duration-100"
                                     >
                                         <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-[0.12em] group-hover:text-foreground transition-colors">
                                             Quick Links
@@ -236,6 +237,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 <div className="h-px bg-border my-1" />
                                 <div className="max-h-48 overflow-y-auto">
                                     <button
+                                        role="option"
+                                        aria-selected={selectedCentreId === 'all'}
                                         onClick={() => { selectCentre('all'); closeCentreDropdown(); }}
                                         className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
                                             selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
@@ -247,6 +250,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     {centres.map(centre => (
                                         <button
                                             key={centre.id}
+                                            role="option"
+                                            aria-selected={selectedCentreId === centre.id}
                                             onClick={() => { selectCentre(centre.id); closeCentreDropdown(); }}
                                             className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
                                                 selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
@@ -277,10 +282,13 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     <button
                                         ref={centreBtnRef}
                                         onClick={openCentreDropdown}
+                                        aria-haspopup="listbox"
+                                        aria-expanded={dropdownOpen}
+                                        aria-controls="centre-dropdown-menu"
                                         className={`
                                             keep-shape
                                             flex items-center justify-between w-full px-3 py-2.5 rounded-xl
-                                            transition-all group text-left
+                                            transition-all group text-left active:scale-[0.97] duration-100
                                             ${isCentresPageActive
                                                 ? 'text-primary bg-primary/10 font-bold'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
@@ -307,7 +315,10 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     <button
                                         ref={centreBtnRef}
                                         onClick={openCentreDropdown}
-                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2.5 rounded-xl transition-all group ${
+                                        aria-haspopup="listbox"
+                                        aria-expanded={dropdownOpen}
+                                        aria-controls="centre-dropdown-menu"
+                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2.5 rounded-xl transition-all group active:scale-[0.95] duration-100 ${
                                             isCentresPageActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                                         }`}
                                         title={selectedCentreId === 'all' ? 'Combined View' : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
@@ -325,8 +336,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     <>
                                         <div className="fixed inset-0 z-[199]" onClick={closeCentreDropdown} />
                                         <div
+                                            id="centre-dropdown-menu"
+                                            role="listbox"
+                                            aria-label="Active Centre Selection"
                                             className="fixed bg-popover border border-border rounded-2xl shadow-2xl z-[200] py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
-                                            style={{ top: dropdownAnchor.top, left: dropdownAnchor.left, width: dropdownAnchor.width }}
+                                            style={{ top: dropdownAnchor.top, left: dropdownAnchor.left, width: dropdownAnchor.width, minWidth: '220px' }}
                                         >
                                             {dropdownContent}
                                         </div>
@@ -356,7 +370,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         }}
                                         className={`
                                             flex items-center gap-4 px-4 py-2.5 rounded-full
-                                            transition-all duration-300 ease-out group relative overflow-hidden
+                                            transition-all duration-300 ease-out group relative overflow-hidden active:scale-[0.97]
                                             ${isActive
                                                 ? 'text-primary bg-primary/10 font-bold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:bg-primary before:rounded-r-full'
                                                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
@@ -443,6 +457,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         flex items-center justify-center
                         shadow-md border border-border
                         hover:bg-secondary transition-all duration-200
+                        active:scale-90
                         group z-50 hidden md:flex
                     `}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
