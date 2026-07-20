@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { parents, children, invoices, payments } from '@/db/schema';
 import { eq, and, desc, ilike, or, sum, count, sql } from 'drizzle-orm';
 import Link from 'next/link';
-import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling } from 'lucide-react';
+import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling, Baby } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 interface Props {
@@ -99,9 +99,14 @@ export default async function ParentsPage({ searchParams }: Props) {
         outstanding: number;
     }>;
 
-    const totalParents = rows.length;
-    const withOutstanding = rows.filter(r => Number(r.outstanding) > 0).length;
-    const totalOutstanding = rows.reduce((s, r) => s + Number(r.outstanding), 0);
+    // Split into families WITH children vs orphaned parent records (0 children)
+    const familyRows = rows.filter(r => Number(r.child_count) > 0);
+    const orphanedRows = rows.filter(r => Number(r.child_count) === 0);
+
+    const totalFamilies = familyRows.length;
+    const totalChildren = familyRows.reduce((s, r) => s + Number(r.child_count), 0);
+    const withOutstanding = familyRows.filter(r => Number(r.outstanding) > 0).length;
+    const totalOutstanding = familyRows.reduce((s, r) => s + Number(r.outstanding), 0);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -116,20 +121,29 @@ export default async function ParentsPage({ searchParams }: Props) {
             </HeaderPortal>
 
             {/* KPI row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-card border border-border rounded-[28px] p-5 group hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Users className="w-5 h-5 text-primary" />
                         </div>
                     </div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Families</p>
-                    <p className="text-3xl font-black text-foreground mt-0.5">{totalParents}</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Families</p>
+                    <p className="text-3xl font-black text-foreground mt-0.5">{totalFamilies}</p>
                 </div>
                 <div className="bg-card border border-border rounded-[28px] p-5 group hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <AlertCircle className="w-5 h-5 text-amber-500" />
+                        <div className="w-10 h-10 bg-success/10 border border-success/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Baby className="w-5 h-5 text-success" />
+                        </div>
+                    </div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Children</p>
+                    <p className="text-3xl font-black text-foreground mt-0.5">{totalChildren}</p>
+                </div>
+                <div className="bg-card border border-border rounded-[28px] p-5 group hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="w-10 h-10 bg-warning/10 border border-warning/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <AlertCircle className="w-5 h-5 text-warning" />
                         </div>
                     </div>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">With Balance</p>
@@ -137,11 +151,11 @@ export default async function ParentsPage({ searchParams }: Props) {
                 </div>
                 <div className="bg-card border border-border rounded-[28px] p-5 group hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <PoundSterling className="w-5 h-5 text-rose-500" />
+                        <div className="w-10 h-10 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <PoundSterling className="w-5 h-5 text-destructive" />
                         </div>
                     </div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Outstanding</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Outstanding</p>
                     <p className="text-3xl font-black text-foreground mt-0.5">£{totalOutstanding.toFixed(0)}</p>
                 </div>
             </div>
@@ -160,7 +174,7 @@ export default async function ParentsPage({ searchParams }: Props) {
             </form>
 
             {/* Parent list */}
-            {rows.length === 0 ? (
+            {familyRows.length === 0 && orphanedRows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-dashed border-border rounded-3xl">
                     <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-4 text-3xl">👪</div>
                     <h3 className="text-foreground font-bold mb-2">
@@ -178,94 +192,139 @@ export default async function ParentsPage({ searchParams }: Props) {
                     )}
                 </div>
             ) : (
-                <div className="bg-card border border-border rounded-[32px] overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-border">
-                                    <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Parent</th>
-                                    <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Contact</th>
-                                    <th className="py-4 px-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Children</th>
-                                    <th className="py-4 px-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Outstanding</th>
-                                    <th className="py-4 px-4 w-10" />
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {rows.map((parent) => {
-                                    const fullName = `${parent.first_name} ${parent.last_name}`;
-                                    const initials = getInitials(parent.first_name, parent.last_name);
-                                    const gradient = getAvatarGradient(parent.first_name);
-                                    const outstanding = Number(parent.outstanding);
-
-                                    return (
-                                        <tr
-                                            key={parent.id}
-                                            className="group hover:bg-secondary/40 transition-colors cursor-pointer"
-                                        >
-                                            <td className="py-4 px-6">
-                                                <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3">
-                                                    {/* Gradient avatar */}
-                                                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-sm`}>
-                                                        {initials}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                                                            {fullName}
-                                                        </p>
-                                                        {parent.email && (
-                                                            <p className="text-xs text-muted-foreground">{parent.email}</p>
-                                                        )}
-                                                    </div>
-                                                </Link>
-                                            </td>
-                                            <td className="py-4 px-6 hidden md:table-cell">
-                                                <div className="space-y-0.5">
-                                                    {parent.phone && (
-                                                        <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                                                            <Phone className="w-3 h-3 text-muted-foreground" />
-                                                            {parent.phone}
-                                                        </p>
-                                                    )}
-                                                    {parent.email && (
-                                                        <p className="text-xs font-medium text-foreground flex items-center gap-1.5 md:hidden lg:flex">
-                                                            <Mail className="w-3 h-3 text-muted-foreground" />
-                                                            {parent.email}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-4 text-center">
-                                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-primary/10 text-primary text-xs font-black border border-primary/20">
-                                                    {parent.child_count}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-4 text-right hidden sm:table-cell">
-                                                {outstanding > 0 ? (
-                                                    <span className="text-sm font-black text-rose-500">
-                                                        £{outstanding.toFixed(2)}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-muted-foreground font-medium">—</span>
-                                                )}
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <Link href={`/dashboard/parents/${parent.id}`}>
-                                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                </Link>
-                                            </td>
+                <div className="space-y-4">
+                    {/* Families WITH children */}
+                    {familyRows.length > 0 && (
+                        <div className="bg-card border border-border rounded-[32px] overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-border">
+                                            <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Parent / Family</th>
+                                            <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Contact</th>
+                                            <th className="py-4 px-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Children</th>
+                                            <th className="py-4 px-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Outstanding</th>
+                                            <th className="py-4 px-4 w-10" />
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {familyRows.map((parent) => {
+                                            const fullName = `${parent.first_name} ${parent.last_name}`;
+                                            const initials = getInitials(parent.first_name, parent.last_name);
+                                            const gradient = getAvatarGradient(parent.first_name);
+                                            const outstanding = Number(parent.outstanding);
+                                            const childCount = Number(parent.child_count);
 
-                    {/* Footer */}
-                    <div className="px-6 py-3 border-t border-border bg-secondary/20">
-                        <p className="text-xs text-muted-foreground font-medium">
-                            {rows.length} parent{rows.length !== 1 ? 's' : ''} {search ? `matching "${search}"` : 'total'} · Sorted A–Z by surname
-                        </p>
-                    </div>
+                                            return (
+                                                <tr
+                                                    key={parent.id}
+                                                    className="group hover:bg-secondary/40 transition-colors cursor-pointer"
+                                                >
+                                                    <td className="py-4 px-6">
+                                                        <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-sm`}>
+                                                                {initials}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                                                                    {fullName}
+                                                                </p>
+                                                                {parent.email && (
+                                                                    <p className="text-xs text-muted-foreground">{parent.email}</p>
+                                                                )}
+                                                            </div>
+                                                        </Link>
+                                                    </td>
+                                                    <td className="py-4 px-6 hidden md:table-cell">
+                                                        <div className="space-y-0.5">
+                                                            {parent.phone && (
+                                                                <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                                                                    <Phone className="w-3 h-3 text-muted-foreground" />
+                                                                    {parent.phone}
+                                                                </p>
+                                                            )}
+                                                            {parent.email && (
+                                                                <p className="text-xs font-medium text-foreground flex items-center gap-1.5 md:hidden lg:flex">
+                                                                    <Mail className="w-3 h-3 text-muted-foreground" />
+                                                                    {parent.email}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-center">
+                                                        <span className={`inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-xl text-xs font-black border ${
+                                                            childCount >= 2
+                                                                ? 'bg-success/10 text-success border-success/20'
+                                                                : 'bg-primary/10 text-primary border-primary/20'
+                                                        }`}>
+                                                            {childCount}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-right hidden sm:table-cell">
+                                                        {outstanding > 0 ? (
+                                                            <span className="text-sm font-black text-destructive">
+                                                                £{outstanding.toFixed(2)}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground font-medium">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <Link href={`/dashboard/parents/${parent.id}`}>
+                                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="px-6 py-3 border-t border-border bg-secondary/20">
+                                <p className="text-xs text-muted-foreground font-medium">
+                                    {familyRows.length} famil{familyRows.length !== 1 ? 'ies' : 'y'} · {totalChildren} child{totalChildren !== 1 ? 'ren' : ''} {search ? `matching "${search}"` : 'total'} · Sorted A–Z by surname
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Orphaned parent records (no children linked) */}
+                    {orphanedRows.length > 0 && !search && (
+                        <details className="group">
+                            <summary className="flex items-center gap-2 cursor-pointer list-none px-1 py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors select-none">
+                                <ChevronRight className="w-3.5 h-3.5 transition-transform group-open:rotate-90" />
+                                {orphanedRows.length} incomplete registration{orphanedRows.length !== 1 ? 's' : ''} (no children linked)
+                            </summary>
+                            <div className="mt-2 bg-card border border-dashed border-border rounded-[28px] overflow-hidden opacity-60">
+                                <table className="w-full">
+                                    <tbody className="divide-y divide-border">
+                                        {orphanedRows.map((parent) => {
+                                            const fullName = `${parent.first_name} ${parent.last_name}`;
+                                            const initials = getInitials(parent.first_name, parent.last_name);
+                                            return (
+                                                <tr key={parent.id} className="group/row hover:bg-secondary/40 transition-colors">
+                                                    <td className="py-3 px-6">
+                                                        <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-xl bg-secondary border border-border flex items-center justify-center text-xs font-black text-muted-foreground flex-shrink-0">
+                                                                {initials}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-muted-foreground">{fullName}</p>
+                                                                {parent.email && <p className="text-xs text-muted-foreground/70">{parent.email}</p>}
+                                                            </div>
+                                                        </Link>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right">
+                                                        <span className="text-[10px] font-bold text-muted-foreground bg-secondary border border-border px-2 py-0.5 rounded-full">No children</span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    )}
                 </div>
             )}
         </div>
