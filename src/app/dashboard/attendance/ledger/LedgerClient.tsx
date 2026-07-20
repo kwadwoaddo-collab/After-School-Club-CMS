@@ -140,7 +140,7 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
         <>
             <div className={`bg-card border border-border rounded-2xl overflow-hidden ${statusColor} transition-all hover:shadow-sm`}>
                 <div
-                    className="flex items-center gap-4 px-5 py-4 cursor-pointer"
+                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-secondary/20 active:scale-[0.99] transition-all duration-100"
                     onClick={() => setExpanded(!expanded)}
                 >
                     {/* Avatar */}
