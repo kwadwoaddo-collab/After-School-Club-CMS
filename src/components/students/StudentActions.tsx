@@ -43,22 +43,22 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
                         <div className="w-14 h-14 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
                             <Trash2 className="w-7 h-7 text-destructive" />
                         </div>
-                        <h3 className="text-lg font-bold text-white text-center mb-2">Delete Student?</h3>
+                        <h3 className="text-lg font-bold text-foreground text-center mb-2">Delete Student?</h3>
                         <p className="text-sm text-on-surface-variant text-center mb-6">
-                            This will permanently remove <strong className="text-white">{studentName}</strong> and all their notes and attendance records. This action <strong className="text-destructive">cannot be undone</strong>.
+                            This will permanently remove <strong className="text-foreground">{studentName}</strong> and all their notes and attendance records. This action <strong className="text-destructive">cannot be undone</strong>.
                         </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowConfirm(false)}
                                 disabled={isDeleting}
-                                className="flex-1 px-4 py-2.5 bg-secondary/40 hover:bg-card border border-outline-variant/20 rounded-2xl text-sm font-semibold text-on-surface transition-all"
+                                className="flex-1 px-4 py-2.5 bg-secondary/40 hover:bg-card border border-outline-variant/20 rounded-2xl text-sm font-semibold text-on-surface transition-all active:scale-95 duration-100"
                             >
                                 Keep Student
                             </button>
                             <button
                                 onClick={handleDelete}
                                 disabled={isDeleting}
-                                className="flex-1 px-4 py-2.5 bg-error hover:bg-error/80 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2.5 bg-error hover:bg-error/80 rounded-2xl text-sm font-bold text-white transition-all active:scale-95 duration-100 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Yes, Delete'}
                             </button>
@@ -70,13 +70,13 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                 <Link
                     href={`/dashboard/students/${studentId}`}
-                    className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg inline-flex items-center gap-2 transition-all"
+                    className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg inline-flex items-center gap-2 transition-all active:scale-95 duration-100"
                 >
                     Manage <ArrowRight className="w-3 h-3" />
                 </Link>
                 <button
                     onClick={() => setShowConfirm(true)}
-                    className="p-2 text-on-surface-variant hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                    className="p-2 text-on-surface-variant hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all active:scale-90 duration-100"
                     title={`Delete ${studentName}`}
                 >
                     <Trash2 className="w-4 h-4" />

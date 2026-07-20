@@ -49,7 +49,7 @@ export default async function StudentsPage(props: {
                     </div>
                     <Link
                         href="/dashboard/students/add"
-                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-lg shadow-primary/30 glow-btn"
                     >
                         <Plus className="w-4 h-4" /> Add Student
                     </Link>
@@ -220,7 +220,7 @@ export default async function StudentsPage(props: {
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Students</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-white/10 text-muted-foreground text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-border text-muted-foreground text-[10px] font-bold">
                         {totalCount}
                     </span>
                 </div>
@@ -236,7 +236,7 @@ export default async function StudentsPage(props: {
                 </Link>
                 <Link
                     href="/dashboard/students/add"
-                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100 cursor-pointer"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Student</span>
@@ -300,7 +300,7 @@ export default async function StudentsPage(props: {
                 {/* Low Attendance */}
                 <Link
                     href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'}
-                    className={`rounded-2xl p-5 transition-all bg-card border ${showLowAttendance ? 'border-warning/40 ring-1 ring-warning/20' : 'border-border hover:border-warning/30 hover:shadow-md'} shadow-sm`}
+                    className={`rounded-2xl p-5 transition-all bg-card border ${showLowAttendance ? 'border-warning/40 ring-1 ring-warning/20' : 'border-border hover:border-warning/30 active:scale-[0.985] active:opacity-95'} shadow-sm duration-100`}
                 >
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-warning/10 text-warning flex-shrink-0">

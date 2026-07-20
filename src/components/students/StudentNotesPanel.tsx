@@ -84,13 +84,13 @@ export default function StudentNotesPanel({ childId, childName, notes, currentUs
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Add a new internal note..."
                     rows={2}
-                    className="flex-1 px-4 py-3 bg-card border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
+                    className="flex-1 px-4 py-3 bg-card border border-border rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
                     disabled={isPending}
                 />
                 <button
                     onClick={handleAddNote}
                     disabled={isPending || !newNote.trim()}
-                    className="px-6 py-2 bg-slate-900 border border-slate-800 text-white font-bold rounded-2xl shadow-lg hover:bg-slate-800 transition-all disabled:opacity-50 h-auto self-end"
+                    className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-2xl shadow-lg hover:bg-primary/90 active:scale-95 transition-all duration-100 disabled:opacity-50 h-auto self-end"
                 >
                     {isPending ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Note'}
                 </button>

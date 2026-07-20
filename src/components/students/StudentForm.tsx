@@ -177,7 +177,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                         </svg>
                         Missing Required Fields
                     </div>
-                    <p className="font-semibold text-sm text-amber-300">Please check the {Object.keys(errors).length} fields marked in red below.</p>
+                    <p className="font-semibold text-sm text-warning">Please check the {Object.keys(errors).length} fields marked in red below.</p>
                 </div>
             )}
 
@@ -186,7 +186,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                 <div className="md:col-span-2">
                     <h3 className="text-lg font-bold text-foreground mb-4">Centre Assignment</h3>
                     <div>
-                        <label className="block text-sm font-bold text-slate-300 mb-1">
+                        <label className="block text-sm font-bold text-foreground mb-1">
                             Assign to Centre <span className="text-rose-500">*</span>
                         </label>
                         {accessibleCentres.length === 0 ? (
@@ -218,23 +218,39 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                     <h3 className="text-lg font-bold text-foreground mb-4">Student Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
-                            <input name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} className={inputClass('firstName')} />
+                            <label className="block text-sm font-bold text-foreground mb-1">First Name</label>
+                            <input type="text" name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} className={inputClass('firstName')} placeholder="e.g. John" />
                             {errors.firstName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.firstName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
-                            <input name="lastName" id="lastName" value={formData.lastName} onChange={handleChange} className={inputClass('lastName')} />
+                            <label className="block text-sm font-bold text-foreground mb-1">Last Name</label>
+                            <input type="text" name="lastName" id="lastName" value={formData.lastName} onChange={handleChange} className={inputClass('lastName')} placeholder="e.g. Doe" />
                             {errors.lastName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.lastName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">Date of Birth</label>
+                            <label className="block text-sm font-bold text-foreground mb-1">Date of Birth</label>
                             <input type="date" name="dateOfBirth" id="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={inputClass('dateOfBirth')} />
                             {errors.dateOfBirth && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.dateOfBirth}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">School Year</label>
-                            <input name="schoolYear" id="schoolYear" value={formData.schoolYear} onChange={handleChange} className={inputClass('schoolYear')} placeholder="e.g. Year 5" />
+                            <label className="block text-sm font-bold text-foreground mb-1">School Year</label>
+                            <select name="schoolYear" id="schoolYear" value={formData.schoolYear} onChange={handleChange} className={inputClass('schoolYear')}>
+                                <option value="">— Select school year —</option>
+                                <option value="Reception">Reception</option>
+                                <option value="Y1">Year 1</option>
+                                <option value="Y2">Year 2</option>
+                                <option value="Y3">Year 3</option>
+                                <option value="Y4">Year 4</option>
+                                <option value="Y5">Year 5</option>
+                                <option value="Y6">Year 6</option>
+                                <option value="Y7">Year 7</option>
+                                <option value="Y8">Year 8</option>
+                                <option value="Y9">Year 9</option>
+                                <option value="Y10">Year 10</option>
+                                <option value="Y11">Year 11</option>
+                                <option value="Y12">Year 12</option>
+                                <option value="Y13">Year 13</option>
+                            </select>
                             {errors.schoolYear && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.schoolYear}</p>}
                         </div>
                     </div>
@@ -245,22 +261,22 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                     <h3 className="text-lg font-bold text-foreground mb-4">Parent / Guardian Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">First Name</label>
-                            <input name="parentFirstName" id="parentFirstName" value={formData.parentFirstName} onChange={handleChange} className={inputClass('parentFirstName')} />
+                            <label className="block text-sm font-bold text-foreground mb-1">First Name</label>
+                            <input type="text" name="parentFirstName" id="parentFirstName" value={formData.parentFirstName} onChange={handleChange} className={inputClass('parentFirstName')} placeholder="e.g. Jane" />
                             {errors.parentFirstName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentFirstName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">Last Name</label>
-                            <input name="parentLastName" id="parentLastName" value={formData.parentLastName} onChange={handleChange} className={inputClass('parentLastName')} />
+                            <label className="block text-sm font-bold text-foreground mb-1">Last Name</label>
+                            <input type="text" name="parentLastName" id="parentLastName" value={formData.parentLastName} onChange={handleChange} className={inputClass('parentLastName')} placeholder="e.g. Doe" />
                             {errors.parentLastName && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentLastName}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">Email</label>
-                            <input type="email" name="parentEmail" id="parentEmail" value={formData.parentEmail} onChange={handleChange} className={inputClass('parentEmail')} />
+                            <label className="block text-sm font-bold text-foreground mb-1">Email</label>
+                            <input type="email" name="parentEmail" id="parentEmail" value={formData.parentEmail} onChange={handleChange} className={inputClass('parentEmail')} placeholder="e.g. jane@example.com" />
                             {errors.parentEmail && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentEmail}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-300 mb-1">Phone</label>
+                            <label className="block text-sm font-bold text-foreground mb-1">Phone</label>
                             <input type="tel" name="parentPhone" id="parentPhone" value={formData.parentPhone} onChange={handleChange} className={inputClass('parentPhone')} />
                             {errors.parentPhone && <p className="text-rose-500 text-[10px] font-bold mt-1.5 uppercase tracking-wider">{errors.parentPhone}</p>}
                         </div>

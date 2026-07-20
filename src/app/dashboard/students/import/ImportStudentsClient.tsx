@@ -216,10 +216,10 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
       {step === 1 && (
         <div className={`${card} p-8 space-y-6`}>
           {/* Download template */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-blue-50 border border-blue-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/20">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                <FileSpreadsheet className="w-4 h-4 text-white" />
+                <FileSpreadsheet className="w-4 h-4 text-primary-foreground" />
               </div>
               <div>
                 <h3 className="font-bold text-foreground text-sm">Download Template</h3>
@@ -228,7 +228,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             </div>
             <button
               onClick={handleDownloadTemplate}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-blue-200 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-50 transition-all shadow-sm flex-shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-primary/20 text-primary rounded-xl text-xs font-bold hover:bg-primary/10 transition-all shadow-sm flex-shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
               Download template.csv
@@ -253,17 +253,17 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all ${
-              dragOver ? 'border-blue-400 bg-blue-50' : 'border-border hover:border-blue-300 hover:bg-secondary/40'
+              dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30 hover:bg-secondary/40'
             }`}
           >
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-primary/10' : 'bg-secondary/60'}`}>
-              <Upload className={`w-6 h-6 ${dragOver ? 'text-blue-600' : 'text-muted-foreground'}`} />
+              <Upload className={`w-6 h-6 ${dragOver ? 'text-primary' : 'text-muted-foreground'}`} />
             </div>
             <h4 className="font-bold text-foreground text-base mb-1">Upload your CSV spreadsheet</h4>
             <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
               Drag and drop your spreadsheet here, or click to browse. Max size 5MB.
             </p>
-            <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-primary/20">
+            <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-primary/20">
               <Upload className="w-4 h-4" />
               Browse Files
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
@@ -373,7 +373,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             <button
               onClick={handleStartImport}
               disabled={!isMappingValid()}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-sm shadow-primary/20"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-sm shadow-primary/20"
             >
               Confirm and Start Import
               <ArrowRight className="w-4 h-4" />
@@ -387,8 +387,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
         <div className={`${card} p-8 space-y-6`}>
           {isImporting ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                <RefreshCw className="w-7 h-7 text-blue-600 animate-spin" />
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <RefreshCw className="w-7 h-7 text-primary animate-spin" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-foreground">Importing Students…</h3>
@@ -415,18 +415,18 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
               {/* Status banner */}
               {result?.success ? (
-                <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  <p className="text-sm font-semibold text-emerald-800">
+                <div className="flex items-center gap-3 p-4 bg-success/5 border border-success/20 rounded-2xl">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  <p className="text-sm font-semibold text-success">
                     Roster migration completed successfully! All records imported without errors.
                   </p>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-4 bg-error/5 border border-error/20 rounded-2xl">
+                  <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-bold text-red-800">Import completed with warnings</p>
-                    <p className="text-xs text-red-600 mt-0.5">Some records could not be created. See the error log below.</p>
+                    <p className="text-sm font-bold text-error">Import completed with warnings</p>
+                    <p className="text-xs text-error/80 mt-0.5">Some records could not be created. See the error log below.</p>
                   </div>
                 </div>
               )}
@@ -448,21 +448,21 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
               {/* Skipped */}
               {(result?.stats.skippedStudents ?? 0) > 0 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
-                  <span className="text-amber-800 font-medium">Skipped duplicates (already exist)</span>
-                  <span className="font-bold text-amber-900">{result!.stats.skippedStudents}</span>
+                <div className="flex items-center justify-between px-4 py-3 bg-warning/5 border border-warning/20 rounded-xl text-sm">
+                  <span className="text-warning font-medium">Skipped duplicates (already exist)</span>
+                  <span className="font-bold text-warning/80">{result!.stats.skippedStudents}</span>
                 </div>
               )}
 
               {/* Errors */}
               {result?.errors && result.errors.length > 0 && (
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-red-500 mb-2">Error Log ({result.errors.length})</p>
-                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-red-100 divide-y divide-red-100 bg-red-50/50">
+                  <p className="text-xs font-black uppercase tracking-wider text-error mb-2">Error Log ({result.errors.length})</p>
+                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-error/20 divide-y divide-error/10 bg-error/5">
                     {result.errors.map((err, i) => (
                       <div key={i} className="p-3.5 text-xs flex justify-between items-start gap-4">
                         <div>
-                          <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[10px] font-bold">Row {err.row}</span>
+                          <span className="px-2 py-0.5 rounded-md bg-error/10 text-error text-[10px] font-bold">Row {err.row}</span>
                           {err.name && <span className="text-foreground font-bold ml-2">{err.name}</span>}
                           <p className="text-muted-foreground mt-1">{err.message}</p>
                         </div>
@@ -477,7 +477,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               <div className="pt-2 border-t border-border flex justify-end">
                 <Link
                   href="/dashboard/students"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-primary/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-primary/20"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   Done — View Students
