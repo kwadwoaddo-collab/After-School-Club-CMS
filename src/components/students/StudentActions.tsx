@@ -22,7 +22,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
         try {
             const res = await fetch(`/api/students/${studentId}`, { method: 'DELETE' });
             if (res.ok) {
-                router.refresh();
+                router.push('/dashboard/students');
             } else {
                 setAlertError('Failed to delete student. Please try again.');
             }
