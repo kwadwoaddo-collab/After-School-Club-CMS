@@ -1,42 +1,24 @@
 export default function ReportsLoading() {
-    return (
-        <div className="space-y-8 animate-pulse">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div className="space-y-2">
-                    <div className="h-9 w-36 bg-card rounded-xl" />
-                    <div className="h-4 w-52 bg-card rounded-lg" />
-                </div>
-                <div className="flex gap-2">
-                    <div className="h-10 w-28 bg-card rounded-2xl" />
-                    <div className="h-10 w-28 bg-card rounded-2xl" />
-                </div>
-            </div>
-
-            {/* Tab bar */}
-            <div className="flex gap-2">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className={`h-10 rounded-xl bg-card ${i === 1 ? 'w-28' : 'w-24'}`} />
-                ))}
-            </div>
-
-            {/* Report content */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glassmorphic-card rounded-2xl p-6 space-y-4">
-                    <div className="h-5 w-32 bg-card rounded-lg" />
-                    <div className="space-y-2">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <div className="flex-1 h-3 bg-card rounded-full" />
-                                <div className="h-3 w-12 bg-card rounded" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className="glassmorphic-card rounded-2xl p-6">
-                    <div className="h-48 bg-card/50 rounded-xl" />
-                </div>
-            </div>
+  return (
+    <div className="animate-pulse space-y-6 p-6">
+      {/* Tab bar */}
+      <div className="flex gap-2">
+        {[1,2,3,4].map(i => <div key={i} className="h-9 w-32 rounded-full bg-muted" />)}
+      </div>
+      {/* Config card */}
+      <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+        <div className="h-5 w-48 rounded-lg bg-muted" />
+        <div className="flex gap-2">
+          {[1,2,3].map(i => <div key={i} className="h-8 w-24 rounded-full bg-muted" />)}
         </div>
-    );
+        <div className="h-10 w-32 rounded-xl bg-muted" />
+      </div>
+      {/* Stats grid */}
+      <div className="grid grid-cols-3 gap-4">
+        {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 rounded-2xl bg-muted" />)}
+      </div>
+      {/* Table rows */}
+      {[1,2,3].map(i => <div key={i} className="h-14 rounded-xl bg-muted" />)}
+    </div>
+  );
 }

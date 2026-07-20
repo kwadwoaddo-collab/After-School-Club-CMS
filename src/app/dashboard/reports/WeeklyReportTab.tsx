@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import {
     Loader2, Download, Calendar, Users, BookOpen,
@@ -40,15 +40,15 @@ function fmtDisplay(iso: string): string {
 }
 
 function attendanceColor(rate: number): string {
-    if (rate >= 80) return 'text-emerald-600';
-    if (rate >= 50) return 'text-amber-600';
-    return 'text-red-600';
+    if (rate >= 80) return 'text-success';
+    if (rate >= 50) return 'text-warning';
+    return 'text-destructive';
 }
 
 function attendanceBadgeClass(rate: number): string {
-    if (rate >= 80) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (rate >= 50) return 'bg-amber-50 text-amber-700 border-amber-200';
-    return 'bg-red-50 text-red-700 border-red-200';
+    if (rate >= 80) return 'bg-success/10 text-success border-success/20';
+    if (rate >= 50) return 'bg-warning/10 text-warning border-warning/20';
+    return 'bg-destructive/10 text-destructive border-destructive/20';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,11 +115,16 @@ interface StatCardProps {
     iconClass?: string;
     iconBg?: string;
     valueClass?: string;
+    onClick?: () => void;
+    clickable?: boolean;
 }
 
-function StatCard({ label, value, icon: Icon, iconClass = 'text-primary', iconBg = 'bg-primary/10', valueClass = 'text-foreground' }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, iconClass = 'text-primary', iconBg = 'bg-primary/10', valueClass = 'text-foreground', onClick, clickable }: StatCardProps) {
     return (
-        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
+        <div 
+            className={`bg-card border border-border rounded-2xl p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow ${clickable ? 'cursor-pointer hover:bg-secondary/80 hover:border-primary/20 active:scale-[0.98] transition-all' : ''}`}
+            onClick={onClick}
+        >
             <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
                 <div className={`w-8 h-8 ${iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
@@ -139,18 +144,18 @@ function SummarySection({ summary }: { summary: WeeklyReportData['summary'] }) {
 
     const stats: StatCardProps[] = [
         { label: 'New Registrations', value: summary.newRegistrations, icon: Users, iconClass: 'text-primary', iconBg: 'bg-primary/10' },
-        { label: 'New Bookings', value: summary.newBookings, icon: BookOpen, iconClass: 'text-violet-600', iconBg: 'bg-violet-50' },
-        { label: 'Sessions Run', value: summary.sessionsRun, icon: CalendarCheck, iconClass: 'text-emerald-600', iconBg: 'bg-emerald-50' },
+        { label: 'New Bookings', value: summary.newBookings, icon: BookOpen, iconClass: 'text-primary', iconBg: 'bg-primary/10' },
+        { label: 'Sessions Run', value: summary.sessionsRun, icon: CalendarCheck, iconClass: 'text-success', iconBg: 'bg-success/10' },
         {
             label: 'Attendance Rate',
             value: rate != null ? `${rate}%` : '—',
             icon: BarChart3,
             iconClass: rateIconClass,
-            iconBg: rate != null && rate >= 80 ? 'bg-emerald-50' : rate != null && rate >= 50 ? 'bg-amber-50' : 'bg-red-50',
+            iconBg: rate != null && rate >= 80 ? 'bg-success/10' : rate != null && rate >= 50 ? 'bg-warning/10' : 'bg-destructive/10',
             valueClass: rateIconClass,
         },
-        { label: 'Pending This Period', value: summary.pendingRegistrationsThisPeriod, icon: Clock, iconClass: 'text-amber-600', iconBg: 'bg-amber-50', valueClass: 'text-amber-700' },
-        { label: 'Overdue Follow-ups', value: summary.overdueFollowUps, icon: AlertTriangle, iconClass: 'text-red-600', iconBg: 'bg-red-50', valueClass: summary.overdueFollowUps > 0 ? 'text-red-600' : 'text-foreground' },
+        { label: 'Pending This Period', value: summary.pendingRegistrationsThisPeriod, icon: Clock, iconClass: 'text-warning', iconBg: 'bg-warning/10', valueClass: 'text-warning', clickable: true, onClick: () => document.getElementById('pending-actions-section')?.scrollIntoView({ behavior: 'smooth' }) },
+        { label: 'Overdue Follow-ups', value: summary.overdueFollowUps, icon: AlertTriangle, iconClass: 'text-destructive', iconBg: 'bg-destructive/10', valueClass: summary.overdueFollowUps > 0 ? 'text-destructive' : 'text-foreground', clickable: true, onClick: () => document.getElementById('pending-actions-section')?.scrollIntoView({ behavior: 'smooth' }) },
     ];
 
     return (
@@ -182,7 +187,7 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                             <tr
                                 key={i}
                                 className={`transition-colors ${isOverdue
-                                    ? 'border-l-2 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50'
+                                    ? 'border-l-2 border-l-warning bg-warning/10 hover:bg-warning/20'
                                     : 'hover:bg-secondary/40'
                                 }`}
                             >
@@ -195,13 +200,13 @@ function NewRegistrationsSection({ rows }: { rows: WeeklyReportData['newRegistra
                                 <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{r.centre}</td>
                                 <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{r.startDate}</td>
                                 <td className="px-4 py-3">
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
                                         {r.status}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3">
                                     {isOverdue ? (
-                                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-warning/10 text-warning border border-warning/20">
                                             {r.daysSinceSubmitted}d
                                         </span>
                                     ) : (
@@ -223,7 +228,7 @@ function NewBookingsSection({ rows }: { rows: WeeklyReportData['newBookings'] })
     const headers = ['Child(ren)', 'Parent', 'Contact', 'Centre', 'Session Date', 'Status', 'Attendance'];
     return (
         <div>
-            <SectionHeading icon={BookOpen} title="New Bookings" iconClass="text-violet-600" bgClass="bg-violet-50" />
+            <SectionHeading icon={BookOpen} title="New Bookings" iconClass="text-primary" bgClass="bg-primary/10" />
             {rows.length === 0 ? (
                 <EmptyState message="No new bookings for this period." />
             ) : (
@@ -236,7 +241,7 @@ function NewBookingsSection({ rows }: { rows: WeeklyReportData['newBookings'] })
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{b.centre}</td>
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{b.sessionDate}</td>
                             <td className="px-4 py-3">
-                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-violet-50 text-violet-700 border border-violet-200">
+                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
                                     {b.bookingStatus}
                                 </span>
                             </td>
@@ -255,7 +260,7 @@ function AttendanceSection({ rows }: { rows: WeeklyReportData['attendanceByCentr
     const headers = ['Centre', 'Sessions', 'Expected', 'Attended', 'Rate'];
     return (
         <div>
-            <SectionHeading icon={BarChart3} title="Attendance by Centre" iconClass="text-emerald-600" bgClass="bg-emerald-50" />
+            <SectionHeading icon={BarChart3} title="Attendance by Centre" iconClass="text-success" bgClass="bg-success/10" />
             {rows.length === 0 ? (
                 <EmptyState message="No attendance data for this period." />
             ) : (
@@ -287,15 +292,15 @@ const PENDING_TYPE_LABELS: Record<WeeklyReportData['pendingActions'][number]['ty
 };
 
 const PENDING_TYPE_COLORS: Record<WeeklyReportData['pendingActions'][number]['type'], string> = {
-    overdue_registration: 'bg-amber-50 text-amber-700 border-amber-200',
-    missed_attendance: 'bg-red-50 text-red-700 border-red-200',
+    overdue_registration: 'bg-warning/10 text-warning border-warning/20',
+    missed_attendance: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingActions'] }) {
     const headers = ['Type', 'Name', 'Description', 'Date', 'Days Pending'];
     return (
-        <div>
-            <SectionHeading icon={AlertTriangle} title="Pending Actions" iconClass="text-amber-600" bgClass="bg-amber-50" />
+        <div id="pending-actions-section">
+            <SectionHeading icon={AlertTriangle} title="Pending Actions" iconClass="text-warning" bgClass="bg-warning/10" />
             {rows.length === 0 ? (
                 <EmptyState message="No pending actions — all clear! 🎉" />
             ) : (
@@ -312,8 +317,8 @@ function PendingActionsSection({ rows }: { rows: WeeklyReportData['pendingAction
                             <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">{p.date}</td>
                             <td className="px-4 py-3">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${p.daysPending >= 7
-                                    ? 'bg-red-50 text-red-700 border-red-200'
-                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                    ? 'bg-destructive/10 text-destructive border-destructive/20'
+                                    : 'bg-warning/10 text-warning border-warning/20'
                                 }`}>
                                     {p.daysPending}d
                                 </span>
@@ -370,6 +375,10 @@ export default function WeeklyReportTab() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rangeMode, customStart, customEnd]);
 
+    useEffect(() => {
+        handlePreview();
+    }, [handlePreview]);
+
     const handleDownloadPdf = useCallback(async () => {
         if (!reportData) return;
         setPdfError(null);
@@ -391,18 +400,18 @@ export default function WeeklyReportTab() {
             {/* ── Date Range Card ──────────────────────────────────────────── */}
             <div className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-foreground text-xl leading-tight">CEO Weekly Activity Report</h2>
+                        <h2 className="font-bold text-foreground text-xl leading-tight">Activity Report</h2>
                         <p className="text-sm text-muted-foreground mt-0.5">Preview and download an executive summary for the selected period</p>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
                     {(['this_week', 'last_week', 'custom'] as const).map((mode) => {
-                        const label = mode === 'this_week' ? 'This Week' : mode === 'last_week' ? 'Last Week' : 'Custom Range';
+                        const label = mode === 'this_week' ? 'Week to Date' : mode === 'last_week' ? 'Last Full Week' : 'Custom Range';
                         return (
                             <button
                                 key={mode}
@@ -449,17 +458,17 @@ export default function WeeklyReportTab() {
                 <button
                     onClick={handlePreview}
                     disabled={isLoading || (rangeMode === 'custom' && (!customStart || !customEnd))}
-                    className="w-full py-4 bg-primary hover:bg-primary/90 active:bg-primary/80 text-white font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-secondary border border-border text-foreground hover:bg-secondary/80 font-bold rounded-2xl text-sm transition-all flex justify-center items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isLoading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Generating Report…</>
                     ) : (
-                        <><Calendar className="w-4 h-4" />Preview Report</>
+                        <><Calendar className="w-4 h-4" />Refresh Report</>
                     )}
                 </button>
 
                 {error && (
-                    <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
+                    <div className="px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
                         {error}
                     </div>
                 )}
@@ -494,16 +503,16 @@ export default function WeeklyReportTab() {
                             <button
                                 onClick={handleDownloadPdf}
                                 disabled={isPdfLoading}
-                                className="flex items-center gap-2 px-6 py-3 bg-card hover:bg-secondary/40 border border-border hover:border-border rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 rounded-2xl text-sm font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isPdfLoading ? (
-                                    <><Loader2 className="w-4 h-4 text-primary animate-spin" />Generating PDF…</>
+                                    <><Loader2 className="w-4 h-4 animate-spin" />Generating PDF…</>
                                 ) : (
-                                    <><Download className="w-4 h-4 text-blue-600" />Download PDF</>
+                                    <><Download className="w-4 h-4" />Download PDF</>
                                 )}
                             </button>
                             {pdfError && (
-                                <p className="text-xs text-red-600 font-medium max-w-xs text-right">{pdfError}</p>
+                                <p className="text-xs text-destructive font-medium max-w-xs text-right">{pdfError}</p>
                             )}
                         </div>
                     </div>

@@ -33,7 +33,7 @@ export default async function ReportsPage() {
                         Reports &amp; Exports
                     </h1>
                     <p className="text-muted-foreground font-medium mt-1">
-                        Download your booking and student data as CSV files.
+                        View executive activity reports and export raw data to CSV or PDF.
                     </p>
                 </div>
             </div>
