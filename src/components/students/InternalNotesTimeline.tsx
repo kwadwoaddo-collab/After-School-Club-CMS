@@ -106,7 +106,6 @@ export default function InternalNotesTimeline({ childId, initialNotes }: Interna
           onChange={(e) => setContent(e.target.value)}
           placeholder="Type observation or note..."
           className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
-          className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none min-h-[80px]"
           disabled={isPending}
         />
         <div className="flex justify-end mt-2">

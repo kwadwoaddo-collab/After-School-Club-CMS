@@ -76,14 +76,14 @@ export default async function CentresPage() {
             {/* Page Header */}
             <div className="flex items-end justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Centres</h1>
+                    <h1 className="text-3xl font-black text-foreground tracking-tight">Centres</h1>
                     <p className="text-on-surface-variant font-medium mt-1">
                         Manage your club centres and locations
                     </p>
                 </div>
                 <Link
                     href="/dashboard/centres/add"
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/30 glow-btn duration-100"
                 >
                     <Plus className="w-4 h-4" /> Add Centre
                 </Link>
@@ -95,13 +95,13 @@ export default async function CentresPage() {
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <MapPin className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No centres yet</h3>
+                    <h3 className="text-xl font-bold text-foreground mb-2">No centres yet</h3>
                     <p className="text-on-surface-variant mb-6">
                         Get started by adding your first centre
                     </p>
                     <Link
                         href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg glow-btn shadow-primary/30"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 shadow-lg glow-btn shadow-primary/30 duration-100"
                     >
                         <Plus className="w-4 h-4" /> Add Your First Centre
                     </Link>
@@ -111,7 +111,7 @@ export default async function CentresPage() {
                     {centresWithStats.map((centre) => (
                         <div
                             key={centre.id}
-                            className="glassmorphic-card rounded-3xl p-6 hover:border-primary/30 transition-all group glow-hover-primary"
+                            className="glassmorphic-card rounded-3xl p-6 hover:border-primary/30 active:scale-[0.985] active:opacity-95 transition-all group glow-hover-primary duration-200"
                         >
                             <div className="flex items-start justify-between mb-6">
                                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -125,7 +125,7 @@ export default async function CentresPage() {
                                 </div>
                             </div>
 
-                            <h3 className="text-xl font-black text-white mb-2 tracking-tight group-hover:text-primary transition-colors">{centre.name}</h3>
+                            <h3 className="text-xl font-black text-foreground mb-2 tracking-tight group-hover:text-primary transition-colors">{centre.name}</h3>
 
                             {centre.address && (
                                 <p className="text-sm text-on-surface-variant opacity-80 mb-6 flex items-start gap-2 h-10 overflow-hidden line-clamp-2">
@@ -153,13 +153,13 @@ export default async function CentresPage() {
                                 <div className="flex items-center gap-2">
                                     <Link
                                         href={`/dashboard/centres/${centre.id}/billing`}
-                                        className="px-3 py-2 bg-card/5 border border-white/10 text-on-surface-variant text-xs font-bold rounded-xl hover:bg-card/10 hover:text-white flex items-center gap-1.5 transition-all"
+                                        className="px-3 py-2 bg-card/5 border border-border text-on-surface-variant text-xs font-bold rounded-xl hover:bg-card/10 hover:text-foreground active:scale-95 transition-all flex items-center gap-1.5 duration-100"
                                     >
                                         Billing
                                     </Link>
                                     <Link
                                         href={`/dashboard/bookings?centre=${centre.id}`}
-                                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 flex items-center gap-2 transition-all shadow-md shadow-primary/20"
+                                        className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2 duration-100 shadow-md shadow-primary/20"
                                     >
                                         Manage <ArrowRight className="w-3.5 h-3.5" />
                                     </Link>

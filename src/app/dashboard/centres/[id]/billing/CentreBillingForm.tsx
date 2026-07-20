@@ -81,7 +81,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard/centres"
-                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/80 active:scale-95 transition-all duration-100"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </Link>
@@ -300,7 +300,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-black transition-all shadow-lg shadow-primary/30 disabled:opacity-60"
+                        className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-black active:scale-[0.98] transition-all shadow-lg shadow-primary/30 disabled:opacity-60 duration-100"
                     >
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

@@ -643,30 +643,28 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 );
                                             })()}
                                             {hasMedicalNote(booking) && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 cursor-help shadow-sm">
-                                                            <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="bg-card border-border shadow-xl p-3 max-w-[200px]">
-                                                        <div className="font-bold text-destructive mb-1 border-b border-destructive/20 pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/>Medical / Allergy Alert</div>
+                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 cursor-help shadow-sm">
+                                                        <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+                                                    </div>
+                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                        <div className="font-bold text-destructive mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/>Medical / Allergy Alert</div>
                                                         {getMedicalNotesContent(booking)}
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
+                                                    </div>
+                                                </div>
                                             )}
                                             {hasSafeguardingNote(booking) && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-sm">
-                                                            <Shield className="w-3.5 h-3.5 text-primary" />
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="bg-card border-border shadow-xl p-3 max-w-[200px]">
-                                                        <div className="font-bold text-primary mb-1 border-b border-primary/20 pb-1 flex items-center gap-1.5"><Shield className="w-3 h-3"/>Safeguarding Alert</div>
+                                                <div className="relative group/tooltip flex items-center outline-none">
+                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-sm">
+                                                        <Shield className="w-3.5 h-3.5 text-primary" />
+                                                    </div>
+                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
+                                                        <div className="font-bold text-primary mb-1 border-b border-border pb-1 flex items-center gap-1.5"><Shield className="w-3.5 h-3.5"/>Safeguarding Alert</div>
                                                         {getSafeguardingNotesContent(booking)}
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
+                                                    </div>
+                                                </div>
                                             )}
                                             {(booking.parent?.email || booking.parent?.phone) && (
                                                 <div className="flex items-center gap-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
