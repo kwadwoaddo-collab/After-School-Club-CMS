@@ -16,7 +16,8 @@
     "db:reset": "tsx src/scripts/reset-db.ts",
     "test": "vitest run",
     "test:e2e": "npx playwright test",
-    "test:all": "vitest run && npx playwright test"
+    "test:all": "vitest run && npx playwright test",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
