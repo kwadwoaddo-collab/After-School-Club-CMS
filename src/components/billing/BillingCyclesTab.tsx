@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react';
 import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Users, Loader2 } from 'lucide-react';
 import GenerateInvoiceModal from './GenerateInvoiceModal';
+import BulkInvoiceConfirmModal from './BulkInvoiceConfirmModal';
 import { useRouter } from 'next/navigation';
+import { generateInvoiceFromConfig } from '@/features/billing/actions';
 import type { BillingCycleRow } from '@/features/billing/queries';
 
 // ─── Status pill ──────────────────────────────────────────────────────────────
@@ -158,6 +160,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
     const [isPending, startTransition] = useTransition();
     const [filter, setFilter] = useState<'all' | 'ready' | 'needs_setup' | 'invoice_sent'>('all');
     const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+    const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
     const handleGenerated = () => startTransition(() => router.refresh());
 
@@ -166,15 +169,15 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
         try {
             const readyCycles = cycles.filter(c => c.cycleStatus === 'ready');
             for (const cycle of readyCycles) {
-                await fetch('/api/finance/invoices', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        billingConfigId: cycle.config.id,
-                        familyId: cycle.config.parentId,
-                        amountPence: cycle.config.agreedMonthlyPence,
-                        periodLabel: cycle.periodLabel,
-                        dueDate: cycle.dueDateStr
-                    })
+                const dueDateStr = cycle.dueDateStr
+                    ? cycle.dueDateStr.split('T')[0]
+                    : new Date().toISOString().split('T')[0];
+
+                await generateInvoiceFromConfig({
+                    configId: cycle.config.id,
+                    periodStartStr: dueDateStr,
+                    periodEndStr: dueDateStr,
+                    amountPence: cycle.config.agreedMonthlyPence,
                 });
             }
             startTransition(() => router.refresh());
@@ -216,7 +219,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                 {counts.ready > 1 && (
                     <button 
                         disabled={isGeneratingAll}
-                        onClick={handleGenerateAll}
+                        onClick={() => setShowBulkConfirm(true)}
                         className="flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-xs font-black hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-[0.97] disabled:opacity-50"
                     >
                         {isGeneratingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
@@ -244,6 +247,17 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                         />
                     ))}
                 </div>
+            )}
+
+            {showBulkConfirm && (
+                <BulkInvoiceConfirmModal
+                    isOpen={showBulkConfirm}
+                    onClose={() => setShowBulkConfirm(false)}
+                    onConfirm={async () => {
+                        await handleGenerateAll();
+                    }}
+                    cycles={cycles.filter(c => c.cycleStatus === 'ready')}
+                />
             )}
 
             {isPending && (
