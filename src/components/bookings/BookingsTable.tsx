@@ -31,6 +31,15 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     }, [initialBookings]);
 
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        if (!activeDropdown) return;
+        const handleClickOutside = () => setActiveDropdown(null);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [activeDropdown]);
+
     // confirmDelete holds the bookingId pending permanent deletion
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -722,10 +731,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
  
                                         {activeDropdown === booking.id && (
                                             <>
-                                                <div
-                                                    className="fixed inset-0 z-10"
-                                                    onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}
-                                                />
                                                 <div className="absolute right-0 top-full mt-2 w-52 bg-popover/90 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-20">
                                                     <Link
                                                         href={`/dashboard/bookings/${booking.id}`}
@@ -926,10 +931,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     
                                     {activeDropdown === `mobile-${booking.id}` && (
                                         <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }}
-                                            />
                                             <div className="absolute right-0 top-full mt-2 w-52 bg-popover/90 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-20">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
