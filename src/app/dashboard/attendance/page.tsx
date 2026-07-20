@@ -97,7 +97,7 @@ export default async function AttendancePage(props: {
                 <div className="flex items-center gap-2">
                     {/* Jump to today */}
                     {!isToday && (
-                        <Link href="/dashboard/attendance" className="px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-all flex items-center gap-1.5">
+                        <Link href="/dashboard/attendance" className="px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-all active:scale-95 duration-100 flex items-center gap-1.5">
                             <CalendarCheck className="w-3.5 h-3.5" />
                             Go to Today
                         </Link>
@@ -106,13 +106,13 @@ export default async function AttendancePage(props: {
                     <a
                         href={`/api/export/register?date=${targetStr}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
                         download={`register-${targetStr}.csv`}
-                        className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5"
+                        className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold hover:bg-emerald-500/20 transition-all active:scale-95 duration-100 flex items-center gap-1.5"
                         title={`Download register for ${format(targetDate, 'd MMM yyyy')} as CSV`}
                     >
                         <Download className="w-3.5 h-3.5" />
                         Export CSV
                     </a>
-                    <Link href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all">
+                    <Link href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all active:scale-90 duration-100">
                         <ChevronLeft className="w-4 h-4" />
                     </Link>
                     <div className="px-4 py-2 rounded-xl bg-secondary border border-border">
@@ -121,7 +121,7 @@ export default async function AttendancePage(props: {
                             {isToday && <span className="ml-2 text-primary text-xs font-bold uppercase tracking-wider">Today</span>}
                         </p>
                     </div>
-                    <Link href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all">
+                    <Link href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all active:scale-90 duration-100">
                         <ChevronRight className="w-4 h-4" />
                     </Link>
                 </div>

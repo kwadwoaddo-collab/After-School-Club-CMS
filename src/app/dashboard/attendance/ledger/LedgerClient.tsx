@@ -76,7 +76,7 @@ function ForgivModal({
                         <h3 className="text-base font-bold text-foreground">Forgive Sessions</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">{entry.firstName} {entry.lastName} · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary/60 text-muted-foreground hover:text-muted-foreground transition-all">
+                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all active:scale-90 duration-100">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -86,12 +86,12 @@ function ForgivModal({
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setAmount(Math.max(1, amount - 1))}
-                                className="w-10 h-10 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 text-foreground font-bold text-lg flex items-center justify-center transition-all"
+                                className="w-10 h-10 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 text-foreground font-bold text-lg flex items-center justify-center transition-all active:scale-90 duration-100"
                             >−</button>
                             <span className="text-2xl font-black text-foreground w-8 text-center">{amount}</span>
                             <button
                                 onClick={() => setAmount(amount + 1)}
-                                className="w-10 h-10 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 text-foreground font-bold text-lg flex items-center justify-center transition-all"
+                                className="w-10 h-10 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 text-foreground font-bold text-lg flex items-center justify-center transition-all active:scale-90 duration-100"
                             >+</button>
                         </div>
                     </div>
@@ -110,11 +110,11 @@ function ForgivModal({
                     </div>
                 </div>
                 <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
-                    <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary/40 text-sm font-semibold transition-all">Cancel</button>
+                    <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary/40 text-sm font-semibold transition-all active:scale-95 duration-100">Cancel</button>
                     <button
                         onClick={submit}
                         disabled={isPending}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all active:scale-95 duration-100 disabled:opacity-50"
                     >
                         {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <Shield className="w-3.5 h-3.5" />
@@ -251,7 +251,7 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                             </p>
                             <button
                                 onClick={e => { e.stopPropagation(); setShowForgive(true); }}
-                                className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-primary/8 transition-all"
+                                className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-primary/8 transition-all active:scale-95 duration-100"
                             >
                                 <Shield className="w-3.5 h-3.5" />
                                 Forgive Sessions
@@ -378,7 +378,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                 </div>
                 <button
                     onClick={exportCsv}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-border text-foreground text-sm font-semibold rounded-xl hover:bg-secondary/40 transition-all shadow-sm"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-border text-foreground text-sm font-semibold rounded-xl hover:bg-secondary/40 transition-all active:scale-95 duration-100 shadow-sm"
                 >
                     <Download className="w-4 h-4" />
                     Export CSV
@@ -442,7 +442,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         key={chip.id}
                         onClick={() => setDatePreset(chip.id)}
                         aria-pressed={datePreset === chip.id}
-                        className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                        className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all active:scale-95 duration-100 ${
                             datePreset === chip.id
                                 ? 'bg-primary text-primary-foreground border-primary'
                                 : 'bg-card border-border text-muted-foreground hover:border-primary/40'
@@ -459,7 +459,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                     <button
                         key={t.id}
                         onClick={() => setTab(t.id)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 duration-100 ${
                             tab === t.id
                                 ? 'bg-card text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'

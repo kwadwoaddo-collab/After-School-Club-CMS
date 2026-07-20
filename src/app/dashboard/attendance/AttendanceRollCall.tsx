@@ -296,7 +296,7 @@ function AttendeeCard({
                         </div>
                         <button
                             onClick={() => { setIsAbsent(false); setAbsenceReason(''); }}
-                            className="px-4 py-3 rounded-xl bg-card border border-border text-sm font-bold text-muted-foreground hover:bg-secondary/40 active:scale-95 transition-all"
+                            className="px-4 py-3 rounded-xl bg-card border border-border text-sm font-bold text-muted-foreground hover:bg-secondary/40 active:scale-95 duration-100 transition-all"
                         >
                             Undo
                         </button>
@@ -309,7 +309,7 @@ function AttendeeCard({
                             <button
                                 onClick={handleCheckIn}
                                 disabled={isPending}
-                                className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
+                                className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 duration-100 border ${
                                     isIn
                                         ? 'bg-tertiary-container/15 border-tertiary/30 text-tertiary'
                                         : 'bg-card border-border text-foreground hover:bg-tertiary-container/10 hover:border-tertiary/20 hover:text-tertiary'
@@ -324,7 +324,7 @@ function AttendeeCard({
                                 <button
                                     onClick={handleCheckOut}
                                     disabled={isPending}
-                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
+                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 duration-100 border ${
                                         isOut
                                             ? 'bg-primary/15 border-primary/30 text-primary'
                                             : 'bg-card border-border text-foreground hover:bg-primary/8 hover:border-primary/25 hover:text-primary'
@@ -339,7 +339,7 @@ function AttendeeCard({
                             {!isIn && (
                                 <button
                                     onClick={() => setShowAbsenceSheet(v => !v)}
-                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
+                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 duration-100 border ${
                                         showAbsenceSheet
                                             ? 'bg-error-container/15 border-error/30 text-error'
                                             : 'bg-card border-border text-foreground hover:bg-error-container/10 hover:border-error/30 hover:text-error'
@@ -389,7 +389,7 @@ function AttendeeCard({
                                         onClick={() => handleMarkAbsent(r.key)}
                                         disabled={isPending}
                                         aria-label={r.label}
-                                        className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl bg-card border-2 border-border hover:border-error/30 hover:bg-error-container/10 active:scale-95 transition-all disabled:opacity-50"
+                                        className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl bg-card border-2 border-border hover:border-error/30 hover:bg-error-container/10 active:scale-95 duration-100 transition-all disabled:opacity-50"
                                     >
                                         <span className="text-2xl leading-none">{r.emoji}</span>
                                         <span className="text-sm font-bold text-foreground">{r.label}</span>
@@ -591,7 +591,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                 <div className="flex gap-2">
                     <button
                         onClick={() => setShowWalkIn(true)}
-                        className="flex-1 sm:flex-none h-12 px-5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm shadow-primary/20 active:scale-95"
+                        className="flex-1 sm:flex-none h-12 px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm shadow-primary/20 active:scale-95 duration-100"
                     >
                         <Plus className="w-4 h-4 stroke-[2.5]" />
                         Walk-In
@@ -621,7 +621,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
-                            className="mt-4 px-4 py-2.5 bg-secondary/60 border border-border rounded-xl text-sm font-bold text-foreground hover:bg-secondary transition-all"
+                            className="mt-4 px-4 py-2.5 bg-secondary/60 border border-border rounded-xl text-sm font-bold text-foreground hover:bg-secondary transition-all active:scale-95 duration-100"
                         >
                             Clear search
                         </button>
@@ -673,7 +673,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             <button
                                                 onClick={() => handleMarkAllIn(slot)}
                                                 disabled={bulkPendingSlot === slot.time}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 disabled:opacity-60 bg-success/10 text-success border-success/20 hover:bg-success/20 hover:border-success/30"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 duration-100 disabled:opacity-60 bg-success/10 text-success border-success/20 hover:bg-success/20 hover:border-success/30"
                                             >
                                                 {bulkPendingSlot === slot.time
                                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -790,7 +790,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                             </div>
                             <button
                                 onClick={() => setShowWalkIn(false)}
-                                className="w-9 h-9 rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground transition-all"
+                                className="w-9 h-9 rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground transition-all active:scale-90 duration-100"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -802,7 +802,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     <button
                                         key={tab}
                                         onClick={() => setWalkInTab(tab)}
-                                        className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-all ${
+                                        className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-all active:scale-[0.98] duration-100 ${
                                             walkInTab === tab
                                                 ? 'border-primary text-primary bg-card'
                                                 : 'border-transparent text-muted-foreground hover:text-muted-foreground'
@@ -948,7 +948,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-secondary/40">
                             <button
                                 onClick={() => setShowWalkIn(false)}
-                                className="h-11 px-5 rounded-xl bg-card border border-border text-foreground text-sm font-bold hover:bg-secondary/60 transition-all"
+                                className="h-11 px-5 rounded-xl bg-card border border-border text-foreground text-sm font-bold hover:bg-secondary/60 transition-all active:scale-95 duration-100"
                             >
                                 Cancel
                             </button>
@@ -956,7 +956,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                 <button
                                     onClick={handleWalkInSubmit}
                                     disabled={isSubmitting}
-                                    className="h-11 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white text-sm font-bold transition-all flex items-center gap-2 shadow-sm shadow-emerald-200 active:scale-95"
+                                    className="h-11 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-primary-foreground text-sm font-bold transition-all flex items-center gap-2 shadow-sm shadow-emerald-200 active:scale-95 duration-100"
                                 >
                                     {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                                     {walkInTab === 'existing' ? 'Add to Register' : 'Register & Check In'}
