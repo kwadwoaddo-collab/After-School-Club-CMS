@@ -314,7 +314,7 @@ export default async function FinancePage(props: {
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-success/10 border border-success/20 text-success text-sm font-bold hover:bg-success/20 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-success/10 border border-success/20 text-success text-sm font-bold hover:bg-success/20 transition-all active:scale-95 duration-100"
                         title="Download finance CSV for current month"
                     >
                         <Download className="w-4 h-4" />
@@ -336,34 +336,36 @@ export default async function FinancePage(props: {
                     return (
                         <div
                             key={stat.name}
-                            className={`relative overflow-hidden group shadow-sm rounded-[32px] p-6 border transition-colors ${
+                            className={`relative overflow-hidden group shadow-sm rounded-3xl p-6 border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.015] active:scale-[0.985] cursor-pointer ${
                                 stat.hero ? 'lg:col-span-2' : ''
                             } ${
                                 isDestructive
-                                    ? 'bg-destructive/5 border-destructive/20'
-                                    : 'bg-card border-border'
+                                    ? 'bg-destructive/5 border-destructive/20 hover:border-destructive/40'
+                                    : 'bg-card border-border hover:border-primary/20'
                             }`}
                         >
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-transform ${
+                            <div className="flex items-center justify-between mb-4 relative z-10">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-110 ${
                                     isDestructive
-                                        ? 'bg-destructive/10 border-destructive/20'
-                                        : 'bg-primary/10 border-primary/20'
+                                        ? 'bg-destructive/10 border-destructive/20 text-destructive'
+                                        : 'bg-primary/10 border-primary/20 text-primary'
                                 }`}>
-                                    <stat.icon className={`w-6 h-6 ${isDestructive ? 'text-destructive' : 'text-primary'}`} />
+                                    <stat.icon className="w-6 h-6" />
                                 </div>
                             </div>
-                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{stat.name}</p>
-                            <h3 className={`font-black mt-1 ${stat.hero ? 'text-4xl' : 'text-3xl'} ${isDestructive ? 'text-destructive' : 'text-foreground'}`}>
-                                {stat.value}
-                            </h3>
-                            <p className="text-xs font-medium text-muted-foreground mt-1">{stat.sublabel}</p>
+                            <div className="relative z-10">
+                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{stat.name}</p>
+                                <h3 className={`font-black mt-1 tracking-tight tabular-nums ${stat.hero ? 'text-4xl' : 'text-3xl'} ${isDestructive ? 'text-destructive' : 'text-foreground'}`}>
+                                    {stat.value}
+                                </h3>
+                                <p className="text-xs font-medium text-muted-foreground mt-3 pt-3 border-t border-border/30">{stat.sublabel}</p>
+                            </div>
 
                             {/* Decorative background pulse */}
-                            <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full blur-3xl transition-colors ${
+                            <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full blur-3xl transition-colors pointer-events-none ${
                                 isDestructive
-                                    ? 'bg-destructive/5 group-hover:bg-destructive/10'
-                                    : 'bg-primary/5 group-hover:bg-primary/10'
+                                    ? 'bg-destructive/5 group-hover:bg-destructive/15'
+                                    : 'bg-primary/5 group-hover:bg-primary/15'
                             }`} />
                         </div>
                     );
@@ -440,7 +442,7 @@ export default async function FinancePage(props: {
                         </p>
                         <Link 
                             href="/dashboard/settings/finance"
-                            className="block w-full text-center py-4 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-foreground hover:bg-secondary transition-all"
+                            className="block w-full text-center py-4 bg-secondary/60 border border-border rounded-2xl text-sm font-bold text-foreground hover:bg-secondary transition-all active:scale-95 duration-100"
                         >
                             Configure Billing
                         </Link>

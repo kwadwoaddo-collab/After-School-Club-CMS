@@ -27,7 +27,7 @@ export default function FinanceDashboardClient({ students, recentInvoices = [], 
                 {/* Create invoice */}
                 <button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2.5 h-[44px] bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
+                    className="flex items-center gap-2 px-6 py-2.5 h-[44px] bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 active:scale-95 duration-100"
                 >
                     <Plus className="w-4 h-4" /> Create Invoice
                 </button>
@@ -69,7 +69,7 @@ export function InvoiceTable({
                 {isOwner && onCreateInvoice && (
                     <button
                         onClick={onCreateInvoice}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 active:scale-95 duration-100"
                     >
                         <Plus className="w-4 h-4" />
                         Create Invoice
@@ -113,7 +113,7 @@ export function InvoiceTable({
                                 <tr 
                                     key={invoice.id} 
                                     onClick={() => { if (isPending) return; router.push(`/dashboard/finance/invoices/${invoice.id}`); }}
-                                    className={`group transition-colors border-l-2 ${
+                                    className={`group transition-all duration-100 border-l-2 active:scale-[0.99] ${
                                         isOverdue
                                             ? 'bg-destructive/5 border-l-destructive hover:bg-destructive/10'
                                             : 'border-l-transparent hover:bg-secondary/60'
@@ -163,7 +163,7 @@ export function InvoiceTable({
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'void' })}
-                                                        className="p-2 bg-warning/10 text-warning hover:bg-warning/20 rounded-lg transition-colors border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="p-2 bg-warning/10 text-warning hover:bg-warning/20 rounded-lg transition-all border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
                                                         title="Void Invoice"
                                                     >
                                                         <Ban className="w-4 h-4" />
@@ -174,7 +174,7 @@ export function InvoiceTable({
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'delete' })}
-                                                        className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
                                                         title="Delete Invoice"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -243,7 +243,7 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
                             <tr 
                                 key={invoice.id} 
                                 onClick={() => router.push(`/dashboard/finance/invoices/${invoice.id}`)}
-                                className="group hover:bg-secondary/60 transition-colors cursor-pointer"
+                                className="group hover:bg-secondary/60 transition-all duration-100 cursor-pointer active:scale-[0.99]"
                             >
                                 <td className="py-4 px-4">
                                     <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
