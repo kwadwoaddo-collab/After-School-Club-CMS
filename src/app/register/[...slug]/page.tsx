@@ -56,10 +56,10 @@ const emptyParent = (): ParentEntry => ({
 });
 
 // ── Shared input styles ────────────────────────────────────────────
-const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-white border border-gray-200 text-gray-900 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50/40 focus:border-primary/50 text-sm transition-colors';
-const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-white border border-red-400 ring-2 ring-red-400/20 text-gray-900 placeholder:text-muted-foreground focus:outline-none text-sm';
-const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
-const sectionTitle = 'text-gray-900 font-bold text-xl mb-5';
+const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50/40 focus:border-primary/50 text-base transition-colors';
+const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-card border border-destructive ring-2 ring-destructive/20 text-foreground placeholder:text-muted-foreground focus:outline-none text-base';
+const labelCls = 'block text-sm font-medium text-muted-foreground mb-1';
+const sectionTitle = 'text-foreground font-bold text-xl mb-5';
 
 // ── Step indicator ─────────────────────────────────────────────────
 function ProgressBar({ current, total }: { current: number; total: number }) {
@@ -67,16 +67,16 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
         <div className="mb-8">
             <div className="flex gap-1.5 mb-2">
                 {Array.from({ length: total }).map((_, i) => (
-                    <div key={i} className={`flex-1 h-1 rounded-full transition-all ${i < current ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                    <div key={i} className={`flex-1 h-1 rounded-full transition-all ${i < current ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`} />
                 ))}
             </div>
-            <p className="text-gray-400 text-xs text-center">Step {current} of {total}</p>
+            <p className="text-muted-foreground text-xs text-center">Step {current} of {total}</p>
         </div>
     );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-    return <div><label className={labelCls}>{label}</label>{children}</div>;
+function Field({ label, children, htmlFor }: { label: string; children: React.ReactNode, htmlFor?: string }) {
+    return <div><label htmlFor={htmlFor} className={labelCls}>{label}</label>{children}</div>;
 }
 
 export default function RegisterPage() {
@@ -222,6 +222,7 @@ export default function RegisterPage() {
                 if (!c.lastName.trim()) invalid.add(`child-ln-${i}`);
                 if (!c.dateOfBirth) invalid.add(`child-dob-${i}`);
                 if (!c.schoolYear) invalid.add(`child-yr-${i}`);
+                if (c.sessions.length === 0) invalid.add(`child-sessions-${i}`);
             });
             if (invalid.size > 0) errorMsg = 'Please fill in all required child details (name, date of birth, and year group).';
         }
@@ -349,11 +350,11 @@ export default function RegisterPage() {
         return (
             <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <svg className="w-8 h-8 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    <p className="text-gray-400 text-sm">Loading registration form...</p>
+                    <p className="text-muted-foreground text-sm">Loading registration form...</p>
                 </div>
             </div>
         );
@@ -364,13 +365,13 @@ export default function RegisterPage() {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#f5f5f7]">
                 <div className="max-w-md w-full text-center">
-                    <div className="w-20 h-20 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-20 h-20 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-10 h-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-3">Registration Link Not Found</h1>
-                    <p className="text-gray-500 text-sm leading-relaxed">
+                    <h1 className="text-2xl font-bold text-foreground mb-3">Registration Link Not Found</h1>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                         This registration link is invalid or no longer active.<br />
                         Please contact the organisation directly for a valid link.
                     </p>
@@ -383,39 +384,39 @@ export default function RegisterPage() {
     if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
         return (
             <div className="min-h-screen bg-[#f5f5f7]">
-                <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="bg-card border-b border-border px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-gray-900 font-semibold text-sm group-hover:text-blue-600 transition-colors">{orgInfo?.name}</p>
-                            <p className="text-gray-400 text-xs">Student Registration Form</p>
+                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">{orgInfo?.name}</p>
+                            <p className="text-muted-foreground text-xs">Student Registration Form</p>
                         </button>
                     </div>
                 </div>
                 <div className="max-w-md mx-auto px-4 py-16">
                     <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Select a Centre</h1>
-                        <p className="text-gray-500 text-sm">Choose the location where you would like to register your child.</p>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">Select a Centre</h1>
+                        <p className="text-muted-foreground text-sm">Choose the location where you would like to register your child.</p>
                     </div>
                     <div className="space-y-3">
                         {orgInfo.centres.map(centre => (
                             <button
                                 key={centre.id}
                                 onClick={() => setSelectedCentreId(centre.id)}
-                                className="w-full text-left p-5 rounded-2xl bg-white border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all group"
+                                className="w-full text-left p-5 rounded-2xl bg-card border border-border hover:border-primary/20 hover:shadow-md transition-all group"
                             >
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <p className="text-gray-900 font-semibold mb-0.5">{centre.name}</p>
-                                        <p className="text-gray-500 text-sm">{centre.address || 'After School provisions'}</p>
+                                        <p className="text-foreground font-semibold mb-0.5">{centre.name}</p>
+                                        <p className="text-muted-foreground text-sm">{centre.address || 'After School provisions'}</p>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
-                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
+                                        <svg className="w-4 h-4 text-muted-foreground group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
@@ -424,7 +425,7 @@ export default function RegisterPage() {
                         ))}
                     </div>
                     <div className="mt-8 flex justify-start">
-                        <Link href="/" className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-colors text-sm">
+                        <Link href="/" className="px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm">
                             ← Back
                         </Link>
                     </div>
@@ -440,12 +441,12 @@ export default function RegisterPage() {
         return (
             <div className="min-h-screen bg-[#f5f5f7]">
                 {/* Header */}
-                <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="bg-card border-b border-border px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-gray-900 font-semibold text-sm group-hover:text-blue-600 transition-colors">{orgInfo?.name}</p>
-                            <p className="text-gray-400 text-xs">Student Registration Form</p>
+                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">{orgInfo?.name}</p>
+                            <p className="text-muted-foreground text-xs">Student Registration Form</p>
                         </button>
                     </div>
                 </div>
@@ -453,35 +454,35 @@ export default function RegisterPage() {
                 <div className="max-w-2xl mx-auto px-4 py-10">
                     {/* Title */}
                     <div className="mb-8">
-                        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 mb-4">
-                            <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
+                            <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-blue-600 text-xs font-medium">Please read before registering</span>
+                            <span className="text-primary text-xs font-medium">Please read before registering</span>
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">📋 Fees &amp; Payment Information</h1>
-                        <p className="text-gray-500 text-sm">Before you complete the registration form, please review our fees and payment terms.</p>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">📋 Fees &amp; Payment Information</h1>
+                        <p className="text-muted-foreground text-sm">Before you complete the registration form, please review our fees and payment terms.</p>
                     </div>
 
                     {/* Mode of Finance card */}
                     <div className="bg-gradient-to-r from-blue-600 to-violet-600 rounded-2xl p-6 mb-5">
-                        <p className="text-white/70 text-xs uppercase tracking-widest mb-3">Mode of Finance</p>
+                        <p className="text-foreground/70 text-xs uppercase tracking-widest mb-3">Mode of Finance</p>
                         <div className="space-y-3">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
-                                <span className="text-white/80 text-sm">Self Finance</span>
-                                <span className="text-white font-bold text-xl">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-white/60 font-normal text-sm">per session</span></span>
+                                <span className="text-foreground/80 text-sm">Self Finance</span>
+                                <span className="text-foreground font-bold text-xl">£{activeCentre?.feeSelfFinance ?? orgInfo?.pricing?.selfFinanceRate ?? 20} <span className="text-foreground/60 font-normal text-sm">per session</span></span>
                             </div>
                             <div className="border-t border-white/20" />
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-0">
-                                <span className="text-white/80 text-sm">Tax Credit / Universal Credit / Student Finance</span>
-                                <span className="text-white font-bold text-xl">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-white/60 font-normal text-sm">per session</span></span>
+                                <span className="text-foreground/80 text-sm">Tax Credit / Universal Credit / Student Finance</span>
+                                <span className="text-foreground font-bold text-xl">£{activeCentre?.feeAssistedFinance ?? orgInfo?.pricing?.taxCreditRate ?? 30} <span className="text-foreground/60 font-normal text-sm">per session</span></span>
                             </div>
                         </div>
                     </div>
 
                     {/* Payment terms */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
-                        <h2 className="text-gray-900 font-semibold text-sm mb-4">💳 Payment Terms</h2>
+                    <div className="bg-card border border-border rounded-2xl p-6 mb-4">
+                        <h2 className="text-foreground font-semibold text-sm mb-4">💳 Payment Terms</h2>
                         <div className="space-y-4">
                             {[
                                 { icon: '📅', text: 'All fees must be paid 1 month in advance.' },
@@ -491,33 +492,33 @@ export default function RegisterPage() {
                             ].map((item, i) => (
                                 <div key={i} className="flex gap-3">
                                     <span className="text-lg leading-tight">{item.icon}</span>
-                                    <p className="text-gray-600 text-sm leading-relaxed">{item.text}</p>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">{item.text}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Funding options */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
-                        <h2 className="text-gray-900 font-semibold text-sm mb-4">💰 Accepted Funding Methods</h2>
-                        <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-card border border-border rounded-2xl p-6 mb-4">
+                        <h2 className="text-foreground font-semibold text-sm mb-4">💰 Accepted Funding Methods</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {[
                                 { label: 'Tax-Free Childcare', desc: 'Via HMRC childcare account' },
                                 { label: 'Universal Credit', desc: 'Childcare element — notify DWP of any changes' },
                                 { label: 'Student Finance (CCG)', desc: 'Monthly requests submitted by the club' },
                                 { label: 'Self-Funding', desc: 'Direct payment to the club' },
                             ].map((f, i) => (
-                                <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <p className="text-gray-900 text-sm font-semibold">{f.label}</p>
-                                    <p className="text-gray-500 text-xs mt-0.5">{f.desc}</p>
+                                <div key={i} className="bg-secondary rounded-xl p-4 border border-gray-100">
+                                    <p className="text-foreground text-sm font-semibold">{f.label}</p>
+                                    <p className="text-muted-foreground text-xs mt-0.5">{f.desc}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Safeguarding note */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-8">
-                        <p className="text-gray-500 text-xs leading-relaxed">
+                    <div className="bg-secondary border border-border rounded-2xl p-5 mb-8">
+                        <p className="text-muted-foreground text-xs leading-relaxed">
                             🔒 All personal information provided on this form is handled securely and confidentially.
                             Information may be shared with relevant authorities if required under safeguarding or child protection procedures.
                         </p>
@@ -526,22 +527,22 @@ export default function RegisterPage() {
                     {/* CTA */}
                     <div className="flex justify-between items-center mt-8 gap-4">
                         {orgInfo?.centres && orgInfo.centres.length > 1 ? (
-                            <button onClick={() => setSelectedCentreId(null)} className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-colors text-sm whitespace-nowrap">
+                            <button onClick={() => setSelectedCentreId(null)} className="px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm whitespace-nowrap">
                                 ← Back
                             </button>
                         ) : (
-                            <Link href="/" className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-colors text-sm whitespace-nowrap">
+                            <Link href="/" className="px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm whitespace-nowrap">
                                 ← Back
                             </Link>
                         )}
                         <button
                             onClick={() => setShowFeesIntro(false)}
-                            className="flex-1 py-4 rounded-2xl font-semibold text-white text-base transition-all bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-lg shadow-blue-600/25"
+                            className="flex-1 py-4 rounded-2xl font-semibold text-foreground text-base transition-all bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground shadow-lg shadow-blue-600/25"
                         >
                             I understand — Proceed to Registration →
                         </button>
                     </div>
-                    <p className="text-center text-gray-400 text-xs mt-3">You will be asked to confirm your agreement to these terms at the end of the form.</p>
+                    <p className="text-center text-muted-foreground text-xs mt-3">You will be asked to confirm your agreement to these terms at the end of the form.</p>
                 </div>
             </div>
         );
@@ -552,14 +553,14 @@ export default function RegisterPage() {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#f5f5f7]">
                 <div className="max-w-md w-full text-center">
-                    <div className="w-20 h-20 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-20 h-20 bg-success/10 border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-3">Registration Submitted!</h2>
-                    <p className="text-gray-600 mb-4">Thank you for registering with <strong className="text-gray-900">{orgInfo?.name}</strong>.</p>
-                    <p className="text-gray-400 text-sm mb-6">A confirmation copy has been sent to your email. The team will be in touch to confirm your place.</p>
+                    <h2 className="text-3xl font-bold text-foreground mb-3">Registration Submitted!</h2>
+                    <p className="text-muted-foreground mb-4">Thank you for registering with <strong className="text-foreground">{orgInfo?.name}</strong>.</p>
+                    <p className="text-muted-foreground text-sm mb-6">A confirmation copy has been sent to your email. The team will be in touch to confirm your place.</p>
                     {isClient && (
                         <div className="flex flex-col gap-3">
                             <PDFDownloadLink
@@ -592,7 +593,7 @@ export default function RegisterPage() {
                                     />
                                 }
                                 fileName={`registration-${parentList[0]?.lastName.toLowerCase()}-${parentList[0]?.firstName.toLowerCase()}.pdf`.replace(/\s+/g, '-')}
-                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25"
+                                className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground text-foreground font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/25"
                             >
                                 {({ loading }) => (
                                     <>
@@ -605,7 +606,7 @@ export default function RegisterPage() {
                             </PDFDownloadLink>
                             <button
                                 onClick={resetToStart}
-                                className="w-full py-3 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 rounded-xl transition-all border border-gray-200 text-sm font-medium"
+                                className="w-full py-3 bg-card hover:bg-secondary text-muted-foreground hover:text-foreground rounded-xl transition-all border border-border text-sm font-medium"
                             >
                                 Register Another Child
                             </button>
@@ -619,13 +620,13 @@ export default function RegisterPage() {
     return (
         <div className="min-h-screen bg-[#f5f5f7]">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="bg-card border-b border-border px-6 py-4">
                 <div className="max-w-2xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer flex flex-col justify-center">
-                            <p className="text-gray-900 font-semibold text-sm group-hover:text-blue-600 transition-colors leading-tight">{orgInfo?.name ?? '...'}</p>
-                            <p className="text-gray-400 text-[10px] uppercase tracking-widest mt-0.5">{orgInfo?.centres?.find(c => c.id === selectedCentreId)?.name ?? 'Student Registration Form'}</p>
+                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors leading-tight">{orgInfo?.name ?? '...'}</p>
+                            <p className="text-muted-foreground text-[10px] uppercase tracking-widest mt-0.5">{orgInfo?.centres?.find(c => c.id === selectedCentreId)?.name ?? 'Student Registration Form'}</p>
                         </button>
                     </div>
                 </div>
@@ -635,25 +636,25 @@ export default function RegisterPage() {
                 <ProgressBar current={step} total={TOTAL_STEPS} />
 
                 {isPrefilled && (
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <svg className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
                             {childList.length > 1 ? (
                                 <>
-                                    <p className="text-sm font-bold text-blue-800">
+                                    <p className="text-sm font-bold text-primary">
                                         Registration pre-filled for {childList.length} children
                                     </p>
-                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">
+                                    <p className="text-xs text-primary font-semibold mt-0.5">
                                         This link covers: {childList.map(c => `${c.firstName} ${c.lastName}`.trim()).filter(Boolean).join(', ')}.
                                         Parent and shared details have been pre-filled — please review and complete any remaining fields.
                                     </p>
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-sm font-bold text-blue-800">Registration details pre-filled</p>
-                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
+                                    <p className="text-sm font-bold text-primary">Registration details pre-filled</p>
+                                    <p className="text-xs text-primary font-semibold mt-0.5">We have pre-filled parent and student details from your assessment booking. Please review them and fill in any remaining fields.</p>
                                 </>
                             )}
                         </div>
@@ -670,14 +671,14 @@ export default function RegisterPage() {
                             </Field>
                         </div>
                         {childList.map((c, i) => (
-                            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
+                            <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-gray-900 font-semibold">Child {i + 1}</h3>
+                                    <h3 className="text-foreground font-semibold">Child {i + 1}</h3>
                                     {i > 0 && (
-                                        <button onClick={() => removeChild(i)} className="text-red-500 text-xs hover:text-red-700 font-medium">Remove</button>
+                                        <button onClick={() => removeChild(i)} className="text-destructive text-xs hover:text-destructive font-medium">Remove</button>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                     <Field label="First Name *">
                                         <input id={`child-fn-${i}`} type="text" value={c.firstName} onChange={e => { updateChild(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-fn-${i}`); return n; }); }} className={invalidFields.has(`child-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
                                     </Field>
@@ -685,7 +686,7 @@ export default function RegisterPage() {
                                         <input id={`child-ln-${i}`} type="text" value={c.lastName} onChange={e => { updateChild(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-ln-${i}`); return n; }); }} className={invalidFields.has(`child-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
                                     </Field>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mb-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                                     <Field label="Date of Birth *">
                                         <input id={`child-dob-${i}`} type="date" value={c.dateOfBirth} onChange={e => { updateChild(i, 'dateOfBirth', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-dob-${i}`); return n; }); }} className={invalidFields.has(`child-dob-${i}`) ? inputErrCls : inputCls} />
                                     </Field>
@@ -697,15 +698,15 @@ export default function RegisterPage() {
                                     </Field>
                                 </div>
                                 {/* Session times */}
-                                <div className="border-t border-gray-200 pt-5">
+                                <div className="border-t border-border pt-5">
                                     <div className="flex items-start justify-between gap-3 mb-3">
                                         <div>
-                                            <p className="text-gray-900 font-semibold text-sm">Select Preferred Sessions — Child {i + 1} *</p>
-                                            <p className="text-gray-500 text-xs mt-0.5">Please select the number of sessions required for your chosen days</p>
+                                            <p className="text-foreground font-semibold text-sm">Select Preferred Sessions — Child {i + 1} *</p>
+                                            <p className="text-muted-foreground text-xs mt-0.5">Please select the number of sessions required for your chosen days</p>
                                         </div>
                                     </div>
-                                    <p className="text-amber-600 text-xs mb-4">⚠ Session times selected can be changed by mutual agreement with the centre and yourself at any time.</p>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <p className="text-warning text-xs mb-4">⚠ Session times selected can be changed by mutual agreement with the centre and yourself at any time.</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {(() => {
                                             const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
                                             let slotsToUse = orgInfo?.sessionSlots ?? SESSION_SLOTS;
@@ -713,7 +714,7 @@ export default function RegisterPage() {
                                                 try { slotsToUse = JSON.parse(activeCentre.sessionSlots); } catch { /* ignore */ }
                                             }
                                             return slotsToUse.map((slot: string) => (
-                                                <label key={slot} className="flex items-center gap-2.5 cursor-pointer group bg-gray-50 border border-gray-200 p-3 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+                                                <label key={slot} className="flex items-center gap-2.5 cursor-pointer group bg-secondary border border-border p-3 rounded-xl hover:border-primary/20 hover:bg-primary/10/50 transition-all">
                                                     <input
                                                         type="checkbox"
                                                         id={`child-${i}-session-${slot}`}
@@ -724,9 +725,9 @@ export default function RegisterPage() {
                                                                 : c.sessions.filter(s => s !== slot);
                                                             updateChild(i, 'sessions', updated);
                                                         }}
-                                                        className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer flex-shrink-0"
+                                                        className="w-4 h-4 rounded border-border accent-blue-600 cursor-pointer flex-shrink-0"
                                                     />
-                                                    <span className="text-gray-700 text-xs group-hover:text-gray-900 transition-colors break-words w-full">{slot}</span>
+                                                    <span className="text-muted-foreground text-xs group-hover:text-foreground transition-colors break-words w-full">{slot}</span>
                                                 </label>
                                             ));
                                         })()}
@@ -735,7 +736,7 @@ export default function RegisterPage() {
                             </div>
                         ))}
                         {childList.length < 5 && (
-                            <button onClick={addChild} className="w-full py-3 rounded-xl border border-dashed border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600 transition-colors text-sm font-medium">
+                            <button onClick={addChild} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
                                 + Add Another Child
                             </button>
                         )}
@@ -747,9 +748,9 @@ export default function RegisterPage() {
                     <div>
                         <h2 className={sectionTitle}>Parent / Carer Details</h2>
                         {parentList.map((p, i) => (
-                            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
-                                <h3 className="text-gray-900 font-semibold mb-4">Parent / Carer {i + 1}{i === 0 ? ' (Primary)' : ''}</h3>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
+                                <h3 className="text-foreground font-semibold mb-4">Parent / Carer {i + 1}{i === 0 ? ' (Primary)' : ''}</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                     <Field label="First Name *">
                                         <input id={`p-fn-${i}`} type="text" value={p.firstName} onChange={e => { updateParent(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-fn-${i}`); return n; }); }} className={invalidFields.has(`p-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
                                     </Field>
@@ -757,7 +758,7 @@ export default function RegisterPage() {
                                         <input id={`p-ln-${i}`} type="text" value={p.lastName} onChange={e => { updateParent(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ln-${i}`); return n; }); }} className={invalidFields.has(`p-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
                                     </Field>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                     <Field label="Relationship *">
                                         <select id={`p-rel-${i}`} value={p.relationship} onChange={e => { updateParent(i, 'relationship', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-rel-${i}`); return n; }); }} className={invalidFields.has(`p-rel-${i}`) ? inputErrCls : inputCls}>
                                             <option value="">Select</option>
@@ -783,7 +784,7 @@ export default function RegisterPage() {
                                         <input id={`p-a2-${i}`} type="text" value={p.addressLine2} onChange={e => updateParent(i, 'addressLine2', e.target.value)} className={inputCls} placeholder="Flat, suite, etc. (optional)" />
                                     </Field>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Field label="City *">
                                         <input id={`p-city-${i}`} type="text" value={p.city} onChange={e => { updateParent(i, 'city', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-city-${i}`); return n; }); }} className={invalidFields.has(`p-city-${i}`) ? inputErrCls : inputCls} placeholder="London" />
                                     </Field>
@@ -793,9 +794,9 @@ export default function RegisterPage() {
                                 </div>
                             </div>
                         ))}
-                        <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-white border border-gray-200 hover:border-blue-400 transition-colors shadow-sm">
+                        <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-card border border-border hover:border-primary/20 transition-colors shadow-sm">
                             <input id="secondParent" type="checkbox" checked={secondParent} onChange={e => setSecondParent(e.target.checked)} className="w-4 h-4 rounded accent-blue-600" />
-                            <span className="text-gray-700 text-sm">Add a second parent / carer</span>
+                            <span className="text-muted-foreground text-sm">Add a second parent / carer</span>
                         </label>
                     </div>
                 )}
@@ -804,8 +805,8 @@ export default function RegisterPage() {
                 {step === 3 && (
                     <div>
                         <h2 className={sectionTitle}>Emergency Contact</h2>
-                        <p className="text-gray-500 text-sm mb-6">This should be someone other than the parents listed above who we can contact in an emergency.</p>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4 shadow-sm">
+                        <p className="text-muted-foreground text-sm mb-6">This should be someone other than the parents listed above who we can contact in an emergency.</p>
+                        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-sm">
                             <Field label="Full Name *">
                                 <input id="ec-name" type="text" value={emergency.name} onChange={e => { setEmergency(v => ({ ...v, name: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-name'); return n; }); }} className={invalidFields.has('ec-name') ? inputErrCls : inputCls} placeholder="Full name" />
                             </Field>
@@ -823,15 +824,15 @@ export default function RegisterPage() {
                 {step === 4 && (
                     <div>
                         <h2 className={sectionTitle}>Funding Information</h2>
-                        <p className="text-gray-500 text-sm mb-6">All fees must be paid 1 month in advance. How will you be funding your child&apos;s place?</p>
+                        <p className="text-muted-foreground text-sm mb-6">All fees must be paid 1 month in advance. How will you be funding your child&apos;s place?</p>
                         <div className="space-y-3">
                             {FUNDING_OPTIONS.map(opt => (
                                 <label
                                     key={opt.value}
                                     className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                                         funding.type === opt.value
-                                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/30'
-                                            : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50/30 shadow-sm'
+                                            ? 'border-primary/20 bg-primary/10 ring-1 ring-blue-500/30'
+                                            : 'border-border bg-card hover:border-primary/20 hover:bg-primary/10/30 shadow-sm'
                                     }`}
                                 >
                                     <input
@@ -842,7 +843,7 @@ export default function RegisterPage() {
                                         onChange={() => setFunding(f => ({ ...f, type: opt.value }))}
                                         className="w-4 h-4 accent-blue-600"
                                     />
-                                    <span className="text-gray-900 text-sm font-medium">{opt.label}</span>
+                                    <span className="text-foreground text-sm font-medium">{opt.label}</span>
                                 </label>
                             ))}
                             {funding.type === 'other' && (
@@ -867,15 +868,15 @@ export default function RegisterPage() {
                 {step === 5 && (
                     <div>
                         <h2 className={sectionTitle}>About Your Child</h2>
-                        <p className="text-gray-500 text-sm mb-6">Please let us know of any special educational needs, medical conditions, or other information that may help us support your child.</p>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                            <p className="text-gray-700 text-sm font-medium mb-4">Does your child have any special needs or medical information we should know about?</p>
+                        <p className="text-muted-foreground text-sm mb-6">Please let us know of any special educational needs, medical conditions, or other information that may help us support your child.</p>
+                        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                            <p className="text-muted-foreground text-sm font-medium mb-4">Does your child have any special needs or medical information we should know about?</p>
                             <div className="flex gap-4 mb-6">
                                 {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
                                     <label key={String(opt.v)} className={`flex items-center gap-2 px-5 py-3 rounded-xl border cursor-pointer transition-all font-medium text-sm ${
                                         specialNeeds.has === opt.v
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500/30'
-                                            : 'border-gray-200 text-gray-600 hover:border-blue-400'
+                                            ? 'border-primary/20 bg-primary/10 text-blue-700 ring-1 ring-blue-500/30'
+                                            : 'border-border text-muted-foreground hover:border-primary/20'
                                     }`}>
                                         <input type="radio" name="specialNeeds" checked={specialNeeds.has === opt.v} onChange={() => setSpecialNeeds(s => ({ ...s, has: opt.v }))} className="sr-only" />
                                         {opt.l}
@@ -903,39 +904,39 @@ export default function RegisterPage() {
                         <h2 className={sectionTitle}>Review &amp; Submit</h2>
 
                         {/* Summary */}
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-5 space-y-3 text-sm shadow-sm">
-                            <div><span className="text-gray-400 uppercase text-xs tracking-wide font-bold">Children</span>
-                                {childList.map((c, i) => <p key={i} className="text-gray-900 mt-1 font-medium">{c.firstName} {c.lastName} · {c.schoolYear}</p>)}
+                        <div className="bg-card border border-border rounded-2xl p-5 mb-5 space-y-3 text-sm shadow-sm">
+                            <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Children</span>
+                                {childList.map((c, i) => <p key={i} className="text-foreground mt-1 font-medium">{c.firstName} {c.lastName} · {c.schoolYear}</p>)}
                             </div>
-                            <div><span className="text-gray-400 uppercase text-xs tracking-wide font-bold">Primary Parent</span>
-                                <p className="text-gray-900 mt-1">{parentList[0]?.firstName} {parentList[0]?.lastName} · {parentList[0]?.email}</p>
+                            <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Primary Parent</span>
+                                <p className="text-foreground mt-1">{parentList[0]?.firstName} {parentList[0]?.lastName} · {parentList[0]?.email}</p>
                             </div>
-                            <div><span className="text-gray-400 uppercase text-xs tracking-wide font-bold">Emergency Contact</span>
-                                <p className="text-gray-900 mt-1">{emergency.name} ({emergency.relationship}) · {emergency.phone}</p>
+                            <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Emergency Contact</span>
+                                <p className="text-foreground mt-1">{emergency.name} ({emergency.relationship}) · {emergency.phone}</p>
                             </div>
-                            <div><span className="text-gray-400 uppercase text-xs tracking-wide font-bold">Funding</span>
-                                <p className="text-gray-900 mt-1">
+                            <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Funding</span>
+                                <p className="text-foreground mt-1">
                                     {FUNDING_OPTIONS.find(o => o.value === funding.type)?.label ?? 'Not specified'}
                                     {funding.type === 'other' && funding.other ? ` — ${funding.other}` : ''}
                                 </p>
                             </div>
-                            {startDate && <div><span className="text-gray-400 uppercase text-xs tracking-wide font-bold">Start Date</span>
-                                <p className="text-gray-900 mt-1">{new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                            {startDate && <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Start Date</span>
+                                <p className="text-foreground mt-1">{new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                             </div>}
                         </div>
 
                         {/* T&Cs */}
                         {orgInfo?.registrationTerms && (
-                            <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-5 shadow-sm">
-                                <h3 className="text-gray-900 font-semibold text-sm mb-3">Terms &amp; Conditions</h3>
-                                <div className="text-gray-500 text-xs leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap pr-2">
+                            <div className="bg-card border border-border rounded-2xl p-5 mb-5 shadow-sm">
+                                <h3 className="text-foreground font-semibold text-sm mb-3">Terms &amp; Conditions</h3>
+                                <div className="text-muted-foreground text-xs leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap pr-2">
                                     {orgInfo.registrationTerms}
                                 </div>
                             </div>
                         )}
 
-                        <label className={`flex items-start gap-3 p-4 rounded-xl bg-white border cursor-pointer mb-5 hover:border-blue-400 transition-colors shadow-sm ${
-                            invalidFields.has('terms-agree') ? 'border-red-400 ring-1 ring-red-400/30' : 'border-gray-200'
+                        <label className={`flex items-start gap-3 p-4 rounded-xl bg-card border cursor-pointer mb-5 hover:border-primary/20 transition-colors shadow-sm ${
+                            invalidFields.has('terms-agree') ? 'border-destructive/20 ring-1 ring-red-400/30' : 'border-border'
                         }`}>
                             <input
                                 id="terms-agree"
@@ -944,30 +945,30 @@ export default function RegisterPage() {
                                 onChange={e => { setTermsAgreed(e.target.checked); setInvalidFields(f => { const n = new Set(f); n.delete('terms-agree'); return n; }); }}
                                 className="w-4 h-4 mt-0.5 rounded flex-shrink-0 accent-blue-600"
                             />
-                            <span className="text-gray-700 text-sm">I confirm that I have read and agree to the Terms and Conditions above, and that the information provided is accurate.</span>
+                            <span className="text-muted-foreground text-sm">I confirm that I have read and agree to the Terms and Conditions above, and that the information provided is accurate.</span>
                         </label>
 
                         {/* Signature */}
                         <div className="mb-5">
-                            <p className="text-gray-900 font-semibold text-sm mb-1">Parent / Carer Signature <span className="text-red-500">*</span></p>
-                            <p className="text-gray-400 text-xs mb-3">By signing below you confirm that all information provided is accurate and that you agree to the terms above.</p>
+                            <p className="text-foreground font-semibold text-sm mb-1">Parent / Carer Signature <span className="text-destructive">*</span></p>
+                            <p className="text-muted-foreground text-xs mb-3">By signing below you confirm that all information provided is accurate and that you agree to the terms above.</p>
                             <SignaturePadWidget
                                 ref={signaturePadRef}
                                 onChange={val => { setSignature(val); setInvalidFields(f => { const n = new Set(f); n.delete('signature-pad'); return n; }); }}
                                 invalid={invalidFields.has('signature-pad')}
                             />
                             {invalidFields.has('signature-pad') && (
-                                <p className="text-red-500 text-xs mt-1.5">A signature is required to submit the form.</p>
+                                <p className="text-destructive text-xs mt-1.5">A signature is required to submit the form.</p>
                             )}
                         </div>
 
-                        {error && <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm mb-4">{error}</div>}
+                        {error && <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm mb-4">{error}</div>}
 
                         <button
                             id="submit-registration"
                             onClick={handleSubmit}
                             disabled={submitting}
-                            className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
+                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground text-foreground font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
                         >
                             {submitting ? (
                                 <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Submitting...</>
@@ -981,14 +982,14 @@ export default function RegisterPage() {
                     {step > 1 ? (
                         <button
                             onClick={() => setStep(s => s - 1)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-all text-sm font-medium"
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary active:bg-secondary transition-all text-sm font-medium"
                         >
                             ← Back
                         </button>
                     ) : (
                         <button
                             onClick={() => setShowFeesIntro(true)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-all text-sm font-medium"
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary active:bg-secondary transition-all text-sm font-medium"
                         >
                             ← Back
                         </button>
@@ -996,7 +997,7 @@ export default function RegisterPage() {
                     {step < TOTAL_STEPS && (
                         <button
                             onClick={handleContinue}
-                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold transition-all text-sm shadow-md shadow-blue-600/25"
+                            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground text-foreground font-semibold transition-all text-sm shadow-md shadow-blue-600/25"
                         >
                             Continue →
                         </button>
@@ -1005,8 +1006,8 @@ export default function RegisterPage() {
 
                 {/* Step-level error message */}
                 {stepError && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
-                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         {stepError}
                     </div>
                 )}
