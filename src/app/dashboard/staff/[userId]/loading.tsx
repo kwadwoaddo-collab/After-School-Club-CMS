@@ -2,12 +2,8 @@ export default function StaffDetailLoading() {
     return (
         <div className="space-y-8 animate-pulse">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div className="space-y-2">
-                    <div className="h-9 w-48 bg-card rounded-xl" />
-                    <div className="h-4 w-32 bg-card rounded-lg" />
-                </div>
-                <div className="h-11 w-28 bg-primary/20 rounded-2xl" />
+            <div className="flex items-start justify-between">
+                <div className="h-9 w-28 bg-secondary rounded-full" />
             </div>
 
             {/* Profile card: avatar + name */}

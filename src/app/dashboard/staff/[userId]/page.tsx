@@ -2,12 +2,13 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { users, organisations, centres, centreMemberships } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { ArrowLeft, Crown, Briefcase, MonitorSmartphone, GraduationCap, Mail, MapPin, Calendar, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import StaffCentreAssignment from '@/components/staff/StaffCentreAssignment';
 import StaffRoleSelector from '@/components/staff/StaffRoleSelector';
 import { format } from 'date-fns';
+import { ROLE_COLORS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
 
 interface PageProps {
     params: Promise<{ userId: string }>;
@@ -35,28 +36,14 @@ export default async function EditStaffPage({ params }: PageProps) {
         orderBy: (centres, { asc }) => [asc(centres.name)],
     });
 
+    const allOrgOwners = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.organisationId, session.user.organisationId), eq(users.role, 'ORG_OWNER')));
+    
+    const ownerCount = allOrgOwners.length;
+
     const currentAssignments = staffMember.memberships.map((m) => m.centreId);
-
-    // Role badge style: Gold=Owner, Purple=Manager, Blue=FrontDesk, Green=Tutor
-    const getRoleStyle = (role: string) => {
-        const styles: Record<string, string> = {
-            ORG_OWNER:  'bg-amber-50  text-amber-700  border-amber-200',
-            MANAGER:    'bg-violet-50 text-violet-700 border-violet-200',
-            FRONT_DESK: 'bg-blue-50   text-blue-700   border-blue-200',
-            TUTOR:      'bg-emerald-50 text-emerald-700 border-emerald-200',
-        };
-        return styles[role] || 'bg-secondary/40 text-foreground border-border';
-    };
-
-    const getRoleAvatarStyle = (role: string) => {
-        const styles: Record<string, string> = {
-            ORG_OWNER:  'from-amber-100 to-amber-50 text-amber-700 border border-amber-200',
-            MANAGER:    'from-violet-100 to-violet-50 text-violet-700 border border-violet-200',
-            FRONT_DESK: 'from-blue-100 to-blue-50 text-blue-700 border border-blue-200',
-            TUTOR:      'from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200',
-        };
-        return styles[role] || 'from-gray-100 to-gray-50 text-foreground border border-border';
-    };
 
     const getRoleIcon = (role: string, className?: string) => {
         if (role === 'ORG_OWNER') return <Crown className={className} />;
@@ -73,9 +60,17 @@ export default async function EditStaffPage({ params }: PageProps) {
     };
 
 
-    const initials = staffMember.name
-        ? staffMember.name.split(' ').map((n: string) => n ? n[0] : '').filter(Boolean).join('').toUpperCase().slice(0, 2)
-        : (staffMember.email || 'S').charAt(0).toUpperCase();
+    const initials = (() => {
+        if (staffMember.firstName && staffMember.lastName) {
+            return (staffMember.firstName[0] + staffMember.lastName[0]).toUpperCase();
+        }
+        if (staffMember.name) {
+            const parts = staffMember.name.trim().split(' ').filter(Boolean);
+            const raw = parts.map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+            return raw.length === 1 ? raw + raw : raw;
+        }
+        return (staffMember.email || 'S').charAt(0).toUpperCase().repeat(2);
+    })();
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -93,16 +88,21 @@ export default async function EditStaffPage({ params }: PageProps) {
             <div className="bg-card rounded-[32px] p-8 border border-border shadow-sm">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     {/* Avatar */}
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center text-2xl font-black flex-shrink-0 ${getRoleAvatarStyle(staffMember.role)}`}>
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black flex-shrink-0 ${ROLE_AVATAR_COLORS[staffMember.role] ?? 'bg-secondary text-foreground border border-border'}`}>
                         {initials}
                     </div>
                     {/* Info */}
                     <div className="flex-1">
                         <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">
-                            {staffMember.name || 'Unnamed User'}
+                            {staffMember.firstName && staffMember.lastName
+                                ? `${staffMember.firstName} ${staffMember.lastName}`
+                                : staffMember.name
+                                    ? staffMember.name
+                                    : <span className="text-muted-foreground italic">{staffMember.email}</span>
+                            }
                         </h1>
                         <div className="flex flex-wrap items-center gap-3 mb-3">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border ${getRoleStyle(staffMember.role)}`}>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border ${ROLE_COLORS[staffMember.role] ?? 'bg-secondary/40 text-foreground border-border'}`}>
                                 {getRoleIcon(staffMember.role, "w-3.5 h-3.5")}
                                 {staffMember.role.replace(/_/g, ' ')}
                             </span>
@@ -128,26 +128,27 @@ export default async function EditStaffPage({ params }: PageProps) {
                 userId={userId}
                 currentRole={staffMember.role as any}
                 staffName={staffMember.name || staffMember.email}
+                ownerCount={ownerCount}
             />
 
             {/* Centre Assignment */}
             {staffMember.role === 'ORG_OWNER' ? (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-3">
-                    <Crown className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="bg-warning/10 border border-warning/20 rounded-2xl p-6 flex items-start gap-3">
+                    <Crown className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                     <div>
-                        <h3 className="font-bold text-amber-800 text-sm">Organization Owner — Full Access</h3>
-                        <p className="text-xs text-amber-700 font-medium leading-relaxed mt-1">
+                        <h3 className="font-bold text-warning text-sm">Organization Owner — Full Access</h3>
+                        <p className="text-xs text-warning/80 font-medium leading-relaxed mt-1">
                             ORG_OWNER users automatically have full access to all centres. Centre assignments are not applicable.
                         </p>
                     </div>
                 </div>
             ) : (
                 <>
-                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-start gap-3">
-                        <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="bg-info/10 border border-info/20 rounded-2xl p-6 flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
                         <div>
-                            <h3 className="font-bold text-blue-800 text-sm">Centre-Level Access Control</h3>
-                            <p className="text-xs text-blue-600 font-medium leading-relaxed mt-1">
+                            <h3 className="font-bold text-info text-sm">Centre-Level Access Control</h3>
+                            <p className="text-xs text-info font-medium leading-relaxed mt-1">
                                 This staff member will only see bookings, students, and data from the centres you assign below.
                             </p>
                         </div>
