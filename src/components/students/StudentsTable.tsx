@@ -45,7 +45,7 @@ const columns: DataTableColumn<StudentRow>[] = [
       return (
         <div className="flex items-center gap-3">
           <AttendanceRadial percentage={student.attendanceRate} size="sm">
-            <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            <div className="w-full h-full bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm">
               {student.firstName[0]}{student.lastName[0]}
             </div>
           </AttendanceRadial>
