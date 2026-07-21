@@ -46,7 +46,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const searchInputRef = useRef<HTMLInputElement>(null);
     const searchContainerRef = useRef<HTMLDivElement>(null);
 
-    const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system');
+    const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('dark');
     const [themeMounted, setThemeMounted] = useState(false);
 
     useEffect(() => {
