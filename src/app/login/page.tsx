@@ -321,6 +321,13 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  useEffect(() => {
+    document.body.classList.add('landing-page-active');
+    return () => {
+      document.body.classList.remove('landing-page-active');
+    };
+  }, []);
+
   return (
     <div className="min-h-screen grid md:grid-cols-2 relative overflow-hidden" style={{ backgroundColor: '#05070A' }}>
 
