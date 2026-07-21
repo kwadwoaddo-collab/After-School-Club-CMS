@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
 
 import ReassignCentreModal from './ReassignCentreModal';
+import { getAvatarGradient } from '@/components/ui/utils';
 
 interface BookingsTableProps {
     bookings: any[];
@@ -610,7 +611,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </td>
                                 <td className="px-4 py-3.5">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0">
+                                        <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${getAvatarGradient(getStudentList(booking).first)} flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0`}>
                                             {getStudentInitials(booking)}
                                         </div>
                                         <div className="flex items-center gap-2 min-w-0">
@@ -851,7 +852,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         className="w-4 h-4 rounded appearance-none border border-primary/40 bg-background checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
                                     />
                                 </div>
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold">
+                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${getAvatarGradient(getStudentList(booking).first)} flex items-center justify-center text-white text-sm font-bold`}>
                                     {getStudentInitials(booking)}
                                 </div>
                                 <div>

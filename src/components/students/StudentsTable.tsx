@@ -6,6 +6,7 @@ import { ShieldAlert, Mail, Phone, Users, Plus, TrendingDown } from 'lucide-reac
 import DataTable, { DataTableColumn } from '@/components/ui/DataTable';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import StudentActions from '@/components/students/StudentActions';
+import { getAvatarGradient } from '@/components/ui/utils';
 
 /* ------------------------------------------------------------------ */
 /*  Row shape – pre-enriched by the server component                   */
@@ -45,7 +46,7 @@ const columns: DataTableColumn<StudentRow>[] = [
       return (
         <div className="flex items-center gap-3">
           <AttendanceRadial percentage={student.attendanceRate} size="sm">
-            <div className="w-full h-full bg-gradient-to-br from-primary to-accent-violet flex items-center justify-center text-white text-sm font-bold shadow-sm">
+            <div className={`w-full h-full bg-gradient-to-br ${getAvatarGradient(student.firstName)} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
               {student.firstName[0]}{student.lastName[0]}
             </div>
           </AttendanceRadial>

@@ -9,26 +9,14 @@ import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import DeleteParentButton from '@/components/parents/DeleteParentButton';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { getAvatarGradient } from '@/components/ui/utils';
 
 interface Props {
     searchParams: Promise<{ search?: string; centre?: string }>;
 }
 
 function getInitials(firstName: string, lastName: string) {
-    return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase();
-}
-
-function getAvatarGradient(name: string) {
-    const gradients = [
-        'from-blue-500 to-indigo-600',
-        'from-violet-500 to-purple-600',
-        'from-emerald-500 to-teal-600',
-        'from-amber-500 to-orange-600',
-        'from-rose-500 to-pink-600',
-        'from-cyan-500 to-sky-600',
-    ];
-    const idx = name.charCodeAt(0) % gradients.length;
-    return gradients[idx];
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 export default async function ParentsPage({ searchParams }: Props) {
