@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Rate Limiting
  * 
@@ -85,7 +86,7 @@ export async function checkRateLimit(
     };
   } catch (error) {
     // If Redis is down, fail open (allow the request)
-    console.error('[RateLimit] Redis error, failing open:', error);
+    logger.error('[RateLimit] Redis error, failing open:', error);
     return { success: true };
   }
 }

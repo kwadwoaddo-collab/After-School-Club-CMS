@@ -201,7 +201,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                 setSuccess(true);
                 setIsEditing(false);
                 setTimeout(() => setSuccess(false), 3000);
-            } catch (e: any) {
+            } catch (e) {
                 setError(e.message || 'Failed to save changes');
             }
         });

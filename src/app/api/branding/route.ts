@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
             message: 'Branding updated successfully'
         });
     } catch (error) {
-        console.error('Branding update error:', error);
+        logger.error('Branding update error:', error);
         return NextResponse.json({ error: 'Failed to update branding' }, { status: 500 });
     }
 }

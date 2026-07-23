@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
@@ -78,8 +80,9 @@ export async function POST(
 
         // ── Fire-and-forget: parent reschedule email + in-app bell ────────────
         const orgId = session.user.organisationId;
-        const childrenNames = booking.attendees
-            .map((a: any) => `${a.child.firstName} ${a.child.lastName}`)
+        const childrenNames = (booking.attendees ?? [])
+            .map((a: any) => `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim())
+            .filter(Boolean)
             .join(', ') || 'your child';
 
         void notificationService.sendBookingReschedule({
@@ -91,7 +94,7 @@ export async function POST(
             oldStartAt,
             newStartAt: newStartDate,
             confirmationCode: booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase(),
-        }).catch(e => console.error('[reschedule] notification error:', e));
+        }).catch(e => logger.error('[reschedule] notification error:', e));
 
         const newDateStr = newStartDate.toLocaleDateString('en-GB', {
             day: 'numeric', month: 'short', year: 'numeric',
@@ -102,11 +105,11 @@ export async function POST(
             title: 'Booking Rescheduled',
             message: `Booking for ${childrenNames} at ${booking.centre.name} moved to ${newDateStr}.`,
             bookingId,
-        }).catch(e => console.error('[reschedule] db-notify error:', e));
+        }).catch(e => logger.error('[reschedule] db-notify error:', e));
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Reschedule error:', error);
+        logger.error('Reschedule error:', error);
         return NextResponse.json({ error: 'Failed to reschedule booking' }, { status: 500 });
     }
 }

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -54,7 +56,7 @@ export async function POST(req: Request) {
         }
 
         const orgId = currentUser.organisationId;
-        console.log(`[Migration] Starting migration for org ${orgId} by ${currentUser.email}`);
+        logger.info(`[Migration] Starting migration for org ${orgId} by ${currentUser.email}`);
 
         // ── 2. Fetch all relevant data in 3 queries (not N+1) ──────────────
 
@@ -138,11 +140,11 @@ export async function POST(req: Request) {
             timestamp: new Date().toISOString(),
         };
 
-        console.log(`[Migration] Complete — created ${toInsert.length} memberships, skipped ${existingMemberships.length}`);
+        logger.info(`[Migration] Complete — created ${toInsert.length} memberships, skipped ${existingMemberships.length}`);
         return NextResponse.json(result);
 
     } catch (error) {
-        console.error('[Migration] Failed:', error);
+        logger.error('[Migration] Failed:', error);
         return NextResponse.json(
             { success: false, error: 'Migration failed' },
             { status: 500 }

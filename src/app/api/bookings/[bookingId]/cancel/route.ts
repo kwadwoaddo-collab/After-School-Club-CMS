@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -62,8 +64,9 @@ export async function POST(
 
         // ── Fire-and-forget: parent cancellation email + in-app bell ──────────
         const orgId = session.user.organisationId;
-        const childrenNames = booking.attendees
-            .map((a: any) => `${a.child.firstName} ${a.child.lastName}`)
+        const childrenNames = (booking.attendees ?? [])
+            .map((a: any) => `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim())
+            .filter(Boolean)
             .join(', ') || 'your child';
 
         // 1. Parent email / SMS notification
@@ -74,23 +77,25 @@ export async function POST(
             childrenNames,
             startAt: booking.startAt,
             confirmationCode: booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase(),
-        }).catch(e => console.error('[cancel] notification error:', e));
+        }).catch(e => logger.error('[cancel] notification error:', e));
 
         // 2. In-app bell for org owners
-        const dateStr = booking.startAt.toLocaleDateString('en-GB', {
-            day: 'numeric', month: 'short', year: 'numeric',
-        });
+        const dateStr = booking.startAt
+            ? new Date(booking.startAt).toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'short', year: 'numeric',
+            })
+            : 'unknown date';
         void notifyOwners({
             orgId,
             type: 'booking_cancelled',
             title: 'Booking Cancelled',
             message: `Booking for ${childrenNames} at ${booking.centre.name} on ${dateStr} has been cancelled.`,
             bookingId,
-        }).catch(e => console.error('[cancel] db-notify error:', e));
+        }).catch(e => logger.error('[cancel] db-notify error:', e));
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error cancelling booking:', error);
+        logger.error('Error cancelling booking:', error);
         return NextResponse.json(
             { error: 'Failed to cancel booking' },
             { status: 500 }

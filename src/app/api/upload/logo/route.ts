@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Logo Upload API
  * 
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
     // Return public URL
     const publicUrl = `/uploads/logos/${filename}`;
 
-    console.log(`[Logo Upload] Saved ${filename}`);
+    logger.info(`[Logo Upload] Saved ${filename}`);
 
     return NextResponse.json({
       success: true,
@@ -109,7 +111,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[Logo Upload] Error:', error);
+    logger.error('[Logo Upload] Error:', error);
     return NextResponse.json(
       { error: 'Failed to upload logo' },
       { status: 500 }

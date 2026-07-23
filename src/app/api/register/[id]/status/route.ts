@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -97,7 +99,7 @@ export async function PATCH(
                     newStatus: status as RegistrationStatus,
                 });
             } catch (err) {
-                console.error('[Status Email] Failed to send status update email:', err);
+                logger.error('[Status Email] Failed to send status update email:', err);
             }
         })();
     }

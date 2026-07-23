@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
@@ -5,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 async function main() {
-    console.log('🔄 Resetting database... EVERY PIECE OF DATA WILL BE GONE.');
+    logger.info('🔄 Resetting database... EVERY PIECE OF DATA WILL BE GONE.');
 
     const { db } = await import('../db');
     const {
@@ -17,7 +18,6 @@ async function main() {
         childSubjects,
         children,
         parents,
-        studentRegistrations,
         staffInvites,
         centreMemberships,
         centreAvailabilityRules,
@@ -26,53 +26,51 @@ async function main() {
         sessions,
         accounts,
         users,
-        organisations
+        organisations,
+        terms,
+        clubSessions,
+        sessionExceptions,
+        bookingPlans
     } = await import('../db/schema');
 
+    // We wrap each clear in try/catch to handle cases where some tables don't exist yet (e.g. before initial migration)
+    const clearTable = async (name: string, deletePromise: Promise<any>) => {
+        try {
+            await deletePromise;
+            logger.info(`  - Cleared: ${name}`);
+        } catch (e: any) {
+            logger.info(`  - Skipped: ${name} (might not exist yet: ${e.message || e})`);
+        }
+    };
+
     try {
-        // Order matters for cascade-less truncates, but we'll try simple delete first or just TRUNCATE CASCADE if supported
-        // Drizzle delete().where(sql`true`) is a safe way to clear data
+        logger.info('🔄 Clearing tables...');
+        await clearTable('bookingPlans', db.delete(bookingPlans));
+        await clearTable('clubSessions', db.delete(clubSessions));
+        await clearTable('terms', db.delete(terms));
+        await clearTable('sessionExceptions', db.delete(sessionExceptions));
+        await clearTable('auditEvents', db.delete(auditEvents));
+        await clearTable('slotHolds', db.delete(slotHolds));
+        await clearTable('calendarBusy', db.delete(calendarBusy));
+        await clearTable('bookingAttendees', db.delete(bookingAttendees));
+        await clearTable('bookings', db.delete(bookings));
+        await clearTable('childSubjects', db.delete(childSubjects));
+        await clearTable('children', db.delete(children));
+        await clearTable('parents', db.delete(parents));
+        await clearTable('staffInvites', db.delete(staffInvites));
+        await clearTable('centreMemberships', db.delete(centreMemberships));
+        await clearTable('centreAvailabilityRules', db.delete(centreAvailabilityRules));
+        await clearTable('centres', db.delete(centres));
+        await clearTable('sessions', db.delete(sessions));
+        await clearTable('accounts', db.delete(accounts));
+        await clearTable('verificationTokens', db.delete(verificationTokens));
+        await clearTable('users', db.delete(users));
+        await clearTable('organisations', db.delete(organisations));
 
-        console.log('  - Clearing Audit logs, Holds, and Busy Slots...');
-        await db.delete(auditEvents);
-        await db.delete(slotHolds);
-        await db.delete(calendarBusy);
-
-        console.log('  - Clearing Bookings and Attendees...');
-        await db.delete(bookingAttendees);
-        await db.delete(bookings);
-
-        console.log('  - Clearing Students and Parents...');
-        await db.delete(childSubjects);
-        await db.delete(children);
-        await db.delete(parents);
-
-        console.log('  - Clearing Registrations and Invites...');
-        await db.delete(studentRegistrations);
-        await db.delete(staffInvites);
-
-        console.log('  - Clearing Centres and Memberships...');
-        await db.delete(centreMemberships);
-        await db.delete(centreAvailabilityRules);
-        await db.delete(centres);
-
-        console.log('  - Clearing Auth Sessions and Accounts...');
-        await db.delete(sessions);
-        await db.delete(accounts);
-        await db.delete(verificationTokens);
-
-        console.log('  - Clearing Users and Organisations...');
-        await db.delete(users);
-        await db.delete(organisations);
-
-        console.log('✨ Database cleared successfully!');
-
-        // Optionally run seed if user wants? 
-        // For now just clear.
-
+        logger.info('✨ Database cleared successfully!');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error resetting database:', error);
+        logger.error('❌ Error resetting database:', error);
         process.exit(1);
     }
 }

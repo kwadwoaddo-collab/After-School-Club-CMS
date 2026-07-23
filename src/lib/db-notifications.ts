@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * src/lib/db-notifications.ts
  *
@@ -65,6 +66,6 @@ export async function notifyOwners(opts: NotifyOptions): Promise<void> {
         );
     } catch (err) {
         // Never throw — notifications are non-critical
-        console.error('[db-notifications] Failed to insert notification:', err);
+        logger.error('[db-notifications] Failed to insert notification:', err);
     }
 }

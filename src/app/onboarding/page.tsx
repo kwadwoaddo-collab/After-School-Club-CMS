@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import OnboardingForm from '@/components/onboarding/OnboardingForm';
+import OnboardingForm from '@/features/onboarding/components/OnboardingForm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';

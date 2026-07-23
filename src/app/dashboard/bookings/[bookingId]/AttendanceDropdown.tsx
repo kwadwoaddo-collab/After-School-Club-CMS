@@ -57,7 +57,7 @@ export default function AttendanceDropdown({
             });
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
-        } catch (err: any) {
+        } catch (err) {
             setError(err.message || 'Failed to save attendance');
         } finally {
             setIsSaving(false);

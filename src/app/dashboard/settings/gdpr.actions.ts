@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -100,7 +103,7 @@ export async function exportOrganisationData(): Promise<{
 
         return { ok: true, json: JSON.stringify(payload, null, 2) };
     } catch (err) {
-        console.error('[GDPR Export]', err);
+        logger.error('[GDPR Export]', err);
         return { ok: false, error: 'Export failed. Please try again.' };
     }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -6,7 +7,7 @@ import { eq, and, desc, ilike, or, sum, count, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Users, Mail, Phone, ChevronRight, Search, AlertCircle, PoundSterling, Baby, Archive } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
-import DeleteParentButton from '@/components/parents/DeleteParentButton';
+import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getAvatarGradient } from '@/components/ui/utils';

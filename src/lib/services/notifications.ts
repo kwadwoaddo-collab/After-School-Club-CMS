@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Unified Notification Service
  * 
@@ -88,7 +90,7 @@ export class NotificationService {
     }
 
     // Log result
-    console.log(`[NotificationService] Booking confirmation sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    logger.info(`[NotificationService] Booking confirmation sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
 
     return result;
   }
@@ -137,7 +139,7 @@ export class NotificationService {
       if (!smsResult.success) result.smsError = smsResult.error;
     }
 
-    console.log(`[NotificationService] Cancellation sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    logger.info(`[NotificationService] Cancellation sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
 
     return result;
   }
@@ -183,7 +185,7 @@ export class NotificationService {
       result.smsSent = (smsResult as any).success ?? false;
     }
 
-    console.log(`[NotificationService] Reschedule sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    logger.info(`[NotificationService] Reschedule sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
     return result;
   }
 

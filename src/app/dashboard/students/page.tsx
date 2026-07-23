@@ -6,10 +6,10 @@ import { eq, desc, asc, sql, inArray, and, or, ilike, isNull } from 'drizzle-orm
 import Link from 'next/link';
 import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown, Upload } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
-import StudentsTable from '@/components/students/StudentsTable';
-import type { StudentRow } from '@/components/students/StudentsTable';
+import StudentsTable from '@/features/students/components/StudentsTable';
+import type { StudentRow } from '@/features/students/components/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
-import StudentsFilters from '@/components/students/StudentsFilters';
+import StudentsFilters from '@/features/students/components/StudentsFilters';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 export default async function StudentsPage(props: {

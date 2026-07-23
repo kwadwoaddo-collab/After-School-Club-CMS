@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
@@ -35,7 +36,7 @@ function PortalLoginForm() {
                 setError(data.error || 'Failed to send link. Please try again.');
             }
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             setError('Something went wrong. Please try again.');
         } finally {
             setIsSubmitting(false);

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -7,7 +9,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
 import RegistrationsBulkClient from '@/components/dashboard/RegistrationsBulkClient';
-import RegistrationsFilters from '@/components/registration/RegistrationsFilters';
+import RegistrationsFilters from '@/features/registration/components/RegistrationsFilters';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { normalizeString } from '@/lib/search-params';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
@@ -84,7 +86,7 @@ export default async function RegistrationsPage(props: {
     const signedUpCount = allActiveCentreRegistrations.filter(r => r.status === 'signed_up').length;
     const notInterestedCount = allActiveCentreRegistrations.filter(r => r.status === 'not_interested').length;
 
-    let rows: any[] = [];
+    let rows: unknown[] = [];
     let searchActiveAndNoResults = false;
     let matchingIds: string[] = [];
 
@@ -119,7 +121,7 @@ export default async function RegistrationsPage(props: {
                 searchActiveAndNoResults = true;
             }
         } catch (error) {
-            console.error('Failed to search registrations:', error);
+            logger.error('Failed to search registrations:', error);
             searchActiveAndNoResults = true;
         }
     }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { cache } from 'react';
 import { db } from '@/db';
 import {

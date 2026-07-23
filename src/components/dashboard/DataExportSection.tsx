@@ -63,7 +63,7 @@ export function DataExportSection() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (e: any) {
+    } catch (e) {
       setError(e.message || 'Download failed');
     } finally {
       setLoading(null);

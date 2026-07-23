@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useEffect } from 'react';
 import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
@@ -12,7 +13,7 @@ export default function PortalError({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error('Parent Portal Error:', error);
+        logger.error('Parent Portal Error:', error);
     }, [error]);
 
     return (

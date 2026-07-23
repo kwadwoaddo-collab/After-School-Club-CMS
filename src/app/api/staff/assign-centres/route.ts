@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
             centreCount: centreIds?.length || 0,
         });
     } catch (error) {
-        console.error('Centre assignment error:', error);
+        logger.error('Centre assignment error:', error);
         return NextResponse.json(
             { error: 'Failed to update centre assignments' },
             { status: 500 }

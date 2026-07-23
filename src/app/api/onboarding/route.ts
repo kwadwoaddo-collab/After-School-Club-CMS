@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { organisations, centres, users } from '@/db/schema';
@@ -69,8 +70,8 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json({ success: true, orgId: org.id });
-    } catch (error: any) {
-        console.error('Onboarding error:', error);
+    } catch (error) {
+        logger.error('Onboarding error:', error);
 
         if (error instanceof z.ZodError) {
             return NextResponse.json({

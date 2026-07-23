@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { organisations, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import SettingsTabs from '@/components/settings/SettingsTabs';
+import SettingsTabs from '@/features/settings/components/SettingsTabs';
 
 export const metadata: Metadata = {
     title: 'Workspace Settings',

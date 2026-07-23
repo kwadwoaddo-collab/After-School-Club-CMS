@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import StudentForm from '@/components/students/StudentForm';
+import StudentForm from '@/features/students/components/StudentForm';
 import { db } from '@/db';
 import { centres, centreMemberships } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';

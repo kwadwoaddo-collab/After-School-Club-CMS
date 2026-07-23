@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import { bookings, bookingAttendees, parents, children, childSubjects, centres, studentNotes } from '@/db/schema';
 import { BookingInput } from '@/lib/validations/booking';
@@ -70,16 +72,16 @@ export class BookingService {
           });
 
           if (oldBooking?.googleCalendarEventId) {
-            await googleCalendarService.deleteCalendarEvent(oldBooking.googleCalendarEventId).catch(console.error);
+            await googleCalendarService.deleteCalendarEvent(oldBooking.googleCalendarEventId).catch(err => logger.error('[BOOKING] Failed to delete calendar event:', err));
           }
 
           await tx.update(bookings)
             .set({ status: 'cancelled', updatedAt: new Date() })
             .where(eq(bookings.id, input.rescheduleId));
 
-          console.log(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling`);
+          logger.info(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling`);
         } catch (error) {
-          console.error('[BOOKING] Failed to cancel old booking for reschedule:', error);
+          logger.error('[BOOKING] Failed to cancel old booking for reschedule:', error);
         }
       }
 
@@ -120,6 +122,7 @@ export class BookingService {
           schoolYear: childInput.schoolYear,
           notes: childInput.notes || null,
           systemNoteContent: childInput.notes || null,
+          imageUrl: childInput.imageUrl || null,
         });
 
         // Add child subjects (only if the relation doesn't exist yet to prevent duplicates)
@@ -180,7 +183,7 @@ export class BookingService {
             .where(eq(parents.id, parent.id));
         }
       } catch (error) {
-        console.error('[BookingService] Failed to create Stripe customer:', error);
+        logger.error('[BookingService] Failed to create Stripe customer:', error);
       }
     }
 
@@ -206,7 +209,7 @@ export class BookingService {
           .where(eq(bookings.id, booking.id));
       }
     } catch (error) {
-      console.error('[BookingService] Failed to create calendar event:', error);
+      logger.error('[BookingService] Failed to create calendar event:', error);
     }
 
     // Send notifications (email + SMS)
@@ -227,7 +230,7 @@ export class BookingService {
         magicLink,
       });
     } catch (error) {
-      console.error('[BookingService] Failed to send notifications:', error);
+      logger.error('[BookingService] Failed to send notifications:', error);
     }
 
     // Write in-app dashboard notification (fire-and-forget)
@@ -278,7 +281,7 @@ export class BookingService {
       try {
         await googleCalendarService.deleteCalendarEvent(booking.googleCalendarEventId);
       } catch (error) {
-        console.error('[BookingService] Failed to delete calendar event:', error);
+        logger.error('[BookingService] Failed to delete calendar event:', error);
       }
     }
 
@@ -297,7 +300,7 @@ export class BookingService {
         confirmationCode: booking.confirmationCode || '',
       });
     } catch (error) {
-      console.error('[BookingService] Failed to send cancellation notifications:', error);
+      logger.error('[BookingService] Failed to send cancellation notifications:', error);
     }
 
     // Update booking status

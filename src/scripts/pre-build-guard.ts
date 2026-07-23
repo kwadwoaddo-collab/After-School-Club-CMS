@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { readdirSync, lstatSync } from 'fs';
 import { join } from 'path';
 
@@ -18,19 +19,19 @@ function checkDir(dir: string) {
         } else {
             // Pattern for common "Copy 2", "route 2", etc.
             if (file.match(/.*\s\d\..*/)) {
-                console.error(`\x1b[31m[STABILITY ERROR]\x1b[0m Duplicate file detected: ${fullPath}`);
-                console.error(`Next.js build will hang or 404 if this is not removed.`);
+                logger.error(`\x1b[31m[STABILITY ERROR]\x1b[0m Duplicate file detected: ${fullPath}`);
+                logger.error(`Next.js build will hang or 404 if this is not removed.`);
                 process.exit(1);
             }
         }
     }
 }
 
-console.log('--- Stability Guard: Checking for duplicate files ---');
+logger.info('--- Stability Guard: Checking for duplicate files ---');
 try {
     checkDir(process.cwd());
-    console.log('\x1b[32m[SAFE]\x1b[0m No duplicates found. Proceeding to build...');
+    logger.info('\x1b[32m[SAFE]\x1b[0m No duplicates found. Proceeding to build...');
 } catch (err) {
-    console.error('Error during pre-build check:', err);
+    logger.error('Error during pre-build check:', err);
     process.exit(1);
 }

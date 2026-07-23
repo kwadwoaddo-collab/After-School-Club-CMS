@@ -94,6 +94,17 @@ export async function canUserAccessCentre(
 }
 
 /**
+ * Check if a user can access safeguarding records (MANAGER or ORG_OWNER only)
+ */
+export async function canUserAccessSafeguardingRecords(
+    userId: string,
+    centreId: string
+): Promise<boolean> {
+    const role = await getUserRoleForCentre(userId, centreId);
+    return role === 'ORG_OWNER' || role === 'MANAGER';
+}
+
+/**
  * Check if user is an organization owner
  */
 export async function isOrgOwner(userId: string): Promise<boolean> {
@@ -281,6 +292,30 @@ export async function getVisibleChildIds(
         );
 
     return rows.map((r) => r.id);
+}
+
+/**
+ * Require a specific role globally. Used in server actions.
+ */
+export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 'FRONT_DESK' | 'TUTOR') {
+    const session = await import('@/lib/auth').then(m => m.auth());
+    if (!session?.user) throw new Error('Unauthorized');
+
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+    });
+
+    if (!user) throw new Error('User not found');
+
+    if (requiredRole === 'ORG_OWNER' && user.role !== 'ORG_OWNER') {
+        throw new Error('Forbidden: ORG_OWNER required');
+    }
+    
+    if (requiredRole === 'MANAGER' && user.role !== 'ORG_OWNER' && user.role !== 'MANAGER') {
+        throw new Error('Forbidden: MANAGER required');
+    }
+
+    return user;
 }
 
 

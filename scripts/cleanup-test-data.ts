@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { users, organisations, parents, children, bookings, accounts, sessions, centres, centreMemberships, staffInvites, studentRegistrations, auditEvents, notifications } from '@/db/schema';
+import { users, organisations, parents, children, bookings, accounts, sessions, centres, centreMemberships, staffInvites, auditEvents, notifications } from '@/db/schema';
 import { eq, or, inArray } from 'drizzle-orm';
 
 /**

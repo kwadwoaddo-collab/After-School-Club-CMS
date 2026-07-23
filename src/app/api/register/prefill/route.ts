@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { parents, children } from '@/db/schema';
@@ -20,7 +22,7 @@ export async function GET(req: NextRequest) {
             const result = await jwtVerify(token, secret);
             payload = result.payload;
         } catch (err) {
-            console.error('[Prefill API] Token verification failed:', err);
+            logger.error('[Prefill API] Token verification failed:', err);
             return NextResponse.json({ error: 'Invalid or expired prefill token' }, { status: 400 });
         }
 
@@ -81,7 +83,7 @@ export async function GET(req: NextRequest) {
             children: transformedChildren,
         });
     } catch (err) {
-        console.error('[Prefill API] Error:', err);
+        logger.error('[Prefill API] Error:', err);
         return NextResponse.json({ error: 'Failed to fetch prefill details' }, { status: 500 });
     }
 }

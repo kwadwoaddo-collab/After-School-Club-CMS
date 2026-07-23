@@ -1,4 +1,5 @@
 'use server';
+import { logger } from '@/lib/logger';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -277,8 +278,8 @@ export async function importStudentsAction(
         }
       });
 
-    } catch (err: any) {
-      console.error(`Error importing row ${rowNumber}:`, err);
+    } catch (err) {
+      logger.error(`Error importing row ${rowNumber}:`, err);
       errors.push({
         row: rowNumber,
         email: row.parentEmail,

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -57,15 +58,15 @@ export async function POST(request: NextRequest) {
                 resetUrl,
             });
 
-            console.log(`[PasswordReset] Reset link sent to ${email}`);
+            logger.info(`[PasswordReset] Reset link sent to ${email}`);
         } else {
-            console.log(`[PasswordReset] No credential account found for ${email} — silently succeeding`);
+            logger.info(`[PasswordReset] No credential account found for ${email} — silently succeeding`);
         }
 
         // Always return success
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[PasswordReset] Error:', error);
+        logger.error('[PasswordReset] Error:', error);
         return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
     }
 }
@@ -112,10 +113,10 @@ export async function PATCH(request: NextRequest) {
             updatedAt: new Date(),
         }).where(eq(users.id, user.id));
 
-        console.log(`[PasswordReset] Password updated for user ${user.email}`);
+        logger.info(`[PasswordReset] Password updated for user ${user.email}`);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[PasswordReset] Error updating password:', error);
+        logger.error('[PasswordReset] Error updating password:', error);
         return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
     }
 }

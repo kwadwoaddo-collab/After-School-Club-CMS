@@ -1,4 +1,6 @@
 'use server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { db } from '@/db';
 import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calendarBusy, children, parents, centres, organisations } from '@/db/schema';
@@ -86,7 +88,7 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
                 updatedAt: new Date()
             })
             .where(eq(bookings.id, bookingId));
-    } catch (e: any) {
+    } catch (e) {
         if (e.code === '23505') { // Postgres unique violation (double booking)
             throw new Error('This slot is already booked.');
         }

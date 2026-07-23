@@ -1,4 +1,5 @@
 'use server';
+import { logger } from '@/lib/logger';
 
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
@@ -48,7 +49,7 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
         revalidatePath('/portal/billing');
         return { success: true };
     } catch (e) {
-        console.error('Failed to submit voucher payment:', e);
+        logger.error('Failed to submit voucher payment:', e);
         return { success: false, error: 'Internal server error processing payment' };
     }
 }

@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { format } from 'date-fns';
+import { formatInTimezone } from './datetime';
 
 /**
  * Attendance utilities — Phase B (read-path only)
@@ -148,6 +150,8 @@ export interface CompiledAttendee {
   lateMinutes: number | null;
   isCatchUp: boolean;
   bookingId: string | null;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
 }
 
 export interface CompiledSlot {
@@ -159,8 +163,8 @@ export interface CompiledSlot {
 
 export function compileDailyRegisterSlots(params: {
   targetDate: Date;
-  allChildrenAtCentre: any[];
-  dayBookings: any[];
+  allChildrenAtCentre: unknown[];
+  dayBookings: unknown[];
 }): CompiledSlot[] {
   const { targetDate, allChildrenAtCentre, dayBookings } = params;
   const targetDayName = format(targetDate, 'EEEE'); // e.g. "Monday"
@@ -252,6 +256,8 @@ export function compileDailyRegisterSlots(params: {
           lateMinutes: att.lateMinutes,
           isCatchUp: false,
           bookingId: bookingMatch.id,
+          checkInTime: att.checkInAt ? formatInTimezone(new Date(att.checkInAt)) : null,
+          checkOutTime: att.checkOutAt ? formatInTimezone(new Date(att.checkOutAt)) : null,
         });
       } else {
         const parentInfo =
@@ -274,6 +280,8 @@ export function compileDailyRegisterSlots(params: {
           lateMinutes: null,
           isCatchUp: false,
           bookingId: null,
+          checkInTime: null,
+          checkOutTime: null,
         });
       }
     }
@@ -323,6 +331,8 @@ export function compileDailyRegisterSlots(params: {
           lateMinutes: att.lateMinutes,
           isCatchUp: true,
           bookingId: booking.id,
+          checkInTime: att.checkInAt ? formatInTimezone(new Date(att.checkInAt)) : null,
+          checkOutTime: att.checkOutAt ? formatInTimezone(new Date(att.checkOutAt)) : null,
         });
       }
     }

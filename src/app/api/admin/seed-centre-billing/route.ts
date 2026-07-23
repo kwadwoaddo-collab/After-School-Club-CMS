@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -23,7 +24,7 @@ export async function GET() {
         .from(centres)
         .where(eq(centres.organisationId, orgId));
 
-    const results: any[] = [];
+    const results: unknown[] = [];
 
     for (const c of all) {
         const addr = (c.address || '').toLowerCase();

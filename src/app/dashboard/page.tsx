@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -27,7 +28,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
 
     let org: any;
-    let centresList: any[] = [];
+    let centresList: unknown[] = [];
     try {
         const [orgs, fetchedCentres] = await Promise.all([
             db

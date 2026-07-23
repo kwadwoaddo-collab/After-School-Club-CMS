@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
@@ -55,13 +58,13 @@ export async function cancelBookingByParent(bookingId: string) {
                 childrenNames,
                 startAt: bookingDate,
                 confirmationCode: booking.confirmationCode || bookingId.slice(0, 8).toUpperCase(),
-            }).catch(e => console.error('[Email] Failed to send cancellation email:', e));
+            }).catch(e => logger.error('[Email] Failed to send cancellation email:', e));
         }
 
         revalidatePath('/portal');
         return { success: true };
     } catch (e) {
-        console.error('Failed to cancel booking:', e);
+        logger.error('Failed to cancel booking:', e);
         return { success: false, error: 'An error occurred while attempting to cancel the booking' };
     }
 }

@@ -8,7 +8,7 @@ import {
     ArrowLeft, ShieldAlert, FileText, User,
     CalendarDays, CheckCircle2, XCircle, Clock, MapPin, CalendarClock,
 } from 'lucide-react';
-import { AddMedicalNoteForm } from '@/components/portal/AddMedicalNoteForm';
+import { AddMedicalNoteForm } from '@/features/portal/components/AddMedicalNoteForm';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     confirmed: { label: 'Upcoming', className: 'bg-primary/10 text-primary border-primary/20' },

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites, users } from '@/db/schema';
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
             role: invite.role,
         });
     } catch (error) {
-        console.error('Accept invite error:', error);
+        logger.error('Accept invite error:', error);
         return NextResponse.json({ error: 'Failed to accept invitation' }, { status: 500 });
     }
 }

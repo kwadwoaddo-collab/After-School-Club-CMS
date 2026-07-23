@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useState, Suspense, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
@@ -135,7 +136,7 @@ function LoginForm() {
                 try {
                   await signIn('google', { callbackUrl: '/dashboard' });
                 } catch (err) {
-                  console.error(err);
+                  logger.error(err);
                   setGoogleError('Failed to sign in with Google. Please try again.');
                   setGoogleLoading(false);
                 }

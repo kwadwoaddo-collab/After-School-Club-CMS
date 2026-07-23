@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -11,7 +12,7 @@ export default function DashboardError({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error('Dashboard Error:', error);
+        logger.error('Dashboard Error:', error);
     }, [error]);
 
     return (

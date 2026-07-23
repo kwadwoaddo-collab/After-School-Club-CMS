@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
@@ -101,9 +101,9 @@ function AttendeeCard({
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string | null>(attendee.id);
 
-    const [checkIn,  setCheckIn]  = useState<string>(attendee.checkInTime  ?? '');
-    const [checkOut, setCheckOut] = useState<string>(attendee.checkOutTime ?? '');
-    const [isAbsent, setIsAbsent] = useState(attendee.attendanceStatus === 'absent');
+    const [checkIn,  setCheckIn]  = useOptimistic<string, string>(attendee.checkInTime  ?? '', (state, update) => update);
+    const [checkOut, setCheckOut] = useOptimistic<string, string>(attendee.checkOutTime ?? '', (state, update) => update);
+    const [isAbsent, setIsAbsent] = useOptimistic<boolean, boolean>(attendee.attendanceStatus === 'absent', (state, update) => update);
     const [absenceReason, setAbsenceReason] = useState<string>('');
     const [note, setNote] = useState<string>(attendee.attendanceNote ?? '');
     const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
@@ -136,18 +136,17 @@ function AttendeeCard({
 
     const handleCheckIn = () => {
         const time = nowHHmm();
-        setCheckIn(time);
-        setIsAbsent(false);
         setShowAbsenceSheet(false);
         onStatusChange?.(attendee.id, { checkedIn: true, absent: false });
         startTransition(async () => {
+            setCheckIn(time);
+            setIsAbsent(false);
             try {
                 const { attendeeId } = await ensureBooking();
-                await updateAttendanceTimelog({ attendeeId, checkInTime: time, checkOutTime: checkOut || null, absenceReason: null, attendanceNote: note || null, sessionTime });
+                await updateAttendanceTimelog({ attendeeId, checkInTime: time, checkOutTime: checkOut || null, dateStr, absenceReason: null, attendanceNote: note || null, sessionTime });
                 flashSaved();
             } catch {
                 onToast({ title: 'Could not record check-in', message: 'Please try again.', variant: 'error' });
-                setCheckIn('');
                 onStatusChange?.(attendee.id, { checkedIn: false });
             }
         });
@@ -155,29 +154,28 @@ function AttendeeCard({
 
     const handleCheckOut = () => {
         const time = nowHHmm();
-        setCheckOut(time);
         onStatusChange?.(attendee.id, { checkedOut: true });
         startTransition(async () => {
+            setCheckOut(time);
             try {
                 const { attendeeId } = await ensureBooking();
-                await updateAttendanceTimelog({ attendeeId, checkInTime: checkIn || null, checkOutTime: time, absenceReason: null, attendanceNote: note || null, sessionTime });
+                await updateAttendanceTimelog({ attendeeId, checkInTime: checkIn || null, checkOutTime: time, dateStr, absenceReason: null, attendanceNote: note || null, sessionTime });
                 flashSaved();
             } catch {
                 onToast({ title: 'Could not record check-out', message: 'Please try again.', variant: 'error' });
-                setCheckOut('');
                 onStatusChange?.(attendee.id, { checkedOut: false });
             }
         });
     };
 
     const handleMarkAbsent = (reason: typeof ABSENCE_REASONS[number]['key']) => {
-        setIsAbsent(true);
         setAbsenceReason(reason);
-        setCheckIn('');
-        setCheckOut('');
         setShowAbsenceSheet(false);
         onStatusChange?.(attendee.id, { absent: true, checkedIn: false, checkedOut: false });
         startTransition(async () => {
+            setIsAbsent(true);
+            setCheckIn('');
+            setCheckOut('');
             try {
                 const res = await markAttendeeAttendance({
                     bookingId: curBookingId, attendeeId: curAttendeeId,
@@ -189,12 +187,11 @@ function AttendeeCard({
                     setCurAttendeeId(res.attendeeId ?? null);
                 }
                 if (res?.attendeeId) {
-                    await updateAttendanceTimelog({ attendeeId: res.attendeeId, checkInTime: null, checkOutTime: null, absenceReason: reason, attendanceNote: null, sessionTime });
+                    await updateAttendanceTimelog({ attendeeId: res.attendeeId, checkInTime: null, checkOutTime: null, dateStr, absenceReason: reason, attendanceNote: null, sessionTime });
                 }
                 flashSaved();
             } catch {
                 onToast({ title: 'Could not mark absent', message: 'Please try again.', variant: 'error' });
-                setIsAbsent(false);
                 onStatusChange?.(attendee.id, { absent: false });
             }
         });

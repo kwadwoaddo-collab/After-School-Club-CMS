@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children } from '@/db/schema';
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
-    console.error('[Cron Roll] CRON_SECRET is not set — endpoint locked.');
+    logger.error('[Cron Roll] CRON_SECRET is not set — endpoint locked.');
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
   }
   if (authHeader !== `Bearer ${cronSecret}`) {
@@ -63,10 +64,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    console.log(`[Cron Roll] September 1st Rollover Completed: updated ${rolledCount} students.`);
+    logger.info(`[Cron Roll] September 1st Rollover Completed: updated ${rolledCount} students.`);
     return NextResponse.json({ success: true, rolledCount });
-  } catch (err: any) {
-    console.error('[Cron Roll] Failed to run rollover cron:', err);
+  } catch (err) {
+    logger.error('[Cron Roll] Failed to run rollover cron:', err);
     return NextResponse.json({ error: err.message || 'Internal database error' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 'use server';
+import { logger } from '@/lib/logger';
 
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
@@ -98,7 +99,7 @@ export async function createPortalBooking({
  
                 return code;
             });
-        } catch (e: any) {
+        } catch (e) {
             return { success: false, error: e.message || 'Failed to complete booking.' };
         }
  
@@ -117,12 +118,12 @@ export async function createPortalBooking({
                 duration,
                 confirmationCode,
                 magicLink: `${process.env.NEXTAUTH_URL || ''}/portal`,
-            }).catch((e: unknown) => console.error('[Email] Failed to send booking confirmation:', e));
+            }).catch((e: unknown) => logger.error('[Email] Failed to send booking confirmation:', e));
         }
  
         return { success: true, confirmationCode };
     } catch (e) {
-        console.error('Failed to create portal booking:', e);
+        logger.error('Failed to create portal booking:', e);
         return { success: false, error: 'An error occurred while creating the booking.' };
     }
 }
@@ -203,7 +204,7 @@ export async function reschedulePortalBooking({
 
                 return code;
             });
-        } catch (e: any) {
+        } catch (e) {
             return { success: false, error: e.message || 'Failed to reschedule booking.' };
         }
 
@@ -219,12 +220,12 @@ export async function reschedulePortalBooking({
                 oldStartAt,
                 newStartAt: newStartDate,
                 confirmationCode,
-            }).catch((e: unknown) => console.error('[Email] Failed to send reschedule email:', e));
+            }).catch((e: unknown) => logger.error('[Email] Failed to send reschedule email:', e));
         }
 
         return { success: true, confirmationCode };
     } catch (e) {
-        console.error('Failed to reschedule portal booking:', e);
+        logger.error('Failed to reschedule portal booking:', e);
         return { success: false, error: 'An error occurred while rescheduling.' };
     }
 }

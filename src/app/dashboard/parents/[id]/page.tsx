@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
@@ -6,7 +7,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import ParentProfileClient from './ParentProfileClient';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import DeleteParentButton from '@/components/parents/DeleteParentButton';
+import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
 
 interface ParentPageProps {
     params: Promise<{ id: string }>;

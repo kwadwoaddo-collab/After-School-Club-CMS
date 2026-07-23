@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -5,7 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import { centres, children } from '@/db/schema';
-import ReceiptGeneratorClient from '@/components/finance/ReceiptGeneratorClient';
+import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 
 export default async function ReceiptPage() {
     const session = await auth();

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * SMS Service using Twilio
  * 
@@ -44,7 +45,7 @@ export class SMSService {
     if (!accountSid || accountSid.startsWith('ACxxx') ||
       !authToken || authToken.startsWith('xxx') ||
       !fromNumber || fromNumber.startsWith('+44XXX')) {
-      console.warn('[SMSService] Twilio credentials not configured. SMS disabled.');
+      logger.warn('[SMSService] Twilio credentials not configured. SMS disabled.');
       this.initialized = true;
       return false;
     }
@@ -52,10 +53,10 @@ export class SMSService {
     try {
       this.client = twilio(accountSid, authToken);
       this.initialized = true;
-      console.log('[SMSService] Initialized successfully');
+      logger.info('[SMSService] Initialized successfully');
       return true;
     } catch (error) {
-      console.error('[SMSService] Failed to initialize:', error);
+      logger.error('[SMSService] Failed to initialize:', error);
       this.initialized = true;
       return false;
     }
@@ -91,11 +92,11 @@ export class SMSService {
         to: data.parentPhone,
       });
 
-      console.log(`[SMSService] Confirmation SMS sent: ${result.sid}`);
+      logger.info(`[SMSService] Confirmation SMS sent: ${result.sid}`);
       return { success: true, messageId: result.sid };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[SMSService] Error sending SMS:', error);
+      logger.error('[SMSService] Error sending SMS:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -129,11 +130,11 @@ export class SMSService {
         to: data.parentPhone,
       });
 
-      console.log(`[SMSService] Cancellation SMS sent: ${result.sid}`);
+      logger.info(`[SMSService] Cancellation SMS sent: ${result.sid}`);
       return { success: true, messageId: result.sid };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[SMSService] Error sending SMS:', error);
+      logger.error('[SMSService] Error sending SMS:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -170,11 +171,11 @@ export class SMSService {
         to: data.parentPhone,
       });
 
-      console.log(`[SMSService] Reminder SMS sent: ${result.sid}`);
+      logger.info(`[SMSService] Reminder SMS sent: ${result.sid}`);
       return { success: true, messageId: result.sid };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[SMSService] Error sending SMS:', error);
+      logger.error('[SMSService] Error sending SMS:', error);
       return { success: false, error: errorMessage };
     }
   }

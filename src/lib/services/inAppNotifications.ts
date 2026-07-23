@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * In-App Notification Service
  * Creates notifications in the database for display in the dashboard
@@ -31,9 +32,9 @@ export class InAppNotificationService {
                 isRead: false,
             });
 
-            console.log(`[InAppNotification] Created notification for user ${params.userId}: ${params.title}`);
+            logger.info(`[InAppNotification] Created notification for user ${params.userId}: ${params.title}`);
         } catch (error) {
-            console.error('[InAppNotification] Failed to create notification:', error);
+            logger.error('[InAppNotification] Failed to create notification:', error);
         }
     }
 

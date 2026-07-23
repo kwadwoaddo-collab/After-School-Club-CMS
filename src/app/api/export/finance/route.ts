@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
@@ -127,7 +129,7 @@ export async function GET(req: NextRequest) {
             },
         });
     } catch (error) {
-        console.error('[GET /api/export/finance]', error);
+        logger.error('[GET /api/export/finance]', error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 }

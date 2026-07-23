@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
             });
             // Always show success (prevents email enumeration)
             setSent(true);
-        } catch (err: any) {
+        } catch (err) {
             setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { bookingSchema } from '@/lib/validations/booking';
 import { BookingService } from '@/lib/services/booking';
@@ -102,8 +103,8 @@ export async function POST(request: NextRequest) {
 
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : '';
-    console.error('[API /bookings] Booking creation failed:', errorMessage);
-    console.error('[API /bookings] Stack:', errorStack);
+    logger.error('[API /bookings] Booking creation failed:', errorMessage);
+    logger.error('[API /bookings] Stack:', errorStack);
     const responseBody: Record<string, unknown> = { error: 'Failed to create booking' };
     if (process.env.NODE_ENV === 'development') {
       responseBody.debug = errorMessage;

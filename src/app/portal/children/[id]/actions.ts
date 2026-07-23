@@ -1,4 +1,5 @@
 'use server';
+import { logger } from '@/lib/logger';
 
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
@@ -33,7 +34,7 @@ export async function addMedicalNote(childId: string, content: string) {
         revalidatePath(`/portal/children/${childId}`);
         return { success: true };
     } catch (e) {
-        console.error('Failed to add medical note:', e);
+        logger.error('Failed to add medical note:', e);
         return { success: false, error: 'An error occurred while attempting to save the note' };
     }
 }

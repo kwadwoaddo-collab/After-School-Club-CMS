@@ -1,6 +1,8 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { children, parents, bookings, centres } from '@/db/schema';
+import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
 import { ilike, or, eq, sql, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 
@@ -92,7 +94,8 @@ export async function GET(request: NextRequest) {
       })
       .from(bookings)
       .leftJoin(parents, eq(bookings.parentId, parents.id))
-      .leftJoin(children, eq(bookings.childId, children.id))
+      .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
+      .leftJoin(children, eq(bookingAttendees.childId, children.id))
       .where(
         or(
           ilike(parents.firstName, searchPattern),
@@ -146,7 +149,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: formattedResults });
 
   } catch (error) {
-    console.error('Search API error:', error);
+    logger.error('Search API error:', error);
     return NextResponse.json({ error: 'Failed to perform search' }, { status: 500 });
   }
 }

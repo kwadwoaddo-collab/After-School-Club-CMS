@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useState } from 'react';
 import { Copy, Check, Share2 } from 'lucide-react';
@@ -16,7 +17,7 @@ export default function BookingLinkCard({ bookingLink }: BookingLinkCardProps) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
-            console.error('Failed to copy text: ', err);
+            logger.error('Failed to copy text: ', err);
         }
     };
 

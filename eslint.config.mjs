@@ -17,11 +17,32 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": "off",
       "react/no-unescaped-entities": "off",
       "@next/next/no-img-element": "off",
-      "react-hooks/set-state-in-effect": "off"
+      "react-hooks/set-state-in-effect": "off",
+      "no-console": "error"
+    }
+  },
+  {
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/__tests__/**",
+      "src/lib/logger.ts",
+      "scripts/**",
+      "src/scripts/**",
+      "tests/**",
+      "scratch/**",
+      "prev_bookings.tsx",
+      "*.config.ts",
+      "*.config.mjs",
+      "**/*.mjs"
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-console": "off"
     }
   }
 ]);

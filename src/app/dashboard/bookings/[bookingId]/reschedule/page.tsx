@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import RescheduleForm from '@/components/bookings/RescheduleForm';
+import RescheduleForm from '@/features/bookings/components/RescheduleForm';
 
 export default async function ReschedulePage({ params }: { params: Promise<{ bookingId: string }> }) {
     const session = await auth();

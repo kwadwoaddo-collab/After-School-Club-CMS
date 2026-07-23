@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -166,10 +167,10 @@ export async function POST(request: NextRequest) {
             });
             emailSent = result.success;
             if (!result.success) {
-                console.error('[Staff Invite] Email failed:', result.error);
+                logger.error('[Staff Invite] Email failed:', result.error);
             }
         } catch (emailError) {
-            console.error('[Staff Invite] Email exception:', emailError);
+            logger.error('[Staff Invite] Email exception:', emailError);
         }
 
         return NextResponse.json({
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
             emailSent,
         });
     } catch (error) {
-        console.error('Staff invite error:', error);
+        logger.error('Staff invite error:', error);
         return NextResponse.json(
             { error: 'Failed to send invitation' },
             { status: 500 }

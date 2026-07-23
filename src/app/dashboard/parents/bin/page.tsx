@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -6,7 +7,7 @@ import { eq, isNotNull, sql } from 'drizzle-orm';
 import { Archive, Trash2, ArrowLeft, Clock } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import Link from 'next/link';
-import BinActions from '@/components/parents/BinActions';
+import BinActions from '@/features/parents/components/BinActions';
 import { purgeStaleBinItems } from '../bin.actions';
 
 export default async function BinPage() {

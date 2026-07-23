@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useEffect } from 'react';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
@@ -12,7 +13,7 @@ export default function RootError({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error('Root App Error:', error);
+        logger.error('Root App Error:', error);
     }, [error]);
 
     return (

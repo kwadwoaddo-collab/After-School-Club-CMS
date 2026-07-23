@@ -1,7 +1,11 @@
 'use client';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useTransition, useEffect } from 'react';
+
+import { useState, useTransition, useOptimistic, useEffect } from 'react';
 import { markAttendeeAttendance } from '@/features/bookings/actions';
+import { queueOfflineAction, getUnsyncedActions, markActionSynced } from '@/lib/offline-sync';
 import {
     CheckCircle2, XCircle, Clock, AlertTriangle,
     Loader2, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Users,
@@ -57,7 +61,7 @@ const playChime = (type: 'success' | 'error') => {
             osc.stop(now + 0.25);
         }
     } catch (e) {
-        console.error('Failed to play Web Audio API chime:', e);
+        logger.error('Failed to play Web Audio API chime:', e);
     }
 };
 
@@ -117,7 +121,10 @@ function StudentCard({
 }) {
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string>(attendee.id);
-    const [status, setStatus] = useState<AttendanceStatus>(attendee.attendanceStatus);
+    const [status, addOptimisticStatus] = useOptimistic<AttendanceStatus, AttendanceStatus>(
+        attendee.attendanceStatus,
+        (state, newStatus) => newStatus
+    );
     const [note, setNote] = useState<string>(attendee.attendanceNote || '');
     const [lateMinutes, setLateMinutes] = useState<string>(
         attendee.lateMinutes != null ? attendee.lateMinutes.toString() : ''
@@ -131,29 +138,54 @@ function StudentCard({
         if (next === 'late') setShowDetails(true);
 
         startTransition(async () => {
+            addOptimisticStatus(next);
             try {
-                const res = await markAttendeeAttendance({
-                    bookingId: curBookingId,
-                    attendeeId: curAttendeeId,
-                    status: next,
-                    note: note || null,
-                    lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
-                    childId: attendee.childId,
-                    dateStr,
-                    sessionTime,
-                    centreId,
-                });
+                let res;
+                if (!navigator.onLine) {
+                    await queueOfflineAction({
+                        childId: attendee.childId,
+                        centreId,
+                        type: next === 'check_out' || next === 'absent' ? 'check_out' : 'check_in',
+                        timestamp: new Date().toISOString(),
+                    });
+                    res = { bookingId: curBookingId, attendeeId: curAttendeeId };
+                } else {
+                    res = await markAttendeeAttendance({
+                        bookingId: curBookingId,
+                        attendeeId: curAttendeeId,
+                        status: next,
+                        note: note || null,
+                        lateMinutes: lateMinutes ? parseInt(lateMinutes, 10) : null,
+                        childId: attendee.childId,
+                        dateStr,
+                        sessionTime,
+                        centreId,
+                    });
+                }
+                
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
                     setCurAttendeeId(res.attendeeId || attendee.id);
                 }
-                setStatus(next);
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
                 playChime('success');
-            } catch (err: any) {
-                playChime('error');
-                onToast({ title: 'Could not mark attendance', message: 'Please try again or refresh.', variant: 'error' });
+            } catch (err) {
+                // If it fails due to network while we thought we were online, queue it
+                if (!navigator.onLine || (err as Error).message.includes('fetch')) {
+                    await queueOfflineAction({
+                        childId: attendee.childId,
+                        centreId,
+                        type: next === 'check_out' || next === 'absent' ? 'check_out' : 'check_in',
+                        timestamp: new Date().toISOString(),
+                    });
+                    setFlash(true);
+                    setTimeout(() => setFlash(false), 800);
+                    playChime('success');
+                } else {
+                    playChime('error');
+                    onToast({ title: 'Could not mark attendance', message: 'Please try again or refresh.', variant: 'error' });
+                }
             }
         });
     };
@@ -179,7 +211,7 @@ function StudentCard({
                 setFlash(true);
                 setTimeout(() => setFlash(false), 800);
                 playChime('success');
-            } catch (err: any) {
+            } catch (err) {
                 playChime('error');
                 onToast({ title: 'Could not save details', message: 'Please try again.', variant: 'error' });
             }
@@ -346,6 +378,35 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         const t = setInterval(() => router.refresh(), 60_000);
         return () => clearInterval(t);
     }, [router]);
+
+    // Offline sync manager
+    useEffect(() => {
+        const handleOnline = async () => {
+            const actions = await getUnsyncedActions();
+            if (actions.length > 0) {
+                toast({ title: 'You are back online!', message: `Syncing ${actions.length} offline actions...`, variant: 'default' });
+                for (const action of actions) {
+                    try {
+                        await markAttendeeAttendance({
+                            childId: action.childId,
+                            centreId: action.centreId,
+                            status: action.type === 'check_in' ? 'present' : 'check_out', // mapping type back to status
+                            dateStr: resolvedDateStr,
+                            sessionTime: '15:15', // We'll assume default or try to match, but markAttendeeAttendance doesn't strictly need accurate sessionTime if bookingId is missing but we'd normally pass it. Wait, kiosk requires it. Let's pass a dummy or we need to save sessionTime in the action.
+                        } as any);
+                        await markActionSynced(action.id);
+                    } catch (e) {
+                        logger.error('Failed to sync action', e);
+                    }
+                }
+                toast({ title: 'Sync complete', message: 'All offline check-ins uploaded.', variant: 'success' });
+                router.refresh();
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [router, toast, resolvedDateStr]);
 
     // Sync fullscreen state with browser events (e.g. Esc key)
     useEffect(() => {

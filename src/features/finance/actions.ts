@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { db } from '@/db';
 import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents } from '@/db/schema';
@@ -204,7 +207,7 @@ export async function createInvoice(data: {
             dueDate: newInvoice.dueDate,
             centreName: centre?.name || 'the centre',
             portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-        }).catch(e => console.error('[Email] Failed to send invoice created email:', e));
+        }).catch(e => logger.error('[Email] Failed to send invoice created email:', e));
     }
 
     revalidatePath('/dashboard/finance');
@@ -697,7 +700,7 @@ export async function verifyPayment(paymentId: string) {
                 amount: Number(payment.amount),
                 invoiceFullyPaid,
                 portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-            }).catch(e => console.error('[Email] Failed to send voucher verified email:', e));
+            }).catch(e => logger.error('[Email] Failed to send voucher verified email:', e));
         }
 
         revalidatePath('/dashboard/finance');
@@ -746,7 +749,7 @@ export async function failPayment(paymentId: string) {
             invoiceNumber: payment.invoice.invoiceNumber,
             amount: Number(payment.amount),
             portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-        }).catch(e => console.error('[Email] Failed to send voucher failed email:', e));
+        }).catch(e => logger.error('[Email] Failed to send voucher failed email:', e));
     }
 
     revalidatePath('/dashboard/finance');

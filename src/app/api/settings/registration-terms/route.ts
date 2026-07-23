@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -19,7 +21,7 @@ export async function GET() {
 
         return NextResponse.json(org ?? {});
     } catch (error) {
-        console.error('[GET /api/settings/registration-terms]', error);
+        logger.error('[GET /api/settings/registration-terms]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
@@ -62,7 +64,7 @@ export async function PATCH(req: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[PATCH /api/settings/registration-terms]', error);
+        logger.error('[PATCH /api/settings/registration-terms]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

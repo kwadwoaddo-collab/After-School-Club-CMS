@@ -85,7 +85,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                 return updated;
             });
             startTransition(() => router.refresh());
-        } catch (err: any) {
+        } catch (err) {
             toast({ title: 'Error', message: err.message, variant: 'error' });
         } finally {
             setUpdatingRoleId(null);
@@ -100,7 +100,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
             toast({ title: 'Staff removed', message: 'The staff member has been removed from your organisation.', variant: 'success' });
             setConfirmRemoveId(null);
             startTransition(() => router.refresh());
-        } catch (err: any) {
+        } catch (err) {
             toast({ title: 'Error', message: err.message, variant: 'error' });
         }
     };
@@ -112,7 +112,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
             if (!res.ok) throw new Error(data.error || 'Failed to revoke invite');
             toast({ title: 'Invite revoked', message: 'The pending invite has been cancelled.', variant: 'success' });
             startTransition(() => router.refresh());
-        } catch (err: any) {
+        } catch (err) {
             toast({ title: 'Error', message: err.message, variant: 'error' });
         }
     };
@@ -157,7 +157,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                     <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
                         <button
                             onClick={() => setRoleFilter('ALL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${roleFilter === 'ALL' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all active:scale-95 duration-100 ${roleFilter === 'ALL' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'}`}
                         >
                             All
                         </button>
@@ -165,7 +165,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                             <button
                                 key={val}
                                 onClick={() => setRoleFilter(val)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${roleFilter === val ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'}`}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all active:scale-95 duration-100 ${roleFilter === val ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'}`}
                             >
                                 {label}
                             </button>
@@ -183,7 +183,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                         return (
                             <div key={member.id} className="group">
                                 <div
-                                    className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-colors cursor-pointer"
+                                    className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-all active:scale-[0.99] duration-100 cursor-pointer"
                                     onClick={() => setExpandedId(isExpanded ? null : member.id)}
                                 >
                                     {/* Avatar */}
@@ -241,17 +241,19 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                                                         )}
                                                     </div>
                                                     {pendingRoles[member.id] && pendingRoles[member.id] !== member.role && (
-                                                        <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-xl flex items-start gap-2 animate-in fade-in">
-                                                            <Shield className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
+                                                        <div className="mt-3 p-3 bg-card border border-border shadow-sm rounded-xl flex items-start gap-2 animate-in fade-in">
+                                                            <div className="w-6 h-6 rounded-lg bg-warning/10 flex items-center justify-center flex-shrink-0">
+                                                                <Shield className="w-3.5 h-3.5 text-warning" />
+                                                            </div>
                                                             <div className="flex-1">
-                                                                <p className="text-xs text-warning font-semibold">
-                                                                    ⚠️ This changes access globally.
+                                                                <p className="text-xs text-foreground font-semibold">
+                                                                    This changes access globally.
                                                                 </p>
                                                                 <div className="mt-2 flex items-center gap-2">
                                                                     <button
                                                                         onClick={() => confirmRoleChange(member.id)}
                                                                         disabled={updatingRoleId === member.id}
-                                                                        className="px-3 py-1.5 bg-warning text-warning-foreground text-xs font-bold rounded-lg hover:bg-warning/90 transition-colors"
+                                                                        className="px-3 py-1.5 bg-warning text-warning-foreground text-xs font-bold rounded-lg hover:bg-warning/90 transition-all active:scale-95 duration-100"
                                                                     >
                                                                         Save to confirm
                                                                     </button>
@@ -262,9 +264,8 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                                                                                 delete updated[member.id];
                                                                                 return updated;
                                                                             });
-                                                                            // we might want to reset the select, but it's fine
                                                                         }}
-                                                                        className="px-3 py-1.5 text-muted-foreground text-xs font-bold hover:text-foreground transition-colors"
+                                                                        className="px-3 py-1.5 text-muted-foreground text-xs font-bold hover:text-foreground transition-all active:scale-95 duration-100"
                                                                     >
                                                                         Cancel
                                                                     </button>
@@ -317,13 +318,13 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                                                         <span className="text-xs text-rose-500 font-bold">Remove this staff member?</span>
                                                         <button
                                                             onClick={() => handleRemove(member.id)}
-                                                            className="text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 px-3 py-1.5 rounded-xl transition-colors"
+                                                            className="text-xs font-bold text-destructive-foreground bg-rose-500 hover:bg-rose-600 px-3 py-1.5 rounded-xl transition-all active:scale-95 duration-100"
                                                         >
                                                             Confirm Remove
                                                         </button>
                                                         <button
                                                             onClick={() => setConfirmRemoveId(null)}
-                                                            className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+                                                            className="text-xs font-bold text-muted-foreground hover:text-foreground transition-all active:scale-95 duration-100"
                                                         >
                                                             Cancel
                                                         </button>
@@ -331,7 +332,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                                                 ) : (
                                                     <button
                                                         onClick={() => setConfirmRemoveId(member.id)}
-                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-500 hover:text-rose-400 transition-colors"
+                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-500 hover:text-rose-400 transition-all active:scale-95 duration-100"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" /> Remove from organisation
                                                     </button>
@@ -375,7 +376,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
                                     )}
                                     <button
                                         onClick={() => handleRevokeInvite(invite.id)}
-                                        className="text-xs font-bold text-muted-foreground hover:text-rose-500 transition-colors"
+                                        className="text-xs font-bold text-muted-foreground hover:text-rose-500 transition-all active:scale-90 duration-100"
                                         title="Revoke invite"
                                     >
                                         <XCircle className="w-4 h-4" />

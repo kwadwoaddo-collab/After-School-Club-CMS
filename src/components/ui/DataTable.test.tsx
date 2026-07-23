@@ -1,3 +1,4 @@
+'use client';
 /**
  * Unit tests for the DataTable component.
  *
@@ -11,7 +12,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 // We import the types, not the default export, since the component
-// uses 'use client' — but renderToStaticMarkup works for SSR output.
+// uses  — but renderToStaticMarkup works for SSR output.
 import DataTable, { DataTableColumn, DataTableProps } from './DataTable';
 
 /* ------------------------------------------------------------------ */

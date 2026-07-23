@@ -1,9 +1,13 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Mail, UserPlus, Shield, MapPin, Building2, AlertCircle } from 'lucide-react';
+
+import { logger } from '@/lib/logger';
 
 export default function InviteStaffPage() {
     const router = useRouter();
@@ -26,7 +30,7 @@ export default function InviteStaffPage() {
                 if (Array.isArray(data)) setCentres(data);
                 else if (data.centres) setCentres(data.centres);
             })
-            .catch(console.error);
+            .catch(err => logger.error('Failed to fetch centres:', err));
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +51,7 @@ export default function InviteStaffPage() {
             }
 
             router.push('/dashboard/staff?invited=true');
-        } catch (err: any) {
+        } catch (err) {
             setError(err.message);
             setLoading(false);
         }
@@ -76,7 +80,7 @@ export default function InviteStaffPage() {
             {/* Back Button */}
             <Link
                 href="/dashboard/staff"
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition-colors"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition-all active:scale-95 duration-100"
             >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Team
@@ -91,12 +95,14 @@ export default function InviteStaffPage() {
             </div>
 
             {/* Info Card */}
-            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6">
+            <div className="bg-card border border-border shadow-sm rounded-2xl p-6">
                 <div className="flex gap-4">
-                    <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-5 h-5 text-primary" />
+                    </div>
                     <div>
-                        <h3 className="font-bold text-primary mb-1">Centre-Level Access</h3>
-                        <p className="text-sm text-primary/80 leading-relaxed">
+                        <h3 className="font-bold text-foreground mb-1">Centre-Level Access</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                             After inviting, you'll assign this staff member to specific centres.
                             They'll only see bookings and students from their assigned centres.
                         </p>
@@ -217,7 +223,7 @@ export default function InviteStaffPage() {
                             {roles.map((role) => (
                                 <label
                                     key={role.value}
-                                    className={`flex items-start gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all ${formData.role === role.value
+                                    className={`flex items-start gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all active:scale-[0.99] duration-100 ${formData.role === role.value
                                         ? 'border-primary bg-primary/10'
                                         : 'border-border hover:border-primary/30'
                                         }`}
@@ -245,14 +251,16 @@ export default function InviteStaffPage() {
                     </div>
 
                     {/* Note about centre assignment */}
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4">
+                    <div className="bg-card border border-border shadow-sm rounded-2xl p-4">
                         <div className="flex gap-3">
-                            <MapPin className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                                <MapPin className="w-5 h-5 text-amber-500" />
+                            </div>
                             <div>
-                                <h4 className="font-bold text-amber-500 text-sm mb-1">
+                                <h4 className="font-bold text-foreground text-sm mb-1">
                                     Centre Assignment - Next Step
                                 </h4>
-                                <p className="text-xs text-amber-500/80 leading-relaxed font-medium">
+                                <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                                     After sending the invitation, you'll be able to assign this staff member to
                                     specific centres. They'll only have access to data from those centres.
                                 </p>
@@ -265,18 +273,18 @@ export default function InviteStaffPage() {
                 <div className="px-8 py-6 border-t border-border flex items-center justify-between">
                     <Link
                         href="/dashboard/staff"
-                        className="px-6 py-3 text-muted-foreground hover:text-foreground font-bold transition-colors"
+                        className="px-6 py-3 text-muted-foreground hover:text-foreground font-bold transition-all active:scale-95 duration-100"
                     >
                         Cancel
                     </Link>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:bg-secondary disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 duration-100 disabled:opacity-50 disabled:bg-secondary disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
                     >
                         {loading ? (
                             <>
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                                 Sending Invitation...
                             </>
                         ) : (

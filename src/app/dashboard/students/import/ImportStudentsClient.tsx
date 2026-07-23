@@ -189,7 +189,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
     try {
       const res = await importStudentsAction(importRows, centreId || null);
       setResult(res);
-    } catch (err: any) {
+    } catch (err) {
       setResult({
         success: false,
         stats: { totalRows: csvRows.length, createdParents: 0, matchedParents: 0, createdStudents: 0, skippedStudents: 0 },

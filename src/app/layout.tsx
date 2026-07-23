@@ -50,13 +50,20 @@ export default function RootLayout({
                   var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                   if (isDark) {
                     document.documentElement.classList.add('dark');
-                    document.documentElement.classList.remove('light');
                   } else {
                     document.documentElement.classList.add('light');
                     document.documentElement.classList.remove('dark');
                   }
                 } catch (e) {}
-              })()
+              })();
+
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
             `,
           }}
         />

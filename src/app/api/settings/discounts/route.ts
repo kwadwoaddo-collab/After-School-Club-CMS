@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -18,7 +20,7 @@ export async function GET() {
         const row = (result as any)[0] ?? (result as any).rows?.[0];
         return NextResponse.json({ discountRules: row?.discount_rules ?? [] });
     } catch (error) {
-        console.error('[Discounts GET] error:', error);
+        logger.error('[Discounts GET] error:', error);
         return NextResponse.json({ discountRules: [] });
     }
 }
@@ -53,7 +55,7 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({ success: true, discountRules });
     } catch (error) {
-        console.error('[Discounts PATCH] error:', error);
+        logger.error('[Discounts PATCH] error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

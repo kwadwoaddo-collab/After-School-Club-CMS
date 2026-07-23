@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { cookies } from 'next/headers';
 import { db } from '@/db';
 import { parents } from '@/db/schema';
@@ -67,7 +68,7 @@ export const getCurrentParent = cache(async () => {
         });
         return parent || null;
     } catch (e) {
-        console.error('Parent auth error', e);
+        logger.error('Parent auth error', e);
         return null;
     }
 });

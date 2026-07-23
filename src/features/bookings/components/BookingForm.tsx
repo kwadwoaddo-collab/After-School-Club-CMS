@@ -1,10 +1,14 @@
 'use client';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
     bookingSchema,
     parentSchema,
@@ -70,6 +74,7 @@ const DEFAULT_DURATION = 60;
 const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
 export default function BookingForm({ centreId, centreName, operatingHours, brandColor = '#4F46E5', backToCentresUrl, rescheduleData }: BookingFormProps) {
+    const router = useRouter();
     // ... state ...
     const [step, setStep] = useState(1);
     const { toast } = useToast();
@@ -107,7 +112,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 setParentSearchResults(parentsOnly);
             }
         } catch (err) {
-            console.error('Failed to search parents:', err);
+            logger.error('Failed to search parents:', err);
         } finally {
             setSearchingParents(false);
         }
@@ -147,7 +152,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 toast({ title: 'Error', message: 'Failed to load parent details.', variant: 'error' });
             }
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             toast({ title: 'Error', message: 'Error loading parent details.', variant: 'error' });
         }
     };
@@ -201,7 +206,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             const dayOfWeek = days[dateObj.getDay()];
             setDaySchedule(parsedHours[dayOfWeek] || null);
         } catch (e) {
-            console.error('Failed to parse operating hours', e);
+            logger.error('Failed to parse operating hours', e);
             setDaySchedule(null);
         }
     }, [selectedDate, operatingHours]);
@@ -263,7 +268,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
     // Populate data if rescheduling
     useEffect(() => {
         if (rescheduleData) {
-            console.log('[BOOKING] Rescheduling mode detected', rescheduleData);
+            logger.info('[BOOKING] Rescheduling mode detected', rescheduleData);
 
             // Prefill Parent
             if (rescheduleData.parent) {
@@ -314,7 +319,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     setTimeSlots(data.slots || []);
                 }
             } catch {
-                console.error('Failed to fetch slots');
+                logger.error('Failed to fetch slots');
             } finally {
                 setLoadingSlots(false);
             }
@@ -331,7 +336,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         const data = getValues();
         let result: any;
 
-        console.log('[BOOKING] Validating Step:', step);
+        logger.info('[BOOKING] Validating Step:', step);
 
         if (step === 1) {
             result = parentSchema.safeParse(data.parent);
@@ -342,7 +347,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         }
 
         if (result && !result.success) {
-            console.log('[BOOKING] Validation Failed:', result.error.issues);
+            logger.info('[BOOKING] Validation Failed:', result.error.issues);
 
             // Map Zod errors back to React Hook Form
             result.error.issues.forEach((issue: any) => {
@@ -382,8 +387,32 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         }
 
         // If we reach here, validation for the current step passed
-        console.log('[BOOKING] Step', step, 'Validation OK');
+        logger.info('[BOOKING] Step', step, 'Validation OK');
         setStep(prev => prev + 1);
+    };
+
+    const [uploadingImage, setUploadingImage] = useState<{ [key: number]: boolean }>({});
+    const handleImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingImage(prev => ({ ...prev, [index]: true }));
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            if (!res.ok) throw new Error('Upload failed');
+            const data = await res.json();
+            setValue(`children.${index}.imageUrl`, data.url);
+            toast({ title: 'Success', message: 'Photo uploaded', variant: 'success' });
+        } catch (err) {
+            toast({ title: 'Error', message: 'Failed to upload photo', variant: 'error' });
+        } finally {
+            setUploadingImage(prev => ({ ...prev, [index]: false }));
+        }
     };
 
     // ... onSubmit ...
@@ -492,7 +521,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         onClick={(e) => {
                             if (!backToCentresUrl) {
                                 e.preventDefault();
-                                window.location.reload();
+                                router.refresh();
                             }
                         }}
                         className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -789,6 +818,21 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
                                                 <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Child's last name" />
                                                 {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Photo (Optional)</label>
+                                                <div className="flex items-center gap-4">
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*"
+                                                        onChange={(e) => handleImageUpload(index, e)}
+                                                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 brand-ring outline-none text-foreground text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-secondary file:text-foreground hover:file:bg-secondary/80 transition-colors cursor-pointer" 
+                                                    />
+                                                    {uploadingImage[index] && <Spinner size="sm" />}
+                                                    {watchedChildren?.[index]?.imageUrl && !uploadingImage[index] && (
+                                                        <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200 shrink-0">✓ Uploaded</span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="hidden">
                                                 <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>

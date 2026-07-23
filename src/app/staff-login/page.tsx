@@ -28,7 +28,7 @@ export default function StaffLoginPage() {
             }
 
             setStep('sent');
-        } catch (err: any) {
+        } catch (err) {
             setError(err.message);
             setStep('error');
         }

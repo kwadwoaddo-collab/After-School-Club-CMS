@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success || !result.sessionUrl) {
-        console.error('[portal/checkout] Stripe session creation failed:', result.error);
+        logger.error('[portal/checkout] Stripe session creation failed:', result.error);
         return NextResponse.json({ error: result.error || 'Failed to create payment session' }, { status: 500 });
     }
 

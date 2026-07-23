@@ -25,21 +25,13 @@
   --line-height-caption: 1.4;
 
   /* Midnight Luminary / SprintScale Dark Theme Tokens mapped to HIG variables */
-  --color-surface-container-low: hsl(var(--background));
-  --color-surface-container-highest: hsl(var(--secondary));
   --color-error-container: #9f0519;
-  --color-on-primary: hsl(var(--primary-foreground));
   --color-surface-container: hsl(var(--card));
   --color-tertiary-container: #5cfd80;
   --color-primary: hsl(var(--primary));
-  --color-on-surface-variant: hsl(var(--muted-foreground));
-  --color-surface-bright: hsl(var(--card));
-  --color-surface: hsl(var(--card));
   --color-background: hsl(var(--background));
   --color-tertiary: #b8ffbb;
-  --color-surface-container-high: hsl(var(--secondary));
   --color-error: #ff716c;
-  --color-surface-container-lowest: hsl(var(--background));
   --color-secondary: hsl(var(--secondary));
   --color-secondary-container: hsl(var(--secondary));
   --color-outline-variant: hsl(var(--border));
@@ -262,14 +254,14 @@ textarea::placeholder {
 input:user-invalid,
 textarea:user-invalid,
 select:user-invalid {
-  border-color: hsl(var(--destructive)) !important;
-  box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2) !important;
+  border-color: hsl(var(--destructive));
+  box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2);
 }
 
 input:user-valid:not(:placeholder-shown),
 textarea:user-valid:not(:placeholder-shown),
 select:user-valid {
-  border-color: #30d158 !important; /* Apple System Green */
+  border-color: #30d158; /* Apple System Green */
 }
 
 /* Content Visibility for Data Grids (Performance Optimization) */
@@ -617,33 +609,33 @@ select:user-valid {
   }
   
   .glow-hover-primary:hover {
-    border-color: hsl(var(--primary) / 0.35) !important;
-    box-shadow: 0 12px 40px -12px hsl(var(--primary) / 0.1), var(--shadow-md) !important;
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow: 0 12px 40px -12px hsl(var(--primary) / 0.1), var(--shadow-md);
   }
 
   .glow-hover-secondary:hover {
-    border-color: hsl(var(--secondary) / 0.35) !important;
-    box-shadow: 0 12px 40px -12px hsl(var(--secondary) / 0.1), var(--shadow-md) !important;
+    border-color: hsl(var(--secondary) / 0.35);
+    box-shadow: 0 12px 40px -12px hsl(var(--secondary) / 0.1), var(--shadow-md);
   }
 
   .glow-hover-tertiary:hover {
-    border-color: #30d15835 !important;
-    box-shadow: 0 12px 40px -12px rgba(48, 209, 88, 0.1), var(--shadow-md) !important;
+    border-color: #30d15835;
+    box-shadow: 0 12px 40px -12px rgba(48, 209, 88, 0.1), var(--shadow-md);
   }
 
   .glow-hover-accent-violet:hover {
-    border-color: #8b5cf635 !important;
-    box-shadow: 0 12px 40px -12px rgba(139, 92, 246, 0.1), var(--shadow-md) !important;
+    border-color: #8b5cf635;
+    box-shadow: 0 12px 40px -12px rgba(139, 92, 246, 0.1), var(--shadow-md);
   }
 
   .glow-hover-warning:hover {
-    border-color: rgba(245, 158, 11, 0.35) !important;
-    box-shadow: 0 12px 40px -12px rgba(245, 158, 11, 0.1), var(--shadow-md) !important;
+    border-color: rgba(245, 158, 11, 0.35);
+    box-shadow: 0 12px 40px -12px rgba(245, 158, 11, 0.1), var(--shadow-md);
   }
 
   .glow-hover-error:hover {
-    border-color: hsl(var(--destructive) / 0.35) !important;
-    box-shadow: 0 12px 40px -12px hsl(var(--destructive) / 0.1), var(--shadow-md) !important;
+    border-color: hsl(var(--destructive) / 0.35);
+    box-shadow: 0 12px 40px -12px hsl(var(--destructive) / 0.1), var(--shadow-md);
   }
 }
 
@@ -658,24 +650,24 @@ select:user-valid {
 /* Explicit Line-Height per Text Size Tier Utilities */
 .leading-display,
 .display {
-  line-height: 1.05 !important;
+  line-height: 1.05;
 }
 
 .leading-heading,
 .heading {
-  line-height: 1.1 !important;
+  line-height: 1.1;
 }
 
 .leading-body,
 .body {
-  line-height: 1.5 !important;
+  line-height: 1.5;
 }
 
 .leading-caption,
 .caption,
 caption,
 figcaption {
-  line-height: 1.4 !important;
+  line-height: 1.4;
 }
 
 /* Animated eyebrow label — respects prefers-reduced-motion */
@@ -696,239 +688,110 @@ figcaption {
 }
 
 /* ── Global Theme-Aware UI Overrides for Light Mode & Apple Aesthetics ── */
-body:not(.landing-page-active) :is(.text-white, .text-slate-100, .text-zinc-100):not(
-  button,
-  button *,
-  a[class*="bg-primary"],
-  a[class*="bg-primary"] *,
-  a[class*="bg-blue"],
-  a[class*="bg-blue"] *,
-  [class*="bg-primary"] *,
-  [class*="bg-blue"] *,
-  [class*="bg-emerald"] *,
-  [class*="bg-red"] *,
-  [class*="bg-destructive"] *,
-  [class*="text-primary-foreground"],
-  .keep-white,
-  .keep-white *
-) {
-  color: hsl(var(--foreground)) !important;
-}
+
 
 /* Typography & Titles override */
-body:not(.landing-page-active) :is(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6):not(.keep-typography) {
-  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  font-weight: 700 !important;
-  color: hsl(var(--foreground)) !important;
-  line-height: 1.1 !important;
+@layer base {
+  h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  line-height: 1.1;
+}
 }
 
-body:not(.landing-page-active) :is(h1, .h1) {
-  letter-spacing: -0.04em !important;
+@layer base {
+  h1, .h1 {
+  letter-spacing: -0.04em;
+}
 }
 
-body:not(.landing-page-active) :is(h2, .h2) {
-  letter-spacing: -0.03em !important;
+@layer base {
+  h2, .h2 {
+  letter-spacing: -0.03em;
+}
 }
 
-body:not(.landing-page-active) :is(h3, .h3) {
-  letter-spacing: -0.02em !important;
+@layer base {
+  h3, .h3 {
+  letter-spacing: -0.02em;
+}
 }
 
-body:not(.landing-page-active) :is(h4, h5, h6, .h4, .h5, .h6) {
-  letter-spacing: -0.01em !important;
+@layer base {
+  h4, h5, h6, .h4, .h5, .h6 {
+  letter-spacing: -0.01em;
+}
 }
 
 /* Card & Panels override - Soft Squircles & Shadows */
-body:not(.landing-page-active) :is(
-  .card,
-  .glassmorphic-card,
-  .kpi-card,
-  .bg-card,
-  .bg-surface,
-  .bg-surface-container,
-  .bg-surface-container-high,
-  .bg-surface-container-low,
-  .bg-surface-container-highest,
-  .bg-surface-container-lowest,
-  .bg-\[\#1a1d23\],
-  .bg-\[\#1c1c1e\]
-):not(body, html, main, aside, header, .keep-shape) {
-  border-radius: 24px !important; /* rounded-3xl (Apple squircle) */
-  border: 1px solid var(--card-border) !important;
-  box-shadow: var(--shadow-card) !important;
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+@layer components {
+  .card, .glassmorphic-card, .kpi-card, .bg-card, .bg-surface, .bg-surface-container, .bg-surface-container-high, .bg-surface-container-low, .bg-surface-container-highest, .bg-surface-container-lowest {
+    border-radius: 24px; /* rounded-3xl (Apple squircle) */
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-card);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 
 /* Apple Micro-Interactions on hover/active */
-body:not(.landing-page-active) :is(
-  .card,
-  .glassmorphic-card,
-  .kpi-card,
-  .bg-card,
-  .bg-surface,
-  .bg-surface-container,
-  .bg-surface-container-high,
-  .bg-surface-container-low,
-  .bg-surface-container-highest,
-  .bg-surface-container-lowest,
-  .bg-\[\#1a1d23\],
-  .bg-\[\#1c1c1e\]
-):not(body, html, main, aside, header, .keep-shape):hover {
-  transform: scale(1.012) !important;
-  box-shadow: var(--shadow-card-hover) !important;
+@layer components {
+  .card:hover, .glassmorphic-card:hover, .kpi-card:hover, .bg-card:hover, .bg-surface:hover, .bg-surface-container:hover, .bg-surface-container-high:hover, .bg-surface-container-low:hover, .bg-surface-container-highest:hover, .bg-surface-container-lowest:hover {
+    transform: scale(1.012);
+    box-shadow: var(--shadow-card-hover);
+  }
 }
 
-body:not(.landing-page-active) :is(
-  .card,
-  .glassmorphic-card,
-  .kpi-card,
-  .bg-card,
-  .bg-surface,
-  .bg-surface-container,
-  .bg-surface-container-high,
-  .bg-surface-container-low,
-  .bg-surface-container-highest,
-  .bg-surface-container-lowest,
-  .bg-\[\#1a1d23\],
-  .bg-\[\#1c1c1e\]
-):not(body, html, main, aside, header, .keep-shape):active {
-  transform: scale(0.988) !important;
+@layer components {
+  .card:active, .glassmorphic-card:active, .kpi-card:active, .bg-card:active, .bg-surface:active, .bg-surface-container:active, .bg-surface-container-high:active, .bg-surface-container-low:active, .bg-surface-container-highest:active, .bg-surface-container-lowest:active {
+    transform: scale(0.988);
+  }
 }
-
 /* Rounded Pill Capsules for Buttons, Toggle filters, and CTA Links */
-body:not(.landing-page-active) :is(
-  button,
-  .btn,
-  [class*="btn-"],
-  [class*="button-"],
-  a[class*="bg-primary"],
-  a[class*="bg-secondary"],
-  a[class*="btn-"],
-  input[type="submit"]
-):not(
-  .keep-shape,
-  table *,
-  [role="gridcell"] *,
-  [role="row"] *,
-  [class*="pagination"] *,
-  [aria-label*="pagination"] *,
-  [aria-label*="Pagination"] *,
-  [role="combobox"],
-  [role="combobox"] *,
-  [role="menu"] *,
-  [role="menuitem"] *,
-  [role="option"] *,
-  [class*="select"] *,
-  select *,
-  [class*="dropdown"] *,
-  [class*="calendar"] *,
-  [class*="picker"] *,
-  [class*="rdp"] *,
-  [class*="icon"] *,
-  .icon-button,
-  [aria-label*="icon"]
-) {
-  border-radius: 9999px !important; /* rounded-full pill shape */
+@layer base {
+  button, .btn, [class*="btn-"], [class*="button-"], input[type="submit"] {
+    border-radius: 9999px; /* rounded-full pill shape */
+  }
 }
-
 /* Premium Form Inputs & Selects */
-body:not(.landing-page-active) :is(
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="search"],
-  input[type="date"],
-  select,
-  textarea
-) {
-  border-radius: 12px !important; /* rounded-xl */
-  border-color: hsl(var(--border)) !important;
-  background-color: var(--input-bg) !important;
+@layer base {
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], input[type="search"], input[type="date"], select, textarea {
+    border-radius: 12px; /* rounded-xl */
+    border-color: hsl(var(--border));
+    background-color: var(--input-bg);
+  }
 }
 
 /* Spacious Padding overrides for main section elements */
-body:not(.landing-page-active) :is(
-  .container,
-  main,
-  .main-content,
-  .p-6,
-  [class*=":p-6"]
-):not(body, html, table, tr, td, th, section) {
-  padding: 2rem !important; /* p-8 */
-}
+
 
 /* Soft dynamic borders, shadows and overlays to replace harsh dark outlines */
-body:not(.landing-page-active) :is(.border-white\/10) {
-  border-color: hsl(var(--border)) !important;
-}
-body:not(.landing-page-active) :is(.border-white\/5) {
-  border-color: hsl(var(--border) / 0.5) !important;
-}
-body:not(.landing-page-active) :is(.bg-white\/5) {
-  background-color: hsl(var(--muted) / 0.5) !important;
-}
-body:not(.landing-page-active) :is(.bg-white\/3) {
-  background-color: hsl(var(--muted) / 0.3) !important;
-}
-body:not(.landing-page-active) :is(.bg-white\/10) {
-  background-color: hsl(var(--muted) / 0.8) !important;
-}
+
+
+
+
+
 body:not(.landing-page-active) :is(.hover\:bg-white\/5):hover {
-  background-color: hsl(var(--muted) / 0.5) !important;
+  background-color: hsl(var(--muted) / 0.5);
 }
 body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
-  background-color: hsl(var(--muted) / 0.8) !important;
+  background-color: hsl(var(--muted) / 0.8);
 }
 
 /* Dynamic contrast tuning overrides for WCAG compliance */
-body:not(.landing-page-active) :is(
-  .text-slate-400,
-  .text-gray-400,
-  .text-zinc-400,
-  .text-slate-500,
-  .text-gray-500,
-  .text-zinc-500
-):not(
-  button,
-  button *,
-  a[class*="bg-"],
-  a[class*="btn-"],
-  [class*="bg-primary"] *,
-  [class*="bg-blue"] *,
-  [class*="bg-emerald"] *,
-  [class*="bg-red"] *,
-  [class*="bg-destructive"] *,
-  [class*="text-primary-foreground"]
-) {
-  color: hsl(var(--muted-foreground)) !important;
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-body:not(.landing-page-active) :is(
-  .text-slate-300,
-  .text-gray-300,
-  .text-zinc-300
-):not(
-  button,
-  button *,
-  a[class*="bg-"],
-  a[class*="btn-"],
-  [class*="bg-primary"] *,
-  [class*="bg-blue"] *,
-  [class*="bg-emerald"] *,
-  [class*="bg-red"] *,
-  [class*="bg-destructive"] *,
-  [class*="text-primary-foreground"]
-) {
-  color: hsl(var(--foreground)) !important;
+/* Ensure all interactive elements have focus-visible ring by default */
+@layer base {
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
 }
-
-body:not(.landing-page-active) .keep-shape {
-  border-radius: 12px !important;
-}
-
-
-
-

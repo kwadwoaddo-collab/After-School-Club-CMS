@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useRouter } from 'next/navigation';
 import { updateBookingStatus } from '@/features/bookings/actions';
@@ -58,7 +59,7 @@ export default function RecentStudentsTable({ students }: RecentStudentsTablePro
             try {
                 await updateBookingStatus(student.bookingId!, nextStatus);
             } catch (error) {
-                console.error('Failed to update status', error);
+                logger.error('Failed to update status', error);
             }
         });
     };

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -96,7 +98,7 @@ export async function PATCH(
 
         return NextResponse.json({ success: true, centre: updatedCentre });
     } catch (error) {
-        console.error('Update centre error:', error);
+        logger.error('Update centre error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

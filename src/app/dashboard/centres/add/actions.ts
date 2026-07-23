@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -36,7 +39,7 @@ export async function createCentre(prevState: any, formData: FormData) {
             timezone: 'Europe/London', // Default for now
         });
     } catch (e) {
-        console.error('Failed to create centre:', e);
+        logger.error('Failed to create centre:', e);
         return { message: 'Failed to create centre. Please try again.' };
     }
 

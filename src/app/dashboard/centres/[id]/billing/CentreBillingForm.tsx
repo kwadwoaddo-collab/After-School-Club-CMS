@@ -59,7 +59,7 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
             await updateCentreBilling({ centreId: centre.id, ...form });
             setSaved(true);
             router.refresh();
-        } catch (err: any) {
+        } catch (err) {
             setError(err.message || 'Failed to save. Please try again.');
         } finally {
             setIsSaving(false);

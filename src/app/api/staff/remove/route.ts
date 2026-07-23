@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[POST /api/staff/remove]', error);
+        logger.error('[POST /api/staff/remove]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

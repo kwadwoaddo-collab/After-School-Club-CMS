@@ -85,6 +85,62 @@
       "when": 1784570478739,
       "tag": "0011_add_soft_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784735024464,
+      "tag": "0012_elite_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784794525084,
+      "tag": "0013_brave_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784798133505,
+      "tag": "0014_slimy_true_believers",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784799295921,
+      "tag": "0015_green_lila_cheney",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784806033885,
+      "tag": "0016_brave_silvermane",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784807078926,
+      "tag": "0017_safe_mephisto",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784807252799,
+      "tag": "0018_bizarre_lord_hawal",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784807283025,
+      "tag": "0019_gigantic_dormammu",
+      "breakpoints": true
     }
   ]
 }

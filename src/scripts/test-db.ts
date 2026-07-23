@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 import { children, parents, bookings, centres, bookingAttendees, studentNotes } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -7,7 +8,7 @@ async function test() {
   const { db } = await import('../db/index');
   
   try {
-    console.log("Testing student fetch...");
+    logger.info("Testing student fetch...");
     const studentData = await db
         .select({
             id: children.id,
@@ -27,11 +28,11 @@ async function test() {
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .limit(1);
-    console.log("Student fetch success.");
+    logger.info("Student fetch success.");
     
     if (studentData.length > 0) {
         const student = studentData[0];
-        console.log("Testing bookings fetch...");
+        logger.info("Testing bookings fetch...");
         await db
             .select({
                 id: bookings.id,
@@ -52,21 +53,21 @@ async function test() {
             .where(eq(bookingAttendees.childId, student.id))
             .orderBy(desc(bookings.startAt))
             .limit(10);
-        console.log("Bookings fetch success.");
+        logger.info("Bookings fetch success.");
         
-        console.log("Testing notes fetch...");
+        logger.info("Testing notes fetch...");
         await db.query.studentNotes.findMany({
             where: eq(studentNotes.childId, student.id),
             orderBy: [desc(studentNotes.createdAt)],
         });
-        console.log("Notes fetch success.");
+        logger.info("Notes fetch success.");
     } else {
-        console.log("No student found to test relationships");
+        logger.info("No student found to test relationships");
     }
     
-  } catch (e: any) {
-    console.error("DB QUERY FAILED:");
-    console.error(e);
+  } catch (e) {
+    logger.error("DB QUERY FAILED:");
+    logger.error(e);
   }
   process.exit(0);
 }

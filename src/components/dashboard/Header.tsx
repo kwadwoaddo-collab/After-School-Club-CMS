@@ -1,4 +1,7 @@
 'use client';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Menu, LogOut, ChevronDown, Loader2, Sun, Cloud, Moon } from 'lucide-react';
@@ -135,7 +138,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 setNotifications(data.notifications || []);
             }
         } catch (error) {
-            console.error('Failed to fetch notifications:', error);
+            logger.error('Failed to fetch notifications:', error);
         } finally {
             setIsLoadingNotifications(false);
         }
@@ -159,7 +162,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     n.id === notification.id ? { ...n, read: true } : n
                 ));
             } catch (error) {
-                console.error('Failed to mark notification as read:', error);
+                logger.error('Failed to mark notification as read:', error);
             }
         }
     };
@@ -173,7 +176,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             });
             setNotifications(notifications.map(n => ({ ...n, read: true })));
         } catch (error) {
-            console.error('Failed to mark all as read:', error);
+            logger.error('Failed to mark all as read:', error);
         }
     };
 
@@ -206,7 +209,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     setSearchResults(data.results || []);
                 }
             } catch (error) {
-                console.error('Search failed:', error);
+                logger.error('Search failed:', error);
             } finally {
                 setIsSearching(false);
             }

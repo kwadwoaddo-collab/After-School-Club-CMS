@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * NextAuth.js Configuration
  * 
@@ -233,7 +235,7 @@ const nextAuthResult = NextAuth({
             .set({ role: 'ORG_OWNER' })
             .where(eq(users.id, user.id));
         } catch (error) {
-          console.error('Failed to set role for new user:', error);
+          logger.error('Failed to set role for new user:', error);
         }
       }
     },
@@ -257,7 +259,7 @@ export interface SessionWithOrg {
 
 export function auth(): Promise<SessionWithOrg | null>;
 export function auth(req: any, ctx: any): any;
-export async function auth(...args: any[]) {
+export async function auth(...args: unknown[]) {
   const session = await (nextAuthResult.auth as any)(...args);
 
   if (session?.user?.id && !session.user.organisationId) {
@@ -271,7 +273,7 @@ export async function auth(...args: any[]) {
         session.user.needsOnboarding = false;
       }
     } catch (e) {
-      console.error('Failed to fetch user organisation in auth wrapper:', e);
+      logger.error('Failed to fetch user organisation in auth wrapper:', e);
     }
   }
 

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Stripe Service
  * 
@@ -45,7 +46,7 @@ export class StripeService {
    */
   async createCustomer(input: CreateCustomerInput): Promise<string | null> {
     if (!stripe) {
-      console.warn('[StripeService] Stripe not configured. Skipping customer creation.');
+      logger.warn('[StripeService] Stripe not configured. Skipping customer creation.');
       return null;
     }
 
@@ -58,10 +59,10 @@ export class StripeService {
         },
       });
 
-      console.log(`[StripeService] Created customer ${customer.id} for org ${input.organisationId}`);
+      logger.info(`[StripeService] Created customer ${customer.id} for org ${input.organisationId}`);
       return customer.id;
     } catch (error) {
-      console.error('[StripeService] Failed to create customer:', error);
+      logger.error('[StripeService] Failed to create customer:', error);
       return null;
     }
   }
@@ -76,7 +77,7 @@ export class StripeService {
     cancelUrl: string
   ): Promise<CheckoutResult> {
     if (!stripe) {
-      console.warn('[StripeService] Stripe not configured.');
+      logger.warn('[StripeService] Stripe not configured.');
       return { success: false, error: 'Stripe not configured' };
     }
 
@@ -101,7 +102,7 @@ export class StripeService {
       return { success: true, sessionUrl: session.url || undefined };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[StripeService] Failed to create checkout session:', error);
+      logger.error('[StripeService] Failed to create checkout session:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -111,13 +112,13 @@ export class StripeService {
    */
   async createFreeSubscription(customerId: string): Promise<string | null> {
     if (!stripe) {
-      console.warn('[StripeService] Stripe not configured. Assuming free tier active.');
+      logger.warn('[StripeService] Stripe not configured. Assuming free tier active.');
       return 'free_no_stripe';
     }
 
     const freePriceId = process.env.STRIPE_FREE_PRICE_ID;
     if (!freePriceId || freePriceId.startsWith('price_xxx')) {
-      console.warn('[StripeService] Free price ID not configured. Assuming free tier active.');
+      logger.warn('[StripeService] Free price ID not configured. Assuming free tier active.');
       return 'free_no_price';
     }
 
@@ -128,10 +129,10 @@ export class StripeService {
         payment_behavior: 'default_incomplete',
       });
 
-      console.log(`[StripeService] Created free subscription ${subscription.id}`);
+      logger.info(`[StripeService] Created free subscription ${subscription.id}`);
       return subscription.id;
     } catch (error) {
-      console.error('[StripeService] Failed to create free subscription:', error);
+      logger.error('[StripeService] Failed to create free subscription:', error);
       return null;
     }
   }
@@ -146,7 +147,7 @@ export class StripeService {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       return subscription.status;
     } catch (error) {
-      console.error('[StripeService] Failed to get subscription:', error);
+      logger.error('[StripeService] Failed to get subscription:', error);
       return null;
     }
   }
@@ -161,7 +162,7 @@ export class StripeService {
       await stripe.subscriptions.cancel(subscriptionId);
       return true;
     } catch (error) {
-      console.error('[StripeService] Failed to cancel subscription:', error);
+      logger.error('[StripeService] Failed to cancel subscription:', error);
       return false;
     }
   }
@@ -173,22 +174,22 @@ export class StripeService {
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log(`[StripeService] Checkout completed for customer ${session.customer}`);
+        logger.info(`[StripeService] Checkout completed for customer ${session.customer}`);
         // Update organisation subscription status in DB
         break;
 
       case 'customer.subscription.updated':
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[StripeService] Subscription ${subscription.id} updated: ${subscription.status}`);
+        logger.info(`[StripeService] Subscription ${subscription.id} updated: ${subscription.status}`);
         break;
 
       case 'customer.subscription.deleted':
         const deletedSub = event.data.object as Stripe.Subscription;
-        console.log(`[StripeService] Subscription ${deletedSub.id} cancelled`);
+        logger.info(`[StripeService] Subscription ${deletedSub.id} cancelled`);
         break;
 
       default:
-        console.log(`[StripeService] Unhandled event type: ${event.type}`);
+        logger.info(`[StripeService] Unhandled event type: ${event.type}`);
     }
   }
 
@@ -238,7 +239,7 @@ export class StripeService {
       return { success: true, sessionUrl: session.url || undefined };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[StripeService] Failed to create invoice payment session:', error);
+      logger.error('[StripeService] Failed to create invoice payment session:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -252,14 +253,14 @@ export class StripeService {
 
     const webhookSecret = process.env.STRIPE_INVOICE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error('[StripeService] Invoice webhook secret not configured');
+      logger.error('[StripeService] Invoice webhook secret not configured');
       return null;
     }
 
     try {
       return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
     } catch (error) {
-      console.error('[StripeService] Invoice webhook signature verification failed:', error);
+      logger.error('[StripeService] Invoice webhook signature verification failed:', error);
       return null;
     }
   }

@@ -1,4 +1,7 @@
 'use client';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -22,7 +25,7 @@ import { getParents, getChildrenByParent, createInvoice, createLegacyFamilyAndIn
 import { useRouter } from 'next/navigation';
 
 interface CreateInvoiceModalProps {
-    centres: any[];
+    centres: unknown[];
     onClose: () => void;
 }
 
@@ -86,7 +89,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                 const parents = await getParents(parentSearch);
                 setSearchResults(parents);
             } catch (err) {
-                console.error(err);
+                logger.error(err);
             } finally {
                 setIsLoading(false);
             }
@@ -129,7 +132,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                 }
             }
         } catch (err) {
-            console.error(err);
+            logger.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -209,7 +212,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
             router.refresh();
             onClose();
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             toast({ title: 'Error', message: 'Failed to create invoice', variant: 'error' });
         } finally {
             setIsSaving(false);

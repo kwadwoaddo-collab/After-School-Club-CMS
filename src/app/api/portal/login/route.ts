@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import { parents } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(response);
     } catch (error) {
-        console.error('Portal login error:', error);
+        logger.error('Portal login error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }

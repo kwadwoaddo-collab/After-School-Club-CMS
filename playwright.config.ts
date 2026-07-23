@@ -11,6 +11,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.PREVIEW_BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3005',
     trace: 'on-first-retry',
+    video: 'on',
   },
 
   projects: [

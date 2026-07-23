@@ -1,4 +1,6 @@
 'use server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { db } from '@/db';
 import { bookingAttendees, bookings, children, sessionCredits, users } from '@/db/schema';
@@ -11,6 +13,7 @@ import {
     getAcademicYearRange,
     deriveLateMinutes,
 } from './utils';
+import { parseInTimezone } from '@/lib/datetime';
 
 // ─── Update attendance with check-in/out times ────────────────────────────────
 
@@ -19,6 +22,7 @@ export interface UpdateAttendanceParams {
     attendeeId: string;
     checkInTime?: string | null;
     checkOutTime?: string | null;
+    dateStr: string;
     absenceReason?: 'illness' | 'holiday' | 'family' | 'other' | null;
     attendanceNote?: string | null;
     sessionTime: string; // slot time e.g. "15:45"
@@ -28,7 +32,7 @@ export async function updateAttendanceTimelog(params: UpdateAttendanceParams) {
     const session = await auth();
     if (!session?.user?.id) throw new Error('Unauthorized');
 
-    const { attendeeId, checkInTime, checkOutTime, absenceReason, attendanceNote, sessionTime } = params;
+    const { attendeeId, checkInTime, checkOutTime, dateStr, absenceReason, attendanceNote, sessionTime } = params;
 
     // Determine attendance status from the time log
     let attendanceStatus: 'present' | 'absent' | 'late' | null = null;
@@ -41,10 +45,13 @@ export async function updateAttendanceTimelog(params: UpdateAttendanceParams) {
         attendanceStatus = 'absent';
     }
 
+    const checkInAt = checkInTime ? parseInTimezone(dateStr, checkInTime) : null;
+    const checkOutAt = checkOutTime ? parseInTimezone(dateStr, checkOutTime) : null;
+
     await db.update(bookingAttendees)
         .set({
-            checkInTime: checkInTime ?? null,
-            checkOutTime: checkOutTime ?? null,
+            checkInAt,
+            checkOutAt,
             absenceReason: absenceReason ?? null,
             attendanceNote: attendanceNote ?? null,
             attendanceStatus: attendanceStatus ?? undefined,
@@ -137,7 +144,7 @@ export async function getSessionLedger(
 
             const isAbsent = att.attendanceStatus === 'absent';
             // Extra = explicitly tagged as extra session with a check-in
-            const isExtra = att.sessionType === 'extra' && !!att.checkInTime;
+            const isExtra = att.sessionType === 'extra' && !!att.checkInAt;
 
             if (isExtra) {
                 entry.extraSessionsAttended += 1;

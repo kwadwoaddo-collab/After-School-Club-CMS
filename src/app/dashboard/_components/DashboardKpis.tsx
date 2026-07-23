@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { getStudentKpis, getBookingKpis, getRegistrationKpis, getWeeklyRegistrations } from '@/lib/dashboard-queries';
 import { subDays, eachWeekOfInterval, isSameDay } from 'date-fns';
@@ -23,7 +25,7 @@ export default async function DashboardKpisWidget({
             getWeeklyRegistrations(orgId, registrationsCentreCondition, now)
         ]);
     } catch (e) {
-        console.error('Failed to load KPIs:', e);
+        logger.error('Failed to load KPIs:', e);
         return <div className="text-red-400 p-4 bg-red-400/10 rounded-xl">Failed to load statistics</div>;
     }
 

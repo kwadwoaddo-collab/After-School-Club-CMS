@@ -11,6 +11,7 @@ export const childSchema = z.object({
   subjects: z.array(z.enum(['Maths', 'English', 'Science', 'Other', 'Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech'])).min(1, 'Please select at least one activity'),
   customSubject: z.string().max(100).optional(),
   notes: z.string().max(1000).optional(),
+  imageUrl: z.string().url().optional(),
 });
 
 export const parentSchema = z.object({

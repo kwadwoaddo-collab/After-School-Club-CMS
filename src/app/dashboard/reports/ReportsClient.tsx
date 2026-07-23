@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useState } from 'react';
 import { Download, FileSpreadsheet, Loader2, Calendar, FileText, Users, BarChart3, Check } from 'lucide-react';
@@ -91,7 +92,7 @@ export default function ReportsClient() {
                 setEndDateBooking('');
             }
         } catch (error) {
-            console.error('Export failed:', error);
+            logger.error('Export failed:', error);
             setBookingExportMsg({ text: 'Export failed. Please try again.', type: 'error' });
         } finally {
             setIsExportingBookings(false);
@@ -162,7 +163,7 @@ export default function ReportsClient() {
                 setEndDateStudent('');
             }
         } catch (error) {
-            console.error('Export failed:', error);
+            logger.error('Export failed:', error);
             setStudentExportMsg({ text: 'Export failed. Please try again.', type: 'error' });
         } finally {
             setIsExportingStudents(false);

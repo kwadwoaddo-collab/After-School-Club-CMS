@@ -21,6 +21,10 @@ export function calculateDiscount(
     // Sibling discount only applies when 2+ children are on the invoice
     if (rule.type === 'sibling' && siblingCount < 2) continue;
 
+    // We assume early_bird rule logic is pre-validated by the caller before being 
+    // passed into this function (e.g., caller checks earlyBirdCutoffDate).
+    // If it's passed here as active, we apply it.
+
     let ruleDiscount = 0;
     if (rule.valueType === 'percent') {
       ruleDiscount = (baseAmount * rule.value) / 100;

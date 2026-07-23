@@ -26,13 +26,20 @@ export const fundingTypeEnum = pgEnum('funding_type', ['tax_free_childcare', 'ch
 export const studentSourceEnum = pgEnum('student_source', ['assessment', 'registration', 'both']);
 export const parentRelationshipEnum = pgEnum('parent_relationship', ['mother', 'father', 'guardian', 'other']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'partially_paid', 'paid', 'void']);
-export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfer', 'stripe', 'voucher', 'other']);
+export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfer', 'stripe', 'voucher', 'other', 'gocardless', 'tax_free_childcare']);
+export const parentCreditTypeEnum = pgEnum('parent_credit_type', ['credit', 'debit', 'refund']);
+export const instalmentStatusEnum = pgEnum('instalment_status', ['pending', 'processing', 'paid', 'failed']);
+export const incidentTypeEnum = pgEnum('incident_type', ['accident', 'incident', 'medication', 'safeguarding']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'verified', 'failed']);
 export const progressRatingEnum = pgEnum('progress_rating', ['excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory']);
 export const noteTypeEnum = pgEnum('note_type', ['general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present', 'absent', 'late', 'no_show', 'excused']);
 export const sessionTypeEnum = pgEnum('session_type', ['scheduled', 'extra']);
 export const absenceReasonEnum = pgEnum('absence_reason', ['illness', 'holiday', 'family', 'other']);
+export const clubSessionTypeEnum = pgEnum('club_session_type', ['breakfast', 'after_school', 'holiday']);
+export const bookingPlanStatusEnum = pgEnum('booking_plan_status', ['active', 'paused', 'cancelled']);
+export const waitlistStatusEnum = pgEnum('waitlist_status', ['waiting', 'offered', 'accepted', 'expired', 'cancelled']);
+
 
 
 // ==================== ORGANISATIONS & CENTRES ====================
@@ -55,15 +62,15 @@ export const organisations = pgTable('organisations', {
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
   subscriptionStatus: subscriptionStatusEnum('subscription_status').default('active'),
   subscriptionTier: varchar('subscription_tier', { length: 50 }).default('free'),
-  subscriptionExpiresAt: timestamp('subscription_expires_at'),
+  subscriptionExpiresAt: timestamp('subscription_expires_at', { withTimezone: true }),
 
   // Registration feature
   registrationTerms: text('registration_terms'),
   sessionSlots: text('session_slots'),          // JSON-encoded string[] of session time options
   registrationPricing: text('registration_pricing'), // JSON: {selfFinanceRate: number, taxCreditRate: number}
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const centres = pgTable('centres', {
@@ -90,8 +97,8 @@ export const centres = pgTable('centres', {
   // approvalDate: added in migration 0007 — uncomment after running: ALTER TABLE centres ADD COLUMN approval_date varchar(100)
   // approvalDate: varchar('approval_date', { length: 100 }),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index('centres_org_idx').on(table.organisationId),
 }));
@@ -108,13 +115,19 @@ export const users = pgTable('users', {
 
   // Auth fields
   passwordHash: varchar('password_hash', { length: 255 }),
-  emailVerified: timestamp('email_verified'),
+  emailVerified: timestamp('email_verified', { withTimezone: true }),
   image: varchar('image', { length: 500 }),
   passwordResetToken: varchar('password_reset_token', { length: 255 }),
-  passwordResetExpiry: timestamp('password_reset_expiry'),
+  passwordResetExpiry: timestamp('password_reset_expiry', { withTimezone: true }),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  // Compliance & Safeguarding
+  dbsNumber: varchar('dbs_number', { length: 100 }),
+  dbsExpiryDate: date('dbs_expiry_date'),
+  firstAidExpiryDate: date('first_aid_expiry_date'),
+  safeguardingExpiryDate: date('safeguarding_expiry_date'),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index('users_org_idx').on(table.organisationId),
 }));
@@ -141,13 +154,13 @@ export const sessions = pgTable('sessions', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   sessionToken: varchar('session_token', { length: 255 }).notNull().unique(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  expires: timestamp('expires').notNull(),
+  expires: timestamp('expires', { withTimezone: true }).notNull(),
 });
 
 export const verificationTokens = pgTable('verification_tokens', {
   identifier: varchar('identifier', { length: 255 }).notNull(),
   token: varchar('token', { length: 255 }).notNull().unique(),
-  expires: timestamp('expires').notNull(),
+  expires: timestamp('expires', { withTimezone: true }).notNull(),
 }, (table) => ({
   uniqueIdentifier: unique().on(table.identifier, table.token),
 }));
@@ -157,7 +170,7 @@ export const centreMemberships = pgTable('centre_memberships', {
   centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   role: userRoleEnum('role').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueMembership: unique().on(table.centreId, table.userId),
   userIdIdx: index('centre_memberships_user_idx').on(table.userId),
@@ -169,9 +182,9 @@ export const staffInvites = pgTable('staff_invites', {
   email: varchar('email', { length: 255 }).notNull(),
   role: userRoleEnum('role').notNull(),
   token: varchar('token', { length: 255 }).notNull().unique(),
-  expiresAt: timestamp('expires_at').notNull(),
-  usedAt: timestamp('used_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // ==================== PARENTS & CHILDREN ====================
@@ -187,7 +200,7 @@ export const parents = pgTable('parents', {
 
   // Magic Link / Portal Access
   magicLinkToken: varchar('magic_link_token', { length: 255 }).unique(),
-  magicLinkExpiresAt: timestamp('magic_link_expires_at'),
+  magicLinkExpiresAt: timestamp('magic_link_expires_at', { withTimezone: true }),
 
   // Registration enrichment fields (added by student registration feature)
   relationship: parentRelationshipEnum('relationship'),
@@ -196,9 +209,9 @@ export const parents = pgTable('parents', {
   city: varchar('city', { length: 100 }),
   postcode: varchar('postcode', { length: 10 }),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  deletedAt: timestamp('deleted_at'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, (table) => ({
   orgIdx: index('parents_org_idx').on(table.organisationId),
   emailIdx: index('parents_email_idx').on(table.email),
@@ -218,29 +231,60 @@ export const children = pgTable('children', {
 
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
-  dateOfBirth: timestamp('date_of_birth'),
+  dateOfBirth: timestamp('date_of_birth', { withTimezone: true }),
   schoolYear: varchar('school_year', { length: 10 }).notNull(),
   notes: text('notes'),
+  imageUrl: text('image_url'),
+
+  // Safeguarding & Profile (Phase 3)
+  allergies: text('allergies').array().default([]),
+  dietaryRequirements: text('dietary_requirements'),
+  medicalConditions: text('medical_conditions'),
+  medicationNotes: text('medication_notes'),
+  gpName: varchar('gp_name', { length: 255 }),
+  gpPhone: varchar('gp_phone', { length: 50 }),
+  senDetails: text('sen_details'),
+  photoConsent: boolean('photo_consent').default(false).notNull(),
+  sunCreamConsent: boolean('sun_cream_consent').default(false).notNull(),
+  firstAidConsent: boolean('first_aid_consent').default(false).notNull(),
 
   // Registration feature enrichment (additive)
   source: studentSourceEnum('source').default('assessment'),
   isRegistered: boolean('is_registered').default(false),
-  registeredAt: timestamp('registered_at'),
+  registeredAt: timestamp('registered_at', { withTimezone: true }),
   registeredSessions: text('registered_sessions').array(),
 
+  // Phase 4: Childcare Payments
+  tfcReference: varchar('tfc_reference', { length: 50 }),
+  
   // Operational flags (shown on roll-call card)
   flagHomework: boolean('flag_homework').default(false).notNull(),
   flagBehaviour: boolean('flag_behaviour').default(false).notNull(),
   flagNote: text('flag_note'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  deletedAt: timestamp('deleted_at'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 
 }, (table) => ({
   parentIdx: index('children_parent_idx').on(table.parentId),
   orgIdx: index('children_org_idx').on(table.organisationId),
   centreIdx: index('children_centre_idx').on(table.centreId),
+}));
+
+export const authorisedCollectors = pgTable('authorised_collectors', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  relationship: varchar('relationship', { length: 100 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  collectionPassword: varchar('collection_password', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  childIdx: index('auth_collectors_child_idx').on(table.childId),
+  orgIdx: index('auth_collectors_org_idx').on(table.organisationId),
 }));
 
 export const studentNotes = pgTable('student_notes', {
@@ -254,9 +298,9 @@ export const studentNotes = pgTable('student_notes', {
   noteType: noteTypeEnum('note_type').default('general'),
   subject: varchar('subject', { length: 100 }),   // e.g. 'Maths', 'English', 'Science'
   rating: progressRatingEnum('rating'),            // structured progress rating
-  pinnedAt: timestamp('pinned_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  pinnedAt: timestamp('pinned_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   childIdx: index('student_notes_child_idx').on(table.childId),
   userIdIdx: index('student_notes_user_idx').on(table.userId),
@@ -280,10 +324,10 @@ export const bookings = pgTable('bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
   centreId: uuid('centre_id').references(() => centres.id),
   parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'cascade' }).notNull(),
-  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }), // Deprecated: Kept for backward compatibility but nullable
-  tutorId: uuid('tutor_id').references(() => users.id),
-  assessmentType: assessmentTypeEnum('assessment_type').default('initial_assessment').notNull(),
-  startAt: timestamp('start_at').notNull(),
+  staffId: uuid('staff_id').references(() => users.id),
+  sessionId: uuid('session_id').references(() => clubSessions.id, { onDelete: 'set null' }),
+  assessmentType: assessmentTypeEnum('assessment_type'),
+  startAt: timestamp('start_at', { withTimezone: true }).notNull(),
   duration: integer('duration').default(30).notNull(),
   modality: modalityEnum('modality').notNull(),
   status: bookingStatusEnum('status').default('confirmed').notNull(),
@@ -291,8 +335,8 @@ export const bookings = pgTable('bookings', {
   magicLinkToken: varchar('magic_link_token', { length: 255 }).notNull().unique(),
   googleCalendarEventId: varchar('google_calendar_event_id', { length: 255 }),
   communicationsConsent: boolean('communications_consent').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueTimeSlot: unique('unique_time_slot').on(table.centreId, table.modality, table.startAt, table.parentId),
   centreIdx: index('bookings_centre_idx').on(table.centreId),
@@ -310,16 +354,16 @@ export const bookingAttendees = pgTable('booking_attendees', {
   attendanceStatus: attendanceStatusEnum('attendance_status'),
   attendanceNote: text('attendance_note'),
   lateMinutes: integer('late_minutes'),
-  attendanceMarkedAt: timestamp('attendance_marked_at'),
+  attendanceMarkedAt: timestamp('attendance_marked_at', { withTimezone: true }),
   attendanceMarkedBy: uuid('attendance_marked_by').references(() => users.id, { onDelete: 'set null' }),
 
   // Time-log fields (Phase B — check-in/out model)
-  checkInTime: varchar('check_in_time', { length: 5 }),   // "HH:mm" e.g. "15:47"
-  checkOutTime: varchar('check_out_time', { length: 5 }),  // "HH:mm" e.g. "17:05"
+  checkInAt: timestamp('check_in_at', { withTimezone: true }),
+  checkOutAt: timestamp('check_out_at', { withTimezone: true }),
   sessionType: sessionTypeEnum('session_type'),             // scheduled | extra (auto-set)
   absenceReason: absenceReasonEnum('absence_reason'),       // illness | holiday | family | other
   forgivenBy: uuid('forgiven_by').references(() => users.id, { onDelete: 'set null' }),
-  forgivenAt: timestamp('forgiven_at'),
+  forgivenAt: timestamp('forgiven_at', { withTimezone: true }),
   forgivenNote: text('forgiven_note'),
 
   // Assessment / Feedback Fields
@@ -328,8 +372,8 @@ export const bookingAttendees = pgTable('booking_attendees', {
   feedbackAttachmentBase64: text('feedback_attachment_base64'),
   feedbackAttachmentMime: varchar('feedback_attachment_mime', { length: 50 }),
   feedbackStatus: varchar('feedback_status', { length: 20 }).default('PENDING').notNull(),
-  feedbackSentAt: timestamp('feedback_sent_at'),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  feedbackSentAt: timestamp('feedback_sent_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueAttendee: unique().on(table.bookingId, table.childId),
   bookingIdx: index('booking_attendees_booking_idx').on(table.bookingId),
@@ -343,7 +387,7 @@ export const centreAvailabilityRules = pgTable('centre_availability_rules', {
   dayOfWeek: integer('day_of_week').notNull(),
   startTime: varchar('start_time', { length: 5 }).notNull(),
   endTime: varchar('end_time', { length: 5 }).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueDay: unique().on(table.centreId, table.dayOfWeek),
 }));
@@ -351,9 +395,9 @@ export const centreAvailabilityRules = pgTable('centre_availability_rules', {
 export const slotHolds = pgTable('slot_holds', {
   id: uuid('id').defaultRandom().primaryKey(),
   resourceKey: varchar('resource_key', { length: 100 }).notNull(),
-  timeBucket: timestamp('time_bucket').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  timeBucket: timestamp('time_bucket', { withTimezone: true }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueSlot: unique().on(table.resourceKey, table.timeBucket),
 }));
@@ -361,49 +405,95 @@ export const slotHolds = pgTable('slot_holds', {
 export const calendarBusy = pgTable('calendar_busy', {
   id: uuid('id').defaultRandom().primaryKey(),
   calendarId: varchar('calendar_id', { length: 255 }).notNull(),
-  startAt: timestamp('start_at').notNull(),
-  endAt: timestamp('end_at').notNull(),
-  cachedAt: timestamp('cached_at').defaultNow().notNull(),
+  startAt: timestamp('start_at', { withTimezone: true }).notNull(),
+  endAt: timestamp('end_at', { withTimezone: true }).notNull(),
+  cachedAt: timestamp('cached_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ==================== REGISTRATIONS ====================
-export const registrationStatusEnum = pgEnum('registration_status', ['pending', 'approved', 'contacted', 'rejected']);
-
-export const studentRegistrations = pgTable('student_registrations', {
+// ==================== TERMS & SESSIONS ====================
+export const terms = pgTable('terms', {
   id: uuid('id').defaultRandom().primaryKey(),
-  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
-
-  // Parent Details
-  parentFirstName: varchar('parent_first_name', { length: 100 }).notNull(),
-  parentLastName: varchar('parent_last_name', { length: 100 }).notNull(),
-  email: varchar('email', { length: 255 }).notNull(),
-  phone: varchar('phone', { length: 20 }).notNull(),
-  relationship: varchar('relationship', { length: 50 }).notNull(),
-
-  // Child Details
-  childFirstName: varchar('child_first_name', { length: 100 }).notNull(),
-  childLastName: varchar('child_last_name', { length: 100 }).notNull(),
-  dateOfBirth: timestamp('date_of_birth').notNull(),
-  schoolYear: varchar('school_year', { length: 10 }).notNull(),
-  notes: text('notes'),
-
-  // Academic Details
-  subjects: text('subjects').array().notNull(), // PostgreSQL array type
-
-  // Preferences
-  preferredDays: text('preferred_days').array().notNull(),
-  preferredTimes: text('preferred_times').array(),
-  lessonType: varchar('lesson_type', { length: 50 }).notNull(),
-
-  // Metadata
-  status: registrationStatusEnum('status').default('pending').notNull(),
-  marketingConsent: boolean('marketing_consent').default(false).notNull(),
-
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  startDate: timestamp('start_date', { withTimezone: true }).notNull(),
+  endDate: timestamp('end_date', { withTimezone: true }).notNull(),
+  holidays: jsonb('holidays').default([]).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
-  centreStatusIdx: index('student_registrations_centre_status_idx').on(table.centreId, table.status),
+  orgIdx: index('terms_org_idx').on(table.organisationId),
 }));
+
+export const clubSessions = pgTable('club_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
+  type: clubSessionTypeEnum('type').notNull(),
+  weekday: integer('weekday').notNull(), // 0 = Sunday, 1 = Monday, etc.
+  startTime: varchar('start_time', { length: 5 }).notNull(), // HH:mm
+  endTime: varchar('end_time', { length: 5 }).notNull(), // HH:mm
+  capacity: integer('capacity').notNull(),
+  price: numeric('price', { precision: 10, scale: 2 }).notNull(), // standard or full-day price
+  amPrice: numeric('am_price', { precision: 10, scale: 2 }), // for holiday half-days
+  pmPrice: numeric('pm_price', { precision: 10, scale: 2 }), // for holiday half-days
+  activityDescription: text('activity_description'),
+  earlyBirdCutoffDate: timestamp('early_bird_cutoff_date', { withTimezone: true }),
+  earlyBirdPrice: numeric('early_bird_price', { precision: 10, scale: 2 }),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('club_sessions_org_idx').on(table.organisationId),
+  centreIdx: index('club_sessions_centre_idx').on(table.centreId),
+}));
+
+export const sessionExceptions = pgTable('session_exceptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
+  exceptionDate: date('exception_date').notNull(),
+  reason: varchar('reason', { length: 255 }),
+  isClosure: boolean('is_closure').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('session_exceptions_org_idx').on(table.organisationId),
+  centreIdx: index('session_exceptions_centre_idx').on(table.centreId),
+}));
+
+export const bookingPlans = pgTable('booking_plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  clubSessionId: uuid('club_session_id').references(() => clubSessions.id, { onDelete: 'cascade' }).notNull(),
+  termId: uuid('term_id').references(() => terms.id, { onDelete: 'cascade' }).notNull(),
+  weekdayPattern: jsonb('weekday_pattern').default([]).notNull(),
+  status: bookingPlanStatusEnum('status').default('active').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('booking_plans_org_idx').on(table.organisationId),
+  childIdx: index('booking_plans_child_idx').on(table.childId),
+  sessionIdx: index('booking_plans_session_idx').on(table.clubSessionId),
+  termIdx: index('booking_plans_term_idx').on(table.termId),
+}));
+
+export const waitlistEntries = pgTable('waitlist_entries', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  clubSessionId: uuid('club_session_id').references(() => clubSessions.id, { onDelete: 'cascade' }).notNull(),
+  sessionDate: date('session_date'), // Nullable if waiting for a whole term plan
+  termId: uuid('term_id').references(() => terms.id, { onDelete: 'cascade' }), // For term bookings
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  position: integer('position').notNull(),
+  status: waitlistStatusEnum('status').default('waiting').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('waitlist_entries_org_idx').on(table.organisationId),
+  sessionIdx: index('waitlist_entries_session_idx').on(table.clubSessionId),
+  childIdx: index('waitlist_entries_child_idx').on(table.childId),
+}));
+
 
 // ==================== FULL REGISTRATION FORMS ====================
 // New tables for the multi-child, multi-parent registration form
@@ -418,7 +508,7 @@ export const registrations = pgTable('registrations', {
   status: registrationStatusEnum2('status').default('awaiting_confirmation').notNull(),
 
   // Child start date (common to all children in this submission)
-  startDate: timestamp('start_date'),
+  startDate: timestamp('start_date', { withTimezone: true }),
 
   // Funding
   fundingTypes: text('funding_types').array(), // e.g. ['tax_free_childcare', 'self_funded']
@@ -439,9 +529,9 @@ export const registrations = pgTable('registrations', {
   // Digital signature (base64-encoded PNG data URL captured from the signature pad)
   parentSignature: text('parent_signature'),
 
-  submittedAt: timestamp('submitted_at').defaultNow(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgStatusIdx: index('registrations_org_status_idx').on(table.organisationId, table.status),
   centreIdx: index('registrations_centre_idx').on(table.centreId),
@@ -455,11 +545,11 @@ export const registrationChildren = pgTable('registration_children', {
   // Snapshot of submitted data (in case child record doesn't exist yet at submission time)
   submittedFirstName: varchar('submitted_first_name', { length: 100 }).notNull(),
   submittedLastName: varchar('submitted_last_name', { length: 100 }).notNull(),
-  submittedDateOfBirth: timestamp('submitted_date_of_birth'),
+  submittedDateOfBirth: timestamp('submitted_date_of_birth', { withTimezone: true }),
   submittedSchoolYear: varchar('submitted_school_year', { length: 10 }),
   submittedSessions: text('submitted_sessions').array(),
   wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing child
-  createdAt: timestamp('created_at').defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (table) => ({
   registrationIdx: index('registration_children_registration_idx').on(table.registrationId),
   childIdx: index('registration_children_child_idx').on(table.childId),
@@ -478,7 +568,7 @@ export const registrationParents = pgTable('registration_parents', {
   submittedPhone: varchar('submitted_phone', { length: 20 }),
   submittedRelationship: varchar('submitted_relationship', { length: 50 }),
   wasMatched: boolean('was_matched').default(false).notNull(), // true if linked to existing parent
-  createdAt: timestamp('created_at').defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (table) => ({
   registrationIdx: index('registration_parents_registration_idx').on(table.registrationId),
   parentIdx: index('registration_parents_parent_idx').on(table.parentId),
@@ -495,10 +585,10 @@ export const invoices = pgTable('invoices', {
   invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(),
   amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
   status: invoiceStatusEnum('status').default('draft').notNull(),
-  invoiceDate: timestamp('invoice_date').notNull(),
-  dueDate: timestamp('due_date').notNull(),
-  billingPeriodStart: timestamp('billing_period_start'),
-  billingPeriodEnd: timestamp('billing_period_end'),
+  invoiceDate: timestamp('invoice_date', { withTimezone: true }).notNull(),
+  dueDate: timestamp('due_date', { withTimezone: true }).notNull(),
+  billingPeriodStart: timestamp('billing_period_start', { withTimezone: true }),
+  billingPeriodEnd: timestamp('billing_period_end', { withTimezone: true }),
   
   notes: text('notes'),
 
@@ -506,8 +596,8 @@ export const invoices = pgTable('invoices', {
   billingPeriodLabel: varchar('billing_period_label', { length: 100 }),
   coveredChildrenJson: jsonb('covered_children_json'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgStatusIdx: index('invoices_org_status_idx').on(table.organisationId, table.status),
   parentIdx: index('invoices_parent_idx').on(table.parentId),
@@ -523,12 +613,67 @@ export const payments = pgTable('payments', {
   method: paymentMethodEnum('method').notNull(),
   status: paymentStatusEnum('status').default('verified').notNull(),
   transactionReference: varchar('transaction_reference', { length: 255 }),
-  recordedAt: timestamp('recorded_at').defaultNow().notNull(),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),
   
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   invoiceIdx: index('payments_invoice_idx').on(table.invoiceId),
+}));
+
+export const parentCredits = pgTable('parent_credits', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'cascade' }).notNull(),
+  
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  type: parentCreditTypeEnum('type').notNull(),
+  reason: varchar('reason', { length: 255 }),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('parent_credits_org_idx').on(table.organisationId),
+  parentIdx: index('parent_credits_parent_idx').on(table.parentId),
+}));
+
+export const invoiceInstalments = pgTable('invoice_instalments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }).notNull(),
+  
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  dueDate: timestamp('due_date', { withTimezone: true }).notNull(),
+  status: instalmentStatusEnum('status').default('pending').notNull(),
+  gocardlessPaymentId: varchar('gocardless_payment_id', { length: 255 }),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('invoice_instalments_org_idx').on(table.organisationId),
+  invoiceIdx: index('invoice_instalments_invoice_idx').on(table.invoiceId),
+}));
+
+export const incidents = pgTable('incidents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }).notNull(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'cascade' }).notNull(),
+  
+  type: incidentTypeEnum('type').notNull(),
+  date: timestamp('date', { withTimezone: true }).notNull(),
+  description: text('description').notNull(),
+  treatment: text('treatment'),
+  witnesses: text('witnesses'),
+  bodyMapCoordinates: jsonb('body_map_coordinates'), // store x, y coords on body map
+  
+  staffSignature: text('staff_signature'), // base64 or URL
+  parentSignature: text('parent_signature'), // base64 or URL
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('incidents_org_idx').on(table.organisationId),
+  centreIdx: index('incidents_centre_idx').on(table.centreId),
+  childIdx: index('incidents_child_idx').on(table.childId),
 }));
 
 // ==================== SESSION CREDITS (Admin Forgiveness) ====================
@@ -539,7 +684,7 @@ export const sessionCredits = pgTable('session_credits', {
   sessionsAmount: integer('sessions_amount').default(1).notNull(),
   adminId: uuid('admin_id').references(() => users.id, { onDelete: 'set null' }),
   note: text('note'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   childIdx: index('session_credits_child_idx').on(table.childId),
   yearIdx: index('session_credits_year_idx').on(table.academicYear),
@@ -552,7 +697,7 @@ export const auditEvents = pgTable('audit_events', {
   userId: uuid('user_id').references(() => users.id),
   eventType: varchar('event_type', { length: 100 }).notNull(),
   eventData: text('event_data'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgCreatedIdx: index('audit_events_org_created_idx').on(table.organisationId, table.createdAt),
 }));
@@ -567,10 +712,28 @@ export const notifications = pgTable('notifications', {
   message: text('message').notNull(),
   bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'cascade' }),
   isRead: boolean('is_read').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index('notifications_org_idx').on(table.organisationId),
   userIdIdx: index('notifications_user_idx').on(table.userId),
+}));
+
+export const broadcasts = pgTable('broadcasts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }),
+  
+  subject: text('subject').notNull(),
+  message: text('message').notNull(),
+  
+  recipientCount: integer('recipient_count').default(0).notNull(),
+  successCount: integer('success_count').default(0).notNull(),
+  failureCount: integer('failure_count').default(0).notNull(),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('broadcasts_org_idx').on(table.organisationId),
+  centreIdx: index('broadcasts_centre_idx').on(table.centreId),
 }));
 
 // ==================== RELATIONS ====================
@@ -579,6 +742,11 @@ export const organisationsRelations = relations(organisations, ({ many }) => ({
   users: many(users),
   staffInvites: many(staffInvites),
   auditEvents: many(auditEvents),
+  authorisedCollectors: many(authorisedCollectors),
+  clubSessions: many(clubSessions),
+  sessionExceptions: many(sessionExceptions),
+  bookingPlans: many(bookingPlans),
+  waitlistEntries: many(waitlistEntries),
 }));
 
 export const centresRelations = relations(centres, ({ one, many }) => ({
@@ -589,7 +757,6 @@ export const centresRelations = relations(centres, ({ one, many }) => ({
   bookings: many(bookings),
   availabilityRules: many(centreAvailabilityRules),
   memberships: many(centreMemberships),
-  studentRegistrations: many(studentRegistrations),
 }));
 
 export const centreAvailabilityRulesRelations = relations(centreAvailabilityRules, ({ one }) => ({
@@ -649,6 +816,9 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
   attendances: many(bookingAttendees),
   notes: many(studentNotes),
   sessionCredits: many(sessionCredits),
+  authorisedCollectors: many(authorisedCollectors),
+  bookingPlans: many(bookingPlans),
+  waitlistEntries: many(waitlistEntries),
 }));
 
 
@@ -672,14 +842,13 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
     fields: [bookings.parentId],
     references: [parents.id],
   }),
-  // Deprecated direct relation, kept for type safety until fully removed
-  child: one(children, {
-    fields: [bookings.childId],
-    references: [children.id],
-  }),
-  tutor: one(users, {
-    fields: [bookings.tutorId],
+  staff: one(users, {
+    fields: [bookings.staffId],
     references: [users.id],
+  }),
+  session: one(clubSessions, {
+    fields: [bookings.sessionId],
+    references: [clubSessions.id],
   }),
   attendees: many(bookingAttendees),
 }));
@@ -699,12 +868,80 @@ export const bookingAttendeesRelations = relations(bookingAttendees, ({ one }) =
   }),
 }));
 
-export const studentRegistrationsRelations = relations(studentRegistrations, ({ one }) => ({
+
+export const bookingPlanRelations = relations(bookingPlans, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [bookingPlans.organisationId],
+    references: [organisations.id],
+  }),
+  child: one(children, {
+    fields: [bookingPlans.childId],
+    references: [children.id],
+  }),
+  clubSession: one(clubSessions, {
+    fields: [bookingPlans.clubSessionId],
+    references: [clubSessions.id],
+  }),
+  term: one(terms, {
+    fields: [bookingPlans.termId],
+    references: [terms.id],
+  }),
+}));
+
+export const broadcastsRelations = relations(broadcasts, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [broadcasts.organisationId],
+    references: [organisations.id],
+  }),
   centre: one(centres, {
-    fields: [studentRegistrations.centreId],
+    fields: [broadcasts.centreId],
     references: [centres.id],
   }),
 }));
+
+export const clubSessionsRelations = relations(clubSessions, ({ one, many }) => ({
+  organisation: one(organisations, {
+    fields: [clubSessions.organisationId],
+    references: [organisations.id],
+  }),
+  centre: one(centres, {
+    fields: [clubSessions.centreId],
+    references: [centres.id],
+  }),
+  bookingPlans: many(bookingPlans),
+  waitlistEntries: many(waitlistEntries),
+}));
+
+export const authorisedCollectorsRelations = relations(authorisedCollectors, ({ one }) => ({
+  child: one(children, {
+    fields: [authorisedCollectors.childId],
+    references: [children.id],
+  }),
+  organisation: one(organisations, {
+    fields: [authorisedCollectors.organisationId],
+    references: [organisations.id],
+  }),
+}));
+
+export const waitlistEntriesRelations = relations(waitlistEntries, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [waitlistEntries.organisationId],
+    references: [organisations.id],
+  }),
+  clubSession: one(clubSessions, {
+    fields: [waitlistEntries.clubSessionId],
+    references: [clubSessions.id],
+  }),
+  term: one(terms, {
+    fields: [waitlistEntries.termId],
+    references: [terms.id],
+  }),
+  child: one(children, {
+    fields: [waitlistEntries.childId],
+    references: [children.id],
+  }),
+}));
+
 
 export const registrationsRelations = relations(registrations, ({ one, many }) => ({
   organisation: one(organisations, {
@@ -773,12 +1010,50 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
     references: [children.id],
   }),
   payments: many(payments),
+  instalments: many(invoiceInstalments),
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({
   invoice: one(invoices, {
     fields: [payments.invoiceId],
     references: [invoices.id],
+  }),
+}));
+
+export const invoiceInstalmentsRelations = relations(invoiceInstalments, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [invoiceInstalments.organisationId],
+    references: [organisations.id],
+  }),
+  invoice: one(invoices, {
+    fields: [invoiceInstalments.invoiceId],
+    references: [invoices.id],
+  }),
+}));
+
+export const parentCreditsRelations = relations(parentCredits, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [parentCredits.organisationId],
+    references: [organisations.id],
+  }),
+  parent: one(parents, {
+    fields: [parentCredits.parentId],
+    references: [parents.id],
+  }),
+}));
+
+export const incidentsRelations = relations(incidents, ({ one }) => ({
+  organisation: one(organisations, {
+    fields: [incidents.organisationId],
+    references: [organisations.id],
+  }),
+  centre: one(centres, {
+    fields: [incidents.centreId],
+    references: [centres.id],
+  }),
+  child: one(children, {
+    fields: [incidents.childId],
+    references: [children.id],
   }),
 }));
 
@@ -819,8 +1094,8 @@ export const billingConfigs = pgTable('billing_configs', {
   status: billingStatusEnum('status').notNull().default('active'),
   notes:  text('notes'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgIdx:    index('billing_configs_org_idx').on(table.organisationId),
   centreIdx: index('billing_configs_centre_idx').on(table.centreId),
@@ -837,7 +1112,7 @@ export const billingConfigChildren = pgTable('billing_config_children', {
   id:       uuid('id').defaultRandom().primaryKey(),
   configId: uuid('config_id').references(() => billingConfigs.id, { onDelete: 'cascade' }).notNull(),
   childId:  uuid('child_id').references(() => children.id,        { onDelete: 'cascade' }).notNull(),
-  addedAt:  timestamp('added_at').defaultNow().notNull(),
+  addedAt:  timestamp('added_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   configIdx: index('bcc_config_idx').on(table.configId),
   childIdx:  index('bcc_child_idx').on(table.childId),
@@ -858,13 +1133,13 @@ export const billingRuns = pgTable('billing_runs', {
 
   amountPence: integer('amount_pence').notNull().default(0),
 
-  runAt:  timestamp('run_at').defaultNow().notNull(),
+  runAt:  timestamp('run_at', { withTimezone: true }).defaultNow().notNull(),
   runBy:  uuid('run_by'),
 
   success:  boolean('success').notNull().default(true),
   errorLog: text('error_log'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   configIdx:  index('billing_runs_config_idx').on(table.billingConfigId),
   periodIdx:  index('billing_runs_period_idx').on(table.periodStart),
@@ -911,8 +1186,8 @@ export const portalNotifications = pgTable('portal_notifications', {
   title: text('title').notNull(),
   body: text('body').notNull(),
   href: text('href'),
-  readAt: timestamp('read_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 

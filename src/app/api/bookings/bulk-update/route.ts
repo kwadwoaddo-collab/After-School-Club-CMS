@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -66,7 +68,7 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({ success: true, count: validBookingIds.length });
     } catch (error) {
-        console.error('[PATCH /api/bookings/bulk-update]', error);
+        logger.error('[PATCH /api/bookings/bulk-update]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

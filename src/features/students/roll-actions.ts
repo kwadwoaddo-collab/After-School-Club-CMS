@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -74,8 +77,8 @@ export async function rollSchoolYearsAction(): Promise<RollResult> {
       rolledCount,
       message: `Successfully rolled school years forward for ${rolledCount} student${rolledCount !== 1 ? 's' : ''}.`,
     };
-  } catch (err: any) {
-    console.error('[Roll Action] Failed to roll school years:', err);
+  } catch (err) {
+    logger.error('[Roll Action] Failed to roll school years:', err);
     return {
       success: false,
       rolledCount: 0,

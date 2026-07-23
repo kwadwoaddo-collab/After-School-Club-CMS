@@ -1,9 +1,11 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents } from '@/db/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
-import StudentProfile from '@/components/students/StudentProfile';
+import StudentProfile from '@/features/students/components/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { fetchStudentBillingConfig } from '@/features/billing/queries';
@@ -197,7 +199,7 @@ export default async function StudentProfilePage(
                 };
             }
         } catch (err) {
-            console.error('[student-profile] registration detail fetch failed:', err);
+            logger.error('[student-profile] registration detail fetch failed:', err);
         }
     }
 
@@ -205,7 +207,7 @@ export default async function StudentProfilePage(
     try {
         billingConfig = await fetchStudentBillingConfig(id, student.parentId, session.user.organisationId);
     } catch (err) {
-        console.error('[student-profile] fetchStudentBillingConfig failed:', err);
+        logger.error('[student-profile] fetchStudentBillingConfig failed:', err);
     }
 
     return (

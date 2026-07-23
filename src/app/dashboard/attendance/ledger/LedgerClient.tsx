@@ -62,7 +62,7 @@ function ForgivModal({
                 await forgiveSessionsAction({ childId: entry.childId, sessionsAmount: amount, note });
                 toast({ title: 'Sessions forgiven', message: `${amount} session(s) written off for ${entry.firstName}.`, variant: 'success' });
                 onClose();
-            } catch (e: any) {
+            } catch (e) {
                 toast({ title: 'Could not forgive sessions', message: e.message, variant: 'error' });
             }
         });

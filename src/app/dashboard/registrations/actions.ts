@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -48,7 +51,7 @@ export async function assignRegistrationCentre(registrationId: string, centreId:
         revalidatePath('/dashboard/registrations');
         return { success: true };
     } catch (error) {
-        console.error('Failed to assign centre:', error);
+        logger.error('Failed to assign centre:', error);
         throw new Error('Failed to assign centre');
     }
 }
@@ -334,7 +337,7 @@ export async function updateRegistrationStatus(
             }
         } catch (emailErr) {
             // Non-fatal — log but don't block the status update
-            console.error('[updateRegistrationStatus] Email send failed:', emailErr);
+            logger.error('[updateRegistrationStatus] Email send failed:', emailErr);
         }
     }
 

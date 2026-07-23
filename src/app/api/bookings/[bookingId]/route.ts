@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -47,7 +48,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[DELETE /api/bookings/[bookingId]]', error);
+        logger.error('[DELETE /api/bookings/[bookingId]]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

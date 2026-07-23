@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Availability API
  *
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ slots: formattedSlots });
   } catch (error) {
-    console.error('[Availability API] Error:', error);
+    logger.error('[Availability API] Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch availability' },
       { status: 500 }

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -129,7 +131,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true, sent, skipped, failed, total: regs.length });
 
     } catch (err) {
-        console.error('[bulk-email] Error:', err);
+        logger.error('[bulk-email] Error:', err);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

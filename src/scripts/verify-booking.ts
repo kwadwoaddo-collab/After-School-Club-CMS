@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, users, centres } from '@/db/schema';
@@ -9,7 +10,7 @@ dotenv.config({ path: '.env.local' });
 
 async function checkBooking() {
     const code = 'JOHNGY6ZUW';
-    console.log(`Checking for booking with code: ${code}`);
+    logger.info(`Checking for booking with code: ${code}`);
 
     try {
         const booking = await db.query.bookings.findFirst({
@@ -26,22 +27,22 @@ async function checkBooking() {
         });
 
         if (booking) {
-            console.log('✅ Booking Found!');
-            console.log('--- Booking Details ---');
-            console.log(`ID: ${booking.id}`);
-            console.log(`Status: ${booking.status}`);
-            console.log(`Date: ${booking.startAt}`);
-            console.log(`Centre: ${booking.centre?.name}`);
-            console.log(`Parent: ${booking.parent.firstName} ${booking.parent.lastName} (${booking.parent.email})`);
-            console.log('--- Attendees ---');
+            logger.info('✅ Booking Found!');
+            logger.info('--- Booking Details ---');
+            logger.info(`ID: ${booking.id}`);
+            logger.info(`Status: ${booking.status}`);
+            logger.info(`Date: ${booking.startAt}`);
+            logger.info(`Centre: ${booking.centre?.name}`);
+            logger.info(`Parent: ${booking.parent.firstName} ${booking.parent.lastName} (${booking.parent.email})`);
+            logger.info('--- Attendees ---');
             booking.attendees.forEach(a => {
-                console.log(`- ${a.child.firstName} ${a.child.lastName}`);
+                logger.info(`- ${a.child.firstName} ${a.child.lastName}`);
             });
         } else {
-            console.log('❌ Booking NOT found.');
+            logger.info('❌ Booking NOT found.');
         }
     } catch (error) {
-        console.error('Error querying database:', error);
+        logger.error('Error querying database:', error);
     }
     process.exit(0);
 }

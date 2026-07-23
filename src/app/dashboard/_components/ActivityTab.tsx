@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import {
     organisations, centres, children,
@@ -219,6 +220,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
 
     const relativeTime = (dateStr: string | Date | null | undefined): string => {
         if (!dateStr) return '—';
+        // eslint-disable-next-line react-hooks/purity
         const diffMs = Date.now() - new Date(dateStr).getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         if (diffDays < 0) return 'in the future';

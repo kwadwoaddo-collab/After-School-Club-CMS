@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -64,7 +66,7 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true, count: validBookingIds.length });
     } catch (error) {
-        console.error('[DELETE /api/bookings/bulk-delete]', error);
+        logger.error('[DELETE /api/bookings/bulk-delete]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

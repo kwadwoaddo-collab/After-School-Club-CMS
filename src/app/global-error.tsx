@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -11,7 +12,7 @@ export default function GlobalError({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error('Global Layout Error:', error);
+        logger.error('Global Layout Error:', error);
     }, [error]);
 
     return (

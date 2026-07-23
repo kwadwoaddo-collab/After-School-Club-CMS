@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getCurrentParent } from '@/lib/parent-auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';

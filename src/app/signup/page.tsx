@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -211,7 +212,7 @@ export default function SignupPage() {
                   try {
                     await signIn('google', { callbackUrl: '/onboarding' });
                   } catch (err) {
-                    console.error(err);
+                    logger.error(err);
                     setGoogleError('Could not open Google sign-in. Please try again.');
                     setGoogleLoading(false);
                   }

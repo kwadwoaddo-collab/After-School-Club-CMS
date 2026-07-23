@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { bookings, invoices, payments } from '@/db/schema';
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
-        console.error('[Reminder] CRON_SECRET is not set — endpoint locked.');
+        logger.error('[Reminder] CRON_SECRET is not set — endpoint locked.');
         return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
     if (authHeader !== `Bearer ${cronSecret}`) {
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
     const tomorrowEnd = endOfDay(tomorrow);
 
     // ── 2. Fetch tomorrow's confirmed bookings ───────────────────────────────
-    let upcomingBookings: any[];
+    let upcomingBookings: unknown[];
     try {
         upcomingBookings = await db.query.bookings.findMany({
             where: and(
@@ -58,7 +60,7 @@ export async function POST(req: NextRequest) {
             },
         });
     } catch (dbError) {
-        console.error('[Reminder] Failed to query bookings:', dbError);
+        logger.error('[Reminder] Failed to query bookings:', dbError);
         return NextResponse.json({ error: 'Failed to query bookings' }, { status: 500 });
     }
 
@@ -129,7 +131,7 @@ export async function POST(req: NextRequest) {
             });
             sent++;
         } catch (err) {
-            console.error('[Reminder] Failed to send for booking', booking.id, err);
+            logger.error('[Reminder] Failed to send for booking', booking.id, err);
             errors++;
         }
     }
@@ -170,7 +172,7 @@ export async function POST(req: NextRequest) {
             invoiceSent++;
         }
     } catch (err) {
-        console.error('[Reminder] Failed to process invoice reminders:', err);
+        logger.error('[Reminder] Failed to process invoice reminders:', err);
     }
 
     return NextResponse.json({

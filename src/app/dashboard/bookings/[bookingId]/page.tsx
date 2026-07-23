@@ -6,12 +6,12 @@ import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle2, Circle, XCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import MarkAttendedButton from '@/components/bookings/MarkAttendedButton';
-import StudentNotesPanel from '@/components/students/StudentNotesPanel';
-import InternalNotesTimeline from '@/components/students/InternalNotesTimeline';
+import MarkAttendedButton from '@/features/bookings/components/MarkAttendedButton';
+import StudentNotesPanel from '@/features/students/components/StudentNotesPanel';
+import InternalNotesTimeline from '@/features/students/components/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentres } from '@/lib/permissions';
-import ReassignCentreButton from '@/components/bookings/ReassignCentreButton';
+import ReassignCentreButton from '@/features/bookings/components/ReassignCentreButton';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import AttendanceDropdown from './AttendanceDropdown';
 import type { AttendanceStatus } from '@/lib/attendance';
@@ -42,10 +42,7 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     }
                 }
             },
-            tutor: true,
-            child: {
-                with: { notes: { orderBy: (notes, { desc }) => [desc(notes.createdAt)] } }
-            }
+            staff: true
         }
     });
 
@@ -74,9 +71,6 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
         if (booking.attendees && booking.attendees.length > 0) {
             const child = booking.attendees[0].child;
             return { id: child.id, name: `${child.firstName} ${child.lastName}`, grade: child.schoolYear, dob: child.dateOfBirth, initials: `${(child.firstName || '')[0] || ''}${(child.lastName || '')[0] || ''}`.toUpperCase() || '?' };
-        }
-        if (booking.child) {
-            return { id: booking.child.id, name: `${booking.child.firstName} ${booking.child.lastName}`, grade: booking.child.schoolYear, dob: booking.child.dateOfBirth, initials: `${(booking.child.firstName || '')[0] || ''}${(booking.child.lastName || '')[0] || ''}`.toUpperCase() || '?' };
         }
         return { id: '', name: 'Unknown Student', grade: null, dob: null, initials: '?' };
     };

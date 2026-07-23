@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Email Service using Resend
  * 
@@ -46,7 +48,7 @@ export class EmailService {
   async sendBookingConfirmation(data: BookingEmailData): Promise<EmailResult> {
     // Check if API key is configured
     if (!resend) {
-      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
       return { success: false, error: 'Email service not configured' };
     }
 
@@ -292,15 +294,15 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Failed to send confirmation:', error);
+        logger.error('[EmailService] Failed to send confirmation:', error);
         return { success: false, error: error.message };
       }
 
-      console.log(`[EmailService] Confirmation email sent: ${result?.id}`);
+      logger.info(`[EmailService] Confirmation email sent: ${result?.id}`);
       return { success: true, messageId: result?.id };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[EmailService] Error sending email:', error);
+      logger.error('[EmailService] Error sending email:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -316,7 +318,7 @@ export class EmailService {
     inviterName: string;
   }): Promise<EmailResult> {
     if (!resend) {
-      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
       return { success: false, error: 'Email service not configured' };
     }
 
@@ -526,15 +528,15 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Failed to send staff invitation:', error);
+        logger.error('[EmailService] Failed to send staff invitation:', error);
         return { success: false, error: error.message };
       }
 
-      console.log(`[EmailService] Staff invitation email sent: ${result?.id}`);
+      logger.info(`[EmailService] Staff invitation email sent: ${result?.id}`);
       return { success: true, messageId: result?.id };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[EmailService] Error sending staff invitation email:', error);
+      logger.error('[EmailService] Error sending staff invitation email:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -550,7 +552,7 @@ export class EmailService {
     confirmationCode: string;
   }): Promise<EmailResult> {
     if (!resend) {
-      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
       return { success: false, error: 'Email service not configured' };
     }
 
@@ -597,15 +599,15 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Failed to send cancellation:', error);
+        logger.error('[EmailService] Failed to send cancellation:', error);
         return { success: false, error: error.message };
       }
 
-      console.log(`[EmailService] Cancellation email sent: ${result?.id}`);
+      logger.info(`[EmailService] Cancellation email sent: ${result?.id}`);
       return { success: true, messageId: result?.id };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[EmailService] Error sending email:', error);
+      logger.error('[EmailService] Error sending email:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -623,7 +625,7 @@ export class EmailService {
     centreName: string;
   }): Promise<EmailResult> {
     if (!resend) {
-      console.warn('[EmailService] Resend client not initialized. Email not sent.');
+      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
       return { success: false, error: 'Email service not configured' };
     }
 
@@ -683,15 +685,15 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('[EmailService] Failed to send reschedule email:', error);
+        logger.error('[EmailService] Failed to send reschedule email:', error);
         return { success: false, error: error.message };
       }
 
-      console.log(`[EmailService] Reschedule email sent: ${result?.id}`);
+      logger.info(`[EmailService] Reschedule email sent: ${result?.id}`);
       return { success: true, messageId: result?.id };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[EmailService] Error sending reschedule email:', error);
+      logger.error('[EmailService] Error sending reschedule email:', error);
       return { success: false, error: errorMessage };
     }
   }
@@ -1337,7 +1339,7 @@ export class EmailService {
   </div>
 </body></html>`;
 
-    let attachments: any[] | undefined = undefined;
+    let attachments: unknown[] | undefined = undefined;
     if (data.attachmentBase64) {
       try {
         const parts = data.attachmentBase64.split(';base64,');
@@ -1351,7 +1353,7 @@ export class EmailService {
           }
         ];
       } catch (err) {
-        console.error('[EmailService] Error processing attachment:', err);
+        logger.error('[EmailService] Error processing attachment:', err);
       }
     }
 

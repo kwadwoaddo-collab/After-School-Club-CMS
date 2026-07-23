@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { stripeService } from '@/lib/services/stripe';
 import { db } from '@/db';
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
         const { invoiceId, invoiceNumber } = session.metadata;
         if (!invoiceId) {
-            console.error('[stripe-invoice webhook] Missing invoiceId in session metadata');
+            logger.error('[stripe-invoice webhook] Missing invoiceId in session metadata');
             return NextResponse.json({ error: 'Missing invoiceId in metadata' }, { status: 400 });
         }
 
@@ -70,9 +71,9 @@ export async function POST(req: NextRequest) {
                 .set({ status: 'paid', updatedAt: new Date() })
                 .where(eq(invoices.id, invoiceId));
 
-            console.log(`[stripe-invoice webhook] Invoice ${invoiceNumber} (${invoiceId}) marked as paid. Amount: £${amountPaid}`);
+            logger.info(`[stripe-invoice webhook] Invoice ${invoiceNumber} (${invoiceId}) marked as paid. Amount: £${amountPaid}`);
         } catch (err) {
-            console.error('[stripe-invoice webhook] DB error processing payment:', err);
+            logger.error('[stripe-invoice webhook] DB error processing payment:', err);
             return NextResponse.json({ error: 'Database error' }, { status: 500 });
         }
     }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { organisations, users, centres } from '@/db/schema';
@@ -151,7 +152,7 @@ export async function POST(req: NextRequest) {
         return response;
 
     } catch (error) {
-        console.error('Registration error:', error);
+        logger.error('Registration error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

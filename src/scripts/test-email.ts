@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 
 import dotenv from 'dotenv';
 // import { emailService } from '@/lib/services/email';
@@ -5,20 +6,20 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 async function testEmail() {
-    console.log('--- Testing Email Configuration ---');
+    logger.info('--- Testing Email Configuration ---');
 
     if (!process.env.RESEND_API_KEY) {
-        console.error('❌ RESEND_API_KEY is missing from .env.local');
+        logger.error('❌ RESEND_API_KEY is missing from .env.local');
         process.exit(1);
     }
 
     if (process.env.RESEND_API_KEY.startsWith('re_xxx')) {
-        console.warn('⚠️ RESEND_API_KEY appears to be a placeholder (starts with "re_xxx").');
+        logger.warn('⚠️ RESEND_API_KEY appears to be a placeholder (starts with "re_xxx").');
     } else {
-        console.log('✅ RESEND_API_KEY is present.');
+        logger.info('✅ RESEND_API_KEY is present.');
     }
 
-    console.log(`Sending from: ${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`);
+    logger.info(`Sending from: ${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`);
 
     // Use a hardcoded test email or one from environment to avoid sending to real users accidentally in production, 
     // but for this dev test we'll use a dummy one. Ideally user provides one.
@@ -26,7 +27,7 @@ async function testEmail() {
     const testEmail = process.argv[2] || 'delivered@resend.dev';
 
 
-    console.log(`Attempting to send test email to ${testEmail}...`);
+    logger.info(`Attempting to send test email to ${testEmail}...`);
 
     // Import service after dotenv config
     const { emailService } = await import('@/lib/services/email');
@@ -44,11 +45,11 @@ async function testEmail() {
     });
 
     if (result.success) {
-        console.log('✅ Email sent successfully!');
-        console.log('Message ID:', result.messageId);
+        logger.info('✅ Email sent successfully!');
+        logger.info('Message ID:', result.messageId);
     } else {
-        console.error('❌ Failed to send email.');
-        console.error('Error:', result.error);
+        logger.error('❌ Failed to send email.');
+        logger.error('Error:', result.error);
     }
 }
 

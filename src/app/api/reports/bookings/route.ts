@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -98,7 +100,7 @@ export async function GET() {
       },
     });
   } catch (e) {
-    console.error('Bookings CSV export error:', e);
+    logger.error('Bookings CSV export error:', e);
     return NextResponse.json({ error: 'Export failed' }, { status: 500 });
   }
 }

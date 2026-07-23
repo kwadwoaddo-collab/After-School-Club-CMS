@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(orgCentres);
     } catch (error) {
-        console.error('[Centres API] Error:', error);
+        logger.error('[Centres API] Error:', error);
         return NextResponse.json(
             { error: 'Failed to fetch centres' },
             { status: 500 }

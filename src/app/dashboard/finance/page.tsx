@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -19,7 +21,7 @@ import FinanceDashboardClient, { OverdueInvoiceTable, InvoiceAgingSummary, Paren
 import FilterableInvoiceSection from '@/features/finance/components/FilterableInvoiceSection';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import { normalizeString } from '@/lib/search-params';
-import BillingCyclesTab from '@/components/billing/BillingCyclesTab';
+import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
 
 
@@ -80,7 +82,7 @@ export default async function FinancePage(props: {
     try {
         billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
     } catch (err) {
-        console.error('[finance] fetchBillingCycles failed:', err);
+        logger.error('[finance] fetchBillingCycles failed:', err);
     }
 
     // Calculate real stats with database-level aggregations

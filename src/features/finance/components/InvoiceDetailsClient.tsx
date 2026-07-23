@@ -1,4 +1,6 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useEffect, useTransition } from 'react';
 import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
@@ -41,7 +43,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             setIsEditingDate(false);
             router.refresh();
             toast({ title: 'Date updated', message: 'Invoice issue date updated.', variant: 'success' });
-        } catch (err: any) {
+        } catch (err) {
             toast({ title: 'Update failed', message: err.message || 'Failed to update date', variant: 'error' });
         } finally {
             setIsUpdatingDate(false);
@@ -68,7 +70,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             setIsEditingNotes(false);
             router.refresh();
             toast({ title: 'Notes saved', message: 'Invoice notes updated.', variant: 'success' });
-        } catch (err: any) {
+        } catch (err) {
             toast({ title: 'Update failed', message: err.message || 'Failed to update notes', variant: 'error' });
         } finally {
             setIsUpdatingNotes(false);

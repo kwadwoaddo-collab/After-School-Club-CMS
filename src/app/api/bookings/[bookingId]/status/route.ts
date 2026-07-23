@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -73,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
         return NextResponse.json({ success: true, booking: updated });
     } catch (error) {
-        console.error('[PATCH /api/bookings/[bookingId]/status]', error);
+        logger.error('[PATCH /api/bookings/[bookingId]/status]', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

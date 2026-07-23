@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { staffInvites } from '@/db/schema';

@@ -1,4 +1,6 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState } from 'react';
 import { X, CreditCard, Calendar, Check, Loader2, Landmark, Ticket } from 'lucide-react';
@@ -50,7 +52,7 @@ export default function RecordPaymentModal({
             toast('Payment recorded successfully', 'success');
             onSuccess();
             onClose();
-        } catch (error: any) {
+        } catch (error) {
             toast(error.message || 'Failed to record payment', 'error');
         } finally {
             setIsSubmitting(false);

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { parents } from '@/db/schema';
@@ -106,7 +108,7 @@ export async function GET(
             children: parentChildren
         });
     } catch (error) {
-        console.error('Failed to fetch parent details:', error);
+        logger.error('Failed to fetch parent details:', error);
         return NextResponse.json({ error: 'Failed to fetch details' }, { status: 500 });
     }
 }

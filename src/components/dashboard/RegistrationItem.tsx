@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -39,7 +40,7 @@ export default function RegistrationItem({ registration: r, statusBadge, statusL
             try {
                 await assignRegistrationCentre(r.id, value);
             } catch (err) {
-                console.error(err);
+                logger.error(err);
             }
         });
     };

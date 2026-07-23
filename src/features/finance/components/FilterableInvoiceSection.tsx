@@ -8,7 +8,7 @@ import Link from 'next/link';
 type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue';
 
 interface Props {
-    initialInvoices: any[];
+    initialInvoices: unknown[];
     isOwner: boolean;
 }
 

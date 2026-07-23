@@ -1,4 +1,7 @@
 'use server';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -59,7 +62,7 @@ export async function updateAvailability(centreId: string, rules: DayRule[]) {
 
         return { success: true };
     } catch (error) {
-        console.error('Failed to update availability:', error);
+        logger.error('Failed to update availability:', error);
         return { success: false, error: 'Failed to update settings' };
     }
 }

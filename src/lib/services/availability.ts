@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { db } from '@/db';
 import { centres, centreAvailabilityRules, bookings, slotHolds } from '@/db/schema';
 import { eq, and, gte, lt } from 'drizzle-orm';
@@ -55,7 +56,7 @@ export class AvailabilityService {
                     rule = rules[0];
                 }
             } catch (error) {
-                console.error('[AvailabilityService] Database query failed, using defaults:', error);
+                logger.error('[AvailabilityService] Database query failed, using defaults:', error);
             }
         }
 
@@ -115,7 +116,7 @@ export class AvailabilityService {
         const resourceKey = centreId ? `${centreId}_${modality}` : `online_${modality}`;
 
         // Get existing bookings
-        let existingBookings: any[] = [];
+        let existingBookings: unknown[] = [];
         try {
             existingBookings = await db.query.bookings.findMany({
                 where: and(
@@ -127,11 +128,11 @@ export class AvailabilityService {
                 ),
             });
         } catch (error) {
-            console.error('[AvailabilityService] Failed to fetch bookings:', error);
+            logger.error('[AvailabilityService] Failed to fetch bookings:', error);
         }
 
         // Get active slot holds
-        let activeHolds: any[] = [];
+        let activeHolds: unknown[] = [];
         try {
             const now = new Date();
             activeHolds = await db.query.slotHolds.findMany({
@@ -143,7 +144,7 @@ export class AvailabilityService {
                 ),
             });
         } catch (error) {
-            console.error('[AvailabilityService] Failed to fetch holds:', error);
+            logger.error('[AvailabilityService] Failed to fetch holds:', error);
         }
 
         // Optionally get Google Calendar busy times
@@ -156,7 +157,7 @@ export class AvailabilityService {
                 );
                 calendarBusyTimes = calendarResult.busy;
             } catch (error) {
-                console.error('[AvailabilityService] Calendar check failed:', error);
+                logger.error('[AvailabilityService] Calendar check failed:', error);
             }
         }
 

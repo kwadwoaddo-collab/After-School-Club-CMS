@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -100,7 +101,7 @@ export default async function StaffPage() {
                 </div>
                 <Link
                     href="/dashboard/staff/invite"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20 glow-btn flex-shrink-0"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-sm shadow-primary/20 glow-btn flex-shrink-0"
                 >
                     <UserPlus className="w-4 h-4" />
                     Invite Staff

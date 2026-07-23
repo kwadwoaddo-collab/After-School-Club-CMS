@@ -1,17 +1,18 @@
+import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 async function main() {
-  console.log('Testing booking creation with environment loaded...');
+  logger.info('Testing booking creation with environment loaded...');
   const { db } = await import('../db');
   const { BookingService } = await import('../lib/services/booking');
 
   const firstCentre = await db.query.centres.findFirst();
   if (!firstCentre) {
-    console.error('No centres found in database!');
+    logger.error('No centres found in database!');
     return;
   }
-  console.log(`Found centre: ${firstCentre.name} (ID: ${firstCentre.id})`);
+  logger.info(`Found centre: ${firstCentre.name} (ID: ${firstCentre.id})`);
 
   const bookingService = new BookingService();
   try {
@@ -44,10 +45,10 @@ async function main() {
         communications: true,
       }
     });
-    console.log('Booking created successfully:', result);
+    logger.info('Booking created successfully:', result);
   } catch (error) {
-    console.error('Booking failed with error:');
-    console.error(error);
+    logger.error('Booking failed with error:');
+    logger.error(error);
   }
 }
 

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
             { status: 201 }
         );
     } catch (error) {
-        console.error('Signup error:', error);
+        logger.error('Signup error:', error);
         return NextResponse.json(
             { error: 'Failed to create account. Please try again.' },
             { status: 500 }

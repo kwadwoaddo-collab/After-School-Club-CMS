@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Google Calendar Service
  * 
@@ -44,7 +45,7 @@ export class GoogleCalendarService {
     try {
       // Check if credentials file exists
       if (!existsSync(SERVICE_ACCOUNT_PATH)) {
-        console.warn(
+        logger.warn(
           `[GoogleCalendarService] Service account file not found at ${SERVICE_ACCOUNT_PATH}. ` +
           `Calendar integration disabled.`
         );
@@ -69,10 +70,10 @@ export class GoogleCalendarService {
       this.calendar = google.calendar({ version: 'v3', auth });
       this.initialized = true;
 
-      console.log('[GoogleCalendarService] Initialized successfully');
+      logger.info('[GoogleCalendarService] Initialized successfully');
       return true;
     } catch (error) {
-      console.error('[GoogleCalendarService] Failed to initialize:', error);
+      logger.error('[GoogleCalendarService] Failed to initialize:', error);
       return false;
     }
   }
@@ -112,7 +113,7 @@ export class GoogleCalendarService {
         isAvailable: busy.length === 0,
       };
     } catch (error) {
-      console.error('[GoogleCalendarService] FreeBusy check failed:', error);
+      logger.error('[GoogleCalendarService] FreeBusy check failed:', error);
       return { busy: [], isAvailable: true };
     }
   }
@@ -126,7 +127,7 @@ export class GoogleCalendarService {
     const isReady = await this.initialize();
 
     if (!isReady || !this.calendar) {
-      console.warn('[GoogleCalendarService] Cannot create event - not initialized');
+      logger.warn('[GoogleCalendarService] Cannot create event - not initialized');
       return null;
     }
 
@@ -170,12 +171,12 @@ export class GoogleCalendarService {
 
       const eventId = response.data.id || null;
       if (eventId) {
-        console.log(`[GoogleCalendarService] Created event: ${eventId}`);
+        logger.info(`[GoogleCalendarService] Created event: ${eventId}`);
       }
 
       return eventId;
     } catch (error) {
-      console.error('[GoogleCalendarService] Failed to create event:', error);
+      logger.error('[GoogleCalendarService] Failed to create event:', error);
       return null;
     }
   }
@@ -195,10 +196,10 @@ export class GoogleCalendarService {
 
     try {
       await this.calendar.events.delete({ calendarId, eventId });
-      console.log(`[GoogleCalendarService] Deleted event: ${eventId}`);
+      logger.info(`[GoogleCalendarService] Deleted event: ${eventId}`);
       return true;
     } catch (error) {
-      console.error('[GoogleCalendarService] Failed to delete event:', error);
+      logger.error('[GoogleCalendarService] Failed to delete event:', error);
       return false;
     }
   }
@@ -234,10 +235,10 @@ export class GoogleCalendarService {
       }
 
       await this.calendar.events.patch({ calendarId, eventId, requestBody: event });
-      console.log(`[GoogleCalendarService] Updated event: ${eventId}`);
+      logger.info(`[GoogleCalendarService] Updated event: ${eventId}`);
       return true;
     } catch (error) {
-      console.error('[GoogleCalendarService] Failed to update event:', error);
+      logger.error('[GoogleCalendarService] Failed to update event:', error);
       return false;
     }
   }

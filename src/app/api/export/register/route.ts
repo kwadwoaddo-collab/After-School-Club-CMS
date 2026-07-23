@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
@@ -122,7 +123,7 @@ export async function GET(req: NextRequest) {
             },
         });
     } catch (error) {
-        console.error('[GET /api/export/register]', error);
+        logger.error('[GET /api/export/register]', error);
         return new NextResponse('Internal server error', { status: 500 });
     }
 }

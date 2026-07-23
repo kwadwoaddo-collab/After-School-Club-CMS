@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users, staffInvites, organisations } from '@/db/schema';
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
         // If the user has been removed from the org (organisationId is null),
         // they can't log in — silently succeed (don't reveal account status)
         if (!user.organisationId) {
-            console.warn(`[Magic Link] User ${email} has no organisationId — access revoked`);
+            logger.warn(`[Magic Link] User ${email} has no organisationId — access revoked`);
             return NextResponse.json({ success: true });
         }
 
@@ -81,14 +82,14 @@ export async function POST(request: NextRequest) {
         });
 
         if (!emailResult.success) {
-            console.error(`[Magic Link] Failed to send email to ${email}:`, emailResult.error);
+            logger.error(`[Magic Link] Failed to send email to ${email}:`, emailResult.error);
             return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
         }
 
-        console.log(`[Magic Link] Sent to ${email}, token expires at ${expiresAt.toISOString()}`);
+        logger.info(`[Magic Link] Sent to ${email}, token expires at ${expiresAt.toISOString()}`);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[Magic Link] Unexpected error:', error);
+        logger.error('[Magic Link] Unexpected error:', error);
         return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
     }
 }

@@ -33,7 +33,7 @@ ALTER TABLE "registration_parents" ALTER COLUMN "was_matched" SET NOT NULL;--> s
     Hope to release this update as soon as possible
 */
 
--- ALTER TABLE "sessions" DROP CONSTRAINT "<constraint_name>";--> statement-breakpoint
+ALTER TABLE "sessions" DROP CONSTRAINT "sessions_pkey";--> statement-breakpoint
 ALTER TABLE "centres" ADD COLUMN "session_slots" text;--> statement-breakpoint
 ALTER TABLE "organisations" ADD COLUMN "registration_pricing" text;--> statement-breakpoint
 ALTER TABLE "registration_children" ADD COLUMN "created_at" timestamp DEFAULT now();--> statement-breakpoint

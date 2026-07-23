@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -5,6 +7,7 @@ import {
     organisations, parents, children, centres,
     registrations, registrationChildren, registrationParents,
     studentNotes,
+    authorisedCollectors as authorisedCollectorsTable,
 } from '@/db/schema';
 import { eq, and, ilike, inArray } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
@@ -41,6 +44,16 @@ const registerSchema = z.object({
         dateOfBirth: z.preprocess(emptyToNull, z.string().optional().nullable()),
         schoolYear: z.preprocess(emptyToNull, z.string().max(10).optional().nullable()),
         sessions: z.array(z.string()).optional(),
+        allergies: z.array(z.string()).optional(),
+        dietaryRequirements: z.preprocess(emptyToNull, z.string().max(500).optional().nullable()),
+        medicalConditions: z.preprocess(emptyToNull, z.string().max(500).optional().nullable()),
+        medicationNotes: z.preprocess(emptyToNull, z.string().max(1000).optional().nullable()),
+        gpName: z.preprocess(emptyToNull, z.string().max(255).optional().nullable()),
+        gpPhone: z.preprocess(emptyToNull, z.string().max(50).optional().nullable()),
+        senDetails: z.preprocess(emptyToNull, z.string().max(1000).optional().nullable()),
+        photoConsent: z.boolean().optional(),
+        sunCreamConsent: z.boolean().optional(),
+        firstAidConsent: z.boolean().optional(),
     })).min(1),
     parents: z.array(z.object({
         parentId: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
@@ -56,6 +69,11 @@ const registerSchema = z.object({
         city: z.preprocess(emptyToNull, z.string().max(100).optional().nullable()),
         postcode: z.preprocess(emptyToNull, z.string().max(20).optional().nullable()),
     })).min(1),
+    authorisedCollectors: z.array(z.object({
+        name: z.string().min(1).max(255),
+        relationship: z.string().min(1).max(50),
+        phone: z.string().min(1).max(30),
+    })).optional(),
     emergencyContact: z.object({
         name: z.preprocess(emptyToNull, z.string().max(255).optional().nullable()),
         phone: z.preprocess(emptyToNull, z.string().max(30).optional().nullable()),
@@ -94,7 +112,7 @@ export async function POST(req: NextRequest) {
         const parsed = registerSchema.safeParse(rawBody);
         if (!parsed.success) {
             const fieldErrors = parsed.error.flatten().fieldErrors;
-            console.error('[Registration] Validation errors:', JSON.stringify(fieldErrors, null, 2));
+            logger.error('[Registration] Validation errors:', JSON.stringify(fieldErrors, null, 2));
             return NextResponse.json(
                 { error: 'Validation failed', details: fieldErrors },
                 { status: 400 }
@@ -112,6 +130,7 @@ export async function POST(req: NextRequest) {
             emergencyContact,
             funding,
             specialNeeds,
+            authorisedCollectors,
             termsAgreed,
             parentSignature,
         } = body;
@@ -125,7 +144,7 @@ export async function POST(req: NextRequest) {
                 const result = await jwtVerify(prefillToken, secret);
                 prefillParentId = (result.payload.parentId as string) || null;
             } catch (err) {
-                console.error('[Registration API] Token verification failed:', err);
+                logger.error('[Registration API] Token verification failed:', err);
             }
         }
 
@@ -342,6 +361,16 @@ export async function POST(req: NextRequest) {
                         notes: specialNeeds?.details || null,
                         sessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                         systemNoteContent: specialNeeds?.details ? `Special Needs (from Registration): ${specialNeeds.details}` : null,
+                        allergies: c.allergies,
+                        dietaryRequirements: c.dietaryRequirements,
+                        medicalConditions: c.medicalConditions,
+                        medicationNotes: c.medicationNotes,
+                        gpName: c.gpName,
+                        gpPhone: c.gpPhone,
+                        senDetails: c.senDetails,
+                        photoConsent: c.photoConsent,
+                        sunCreamConsent: c.sunCreamConsent,
+                        firstAidConsent: c.firstAidConsent,
                     });
                     childId = child.id;
                 }
@@ -356,6 +385,23 @@ export async function POST(req: NextRequest) {
                     submittedSessions: (c.sessions?.length ?? 0) > 0 ? c.sessions : null,
                     wasMatched: childMatched,
                 });
+
+                // ── 4.5 Save authorised collectors for this child ─────────────
+                // Note: The form collects collectors globally, so we add them to every child
+                // or just to the first child. Let's add them to all children since they belong to the same family.
+                if (childId && authorisedCollectors?.length) {
+                    // avoid duplicates by deleting existing ones and inserting new ones (since it's a registration refresh)
+                    await tx.delete(authorisedCollectorsTable).where(eq(authorisedCollectorsTable.childId, childId));
+                    for (const collector of authorisedCollectors) {
+                        await tx.insert(authorisedCollectorsTable).values({
+                            organisationId: org.id,
+                            childId,
+                            name: collector.name,
+                            relationship: collector.relationship,
+                            phone: collector.phone,
+                        });
+                    }
+                }
 
             }
         });
@@ -412,7 +458,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, registrationId: registration.id }, { status: 201 });
     } catch (err) {
-        console.error('[Registration] Error:', err);
+        logger.error('[Registration] Error:', err);
         return NextResponse.json({ error: 'Failed to submit registration' }, { status: 500 });
     }
 }

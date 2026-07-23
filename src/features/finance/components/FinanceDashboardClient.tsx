@@ -1,4 +1,6 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useTransition } from 'react';
 import { Plus, Search, FileText, Trash2, Ban, Loader2, ChevronDown } from 'lucide-react';
@@ -8,9 +10,9 @@ import { useRouter } from 'next/navigation';
 import { deleteInvoice, voidInvoice } from '../actions';
 
 interface FinanceDashboardClientProps {
-    students: any[];
-    recentInvoices: any[];
-    centres: any[];
+    students: unknown[];
+    recentInvoices: unknown[];
+    centres: unknown[];
     isOwner?: boolean;
 }
 
@@ -48,7 +50,7 @@ export function InvoiceTable({
     isOwner = false,
     onCreateInvoice,
 }: { 
-    invoices?: any[];
+    invoices?: unknown[];
     isOwner?: boolean;
     onCreateInvoice?: () => void;
 }) {
@@ -212,7 +214,7 @@ export function InvoiceTable({
     );
 }
 
-export function OverdueInvoiceTable({ invoices = [] }: { invoices?: any[] }) {
+export function OverdueInvoiceTable({ invoices = [] }: { invoices?: unknown[] }) {
     const router = useRouter();
     
     if (!invoices || invoices.length === 0) {
@@ -330,7 +332,7 @@ export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
     );
 }
 
-export function ParentBalanceTable({ balances = [] }: { balances?: any[] }) {
+export function ParentBalanceTable({ balances = [] }: { balances?: unknown[] }) {
     if (!balances || balances.length === 0) return null;
 
     return (

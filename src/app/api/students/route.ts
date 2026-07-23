@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { parents, children, centres } from '@/db/schema';
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, id: newChildId });
     } catch (error) {
-        console.error('Add Student error:', error);
+        logger.error('Add Student error:', error);
         if (error instanceof z.ZodError) {
             return NextResponse.json({
                 error: 'Validation failed',

@@ -5,9 +5,9 @@ import { eq, desc } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CreditCard, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { VoucherPaymentForm } from '@/components/portal/VoucherPaymentForm';
-import StripePayButton from '@/components/portal/StripePayButton';
-import NotificationBell from '@/components/portal/NotificationBell';
+import { VoucherPaymentForm } from '@/features/portal/components/VoucherPaymentForm';
+import StripePayButton from '@/features/portal/components/StripePayButton';
+import NotificationBell from '@/features/portal/components/NotificationBell';
 import { getNotifications } from '@/app/portal/notifications/actions';
 
 export default async function BillingDashboard(props: { searchParams: Promise<{ payment?: string }> }) {

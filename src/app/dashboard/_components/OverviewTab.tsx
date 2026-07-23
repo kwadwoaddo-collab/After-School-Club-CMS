@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import {
     organisations, centres, parents, children,

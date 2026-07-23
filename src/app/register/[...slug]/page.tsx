@@ -1,4 +1,7 @@
 'use client';
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -18,6 +21,16 @@ interface ChildEntry {
     childId?: string; // matched student identifier
     firstName: string; lastName: string; dateOfBirth: string; schoolYear: string;
     sessions: string[];
+    allergies: string[];
+    dietaryRequirements: string;
+    medicalConditions: string;
+    medicationNotes: string;
+    gpName: string;
+    gpPhone: string;
+    senDetails: string;
+    photoConsent: boolean;
+    sunCreamConsent: boolean;
+    firstAidConsent: boolean;
 }
 interface ParentEntry {
     parentId?: string; // matched parent identifier
@@ -29,6 +42,7 @@ interface EmergencyContact { name: string; relationship: string; phone: string; 
 // funding is now a single selection — `type` is the chosen option, `other` for free text
 interface Funding { type: string; other: string; }
 interface SpecialNeeds { has: boolean; details: string; }
+interface AuthorisedCollector { name: string; relationship: string; phone: string; }
 
 const YEAR_GROUPS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Other'];
@@ -49,7 +63,11 @@ const SESSION_SLOTS = [
     'Friday 4:30–5:50 pm', 'Friday 6:00–7:20 pm',
     'Saturday 10:00–11:20 am', 'Saturday 11:30–12:50 pm', 'Saturday 1:00–2:20 pm',
 ];
-const emptyChild = (): ChildEntry => ({ firstName: '', lastName: '', dateOfBirth: '', schoolYear: '', sessions: [] });
+const emptyChild = (): ChildEntry => ({ 
+    firstName: '', lastName: '', dateOfBirth: '', schoolYear: '', sessions: [],
+    allergies: [], dietaryRequirements: '', medicalConditions: '', medicationNotes: '',
+    gpName: '', gpPhone: '', senDetails: '', photoConsent: false, sunCreamConsent: false, firstAidConsent: false 
+});
 const emptyParent = (): ParentEntry => ({
     firstName: '', lastName: '', relationship: '', phone: '', email: '',
     addressLine1: '', addressLine2: '', city: '', postcode: '',
@@ -95,7 +113,7 @@ export default function RegisterPage() {
     const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
     const [showFeesIntro, setShowFeesIntro] = useState(true);
     const [step, setStep] = useState(1);
-    const TOTAL_STEPS = 6;
+    const TOTAL_STEPS = 7;
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -108,6 +126,7 @@ export default function RegisterPage() {
     const [parentList, setParentList] = useState<ParentEntry[]>([emptyParent()]);
     const [secondParent, setSecondParent] = useState(false);
     const [emergency, setEmergency] = useState<EmergencyContact>({ name: '', relationship: '', phone: '' });
+    const [authorisedCollectors, setAuthorisedCollectors] = useState<AuthorisedCollector[]>([]);
     const [funding, setFunding] = useState<Funding>({ type: '', other: '' });
     const [specialNeeds, setSpecialNeeds] = useState<SpecialNeeds>({ has: false, details: '' });
     const [termsAgreed, setTermsAgreed] = useState(false);
@@ -180,7 +199,7 @@ export default function RegisterPage() {
                     }
                 }
             })
-            .catch(err => console.error('[Prefill] Failed to load prefill details:', err));
+            .catch(err => logger.error('[Prefill] Failed to load prefill details:', err));
     }, [token]);
 
     // ── Child helpers ──────────────────────────────────────────────
@@ -207,6 +226,7 @@ export default function RegisterPage() {
         setStep(1);
         setChildList([emptyChild()]);
         setParentList([emptyParent()]);
+        setAuthorisedCollectors([]);
         setStartDate('');
         setError('');
     };
@@ -273,6 +293,15 @@ export default function RegisterPage() {
         }
 
         if (s === 6) {
+            authorisedCollectors.forEach((c, i) => {
+                if (!c.name.trim()) invalid.add(`ac-name-${i}`);
+                if (!c.relationship.trim()) invalid.add(`ac-rel-${i}`);
+                if (!c.phone.trim()) invalid.add(`ac-ph-${i}`);
+            });
+            if (invalid.size > 0) errorMsg = 'Please provide name, relationship, and phone for all authorised collectors.';
+        }
+
+        if (s === 7) {
             if (!signature || signaturePadRef.current?.isEmpty()) {
                 invalid.add('signature-pad');
                 errorMsg = 'Please sign the form before submitting.';
@@ -312,6 +341,7 @@ export default function RegisterPage() {
                     children: childList,
                     parents: parentList,
                     emergencyContact: emergency,
+                    authorisedCollectors,
                     // send as types array for API compatibility (single item)
                     funding: { types: funding.type ? [funding.type] : [], other: funding.other },
                     specialNeeds,
@@ -337,7 +367,7 @@ export default function RegisterPage() {
                 throw new Error(d.error || 'Submission failed');
             }
             setSubmitted(true);
-        } catch (e: any) {
+        } catch (e) {
             setError(e.message);
         } finally {
             setSubmitting(false);
@@ -733,6 +763,48 @@ export default function RegisterPage() {
                                         })()}
                                     </div>
                                 </div>
+                                {/* ── Medical & Consents ───────────────────────────────────── */}
+                                <div className="border-t border-border mt-5 pt-5">
+                                    <h4 className="text-foreground font-semibold text-sm mb-4">Medical &amp; Safeguarding Information</h4>
+                                    
+                                    <div className="space-y-4">
+                                        <Field label="Dietary Requirements">
+                                            <input type="text" value={c.dietaryRequirements} onChange={e => updateChild(i, 'dietaryRequirements', e.target.value)} className={inputCls} placeholder="e.g. Vegetarian, Halal, None" />
+                                        </Field>
+                                        
+                                        <Field label="Medical Conditions">
+                                            <input type="text" value={c.medicalConditions} onChange={e => updateChild(i, 'medicalConditions', e.target.value)} className={inputCls} placeholder="e.g. Asthma, Diabetes, None" />
+                                        </Field>
+
+                                        <Field label="Allergies (comma separated)">
+                                            <input type="text" value={c.allergies.join(', ')} onChange={e => updateChild(i, 'allergies', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className={inputCls} placeholder="e.g. Peanuts, Dairy" />
+                                        </Field>
+                                        
+                                        <Field label="GP Name (Optional)">
+                                            <input type="text" value={c.gpName} onChange={e => updateChild(i, 'gpName', e.target.value)} className={inputCls} placeholder="Dr. Smith" />
+                                        </Field>
+                                        
+                                        <Field label="GP Phone (Optional)">
+                                            <input type="tel" value={c.gpPhone} onChange={e => updateChild(i, 'gpPhone', e.target.value)} className={inputCls} placeholder="020 8123 4567" />
+                                        </Field>
+
+                                        <div className="pt-2">
+                                            <p className="text-sm font-medium text-muted-foreground mb-3">Consents</p>
+                                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
+                                                <input type="checkbox" checked={c.photoConsent} onChange={e => updateChild(i, 'photoConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
+                                                <span className="text-muted-foreground text-sm">I consent to photos/videos being taken for marketing purposes</span>
+                                            </label>
+                                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
+                                                <input type="checkbox" checked={c.sunCreamConsent} onChange={e => updateChild(i, 'sunCreamConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
+                                                <span className="text-muted-foreground text-sm">I consent to the application of sun cream if required</span>
+                                            </label>
+                                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border hover:border-primary/20">
+                                                <input type="checkbox" checked={c.firstAidConsent} onChange={e => updateChild(i, 'firstAidConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
+                                                <span className="text-muted-foreground text-sm">I consent to emergency first aid treatment</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                         {childList.length < 5 && (
@@ -898,8 +970,42 @@ export default function RegisterPage() {
                     </div>
                 )}
 
-                {/* ── STEP 6: Terms & Submit ──────────────────────────────── */}
+                {/* ── STEP 6: Authorised Collectors ─────────────────────────── */}
                 {step === 6 && (
+                    <div>
+                        <h2 className={sectionTitle}>Authorised Collectors</h2>
+                        <p className="text-muted-foreground text-sm mb-6">Please list any individuals authorised to collect your child(ren) from the centre.</p>
+                        
+                        {authorisedCollectors.map((c, i) => (
+                            <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm relative">
+                                <button onClick={() => setAuthorisedCollectors(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-destructive text-xs hover:text-destructive font-medium">Remove</button>
+                                <h3 className="text-foreground font-semibold mb-4">Collector {i + 1}</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                    <Field label="Full Name *">
+                                        <input id={`ac-name-${i}`} type="text" value={c.name} onChange={e => { const v = [...authorisedCollectors]; v[i].name = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-name-${i}`); return n; }); }} className={invalidFields.has(`ac-name-${i}`) ? inputErrCls : inputCls} placeholder="Full name" />
+                                    </Field>
+                                    <Field label="Relationship to Child *">
+                                        <input id={`ac-rel-${i}`} type="text" value={c.relationship} onChange={e => { const v = [...authorisedCollectors]; v[i].relationship = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-rel-${i}`); return n; }); }} className={invalidFields.has(`ac-rel-${i}`) ? inputErrCls : inputCls} placeholder="e.g. Grandparent" />
+                                    </Field>
+                                </div>
+                                <div className="mb-2">
+                                    <Field label="Phone Number *">
+                                        <input id={`ac-ph-${i}`} type="tel" value={c.phone} onChange={e => { const v = [...authorisedCollectors]; v[i].phone = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-ph-${i}`); return n; }); }} className={invalidFields.has(`ac-ph-${i}`) ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
+                                    </Field>
+                                </div>
+                            </div>
+                        ))}
+                        
+                        {authorisedCollectors.length < 3 && (
+                            <button onClick={() => setAuthorisedCollectors(prev => [...prev, { name: '', relationship: '', phone: '' }])} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
+                                + Add Authorised Collector
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* ── STEP 7: Terms & Submit ──────────────────────────────── */}
+                {step === 7 && (
                     <div>
                         <h2 className={sectionTitle}>Review &amp; Submit</h2>
 
@@ -914,6 +1020,13 @@ export default function RegisterPage() {
                             <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Emergency Contact</span>
                                 <p className="text-foreground mt-1">{emergency.name} ({emergency.relationship}) · {emergency.phone}</p>
                             </div>
+                            {authorisedCollectors.length > 0 && (
+                                <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Authorised Collectors</span>
+                                    {authorisedCollectors.map((c, i) => (
+                                        <p key={i} className="text-foreground mt-1">{c.name} ({c.relationship}) · {c.phone}</p>
+                                    ))}
+                                </div>
+                            )}
                             <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Funding</span>
                                 <p className="text-foreground mt-1">
                                     {FUNDING_OPTIONS.find(o => o.value === funding.type)?.label ?? 'Not specified'}

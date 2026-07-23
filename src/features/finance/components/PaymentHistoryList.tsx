@@ -53,7 +53,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
             if (res.success) {
                 toast({ title: 'Success', message: 'Payment verified successfully.', variant: 'success' });
             }
-        } catch (e: any) {
+        } catch (e) {
             toast({ title: 'Error', message: e.message || 'Failed to verify payment', variant: 'error' });
         } finally {
             setProcessingId(null);
@@ -67,7 +67,7 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
             if (res.success) {
                 toast({ title: 'Success', message: 'Payment marked as failed.', variant: 'success' });
             }
-        } catch (e: any) {
+        } catch (e) {
             toast({ title: 'Error', message: e.message || 'Failed to update payment', variant: 'error' });
         } finally {
             setProcessingId(null);

@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/lib/logger';
 
 import { useState, useEffect } from 'react';
 import { BookingWithDetails } from '../types';
@@ -56,7 +57,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                     setRescheduleSlots(data.slots || []);
                 }
             } catch (err) {
-                console.error("Failed to fetch slots", err);
+                logger.error("Failed to fetch slots", err);
             } finally {
                 setLoadingSlots(false);
             }
@@ -70,7 +71,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
             try {
                 await updateBookingStatus(booking.id, newStatus);
             } catch (error) {
-                console.error('Failed to update status:', error);
+                logger.error('Failed to update status:', error);
                 // Optionally add toast here
             }
         });
@@ -86,7 +87,7 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                 setRescheduleDate('');
                 setSelectedSlot(null);
             } catch (error) {
-                console.error('Failed to reschedule:', error);
+                logger.error('Failed to reschedule:', error);
                 setRescheduleError('Failed to reschedule. Please try again.');
             }
         });

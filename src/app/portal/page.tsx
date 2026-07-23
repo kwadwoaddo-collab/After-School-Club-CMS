@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getCurrentParent } from '@/lib/parent-auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -5,8 +6,8 @@ import {
     CalendarCheck, CalendarPlus, Users, ChevronRight, Clock,
     MapPin, Video, ArrowRight, LogOut
 } from 'lucide-react';
-import { CancelBookingButton } from '@/components/portal/CancelBookingButton';
-import NotificationBell from '@/components/portal/NotificationBell';
+import { CancelBookingButton } from '@/features/portal/components/CancelBookingButton';
+import NotificationBell from '@/features/portal/components/NotificationBell';
 import { getNotifications } from '@/app/portal/notifications/actions';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';

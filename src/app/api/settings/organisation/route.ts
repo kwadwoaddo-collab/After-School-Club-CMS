@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
@@ -95,7 +97,7 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({ success: true, org: updatedOrg });
     } catch (error) {
-        console.error('Update organisation error:', error);
+        logger.error('Update organisation error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

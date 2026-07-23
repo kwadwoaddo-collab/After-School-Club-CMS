@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites } from '@/db/schema';
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
             organisationId: invite.organisationId,
         });
     } catch (error) {
-        console.error('Validate invite error:', error);
+        logger.error('Validate invite error:', error);
         return NextResponse.json({ error: 'Failed to validate invitation' }, { status: 500 });
     }
 }

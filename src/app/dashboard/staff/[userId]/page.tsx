@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -5,8 +6,8 @@ import { users, organisations, centres, centreMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { ArrowLeft, Crown, Briefcase, MonitorSmartphone, GraduationCap, Mail, MapPin, Calendar, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import StaffCentreAssignment from '@/components/staff/StaffCentreAssignment';
-import StaffRoleSelector from '@/components/staff/StaffRoleSelector';
+import StaffCentreAssignment from '@/features/staff/components/StaffCentreAssignment';
+import StaffRoleSelector from '@/features/staff/components/StaffRoleSelector';
 import { format } from 'date-fns';
 import { ROLE_COLORS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
 
@@ -76,7 +77,7 @@ export default async function EditStaffPage({ params }: PageProps) {
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Back Button */}
             <div className="flex items-center justify-between">
-                <Link href="/dashboard/staff" className="group inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/dashboard/staff" className="group inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all active:scale-95 duration-100">
                     <div className="w-8 h-8 rounded-full bg-secondary/60 border border-border flex items-center justify-center group-hover:bg-secondary transition-all">
                         <ArrowLeft className="w-4 h-4 text-muted-foreground" />
                     </div>
@@ -133,22 +134,26 @@ export default async function EditStaffPage({ params }: PageProps) {
 
             {/* Centre Assignment */}
             {staffMember.role === 'ORG_OWNER' ? (
-                <div className="bg-warning/10 border border-warning/20 rounded-2xl p-6 flex items-start gap-3">
-                    <Crown className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                <div className="bg-card border border-border shadow-sm rounded-2xl p-6 flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+                        <Crown className="w-5 h-5 text-warning" />
+                    </div>
                     <div>
-                        <h3 className="font-bold text-warning text-sm">Organization Owner — Full Access</h3>
-                        <p className="text-xs text-warning/80 font-medium leading-relaxed mt-1">
+                        <h3 className="font-bold text-foreground text-sm">Organization Owner — Full Access</h3>
+                        <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-1">
                             ORG_OWNER users automatically have full access to all centres. Centre assignments are not applicable.
                         </p>
                     </div>
                 </div>
             ) : (
                 <>
-                    <div className="bg-info/10 border border-info/20 rounded-2xl p-6 flex items-start gap-3">
-                        <ShieldCheck className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
+                    <div className="bg-card border border-border shadow-sm rounded-2xl p-6 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-info/10 flex items-center justify-center flex-shrink-0">
+                            <ShieldCheck className="w-5 h-5 text-info" />
+                        </div>
                         <div>
-                            <h3 className="font-bold text-info text-sm">Centre-Level Access Control</h3>
-                            <p className="text-xs text-info font-medium leading-relaxed mt-1">
+                            <h3 className="font-bold text-foreground text-sm">Centre-Level Access Control</h3>
+                            <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-1">
                                 This staff member will only see bookings, students, and data from the centres you assign below.
                             </p>
                         </div>

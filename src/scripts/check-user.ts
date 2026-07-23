@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 
 import 'dotenv/config';
 import { db } from '../db';
@@ -6,7 +7,7 @@ import { eq } from 'drizzle-orm';
 
 async function checkUser() {
     const email = 'kaddo@sydenahmasc.co.uk';
-    console.log(`Checking for user: ${email}`);
+    logger.info(`Checking for user: ${email}`);
 
     const user = await db.query.users.findFirst({
         where: eq(users.email, email),
@@ -16,23 +17,23 @@ async function checkUser() {
     });
 
     if (user) {
-        console.log('User FOUND.');
-        console.log(`ID: ${user.id}`);
-        console.log(`Role: ${user.role}`);
-        console.log(`Organisation ID: ${user.organisationId}`);
+        logger.info('User FOUND.');
+        logger.info(`ID: ${user.id}`);
+        logger.info(`Role: ${user.role}`);
+        logger.info(`Organisation ID: ${user.organisationId}`);
         if (user.organisation) {
-            console.log(`Organisation Name: ${user.organisation.name}`);
+            logger.info(`Organisation Name: ${user.organisation.name}`);
         } else {
-            console.log('No Organisation linked.');
+            logger.info('No Organisation linked.');
         }
     } else {
-        console.log('User NOT FOUND.');
+        logger.info('User NOT FOUND.');
     }
 
     process.exit(0);
 }
 
 checkUser().catch((err) => {
-    console.error('Error checking user:', err);
+    logger.error('Error checking user:', err);
     process.exit(1);
 });

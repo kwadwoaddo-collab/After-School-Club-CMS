@@ -27,7 +27,7 @@ function AcceptInviteContent() {
 
                 setInviteData(data);
                 setStep('ready');
-            } catch (err: any) {
+            } catch (err) {
                 setError(err.message);
                 setStep('error');
             }
@@ -60,7 +60,7 @@ function AcceptInviteContent() {
             setTimeout(() => {
                 window.location.href = '/dashboard';
             }, 1500);
-        } catch (err: any) {
+        } catch (err) {
             setError(err.message);
             setStep('error');
         }

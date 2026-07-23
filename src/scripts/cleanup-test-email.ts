@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
@@ -7,19 +8,19 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 async function main() {
     // Dynamically import db and schema after env is loaded
     const { db } = await import('../db');
-    const { users, parents, staffInvites, studentRegistrations, organisations, centres, bookings } = await import('../db/schema');
+    const { users, parents, staffInvites, organisations, centres, bookings } = await import('../db/schema');
     const { eq, inArray } = await import('drizzle-orm');
 
     // Get email from command line arguments
     const email = process.argv[2];
 
     if (!email) {
-        console.error('❌ Please provide an email address.');
-        console.log('Usage: npm run db:cleanup -- <email>');
+        logger.error('❌ Please provide an email address.');
+        logger.info('Usage: npm run db:cleanup -- <email>');
         process.exit(1);
     }
 
-    console.log(`🧹 Cleaning up data for email: ${email}`);
+    logger.info(`🧹 Cleaning up data for email: ${email}`);
 
     try {
         // 1. Identify Organisations to delete
@@ -36,7 +37,7 @@ async function main() {
         ]));
 
         if (orgIdsToDelete.length > 0) {
-            console.log(`Found ${orgIdsToDelete.length} organisation(s) to cleanup.`);
+            logger.info(`Found ${orgIdsToDelete.length} organisation(s) to cleanup.`);
 
             // 2. Delete Bookings linked to these Orgs (via Centres)
             // Necessary because bookings -> centres (no cascade usually) -> Org
@@ -49,7 +50,7 @@ async function main() {
                 const bookingsToDelete = await db.select().from(bookings).where(inArray(bookings.centreId, centreIds));
                 if (bookingsToDelete.length > 0) {
                     await db.delete(bookings).where(inArray(bookings.centreId, centreIds));
-                    console.log(`  - Deleted ${bookingsToDelete.length} bookings linked to org centres.`);
+                    logger.info(`  - Deleted ${bookingsToDelete.length} bookings linked to org centres.`);
                 }
             }
 
@@ -58,35 +59,33 @@ async function main() {
             const parentsToDelete = await db.select().from(parents).where(inArray(parents.organisationId, orgIdsToDelete));
             if (parentsToDelete.length > 0) {
                 await db.delete(parents).where(inArray(parents.organisationId, orgIdsToDelete));
-                console.log(`  - Deleted ${parentsToDelete.length} parents linked to orgs.`);
+                logger.info(`  - Deleted ${parentsToDelete.length} parents linked to orgs.`);
             }
 
             // 4. Delete the Organisations (Cascades to Centres, Users, etc.)
             await db.delete(organisations).where(inArray(organisations.id, orgIdsToDelete));
-            console.log(`  - Deleted organisations.`);
+            logger.info(`  - Deleted organisations.`);
         }
 
         // 5. Cleanup any remaining records for this email (orphaned or unlinked)
         // Parents
         const remainingParents = await db.delete(parents).where(eq(parents.email, email)).returning({ id: parents.id });
-        if (remainingParents.length > 0) console.log(`  - Deleted ${remainingParents.length} remaining parent record(s).`);
+        if (remainingParents.length > 0) logger.info(`  - Deleted ${remainingParents.length} remaining parent record(s).`);
 
         // Users
         const remainingUsers = await db.delete(users).where(eq(users.email, email)).returning({ id: users.id });
-        if (remainingUsers.length > 0) console.log(`  - Deleted ${remainingUsers.length} remaining user record(s).`);
+        if (remainingUsers.length > 0) logger.info(`  - Deleted ${remainingUsers.length} remaining user record(s).`);
 
         // Staff Invites
         const remainingInvites = await db.delete(staffInvites).where(eq(staffInvites.email, email)).returning({ id: staffInvites.id });
-        if (remainingInvites.length > 0) console.log(`  - Deleted ${remainingInvites.length} staff invite(s).`);
+        if (remainingInvites.length > 0) logger.info(`  - Deleted ${remainingInvites.length} staff invite(s).`);
 
-        // Student Registrations
-        const remainingRegs = await db.delete(studentRegistrations).where(eq(studentRegistrations.email, email)).returning({ id: studentRegistrations.id });
-        if (remainingRegs.length > 0) console.log(`  - Deleted ${remainingRegs.length} student registration(s).`);
 
-        console.log('✨ Cleanup complete!');
+
+        logger.info('✨ Cleanup complete!');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error cleaning up data:', error);
+        logger.error('❌ Error cleaning up data:', error);
         process.exit(1);
     }
 }

@@ -59,6 +59,7 @@ CREATE TABLE "registrations" (
 );
 --> statement-breakpoint
 ALTER TABLE "sessions" DROP CONSTRAINT "sessions_session_token_unique";--> statement-breakpoint
+ALTER TABLE "sessions" DROP COLUMN "id";--> statement-breakpoint
 ALTER TABLE "sessions" ADD PRIMARY KEY ("session_token");--> statement-breakpoint
 ALTER TABLE "booking_attendees" ADD COLUMN "feedback_notes" text;--> statement-breakpoint
 ALTER TABLE "booking_attendees" ADD COLUMN "feedback_score" varchar(50);--> statement-breakpoint
@@ -89,4 +90,3 @@ ALTER TABLE "registration_children" ADD CONSTRAINT "registration_children_child_
 ALTER TABLE "registration_parents" ADD CONSTRAINT "registration_parents_registration_id_registrations_id_fk" FOREIGN KEY ("registration_id") REFERENCES "public"."registrations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "registration_parents" ADD CONSTRAINT "registration_parents_parent_id_parents_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."parents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "registrations" ADD CONSTRAINT "registrations_organisation_id_organisations_id_fk" FOREIGN KEY ("organisation_id") REFERENCES "public"."organisations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "sessions" DROP COLUMN "id";

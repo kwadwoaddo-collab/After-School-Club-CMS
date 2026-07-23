@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/db';
 import { parents, children, studentNotes } from '@/db/schema';
 import { and, eq, ilike } from 'drizzle-orm';
@@ -26,6 +27,17 @@ export interface ChildInput {
   notes?: string | null;
   sessions?: string[] | null;
   systemNoteContent?: string | null;
+  imageUrl?: string | null;
+  allergies?: string[] | null;
+  dietaryRequirements?: string | null;
+  medicalConditions?: string | null;
+  medicationNotes?: string | null;
+  gpName?: string | null;
+  gpPhone?: string | null;
+  senDetails?: string | null;
+  photoConsent?: boolean;
+  sunCreamConsent?: boolean;
+  firstAidConsent?: boolean;
 }
 
 /**
@@ -126,7 +138,18 @@ export async function resolveOrCreateChild(
           schoolYear: data.schoolYear || child.schoolYear,
           dateOfBirth: data.dateOfBirth ?? child.dateOfBirth,
           notes: data.notes ? (child.notes ? `${child.notes}\n${data.notes}` : data.notes) : child.notes,
+          imageUrl: data.imageUrl ?? child.imageUrl,
           registeredSessions: data.sessions || child.registeredSessions,
+          allergies: data.allergies || child.allergies,
+          dietaryRequirements: data.dietaryRequirements || child.dietaryRequirements,
+          medicalConditions: data.medicalConditions || child.medicalConditions,
+          medicationNotes: data.medicationNotes || child.medicationNotes,
+          gpName: data.gpName || child.gpName,
+          gpPhone: data.gpPhone || child.gpPhone,
+          senDetails: data.senDetails || child.senDetails,
+          photoConsent: data.photoConsent ?? child.photoConsent,
+          sunCreamConsent: data.sunCreamConsent ?? child.sunCreamConsent,
+          firstAidConsent: data.firstAidConsent ?? child.firstAidConsent,
           updatedAt: new Date(),
         })
         .where(eq(children.id, child.id));
@@ -155,9 +178,20 @@ export async function resolveOrCreateChild(
       await tx.update(children)
         .set({
           dateOfBirth: child.dateOfBirth ?? (data.dateOfBirth || null),
-          schoolYear: data.schoolYear ?? child.schoolYear,
-          notes: data.notes ? (child.notes ? `${child.notes}\n${data.notes}` : data.notes) : child.notes,
-          registeredSessions: data.sessions || child.registeredSessions,
+          centreId: child.centreId ?? (data.centreId || null),
+          schoolYear: child.schoolYear === 'Unknown' && data.schoolYear ? data.schoolYear : child.schoolYear,
+          notes: child.notes ? (data.notes ? `${child.notes}\n${data.notes}` : child.notes) : data.notes,
+          imageUrl: child.imageUrl ?? (data.imageUrl || null),
+          allergies: child.allergies?.length ? child.allergies : (data.allergies || []),
+          dietaryRequirements: child.dietaryRequirements ?? (data.dietaryRequirements || null),
+          medicalConditions: child.medicalConditions ?? (data.medicalConditions || null),
+          medicationNotes: child.medicationNotes ?? (data.medicationNotes || null),
+          gpName: child.gpName ?? (data.gpName || null),
+          gpPhone: child.gpPhone ?? (data.gpPhone || null),
+          senDetails: child.senDetails ?? (data.senDetails || null),
+          photoConsent: child.photoConsent ?? (data.photoConsent ?? false),
+          sunCreamConsent: child.sunCreamConsent ?? (data.sunCreamConsent ?? false),
+          firstAidConsent: child.firstAidConsent ?? (data.firstAidConsent ?? false),
           updatedAt: new Date(),
         })
         .where(eq(children.id, child.id));
@@ -174,11 +208,23 @@ export async function resolveOrCreateChild(
         firstName: cleanFirstName,
         lastName: cleanLastName,
         dateOfBirth: data.dateOfBirth || null,
-        schoolYear: data.schoolYear || 'Unknown',
+        schoolYear: data.schoolYear,
         notes: data.notes || null,
+        imageUrl: data.imageUrl || null,
+        registeredSessions: data.sessions || null,
+        allergies: data.allergies || [],
+        dietaryRequirements: data.dietaryRequirements || null,
+        medicalConditions: data.medicalConditions || null,
+        medicationNotes: data.medicationNotes || null,
+        gpName: data.gpName || null,
+        gpPhone: data.gpPhone || null,
+        senDetails: data.senDetails || null,
+        photoConsent: data.photoConsent ?? false,
+        sunCreamConsent: data.sunCreamConsent ?? false,
+        firstAidConsent: data.firstAidConsent ?? false,
+        source: 'registration',
         isRegistered: true,
         registeredAt: new Date(),
-        registeredSessions: data.sessions || null,
       }).returning();
       child = insertedChild;
     }

@@ -10,7 +10,7 @@
  * to Server Components.
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, startTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 export interface Centre {
@@ -69,7 +69,9 @@ export function CentreFilterProvider({
     } catch {
       // ignore
     }
-    router.refresh();
+    startTransition(() => {
+      router.refresh();
+    });
   }, [router]);
 
   // Sync from URL search parameter ?centre=XYZ and clean it up

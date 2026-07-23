@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -7,8 +9,8 @@ import { eq, desc, and, gte, lte, inArray, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Download, Calendar, Filter, Search } from 'lucide-react';
 import { Suspense } from 'react';
-import BookingsTable from '@/components/bookings/BookingsTable';
-import BookingsFilters from '@/components/bookings/BookingsFilters';
+import BookingsTable from '@/features/bookings/components/BookingsTable';
+import BookingsFilters from '@/features/bookings/components/BookingsFilters';
 import Pagination from '@/components/ui/Pagination';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import { getUserAccessibleCentres } from '@/lib/permissions';
@@ -82,7 +84,7 @@ export default async function BookingsPage(props: {
     const effectiveFrom = isToday ? todayStr : searchParams.from;
     const effectiveTo   = isToday ? todayStr : searchParams.to;
 
-    let bookingsData: any[] = [];
+    let bookingsData: unknown[] = [];
     let searchActiveAndNoResults = false;
     let matchingIds: string[] = [];
 
@@ -99,7 +101,6 @@ export default async function BookingsPage(props: {
                 .select({ id: bookings.id })
                 .from(bookings)
                 .leftJoin(parents, eq(bookings.parentId, parents.id))
-                .leftJoin(children, eq(bookings.childId, children.id))
                 .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
                 .leftJoin(attendeeChildren, eq(bookingAttendees.childId, attendeeChildren.id))
                 .where(
@@ -122,7 +123,7 @@ export default async function BookingsPage(props: {
             matchingIds = matchingBookings.map(mb => mb.id);
             if (matchingIds.length === 0) searchActiveAndNoResults = true;
         } catch (error) {
-            console.error('Failed to search bookings:', error);
+            logger.error('Failed to search bookings:', error);
             searchActiveAndNoResults = true;
         }
     }
@@ -170,7 +171,7 @@ export default async function BookingsPage(props: {
     const aggWhere = aggConds.length === 1 ? aggConds[0] : (aggConds.length > 0 ? and(...aggConds) : undefined);
 
     let totalRecords = 0;
-    let statusCountsAgg: any[] = [];
+    let statusCountsAgg: unknown[] = [];
 
     if (!searchActiveAndNoResults) {
         try {
@@ -213,12 +214,11 @@ export default async function BookingsPage(props: {
                         },
                         with: { child: { with: { notes: true } } }
                     },
-                    tutor: true,
-                    child: { with: { notes: true } }
+                    staff: true
                 }
             });
         } catch (error) {
-            console.error('Failed to fetch bookings data:', error);
+            logger.error('Failed to fetch bookings data:', error);
             bookingsData = [];
         }
     }

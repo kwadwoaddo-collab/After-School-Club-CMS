@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { nanoid } from 'nanoid';
@@ -19,7 +20,7 @@ async function seed() {
     users
   } = await import('./schema');
 
-  console.log('🌱 Seeding database with 10 varied MVP Test Bookings...');
+  logger.info('🌱 Seeding database with 10 varied MVP Test Bookings...');
 
   const userEmail = 'kwadwoaddo@googlemail.com';
 
@@ -112,7 +113,7 @@ async function seed() {
     { firstName: 'Ava', lastName: 'Brown', year: 'Reception', parent: 'Mark', offset: 7, time: 10 },    // Next Week
   ];
 
-  console.log('⌛ Creating 10 test bookings with varied dates...');
+  logger.info('⌛ Creating 10 test bookings with varied dates...');
 
   for (const data of testData) {
     // Create Parent
@@ -158,16 +159,16 @@ async function seed() {
     });
   }
 
-  console.log('');
-  console.log('✅ 10 total test bookings created with varied dates!');
-  console.log('📋 Organisation: Bright Star Academy');
-  console.log('');
-  console.log('🔗 View results: http://localhost:3000/dashboard');
+  logger.info('');
+  logger.info('✅ 10 total test bookings created with varied dates!');
+  logger.info('📋 Organisation: Bright Star Academy');
+  logger.info('');
+  logger.info('🔗 View results: http://localhost:3000/dashboard');
 
   process.exit(0);
 }
 
 seed().catch((error) => {
-  console.error('❌ Seeding failed:', error);
+  logger.error('❌ Seeding failed:', error);
   process.exit(1);
 });

@@ -118,11 +118,11 @@ describe('getAttendanceColorClass', () => {
   });
 
   it('returns error classes for absent', () => {
-    expect(getAttendanceColorClass('absent')).toContain('error');
+    expect(getAttendanceColorClass('absent')).toContain('rose');
   });
 
   it('returns error classes for no_show', () => {
-    expect(getAttendanceColorClass('no_show')).toContain('error');
+    expect(getAttendanceColorClass('no_show')).toContain('rose');
   });
 
   it('returns primary classes for excused', () => {

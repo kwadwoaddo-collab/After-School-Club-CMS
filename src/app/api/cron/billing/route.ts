@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import {
@@ -140,11 +141,11 @@ export async function POST(request: NextRequest) {
                 results.errors++;
                 const msg = err instanceof Error ? err.message : String(err);
                 results.errorDetails.push(`config ${config.id}: ${msg}`);
-                console.error(`[cron/billing] Error for config ${config.id}:`, err);
+                logger.error(`[cron/billing] Error for config ${config.id}:`, err);
             }
         }
 
-        console.log('[cron/billing] Run complete:', results);
+        logger.info('[cron/billing] Run complete:', results);
 
         return NextResponse.json({
             ok: true,
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (err) {
-        console.error('[cron/billing] Fatal error:', err);
+        logger.error('[cron/billing] Fatal error:', err);
         return NextResponse.json(
             { error: 'Cron failed', details: err instanceof Error ? err.message : String(err) },
             { status: 500 }
