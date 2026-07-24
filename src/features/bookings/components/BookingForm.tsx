@@ -455,18 +455,18 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             .brand-border { border-color: ${brandColor}; }
             .brand-ring:focus { --tw-ring-color: ${brandColor}; ring-color: ${brandColor}; }
             
-            .bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0 {
+            .brand-btn {
                 background-color: ${brandColor};
                 color: white;
             }
-            .bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0:hover {
+            .brand-btn:hover {
                 filter: brightness(0.9);
             }
-            .bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0-outline {
+            .brand-btn-outline {
                 border-color: ${brandColor};
                 color: ${brandColor};
             }
-            .bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0-outline:hover {
+            .brand-btn-outline:hover {
                 background-color: ${brandColor}10; /* 10% opacity */
             }
             
@@ -486,25 +486,25 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-2">
+                <h2 className="text-3xl font-bold text-foreground mb-2">
                     {rescheduleData ? 'Reschedule Confirmed!' : 'Booking Confirmed!'}
                 </h2>
-                <div className="bg-white/5 border border-white/10 shadow-sm rounded-xl p-6 max-w-md mx-auto mb-8 text-left space-y-5 animate-fadeIn">
-                    <div className="border-b border-white/10 pb-4">
-                        <p className="text-sm font-medium text-white/50 mb-1">Child(ren)</p>
-                        <p className="text-lg font-semibold text-white">
+                <div className="bg-card border border-border shadow-sm rounded-xl p-6 max-w-md mx-auto mb-8 text-left space-y-5 animate-fadeIn">
+                    <div className="border-b border-border pb-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Child(ren)</p>
+                        <p className="text-lg font-semibold text-foreground">
                             {watchedChildren.map(c => `${c.firstName} ${c.lastName}`).filter(n => n.trim() !== '').join(', ') || 'Not specified'}
                         </p>
                     </div>
-                    <div className="border-b border-white/10 pb-4">
-                        <p className="text-sm font-medium text-white/50 mb-1">Date & Time</p>
-                        <p className="text-lg font-semibold text-white">
+                    <div className="border-b border-border pb-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Date & Time</p>
+                        <p className="text-lg font-semibold text-foreground">
                             {watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}
                         </p>
                     </div>
                     <div>
-                        <p className="text-sm font-medium text-white/50 mb-1">Centre</p>
-                        <p className="text-lg font-semibold text-white">{centreName}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Centre</p>
+                        <p className="text-lg font-semibold text-foreground">{centreName}</p>
                     </div>
                 </div>
 
@@ -524,7 +524,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 router.refresh();
                             }
                         }}
-                        className="bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0 inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                         Done
                     </Link>
@@ -541,7 +541,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             <div className="mb-4">
                 {step === 1 ? (
                     backToCentresUrl && (
-                        <Link href={backToCentresUrl} className="inline-flex items-center text-white/50 hover:text-white text-sm transition-colors group">
+                        <Link href={backToCentresUrl} className="inline-flex items-center text-muted-foreground hover:text-foreground text-sm transition-colors group">
                             <svg className="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
@@ -552,7 +552,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     <button
                         type="button"
                         onClick={() => setStep(step - 1)}
-                        className="inline-flex items-center text-white/50 hover:text-white text-sm transition-colors group"
+                        className="inline-flex items-center text-muted-foreground hover:text-foreground text-sm transition-colors group"
                     >
                         <svg className="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -570,19 +570,19 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             type="button"
                             onClick={() => { if (s < step) setStep(s); }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all
-                  ${step >= s ? 'brand-bg text-white' : 'bg-white/10 text-white/50'}
+                  ${step >= s ? 'brand-bg text-foreground' : 'bg-secondary text-muted-foreground'}
                   ${s < step ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
                         >
                             {step > s ? '✓' : s}
                         </button>
                         {s < 4 && (
-                            <div className={`w-8 md:w-16 h-1 mx-1 md:mx-2 rounded ${step > s ? 'brand-bg' : 'bg-white/10'}`} />
+                            <div className={`w-8 md:w-16 h-1 mx-1 md:mx-2 rounded ${step > s ? 'brand-bg' : 'bg-secondary'}`} />
                         )}
                     </div>
                 ))}
             </div>
 
-            <div className="hidden md:flex justify-between text-xs text-white/50 mb-8 px-4">
+            <div className="hidden md:flex justify-between text-xs text-muted-foreground mb-8 px-4">
                 <span className={step >= 1 ? 'brand-text font-medium' : ''}>Parent</span>
                 <span className={step >= 2 ? 'brand-text font-medium' : ''}>Children</span>
                 <span className={step >= 3 ? 'brand-text font-medium' : ''}>Appointment</span>
@@ -594,7 +594,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                 {/* Step 1: Parent Details */}
                 {step === 1 && (
-                    <div className="bg-white/5 p-6 rounded-lg space-y-6 animate-fadeIn">
+                    <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
                         {/* Toggle for New / Existing Family */}
                         <div className="flex gap-4 mb-6">
                             <button
@@ -612,7 +612,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     setParentChildrenList([]);
                                     setValue('children', []);
                                 }}
-                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/10 text-white/50 bg-white/5 hover:bg-white/5'}`}
+                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'new' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
                             >
                                 New Family
                             </button>
@@ -631,7 +631,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     setParentChildrenList([]);
                                     setValue('children', []);
                                 }}
-                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-white/10 text-white/50 bg-white/5 hover:bg-white/5'}`}
+                                className={`flex-1 py-3 px-4 rounded-xl border font-semibold text-sm transition-all ${bookingMode === 'existing' ? 'bg-primary/20 border-primary/50 text-primary' : 'border-border text-muted-foreground bg-card hover:bg-secondary/40'}`}
                             >
                                 Existing Family
                             </button>
@@ -639,14 +639,14 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
                         {bookingMode === 'existing' && (
                             <div className="relative mb-6">
-                                <label className="block text-sm font-medium text-white/70 mb-1">Search Parent *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Search Parent *</label>
                                 <div className="relative">
                                     <input
                                         type="text"
                                         placeholder="Type parent name, email or phone..."
                                         value={parentSearchQuery}
                                         onChange={(e) => handleParentSearch(e.target.value)}
-                                        className="w-full px-4 py-3 border border-white/10 rounded-lg outline-none focus:ring-2 brand-ring focus:border-transparent text-white pr-10"
+                                        className="w-full px-4 py-3 border border-border rounded-lg outline-none focus:ring-2 brand-ring focus:border-transparent text-foreground pr-10"
                                     />
                                     {searchingParents && (
                                         <div className="absolute right-3 top-3.5">
@@ -657,15 +657,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 
                                 {/* Dropdown search results */}
                                 {parentSearchResults.length > 0 && (
-                                    <div className="absolute z-10 left-0 right-0 mt-1 bg-white/5 border border-white/10 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-10 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                         {parentSearchResults.map((result: any) => (
                                             <button
                                                 key={result.id}
                                                 type="button"
                                                 onClick={() => handleSelectParent(result.id)}
-                                                className="w-full px-4 py-3 text-left hover:bg-white/5 flex flex-col border-b last:border-b-0"
+                                                className="w-full px-4 py-3 text-left hover:bg-secondary/40 flex flex-col border-b last:border-b-0"
                                             >
-                                                <span className="font-semibold text-white">{result.title}</span>
+                                                <span className="font-semibold text-foreground">{result.title}</span>
                                                 <span className="text-xs text-gray-505" style={{ color: '#666' }}>{result.subtitle}</span>
                                             </button>
                                         ))}
@@ -674,35 +674,35 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             </div>
                         )}
 
-                        <h2 className="text-xl font-semibold text-white">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">✓ Linked</span>}</h2>
+                        <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">✓ Linked</span>}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-1">First Name *</label>
-                                <input {...register('parent.firstName')} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" placeholder="Enter first name" />
+                                <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
+                                <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Enter first name" />
                                 {errors.parent?.firstName && <p className="text-red-600 text-sm mt-1">{errors.parent.firstName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-1">Last Name *</label>
-                                <input {...register('parent.lastName')} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" placeholder="Enter last name" />
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
+                                <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Enter last name" />
                                 {errors.parent?.lastName && <p className="text-red-600 text-sm mt-1">{errors.parent.lastName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-1">Email <span className="text-white/50 font-normal">(Optional)</span></label>
-                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" placeholder="email@example.com" />
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Email <span className="text-muted-foreground font-normal">(Optional)</span></label>
+                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="email@example.com" />
                                 {errors.parent?.email && <p className="text-red-600 text-sm mt-1">{errors.parent.email.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-1">Phone *</label>
-                                <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" />
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Phone *</label>
+                                <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-white/70 mb-2">Preferred Contact Method</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-2">Preferred Contact Method</label>
                                 <div className="flex gap-4">
                                     {['email', 'phone'].map((method) => {
                                         const isSelected = watchedPreferredContact === method;
                                         return (
-                                            <label key={method} className={`flex-1 flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg border-2 transition-all ${isSelected ? 'border-gray-800 bg-white/5 text-white font-semibold shadow-sm' : 'border-white/10 bg-white/5 text-white/50 hover:border-white/10 hover:bg-white/5'}`}>
+                                            <label key={method} className={`flex-1 flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg border-2 transition-all ${isSelected ? 'border-gray-800 bg-secondary/40 text-foreground font-semibold shadow-sm' : 'border-border bg-card text-muted-foreground hover:border-border hover:bg-secondary/40'}`}>
                                                 <input type="radio" {...register('parent.preferredContact')} value={method} className="sr-only" />
                                                 <span className="capitalize">{method}</span>
                                             </label>
@@ -720,9 +720,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     <div className="space-y-6 animate-fadeIn">
                         {bookingMode === 'existing' ? (
                             <div className="space-y-4">
-                                <h3 className="text-lg font-bold text-white mb-2">Select Registered Children</h3>
+                                <h3 className="text-lg font-bold text-foreground mb-2">Select Registered Children</h3>
                                 {parentChildrenList.length === 0 ? (
-                                    <p className="text-sm text-white/50 bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                                    <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 p-4 rounded-xl">
                                         No registered children found for this parent. Please toggle back to Step 1 and add them manually under "New Family" mode.
                                     </p>
                                 ) : (
@@ -733,7 +733,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             const childFormIndex = currentChildren.findIndex(c => c.id === child.id);
 
                                             return (
-                                                <div key={child.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-sm space-y-4">
+                                                <div key={child.id} className="bg-secondary/40 border border-border rounded-2xl p-5 shadow-sm space-y-4">
                                                     <label className="flex items-center gap-3 cursor-pointer">
                                                         <input
                                                             type="checkbox"
@@ -742,15 +742,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                             className="w-5 h-5 brand-checkbox rounded focus:ring-0"
                                                         />
                                                         <div className="text-left">
-                                                            <p className="font-bold text-white">{child.firstName} {child.lastName}</p>
-                                                            <p className="text-xs text-white/50 font-medium">Year Group: {child.schoolYear}</p>
+                                                            <p className="font-bold text-foreground">{child.firstName} {child.lastName}</p>
+                                                            <p className="text-xs text-muted-foreground font-medium">Year Group: {child.schoolYear}</p>
                                                         </div>
                                                     </label>
 
                                                     {isSelected && childFormIndex !== -1 && (
-                                                        <div className="pt-4 border-t border-white/10/65 space-y-4 animate-fadeIn">
+                                                        <div className="pt-4 border-t border-border/65 space-y-4 animate-fadeIn">
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-white/70 mb-2">Club Activities / Interests *</label>
+                                                                <label className="block text-sm font-semibold text-slate-800 mb-2">Club Activities / Interests *</label>
                                                                 <Controller
                                                                     name={`children.${childFormIndex}.subjects`}
                                                                     control={control}
@@ -768,7 +768,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                                                 : [...(selectField.value || []), subject];
                                                                                             selectField.onChange(newValue);
                                                                                         }}
-                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-white' : 'bg-white/5 border-white/10 text-white/80 hover:border-gray-400'}`}
+                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-slate-700 hover:border-gray-400'}`}
                                                                                     >
                                                                                         {isSubSelected && '✓ '}{subject}
                                                                                     </button>
@@ -782,12 +782,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                 )}
                                                             </div>
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-white/70 mb-1">Additional Notes (Optional)</label>
+                                                                <label className="block text-sm font-semibold text-slate-800 mb-1">Additional Notes (Optional)</label>
                                                                 <textarea
                                                                     {...register(`children.${childFormIndex}.notes`)}
                                                                     rows={2}
                                                                     placeholder="Any specific goals or information..."
-                                                                    className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all"
+                                                                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground"
                                                                 />
                                                             </div>
                                                         </div>
@@ -801,32 +801,32 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         ) : (
                             <>
                                 {fields.map((field, index) => (
-                                    <div key={field.id} className="bg-white/5 p-6 rounded-lg space-y-6 relative border border-white/10 shadow-sm">
+                                    <div key={field.id} className="bg-secondary/40 p-6 rounded-lg space-y-6 relative border border-border shadow-sm">
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className="text-lg font-semibold text-white">Child {index + 1}</h3>
+                                            <h3 className="text-lg font-semibold text-foreground">Child {index + 1}</h3>
                                             {fields.length > 1 && (
                                                 <button type="button" onClick={() => remove(index)} className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center">Remove</button>
                                             )}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-white/70 mb-1">First Name *</label>
-                                                <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" placeholder="Child's first name" />
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
+                                                <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Child's first name" />
                                                 {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-white/70 mb-1">Last Name *</label>
-                                                <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" placeholder="Child's last name" />
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
+                                                <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Child's last name" />
                                                 {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-white/70 mb-1">Photo (Optional)</label>
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Photo (Optional)</label>
                                                 <div className="flex items-center gap-4">
                                                     <input 
                                                         type="file" 
                                                         accept="image/*"
                                                         onChange={(e) => handleImageUpload(index, e)}
-                                                        className="w-full px-4 py-2 border border-white/10 rounded-lg focus:ring-2 brand-ring outline-none text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/10/80 transition-colors cursor-pointer" 
+                                                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 brand-ring outline-none text-foreground text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-secondary file:text-foreground hover:file:bg-secondary/80 transition-colors cursor-pointer" 
                                                     />
                                                     {uploadingImage[index] && <Spinner size="sm" />}
                                                     {watchedChildren?.[index]?.imageUrl && !uploadingImage[index] && (
@@ -835,20 +835,20 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 </div>
                                             </div>
                                             <div className="hidden">
-                                                <label className="block text-sm font-medium text-white/70 mb-1">Date of Birth</label>
-                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" />
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>
+                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" />
                                                 {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-white/70 mb-1">School Year *</label>
-                                                <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all">
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">School Year *</label>
+                                                <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground">
                                                     <option value="">Select year...</option>
                                                     {SCHOOL_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
                                                 </select>
                                                 {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-white/70 mb-2">Club Activities / Interests *</label>
+                                                <label className="block text-sm font-medium text-slate-800 mb-2">Club Activities / Interests *</label>
                                                 <Controller
                                                     name={`children.${index}.subjects`}
                                                     control={control}
@@ -864,7 +864,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                             const newValue = isSelected ? field.value?.filter((s) => s !== subject) : [...(field.value || []), subject];
                                                                             field.onChange(newValue);
                                                                         }}
-                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-white' : 'bg-white/5 border-white/10 text-white/70 hover:border-gray-400'}`}
+                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-slate-800 hover:border-gray-400'}`}
                                                                     >
                                                                         {isSelected && '✓ '}{subject}
                                                                     </button>
@@ -878,15 +878,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                         <input
                                                             {...register(`children.${index}.customSubject`)}
                                                             placeholder="Please specify subject..."
-                                                            className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50 text-white"
+                                                            className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50 text-foreground"
                                                         />
                                                     </div>
                                                 )}
                                                 {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-white/70 mb-1">Additional Notes (Optional)</label>
-                                                <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all" />
+                                                <label className="block text-sm font-medium text-slate-800 mb-1">Additional Notes (Optional)</label>
+                                                <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" />
                                             </div>
                                         </div>
                                     </div>
@@ -894,7 +894,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 <button
                                     type="button"
                                     onClick={() => append({ firstName: '', lastName: '', subjects: [], schoolYear: 'Y1', dateOfBirth: '' })}
-                                    className="w-full py-3 border-2 border-dashed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0-outline"
+                                    className="w-full py-3 border-2 border-dashed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 brand-btn-outline"
                                 >
                                     + Add Another Child
                                 </button>
@@ -906,10 +906,10 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 3: Appointment */}
                 {
                     step === 3 && (
-                        <div className="bg-white/5 p-6 rounded-lg space-y-6 animate-fadeIn">
-                            <h2 className="text-xl font-semibold text-white">Choose Appointment</h2>
+                        <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
+                            <h2 className="text-xl font-semibold text-foreground">Choose Appointment</h2>
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-2">Session Type</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-2">Session Type</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     {[
                                         { value: 'in_person', label: '🏫 In-Person', desc: `At ${centreName}`, disabled: false },
@@ -920,15 +920,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             key={opt.value}
                                             className={`p-4 border-2 rounded-lg text-center transition-all ${
                                                 opt.disabled
-                                                    ? 'border-white/10 bg-white/5 opacity-50 pointer-events-none cursor-not-allowed'
+                                                    ? 'border-border bg-secondary/40 opacity-50 pointer-events-none cursor-not-allowed'
                                                     : modality === opt.value
-                                                        ? 'brand-border bg-white/5 shadow-md cursor-pointer'
-                                                        : 'border-white/10 hover:border-white/10 cursor-pointer'
+                                                        ? 'brand-border bg-card shadow-md cursor-pointer'
+                                                        : 'border-border hover:border-border cursor-pointer'
                                             }`}
                                         >
                                             <input type="radio" {...register('appointment.modality')} value={opt.value} disabled={opt.disabled} className="sr-only" />
-                                            <div className={`text-lg font-medium ${opt.disabled ? 'text-white/50' : modality === opt.value ? 'brand-text' : 'text-white'}`}>{opt.label}</div>
-                                            <div className="text-sm text-white/50">{opt.desc}</div>
+                                            <div className={`text-lg font-medium ${opt.disabled ? 'text-muted-foreground' : modality === opt.value ? 'brand-text' : 'text-foreground'}`}>{opt.label}</div>
+                                            <div className="text-sm text-muted-foreground">{opt.desc}</div>
                                         </label>
                                     ))}
                                 </div>
@@ -936,7 +936,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
                             <div>
                                 {/* Task 4: Date is now mandatory — label updated and helptext added */}
-                                <label className="block text-sm font-medium text-white/70 mb-2">Select Date *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-2">Select Date *</label>
                                 <input
                                     type="date"
                                     value={selectedDate}
@@ -948,14 +948,14 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     }}
                                     min={today}
                                     max={maxDate}
-                                    className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all"
+                                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground"
                                 /></div>
 
                             {selectedDate && (
                                 <div>
-                                    <label className="block text-sm font-medium text-white/70 mb-2">Available Times</label>
+                                    <label className="block text-sm font-medium text-slate-800 mb-2">Available Times</label>
                                     {daySchedule && !daySchedule.open ? (
-                                        <div className="text-center py-8 text-white/50 bg-white/10/60 rounded-lg"><p>The centre is closed on this day.</p></div>
+                                        <div className="text-center py-8 text-muted-foreground bg-secondary/60 rounded-lg"><p>The centre is closed on this day.</p></div>
                                     ) : (
                                         <div className="mt-2">
                                             <input
@@ -963,10 +963,10 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 {...register('appointment.startAt')}
                                                 min={daySchedule?.start || '00:00'}
                                                 max={daySchedule?.end || '23:59'}
-                                                className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:ring-2 brand-ring focus:border-transparent outline-none text-white placeholder:text-white/40 font-medium transition-all"
+                                                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground"
                                             />
-                                            <p className="mt-2 text-sm text-white/50 font-medium">
-                                                Centre hours: <span className="text-white font-semibold">{formatAmPm(daySchedule?.start || '00:00')} - {formatAmPm(daySchedule?.end || '23:59')}</span>
+                                            <p className="mt-2 text-sm text-muted-foreground font-medium">
+                                                Centre hours: <span className="text-foreground font-semibold">{formatAmPm(daySchedule?.start || '00:00')} - {formatAmPm(daySchedule?.end || '23:59')}</span>
                                             </p>
                                         </div>
                                     )}
@@ -979,22 +979,22 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 4: Confirm */}
                 {
                     step === 4 && (
-                        <div className="bg-white/5 p-6 rounded-lg space-y-6 animate-fadeIn">
-                            <h2 className="text-xl font-semibold text-white">Confirm Booking</h2>
-                            <div className="bg-white/5 rounded-lg border border-white/10 divide-y divide-gray-100">
-                                <div className="px-4 py-3 flex justify-between"><span className="text-white/50">Centre</span><span className="font-medium text-white">{centreName}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-white/50">Session Type</span><span className="font-medium text-white">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
-                                <div className="px-4 py-3 flex justify-between"><span className="text-white/50">Date & Time</span><span className="font-medium text-white">{watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
+                        <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
+                            <h2 className="text-xl font-semibold text-foreground">Confirm Booking</h2>
+                            <div className="bg-card rounded-lg border border-border divide-y divide-gray-100">
+                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Centre</span><span className="font-medium text-foreground">{centreName}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Session Type</span><span className="font-medium text-foreground">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
+                                <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Date & Time</span><span className="font-medium text-foreground">{watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
 
                                 {watchedChildren.map((child, i) => (
                                     <div key={i} className="px-4 py-3">
                                         <div className="flex justify-between mb-1">
-                                            <span className="text-white/50">Child {i + 1}</span>
-                                            <span className="font-medium text-white">{child.firstName} {child.lastName}</span>
+                                            <span className="text-muted-foreground">Child {i + 1}</span>
+                                            <span className="font-medium text-foreground">{child.firstName} {child.lastName}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-white/50">Activities / Interests</span>
-                                            <span className="font-medium text-white">{child.subjects?.join(', ') || 'None selected'}</span>
+                                            <span className="text-muted-foreground">Activities / Interests</span>
+                                            <span className="font-medium text-foreground">{child.subjects?.join(', ') || 'None selected'}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -1014,7 +1014,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Buttons */}
                 <div className="flex gap-4">
                     {step > 1 && (
-                        <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-white/10 text-white/70 rounded-lg font-semibold hover:bg-white/5 transition-colors">← Back</button>
+                        <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-border text-slate-800 rounded-lg font-semibold hover:bg-secondary/40 transition-colors">← Back</button>
                     )}
                     {step < 4 ? (
                         // Task 4: on step 3, require both a date AND a valid time slot before enabling Continue
@@ -1028,12 +1028,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 const currentMaxTime = daySchedule.end;
                                 return timeVal < currentMinTime || timeVal > currentMaxTime;
                             })())}
-                            className="flex-1 bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0 py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             Continue →
                         </button>
                     ) : (
-                        <button type="submit" disabled={isSubmitting} className="flex-1 bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold hover:from-[#4f93ff] hover:to-[#7c7fff] transition-all duration-200 shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:shadow-[0_6px_24px_rgba(59,130,246,0.5)] border-0 py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <button type="submit" disabled={isSubmitting} className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             {isSubmitting ? <><Spinner size="sm" /><span>Booking...</span></> : 'Confirm Booking ✓'}
                         </button>
                     )}

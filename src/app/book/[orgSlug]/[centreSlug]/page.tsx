@@ -106,33 +106,33 @@ export default async function BookingPage({
 
   return (
     <div className="min-h-screen py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-white/10" style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}>
-          <div className="mb-8">
-            <div className="flex items-center gap-4">
+      <div className="max-w-2xl mx-auto">
+        <div
+          className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+          style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}
+        >
+          <div className="px-8 pt-8 pb-4">
+            <div className="flex items-center gap-4 mb-1">
               {org.logoUrl && (
-                 
-                <img src={org.logoUrl} alt="Logo" className="h-12 w-auto object-contain" />
+                <img src={org.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
               )}
               <div>
-                <h1 className="text-3xl font-bold text-white">
-                  Book a Session
-                </h1>
-                <p className="text-lg text-white/50">
-                  {centre.name}
-                </p>
+                <h1 className="text-2xl font-bold text-gray-900">Book a Session</h1>
+                <p className="text-sm text-gray-500">{centre.name}</p>
               </div>
             </div>
           </div>
 
-          <BookingForm
-            centreId={centre.id}
-            centreName={centre.name}
-            operatingHours={centre.operatingHours}
-            brandColor={brandColor}
-            backToCentresUrl={orgCentres.length > 1 ? `/book/${orgSlug}` : undefined}
-            rescheduleData={bookingToReschedule}
-          />
+          <div className="px-8 pb-8">
+            <BookingForm
+              centreId={centre.id}
+              centreName={centre.name}
+              operatingHours={centre.operatingHours}
+              brandColor={brandColor}
+              backToCentresUrl={orgCentres.length > 1 ? `/book/${orgSlug}` : undefined}
+              rescheduleData={bookingToReschedule}
+            />
+          </div>
         </div>
       </div>
     </div>
