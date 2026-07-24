@@ -56,7 +56,6 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
     const router = useRouter();
-    const [quickActionsOpen, setQuickActionsOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const { selectedCentreId, setSelectedCentreId, centres } = useCentreFilter();
     const centreBtnRef = useRef<HTMLButtonElement>(null);
@@ -195,40 +194,6 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         )}
                     </div>
 
-                    {/* Quick Links - Only show when expanded */}
-                    {!collapsed && (
-                        <>
-                            {(allowedActions.includes('booking-link') || allowedActions.includes('registration-link')) && (
-                                <div className="mb-6">
-                                    <button
-                                        suppressHydrationWarning
-                                        onClick={() => setQuickActionsOpen(o => !o)}
-                                        aria-expanded={quickActionsOpen}
-                                        className="flex items-center justify-between w-full px-2 mb-3 group active:scale-[0.98] transition-transform duration-100"
-                                    >
-                                        <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-[0.12em] group-hover:text-foreground transition-colors">
-                                            Quick Links
-                                        </p>
-                                        <ChevronDown
-                                            className={`w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-all duration-200 ${quickActionsOpen ? 'rotate-180' : ''}`}
-                                        />
-                                    </button>
-                                    <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${quickActionsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                        <Link
-                                            href="/dashboard/share"
-                                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all text-sm font-semibold group"
-                                        >
-                                            <Share2 className="w-3.5 h-3.5 flex-shrink-0 group-hover:scale-105 transition-transform" />
-                                            Share Portals
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Divider */}
-                            <div className="h-px bg-border mb-6" />
-                        </>
-                    )}
 
                     {/* Active Centre Selector — dropdown uses position:fixed so it renders in the
                         viewport stacking context (z-[200]), escaping the sidebar's z-50 context */}
@@ -418,9 +383,40 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     </nav>
                     </div>
 
-                    {/* Premium User Profile Footer */}
-                    <div className="mt-auto pt-4 flex-shrink-0">
+                    {/* Utility Area & User Profile Footer */}
+                    <div className="mt-auto pt-4 flex-shrink-0 flex flex-col">
                         <div className="h-px bg-border/60 mb-4" />
+
+                        {/* Share Portals Utility */}
+                        {(allowedActions.includes('booking-link') || allowedActions.includes('registration-link')) && (
+                            <div className="relative group/tooltip mb-2">
+                                <Link
+                                    href="/dashboard/share"
+                                    className={`
+                                        flex items-center gap-3 px-3 py-2
+                                        text-slate-500 dark:text-slate-400
+                                        hover:text-slate-900 dark:hover:text-slate-50
+                                        hover:bg-slate-100/50 dark:hover:bg-slate-800/50
+                                        active:scale-[0.98] transition-colors duration-150 ease-out
+                                        ${pathname === '/dashboard/share' ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20' : ''}
+                                        ${collapsed ? 'w-10 h-10 rounded-xl justify-center px-0 mx-auto' : 'w-full rounded-xl'}
+                                    `}
+                                >
+                                    <Share2 strokeWidth={1.5} className="w-5 h-5 flex-shrink-0" />
+                                    {!collapsed && (
+                                        <span className="text-sm font-medium tracking-tight">
+                                            Share Portals
+                                        </span>
+                                    )}
+                                </Link>
+                                {collapsed && (
+                                    <div className="absolute left-full ml-4 top-1/2 translate-y-[calc(-50%+4px)] group-hover/tooltip:-translate-y-1/2 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-all duration-200 delay-200 z-[100] px-2.5 py-1.5 bg-slate-900 dark:bg-slate-800 text-slate-50 text-xs font-medium rounded-md shadow-lg whitespace-nowrap hidden md:block">
+                                        Share Portals
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div
                             className={`
                                 flex items-center gap-3 p-2 rounded-xl transition-colors hover:bg-secondary/40
