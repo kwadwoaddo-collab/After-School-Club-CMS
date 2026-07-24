@@ -62,12 +62,17 @@ function LoginForm() {
     setStaffLoading(true);
     setStaffError('');
     try {
-      await fetch('/api/staff/request-magic-link', {
+      const res = await fetch('/api/staff/request-magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: staffEmail }),
       });
-      setStaffSent(true);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setStaffError(data.error || 'Failed to send login link. Please try again.');
+      } else {
+        setStaffSent(true);
+      }
     } catch {
       setStaffError('Failed to send login link. Please try again.');
     } finally {
