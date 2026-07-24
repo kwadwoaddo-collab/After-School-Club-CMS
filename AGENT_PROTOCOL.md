@@ -23,6 +23,33 @@ To confirm which DB you are connected to at any time, check the host in `.env.lo
 
 ---
 
+## 🌿 Git Branch Strategy
+
+| Branch | Purpose | Deploys to |
+|---|---|---|
+| `dev` | All day-to-day development work | Vercel Preview only (not production) |
+| `main` | Stable, production-ready code | **Live site** (auto-deploys on push) |
+
+**All work is done on `dev`.** When ready to go live (inside the maintenance window), merge into `main` and push:
+
+```bash
+# Make sure dev is up to date and built cleanly first
+git checkout dev
+pnpm run build   # must pass
+
+# Merge into main and push to trigger production deploy
+git checkout main
+git merge dev
+git push origin main
+
+# Switch back to dev immediately after
+git checkout dev
+```
+
+> ⚠️ Never commit directly to `main`. Always work on `dev` and merge.
+
+---
+
 ## 🔁 Development Workflow
 
 Follow this order strictly for every change:
