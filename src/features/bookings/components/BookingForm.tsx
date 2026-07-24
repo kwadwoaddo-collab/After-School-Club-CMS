@@ -570,13 +570,13 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             type="button"
                             onClick={() => { if (s < step) setStep(s); }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all
-                  ${step >= s ? 'brand-bg text-foreground' : 'bg-secondary text-muted-foreground'}
+                  ${step >= s ? 'brand-bg text-foreground' : 'bg-gray-200 text-gray-400'}
                   ${s < step ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
                         >
                             {step > s ? '✓' : s}
                         </button>
                         {s < 4 && (
-                            <div className={`w-8 md:w-16 h-1 mx-1 md:mx-2 rounded ${step > s ? 'brand-bg' : 'bg-secondary'}`} />
+                            <div className={`w-8 md:w-16 h-1 mx-1 md:mx-2 rounded ${step > s ? 'brand-bg' : 'bg-gray-200'}`} />
                         )}
                     </div>
                 ))}
@@ -594,7 +594,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                 {/* Step 1: Parent Details */}
                 {step === 1 && (
-                    <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
+                    <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                         {/* Toggle for New / Existing Family */}
                         <div className="flex gap-4 mb-6">
                             <button
@@ -733,7 +733,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             const childFormIndex = currentChildren.findIndex(c => c.id === child.id);
 
                                             return (
-                                                <div key={child.id} className="bg-secondary/40 border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                                                <div key={child.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                                                     <label className="flex items-center gap-3 cursor-pointer">
                                                         <input
                                                             type="checkbox"
@@ -801,7 +801,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         ) : (
                             <>
                                 {fields.map((field, index) => (
-                                    <div key={field.id} className="bg-secondary/40 p-6 rounded-lg space-y-6 relative border border-border shadow-sm">
+                                    <div key={field.id} className="bg-gray-50 p-6 rounded-lg space-y-6 relative border border-border shadow-sm">
                                         <div className="flex justify-between items-center mb-2">
                                             <h3 className="text-lg font-semibold text-foreground">Child {index + 1}</h3>
                                             {fields.length > 1 && (
@@ -906,7 +906,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 3: Appointment */}
                 {
                     step === 3 && (
-                        <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
+                        <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                             <h2 className="text-xl font-semibold text-foreground">Choose Appointment</h2>
                             <div>
                                 <label className="block text-sm font-medium text-slate-800 mb-2">Session Type</label>
@@ -979,7 +979,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Step 4: Confirm */}
                 {
                     step === 4 && (
-                        <div className="bg-secondary/40 p-6 rounded-lg space-y-6 animate-fadeIn">
+                        <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                             <h2 className="text-xl font-semibold text-foreground">Confirm Booking</h2>
                             <div className="bg-card rounded-lg border border-border divide-y divide-gray-100">
                                 <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Centre</span><span className="font-medium text-foreground">{centreName}</span></div>
