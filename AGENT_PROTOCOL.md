@@ -12,14 +12,14 @@ There are two separate Neon PostgreSQL databases:
 | Environment | Purpose | Used by |
 |---|---|---|
 | **Production** | Live data — real parents, students, bookings | Vercel (live site) |
-| **Dev branch** | Safe sandbox for testing — a snapshot of prod | Local development |
+| **Dev branch** | Safe sandbox for testing — snapshot of prod | Local development |
 
-**`.env.local` must always point to the DEV branch during development.**
-Only switch `DATABASE_URL` to production when verifying a hotfix that is absolutely required immediately.
+**`.env.local` is already correctly pointed at the dev branch** — do not change it.
 
-To check which DB you are currently connected to, look at the host in `.env.local`:
-- Production host: `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`
-- Dev branch host: will be a different endpoint — confirm in the Neon dashboard under **Branches**
+- **Dev branch** (local `.env.local`): `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`
+- **Production branch**: separate URL stored only in Vercel Environment Variables — never in this repo
+
+To confirm which DB you are connected to at any time, check the host in `.env.local` against the above.
 
 ---
 
