@@ -378,7 +378,7 @@ export default function RegisterPage() {
     // ── Loading screen ─────────────────────────────────────────────
     if (orgLoading) {
         return (
-            <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+            <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <svg className="w-8 h-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -393,7 +393,7 @@ export default function RegisterPage() {
     // ── Not found screen ───────────────────────────────────────────
     if (orgNotFound) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-[#f5f5f7]">
+            <div className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
                 <div className="max-w-md w-full text-center">
                     <div className="w-20 h-20 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <svg className="w-10 h-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -413,7 +413,7 @@ export default function RegisterPage() {
     // ── Centre Selection Screen (if multiple centres) ──────────────────
     if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
         return (
-            <div className="min-h-screen bg-[#f5f5f7]">
+            <div className="min-h-screen bg-background text-foreground">
                 <div className="bg-card border-b border-border px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
@@ -469,7 +469,7 @@ export default function RegisterPage() {
         const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
         
         return (
-            <div className="min-h-screen bg-[#f5f5f7]">
+            <div className="min-h-screen bg-background text-foreground">
                 {/* Header */}
                 <div className="bg-card border-b border-border px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
@@ -538,7 +538,7 @@ export default function RegisterPage() {
                                 { label: 'Student Finance (CCG)', desc: 'Monthly requests submitted by the club' },
                                 { label: 'Self-Funding', desc: 'Direct payment to the club' },
                             ].map((f, i) => (
-                                <div key={i} className="bg-secondary rounded-xl p-4 border border-gray-100">
+                                <div key={i} className="bg-secondary rounded-xl p-4 border border-border">
                                     <p className="text-foreground text-sm font-semibold">{f.label}</p>
                                     <p className="text-muted-foreground text-xs mt-0.5">{f.desc}</p>
                                 </div>
@@ -581,7 +581,7 @@ export default function RegisterPage() {
     // ── Success screen ─────────────────────────────────────────────
     if (submitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-[#f5f5f7]">
+            <div className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
                 <div className="max-w-md w-full text-center">
                     <div className="w-20 h-20 bg-success/10 border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -648,7 +648,7 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7]">
+        <div className="min-h-screen bg-background text-foreground">
             {/* Header */}
             <div className="bg-card border-b border-border px-6 py-4">
                 <div className="max-w-2xl mx-auto flex items-center justify-between">

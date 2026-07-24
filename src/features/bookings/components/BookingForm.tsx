@@ -58,11 +58,11 @@ function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 // Error Alert Component
 function ErrorAlert({ message, onDismiss }: { message: string; onDismiss: () => void }) {
     return (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-start gap-3">
             <div className="flex-1">
-                <p className="text-sm text-red-800">{message}</p>
+                <p className="text-sm text-destructive font-medium">{message}</p>
             </div>
-            <button onClick={onDismiss} className="text-red-600 hover:text-red-800">
+            <button onClick={onDismiss} className="text-destructive hover:text-destructive/80 font-medium text-sm">
                 Dismiss
             </button>
         </div>
@@ -508,9 +508,9 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     </div>
                 </div>
 
-                <div className="bg-blue-50/80 rounded-lg p-4 max-w-md mx-auto flex items-start gap-3 text-left">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 max-w-md mx-auto flex items-start gap-3 text-left">
                     <span className="text-blue-500 text-xl mt-0.5">📧</span>
-                    <p className="text-sm text-blue-900 leading-relaxed">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                         You&apos;ll receive a {rescheduleData ? 'updated ' : ''}confirmation email shortly with all the details.
                     </p>
                 </div>
@@ -666,7 +666,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 className="w-full px-4 py-3 text-left hover:bg-secondary/40 flex flex-col border-b last:border-b-0"
                                             >
                                                 <span className="font-semibold text-foreground">{result.title}</span>
-                                                <span className="text-xs text-gray-505" style={{ color: '#666' }}>{result.subtitle}</span>
+                                                <span className="text-xs text-muted-foreground">{result.subtitle}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -674,35 +674,35 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             </div>
                         )}
 
-                        <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">✓ Linked</span>}</h2>
+                        <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/25">✓ Linked</span>}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
-                                <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Enter first name" />
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name *</label>
+                                <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter first name" />
                                 {errors.parent?.firstName && <p className="text-red-600 text-sm mt-1">{errors.parent.firstName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
-                                <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Enter last name" />
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name *</label>
+                                <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter last name" />
                                 {errors.parent?.lastName && <p className="text-red-600 text-sm mt-1">{errors.parent.lastName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-800 mb-1">Email <span className="text-muted-foreground font-normal">(Optional)</span></label>
-                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="email@example.com" />
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">Email <span className="text-muted-foreground font-normal">(Optional)</span></label>
+                                <input type="email" {...register('parent.email')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="email@example.com" />
                                 {errors.parent?.email && <p className="text-red-600 text-sm mt-1">{errors.parent.email.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-800 mb-1">Phone *</label>
-                                <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" />
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">Phone *</label>
+                                <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-800 mb-2">Preferred Contact Method</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-2">Preferred Contact Method</label>
                                 <div className="flex gap-4">
                                     {['email', 'phone'].map((method) => {
                                         const isSelected = watchedPreferredContact === method;
                                         return (
-                                            <label key={method} className={`flex-1 flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg border-2 transition-all ${isSelected ? 'border-gray-800 bg-secondary/40 text-foreground font-semibold shadow-sm' : 'border-border bg-card text-muted-foreground hover:border-border hover:bg-secondary/40'}`}>
+                                            <label key={method} className={`flex-1 flex items-center justify-center gap-2 cursor-pointer py-3 rounded-lg border-2 transition-all ${isSelected ? 'brand-border bg-secondary/40 text-foreground font-semibold shadow-sm' : 'border-border bg-card text-muted-foreground hover:border-border hover:bg-secondary/40'}`}>
                                                 <input type="radio" {...register('parent.preferredContact')} value={method} className="sr-only" />
                                                 <span className="capitalize">{method}</span>
                                             </label>
@@ -722,7 +722,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             <div className="space-y-4">
                                 <h3 className="text-lg font-bold text-foreground mb-2">Select Registered Children</h3>
                                 {parentChildrenList.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                                    <p className="text-sm text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
                                         No registered children found for this parent. Please toggle back to Step 1 and add them manually under "New Family" mode.
                                     </p>
                                 ) : (
@@ -750,7 +750,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                     {isSelected && childFormIndex !== -1 && (
                                                         <div className="pt-4 border-t border-border/65 space-y-4 animate-fadeIn">
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-slate-800 mb-2">Club Activities / Interests *</label>
+                                                                <label className="block text-sm font-semibold text-foreground/80 mb-2">Club Activities / Interests *</label>
                                                                 <Controller
                                                                     name={`children.${childFormIndex}.subjects`}
                                                                     control={control}
@@ -768,7 +768,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                                                 : [...(selectField.value || []), subject];
                                                                                             selectField.onChange(newValue);
                                                                                         }}
-                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-slate-700 hover:border-gray-400'}`}
+                                                                                        className={`px-4 py-2 rounded-full border-2 text-xs font-bold transition-all ${isSubSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-foreground/80 hover:border-gray-400'}`}
                                                                                     >
                                                                                         {isSubSelected && '✓ '}{subject}
                                                                                     </button>
@@ -782,12 +782,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                                 )}
                                                             </div>
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-slate-800 mb-1">Additional Notes (Optional)</label>
+                                                                <label className="block text-sm font-semibold text-foreground/80 mb-1">Additional Notes (Optional)</label>
                                                                 <textarea
                                                                     {...register(`children.${childFormIndex}.notes`)}
                                                                     rows={2}
                                                                     placeholder="Any specific goals or information..."
-                                                                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground"
+                                                                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card"
                                                                 />
                                                             </div>
                                                         </div>
@@ -810,13 +810,13 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-800 mb-1">First Name *</label>
-                                                <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Child's first name" />
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name *</label>
+                                                <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's first name" />
                                                 {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-800 mb-1">Last Name *</label>
-                                                <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" placeholder="Child's last name" />
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name *</label>
+                                                <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's last name" />
                                                 {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
@@ -835,36 +835,37 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 </div>
                                             </div>
                                             <div className="hidden">
-                                                <label className="block text-sm font-medium text-slate-800 mb-1">Date of Birth</label>
-                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" />
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Date of Birth</label>
+                                                <input type="date" {...register(`children.${index}.dateOfBirth`)} max={today} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                                 {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-800 mb-1">School Year *</label>
-                                                <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground">
-                                                    <option value="">Select year...</option>
-                                                    {SCHOOL_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">School Year *</label>
+                                                <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card">
+                                                    {SCHOOL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                                                 </select>
                                                 {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-slate-800 mb-2">Club Activities / Interests *</label>
+                                                <label className="block text-sm font-medium text-foreground/80 mb-2">Club Activities / Interests *</label>
                                                 <Controller
                                                     name={`children.${index}.subjects`}
                                                     control={control}
-                                                    render={({ field }) => (
-                                                        <div className="flex flex-wrap gap-3">
+                                                    render={({ field: selectField }) => (
+                                                        <div className="flex flex-wrap gap-2">
                                                             {SUBJECTS.map((subject) => {
-                                                                const isSelected = field.value?.includes(subject);
+                                                                const isSelected = selectField.value?.includes(subject);
                                                                 return (
                                                                     <button
                                                                         key={subject}
                                                                         type="button"
                                                                         onClick={() => {
-                                                                            const newValue = isSelected ? field.value?.filter((s) => s !== subject) : [...(field.value || []), subject];
-                                                                            field.onChange(newValue);
+                                                                            const newValue = isSelected
+                                                                                ? selectField.value?.filter((s) => s !== subject)
+                                                                                : [...(selectField.value || []), subject];
+                                                                            selectField.onChange(newValue);
                                                                         }}
-                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-slate-800 hover:border-gray-400'}`}
+                                                                        className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${isSelected ? 'brand-bg brand-border text-foreground' : 'bg-card border-border text-foreground/80 hover:border-gray-400'}`}
                                                                     >
                                                                         {isSelected && '✓ '}{subject}
                                                                     </button>
@@ -878,15 +879,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                         <input
                                                             {...register(`children.${index}.customSubject`)}
                                                             placeholder="Please specify subject..."
-                                                            className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-blue-50/50 text-foreground"
+                                                            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-card text-foreground"
                                                         />
                                                     </div>
                                                 )}
                                                 {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-slate-800 mb-1">Additional Notes (Optional)</label>
-                                                <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground" />
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Additional Notes (Optional)</label>
+                                                <textarea {...register(`children.${index}.notes`)} rows={2} placeholder="Any additional information..." className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                             </div>
                                         </div>
                                     </div>
@@ -909,7 +910,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                             <h2 className="text-xl font-semibold text-foreground">Choose Appointment</h2>
                             <div>
-                                <label className="block text-sm font-medium text-slate-800 mb-2">Session Type</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-2">Session Type</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     {[
                                         { value: 'in_person', label: '🏫 In-Person', desc: `At ${centreName}`, disabled: false },
@@ -936,7 +937,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
                             <div>
                                 {/* Task 4: Date is now mandatory — label updated and helptext added */}
-                                <label className="block text-sm font-medium text-slate-800 mb-2">Select Date *</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-2">Select Date *</label>
                                 <input
                                     type="date"
                                     value={selectedDate}
@@ -948,12 +949,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                     }}
                                     min={today}
                                     max={maxDate}
-                                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground"
+                                    className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card"
                                 /></div>
 
                             {selectedDate && (
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-800 mb-2">Available Times</label>
+                                    <label className="block text-sm font-medium text-foreground/80 mb-2">Available Times</label>
                                     {daySchedule && !daySchedule.open ? (
                                         <div className="text-center py-8 text-muted-foreground bg-secondary/60 rounded-lg"><p>The centre is closed on this day.</p></div>
                                     ) : (
@@ -963,7 +964,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 {...register('appointment.startAt')}
                                                 min={daySchedule?.start || '00:00'}
                                                 max={daySchedule?.end || '23:59'}
-                                                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground"
+                                                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card"
                                             />
                                             <p className="mt-2 text-sm text-muted-foreground font-medium">
                                                 Centre hours: <span className="text-foreground font-semibold">{formatAmPm(daySchedule?.start || '00:00')} - {formatAmPm(daySchedule?.end || '23:59')}</span>
@@ -981,7 +982,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     step === 4 && (
                         <div className="bg-gray-50 p-6 rounded-lg space-y-6 animate-fadeIn">
                             <h2 className="text-xl font-semibold text-foreground">Confirm Booking</h2>
-                            <div className="bg-card rounded-lg border border-border divide-y divide-gray-100">
+                            <div className="bg-card rounded-lg border border-border divide-y divide-border/40">
                                 <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Centre</span><span className="font-medium text-foreground">{centreName}</span></div>
                                 <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Session Type</span><span className="font-medium text-foreground">{modality === 'in_person' ? '🏫 In-Person' : '💻 Online'}</span></div>
                                 <div className="px-4 py-3 flex justify-between"><span className="text-muted-foreground">Date & Time</span><span className="font-medium text-foreground">{watchedStartAt ? new Date(watchedStartAt.includes('T') ? watchedStartAt : `${selectedDate}T${watchedStartAt}:00`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not selected'}</span></div>
@@ -1000,10 +1001,10 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 ))}
                             </div>
 
-                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                            <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
                                 <label className="flex items-start gap-3 cursor-pointer">
                                     <input type="checkbox" {...register('consent.communications')} className="mt-1 h-5 w-5 brand-checkbox rounded focus:ring-0" style={{ accentColor: brandColor }} />
-                                    <span className="text-sm text-amber-800">I consent to {centreName} processing my data. *</span>
+                                    <span className="text-sm text-amber-800 dark:text-amber-200">I consent to {centreName} processing my data. *</span>
                                 </label>
                                 {errors.consent?.communications && <p className="text-red-600 text-sm mt-2">{errors.consent.communications.message}</p>}
                             </div>
@@ -1014,7 +1015,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 {/* Buttons */}
                 <div className="flex gap-4">
                     {step > 1 && (
-                        <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-border text-slate-800 rounded-lg font-semibold hover:bg-secondary/40 transition-colors">← Back</button>
+                        <button type="button" onClick={() => setStep(step - 1)} className="flex-1 py-3 px-6 border border-border text-foreground rounded-lg font-semibold hover:bg-secondary/40 transition-colors">← Back</button>
                     )}
                     {step < 4 ? (
                         // Task 4: on step 3, require both a date AND a valid time slot before enabling Continue

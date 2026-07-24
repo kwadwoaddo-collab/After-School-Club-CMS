@@ -22,8 +22,9 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
         const containerRef = useRef<HTMLDivElement>(null);
         const [isEmpty, setIsEmpty] = useState(true);
         const [dimensions, setDimensions] = useState({ width: 0, height: 200 });
+        const [isDark, setIsDark] = useState(false);
 
-        // Size the canvas to the container width
+        // Size the canvas to the container width and watch theme changes
         useEffect(() => {
             const resize = () => {
                 if (containerRef.current) {
@@ -36,7 +37,28 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
             resize();
             const observer = new ResizeObserver(resize);
             if (containerRef.current) observer.observe(containerRef.current);
-            return () => observer.disconnect();
+
+            // Read initial theme setting
+            setIsDark(document.documentElement.classList.contains('dark'));
+
+            // Observe class list changes on <html> to update penColor reactively
+            const mutationObserver = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        setIsDark(document.documentElement.classList.contains('dark'));
+                    }
+                });
+            });
+
+            mutationObserver.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class'],
+            });
+
+            return () => {
+                observer.disconnect();
+                mutationObserver.disconnect();
+            };
         }, []);
 
         const handleEnd = useCallback(() => {
@@ -74,7 +96,7 @@ const SignaturePadWidget = forwardRef<SignaturePadHandle, SignaturePadWidgetProp
                                 height: 200,
                                 className: 'touch-none',
                             }}
-                            penColor="#1e293b"
+                            penColor={isDark ? '#f8fafc' : '#1e293b'}
                             backgroundColor="rgba(255,255,255,0)"
                             onEnd={handleEnd}
                         />

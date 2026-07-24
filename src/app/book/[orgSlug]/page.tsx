@@ -56,8 +56,8 @@ export default async function OrgBookingPage({
     const brandColor = org.brandColor || '#4F46E5';
 
     return (
-        <div className="min-h-screen sidebar-gradient flex flex-col items-center justify-center p-4">
-            <div className="max-w-md w-full glass-card !bg-secondary/80 !border-border rounded-[32px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
+        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+            <div className="max-w-md w-full glass-card rounded-[24px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
                 {org.logoUrl ? (
                      
                     <img
@@ -66,17 +66,17 @@ export default async function OrgBookingPage({
                         className="h-20 mx-auto mb-6 object-contain"
                     />
                 ) : (
-                    <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
+                    <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
                         🏢
                     </div>
                 )}
 
-                <h1 className="text-2xl font-bold text-center text-white mb-2">Select a Centre</h1>
-                <p className="text-center text-slate-400 mb-8">Choose a location to book your session with <strong className="text-white">{org.name}</strong>.</p>
+                <h1 className="text-2xl font-bold text-center text-foreground mb-2">Select a Centre</h1>
+                <p className="text-center text-muted-foreground mb-8">Choose a location to book your session with <strong className="text-foreground">{org.name}</strong>.</p>
 
                 <div className="space-y-4">
                     {org.centres.length === 0 ? (
-                        <div className="text-center p-4 bg-yellow-500/10 text-yellow-500 rounded-lg border border-yellow-500/20">
+                        <div className="text-center p-4 bg-amber-500/10 text-amber-500 rounded-lg border border-amber-500/20">
                             No centres available yet.
                         </div>
                     ) : (
@@ -88,11 +88,11 @@ export default async function OrgBookingPage({
                                 style={{ '--brand-color': brandColor } as React.CSSProperties}
                             >
                                 <div className="absolute inset-0 bg-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ backgroundColor: `${brandColor}10` }} />
-                                <div className="relative p-4 border border-slate-700 rounded-2xl group-hover:border-[var(--brand-color)] transition-all flex justify-between items-center bg-slate-800/50 group-hover:bg-slate-800/80">
-                                    <span className="font-medium text-white group-hover:text-[var(--brand-color)] transition-colors">
+                                <div className="relative p-4 border border-border rounded-2xl group-hover:border-[var(--brand-color)] transition-all flex justify-between items-center bg-secondary/30 group-hover:bg-secondary/60">
+                                    <span className="font-medium text-foreground group-hover:text-[var(--brand-color)] transition-colors">
                                         {centre.name}
                                     </span>
-                                    <span className="text-slate-500 group-hover:text-[var(--brand-color)] transition-colors">→</span>
+                                    <span className="text-muted-foreground group-hover:text-[var(--brand-color)] transition-colors">→</span>
                                 </div>
                             </Link>
                         ))
@@ -100,7 +100,7 @@ export default async function OrgBookingPage({
                 </div>
 
                 <div className="mt-8 text-center">
-                    <Link href="/" className="text-sm text-slate-500 hover:text-white transition-colors">
+                    <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                         ← Back to Home
                     </Link>
                 </div>

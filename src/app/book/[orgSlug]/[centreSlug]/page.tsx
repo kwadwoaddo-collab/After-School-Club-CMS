@@ -49,10 +49,10 @@ export default async function BookingPage({
 
   if (!org) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Organisation Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn&apos;t find the organisation you&apos;re looking for.</p>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Organisation Not Found</h1>
+          <p className="text-muted-foreground mb-6">We couldn&apos;t find the organisation you&apos;re looking for.</p>
         </div>
       </div>
     );
@@ -68,11 +68,11 @@ export default async function BookingPage({
 
   if (!centre) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Centre Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn&apos;t find the centre you&apos;re looking for.</p>
-          <a href={`/book/${orgSlug}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Centre Not Found</h1>
+          <p className="text-muted-foreground mb-6">We couldn&apos;t find the centre you&apos;re looking for.</p>
+          <a href={`/book/${orgSlug}`} className="text-primary hover:underline font-medium">
             View all centres
           </a>
         </div>
@@ -90,11 +90,11 @@ export default async function BookingPage({
 
   if (!org || !centre) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Centre Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn&apos;t find the centre you&apos;re looking for.</p>
-          <a href={`/book/${orgSlug}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Centre Not Found</h1>
+          <p className="text-muted-foreground mb-6">We couldn&apos;t find the centre you&apos;re looking for.</p>
+          <a href={`/book/${orgSlug}`} className="text-primary hover:underline font-medium">
             View all centres
           </a>
         </div>
@@ -105,10 +105,10 @@ export default async function BookingPage({
   const brandColor = org.brandColor || '#4F46E5';
 
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen bg-background text-foreground py-12 px-4" style={{ backgroundColor: `${brandColor}10` }}>
       <div className="max-w-2xl mx-auto">
         <div
-          className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+          className="bg-card text-foreground rounded-2xl shadow-lg border border-border overflow-hidden"
           style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}
         >
           <div className="px-8 pt-8 pb-4">
@@ -117,8 +117,8 @@ export default async function BookingPage({
                 <img src={org.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
               )}
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Book a Session</h1>
-                <p className="text-sm text-gray-500">{centre.name}</p>
+                <h1 className="text-2xl font-bold text-foreground">Book a Session</h1>
+                <p className="text-sm text-muted-foreground">{centre.name}</p>
               </div>
             </div>
           </div>
