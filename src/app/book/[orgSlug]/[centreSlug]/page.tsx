@@ -105,9 +105,9 @@ export default async function BookingPage({
   const brandColor = org.brandColor || '#4F46E5';
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4" style={{ backgroundColor: `${brandColor}10` }}>
+    <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8 border-t-4" style={{ borderColor: brandColor }}>
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-white/10" style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}>
           <div className="mb-8">
             <div className="flex items-center gap-4">
               {org.logoUrl && (
@@ -115,10 +115,10 @@ export default async function BookingPage({
                 <img src={org.logoUrl} alt="Logo" className="h-12 w-auto object-contain" />
               )}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-white">
                   Book a Session
                 </h1>
-                <p className="text-lg text-gray-600">
+                <p className="text-lg text-white/50">
                   {centre.name}
                 </p>
               </div>

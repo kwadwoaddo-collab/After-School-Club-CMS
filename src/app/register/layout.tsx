@@ -1,6 +1,6 @@
 import { ToastProvider } from '@/components/ui/ToastProvider';
 
-export default function BookLayout({ children }: { children: React.ReactNode }) {
+export default function RegisterLayout({ children }: { children: React.ReactNode }) {
     return (
         <ToastProvider>
             <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#05070A' }}>
