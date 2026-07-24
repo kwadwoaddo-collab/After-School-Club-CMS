@@ -41,14 +41,19 @@ export async function POST(req: NextRequest) {
             .set({ magicLinkToken: hashedToken, magicLinkExpiresAt: expiresAt })
             .where(eq(parents.id, parent.id));
 
-        const magicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/portal/verify?token=${rawToken}`;
-        
+        const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawToken}`;
+
         const emailService = new EmailService();
-        await emailService.sendMagicLink({
+        const emailResult = await emailService.sendMagicLink({
             email,
             name: parent.firstName,
             magicLink,
         });
+
+        if (!emailResult.success) {
+            logger.error('Portal login error: failed to send magic link email', emailResult.error);
+            return NextResponse.json({ error: 'Failed to send login email. Please try again later.' }, { status: 500 });
+        }
 
         // Only expose the link in development (never in production)
         const response: Record<string, any> = {
