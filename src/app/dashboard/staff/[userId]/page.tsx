@@ -6,8 +6,7 @@ import { users, organisations, centres, centreMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { ArrowLeft, Crown, Briefcase, MonitorSmartphone, GraduationCap, Mail, MapPin, Calendar, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import StaffCentreAssignment from '@/features/staff/components/StaffCentreAssignment';
-import StaffRoleSelector from '@/features/staff/components/StaffRoleSelector';
+import StaffProfileForm from '@/features/staff/components/StaffProfileForm';
 import { format } from 'date-fns';
 import { ROLE_COLORS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
 
@@ -124,49 +123,15 @@ export default async function EditStaffPage({ params }: PageProps) {
                 </div>
             </div>
 
-            {/* Role Selector */}
-            <StaffRoleSelector
+            {/* Unified Form */}
+            <StaffProfileForm
                 userId={userId}
-                currentRole={staffMember.role as any}
                 staffName={staffMember.name || staffMember.email}
+                currentRole={staffMember.role as any}
                 ownerCount={ownerCount}
+                allCentres={allCentres}
+                currentAssignments={currentAssignments}
             />
-
-            {/* Centre Assignment */}
-            {staffMember.role === 'ORG_OWNER' ? (
-                <div className="bg-card border border-border shadow-sm rounded-2xl p-6 flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
-                        <Crown className="w-5 h-5 text-warning" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-foreground text-sm">Organization Owner — Full Access</h3>
-                        <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-1">
-                            ORG_OWNER users automatically have full access to all centres. Centre assignments are not applicable.
-                        </p>
-                    </div>
-                </div>
-            ) : (
-                <>
-                    <div className="bg-card border border-border shadow-sm rounded-2xl p-6 flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-info/10 flex items-center justify-center flex-shrink-0">
-                            <ShieldCheck className="w-5 h-5 text-info" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-foreground text-sm">Centre-Level Access Control</h3>
-                            <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-1">
-                                This staff member will only see bookings, students, and data from the centres you assign below.
-                            </p>
-                        </div>
-                    </div>
-                    <StaffCentreAssignment
-                        userId={userId}
-                        staffName={staffMember.name || staffMember.email}
-                        staffRole={staffMember.role}
-                        allCentres={allCentres}
-                        currentAssignments={currentAssignments}
-                    />
-                </>
-            )}
         </div>
     );
 }

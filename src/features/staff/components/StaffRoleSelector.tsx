@@ -1,9 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Crown, Briefcase, MonitorSmartphone, GraduationCap, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react';
-import { updateStaffRole } from '@/features/staff/staff-actions';
-import { useToast } from '@/components/ui/ToastProvider';
+import { Crown, Briefcase, MonitorSmartphone, GraduationCap, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 type StaffRole = 'TUTOR' | 'FRONT_DESK' | 'MANAGER' | 'ORG_OWNER';
 
@@ -72,42 +69,13 @@ const ROLES: RoleOption[] = [
 ];
 
 interface Props {
-    userId: string;
     currentRole: StaffRole;
-    staffName: string;
+    selectedRole: StaffRole;
+    onRoleChange: (role: StaffRole) => void;
     ownerCount: number;
 }
 
-export default function StaffRoleSelector({ userId, currentRole, staffName, ownerCount }: Props) {
-    const [selectedRole, setSelectedRole] = useState<StaffRole>(currentRole);
-    const [isPending, startTransition] = useTransition();
-    const [saved, setSaved] = useState(false);
-    const { toast } = useToast();
-
-    const hasChanged = selectedRole !== currentRole;
-
-    const handleSave = () => {
-        startTransition(async () => {
-            try {
-                await updateStaffRole(userId, selectedRole);
-                setSaved(true);
-                setTimeout(() => setSaved(false), 3000);
-                toast({
-                    title: 'Role updated',
-                    message: `${staffName} is now ${ROLES.find(r => r.value === selectedRole)?.label}.`,
-                    variant: 'success',
-                });
-            } catch (err) {
-                toast({
-                    title: 'Could not update role',
-                    message: err.message || 'Please try again.',
-                    variant: 'error',
-                });
-                setSelectedRole(currentRole); // revert
-            }
-        });
-    };
-
+export default function StaffRoleSelector({ currentRole, selectedRole, onRoleChange, ownerCount }: Props) {
     return (
         <div className="bg-card rounded-[24px] p-6 border border-border space-y-5 shadow-sm">
             {/* Header */}
@@ -119,11 +87,6 @@ export default function StaffRoleSelector({ userId, currentRole, staffName, owne
                         <p className="text-xs text-muted-foreground font-semibold mt-0.5">Select the role that matches this staff member&apos;s responsibilities</p>
                     </div>
                 </div>
-                {saved && (
-                    <span className="flex items-center gap-1.5 text-success text-xs font-bold animate-in fade-in duration-300">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Saved
-                    </span>
-                )}
             </div>
 
             {/* Role Cards */}
@@ -133,8 +96,8 @@ export default function StaffRoleSelector({ userId, currentRole, staffName, owne
                     return (
                         <button
                             key={role.value}
-                            onClick={() => setSelectedRole(role.value)}
-                            disabled={isPending || (currentRole === 'ORG_OWNER' && ownerCount === 1 && role.value !== 'ORG_OWNER')}
+                            onClick={() => onRoleChange(role.value)}
+                            disabled={currentRole === 'ORG_OWNER' && ownerCount === 1 && role.value !== 'ORG_OWNER'}
                             className={`relative text-left p-4 rounded-2xl border transition-all duration-200 ${
                                 isActive
                                     ? `${role.activeBg} ${role.activeBorder} ring-1 ${role.activeBorder}`
@@ -205,26 +168,6 @@ export default function StaffRoleSelector({ userId, currentRole, staffName, owne
               </div>
             )}
 
-            {/* Save Button */}
-            {hasChanged && (
-                <div className="flex items-center justify-end gap-3 pt-1 animate-in slide-in-from-bottom-2 duration-300">
-                    <button
-                        onClick={() => setSelectedRole(currentRole)}
-                        disabled={isPending}
-                        className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-secondary/40 text-sm font-bold transition-all"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isPending}
-                        className="px-5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-black transition-all flex items-center gap-2 shadow-sm shadow-primary/10"
-                    >
-                        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                        Save Role Change
-                    </button>
-                </div>
-            )}
         </div>
     );
 }

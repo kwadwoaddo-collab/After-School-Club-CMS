@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MapPin, Check, Save, Trash2, AlertTriangle } from 'lucide-react';
-import Link from 'next/link';
+import { MapPin, Check } from 'lucide-react';
 
 interface Centre {
     id: string;
@@ -12,117 +9,61 @@ interface Centre {
 }
 
 interface StaffCentreAssignmentProps {
-    userId: string;
     staffName: string;
-    staffRole: string;
     allCentres: Centre[];
-    currentAssignments: string[];
+    selectedCentres: string[];
+    onCentresChange: (centres: string[]) => void;
 }
 
 export default function StaffCentreAssignment({
-    userId,
     staffName,
-    staffRole,
     allCentres,
-    currentAssignments,
+    selectedCentres,
+    onCentresChange,
 }: StaffCentreAssignmentProps) {
-    const router = useRouter();
-    const [selectedCentres, setSelectedCentres] = useState<string[]>(currentAssignments);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
-    const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-    const [removing, setRemoving] = useState(false);
 
     const handleToggleCentre = (centreId: string) => {
-        setSelectedCentres((prev) =>
-            prev.includes(centreId) ? prev.filter((id) => id !== centreId) : [...prev, centreId]
-        );
-        setSuccess(false);
-    };
-
-    const handleSave = async () => {
-        setLoading(true);
-        setError('');
-        setSuccess(false);
-
-        try {
-            const response = await fetch('/api/staff/assign-centres', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId,
-                    centreIds: selectedCentres,
-                }),
-            });
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to update centre assignments');
-            }
-
-            setSuccess(true);
-
-            // Refresh the page data
-            router.refresh();
-
-        } catch (err) {
-            setError(err.message);
-            setLoading(false);
+        if (selectedCentres.includes(centreId)) {
+            onCentresChange(selectedCentres.filter((id) => id !== centreId));
+        } else {
+            onCentresChange([...selectedCentres, centreId]);
         }
     };
 
-    const hasChanges = JSON.stringify([...selectedCentres].sort()) !== JSON.stringify([...currentAssignments].sort());
+    const handleSelectAll = () => {
+        onCentresChange(allCentres.map(c => c.id));
+    };
 
-    const handleRemoveStaff = async () => {
-        setRemoving(true);
-        try {
-            const res = await fetch('/api/staff/remove', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId }),
-            });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to remove staff member');
-            }
-            router.push('/dashboard/staff');
-            router.refresh();
-        } catch (err) {
-            setError(err.message);
-            setRemoving(false);
-            setShowRemoveConfirm(false);
-        }
+    const handleClearAll = () => {
+        onCentresChange([]);
     };
 
     return (
-        <div className="bg-card rounded-[32px] overflow-hidden border border-border shadow-sm animate-in fade-in duration-500">
-            <div className="px-8 py-6 border-b border-border">
+        <div className="bg-card rounded-[24px] overflow-hidden border border-border shadow-sm animate-in fade-in duration-500">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-muted-foreground" />
                     <h2 className="text-lg font-bold text-foreground">Centre Assignments</h2>
                 </div>
+                {allCentres.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleSelectAll}
+                            className="text-xs font-bold text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg bg-primary/10"
+                        >
+                            Select All
+                        </button>
+                        <button
+                            onClick={handleClearAll}
+                            className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-secondary"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+                )}
             </div>
 
-            <div className="p-8">
-                {error && (
-                    <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-bold text-sm">
-                        {error}
-                    </div>
-                )}
-
-                {success && (
-                    <div className="mb-6 p-4 bg-success/10 border border-success/20 rounded-xl text-success font-bold text-sm flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                            <Check className="w-5 h-5" />
-                            Centre assignments updated successfully.
-                        </span>
-                        <Link href="/dashboard/staff" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors ml-4">
-                            Back to Team
-                        </Link>
-                    </div>
-                )}
-
+            <div className="p-6">
                 {allCentres.length === 0 ? (
                     <div className="text-center py-12">
                         <MapPin className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
@@ -131,139 +72,57 @@ export default function StaffCentreAssignment({
                     </div>
                 ) : (
                     <>
-                        <div className="space-y-3 mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                             {allCentres.map((centre) => {
                                 const isSelected = selectedCentres.includes(centre.id);
                                 return (
                                     <label
                                         key={centre.id}
-                                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-border hover:border-border bg-card'
-                                            }`}
+                                        className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                                            isSelected
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border hover:border-border/80 bg-card'
+                                        }`}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={() => handleToggleCentre(centre.id)}
-                                            className="w-5 h-5 rounded focus:ring-2 focus:ring-primary/20 accent-primary"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="font-bold text-foreground">{centre.name}</div>
-                                            <div className="text-sm text-muted-foreground font-semibold">{centre.slug}</div>
+                                        <div className="flex-1 min-w-0 pr-3">
+                                            <div className="font-bold text-sm text-foreground truncate">{centre.name}</div>
+                                            <div className="text-xs text-muted-foreground font-medium truncate">{centre.slug}</div>
                                         </div>
-                                        {isSelected && (
-                                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                                                <Check className="w-4 h-4 text-white" />
+                                        <div className="flex-shrink-0 flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => handleToggleCentre(centre.id)}
+                                                className="sr-only" // hidden but accessible
+                                            />
+                                            <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${isSelected ? 'bg-primary' : 'bg-secondary border border-border'}`}>
+                                                {isSelected && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
                                             </div>
-                                        )}
+                                        </div>
                                     </label>
                                 );
                             })}
                         </div>
 
-                        {/* Summary */}
-                        <div className="mb-6 p-4 bg-secondary/40 rounded-xl border border-border">
-                            <div className="text-sm font-medium">
-                                <span className="font-bold text-foreground">Selected: </span>
-                                <span className="text-muted-foreground font-semibold">
-                                    {selectedCentres.length === 0
-                                        ? 'No centres selected - user will have no access'
-                                        : selectedCentres.length === 1
-                                            ? '1 centre'
-                                            : `${selectedCentres.length} centres`}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Warning for no selection */}
-                        {selectedCentres.length === 0 && (
-                            <div className="mb-6 p-4 bg-warning/10 border border-warning/20 rounded-xl">
+                        {/* Summary & Warning */}
+                        {selectedCentres.length === 0 ? (
+                            <div className="p-4 bg-warning/10 border border-warning/20 rounded-xl">
                                 <p className="text-sm text-warning font-semibold leading-relaxed">
                                     ⚠️ <span className="font-bold">{staffName}</span> won&apos;t be able to access
                                     any bookings or students without at least one centre assignment.
                                 </p>
                             </div>
+                        ) : (
+                            <div className="p-4 bg-secondary/40 rounded-xl border border-border flex items-center gap-2 text-sm font-medium">
+                                <span className="font-bold text-foreground">Selected: </span>
+                                <span className="text-muted-foreground font-semibold">
+                                    {selectedCentres.length === 1 ? '1 centre' : `${selectedCentres.length} centres`}
+                                </span>
+                            </div>
                         )}
                     </>
                 )}
             </div>
-
-            {/* Remove Staff Member */}
-            <div className="px-8 py-6 border-t border-border">
-                {!showRemoveConfirm ? (
-                    <button
-                        onClick={() => setShowRemoveConfirm(true)}
-                        className="flex items-center gap-2 text-sm font-bold text-destructive hover:text-destructive/80 transition-colors cursor-pointer"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        Remove {staffName} from organisation
-                    </button>
-                ) : (
-                    <div className="p-5 bg-destructive/10 border border-destructive/20 rounded-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-bold text-foreground text-sm">Remove {staffName}?</p>
-                                <p className="text-sm text-destructive/80 font-semibold mt-1 leading-relaxed">
-                                    They will immediately lose access to the dashboard on their next page load. Their account is not deleted — they just lose access to this organisation.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={handleRemoveStaff}
-                                disabled={removing}
-                                className="flex items-center gap-2 px-4 py-2 bg-destructive hover:bg-destructive/90 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
-                            >
-                                {removing ? (
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                )}
-                                Yes, remove access
-                            </button>
-                            <button
-                                onClick={() => setShowRemoveConfirm(false)}
-                                disabled={removing}
-                                className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Save / Cancel Buttons */}
-            {allCentres.length > 0 && (
-                <div className="px-8 py-6 border-t border-border flex items-center justify-between">
-                    <button
-                        onClick={() => router.push('/dashboard/staff')}
-                        className="px-6 py-3 text-muted-foreground hover:text-foreground font-bold transition-colors cursor-pointer"
-                        disabled={loading}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={!hasChanges || loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl transition-all disabled:opacity-50 disabled:bg-secondary/60 disabled:text-muted-foreground disabled:border-border shadow-sm shadow-primary/10 cursor-pointer"
-                    >
-                        {loading ? (
-                            <>
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                Save Changes
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
         </div>
     );
 }
