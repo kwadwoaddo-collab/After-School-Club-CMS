@@ -37,7 +37,7 @@ interface ParentProfileClientProps {
 }
 
 export default function ParentProfileClient({ parent, invoices, stats, isOwner }: ParentProfileClientProps) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'finance'>('finance'); // Default to finance as per Task 73
+    const [activeTab, setActiveTab] = useState<'overview' | 'finance'>('overview');
     const router = useRouter();
     const { toast } = useToast();
     const [isEditingContact, setIsEditingContact] = useState(false);
@@ -281,7 +281,13 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
                                 <h2 className={`text-4xl font-black ${stats.outstanding > 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
                                     £{stats.outstanding.toFixed(2)}
                                 </h2>
-                                <p className="text-xs text-on-surface-variant mt-2 font-bold uppercase tracking-widest">Outstanding amount</p>
+                                <p className="text-xs text-on-surface-variant mt-2 font-bold uppercase tracking-widest mb-6">Outstanding amount</p>
+                                <button
+                                    onClick={() => setActiveTab('finance')}
+                                    className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                >
+                                    View Full Ledger <ChevronRight className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
 
