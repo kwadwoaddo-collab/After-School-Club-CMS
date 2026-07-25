@@ -19,7 +19,7 @@ export async function addToWaitlist(
   const existingEntries = await db.query.waitlistEntries.findMany({
     where: and(
       eq(waitlistEntries.clubSessionId, clubSessionId),
-      sessionDate ? eq(waitlistEntries.sessionDate, sessionDate) : undefined,
+      sessionDate ? eq(waitlistEntries.sessionDate, sessionDate.toISOString().split('T')[0]) : undefined,
       termId ? eq(waitlistEntries.termId, termId) : undefined
     ),
     orderBy: [asc(waitlistEntries.position)],
@@ -60,7 +60,7 @@ export async function cascadeWaitlist(
   const waitingEntries = await db.query.waitlistEntries.findMany({
     where: and(
       eq(waitlistEntries.clubSessionId, clubSessionId),
-      eq(waitlistEntries.sessionDate, sessionDate),
+      eq(waitlistEntries.sessionDate, sessionDate.toISOString().split('T')[0]),
       eq(waitlistEntries.status, 'waiting')
     ),
     orderBy: [asc(waitlistEntries.position)],

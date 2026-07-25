@@ -249,7 +249,13 @@ function AttendeeCard({
                             <span className="text-[10px] font-bold text-warning ml-1">Late {derivedLate}m</span>
                         )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Yr {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName} {attendee.parentPhone ? `· ${attendee.parentPhone}` : ''}</p>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                        <span>Yr {attendee.schoolYear} · </span>
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(attendee.parentFirstName)}`}>
+                            {attendee.parentFirstName?.[0]}{attendee.parentLastName?.[0]}
+                        </div>
+                        <span>{attendee.parentFirstName} {attendee.parentLastName} {attendee.parentPhone ? `· ${attendee.parentPhone}` : ''}</span>
+                    </div>
                 </div>
             </div>
 

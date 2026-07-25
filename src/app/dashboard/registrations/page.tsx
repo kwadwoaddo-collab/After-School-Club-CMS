@@ -17,9 +17,9 @@ import { FileText, Clock, CheckCircle2, AlertTriangle, Share2 } from 'lucide-rea
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 
 const STATUS_BADGE: Record<string, string> = {
-    awaiting_confirmation: 'bg-warning/10 text-warning border-warning/20',
-    signed_up: 'bg-success/10 text-success border-success/20',
-    not_interested: 'bg-destructive/10 text-destructive border-destructive/20',
+    awaiting_confirmation: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]',
+    signed_up: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]',
+    not_interested: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]',
 };
 
 const STATUS_LABEL: Record<string, string> = {

@@ -257,9 +257,14 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                         </div>
                                         </td>
                                         <td className="px-4 py-3 align-middle">
-                                            <p className="text-sm font-semibold text-foreground">
-                                                {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown'}
-                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(primary?.submittedFirstName || 'Unknown')}`}>
+                                                    {(primary?.submittedFirstName?.[0] || '')}{(primary?.submittedLastName?.[0] || '')}
+                                                </div>
+                                                <span className="font-semibold text-foreground">
+                                                    {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown'}
+                                                </span>
+                                            </div>
                                             {primary?.submittedEmail && (
                                                 <p className="text-xs text-muted-foreground mt-0.5">{primary.submittedEmail}</p>
                                             )}
@@ -272,7 +277,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                                         <span className="relative inline-flex rounded-full h-2 w-2 bg-warning"></span>
                                                     </span>
                                                 )}
-                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusBadge[r.status] || ''}`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${statusBadge[r.status] || ''}`}>
                                                     {statusLabel[r.status] ?? r.status}
                                                 </span>
                                             </div>

@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { BookingWithDetails } from '../types';
 import { ChevronDown, ChevronUp, MapPin, User, Phone, Mail, Clock, CheckCircle, Video } from '@/components/ui/Icons';
-import { cn } from '@/components/ui/utils';
+import { cn, getAvatarGradient } from '@/components/ui/utils';
 import { updateBookingStatus, rescheduleBooking, saveAssessmentFeedback, sendAssessmentFeedback } from '@/features/bookings/actions';
 import { useTransition } from 'react';
 import Link from 'next/link';
@@ -140,7 +140,14 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                                 {booking.attendees.length > 0
                                     ? booking.attendees.map(a => `${a.child.firstName} ${a.child.lastName} (${a.child.schoolYear})`).join(', ')
                                     : booking.child
-                                        ? `${booking.child.firstName} ${booking.child.lastName} (${booking.child.schoolYear})`
+                                        ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(booking.child.firstName)}`}>
+                                                    {booking.child.firstName[0]}{booking.child.lastName[0]}
+                                                </div>
+                                                <span>{booking.child.firstName} {booking.child.lastName} ({booking.child.schoolYear})</span>
+                                            </div>
+                                        )
                                         : 'No student information'
                                 }
                             </div>
@@ -184,8 +191,10 @@ export default function AppointmentScorecard({ booking, defaultExpanded = false 
                             {/* Parent Contact */}
                             <div className="space-y-1">
                                 <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Parent Contact</h4>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <User className="w-4 h-4 text-primary" />
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1.5">
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(booking.parent.firstName)}`}>
+                                        {booking.parent.firstName[0]}{booking.parent.lastName[0]}
+                                    </div>
                                     <span className="font-medium text-foreground">{booking.parent.firstName} {booking.parent.lastName}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-muted-foreground text-sm">

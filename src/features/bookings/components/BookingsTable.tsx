@@ -625,7 +625,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </td>
                                 <td className="px-4 py-3.5">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient(booking.attendees?.[0]?.child?.first_name || booking.child?.first_name)} flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0`}>
+                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient(booking.attendees?.[0]?.child?.firstName || booking.child?.firstName)} flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0`}>
                                             {getStudentInitials(booking)}
                                         </div>
                                         <div className="flex items-center gap-2 min-w-0">
