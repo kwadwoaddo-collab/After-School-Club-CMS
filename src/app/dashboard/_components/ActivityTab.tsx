@@ -20,9 +20,11 @@ interface ActivityTabProps {
     activeCentreId: string;
     accessibleCentreIds: string[];
     hasCentres: boolean;
+    isFeedOnly?: boolean;
+    isFunnelOnly?: boolean;
 }
 
-export default async function ActivityTab({ searchParams, org, activeCentreId, accessibleCentreIds, hasCentres }: ActivityTabProps) {
+export default async function ActivityTab({ searchParams, org, activeCentreId, accessibleCentreIds, hasCentres, isFeedOnly, isFunnelOnly }: ActivityTabProps) {
     const childrenCentreCondition = activeCentreId !== 'all'
         ? eq(children.centreId, activeCentreId)
         : (hasCentres
@@ -254,29 +256,32 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
     const bookingsThisMonth = Number(bookingKpis.thisMonth);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 slide-in-from-bottom-2">
-            <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Activity — {dateLabel}
-                </p>
-                {pipelineCounts.new > 0 && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
-                        <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+        <div className="space-y-6 animate-in fade-in duration-500 slide-in-from-bottom-2 h-full">
+            {!isFunnelOnly && !isFeedOnly && (
+                <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                        Activity — {dateLabel}
+                    </p>
+                    {pipelineCounts.new > 0 && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                            </span>
+                            {pipelineCounts.new} pending review
                         </span>
-                        {pipelineCounts.new} pending review
-                    </span>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={cn("grid gap-6", isFeedOnly ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3")}>
+                {!isFeedOnly && (
                 <div className={cn(
-                    "glassmorphic-card p-6 rounded-3xl relative overflow-hidden flex flex-col gap-6",
-                    "transition-all duration-300 md:col-span-2 lg:col-span-1",
+                    "bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl relative overflow-hidden flex flex-col gap-6",
+                    isFunnelOnly ? "col-span-1 md:col-span-2 lg:col-span-3" : "transition-all duration-300 md:col-span-2 lg:col-span-1",
                     pipelineCounts.new > 0
                         ? "border border-amber-500/30 hover:border-amber-500/50"
-                        : "border border-border hover:border-primary/30"
+                        : "border border-slate-200/60 dark:border-slate-800 hover:border-primary/30"
                 )}>
                     <div className={cn(
                         "absolute -right-4 -top-4 w-32 h-32 rounded-full blur-3xl pointer-events-none transition-colors",
@@ -396,8 +401,10 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                         </Link>
                     )}
                 </div>
+                )}
 
-                <div className={cn("glassmorphic-card p-6 rounded-3xl border border-border relative overflow-hidden", "hover:border-violet-500/30 transition-all duration-300 flex flex-col gap-6")}>
+                {!isFunnelOnly && (
+                <div className={cn("bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 relative overflow-hidden", "hover:border-violet-500/30 transition-all duration-300 flex flex-col gap-6")}>
                     <div className="absolute -right-4 -top-4 w-28 h-28 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
 
                     <div className="flex items-center justify-between relative z-10">
@@ -514,7 +521,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                     </Link>
                 </div>
 
-                <div className={cn("glassmorphic-card p-6 rounded-3xl border border-border relative overflow-hidden", "hover:border-primary/30 transition-all duration-300 flex flex-col gap-6")}>
+                <div className={cn("bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 relative overflow-hidden", "hover:border-primary/30 transition-all duration-300 flex flex-col gap-6")}>
                     <div className="absolute -right-4 -top-4 w-28 h-28 bg-primary/[0.04] rounded-full blur-3xl pointer-events-none" />
 
                     <div className="flex items-center justify-between relative z-10">
@@ -579,6 +586,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                         View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 </div>
+                )}
             </div>
         </div>
     );

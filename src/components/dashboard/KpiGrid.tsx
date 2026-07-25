@@ -151,11 +151,10 @@ export function KpiGrid({
           key={stat.label}
           href={stat.href}
           className={cn(
-            'relative group overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer block',
-            'glassmorphic-card',
-            'hover:scale-[1.015] hover:-translate-y-0.5',
+            'relative group overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer block bg-white dark:bg-slate-900 shadow-sm border-slate-200/60 dark:border-slate-800',
+            'hover:-translate-y-0.5',
             'active:scale-[0.985] active:opacity-95',
-            stat.glowClass || 'hover:border-outline-variant/30',
+            stat.glowClass || 'hover:border-slate-300 dark:hover:border-slate-700',
             'min-h-[148px] p-5 flex flex-col justify-between'
           )}
         >
