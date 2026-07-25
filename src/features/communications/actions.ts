@@ -1,8 +1,8 @@
 'use server';
 
 import { db } from '@/db';
-import { parents, children, broadcasts } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { parents, children, broadcasts, bookings, clubSessions } from '@/db/schema';
+import { eq, inArray, and, sql } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { emailService } from '@/lib/services/email';
 
@@ -13,37 +13,39 @@ export async function sendBroadcast(data: {
   subject: string;
   message: string;
 }) {
+  if (!data.audienceParentIds || data.audienceParentIds.length === 0) {
+    return { success: true, count: 0, sent: 0, failed: 0 };
+  }
+
   const targetParents = await db.query.parents.findMany({
     where: inArray(parents.id, data.audienceParentIds),
   });
 
-  // We check if the parent has ANY booking with communicationsConsent=true
-  // For simplicity, we assume they consented if they are in the DB.
-  // The correct implementation would join with bookings.
-  const consentedParents = targetParents;
-  
-  if (consentedParents.length === 0) {
+  if (targetParents.length === 0) {
     return { success: true, count: 0, sent: 0, failed: 0 };
   }
 
-  // Create broadcast record
+  // Create broadcast record immediately
   const [broadcast] = await db.insert(broadcasts).values({
     organisationId: data.organisationId,
-    centreId: data.centreId,
+    centreId: data.centreId || null,
     subject: data.subject,
     message: data.message,
-    recipientCount: consentedParents.length,
+    recipientCount: targetParents.length,
     successCount: 0,
     failureCount: 0,
   }).returning();
 
-  let successCount = 0;
-  let failureCount = 0;
+  // Background queue architecture: execute without awaiting
+  const sendEmailsTask = async () => {
+    let successCount = 0;
+    let failureCount = 0;
 
-  // Send emails using existing Resend service
-  // For production, this should ideally be queued or batched.
-  await Promise.all(
-    consentedParents.map(async (parent) => {
+    for (const parent of targetParents) {
+      if (!parent.email) {
+        failureCount++;
+        continue;
+      }
       try {
         await emailService.sendEmail({
           to: parent.email,
@@ -55,15 +57,17 @@ export async function sendBroadcast(data: {
       } catch (e) {
         failureCount++;
       }
-    })
-  );
+    }
 
-  // Update broadcast record with delivery status
-  await db.update(broadcasts)
-    .set({ successCount, failureCount })
-    .where(eq(broadcasts.id, broadcast.id));
+    // Update broadcast record with final delivery status
+    await db.update(broadcasts)
+      .set({ successCount, failureCount })
+      .where(eq(broadcasts.id, broadcast.id));
+  };
 
-  return { success: true, count: consentedParents.length, sent: successCount, failed: failureCount };
+  sendEmailsTask().catch(console.error);
+
+  return { success: true, count: targetParents.length, sent: 0, failed: 0 };
 }
 
 export async function getBroadcasts(centreId: string) {
@@ -76,23 +80,53 @@ export async function getBroadcasts(centreId: string) {
     .orderBy(broadcasts.createdAt);
 }
 
-export async function getParentsForCentre(centreId: string) {
+export async function getClassesForCentre(centreId: string) {
   const session = await auth();
   if (!session?.user?.organisationId) return [];
 
-  // Very simplified for the purpose of the UI test - fetching parents that have children in this centre.
-  // We'll just fetch all parents for the org since many things are org-scoped.
-  const parentsList = await db.select({
+  const query = db.select({
+      id: clubSessions.id,
+      type: clubSessions.type,
+      weekday: clubSessions.weekday,
+      startTime: clubSessions.startTime,
+      endTime: clubSessions.endTime,
+  })
+  .from(clubSessions);
+
+  if (centreId === 'all') {
+    query.where(eq(clubSessions.organisationId, session.user.organisationId));
+  } else {
+    query.where(eq(clubSessions.centreId, centreId));
+  }
+
+  return await query;
+}
+
+export async function getParentsForCentre(centreId: string, classId?: string) {
+  const session = await auth();
+  if (!session?.user?.organisationId) return [];
+
+  const baseQuery = db.select({
     id: parents.id,
     firstName: parents.firstName,
     lastName: parents.lastName,
     email: parents.email,
+    communicationsConsent: sql<boolean>`COALESCE(bool_or(${bookings.communicationsConsent}), false)`.mapWith(Boolean).as('communicationsConsent'),
   })
   .from(parents)
-  .where(eq(parents.organisationId, session.user.organisationId));
+  .leftJoin(bookings, eq(parents.id, bookings.parentId));
   
-  return parentsList.map(p => ({
-      ...p,
-      communicationsConsent: true // Mocked for UI
-  }));
+  const conditions = [eq(parents.organisationId, session.user.organisationId)];
+
+  if (centreId !== 'all') {
+    conditions.push(eq(bookings.centreId, centreId));
+  }
+
+  if (classId && classId !== 'all') {
+    conditions.push(eq(bookings.sessionId, classId));
+  }
+
+  baseQuery.where(and(...conditions)).groupBy(parents.id);
+  
+  return await baseQuery;
 }

@@ -1,16 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Send, Users, History, AlertCircle, Loader2 } from 'lucide-react';
-import { sendBroadcast, getBroadcasts, getParentsForCentre } from '@/features/communications/actions';
+import { Send, Users, History, AlertCircle, Loader2, X } from 'lucide-react';
+import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre } from '@/features/communications/actions';
 
 type Broadcast = any;
 type Parent = any;
+type ClubSession = any;
 
 export default function CommunicationsClient({ organisationId, centreId }: { organisationId: string; centreId: string }) {
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [parents, setParents] = useState<Parent[]>([]);
+    const [classes, setClasses] = useState<ClubSession[]>([]);
+    const [selectedClassId, setSelectedClassId] = useState<string>('all');
+    const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const [subject, setSubject] = useState('');
@@ -20,17 +24,19 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
 
     useEffect(() => {
         loadData();
-    }, [centreId]);
+    }, [centreId, selectedClassId]);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [bData, pData] = await Promise.all([
+            const [bData, pData, cData] = await Promise.all([
                 getBroadcasts(centreId),
-                getParentsForCentre(centreId)
+                getParentsForCentre(centreId, selectedClassId),
+                getClassesForCentre(centreId)
             ]);
             setBroadcasts(bData.reverse());
             setParents(pData);
+            setClasses(cData);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -42,10 +48,12 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
         e.preventDefault();
         if (!subject || !message) return;
 
+        const audienceParentIds = parents.filter(p => p.communicationsConsent).map(p => p.id);
+        if (audienceParentIds.length === 0) return;
+
         setIsSending(true);
         setSendResult(null);
         try {
-            const audienceParentIds = parents.map(p => p.id);
             const result = await sendBroadcast({
                 organisationId,
                 centreId,
@@ -140,22 +148,43 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
 
                     <div className="space-y-6">
                         <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                                     <Users className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-foreground">Audience Size</h3>
-                                    <p className="text-xs text-muted-foreground">Currently targeting All Parents</p>
+                                    <h3 className="font-bold text-foreground">Recipient Picker</h3>
+                                    <p className="text-xs text-muted-foreground">Select target audience</p>
                                 </div>
                             </div>
-                            <div className="text-3xl font-black text-foreground mb-2">
-                                {isLoading ? '-' : consentedCount} <span className="text-base font-semibold text-muted-foreground">recipients</span>
+                            
+                            <div className="mb-6">
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Class</label>
+                                <select 
+                                    value={selectedClassId}
+                                    onChange={(e) => setSelectedClassId(e.target.value)}
+                                    className="w-full px-4 py-3 bg-secondary/30 border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                >
+                                    <option value="all">All Parents</option>
+                                    {classes.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            {String(c.type).replace('_', ' ')} - {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][c.weekday]} ({c.startTime})
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
-                            <p className="text-xs text-muted-foreground bg-secondary/50 p-3 rounded-xl flex gap-2">
-                                <AlertCircle className="w-4 h-4 text-warning shrink-0" />
-                                <span>Note: {parents.length - consentedCount} parents are excluded because they have opted out of communications.</span>
-                            </p>
+
+                            <div className="p-4 bg-secondary/30 rounded-xl border border-border/50">
+                                <div className="text-3xl font-black text-foreground mb-1">
+                                    {isLoading ? '-' : consentedCount} <span className="text-sm font-semibold text-muted-foreground">recipients</span>
+                                </div>
+                                {parents.length - consentedCount > 0 && (
+                                    <p className="text-xs text-muted-foreground flex gap-1.5 mt-3 pt-3 border-t border-border/50">
+                                        <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0" />
+                                        <span>{parents.length - consentedCount} parent{parents.length - consentedCount > 1 ? 's' : ''} excluded due to GDPR opt-out.</span>
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -183,9 +212,9 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
                                 </tr>
                             ) : (
                                 broadcasts.map((b) => (
-                                    <tr key={b.id} className="hover:bg-secondary/20 transition-colors">
+                                    <tr key={b.id} onClick={() => setSelectedBroadcast(b)} className="hover:bg-secondary/20 transition-colors cursor-pointer group">
                                         <td className="px-6 py-4 font-medium">{new Date(b.createdAt).toLocaleString('en-GB')}</td>
-                                        <td className="px-6 py-4 font-semibold text-foreground max-w-xs truncate">{b.subject}</td>
+                                        <td className="px-6 py-4 font-semibold text-foreground max-w-xs truncate group-hover:text-primary transition-colors">{b.subject}</td>
                                         <td className="px-6 py-4 text-success font-bold">{b.successCount}</td>
                                         <td className="px-6 py-4">
                                             {b.failureCount > 0 ? (
@@ -199,6 +228,52 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Slide-out History Drawer */}
+            {selectedBroadcast && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div 
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+                        onClick={() => setSelectedBroadcast(null)} 
+                    />
+                    <div className="relative w-full max-w-md bg-card shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300 border-l border-border">
+                        <div className="flex items-center justify-between p-6 border-b border-border">
+                            <h2 className="text-lg font-bold text-foreground">Broadcast Details</h2>
+                            <button 
+                                onClick={() => setSelectedBroadcast(null)}
+                                className="p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Subject</label>
+                                <div className="font-semibold text-foreground text-lg">{selectedBroadcast.subject}</div>
+                                <div className="text-sm text-muted-foreground mt-1">Sent on {new Date(selectedBroadcast.createdAt).toLocaleString('en-GB')}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-success/10 border border-success/20 p-4 rounded-2xl">
+                                    <div className="text-2xl font-black text-success">{selectedBroadcast.successCount}</div>
+                                    <div className="text-xs font-bold text-success/80 uppercase tracking-wider mt-1">Delivered</div>
+                                </div>
+                                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl">
+                                    <div className="text-2xl font-black text-destructive">{selectedBroadcast.failureCount}</div>
+                                    <div className="text-xs font-bold text-destructive/80 uppercase tracking-wider mt-1">Failed</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Message Content</label>
+                                <div className="bg-secondary/30 border border-border p-5 rounded-2xl text-sm whitespace-pre-wrap text-foreground/90 leading-relaxed">
+                                    {selectedBroadcast.message}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
