@@ -136,23 +136,23 @@ export default async function FinancePage(props: {
     const todayStr = today.toISOString().split('T')[0];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-700 max-w-full">
+        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">Finance Ledger</h1>
-                    <p className="text-muted-foreground font-medium mt-1">
+                    <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">Finance Ledger</h1>
+                    <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
                         Manage invoices, payments, and financial health
                     </p>
                 </div>
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={serialize(orgCentres)} />
                     </Suspense>
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-success/10 border border-success/20 text-success text-sm font-bold hover:bg-success/20 transition-all active:scale-95 duration-100"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 shadow-sm transition-all active:scale-95 duration-150"
                         title="Download finance CSV for current month"
                     >
                         <Download className="w-4 h-4" />
