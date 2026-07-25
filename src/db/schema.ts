@@ -605,6 +605,18 @@ export const invoices = pgTable('invoices', {
   childIdx: index('invoices_child_idx').on(table.childId),
 }));
 
+export const invoiceLineItems = pgTable('invoice_line_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }).notNull(),
+  description: text('description').notNull(),
+  quantity: integer('quantity').default(1).notNull(),
+  unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+  lineTotal: numeric('line_total', { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  invoiceIdx: index('invoice_line_items_invoice_idx').on(table.invoiceId),
+}));
+
 export const payments = pgTable('payments', {
   id: uuid('id').defaultRandom().primaryKey(),
   invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }).notNull(),
@@ -1011,6 +1023,14 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   }),
   payments: many(payments),
   instalments: many(invoiceInstalments),
+  lineItems: many(invoiceLineItems),
+}));
+
+export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [invoiceLineItems.invoiceId],
+    references: [invoices.id],
+  }),
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({
