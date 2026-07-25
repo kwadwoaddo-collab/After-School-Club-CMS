@@ -31,11 +31,13 @@ export default async function FinancePage(props: {
         return redirect('/dashboard');
     }
 
+    const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
+
     // Fetch centres for the modal (JSON serialized for RSC boundary safety)
     const orgCentresRaw = await db.query.centres.findMany({
         where: eq(centres.organisationId, session.user.organisationId)
     });
-    const orgCentres = JSON.parse(JSON.stringify(orgCentresRaw));
+    const orgCentres = serialize(orgCentresRaw);
 
     const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
@@ -80,7 +82,7 @@ export default async function FinancePage(props: {
         }
     });
 
-    const serializedInvoices = JSON.parse(JSON.stringify(paginatedInvoices));
+    const serializedInvoices = serialize(paginatedInvoices);
 
     // Fetch billing cycles for the Billing Cycles tab — wrapped in try-catch for resilience
     let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
@@ -89,7 +91,7 @@ export default async function FinancePage(props: {
     } catch (err) {
         logger.error('[finance] fetchBillingCycles failed:', err);
     }
-    const serializedBillingCycles = JSON.parse(JSON.stringify(billingCycles));
+    const serializedBillingCycles = serialize(billingCycles);
 
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
