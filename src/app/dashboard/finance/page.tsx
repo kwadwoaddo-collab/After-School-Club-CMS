@@ -45,9 +45,10 @@ export default async function FinancePage(props: {
     }
 
     // Fetch centres for the modal
-    const orgCentres = await db.query.centres.findMany({
+    const orgCentresRaw = await db.query.centres.findMany({
         where: eq(centres.organisationId, session.user.organisationId)
     });
+    const orgCentres = JSON.parse(JSON.stringify(orgCentresRaw));
 
     const validCentreIds = orgCentres.map(c => c.id);
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
