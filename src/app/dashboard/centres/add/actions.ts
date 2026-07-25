@@ -30,18 +30,20 @@ export async function createCentre(prevState: any, formData: FormData) {
     const randomString = Math.random().toString(36).substring(2, 7);
     const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${randomString}`;
 
+    let newId: string;
     try {
-        await db.insert(centres).values({
+        const [inserted] = await db.insert(centres).values({
             organisationId: session.user.organisationId,
             name,
             address: address || null,
             slug,
             timezone: 'Europe/London', // Default for now
-        });
+        }).returning({ id: centres.id });
+        newId = inserted.id;
     } catch (e) {
         logger.error('Failed to create centre:', e);
         return { message: 'Failed to create centre. Please try again.' };
     }
 
-    redirect('/dashboard');
+    redirect(`/dashboard/centres/${newId}/settings`);
 }

@@ -5,10 +5,10 @@ import { db } from '@/db';
 import { organisations, centres, bookings } from '@/db/schema';
 import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, MapPin, Users, Calendar, ArrowRight, BarChart3, Clock } from 'lucide-react';
+import { Plus, MapPin, ChevronRight, BarChart3, Building2 } from 'lucide-react';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
-import { CapacityIndicator } from '@/components/ui/CapacityIndicator';
 import { LoadForecast } from '@/components/dashboard/LoadForecast';
+import { getAvatarGradient } from '@/components/ui/utils';
 
 export default async function CentresPage() {
     const session = await auth();
@@ -90,14 +90,14 @@ export default async function CentresPage() {
                 </Link>
             </div>
 
-            {/* Centres Grid */}
+            {/* Centres Table */}
             {centresList.length === 0 ? (
-                <div className="glassmorphic-card rounded-[32px] p-12 text-center">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-dashed border-border rounded-3xl">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <MapPin className="w-8 h-8 text-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-foreground mb-2">No centres yet</h3>
-                    <p className="text-on-surface-variant mb-6">
+                    <p className="text-on-surface-variant mb-6 max-w-xs">
                         Get started by adding your first centre
                     </p>
                     <Link
@@ -108,66 +108,74 @@ export default async function CentresPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {centresWithStats.map((centre) => (
-                        <div
-                            key={centre.id}
-                            className="glassmorphic-card rounded-3xl p-6 hover:border-primary/30 active:scale-[0.985] active:opacity-95 transition-all group glow-hover-primary duration-200"
-                        >
-                            <div className="flex items-start justify-between mb-6">
-                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                                    <MapPin className="w-6 h-6 text-primary" />
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                    <span className="px-3 py-1 bg-tertiary-container/10 text-tertiary border border-tertiary/20 text-xs font-bold rounded-full uppercase tracking-wider">
-                                        Active
-                                    </span>
-                                    <CapacityIndicator current={centre.todayCount} max={10} size="sm" />
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl font-black text-foreground mb-2 tracking-tight group-hover:text-primary transition-colors">{centre.name}</h3>
-
-                            {centre.address && (
-                                <p className="text-sm text-on-surface-variant opacity-80 mb-6 flex items-start gap-2 h-10 overflow-hidden line-clamp-2">
-                                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>{centre.address}</span>
-                                </p>
-                            )}
-
-                            {/* Load Forecast Visualization */}
-                            <div className="mb-6 p-4 rounded-2xl bg-secondary/40/50 border border-outline-variant/5">
-                                <div className="flex items-center gap-2 mb-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                                    <BarChart3 className="w-3.5 h-3.5" />
-                                    7-Day Load Forecast
-                                </div>
-                                <LoadForecast data={centre.forecast} max={10} />
-                            </div>
-
-                            <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
-                                <div className="flex items-center gap-4 text-xs text-on-surface-variant font-medium">
-                                    <div className="flex items-center gap-1.5 bg-secondary/40 px-2 py-1 rounded-lg">
-                                        <Calendar className="w-3.5 h-3.5" />
-                                        <span>{centre.todayCount} today</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Link
-                                        href={`/dashboard/centres/${centre.id}/billing`}
-                                        className="px-3 py-2 bg-card/5 border border-border text-on-surface-variant text-xs font-bold rounded-xl hover:bg-card/10 hover:text-foreground active:scale-95 transition-all flex items-center gap-1.5 duration-100"
-                                    >
-                                        Billing
-                                    </Link>
-                                    <Link
-                                        href={`/dashboard/bookings?centre=${centre.id}`}
-                                        className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2 duration-100 shadow-md shadow-primary/20"
-                                    >
-                                        Manage <ArrowRight className="w-3.5 h-3.5" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                <div className="bg-card border border-border rounded-[32px] overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-border bg-secondary/10">
+                                    <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Centre Identity</th>
+                                    <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Compliance</th>
+                                    <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+                                    <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">7-Day Forecast</th>
+                                    <th className="py-4 px-4 w-10" />
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {centresWithStats.map((centre) => {
+                                    const gradient = getAvatarGradient(centre.name);
+                                    
+                                    return (
+                                        <tr key={centre.id} className="group hover:bg-secondary/40 transition-colors cursor-pointer">
+                                            <td className="py-4 px-6">
+                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-center gap-3 active:scale-[0.985] transition-all duration-100">
+                                                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-sm`}>
+                                                        <Building2 className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                                                            {centre.name}
+                                                        </p>
+                                                        {centre.address && (
+                                                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[250px]">
+                                                                {centre.address}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </Link>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="block">
+                                                    {centre.ofstedId ? (
+                                                        <span className="font-mono text-slate-500 text-xs px-2 py-1 bg-secondary rounded-md border border-border">
+                                                            {centre.ofstedId}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground/50">—</span>
+                                                    )}
+                                                </Link>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                                    <span className="text-sm font-medium text-foreground">Active</span>
+                                                </Link>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="block w-[120px]">
+                                                    <LoadForecast data={centre.forecast} max={10} hideYAxis={true} />
+                                                </Link>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="p-2 text-muted-foreground hover:text-primary transition-colors active:scale-90 duration-100 flex justify-end opacity-0 group-hover:opacity-100">
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>
