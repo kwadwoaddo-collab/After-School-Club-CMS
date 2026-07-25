@@ -828,6 +828,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                             </>
                                         )}
                                     </div>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
