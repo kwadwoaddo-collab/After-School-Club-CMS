@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, Check } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 
@@ -16,16 +16,21 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     const { selectedCentreId, setSelectedCentreId } = useCentreFilter();
 
     const [search, setSearch] = useState(searchParams.get('search') || '');
-    const [year, setYear] = useState(searchParams.get('year') || 'all');
+    
+    const initialYearParam = searchParams.get('year') || 'all';
+    const initialYears = initialYearParam === 'all' ? [] : initialYearParam.split(',');
+    const [selectedYears, setSelectedYears] = useState<string[]>(initialYears);
+    const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+    
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const yearPills = [
-        { value: 'all', label: 'All' },
-        { value: 'Reception', label: 'Rec' },
+    const yearOptions = [
+        { value: 'Reception', label: 'Reception' },
         ...Array.from({ length: 13 }, (_, i) => ({
             value: `Y${i + 1}`,
-            label: `Y${i + 1}`,
+            label: `Year ${i + 1}`,
         })),
     ];
 
@@ -44,20 +49,22 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
     const handleClearFilters = () => {
         setSearch('');
-        setYear('all');
+        setSelectedYears([]);
         setStatus('all');
         setSelectedCentreId('all');
         router.push('/dashboard/students');
     };
 
-    const applyFilters = useCallback((overrides?: { newSearch?: string; newYear?: string; newStatus?: string }) => {
+    const applyFilters = useCallback((overrides?: { newSearch?: string; newYears?: string[]; newStatus?: string }) => {
         const params = new URLSearchParams();
 
         const currentSearch = overrides?.newSearch !== undefined ? overrides.newSearch : search;
         if (currentSearch) params.set('search', currentSearch);
 
-        const currentYear = overrides?.newYear !== undefined ? overrides.newYear : year;
-        if (currentYear !== 'all') params.set('year', currentYear);
+        const currentYears = overrides?.newYears !== undefined ? overrides.newYears : selectedYears;
+        if (currentYears.length > 0) {
+            params.set('year', currentYears.join(','));
+        }
 
         const currentStatus = overrides?.newStatus !== undefined ? overrides.newStatus : status;
         if (currentStatus !== 'all') params.set('status', currentStatus);
@@ -66,7 +73,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
 
         const queryString = params.toString();
         router.push(`/dashboard/students${queryString ? `?${queryString}` : ''}`);
-    }, [search, year, status, selectedCentreId, router]);
+    }, [search, selectedYears, status, selectedCentreId, router]);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
@@ -76,13 +83,42 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
         }, 350);
     }, [applyFilters]);
 
+    const toggleYear = (val: string) => {
+        const newYears = selectedYears.includes(val) 
+            ? selectedYears.filter(y => y !== val) 
+            : [...selectedYears, val];
+        setSelectedYears(newYears);
+        applyFilters({ newYears });
+    };
+
+    const toggleAllYears = () => {
+        if (selectedYears.length === yearOptions.length) {
+            setSelectedYears([]);
+            applyFilters({ newYears: [] });
+        } else {
+            const all = yearOptions.map(o => o.value);
+            setSelectedYears(all);
+            applyFilters({ newYears: all });
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsYearDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => { document.removeEventListener("mousedown", handleClickOutside); };
+    }, []);
+
     useEffect(() => {
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, []);
 
     return (
         <div className="space-y-4 animate-in fade-in duration-300">
-            {/* Row 1: Search + Status + View Toggle */}
+            {/* Unified Filter Bar */}
             <div className="flex items-center gap-3 flex-wrap">
                 {/* Search */}
                 <div className="flex-1 min-w-[240px] relative">
@@ -91,7 +127,7 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                         type="text"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder="Search by student, parent, family/last name, email, or contact..."
+                        placeholder="Search by student, parent, email..."
                         className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-secondary/50 border-border"
                     />
                     {search && (
@@ -102,6 +138,46 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
+                    )}
+                </div>
+
+                {/* Multi-Select Year Dropdown */}
+                <div className="relative min-w-[180px]" ref={dropdownRef}>
+                    <button
+                        onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+                        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-foreground focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-secondary/50 border-border"
+                    >
+                        <span>
+                            {selectedYears.length === 0 ? 'Year Groups (All)' : `Year Groups (${selectedYears.length} Selected)`}
+                        </span>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    
+                    {isYearDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto p-2">
+                            <button
+                                onClick={toggleAllYears}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium hover:bg-secondary/50 rounded-lg text-left"
+                            >
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedYears.length === yearOptions.length ? 'bg-primary border-primary text-white' : 'border-border'}`}>
+                                    {selectedYears.length === yearOptions.length && <Check className="w-3 h-3" />}
+                                </div>
+                                Select All
+                            </button>
+                            <div className="h-px bg-border my-1 mx-2"></div>
+                            {yearOptions.map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => toggleYear(opt.value)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium hover:bg-secondary/50 rounded-lg text-left"
+                                >
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedYears.includes(opt.value) ? 'bg-primary border-primary text-white' : 'border-border'}`}>
+                                        {selectedYears.includes(opt.value) && <Check className="w-3 h-3" />}
+                                    </div>
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
                     )}
                 </div>
 
@@ -123,8 +199,6 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                     <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
                 </div>
 
-
-
                 {/* Clear Filters */}
                 {hasActiveFilters && (
                     <button
@@ -137,26 +211,6 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                 )}
             </div>
 
-            {/* Row 2: Year Group Pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-                {yearPills.map((pill) => (
-                    <button
-                        key={pill.value}
-                        onClick={() => {
-                            setYear(pill.value);
-                            applyFilters({ newYear: pill.value });
-                        }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                            year === pill.value
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-secondary/50 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary'
-                        }`}
-                    >
-                        {pill.label}
-                    </button>
-                ))}
-            </div>
-
             {/* Active Filters Display */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
@@ -166,9 +220,9 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                             &quot;{searchParams.get('search')}&quot; ({resultsCount} results)
                         </span>
                     )}
-                    {year !== 'all' && (
-                        <span className="px-3 py-1 bg-secondary text-foreground text-xs font-bold rounded-full border border-border">
-                            {yearPills.find((o) => o.value === year)?.label || `Year ${year}`}
+                    {selectedYears.length > 0 && (
+                        <span className="px-3 py-1 bg-secondary text-foreground text-xs font-bold rounded-full border border-border flex flex-wrap gap-1">
+                            {selectedYears.map(y => yearOptions.find(o => o.value === y)?.label || y).join(', ')}
                         </span>
                     )}
                     {status !== 'all' && (

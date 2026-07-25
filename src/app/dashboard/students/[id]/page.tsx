@@ -43,6 +43,7 @@ export default async function StudentProfilePage(
             notes: children.notes,
             registeredSessions: children.registeredSessions,
             centreId: children.centreId,
+            sessionSlots: centres.sessionSlots,
             organisationId: children.organisationId,
             parentId: children.parentId,
             registrationId: registrationChildren.registrationId,
@@ -58,6 +59,7 @@ export default async function StudentProfilePage(
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .leftJoin(registrationChildren, eq(children.id, registrationChildren.childId))
+        .leftJoin(centres, eq(children.centreId, centres.id))
         .where(eq(children.id, id))
         .limit(1),
 

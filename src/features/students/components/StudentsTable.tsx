@@ -56,9 +56,10 @@ const columns: DataTableColumn<StudentRow>[] = [
                 {student.firstName} {student.lastName}
               </span>
               {student.isRegistered && (
-                <span className="px-2 py-0.5 rounded-full bg-success/10 border border-success/40 text-[10px] font-bold text-success uppercase tracking-wider ml-1 whitespace-nowrap" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
-                  Registered
-                </span>
+                <div className="flex items-center gap-1.5 ml-2" title={student.source === 'registration' ? 'Signed up via Registration Form' : 'Registered'}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]"></div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Registered</span>
+                </div>
               )}
             </div>
           </div>
@@ -80,14 +81,8 @@ const columns: DataTableColumn<StudentRow>[] = [
     header: 'Year Group',
     render: (student) => {
       const yr = student.schoolYear;
-      let colour = 'bg-secondary border-border text-foreground';
-      if (yr === 'Reception' || yr === 'Y1' || yr === 'Y2') colour = 'bg-primary/10 border-primary/30 text-primary';       // KS1
-      else if (['Y3','Y4','Y5','Y6'].includes(yr ?? ''))   colour = 'bg-success/10 border-success/30 text-success'; // KS2
-      else if (['Y7','Y8','Y9'].includes(yr ?? ''))         colour = 'bg-warning/10 border-warning/30 text-warning';   // KS3
-      else if (['Y10','Y11'].includes(yr ?? ''))            colour = 'bg-destructive/10 border-destructive/30 text-destructive'; // KS4
-      else if (['Y12','Y13'].includes(yr ?? ''))            colour = 'bg-destructive/10 border-destructive/30 text-destructive';      // Sixth form
       return (
-        <span className={`px-3 py-1 border text-xs font-bold rounded-full shadow-sm ${colour}`}>
+        <span className="px-3 py-1 bg-secondary border border-border text-foreground text-xs font-bold rounded-full shadow-sm">
           {yr ?? '—'}
         </span>
       );
@@ -97,22 +92,32 @@ const columns: DataTableColumn<StudentRow>[] = [
     key: 'parentContact',
     header: 'Parent Contact',
     render: (student) => (
-      <div className="space-y-1">
+      <div className="flex flex-col gap-1.5">
         <span className="font-semibold text-sm text-foreground">
           {student.parentFirstName} {student.parentLastName}
         </span>
-        {student.parentEmail && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Mail className="w-3 h-3 text-muted-foreground/60" />
-            {student.parentEmail}
-          </p>
-        )}
-        {student.parentPhone && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Phone className="w-3 h-3 text-muted-foreground/60" />
-            {student.parentPhone}
-          </p>
-        )}
+        <div className="flex items-center gap-1.5 -ml-1">
+          {student.parentEmail && (
+            <a 
+              href={`mailto:${student.parentEmail}`} 
+              className="p-1.5 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors inline-flex items-center justify-center" 
+              title={student.parentEmail} 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Mail className="w-3.5 h-3.5" />
+            </a>
+          )}
+          {student.parentPhone && (
+            <a 
+              href={`tel:${student.parentPhone}`} 
+              className="p-1.5 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors inline-flex items-center justify-center" 
+              title={student.parentPhone} 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Phone className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
       </div>
     ),
   },

@@ -11,6 +11,7 @@ import type { StudentRow } from '@/features/students/components/StudentsTable';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import StudentsFilters from '@/features/students/components/StudentsFilters';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import Pagination from '@/components/ui/Pagination';
 
 export default async function StudentsPage(props: {
     searchParams: Promise<{
@@ -18,6 +19,7 @@ export default async function StudentsPage(props: {
         search?: string;
         year?: string;
         status?: string;
+        page?: string;
     }>
 }) {
     const searchParams = await props.searchParams;
@@ -37,7 +39,6 @@ export default async function StudentsPage(props: {
     const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
 
     if (accessibleCentreIds.length === 0) {
-        // Zero accessible centres — short-circuit with empty page
         return (
             <div className="space-y-8 animate-in fade-in duration-700">
                 <div className="flex items-end justify-between">
@@ -94,8 +95,14 @@ export default async function StudentsPage(props: {
         }
     }
 
+    // Since we are changing filters to MultiSelect, year might be a comma-separated list
+    // Wait, the spec says "Multi-Select Dropdown". "Year Groups (All)" or "Year Groups (2 Selected)".
+    // So year param can be a comma-separated string, or multiple 'year' params. Let's assume comma-separated.
     if (searchParams.year && searchParams.year !== 'all') {
-        conditions.push(eq(children.schoolYear, searchParams.year));
+        const years = searchParams.year.split(',');
+        if (years.length > 0) {
+            conditions.push(inArray(children.schoolYear, years));
+        }
     }
 
     const showLowAttendance = searchParams.status === 'low-attendance';
@@ -103,7 +110,91 @@ export default async function StudentsPage(props: {
         conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
     }
 
-    // ── Main student query ─────────────────
+    // Base subqueries for counts
+    const centreFilterSql = activeCentreId !== 'all' 
+        ? sql`AND b.centre_id = ${activeCentreId}` 
+        : sql`AND b.centre_id IN ${sql`(${sql.join(accessibleCentreIds.map(id => sql`${id}`), sql`, `)})`}`;
+    
+    // Instead of raw text list of accessibleCentreIds, we might need a better way if it's dynamic.
+    // Drizzle `inArray` can be used via sql. Or we just simplify since we are passing activeCentreId or we just check if it's 'all'
+    // Let's build a simpler subquery logic.
+    // Actually, joining all these inside CTE is easier.
+
+    // Let's do it using Drizzle sql``
+    const pastCountQuery = sql<number>`(
+        SELECT count(*)::int FROM ${bookingAttendees} ba
+        INNER JOIN ${bookings} b ON ba.booking_id = b.id
+        WHERE ba.child_id = ${children.id} AND b.start_at <= now()
+        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+    )`;
+
+    const presentCountQuery = sql<number>`(
+        SELECT count(*)::int FROM ${bookingAttendees} ba
+        INNER JOIN ${bookings} b ON ba.booking_id = b.id
+        WHERE ba.child_id = ${children.id} AND b.start_at <= now()
+        AND COALESCE(ba.attendance_status::text, CASE WHEN b.status = 'completed' THEN 'present' ELSE NULL END) = 'present'
+        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+    )`;
+
+    const totalCountQuery = sql<number>`(
+        SELECT count(*)::int FROM ${bookingAttendees} ba
+        INNER JOIN ${bookings} b ON ba.booking_id = b.id
+        WHERE ba.child_id = ${children.id}
+        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+    )`;
+
+    const nextAssessmentQuery = sql<Date | null>`(
+        SELECT min(b.start_at) FROM ${bookingAttendees} ba
+        INNER JOIN ${bookings} b ON ba.booking_id = b.id
+        WHERE ba.child_id = ${children.id} AND b.start_at > now()
+        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+    )`;
+
+    const hasMedicalNotesQuery = sql<boolean>`(
+        EXISTS (
+            SELECT 1 FROM ${studentNotes} sn 
+            WHERE sn.child_id = ${children.id} AND sn.category = 'Medical'
+        )
+    )`;
+    const hasSafeguardingNotesQuery = sql<boolean>`(
+        EXISTS (
+            SELECT 1 FROM ${studentNotes} sn 
+            WHERE sn.child_id = ${children.id} AND sn.category = 'Safeguarding'
+        )
+    )`;
+
+    // Aggregate stats query
+    const statsQuery = db
+        .select({
+            totalCount: sql<number>`count(*)::int`,
+            registeredCount: sql<number>`count(*) filter (where ${children.isRegistered} = true)::int`,
+            leadCount: sql<number>`count(*) filter (where ${children.isRegistered} = false)::int`,
+            medicalAlertCount: sql<number>`count(*) filter (where ${hasMedicalNotesQuery} = true OR ${hasSafeguardingNotesQuery} = true)::int`,
+            lowAttendanceCount: sql<number>`count(*) filter (where ${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75)::int`,
+        })
+        .from(children)
+        .innerJoin(parents, eq(children.parentId, parents.id))
+        .where(and(...conditions));
+
+    if (showLowAttendance) {
+        conditions.push(sql`${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75`);
+    }
+
+    const [stats] = await statsQuery;
+
+    const PAGE_SIZE = 20;
+    const page = Math.max(1, parseInt(searchParams.page || '1', 10));
+    const offset = (page - 1) * PAGE_SIZE;
+
+    // We also need the filtered total count for pagination
+    const [{ filteredCount }] = await db
+        .select({ filteredCount: sql<number>`count(*)::int` })
+        .from(children)
+        .innerJoin(parents, eq(children.parentId, parents.id))
+        .where(and(...conditions));
+
+    const totalPages = Math.ceil(filteredCount / PAGE_SIZE);
+
     const studentsList = await db
         .select({
             id: children.id,
@@ -118,69 +209,29 @@ export default async function StudentsPage(props: {
             parentEmail: parents.email,
             parentPhone: parents.phone,
             parentId: parents.id,
+            bookingCount: totalCountQuery,
+            pastCount: pastCountQuery,
+            presentCount: presentCountQuery,
+            nextAssessment: nextAssessmentQuery,
+            hasMedicalNotes: hasMedicalNotesQuery,
+            hasSafeguardingNotes: hasSafeguardingNotesQuery,
         })
         .from(children)
         .innerJoin(parents, eq(children.parentId, parents.id))
         .where(and(...conditions))
-        .orderBy(asc(children.lastName), asc(children.firstName));
-
-    // ── Booking stats for visible students ──────────────────────────────────
-    const bookingData = await db
-        .select({
-            childId: bookingAttendees.childId,
-            totalCount: sql<number>`count(*)`,
-            pastCount: sql<number>`count(*) filter (where ${bookings.startAt} <= now())`,
-            presentCount: sql<number>`count(*) filter (where ${bookings.startAt} <= now() AND
-                COALESCE(${bookingAttendees.attendanceStatus}::text, CASE WHEN ${bookings.status} = 'completed' THEN 'present' ELSE NULL END) = 'present'
-            )`,
-            nextAssessment: sql<Date | null>`min(${bookings.startAt}) filter (where ${bookings.startAt} > now())`,
-        })
-        .from(bookingAttendees)
-        .innerJoin(bookings, eq(bookingAttendees.bookingId, bookings.id))
-        .where(
-            activeCentreId !== 'all'
-                ? eq(bookings.centreId, activeCentreId)
-                : inArray(bookings.centreId, accessibleCentreIds)
-        )
-        .groupBy(bookingAttendees.childId);
-
-    const bookingDataMap = new Map(
-        bookingData.map((bd) => [bd.childId, {
-            totalCount: bd.totalCount,
-            pastCount: bd.pastCount,
-            presentCount: bd.presentCount,
-            nextAssessment: bd.nextAssessment,
-        }])
-    );
-
-    const studentIds = studentsList.map(s => s.id);
-    let safetyNotes: { childId: string; content: string; category: string }[] = [];
-    if (studentIds.length > 0) {
-        try {
-            safetyNotes = await db.query.studentNotes.findMany({
-                where: and(
-                    inArray(studentNotes.childId, studentIds),
-                    inArray(studentNotes.category, ['Medical', 'Safeguarding'])
-                )
-            });
-        } catch {
-            // Migration may not have run yet — fail gracefully
-            safetyNotes = [];
-        }
-    }
-
+        .orderBy(asc(children.lastName), asc(children.firstName))
+        .limit(PAGE_SIZE)
+        .offset(offset);
 
     const LOW_ATTENDANCE_THRESHOLD = 75;
     const MIN_SESSIONS_FOR_ALERT = 3;
 
     const enrichedStudents: StudentRow[] = studentsList.map((student) => {
-        const bookingInfo = bookingDataMap.get(student.id);
-        const bookingCount = Number(bookingInfo?.totalCount ?? 0);
-        const pastCount = Number(bookingInfo?.pastCount ?? 0);
-        const presentCount = Number(bookingInfo?.presentCount ?? 0);
-        const studentSafetyNotes = safetyNotes.filter(n => n.childId === student.id);
+        const pastCount = Number(student.pastCount || 0);
+        const presentCount = Number(student.presentCount || 0);
+        const bookingCount = Number(student.bookingCount || 0);
         const attendanceRate = pastCount > 0 ? (presentCount / pastCount) * 100 : 0;
-
+        
         return {
             id: student.id,
             firstName: student.firstName,
@@ -198,21 +249,11 @@ export default async function StudentsPage(props: {
             completedCount: presentCount,
             attendanceRate,
             lowAttendance: pastCount >= MIN_SESSIONS_FOR_ALERT && attendanceRate < LOW_ATTENDANCE_THRESHOLD,
-            nextAssessment: bookingInfo?.nextAssessment ?? null,
-            medicalNotes: studentSafetyNotes.filter(n => n.category === 'Medical').map(n => n.content),
-            safeguardingNotes: studentSafetyNotes.filter(n => n.category === 'Safeguarding').map(n => n.content),
+            nextAssessment: student.nextAssessment ?? null,
+            medicalNotes: student.hasMedicalNotes ? ['Medical Note'] : [],
+            safeguardingNotes: student.hasSafeguardingNotes ? ['Safeguarding Note'] : [],
         };
     });
-
-    const visibleStudents = showLowAttendance
-        ? enrichedStudents.filter(s => s.lowAttendance)
-        : enrichedStudents;
-
-    const totalCount = enrichedStudents.length;
-    const registeredCount = enrichedStudents.filter(s => s.isRegistered).length;
-    const leadCount = enrichedStudents.filter(s => !s.isRegistered).length;
-    const medicalAlertCount = enrichedStudents.filter(s => s.medicalNotes.length > 0 || s.safeguardingNotes.length > 0).length;
-    const lowAttendanceCount = enrichedStudents.filter(s => s.lowAttendance).length;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -221,7 +262,7 @@ export default async function StudentsPage(props: {
                 <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Students</h1>
                     <span className="px-2 py-0.5 rounded-full bg-card/5 border border-border text-muted-foreground text-[10px] font-bold">
-                        {totalCount}
+                        {stats?.totalCount || 0}
                     </span>
                 </div>
             </HeaderPortal>
@@ -252,7 +293,7 @@ export default async function StudentsPage(props: {
                             <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{totalCount}</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.totalCount || 0}</p>
                             <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Total Students</p>
                         </div>
                     </div>
@@ -265,7 +306,7 @@ export default async function StudentsPage(props: {
                             <GraduationCap className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{registeredCount}</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.registeredCount || 0}</p>
                             <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Registered</p>
                         </div>
                     </div>
@@ -278,7 +319,7 @@ export default async function StudentsPage(props: {
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{leadCount}</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.leadCount || 0}</p>
                             <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Leads</p>
                         </div>
                     </div>
@@ -291,7 +332,7 @@ export default async function StudentsPage(props: {
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{medicalAlertCount}</p>
+                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.medicalAlertCount || 0}</p>
                             <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Medical Alerts</p>
                         </div>
                     </div>
@@ -307,7 +348,7 @@ export default async function StudentsPage(props: {
                             <TrendingDown className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className={`text-2xl font-bold tracking-tight ${lowAttendanceCount > 0 ? 'text-warning' : 'text-foreground'}`}>{lowAttendanceCount}</p>
+                            <p className={`text-2xl font-bold tracking-tight ${(stats?.lowAttendanceCount || 0) > 0 ? 'text-warning' : 'text-foreground'}`}>{stats?.lowAttendanceCount || 0}</p>
                             <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
                         </div>
                     </div>
@@ -318,11 +359,19 @@ export default async function StudentsPage(props: {
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
                 <StudentsFilters
                     centres={accessibleCentres}
-                    resultsCount={visibleStudents.length}
+                    resultsCount={filteredCount}
                 />
             </div>
 
-            <StudentsTable students={visibleStudents} />
+            <div className="relative">
+                <StudentsTable students={enrichedStudents} />
+                
+                {totalPages > 1 && (
+                    <div className="sticky bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-md border-t border-border mt-4 rounded-b-3xl">
+                        <Pagination currentPage={page} totalPages={totalPages} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

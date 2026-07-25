@@ -277,12 +277,7 @@ export default function StudentProfile({
         ? Math.round((attendanceBreakdown.attended / attendanceBreakdown.total) * 100)
         : 0;
 
-    const completenessFields = [
-        student.firstName, student.lastName, student.dateOfBirth, student.schoolYear,
-        student.parent.phone, student.parent.email, student.notes,
-        student.registeredSessions && student.registeredSessions.length > 0 ? 'yes' : '',
-    ];
-    const completenessScore = Math.round((completenessFields.filter(Boolean).length / completenessFields.length) * 100);
+    // Completeness removed in favour of actionable metrics
 
     const card = 'bg-card border border-border rounded-3xl shadow-sm';
     const sL = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground';
@@ -319,7 +314,7 @@ export default function StudentProfile({
 
             {/* ── Hero card ───────────────────────────────────────────────── */}
             <div className={`${card} overflow-hidden`}>
-                <div className="bg-gradient-to-br from-primary/[0.08] via-violet-500/[0.05] to-transparent px-8 pt-8 pb-0">
+                <div className="bg-gradient-to-br from-primary/[0.08] via-violet-500/[0.05] to-transparent p-8">
                     <div className="flex flex-col sm:flex-row items-center gap-6">
                         <AttendanceRadial
                             percentage={student.attendanceStats
@@ -349,75 +344,31 @@ export default function StudentProfile({
                                     }
                                 </span>
                             </div>
-                            {/* Profile completeness */}
-                            <div className="flex items-center gap-3 max-w-xs mx-auto sm:mx-0 pt-1">
-                                <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-                                    <div
-                                        className={cn(
-                                            'h-full rounded-full transition-all duration-700',
-                                            completenessScore >= 80 ? 'bg-success' : completenessScore >= 50 ? 'bg-warning' : 'bg-destructive'
-                                        )}
-                                        style={{ width: `${completenessScore}%` }}
-                                    />
-                                </div>
-                                <span className={cn(
-                                    'text-xs font-bold',
-                                    completenessScore >= 80 ? 'text-success' : completenessScore >= 50 ? 'text-warning' : 'text-destructive'
-                                )}>
-                                    {completenessScore}% complete
+                        </div>
+                        
+                        {/* Critical Flags Dashboard */}
+                        <div className="flex flex-col gap-2 mt-4 sm:mt-0 sm:ml-auto min-w-[200px]">
+                            {/* Financial Health */}
+                            <div className={cn("p-2.5 rounded-xl border flex items-center justify-between", billingConfig && billingConfig.agreedMonthlyPence < 0 ? "border-destructive/30 bg-destructive/5" : "border-border bg-card")}>
+                                <span className={cn("text-[10px] font-bold uppercase tracking-wider", billingConfig && billingConfig.agreedMonthlyPence < 0 ? "text-destructive" : "text-muted-foreground")}>Balance</span>
+                                <span className={cn("text-sm font-black", billingConfig && billingConfig.agreedMonthlyPence < 0 ? "text-destructive" : "text-foreground")}>
+                                    {billingConfig ? `£${(billingConfig.agreedMonthlyPence / 100).toFixed(2)}/mo` : '£0.00'}
                                 </span>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Stats strip */}
-                    <div className="mt-8 grid grid-cols-3 border-t border-border -mx-8">
-                        <div className="px-8 py-5 border-r border-border flex flex-col gap-0.5">
-                            <span className={sL}>Total Sessions</span>
-                            <span className="text-xl font-black text-foreground">{attendanceBreakdown.total}</span>
-                        </div>
-                        <Link
-                            href={`/dashboard/students/${student.id}/attendance`}
-                            className="px-8 py-5 border-r border-border flex flex-col gap-0.5 hover:bg-secondary/40 transition-colors"
-                        >
-                            <span className={sL}>Attendance Rate</span>
-                            <span className={cn(
-                                'text-xl font-black',
-                                attendanceRate >= 80 ? 'text-success' : attendanceRate >= 60 ? 'text-warning' : 'text-destructive'
-                            )}>
-                                {attendanceBreakdown.total > 0 ? `${attendanceRate}%` : 'N/A'}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                                {attendanceBreakdown.attended} present of {attendanceBreakdown.total}
-                            </span>
-                        </Link>
-                        <div className="px-8 py-5 flex flex-col gap-0.5">
-                            <span className={sL}>Breakdown</span>
-                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                {attendanceBreakdown.attended > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-success">
-                                        <CheckCircle className="w-3 h-3" />{attendanceBreakdown.attended}
-                                    </span>
-                                )}
-                                {attendanceBreakdown.absent > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-destructive">
-                                        <XCircle className="w-3 h-3" />{attendanceBreakdown.absent} abs
-                                    </span>
-                                )}
-                                {attendanceBreakdown.late > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-warning">
-                                        <Clock className="w-3 h-3" />{attendanceBreakdown.late} late
-                                    </span>
-                                )}
-                                {attendanceBreakdown.noShow > 0 && (
-                                    <span className="flex items-center gap-1 text-xs font-bold text-muted-foreground">
-                                        <MinusCircle className="w-3 h-3" />{attendanceBreakdown.noShow} no-show
-                                    </span>
-                                )}
-                                {attendanceBreakdown.total === 0 && (
-                                    <span className="text-xs text-muted-foreground">No sessions yet</span>
-                                )}
+                            
+                            {/* Operational Health */}
+                            <div className={cn("p-2.5 rounded-xl border flex items-center justify-between", attendanceRate < 80 && attendanceBreakdown.total > 0 ? "border-warning/30 bg-warning/5" : "border-border bg-card")}>
+                                <span className={cn("text-[10px] font-bold uppercase tracking-wider", attendanceRate < 80 && attendanceBreakdown.total > 0 ? "text-warning" : "text-muted-foreground")}>30-Day Att.</span>
+                                <span className={cn("text-sm font-black", attendanceRate < 80 && attendanceBreakdown.total > 0 ? "text-warning" : "text-foreground")}>{attendanceBreakdown.total > 0 ? `${attendanceRate}%` : 'N/A'}</span>
                             </div>
+
+                            {/* Safety */}
+                            {(initialNotes.some(n => n.category === 'Medical') || initialNotes.some(n => n.category === 'Safeguarding')) && (
+                                <div className="p-2.5 rounded-xl border border-destructive/20 bg-destructive/10 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-destructive uppercase tracking-wider">Safety Flags</span>
+                                    <ShieldAlert className="w-4 h-4 text-destructive" />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -540,60 +491,37 @@ export default function StudentProfile({
                                 {isEditingSchedule ? (
                                     <div className="space-y-4">
                                         <div>
-                                            <p className={`${sL} mb-2`}>After-School (Mon – Fri)</p>
-                                            <div className="grid grid-cols-5 gap-2">
-                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
-                                                    <div key={day} className="space-y-1.5 p-2.5 bg-card rounded-xl border border-border">
-                                                        <p className="text-[10px] font-black text-foreground truncate">{day.slice(0, 3)}</p>
-                                                        {['3.45pm', '5.00pm'].map(time => {
-                                                            const slot = `${day} ${time}`;
+                                            <p className={`${sL} mb-2`}>Session Configurations</p>
+                                            {student.sessionSlots ? (
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                                    {(() => {
+                                                        let slots = [];
+                                                        try {
+                                                            slots = JSON.parse(student.sessionSlots);
+                                                        } catch (e) {}
+                                                        return slots.map((slot: string) => {
                                                             const checked = selectedSchedules.includes(slot);
                                                             return (
-                                                                <label key={time} className="flex items-center gap-1.5 cursor-pointer">
+                                                                <label key={slot} className="flex items-center gap-2 p-3 bg-card rounded-xl border border-border cursor-pointer hover:border-primary/30 transition-colors">
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={checked}
                                                                         onChange={() => handleToggleSession(slot)}
-                                                                        className="rounded border-border text-primary focus:ring-primary/30 w-3.5 h-3.5"
+                                                                        className="rounded border-border text-primary focus:ring-primary/30 w-4 h-4"
                                                                     />
-                                                                    <span className={cn('text-[10px] font-semibold transition-colors', checked ? 'text-primary' : 'text-muted-foreground')}>
-                                                                        {time}
+                                                                    <span className={cn('text-xs font-bold transition-colors', checked ? 'text-primary' : 'text-foreground')}>
+                                                                        {slot}
                                                                     </span>
                                                                 </label>
                                                             );
-                                                        })}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="border-t border-border pt-3">
-                                            <p className={`${sL} mb-2`}>Weekends (Sat – Sun)</p>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {['Saturday', 'Sunday'].map(day => (
-                                                    <div key={day} className="space-y-1.5 p-2.5 bg-card rounded-xl border border-border">
-                                                        <p className="text-[10px] font-black text-foreground">{day}</p>
-                                                        <div className="grid grid-cols-2 gap-1">
-                                                            {['11.00am', '12.15pm', '1.30pm', '2.45pm'].map(time => {
-                                                                const slot = `${day} ${time}`;
-                                                                const checked = selectedSchedules.includes(slot);
-                                                                return (
-                                                                    <label key={time} className="flex items-center gap-1 cursor-pointer">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={checked}
-                                                                            onChange={() => handleToggleSession(slot)}
-                                                                            className="rounded border-border text-primary focus:ring-primary/30 w-3 h-3"
-                                                                        />
-                                                                        <span className={cn('text-[10px] font-semibold', checked ? 'text-primary' : 'text-muted-foreground')}>
-                                                                            {time}
-                                                                        </span>
-                                                                    </label>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                        });
+                                                    })()}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground italic p-4 bg-secondary/50 rounded-xl">
+                                                    No dynamic session configurations found. Ensure the Centre has session slots configured.
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 ) : student.registeredSessions && student.registeredSessions.length > 0 ? (
