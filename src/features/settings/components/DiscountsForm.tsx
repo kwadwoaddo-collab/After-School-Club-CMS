@@ -186,27 +186,13 @@ function RuleCard({
     );
 }
  
-export default function DiscountsForm() {
+export default function DiscountsForm({ initialRules = [] }: { initialRules?: DiscountRule[] }) {
     const router = useRouter();
-    const [rules, setRules] = useState<DiscountRule[]>([]);
+    const [rules, setRules] = useState<DiscountRule[]>(initialRules);
     const { toast } = useToast();
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
- 
-    useEffect(() => {
-        fetch('/api/settings/discounts')
-            .then((r) => r.json())
-            .then((data) => {
-                setRules(data.discountRules ?? []);
-                setLoading(false);
-            })
-            .catch(() => {
-                setError('Failed to load discount rules');
-                setLoading(false);
-            });
-    }, []);
  
     function addRule(type: DiscountRule['type']) {
         const defaults: Record<DiscountRule['type'], Partial<DiscountRule>> = {
@@ -272,13 +258,7 @@ export default function DiscountsForm() {
             )}
  
             {/* Rules list */}
-            {loading ? (
-                <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Loading rules…</span>
-                </div>
-            ) : (
-                <div className="space-y-3">
+            <div className="space-y-3">
                     {rules.length === 0 && (
                         <div className="bg-card border border-border rounded-2xl p-8 text-center">
                             <Tag className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
@@ -303,7 +283,6 @@ export default function DiscountsForm() {
                         />
                     ))}
                 </div>
-            )}
  
             {/* Add rule buttons */}
             <div>
@@ -343,7 +322,7 @@ export default function DiscountsForm() {
             <div className="flex justify-end pb-6">
                 <button
                     onClick={handleSave}
-                    disabled={saving || loading}
+                    disabled={saving}
                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-foreground text-sm font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all"
                 >
                     {saving ? (

@@ -129,49 +129,7 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Logo Upload Section */}
-                <div className="bg-card border border-border rounded-[32px] p-8 flex flex-col gap-6 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-accent-cyan/10 rounded-2xl flex items-center justify-center">
-                            <Upload className="w-5 h-5 text-accent-cyan" />
-                        </div>
-                        <h2 className="text-xl font-bold text-foreground">Organisation Logo</h2>
-                    </div>
-
-                    <div className="space-y-4">
-                        {/* Logo Preview */}
-                        <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center bg-secondary/60/30">
-                            {logoPreview ? (
-                                <div className="space-y-4">
-                                    <img
-                                        src={logoPreview}
-                                        alt="Logo preview"
-                                        className="max-w-xs mx-auto max-h-32 object-contain"
-                                    />
-                                    <p className="text-sm text-muted-foreground">Preview</p>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <Upload className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                                    <p className="text-sm text-muted-foreground font-medium">
-                                        No logo uploaded yet
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Upload Button - Disabled */}
-                        <div className="w-full px-6 py-3 bg-secondary/60 text-muted-foreground/80 border border-border/40 rounded-2xl text-sm font-bold text-center cursor-not-allowed">
-                            Coming Soon
-                        </div>
-
-                        <p className="text-xs text-muted-foreground/70 text-center">
-                            Logo upload feature launching soon
-                        </p>
-                    </div>
-                </div>
-
+            <div className="grid grid-cols-1 max-w-2xl gap-8">
                 {/* Brand Colours Section */}
                 <div className="bg-card border border-border rounded-[32px] p-8 flex flex-col gap-6 shadow-sm">
                     <div className="flex items-center gap-3">

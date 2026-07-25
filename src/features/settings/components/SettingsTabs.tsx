@@ -12,6 +12,7 @@ import RegistrationTermsForm from './RegistrationTermsForm';
 import DiscountsForm from './DiscountsForm';
 import GdprExportButton from '@/app/dashboard/settings/GdprExportButton';
 import { rollSchoolYearsAction } from '@/features/students/roll-actions';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface SettingsTabsProps {
     org: {
@@ -23,12 +24,14 @@ interface SettingsTabsProps {
         address?: string | null;
         brandColor?: string | null;
         logoUrl?: string | null;
+        registrationTerms?: string | null;
+        discountRules?: any[];
     };
-    centres: unknown[];
+    centres: any[];
     baseUrl: string;
 }
 
-type TabType = 'general' | 'hours' | 'branding' | 'finance' | 'registration' | 'discounts';
+type TabType = 'general' | 'hours' | 'branding' | 'finance' | 'registration' | 'discounts' | 'danger_zone';
 
 export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProps) {
     const searchParams = useSearchParams();
@@ -38,15 +41,9 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
     const [activeTab, setActiveTab] = useState<TabType>(activeTabParam || 'general');
     const { toast } = useToast();
     const [isRolling, setIsRolling] = useState(false);
+    const [isRollModalOpen, setIsRollModalOpen] = useState(false);
 
-    const handleRollSchoolYears = async () => {
-        const confirmRoll = window.confirm(
-            "Are you sure you want to roll the school years forward (+1) for all students in your organisation? " +
-            "This will increment nursery, reception, and numeric years by 1, and mark Year 13 students as 'Graduated'. " +
-            "This action cannot be undone."
-        );
-        if (!confirmRoll) return;
-
+    const performRoll = async () => {
         setIsRolling(true);
         try {
             const res = await rollSchoolYearsAction();
@@ -55,7 +52,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
             } else {
                 toast({ title: 'Error', message: res.message, variant: 'error' });
             }
-        } catch (err) {
+        } catch (err: any) {
             toast({ title: 'Error', message: err.message || 'Failed to roll school years.', variant: 'error' });
         } finally {
             setIsRolling(false);
@@ -77,6 +74,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
         { id: 'finance', label: 'Finance & Pricing', icon: Wallet, description: 'Standard & assisted rates' },
         { id: 'registration', label: 'Registration Form', icon: FileText, description: 'Registration form T&Cs' },
         { id: 'discounts', label: 'Discount Rules', icon: Tag, description: 'Sibling & custom discount rules' },
+        { id: 'danger_zone', label: 'Danger Zone', icon: ShieldCheck, description: 'Data management' },
     ] as const;
 
     const formattedCentres = centres.map(c => ({
@@ -122,42 +120,6 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                                 <p className="text-sm text-muted-foreground mt-1">Configure your organization details and workspace details.</p>
                             </div>
                             <OrganisationInfoForm org={org} baseUrl={baseUrl} />
-                            
-                            <div className="pt-6 border-t border-border/50 space-y-4">
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <ShieldCheck className="w-5 h-5 text-success" />
-                                    <h3 className="font-bold text-sm uppercase tracking-wider">Privacy &amp; Compliance</h3>
-                                </div>
-                                <p className="text-xs text-muted-foreground">Export all stored records for GDPR portability requests.</p>
-                                <GdprExportButton />
-                            </div>
-
-                            <div className="pt-6 border-t border-border/50 space-y-4">
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <GraduationCap className="w-5 h-5 text-primary" />
-                                    <h3 className="font-bold text-sm uppercase tracking-wider">Academic Year Rollover</h3>
-                                </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Increment the school year for all active students in your organisation by +1 (e.g. Year 1 ➔ Year 2, Nursery ➔ Reception, Year 13 ➔ Graduated). This happens automatically on September 1st, but you can manually trigger it here.
-                                </p>
-                                <button
-                                    onClick={handleRollSchoolYears}
-                                    disabled={isRolling}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-secondary/60 hover:bg-secondary border border-border text-foreground rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
-                                >
-                                    {isRolling ? (
-                                        <>
-                                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                            <span>Rolling Years...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <GraduationCap className="w-3.5 h-3.5" />
-                                            <span>Roll School Years (+1)</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
                         </div>
                     )}
 
@@ -189,17 +151,72 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
 
                     {activeTab === 'registration' && (
                         <div className="animate-in fade-in duration-300">
-                            <RegistrationTermsForm />
+                            <RegistrationTermsForm initialTerms={org.registrationTerms || ''} orgSlug={org.slug} />
                         </div>
                     )}
 
                     {activeTab === 'discounts' && (
                         <div className="animate-in fade-in duration-300">
-                            <DiscountsForm />
+                            <DiscountsForm initialRules={org.discountRules || []} />
+                        </div>
+                    )}
+
+                    {activeTab === 'danger_zone' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            <div>
+                                <h2 className="text-xl font-bold text-red-500 tracking-tight">Danger Zone</h2>
+                                <p className="text-sm text-muted-foreground mt-1">Data management and irreversible actions.</p>
+                            </div>
+                            
+                            <div className="pt-2 space-y-4">
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <ShieldCheck className="w-5 h-5 text-success" />
+                                    <h3 className="font-bold text-sm uppercase tracking-wider">Privacy &amp; Compliance</h3>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Export all stored records for GDPR portability requests.</p>
+                                <GdprExportButton />
+                            </div>
+
+                            <div className="pt-6 border-t border-border/50 space-y-4">
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <GraduationCap className="w-5 h-5 text-primary" />
+                                    <h3 className="font-bold text-sm uppercase tracking-wider">Academic Year Rollover</h3>
+                                </div>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Increment the school year for all active students in your organisation by +1 (e.g. Year 1 ➔ Year 2, Nursery ➔ Reception, Year 13 ➔ Graduated). This happens automatically on September 1st, but you can manually trigger it here.
+                                </p>
+                                <button
+                                    onClick={() => setIsRollModalOpen(true)}
+                                    disabled={isRolling}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95 duration-100 cursor-pointer"
+                                >
+                                    {isRolling ? (
+                                        <>
+                                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Rolling Years...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <GraduationCap className="w-3.5 h-3.5" />
+                                            <span>Roll School Years (+1)</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
+            
+            <ConfirmModal 
+                isOpen={isRollModalOpen}
+                onClose={() => setIsRollModalOpen(false)}
+                onConfirm={performRoll}
+                title="Roll School Years"
+                description="Are you sure you want to roll the school years forward (+1) for all students in your organisation? This will increment nursery, reception, and numeric years by 1, and mark Year 13 students as 'Graduated'. This action cannot be undone."
+                confirmText="Yes, Roll Years"
+                variant="danger"
+            />
         </div>
     );
 }

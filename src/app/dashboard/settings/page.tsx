@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { organisations, centres } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import SettingsTabs from '@/features/settings/components/SettingsTabs';
 
 export const metadata: Metadata = {
@@ -27,6 +27,13 @@ export default async function SettingsPage() {
 
     if (!org) return redirect('/onboarding');
 
+    // Fetch discount_rules using raw sql since it's not in the Drizzle schema
+    const result = await db.execute(
+        sql`SELECT discount_rules FROM organisations WHERE id = ${session.user.organisationId} LIMIT 1`
+    );
+    const row = (result as any)[0] ?? (result as any).rows?.[0];
+    const discountRules = row?.discount_rules ?? [];
+
     // Fetch all organization centres
     const orgCentres = await db.query.centres.findMany({
         where: eq(centres.organisationId, org.id),
@@ -34,6 +41,12 @@ export default async function SettingsPage() {
     });
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
+
+    // Augment org with discountRules
+    const orgWithDiscounts = {
+        ...org,
+        discountRules,
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -46,7 +59,7 @@ export default async function SettingsPage() {
             </div>
 
             <SettingsTabs 
-                org={org} 
+                org={orgWithDiscounts} 
                 centres={orgCentres} 
                 baseUrl={baseUrl} 
             />

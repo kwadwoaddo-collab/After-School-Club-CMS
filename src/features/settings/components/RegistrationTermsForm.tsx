@@ -5,25 +5,12 @@ import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { FileText, Save, ArrowLeft, ExternalLink } from 'lucide-react';
  
-export default function RegistrationTermsForm() {
-    const [terms, setTerms] = useState('');
+export default function RegistrationTermsForm({ initialTerms, orgSlug }: { initialTerms: string, orgSlug: string }) {
+    const [terms, setTerms] = useState(initialTerms);
     const { toast } = useToast();
-    const [orgSlug, setOrgSlug] = useState('');
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
- 
-    useEffect(() => {
-        fetch('/api/settings/registration-terms')
-            .then(r => r.json())
-            .then(data => {
-                setTerms(data.registrationTerms ?? '');
-                setOrgSlug(data.slug ?? '');
-                setLoading(false);
-            })
-            .catch(() => { setLoading(false); setError('Failed to load settings.'); });
-    }, []);
  
     const handleSave = async () => {
         setSaving(true); setSaved(false); setError('');
@@ -72,12 +59,7 @@ export default function RegistrationTermsForm() {
                 )}
             </div>
  
-            {loading ? (
-                <div className="flex items-center justify-center py-24">
-                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-            ) : (
-                <div className="space-y-5">
+            <div className="space-y-5">
                     {/* Info banner */}
                     <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex gap-3">
                         <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -131,7 +113,6 @@ export default function RegistrationTermsForm() {
                         </button>
                     </div>
                 </div>
-            )}
         </div>
     );
 }
