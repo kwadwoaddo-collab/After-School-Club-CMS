@@ -404,6 +404,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                 )}
 
                 {!isFunnelOnly && (
+                <>
                 <div className={cn("bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 relative overflow-hidden", "hover:border-violet-500/30 transition-all duration-300 flex flex-col gap-6")}>
                     <div className="absolute -right-4 -top-4 w-28 h-28 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -586,6 +587,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                         View All Registrations <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                 </div>
+                </>
                 )}
             </div>
         </div>
