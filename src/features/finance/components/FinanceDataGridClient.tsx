@@ -94,9 +94,9 @@ export default function FinanceDataGridClient({ invoices, totalCount, page, page
     const handleBulkPayment = async () => {
         try {
             const selected = invoices.filter((i: any) => selectedInvoices.has(i.id));
-            // Simulate bulk payment processing
             for (const invoice of selected) {
-                const outstanding = Number(invoice.amount) - invoice.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+                const payments = invoice.payments || [];
+                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
                 if (outstanding > 0) {
                     await recordPayment({
                         invoiceId: invoice.id,
@@ -179,7 +179,8 @@ export default function FinanceDataGridClient({ invoices, totalCount, page, page
                                 </tr>
                             ) : invoices.map((invoice: any) => {
                                 const isOverdue = invoice.status !== 'paid' && invoice.status !== 'void' && new Date(invoice.dueDate) < new Date();
-                                const outstanding = Number(invoice.amount) - invoice.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+                                const payments = invoice.payments || [];
+                                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
                                 return (
                                     <tr 

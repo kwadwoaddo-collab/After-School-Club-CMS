@@ -124,6 +124,8 @@ export default async function FinancePage(props: {
         }
     });
 
+    const serializedInvoices = JSON.parse(JSON.stringify(paginatedInvoices));
+
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
         .toISOString()
@@ -157,7 +159,7 @@ export default async function FinancePage(props: {
             </div>
 
             <FinanceDataGridClient 
-                invoices={paginatedInvoices}
+                invoices={serializedInvoices}
                 totalCount={totalInvoices}
                 page={page}
                 pageSize={pageSize}
