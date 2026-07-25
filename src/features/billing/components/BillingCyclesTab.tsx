@@ -12,14 +12,14 @@ import type { BillingCycleRow } from '@/features/billing/queries';
 
 function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
     const map = {
-        ready:        { label: 'Ready',        cls: 'bg-primary/10 text-primary border-primary/20' },
-        needs_setup:  { label: 'Needs Setup',  cls: 'bg-warning/10 text-warning border-warning/20' },
-        invoice_sent: { label: 'Invoice Sent', cls: 'bg-success/10 text-success border-success/20' },
-        paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border' },
+        ready:        { label: 'Ready',        cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+        needs_setup:  { label: 'Needs Setup',  cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+        invoice_sent: { label: 'Invoice Sent', cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
+        paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
     };
     const { label, cls } = map[status];
     return (
-        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${cls}`}>
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${cls}`}>
             {label}
         </span>
     );
@@ -46,71 +46,73 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
 
     return (
         <>
-            <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${
-                cycle.cycleStatus === 'paused'      ? 'opacity-60' :
-                cycle.cycleStatus === 'needs_setup' ? 'border-warning/30 bg-warning/5' : 'border-border'
+            <div className={`bg-card/80 backdrop-blur-md rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between ${
+                cycle.cycleStatus === 'paused'      ? 'opacity-60 border-border/40' :
+                cycle.cycleStatus === 'needs_setup' ? 'border-amber-500/30 bg-amber-500/5' : 'border-border/60'
             }`}>
-                {/* Card header */}
-                <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-foreground truncate">{cycle.familyName}</p>
-                        {cycle.centreName && (
-                            <p className="text-xs text-muted-foreground font-semibold">{cycle.centreName}</p>
+                <div>
+                    {/* Card header */}
+                    <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-base font-bold text-foreground truncate tracking-tight">{cycle.familyName}</p>
+                            {cycle.centreName && (
+                                <p className="text-xs text-muted-foreground font-medium mt-0.5">{cycle.centreName}</p>
+                            )}
+                        </div>
+                        <StatusPill status={cycle.cycleStatus} />
+                    </div>
+
+                    <div className="mx-5 border-t border-border/50" />
+
+                    {/* Children list */}
+                    {cycle.coveredChildren.length > 0 && (
+                        <div className="px-5 pt-3 flex flex-wrap gap-1.5">
+                            {cycle.coveredChildren.map(c => (
+                                <span
+                                    key={c.childId}
+                                    className="px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-xl text-[10px] font-bold"
+                                >
+                                    {c.childName}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Card body */}
+                    <div className="px-5 py-3.5 space-y-2 text-sm">
+                        {cycle.periodLabel && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground font-medium">Next period</span>
+                                <span className="font-bold text-foreground">{cycle.periodLabel}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground font-medium">Monthly fee</span>
+                            <span className="font-black text-foreground text-lg tracking-tight tabular-nums">{cycle.amountDisplay}</span>
+                        </div>
+                        {lastRunDisplay && (
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground font-medium">Last invoice</span>
+                                <span className="text-muted-foreground font-semibold">{lastRunDisplay}</span>
+                            </div>
+                        )}
+                        {cycle.cycleStatus === 'needs_setup' && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5 pt-1">
+                                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                Set a monthly fee on student profile
+                            </p>
                         )}
                     </div>
-                    <StatusPill status={cycle.cycleStatus} />
-                </div>
-
-                <div className="mx-4 border-t border-border" />
-
-                {/* Children list */}
-                {cycle.coveredChildren.length > 0 && (
-                    <div className="px-4 pt-3 flex flex-wrap gap-1.5">
-                        {cycle.coveredChildren.map(c => (
-                            <span
-                                key={c.childId}
-                                className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[10px] font-bold"
-                            >
-                                {c.childName}
-                            </span>
-                        ))}
-                    </div>
-                )}
-
-                {/* Card body */}
-                <div className="px-4 py-3 space-y-2">
-                    {cycle.periodLabel && (
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Next period</span>
-                            <span className="font-bold text-foreground text-xs">{cycle.periodLabel}</span>
-                        </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Monthly fee</span>
-                        <span className="font-black text-foreground text-base">{cycle.amountDisplay}</span>
-                    </div>
-                    {lastRunDisplay && (
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Last invoice</span>
-                            <span className="text-xs text-muted-foreground font-semibold">{lastRunDisplay}</span>
-                        </div>
-                    )}
-                    {cycle.cycleStatus === 'needs_setup' && (
-                        <p className="text-xs text-warning font-bold flex items-center gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                            Set a monthly fee on the student's profile
-                        </p>
-                    )}
                 </div>
 
                 {/* Actions */}
-                <div className="px-4 pb-4 flex gap-2">
+                <div className="px-5 pb-5 pt-2 flex gap-2">
                     <button
                         onClick={() => cycle.coveredChildren[0]
                             ? router.push(`/dashboard/students/${cycle.coveredChildren[0].childId}`)
                             : null
                         }
-                        className="flex-1 h-10 rounded-xl bg-secondary/60 text-foreground text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center gap-1.5"
+                        className="flex-1 h-10 rounded-xl bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all flex items-center justify-center gap-1.5 active:scale-95"
                     >
                         <Settings2 className="w-3.5 h-3.5" />
                         Profile
@@ -118,9 +120,9 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     <button
                         disabled={!canGenerate}
                         onClick={() => setShowModal(true)}
-                        className={`flex-1 h-10 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] ${
+                        className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
                             canGenerate
-                                ? 'bg-primary text-white hover:bg-primary/90 shadow-sm shadow-primary/20'
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20'
                                 : 'bg-secondary/60 text-muted-foreground cursor-not-allowed'
                         }`}
                     >

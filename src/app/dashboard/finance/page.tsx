@@ -44,13 +44,15 @@ export default async function FinancePage(props: {
         return redirect('/dashboard');
     }
 
+    const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? value.toString() : value));
+
     // Fetch centres for the modal
     const orgCentresRaw = await db.query.centres.findMany({
         where: eq(centres.organisationId, session.user.organisationId)
     });
-    const orgCentres = JSON.parse(JSON.stringify(orgCentresRaw));
+    const orgCentres = serialize(orgCentresRaw);
 
-    const validCentreIds = orgCentres.map(c => c.id);
+    const validCentreIds = orgCentres.map((c: any) => c.id);
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
 
     const centreFilter = activeCentreId !== 'all' ? eq(invoices.centreId, activeCentreId) : undefined;
@@ -125,7 +127,7 @@ export default async function FinancePage(props: {
         }
     });
 
-    const serializedInvoices = JSON.parse(JSON.stringify(paginatedInvoices));
+    const serializedInvoices = serialize(paginatedInvoices);
 
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -145,7 +147,7 @@ export default async function FinancePage(props: {
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
-                        <FinanceDashboardFilters centres={orgCentres} />
+                        <FinanceDashboardFilters centres={serialize(orgCentres)} />
                     </Suspense>
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
@@ -160,12 +162,27 @@ export default async function FinancePage(props: {
             </div>
 
             <FinanceDataGridClient 
-                invoices={serializedInvoices}
-                totalCount={totalInvoices}
-                page={page}
-                pageSize={pageSize}
-                statusFilter={statusFilter}
+                invoices={serialize(serializedInvoices)}
+                totalCount={serialize(totalInvoices)}
+                page={serialize(page)}
+                pageSize={serialize(pageSize)}
+                statusFilter={serialize(statusFilter)}
+                centres={serialize(orgCentres)}
             />
+
+            {/* Billing Cycles Section */}
+            <div className="bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2.5 tracking-tight">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                        Billing Cycles
+                    </h2>
+                </div>
+                <BillingCyclesTab
+                    cycles={serialize(billingCycles)}
+                    centreId={activeCentreId}
+                />
+            </div>
         </div>
     );
 }
