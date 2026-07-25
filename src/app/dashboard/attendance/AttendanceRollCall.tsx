@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAvatarGradient } from '@/components/ui/utils';
 import Link from 'next/link';
 import { markAttendeeAttendance, registerWalkInChild, registerExistingChildWalkIn } from '@/features/bookings/actions';
 import { updateAttendanceTimelog } from '@/features/attendance/actions';
@@ -228,13 +229,7 @@ function AttendeeCard({
         ? 'border-l-4 border-l-tertiary bg-tertiary-container/10 border border-tertiary/20'
         : 'border-l-4 border-l-border bg-card border border-border hover:border-primary/40';
 
-    const avatarClass = isAbsent
-        ? 'bg-error-container/20 text-error'
-        : (isIn && isOut)
-        ? 'bg-primary/20 text-primary'
-        : isIn
-        ? 'bg-tertiary-container/20 text-tertiary'
-        : 'bg-secondary/60 text-muted-foreground';
+    const avatarClass = `bg-gradient-to-br ${getAvatarGradient(attendee.firstName)} text-white`;
 
     return (
         <div className={`group flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-3 border-b border-border hover:bg-secondary/20 transition-colors ${isAbsent ? 'opacity-70' : ''}`}>

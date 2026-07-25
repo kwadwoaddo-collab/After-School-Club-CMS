@@ -10,6 +10,7 @@ import type { StudentLedgerEntry } from '@/features/attendance/actions';
 import { forgiveSessionsAction } from '@/features/attendance/actions';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
+import { getAvatarGradient } from '@/components/ui/utils';
 
 interface Props {
     ledger: StudentLedgerEntry[];
@@ -144,10 +145,7 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                     onClick={() => setExpanded(!expanded)}
                 >
                     {/* Avatar */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                        entry.netBalance < 0 ? 'bg-error-container/10 text-error' :
-                        entry.netBalance > 0 ? 'bg-tertiary-container/10 text-tertiary' : 'bg-secondary/60 text-muted-foreground'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 bg-gradient-to-br ${getAvatarGradient(entry.firstName || 'U')}`}>
                         {(entry.firstName || '')[0] || ''}{(entry.lastName || '')[0] || ''}
                     </div>
 

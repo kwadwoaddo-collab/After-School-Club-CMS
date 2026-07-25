@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAvatarGradient } from '@/components/ui/utils';
 import Link from 'next/link';
 import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle, Mail, ClipboardList } from 'lucide-react';
 import { assignRegistrationCentre, deleteRegistrations } from '@/app/dashboard/registrations/actions';
@@ -245,10 +246,15 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                                 className="w-4 h-4 rounded accent-primary cursor-pointer mt-1"
                                             />
                                         </td>
-                                        <td className="px-4 py-3 align-middle">
+                                    <td className="px-4 py-3 align-middle">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 bg-gradient-to-br ${getAvatarGradient(r.registrationChildren[0]?.submittedFirstName || 'A')} text-white`}>
+                                                {(r.registrationChildren[0]?.submittedFirstName?.charAt(0) || '') + (r.registrationChildren[0]?.submittedLastName?.charAt(0) || '')}
+                                            </div>
                                             <p className="font-semibold text-foreground truncate max-w-[200px]">
                                                 {childNames || 'None'}
                                             </p>
+                                        </div>
                                         </td>
                                         <td className="px-4 py-3 align-middle">
                                             <p className="text-sm font-semibold text-foreground">

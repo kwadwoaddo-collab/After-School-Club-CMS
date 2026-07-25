@@ -8,6 +8,7 @@ import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
+import { getAvatarGradient } from '@/components/ui/utils';
 
 import ReassignCentreModal from './ReassignCentreModal';
 
@@ -624,7 +625,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </td>
                                 <td className="px-4 py-3.5">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 text-sm font-bold shadow-sm flex-shrink-0`}>
+                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient(booking.attendees?.[0]?.child?.first_name || booking.child?.first_name)} flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0`}>
                                             {getStudentInitials(booking)}
                                         </div>
                                         <div className="flex items-center gap-2 min-w-0">
