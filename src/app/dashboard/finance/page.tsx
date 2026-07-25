@@ -1,29 +1,16 @@
-import { logger } from '@/lib/logger';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { invoices, centres, children, payments } from '@/db/schema';
-import { eq, desc, and, sum, count, ne, lt, sql } from 'drizzle-orm';
-import { 
-    TrendingUp, 
-    Clock, 
-    FileText, 
-    AlertCircle,
-    Download,
-    ArrowUpRight,
-    CreditCard,
-} from 'lucide-react';
+import { invoices, centres } from '@/db/schema';
+import { eq, desc, and, count, ne, lt } from 'drizzle-orm';
+import { Download, CreditCard } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { Suspense } from 'react';
-import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
-import { normalizeString } from '@/lib/search-params';
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
-
-
+import { logger } from '@/lib/logger';
 
 export default async function FinancePage(props: {
     searchParams: Promise<{
@@ -39,55 +26,21 @@ export default async function FinancePage(props: {
     if (!session.user.organisationId) return redirect('/onboarding');
     
     // Check role access - Strictly ORG_OWNER
-    const userRole = (session.user as any).role;
+    const userRole = session.user.role;
     if (userRole !== 'ORG_OWNER') {
         return redirect('/dashboard');
     }
 
-    const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? value.toString() : value));
-
-    // Fetch centres for the modal
+    // Fetch centres for the modal (JSON serialized for RSC boundary safety)
     const orgCentresRaw = await db.query.centres.findMany({
         where: eq(centres.organisationId, session.user.organisationId)
     });
-    const orgCentres = serialize(orgCentresRaw);
+    const orgCentres = JSON.parse(JSON.stringify(orgCentresRaw));
 
-    const validCentreIds = orgCentres.map((c: any) => c.id);
+    const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
 
     const centreFilter = activeCentreId !== 'all' ? eq(invoices.centreId, activeCentreId) : undefined;
-
-    // Fetch summary data
-    const recentInvoices = await db.query.invoices.findMany({
-        where: and(
-            eq(invoices.organisationId, session.user.organisationId),
-            centreFilter
-        ),
-        limit: 10,
-        orderBy: [desc(invoices.createdAt)],
-        with: {
-            centre: true,
-            child: true,
-            parent: true
-        }
-    });
-
-    // Fetch students for the invoice creation modal
-    const students = await db.query.children.findMany({
-        with: {
-            parent: true
-        },
-    });
-    
-    const orgStudents = students.filter(s => s.parent?.organisationId === session.user.organisationId);
-
-    // Fetch billing cycles for the Billing Cycles tab — wrapped in try-catch for resilience
-    let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
-    try {
-        billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
-    } catch (err) {
-        logger.error('[finance] fetchBillingCycles failed:', err);
-    }
 
     const page = Number(searchParams.page) || 1;
     const pageSize = 50;
@@ -127,7 +80,16 @@ export default async function FinancePage(props: {
         }
     });
 
-    const serializedInvoices = serialize(paginatedInvoices);
+    const serializedInvoices = JSON.parse(JSON.stringify(paginatedInvoices));
+
+    // Fetch billing cycles for the Billing Cycles tab — wrapped in try-catch for resilience
+    let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
+    try {
+        billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
+    } catch (err) {
+        logger.error('[finance] fetchBillingCycles failed:', err);
+    }
+    const serializedBillingCycles = JSON.parse(JSON.stringify(billingCycles));
 
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -147,7 +109,7 @@ export default async function FinancePage(props: {
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
-                        <FinanceDashboardFilters centres={serialize(orgCentres)} />
+                        <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
@@ -161,14 +123,17 @@ export default async function FinancePage(props: {
                 </div>
             </div>
 
-            <FinanceDataGridClient 
-                invoices={serialize(serializedInvoices)}
-                totalCount={serialize(totalInvoices)}
-                page={serialize(page)}
-                pageSize={serialize(pageSize)}
-                statusFilter={serialize(statusFilter)}
-                centres={serialize(orgCentres)}
-            />
+            {/* Main Finance Data Grid & KPI Summary */}
+            <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
+                <FinanceDataGridClient 
+                    invoices={serializedInvoices}
+                    totalCount={totalInvoices}
+                    page={page}
+                    pageSize={pageSize}
+                    statusFilter={statusFilter}
+                    centres={orgCentres}
+                />
+            </Suspense>
 
             {/* Billing Cycles Section */}
             <div className="bg-card/80 backdrop-blur-md border border-border/60 shadow-sm rounded-3xl p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-150">
@@ -179,7 +144,7 @@ export default async function FinancePage(props: {
                     </h2>
                 </div>
                 <BillingCyclesTab
-                    cycles={serialize(billingCycles)}
+                    cycles={serializedBillingCycles as any}
                     centreId={activeCentreId}
                 />
             </div>

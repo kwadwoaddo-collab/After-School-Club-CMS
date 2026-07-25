@@ -23,6 +23,61 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { recordPayment } from '@/features/finance/actions';
 import CreateInvoiceModal from './CreateInvoiceModal';
 
+export interface InvoicePayment {
+    id: string;
+    amount: string | number;
+    method?: string | null;
+    recordedAt: string | Date;
+}
+
+export interface InvoiceLineItem {
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice?: string | number;
+    lineTotal: string | number;
+}
+
+export interface FinanceInvoice {
+    id: string;
+    invoiceNumber: string;
+    organisationId: string;
+    centreId?: string | null;
+    parentId: string;
+    childId?: string | null;
+    amount: string | number;
+    status: string;
+    invoiceDate: string | Date;
+    dueDate: string | Date;
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
+    centre?: { id: string; name: string } | null;
+    child?: { id: string; firstName: string; lastName: string } | null;
+    parent?: { id: string; firstName: string; lastName: string; email?: string | null } | null;
+    payments?: InvoicePayment[];
+    lineItems?: InvoiceLineItem[];
+}
+
+export interface FinanceDataGridClientProps {
+    invoices?: FinanceInvoice[];
+    totalCount?: number;
+    page?: number;
+    pageSize?: number;
+    statusFilter?: string;
+    centres?: { id: string; name: string }[];
+}
+
+const formatDateSafe = (dateVal: string | Date | null | undefined, formatStr = 'MMM d, yyyy'): string => {
+    if (!dateVal) return '-';
+    try {
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return '-';
+        return format(d, formatStr);
+    } catch {
+        return '-';
+    }
+};
+
 // Slide-out Drawer component with Apple-level glassmorphism & backdrop blur
 function Sheet({ open, onClose, children, title }: { open: boolean, onClose: () => void, children: React.ReactNode, title: string }) {
     if (!open) return null;
@@ -47,14 +102,14 @@ function Sheet({ open, onClose, children, title }: { open: boolean, onClose: () 
     );
 }
 
-export default function FinanceDataGridClient({ invoices = [], totalCount = 0, page = 1, pageSize = 50, statusFilter = 'all', centres = [] }: any) {
+export default function FinanceDataGridClient({ invoices = [], totalCount = 0, page = 1, pageSize = 50, statusFilter = 'all', centres = [] }: FinanceDataGridClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { addToast } = useToast();
     const [isPending, startTransition] = useTransition();
 
     const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
-    const [viewInvoice, setViewInvoice] = useState<any | null>(null);
+    const [viewInvoice, setViewInvoice] = useState<FinanceInvoice | null>(null);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -67,12 +122,12 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
         const now = new Date();
 
-        invoices.forEach((inv: any) => {
+        invoices.forEach((inv) => {
             const amt = Number(inv.amount) || 0;
             totalInvoiced += amt;
 
             const payments = inv.payments || [];
-            const paid = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+            const paid = payments.reduce((sum: number, p) => sum + (Number(p.amount) || 0), 0);
 
             if (inv.status === 'paid') {
                 totalPaid += amt;
@@ -82,7 +137,8 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 if (outstanding > 0) {
                     totalOutstanding += outstanding;
                 }
-                const isOverdue = inv.dueDate && new Date(inv.dueDate) < now && inv.status !== 'void';
+                const dueDateObj = inv.dueDate ? new Date(inv.dueDate) : null;
+                const isOverdue = dueDateObj && !isNaN(dueDateObj.getTime()) && dueDateObj < now && inv.status !== 'void';
                 if (isOverdue) {
                     overdueCount++;
                 }
@@ -103,7 +159,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
         if (selectedInvoices.size === invoices.length) {
             setSelectedInvoices(new Set());
         } else {
-            setSelectedInvoices(new Set(invoices.map((i: any) => i.id)));
+            setSelectedInvoices(new Set(invoices.map((i) => i.id)));
         }
     };
 
@@ -141,16 +197,16 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             setPaymentAmount('');
             router.refresh();
         } catch (error: any) {
-            addToast(error.message || 'Failed to record payment', 'error');
+            addToast(error?.message || 'Failed to record payment', 'error');
         }
     };
 
     const handleBulkPayment = async () => {
         try {
-            const selected = invoices.filter((i: any) => selectedInvoices.has(i.id));
+            const selected = invoices.filter((i) => selectedInvoices.has(i.id));
             for (const invoice of selected) {
                 const payments = invoice.payments || [];
-                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p) => sum + Number(p.amount), 0);
                 if (outstanding > 0) {
                     await recordPayment({
                         invoiceId: invoice.id,
@@ -164,7 +220,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             setSelectedInvoices(new Set());
             router.refresh();
         } catch (error: any) {
-            addToast(error.message || 'Failed to record bulk payment', 'error');
+            addToast(error?.message || 'Failed to record bulk payment', 'error');
         }
     };
 
@@ -314,10 +370,11 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                         <p className="text-xs text-muted-foreground mt-1">There are no records matching your current filter criteria.</p>
                                     </td>
                                 </tr>
-                            ) : invoices.map((invoice: any) => {
-                                const isOverdue = invoice.status !== 'paid' && invoice.status !== 'void' && new Date(invoice.dueDate) < new Date();
+                            ) : invoices.map((invoice) => {
+                                const dueDateObj = invoice.dueDate ? new Date(invoice.dueDate) : null;
+                                const isOverdue = invoice.status !== 'paid' && invoice.status !== 'void' && !!dueDateObj && !isNaN(dueDateObj.getTime()) && dueDateObj < new Date();
                                 const payments = invoice.payments || [];
-                                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+                                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p) => sum + Number(p.amount), 0);
 
                                 return (
                                     <tr 
@@ -346,9 +403,9 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                             {invoice.child && <div className="text-xs text-muted-foreground font-medium">{invoice.child.firstName} {invoice.child.lastName}</div>}
                                         </td>
                                         <td className="p-4">
-                                            <div className="font-medium text-foreground">{format(new Date(invoice.invoiceDate), 'MMM d, yyyy')}</div>
+                                            <div className="font-medium text-foreground">{formatDateSafe(invoice.invoiceDate)}</div>
                                             <div className={`text-xs ${isOverdue ? 'text-rose-500 font-bold' : 'text-muted-foreground'}`}>
-                                                Due: {format(new Date(invoice.dueDate), 'MMM d, yyyy')}
+                                                Due: {formatDateSafe(invoice.dueDate)}
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -362,7 +419,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 text-xs font-bold">
-                                                    <Clock className="w-3.5 h-3.5" /> {invoice.status.replace('_', ' ')}
+                                                    <Clock className="w-3.5 h-3.5" /> {invoice.status?.replace('_', ' ')}
                                                 </span>
                                             )}
                                         </td>
@@ -432,8 +489,8 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                         <div>
                             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Line Items</h3>
                             <div className="space-y-3 bg-secondary/20 p-4 rounded-2xl border border-border/50">
-                                {viewInvoice.lineItems?.length > 0 ? (
-                                    viewInvoice.lineItems.map((item: any) => (
+                                {viewInvoice.lineItems && viewInvoice.lineItems.length > 0 ? (
+                                    viewInvoice.lineItems.map((item) => (
                                         <div key={item.id} className="flex justify-between items-center text-sm">
                                             <span className="text-foreground font-medium">{item.quantity}x {item.description}</span>
                                             <span className="font-bold tabular-nums text-foreground">£{Number(item.lineTotal).toFixed(2)}</span>
@@ -476,15 +533,15 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                             </div>
                         )}
                         
-                        {viewInvoice.payments?.length > 0 && (
+                        {viewInvoice.payments && viewInvoice.payments.length > 0 && (
                             <div>
                                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Payment History</h3>
                                 <div className="space-y-2">
-                                    {viewInvoice.payments.map((p: any) => (
+                                    {viewInvoice.payments.map((p) => (
                                         <div key={p.id} className="flex justify-between items-center p-3.5 bg-card border border-border/50 rounded-2xl text-sm">
                                             <div className="flex items-center gap-2">
                                                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                <span className="text-muted-foreground text-xs font-medium">{format(new Date(p.recordedAt), 'MMM d, yyyy')}</span>
+                                                <span className="text-muted-foreground text-xs font-medium">{formatDateSafe(p.recordedAt)}</span>
                                             </div>
                                             <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">£{Number(p.amount).toFixed(2)}</span>
                                         </div>
