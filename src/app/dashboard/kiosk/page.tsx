@@ -66,9 +66,30 @@ export default async function KioskPage(props: {
         ? orgCentres.find(c => c.id === activeCentreId)?.name ?? 'All Centres'
         : 'All Centres';
 
+    // Privacy scrub for Kiosk
+    const scrubbedSlots = sortedSlots.map(slot => ({
+        ...slot,
+        regulars: slot.regulars.map((att: any) => ({
+            ...att,
+            lastName: att.lastName ? att.lastName.charAt(0) + '.' : '',
+            parentLastName: att.parentLastName ? att.parentLastName.charAt(0) + '.' : '',
+            parentPhone: null,
+            parentEmail: null,
+            notes: null
+        })),
+        catchups: slot.catchups.map((att: any) => ({
+            ...att,
+            lastName: att.lastName ? att.lastName.charAt(0) + '.' : '',
+            parentLastName: att.parentLastName ? att.parentLastName.charAt(0) + '.' : '',
+            parentPhone: null,
+            parentEmail: null,
+            notes: null
+        }))
+    }));
+
     return (
         <KioskRegister
-            slots={sortedSlots as any}
+            slots={scrubbedSlots as any}
             date={format(now, 'EEEE, d MMMM yyyy')}
             dateStr={format(now, 'yyyy-MM-dd')}
             centreName={activeCentreName}

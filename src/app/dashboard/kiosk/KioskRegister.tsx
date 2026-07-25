@@ -65,7 +65,7 @@ const playChime = (type: 'success' | 'error') => {
     }
 };
 
-type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | null;
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'check_out' | null;
 
 interface Attendee {
     id: string;
@@ -132,13 +132,16 @@ function StudentCard({
     const [showDetails, setShowDetails] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [flash, setFlash] = useState(false);
+    const [pinPadOpen, setPinPadOpen] = useState(false);
+    const [pin, setPin] = useState('');
 
-    const mark = (s: AttendanceStatus) => {
+    const executeMark = (s: AttendanceStatus) => {
         const next = status === s ? null : s;
         if (next === 'late') setShowDetails(true);
 
         startTransition(async () => {
-            addOptimisticStatus(next);
+            // Check out becomes present instantly, just visually
+            addOptimisticStatus(next === 'check_out' ? 'present' : next);
             try {
                 let res;
                 if (!navigator.onLine) {
@@ -190,6 +193,30 @@ function StudentCard({
         });
     };
 
+    const mark = (s: AttendanceStatus) => {
+        const next = status === s ? null : s;
+        if (next === 'check_out') {
+            setPinPadOpen(true);
+            return;
+        }
+        executeMark(s);
+    };
+
+    const handlePinDigit = (num: number) => {
+        if (pin.length < 4) {
+            const newPin = pin + num;
+            setPin(newPin);
+            if (newPin.length === 4) {
+                // Dummy check - accept any PIN for now or add validation if needed
+                setTimeout(() => {
+                    setPinPadOpen(false);
+                    setPin('');
+                    executeMark('check_out');
+                }, 300);
+            }
+        }
+    };
+
     const saveDetails = () => {
         startTransition(async () => {
             try {
@@ -226,6 +253,7 @@ function StudentCard({
         absent:  { ring: 'border-error/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-error' },
         late:    { ring: 'border-warning/30 bg-warning/5 ring-2 ring-warning/10 glow-hover-warning',     avatar: 'bg-warning/20 text-warning' },
         excused: { ring: 'border-secondary/30 bg-secondary-container/5 ring-2 ring-secondary/10 glow-hover-secondary',   avatar: 'bg-secondary-container/20 text-secondary' },
+        check_out: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },
     };
 
     const style = status ? statusStyle[status] : { ring: 'bg-card border border-border shadow-sm hover:border-primary/30 glow-hover-primary', avatar: 'bg-secondary/60 text-muted-foreground' };
@@ -291,7 +319,7 @@ function StudentCard({
                         {([
                             { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-tertiary hover:border-tertiary/20' },
                             { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-warning text-background shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-warning/20',   inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-warning hover:border-warning/20'   },
-                            { s: 'absent'  as const, icon: <XCircle className="w-4 h-4" />,      label: 'Out',  active: 'bg-error text-background shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-error hover:border-error/20'     },
+                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  active: 'bg-error text-background shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-error hover:border-error/20'     },
                         ]).map(({ s, icon, label, active, inactive }) => (
                             <button
                                 key={s}
@@ -346,6 +374,31 @@ function StudentCard({
                             {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
                             Save Details
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* PIN Pad Modal */}
+            {pinPadOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
+                    <div className="bg-card p-6 rounded-3xl border shadow-2xl max-w-[320px] w-full animate-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-bold mb-2 text-center text-foreground">Confirm Check Out</h3>
+                        <p className="text-center mb-6 text-sm text-muted-foreground">
+                            Enter PIN to check out <strong className="text-foreground">{attendee.firstName} {attendee.lastName}</strong>
+                        </p>
+                        <div className="flex justify-center gap-4 mb-8">
+                            {[0, 1, 2, 3].map(i => (
+                                <div key={i} className={`w-3.5 h-3.5 rounded-full transition-colors duration-200 ${pin.length > i ? 'bg-primary' : 'bg-secondary border border-border/50'}`} />
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                                <button key={num} onClick={() => handlePinDigit(num)} className="h-14 text-2xl font-bold bg-secondary/80 hover:bg-secondary rounded-2xl active:scale-95 transition-all text-foreground">{num}</button>
+                            ))}
+                            <button onClick={() => { setPinPadOpen(false); setPin(''); }} className="h-14 text-sm font-bold bg-error/10 text-error hover:bg-error/20 rounded-2xl active:scale-95 transition-all">Cancel</button>
+                            <button onClick={() => handlePinDigit(0)} className="h-14 text-2xl font-bold bg-secondary/80 hover:bg-secondary rounded-2xl active:scale-95 transition-all text-foreground">0</button>
+                            <button onClick={() => setPin(prev => prev.slice(0, -1))} className="h-14 text-sm font-bold bg-warning/10 text-warning hover:bg-warning/20 rounded-2xl active:scale-95 transition-all">Del</button>
+                        </div>
                     </div>
                 </div>
             )}

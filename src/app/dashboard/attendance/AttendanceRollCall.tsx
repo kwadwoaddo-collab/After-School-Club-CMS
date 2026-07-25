@@ -134,6 +134,25 @@ function AttendeeCard({
 
     const flashSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
+    const saveTimeBlur = (type: 'in' | 'out', val: string) => {
+        if (!val) return;
+        startTransition(async () => {
+            try {
+                const { attendeeId } = await ensureBooking();
+                const payload = {
+                    attendeeId,
+                    checkInTime: type === 'in' ? val : (checkIn || null),
+                    checkOutTime: type === 'out' ? val : (checkOut || null),
+                    dateStr, absenceReason: null, attendanceNote: note || null, sessionTime
+                };
+                await updateAttendanceTimelog(payload);
+                flashSaved();
+            } catch {
+                onToast({ title: 'Could not update time', message: 'Please try again.', variant: 'error' });
+            }
+        });
+    };
+
     const handleCheckIn = () => {
         const time = nowHHmm();
         setShowAbsenceSheet(false);
@@ -218,184 +237,101 @@ function AttendeeCard({
         : 'bg-secondary/60 text-muted-foreground';
 
     return (
-        <div className={`rounded-2xl transition-all ${cardClass}`}>
-            <div className="p-4">
-                <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    <div className={`w-13 h-13 rounded-2xl flex items-center justify-center text-base font-black flex-shrink-0 select-none ${avatarClass}`}
-                         style={{ width: 52, height: 52 }}>
-                        {initials}
-                    </div>
-
-                    {/* Main info */}
-                    <div className="flex-1 min-w-0">
-                        {/* Name row */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                                href={`/dashboard/students/${attendee.childId}`}
-                                className="font-bold text-foreground text-base hover:text-primary transition-colors leading-tight"
-                            >
-                                {attendee.firstName} {attendee.lastName}
-                            </Link>
-                            {isExtra && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning border border-warning/20">
-                                    <Sparkles className="w-2.5 h-2.5" /> EXTRA
-                                </span>
-                            )}
-                            {attendee.flagHomework && (
-                                <span title={attendee.flagNote || 'Not bringing homework'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning border border-warning/20">
-                                    <BookOpen className="w-2.5 h-2.5" /> HW
-                                </span>
-                            )}
-                            {attendee.flagBehaviour && (
-                                <span title={attendee.flagNote || 'Behaviour concern'} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-error-container/15 text-error border border-error/20">
-                                    <AlertTriangle className="w-2.5 h-2.5" /> BEHAVIOUR
-                                </span>
-                            )}
-                            {derivedLate !== null && isIn && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/10 text-warning border border-warning/25">
-                                    Late {derivedLate}m
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Sub info */}
-                        <p className="text-sm text-muted-foreground mt-0.5 leading-snug">
-                            Year {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName}
-                            {attendee.parentPhone && ` · ${attendee.parentPhone}`}
-                        </p>
-
-                        {/* Status indicators */}
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap min-h-[20px]">
-                            {saved && <span className="text-xs font-bold text-success animate-pulse">Saved ✓</span>}
-                            {isPending && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
-                            {isIn && (
-                                <span className="text-xs font-semibold text-success">In {checkIn}{isOut ? ` → Out ${checkOut}` : ''}</span>
-                            )}
-                            {isAbsent && (
-                                <span className="text-xs font-semibold text-error">
-                                    Absent{absenceReason ? ` — ${absenceReason}` : ''}
-                                </span>
-                            )}
-                        </div>
-                    </div>
+        <div className={`group flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-3 border-b border-border hover:bg-secondary/20 transition-colors ${isAbsent ? 'opacity-70' : ''}`}>
+            <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${avatarClass}`}>
+                    {initials}
                 </div>
+                <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Link href={`/dashboard/students/${attendee.childId}`} className="font-bold text-foreground hover:text-primary transition-colors text-sm">
+                            {attendee.firstName} {attendee.lastName}
+                        </Link>
+                        {isExtra && <span className="text-[9px] font-bold bg-warning/10 text-warning px-1.5 py-0.5 rounded border border-warning/20">EXTRA</span>}
+                        {attendee.flagBehaviour && <AlertTriangle title="Behaviour Note" className="w-3.5 h-3.5 text-error" />}
+                        {attendee.flagHomework && <BookOpen title="Homework Note" className="w-3.5 h-3.5 text-warning" />}
+                        {derivedLate !== null && isIn && (
+                            <span className="text-[10px] font-bold text-warning ml-1">Late {derivedLate}m</span>
+                        )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">Yr {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName} {attendee.parentPhone ? `· ${attendee.parentPhone}` : ''}</p>
+                </div>
+            </div>
 
-                {/* ── Action buttons ─────────────────────────────────────── */}
+            <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap">
                 {isAbsent ? (
-                    /* Absent state — show undo */
-                    <div className="mt-3 flex items-center gap-3">
-                        <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl bg-error-container/15 border border-error/20">
-                            <XCircle className="w-4 h-4 text-error flex-shrink-0" />
-                            <span className="text-sm font-bold text-error">
-                                Absent{absenceReason ? ` — ${absenceReason}` : ''}
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => { setIsAbsent(false); setAbsenceReason(''); }}
-                            className="px-4 py-3 rounded-xl bg-card border border-border text-sm font-bold text-muted-foreground hover:bg-secondary/40 active:scale-95 duration-100 transition-all"
-                        >
-                            Undo
-                        </button>
+                    <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
+                        <span className="text-xs font-bold text-error mr-2">Absent{absenceReason ? ` — ${absenceReason}` : ''}</span>
+                        <button onClick={() => { setIsAbsent(false); setAbsenceReason(''); }} className="px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-bold hover:bg-secondary active:scale-95 transition-all text-muted-foreground">Undo</button>
                     </div>
                 ) : (
-                    <div className="mt-3 space-y-2">
-                        {/* Primary action row */}
+                    <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end">
                         <div className="flex items-center gap-2">
-                            {/* CHECK IN */}
                             <button
                                 onClick={handleCheckIn}
-                                disabled={isPending}
-                                className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 duration-100 border ${
-                                    isIn
-                                        ? 'bg-tertiary-container/15 border-tertiary/30 text-tertiary'
-                                        : 'bg-card border-border text-foreground hover:bg-tertiary-container/10 hover:border-tertiary/20 hover:text-tertiary'
-                                }`}
+                                disabled={isPending || isIn}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${isIn ? 'bg-tertiary-container/20 border-tertiary/30 text-tertiary' : 'bg-card border-border hover:bg-tertiary/10 hover:border-tertiary/20 hover:text-tertiary'}`}
                             >
-                                <LogIn className="w-4 h-4 flex-shrink-0" />
-                                {isIn ? `In ${checkIn}` : 'Check In'}
+                                {isIn ? 'In' : 'Check In'}
                             </button>
-
-                            {/* CHECK OUT — only after check-in */}
                             {isIn && (
-                                <button
-                                    onClick={handleCheckOut}
-                                    disabled={isPending}
-                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 duration-100 border ${
-                                        isOut
-                                            ? 'bg-primary/15 border-primary/30 text-primary'
-                                            : 'bg-card border-border text-foreground hover:bg-primary/8 hover:border-primary/25 hover:text-primary'
-                                    }`}
-                                >
-                                    <LogOut className="w-4 h-4 flex-shrink-0" />
-                                    {isOut ? `Out ${checkOut}` : 'Check Out'}
-                                </button>
-                            )}
-
-                            {/* MARK ABSENT — only when not checked in */}
-                            {!isIn && (
-                                <button
-                                    onClick={() => setShowAbsenceSheet(v => !v)}
-                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 duration-100 border ${
-                                        showAbsenceSheet
-                                            ? 'bg-error-container/15 border-error/30 text-error'
-                                            : 'bg-card border-border text-foreground hover:bg-error-container/10 hover:border-error/30 hover:text-error'
-                                    }`}
-                                >
-                                    <XCircle className="w-4 h-4 flex-shrink-0" />
-                                    Mark Absent
-                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAbsenceSheet ? 'rotate-180' : ''}`} />
-                                </button>
+                                <input
+                                    type="time"
+                                    value={checkIn}
+                                    onChange={e => setCheckIn(e.target.value)}
+                                    onBlur={e => saveTimeBlur('in', e.target.value)}
+                                    disabled={!isIn || isPending}
+                                    className="h-8 w-24 px-2 text-xs rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50"
+                                />
                             )}
                         </div>
 
-                        {/* Time edit row — compact, below main actions */}
-                        {(isIn || isOut) && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                {isIn && (
-                                    <label className="flex items-center gap-1.5">
-                                        <span className="font-medium">In:</span>
-                                        <input
-                                            type="time"
-                                            value={checkIn}
-                                            onChange={e => setCheckIn(e.target.value)}
-                                            className="h-9 px-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-                                        />
-                                    </label>
-                                )}
-                                {isIn && isOut && (
-                                    <label className="flex items-center gap-1.5">
-                                        <span className="font-medium">Out:</span>
-                                        <input
-                                            type="time"
-                                            value={checkOut}
-                                            onChange={e => setCheckOut(e.target.value)}
-                                            className="h-9 px-2 text-sm rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-                                        />
-                                    </label>
-                                )}
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleCheckOut}
+                                disabled={isPending || isOut || !isIn}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${isOut ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-card border-border hover:bg-primary/10 hover:border-primary/20 hover:text-primary'} disabled:opacity-50`}
+                            >
+                                {isOut ? 'Out' : 'Check Out'}
+                            </button>
+                            {isOut && (
+                                <input
+                                    type="time"
+                                    value={checkOut}
+                                    onChange={e => setCheckOut(e.target.value)}
+                                    onBlur={e => saveTimeBlur('out', e.target.value)}
+                                    disabled={!isOut || isPending}
+                                    className="h-8 w-24 px-2 text-xs rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50"
+                                />
+                            )}
+                        </div>
 
-                        {/* ── Absence reason sheet ─────────────────────── */}
-                        {showAbsenceSheet && (
-                            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border animate-in slide-in-from-top-1 duration-150">
-                                {ABSENCE_REASONS.map(r => (
-                                    <button
-                                        key={r.key}
-                                        onClick={() => handleMarkAbsent(r.key)}
-                                        disabled={isPending}
-                                        aria-label={r.label}
-                                        className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl bg-card border-2 border-border hover:border-error/30 hover:bg-error-container/10 active:scale-95 duration-100 transition-all disabled:opacity-50"
-                                    >
-                                        <span className="text-2xl leading-none">{r.emoji}</span>
-                                        <span className="text-sm font-bold text-foreground">{r.label}</span>
-                                    </button>
-                                ))}
+                        {!isIn && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowAbsenceSheet(v => !v)}
+                                    className="px-3 py-2 rounded-lg text-xs font-bold bg-card border border-border text-muted-foreground hover:text-error hover:border-error/30 transition-all"
+                                >
+                                    Mark Absent
+                                </button>
+                                {showAbsenceSheet && (
+                                    <div className="absolute top-full right-0 mt-1 w-48 bg-card border border-border rounded-xl shadow-xl z-10 p-2 grid grid-cols-2 gap-1">
+                                        {ABSENCE_REASONS.map(r => (
+                                            <button key={r.key} onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 rounded-lg hover:bg-error-container/10 border border-transparent hover:border-error/20">
+                                                <span className="text-lg mb-1">{r.emoji}</span>
+                                                <span className="text-[10px] font-bold">{r.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 )}
+                <div className="w-5 shrink-0 flex justify-center">
+                    {isPending && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
+                    {saved && <span className="text-xs text-success font-bold">✓</span>}
+                </div>
             </div>
         </div>
     );
@@ -474,6 +410,60 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
             });
         } catch {
             toast({ title: 'Bulk mark failed', message: 'Some students could not be marked. Refresh and retry.', variant: 'error' });
+        } finally {
+            setBulkPendingSlot(null);
+        }
+    };
+
+    const handleMarkAllOut = async (slot: CompiledSlot) => {
+        const allAttendees = [...slot.regulars, ...slot.catchups];
+        const time = nowHHmm();
+        
+        const inButNotOut = allAttendees.filter(a => {
+            const s = markedStatus[a.id];
+            return s ? (s.checkedIn && !s.checkedOut && !s.absent) : (!!a.checkInTime && !a.checkOutTime);
+        });
+
+        if (inButNotOut.length === 0) {
+            toast({ title: 'Nobody to check out', message: 'All checked-in students are already checked out.', variant: 'warning' });
+            return;
+        }
+
+        setBulkPendingSlot(`out-${slot.time}`);
+        try {
+            await Promise.all(
+                inButNotOut.map(async (a) => {
+                    try {
+                        let bkId = a.bookingId;
+                        let attId = a.id;
+                        if (!bkId || bkId.startsWith('temp-')) {
+                             const res = await markAttendeeAttendance({
+                                bookingId: a.bookingId, attendeeId: a.id,
+                                status: 'present', note: null, lateMinutes: null,
+                                childId: a.childId, dateStr, sessionTime: slot.time, centreId,
+                            });
+                            if (res) {
+                                bkId = res.bookingId!;
+                                attId = res.attendeeId!;
+                            }
+                        }
+                        
+                        await updateAttendanceTimelog({
+                            attendeeId: attId, checkInTime: a.checkInTime || time, checkOutTime: time,
+                            dateStr, absenceReason: null, attendanceNote: null, sessionTime: slot.time
+                        });
+                        
+                        updateMarkedStatus(a.id, { checkedOut: true });
+                    } catch { /* individual failure */ }
+                })
+            );
+            toast({
+                title: `${inButNotOut.length} checked out`,
+                message: `Marked remaining students out at ${time}.`,
+                variant: 'success',
+            });
+        } catch {
+            toast({ title: 'Bulk mark out failed', message: 'Refresh and try again.', variant: 'error' });
         } finally {
             setBulkPendingSlot(null);
         }
@@ -680,10 +670,17 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             </button>
                                         )}
                                         {missingOut > 0 && (
-                                            <span className="flex items-center gap-1.5 text-warning text-xs font-bold px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
-                                                <AlertCircle className="w-3.5 h-3.5" />
-                                                {missingOut} no check-out
-                                            </span>
+                                            <button
+                                                onClick={() => handleMarkAllOut(slot)}
+                                                disabled={bulkPendingSlot === `out-${slot.time}`}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 duration-100 disabled:opacity-60 bg-warning/10 text-warning border-warning/20 hover:bg-warning/20 hover:border-warning/30"
+                                            >
+                                                {bulkPendingSlot === `out-${slot.time}`
+                                                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    : <LogOut className="w-3.5 h-3.5" />
+                                                }
+                                                Check {missingOut} Out (EOD)
+                                            </button>
                                         )}
                                         {allMarked ? (
                                             <span className="flex items-center gap-1.5 text-success text-xs font-bold px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
@@ -719,7 +716,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             No regular students scheduled for this slot.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2.5">
+                                        <div className="flex flex-col">
                                             {slot.regulars.map(child => (
                                                 <AttendeeCard
                                                     key={child.id}
@@ -754,7 +751,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             No catch-ups or walk-ins registered.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2.5">
+                                        <div className="flex flex-col">
                                             {slot.catchups.map(child => (
                                                 <AttendeeCard
                                                     key={child.id}

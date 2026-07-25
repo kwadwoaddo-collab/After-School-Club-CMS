@@ -193,7 +193,7 @@ export async function sendAssessmentFeedback(attendeeId: string) {
 export async function markAttendeeAttendance(params: {
     bookingId?: string | null;
     attendeeId?: string | null;
-    status: AttendanceStatus | null;
+    status: AttendanceStatus | 'check_out' | null;
     note?: string | null;
     lateMinutes?: number | null;
     childId?: string;
@@ -229,16 +229,25 @@ export async function markAttendeeAttendance(params: {
             throw new Error('Attendee not found in this booking');
         }
 
+        let finalStatus = status === 'check_out' ? 'present' : status;
+        const updateFields: any = {
+            attendanceStatus: finalStatus,
+            attendanceNote: note || null,
+            lateMinutes: lateMinutes || null,
+            attendanceMarkedAt: new Date(),
+            attendanceMarkedBy: session.user.id,
+            updatedAt: new Date()
+        };
+        
+        if (status === 'check_out') {
+            updateFields.checkOutAt = new Date();
+        } else if (status === 'present' || status === 'late') {
+            updateFields.checkInAt = new Date();
+        }
+
         // 1. Update the per-child attendance record with audit trail
         await db.update(bookingAttendees)
-            .set({
-                attendanceStatus: status,
-                attendanceNote: note || null,
-                lateMinutes: lateMinutes || null,
-                attendanceMarkedAt: new Date(),
-                attendanceMarkedBy: session.user.id,
-                updatedAt: new Date()
-            })
+            .set(updateFields)
             .where(eq(bookingAttendees.id, attendeeId!));
 
         revalidatePath(`/dashboard/bookings/${bookingId}`);
@@ -292,24 +301,19 @@ export async function markAttendeeAttendance(params: {
                 if (existingAttendee) {
                     finalAttendeeId = existingAttendee.id;
                     await tx.update(bookingAttendees)
-                        .set({
-                            attendanceStatus: status,
-                            attendanceNote: note || null,
-                            lateMinutes: lateMinutes || null,
-                            attendanceMarkedAt: new Date(),
-                            attendanceMarkedBy: session.user.id,
-                            updatedAt: new Date()
-                        })
+                        .set(updateFields)
                         .where(eq(bookingAttendees.id, finalAttendeeId));
                 } else {
                     const [newAtt] = await tx.insert(bookingAttendees).values({
                         bookingId: finalBookingId,
                         childId: childId,
-                        attendanceStatus: status,
+                        attendanceStatus: finalStatus,
                         attendanceNote: note || null,
                         lateMinutes: lateMinutes || null,
                         attendanceMarkedAt: new Date(),
                         attendanceMarkedBy: session.user.id,
+                        checkInAt: (status === 'present' || status === 'late') ? new Date() : null,
+                        checkOutAt: status === 'check_out' ? new Date() : null,
                     }).returning();
                     finalAttendeeId = newAtt.id;
                 }
