@@ -9,12 +9,7 @@ import Link from 'next/link';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
 import dynamic from 'next/dynamic';
-import type { SignaturePadHandle } from '@/features/registration/components/SignaturePadWidget';
 
-const SignaturePadWidget = dynamic(
-    () => import('@/features/registration/components/SignaturePadWidget'),
-    { ssr: false },
-);
 
 // ── Types ──────────────────────────────────────────────────────────
 interface ChildEntry {
@@ -113,7 +108,7 @@ export default function RegisterPage() {
     const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
     const [showFeesIntro, setShowFeesIntro] = useState(true);
     const [step, setStep] = useState(1);
-    const TOTAL_STEPS = 7;
+    const TOTAL_STEPS = 4;
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -131,7 +126,6 @@ export default function RegisterPage() {
     const [specialNeeds, setSpecialNeeds] = useState<SpecialNeeds>({ has: false, details: '' });
     const [termsAgreed, setTermsAgreed] = useState(false);
     const [signature, setSignature] = useState<string | null>(null);
-    const signaturePadRef = useRef<SignaturePadHandle>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
@@ -237,18 +231,7 @@ export default function RegisterPage() {
         let errorMsg = '';
 
         if (s === 1) {
-            childList.forEach((c, i) => {
-                if (!c.firstName.trim()) invalid.add(`child-fn-${i}`);
-                if (!c.lastName.trim()) invalid.add(`child-ln-${i}`);
-                if (!c.dateOfBirth) invalid.add(`child-dob-${i}`);
-                if (!c.schoolYear) invalid.add(`child-yr-${i}`);
-                if (c.sessions.length === 0) invalid.add(`child-sessions-${i}`);
-            });
-            if (invalid.size > 0) errorMsg = 'Please fill in all required child details (name, date of birth, and year group).';
-        }
-
-        if (s === 2) {
-            // Only primary parent (index 0) is fully required
+            // Parent validation
             const p = parentList[0];
             if (!p.firstName.trim()) invalid.add('p-fn-0');
             if (!p.lastName.trim()) invalid.add('p-ln-0');
@@ -258,53 +241,54 @@ export default function RegisterPage() {
             if (!p.addressLine1.trim()) invalid.add('p-a1-0');
             if (!p.city.trim()) invalid.add('p-city-0');
             if (!p.postcode.trim()) invalid.add('p-pc-0');
-            // Second parent — only name and phone required if added
             if (parentList.length > 1) {
                 const p2 = parentList[1];
                 if (!p2.firstName.trim()) invalid.add('p-fn-1');
                 if (!p2.lastName.trim()) invalid.add('p-ln-1');
                 if (!p2.phone.trim()) invalid.add('p-ph-1');
             }
-            if (invalid.size > 0) errorMsg = 'Please complete all required parent / carer details.';
-        }
-
-        if (s === 3) {
+            // Emergency Contact
             if (!emergency.name.trim()) invalid.add('ec-name');
             if (!emergency.relationship.trim()) invalid.add('ec-rel');
             if (!emergency.phone.trim()) invalid.add('ec-phone');
-            if (invalid.size > 0) errorMsg = 'Please provide emergency contact name, relationship, and phone number.';
-        }
-
-        if (s === 4) {
-            if (!funding.type) {
-                invalid.add('funding-group');
-                errorMsg = 'Please select a funding method.';
-            } else if (funding.type === 'other' && !funding.other.trim()) {
-                invalid.add('fund-other');
-                errorMsg = 'Please describe your funding method.';
-            }
-        }
-
-        if (s === 5) {
-            if (specialNeeds.has && !specialNeeds.details.trim()) {
-                invalid.add('sn-details');
-                errorMsg = 'Please provide details about your child\'s special educational needs.';
-            }
-        }
-
-        if (s === 6) {
+            // Authorised Collectors
             authorisedCollectors.forEach((c, i) => {
                 if (!c.name.trim()) invalid.add(`ac-name-${i}`);
                 if (!c.relationship.trim()) invalid.add(`ac-rel-${i}`);
                 if (!c.phone.trim()) invalid.add(`ac-ph-${i}`);
             });
-            if (invalid.size > 0) errorMsg = 'Please provide name, relationship, and phone for all authorised collectors.';
+            if (invalid.size > 0) errorMsg = 'Please complete all required family and contact details.';
         }
 
-        if (s === 7) {
-            if (!signature || signaturePadRef.current?.isEmpty()) {
+        if (s === 2) {
+            childList.forEach((c, i) => {
+                if (!c.firstName.trim()) invalid.add(`child-fn-${i}`);
+                if (!c.lastName.trim()) invalid.add(`child-ln-${i}`);
+                if (!c.dateOfBirth) invalid.add(`child-dob-${i}`);
+                if (!c.schoolYear) invalid.add(`child-yr-${i}`);
+            });
+            if (specialNeeds.has && !specialNeeds.details.trim()) {
+                invalid.add('sn-details');
+            }
+            if (invalid.size > 0) errorMsg = 'Please fill in all required student details and medical info.';
+        }
+
+        if (s === 3) {
+            childList.forEach((c, i) => {
+                if (c.sessions.length === 0) invalid.add(`child-sessions-${i}`);
+            });
+            if (!funding.type) {
+                invalid.add('funding-group');
+            } else if (funding.type === 'other' && !funding.other.trim()) {
+                invalid.add('fund-other');
+            }
+            if (invalid.size > 0) errorMsg = 'Please select sessions for all children and provide funding information.';
+        }
+
+        if (s === 4) {
+            if (!signature || signature.trim() === '') {
                 invalid.add('signature-pad');
-                errorMsg = 'Please sign the form before submitting.';
+                errorMsg = 'Please type your name to sign the form.';
             }
             if (!termsAgreed) {
                 invalid.add('terms-agree');
@@ -691,325 +675,383 @@ export default function RegisterPage() {
                     </div>
                 )}
 
-                {/* ── STEP 1: Children ───────────────────────────────────── */}
+                {/* ── STEP 1: Family Details ───────────────────────────────────── */}
                 {step === 1 && (
-                    <div>
-                        <h2 className={sectionTitle}>Children&apos;s Details</h2>
-                        <div className="mb-6">
-                            <Field label="Requested Start Date">
-                                <input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} />
-                            </Field>
+                    <div className="space-y-8 animate-in slide-in-from-right-4 duration-200">
+                        <div>
+                            <h2 className={sectionTitle}>Parent / Carer Details</h2>
+                            {parentList.map((p, i) => (
+                                <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
+                                    <h3 className="text-foreground font-semibold mb-4">Parent / Carer {i + 1}{i === 0 ? ' (Primary)' : ''}</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <Field label="First Name *">
+                                            <input id={`p-fn-${i}`} type="text" value={p.firstName} onChange={e => { updateParent(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-fn-${i}`); return n; }); }} onBlur={() => { if(!p.firstName.trim()) setInvalidFields(f => new Set(f).add(`p-fn-${i}`)); }} className={invalidFields.has(`p-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
+                                            {invalidFields.has(`p-fn-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">First name is required</p>}
+                                        </Field>
+                                        <Field label="Last Name *">
+                                            <input id={`p-ln-${i}`} type="text" value={p.lastName} onChange={e => { updateParent(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ln-${i}`); return n; }); }} onBlur={() => { if(!p.lastName.trim()) setInvalidFields(f => new Set(f).add(`p-ln-${i}`)); }} className={invalidFields.has(`p-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
+                                            {invalidFields.has(`p-ln-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Last name is required</p>}
+                                        </Field>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <Field label="Relationship *">
+                                            <select id={`p-rel-${i}`} value={p.relationship} onChange={e => { updateParent(i, 'relationship', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-rel-${i}`); return n; }); }} onBlur={() => { if(!p.relationship.trim()) setInvalidFields(f => new Set(f).add(`p-rel-${i}`)); }} className={invalidFields.has(`p-rel-${i}`) ? inputErrCls : inputCls}>
+                                                <option value="">Select</option>
+                                                {RELATIONSHIPS.map(r => <option key={r} value={r.toLowerCase()}>{r}</option>)}
+                                            </select>
+                                            {invalidFields.has(`p-rel-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Relationship is required</p>}
+                                        </Field>
+                                        <Field label="Phone Number *">
+                                            <input id={`p-ph-${i}`} type="tel" value={p.phone} onChange={e => { updateParent(i, 'phone', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ph-${i}`); return n; }); }} onBlur={() => { if(!p.phone.trim()) setInvalidFields(f => new Set(f).add(`p-ph-${i}`)); }} className={invalidFields.has(`p-ph-${i}`) ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
+                                            {invalidFields.has(`p-ph-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Phone number is required</p>}
+                                        </Field>
+                                    </div>
+                                    <div className="mb-4">
+                                        <Field label="Email Address *">
+                                            <input id={`p-em-${i}`} type="email" value={p.email} onChange={e => { updateParent(i, 'email', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-em-${i}`); return n; }); }} onBlur={() => { if(!p.email.trim()) setInvalidFields(f => new Set(f).add(`p-em-${i}`)); }} className={invalidFields.has(`p-em-${i}`) ? inputErrCls : inputCls} placeholder="email@example.com" />
+                                            {invalidFields.has(`p-em-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Email is required</p>}
+                                        </Field>
+                                    </div>
+                                    <div className="mb-4">
+                                        <p className="text-sm font-medium text-muted-foreground mb-2">Address</p>
+                                        <input type="text" placeholder="Start typing address to search..." className="w-full px-4 py-3 mb-3 rounded-xl bg-secondary/50 border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
+                                        <Field label="Address Line 1 *">
+                                            <input id={`p-a1-${i}`} type="text" value={p.addressLine1} onChange={e => { updateParent(i, 'addressLine1', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-a1-${i}`); return n; }); }} onBlur={() => { if(!p.addressLine1.trim()) setInvalidFields(f => new Set(f).add(`p-a1-${i}`)); }} className={invalidFields.has(`p-a1-${i}`) ? inputErrCls : inputCls} placeholder="Street address" />
+                                            {invalidFields.has(`p-a1-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Address is required</p>}
+                                        </Field>
+                                    </div>
+                                    <div className="mb-4">
+                                        <Field label="Address Line 2">
+                                            <input id={`p-a2-${i}`} type="text" value={p.addressLine2} onChange={e => updateParent(i, 'addressLine2', e.target.value)} className={inputCls} placeholder="Flat, suite, etc. (optional)" />
+                                        </Field>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <Field label="City *">
+                                            <input id={`p-city-${i}`} type="text" value={p.city} onChange={e => { updateParent(i, 'city', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-city-${i}`); return n; }); }} onBlur={() => { if(!p.city.trim()) setInvalidFields(f => new Set(f).add(`p-city-${i}`)); }} className={invalidFields.has(`p-city-${i}`) ? inputErrCls : inputCls} placeholder="London" />
+                                            {invalidFields.has(`p-city-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">City is required</p>}
+                                        </Field>
+                                        <Field label="Postcode *">
+                                            <input id={`p-pc-${i}`} type="text" value={p.postcode} onChange={e => { updateParent(i, 'postcode', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-pc-${i}`); return n; }); }} onBlur={() => { if(!p.postcode.trim()) setInvalidFields(f => new Set(f).add(`p-pc-${i}`)); }} className={invalidFields.has(`p-pc-${i}`) ? inputErrCls : inputCls} placeholder="SE26 4AA" />
+                                            {invalidFields.has(`p-pc-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Postcode is required</p>}
+                                        </Field>
+                                    </div>
+                                </div>
+                            ))}
+                            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-card border border-border hover:border-primary/20 transition-colors shadow-sm mb-8">
+                                <input id="secondParent" type="checkbox" checked={secondParent} onChange={e => setSecondParent(e.target.checked)} className="w-4 h-4 rounded accent-blue-600" />
+                                <span className="text-muted-foreground text-sm">Add a second parent / carer</span>
+                            </label>
                         </div>
-                        {childList.map((c, i) => (
-                            <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-foreground font-semibold">Child {i + 1}</h3>
-                                    {i > 0 && (
-                                        <button onClick={() => removeChild(i)} className="text-destructive text-xs hover:text-destructive font-medium">Remove</button>
-                                    )}
+
+                        <div>
+                            <h2 className={sectionTitle}>Emergency Contact</h2>
+                            <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-sm">
+                                <Field label="Full Name *">
+                                    <input id="ec-name" type="text" value={emergency.name} onChange={e => { setEmergency(v => ({ ...v, name: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-name'); return n; }); }} onBlur={() => { if(!emergency.name.trim()) setInvalidFields(f => new Set(f).add('ec-name')); }} className={invalidFields.has('ec-name') ? inputErrCls : inputCls} placeholder="Full name" />
+                                    {invalidFields.has('ec-name') && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Name is required</p>}
+                                </Field>
+                                <Field label="Relationship to Child *">
+                                    <input id="ec-rel" type="text" value={emergency.relationship} onChange={e => { setEmergency(v => ({ ...v, relationship: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-rel'); return n; }); }} onBlur={() => { if(!emergency.relationship.trim()) setInvalidFields(f => new Set(f).add('ec-rel')); }} className={invalidFields.has('ec-rel') ? inputErrCls : inputCls} placeholder="e.g. Grandparent, Aunt" />
+                                    {invalidFields.has('ec-rel') && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Relationship is required</p>}
+                                </Field>
+                                <Field label="Contact Number *">
+                                    <input id="ec-phone" type="tel" value={emergency.phone} onChange={e => { setEmergency(v => ({ ...v, phone: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-phone'); return n; }); }} onBlur={() => { if(!emergency.phone.trim()) setInvalidFields(f => new Set(f).add('ec-phone')); }} className={invalidFields.has('ec-phone') ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
+                                    {invalidFields.has('ec-phone') && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Phone is required</p>}
+                                </Field>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className={sectionTitle}>Authorised Collectors</h2>
+                            {authorisedCollectors.map((c, i) => (
+                                <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm relative">
+                                    <button onClick={() => setAuthorisedCollectors(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-destructive text-xs hover:text-destructive font-medium">Remove</button>
+                                    <h3 className="text-foreground font-semibold mb-4">Collector {i + 1}</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <Field label="Full Name *">
+                                            <input id={`ac-name-${i}`} type="text" value={c.name} onChange={e => { const v = [...authorisedCollectors]; v[i].name = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-name-${i}`); return n; }); }} onBlur={() => { if(!c.name.trim()) setInvalidFields(f => new Set(f).add(`ac-name-${i}`)); }} className={invalidFields.has(`ac-name-${i}`) ? inputErrCls : inputCls} placeholder="Full name" />
+                                            {invalidFields.has(`ac-name-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Name is required</p>}
+                                        </Field>
+                                        <Field label="Relationship to Child *">
+                                            <input id={`ac-rel-${i}`} type="text" value={c.relationship} onChange={e => { const v = [...authorisedCollectors]; v[i].relationship = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-rel-${i}`); return n; }); }} onBlur={() => { if(!c.relationship.trim()) setInvalidFields(f => new Set(f).add(`ac-rel-${i}`)); }} className={invalidFields.has(`ac-rel-${i}`) ? inputErrCls : inputCls} placeholder="e.g. Grandparent" />
+                                            {invalidFields.has(`ac-rel-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Relationship is required</p>}
+                                        </Field>
+                                    </div>
+                                    <div className="mb-2">
+                                        <Field label="Phone Number *">
+                                            <input id={`ac-ph-${i}`} type="tel" value={c.phone} onChange={e => { const v = [...authorisedCollectors]; v[i].phone = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-ph-${i}`); return n; }); }} onBlur={() => { if(!c.phone.trim()) setInvalidFields(f => new Set(f).add(`ac-ph-${i}`)); }} className={invalidFields.has(`ac-ph-${i}`) ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
+                                            {invalidFields.has(`ac-ph-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Phone is required</p>}
+                                        </Field>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                    <Field label="First Name *">
-                                        <input id={`child-fn-${i}`} type="text" value={c.firstName} onChange={e => { updateChild(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-fn-${i}`); return n; }); }} className={invalidFields.has(`child-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
-                                    </Field>
-                                    <Field label="Last Name *">
-                                        <input id={`child-ln-${i}`} type="text" value={c.lastName} onChange={e => { updateChild(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-ln-${i}`); return n; }); }} className={invalidFields.has(`child-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
-                                    </Field>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-                                    <Field label="Date of Birth *">
-                                        <input id={`child-dob-${i}`} type="date" value={c.dateOfBirth} onChange={e => { updateChild(i, 'dateOfBirth', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-dob-${i}`); return n; }); }} className={invalidFields.has(`child-dob-${i}`) ? inputErrCls : inputCls} />
-                                    </Field>
-                                    <Field label="Year Group *">
-                                        <select id={`child-yr-${i}`} value={c.schoolYear} onChange={e => { updateChild(i, 'schoolYear', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-yr-${i}`); return n; }); }} className={invalidFields.has(`child-yr-${i}`) ? inputErrCls : inputCls}>
-                                            <option value="">Select year</option>
-                                            {YEAR_GROUPS.map(y => <option key={y} value={y}>{y}</option>)}
-                                        </select>
-                                    </Field>
-                                </div>
-                                {/* Session times */}
-                                <div className="border-t border-border pt-5">
-                                    <div className="flex items-start justify-between gap-3 mb-3">
-                                        <div>
-                                            <p className="text-foreground font-semibold text-sm">Select Preferred Sessions — Child {i + 1} *</p>
-                                            <p className="text-muted-foreground text-xs mt-0.5">Please select the number of sessions required for your chosen days</p>
+                            ))}
+                            {authorisedCollectors.length < 3 && (
+                                <button onClick={() => setAuthorisedCollectors(prev => [...prev, { name: '', relationship: '', phone: '' }])} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
+                                    + Add Authorised Collector
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── STEP 2: Student Profile ─────────────────────────────────────── */}
+                {step === 2 && (
+                    <div className="space-y-8 animate-in slide-in-from-right-4 duration-200">
+                        <div>
+                            <h2 className={sectionTitle}>Children's Details</h2>
+                            {childList.map((c, i) => (
+                                <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-foreground font-semibold">Child {i + 1}</h3>
+                                        {i > 0 && (
+                                            <button onClick={() => removeChild(i)} className="text-destructive text-xs hover:text-destructive font-medium">Remove</button>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <Field label="First Name *">
+                                            <input id={`child-fn-${i}`} type="text" value={c.firstName} onChange={e => { updateChild(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-fn-${i}`); return n; }); }} onBlur={() => { if(!c.firstName.trim()) setInvalidFields(f => new Set(f).add(`child-fn-${i}`)); }} className={invalidFields.has(`child-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
+                                            {invalidFields.has(`child-fn-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">First name is required</p>}
+                                        </Field>
+                                        <Field label="Last Name *">
+                                            <input id={`child-ln-${i}`} type="text" value={c.lastName} onChange={e => { updateChild(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-ln-${i}`); return n; }); }} onBlur={() => { if(!c.lastName.trim()) setInvalidFields(f => new Set(f).add(`child-ln-${i}`)); }} className={invalidFields.has(`child-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
+                                            {invalidFields.has(`child-ln-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Last name is required</p>}
+                                        </Field>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                                        <Field label="Date of Birth *">
+                                            <input id={`child-dob-${i}`} type="date" value={c.dateOfBirth} onChange={e => { updateChild(i, 'dateOfBirth', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-dob-${i}`); return n; }); }} onBlur={() => { if(!c.dateOfBirth) setInvalidFields(f => new Set(f).add(`child-dob-${i}`)); }} className={invalidFields.has(`child-dob-${i}`) ? inputErrCls : inputCls} />
+                                            {invalidFields.has(`child-dob-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Date of Birth is required</p>}
+                                        </Field>
+                                        <Field label="Year Group *">
+                                            <select id={`child-yr-${i}`} value={c.schoolYear} onChange={e => { updateChild(i, 'schoolYear', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`child-yr-${i}`); return n; }); }} onBlur={() => { if(!c.schoolYear) setInvalidFields(f => new Set(f).add(`child-yr-${i}`)); }} className={invalidFields.has(`child-yr-${i}`) ? inputErrCls : inputCls}>
+                                                <option value="">Select year</option>
+                                                {YEAR_GROUPS.map(y => <option key={y} value={y}>{y}</option>)}
+                                            </select>
+                                            {invalidFields.has(`child-yr-${i}`) && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Year Group is required</p>}
+                                        </Field>
+                                    </div>
+
+                                    <div className="border-t border-border mt-5 pt-5">
+                                        <h4 className="text-foreground font-semibold text-sm mb-4">Medical &amp; Safeguarding Information</h4>
+                                        <div className="space-y-4">
+                                            <Field label="Dietary Requirements">
+                                                <input type="text" value={c.dietaryRequirements} onChange={e => updateChild(i, 'dietaryRequirements', e.target.value)} className={inputCls} placeholder="e.g. Vegetarian, Halal, None" />
+                                            </Field>
+                                            <Field label="Medical Conditions">
+                                                <input type="text" value={c.medicalConditions} onChange={e => updateChild(i, 'medicalConditions', e.target.value)} className={inputCls} placeholder="e.g. Asthma, Diabetes, None" />
+                                            </Field>
+                                            <Field label="Allergies">
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                        {c.allergies.map((allergy, aIdx) => (
+                                                            <span key={aIdx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-700 text-sm font-medium border border-red-200">
+                                                                {allergy}
+                                                                <button onClick={() => updateChild(i, 'allergies', c.allergies.filter((_, idx) => idx !== aIdx))} className="text-red-400 hover:text-red-700 font-bold ml-1">×</button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Type an allergy and press Enter..." 
+                                                        className={inputCls}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const val = e.currentTarget.value.trim();
+                                                                if (val && !c.allergies.includes(val)) {
+                                                                    updateChild(i, 'allergies', [...c.allergies, val]);
+                                                                    e.currentTarget.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {['Peanuts', 'Dairy', 'Gluten'].map(common => (
+                                                            <button 
+                                                                key={common} 
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    if (!c.allergies.includes(common)) {
+                                                                        updateChild(i, 'allergies', [...c.allergies, common]);
+                                                                    }
+                                                                }} 
+                                                                className="text-xs bg-secondary hover:bg-secondary/80 text-muted-foreground px-2 py-1 rounded-md transition-colors">
+                                                                + {common}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </Field>
+                                            <Field label="GP Name (Optional)">
+                                                <input type="text" value={c.gpName} onChange={e => updateChild(i, 'gpName', e.target.value)} className={inputCls} placeholder="Dr. Smith" />
+                                            </Field>
+                                            <Field label="GP Phone (Optional)">
+                                                <input type="tel" value={c.gpPhone} onChange={e => updateChild(i, 'gpPhone', e.target.value)} className={inputCls} placeholder="020 8123 4567" />
+                                            </Field>
+
+                                            <div className="pt-2">
+                                                <p className="text-sm font-medium text-muted-foreground mb-3">Consents</p>
+                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
+                                                    <input type="checkbox" checked={c.photoConsent} onChange={e => updateChild(i, 'photoConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
+                                                    <span className="text-muted-foreground text-sm">I consent to photos/videos being taken for marketing purposes</span>
+                                                </label>
+                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
+                                                    <input type="checkbox" checked={c.sunCreamConsent} onChange={e => updateChild(i, 'sunCreamConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
+                                                    <span className="text-muted-foreground text-sm">I consent to the application of sun cream if required</span>
+                                                </label>
+                                                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border hover:border-primary/20">
+                                                    <input type="checkbox" checked={c.firstAidConsent} onChange={e => updateChild(i, 'firstAidConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
+                                                    <span className="text-muted-foreground text-sm">I consent to emergency first aid treatment</span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                    <p className="text-warning text-xs mb-4">⚠ Session times selected can be changed by mutual agreement with the centre and yourself at any time.</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                </div>
+                            ))}
+                            {childList.length < 5 && (
+                                <button onClick={addChild} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
+                                    + Add Another Child
+                                </button>
+                            )}
+                        </div>
+
+                        <div>
+                            <h2 className={sectionTitle}>Special Needs</h2>
+                            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                                <p className="text-muted-foreground text-sm font-medium mb-4">Does your child have any special needs or medical information we should know about?</p>
+                                <div className="flex gap-4 mb-6">
+                                    {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
+                                        <label key={String(opt.v)} className={`flex items-center gap-2 px-5 py-3 rounded-xl border cursor-pointer transition-all font-medium text-sm ${
+                                            specialNeeds.has === opt.v
+                                                ? 'border-primary/20 bg-primary/10 text-blue-700 ring-1 ring-blue-500/30'
+                                                : 'border-border text-muted-foreground hover:border-primary/20'
+                                        }`}>
+                                            <input type="radio" name="specialNeeds" checked={specialNeeds.has === opt.v} onChange={() => setSpecialNeeds(s => ({ ...s, has: opt.v }))} className="sr-only" />
+                                            {opt.l}
+                                        </label>
+                                    ))}
+                                </div>
+                                {specialNeeds.has && (
+                                    <Field label="Please provide details *">
+                                        <textarea
+                                            id="sn-details"
+                                            value={specialNeeds.details}
+                                            onChange={e => { setSpecialNeeds(s => ({ ...s, details: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('sn-details'); return n; }); }}
+                                            onBlur={() => { if(!specialNeeds.details.trim()) setInvalidFields(f => new Set(f).add('sn-details')); }}
+                                            className={`${invalidFields.has('sn-details') ? inputErrCls : inputCls} min-h-[120px] resize-none`}
+                                            placeholder="Describe any relevant conditions, allergies, medications, or support needs..."
+                                        />
+                                        {invalidFields.has('sn-details') && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Details are required</p>}
+                                    </Field>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── STEP 3: Session Selection ───────────────────────────── */}
+                {step === 3 && (
+                    <div className="space-y-8 animate-in slide-in-from-right-4 duration-200">
+                        <div>
+                            <h2 className={sectionTitle}>Session Selection</h2>
+                            <div className="mb-6">
+                                <Field label="Requested Start Date">
+                                    <input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} />
+                                </Field>
+                            </div>
+
+                            {childList.map((c, i) => (
+                                <div key={`sess-${i}`} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
+                                    <h3 className="text-foreground font-semibold mb-4">{c.firstName || `Child ${i+1}`} — Preferred Sessions</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                         {(() => {
                                             const activeCentre = orgInfo?.centres?.find(c => c.id === selectedCentreId);
                                             let slotsToUse = orgInfo?.sessionSlots ?? SESSION_SLOTS;
                                             if (activeCentre?.sessionSlots) {
                                                 try { slotsToUse = JSON.parse(activeCentre.sessionSlots); } catch { /* ignore */ }
                                             }
-                                            return slotsToUse.map((slot: string) => (
-                                                <label key={slot} className="flex items-center gap-2.5 cursor-pointer group bg-secondary border border-border p-3 rounded-xl hover:border-primary/20 hover:bg-primary/10/50 transition-all">
-                                                    <input
-                                                        type="checkbox"
-                                                        id={`child-${i}-session-${slot}`}
-                                                        checked={c.sessions.includes(slot)}
-                                                        onChange={e => {
-                                                            const updated = e.target.checked
-                                                                ? [...c.sessions, slot]
-                                                                : c.sessions.filter(s => s !== slot);
+                                            return slotsToUse.map((slot: string) => {
+                                                const isSelected = c.sessions.includes(slot);
+                                                const [day, time] = slot.split(' ', 2).concat(slot.split(' ').slice(2).join(' '));
+                                                return (
+                                                    <div 
+                                                        key={slot}
+                                                        onClick={() => {
+                                                            const updated = isSelected
+                                                                ? c.sessions.filter(s => s !== slot)
+                                                                : [...c.sessions, slot];
                                                             updateChild(i, 'sessions', updated);
+                                                            setInvalidFields(f => { const n = new Set(f); n.delete(`child-sessions-${i}`); return n; });
                                                         }}
-                                                        className="w-4 h-4 rounded border-border accent-blue-600 cursor-pointer flex-shrink-0"
-                                                    />
-                                                    <span className="text-muted-foreground text-xs group-hover:text-foreground transition-colors break-words w-full">{slot}</span>
-                                                </label>
-                                            ));
+                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-sm' : 'border-slate-200 bg-card hover:border-blue-200 hover:bg-slate-50'}`}
+                                                    >
+                                                        {isSelected && (
+                                                            <div className="absolute top-2 right-2 animate-in zoom-in duration-200">
+                                                                <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                                            </div>
+                                                        )}
+                                                        <p className={`font-bold ${isSelected ? 'text-blue-900' : 'text-foreground'}`}>{day || slot.split(' ')[0]}</p>
+                                                        <p className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-muted-foreground'}`}>{slot.substring(day ? day.length + 1 : slot.split(' ')[0].length + 1)}</p>
+                                                    </div>
+                                                );
+                                            });
                                         })()}
                                     </div>
+                                    {invalidFields.has(`child-sessions-${i}`) && <p className="text-sm text-red-500 mt-3 animate-in slide-in-from-top-1">Please select at least one session</p>}
                                 </div>
-                                {/* ── Medical & Consents ───────────────────────────────────── */}
-                                <div className="border-t border-border mt-5 pt-5">
-                                    <h4 className="text-foreground font-semibold text-sm mb-4">Medical &amp; Safeguarding Information</h4>
-                                    
-                                    <div className="space-y-4">
-                                        <Field label="Dietary Requirements">
-                                            <input type="text" value={c.dietaryRequirements} onChange={e => updateChild(i, 'dietaryRequirements', e.target.value)} className={inputCls} placeholder="e.g. Vegetarian, Halal, None" />
-                                        </Field>
-                                        
-                                        <Field label="Medical Conditions">
-                                            <input type="text" value={c.medicalConditions} onChange={e => updateChild(i, 'medicalConditions', e.target.value)} className={inputCls} placeholder="e.g. Asthma, Diabetes, None" />
-                                        </Field>
-
-                                        <Field label="Allergies (comma separated)">
-                                            <input type="text" value={c.allergies.join(', ')} onChange={e => updateChild(i, 'allergies', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className={inputCls} placeholder="e.g. Peanuts, Dairy" />
-                                        </Field>
-                                        
-                                        <Field label="GP Name (Optional)">
-                                            <input type="text" value={c.gpName} onChange={e => updateChild(i, 'gpName', e.target.value)} className={inputCls} placeholder="Dr. Smith" />
-                                        </Field>
-                                        
-                                        <Field label="GP Phone (Optional)">
-                                            <input type="tel" value={c.gpPhone} onChange={e => updateChild(i, 'gpPhone', e.target.value)} className={inputCls} placeholder="020 8123 4567" />
-                                        </Field>
-
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium text-muted-foreground mb-3">Consents</p>
-                                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
-                                                <input type="checkbox" checked={c.photoConsent} onChange={e => updateChild(i, 'photoConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
-                                                <span className="text-muted-foreground text-sm">I consent to photos/videos being taken for marketing purposes</span>
-                                            </label>
-                                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border mb-2 hover:border-primary/20">
-                                                <input type="checkbox" checked={c.sunCreamConsent} onChange={e => updateChild(i, 'sunCreamConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
-                                                <span className="text-muted-foreground text-sm">I consent to the application of sun cream if required</span>
-                                            </label>
-                                            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card border border-border hover:border-primary/20">
-                                                <input type="checkbox" checked={c.firstAidConsent} onChange={e => updateChild(i, 'firstAidConsent', e.target.checked as any)} className="w-4 h-4 rounded accent-blue-600" />
-                                                <span className="text-muted-foreground text-sm">I consent to emergency first aid treatment</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {childList.length < 5 && (
-                            <button onClick={addChild} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
-                                + Add Another Child
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* ── STEP 2: Parents ─────────────────────────────────────── */}
-                {step === 2 && (
-                    <div>
-                        <h2 className={sectionTitle}>Parent / Carer Details</h2>
-                        {parentList.map((p, i) => (
-                            <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm">
-                                <h3 className="text-foreground font-semibold mb-4">Parent / Carer {i + 1}{i === 0 ? ' (Primary)' : ''}</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                    <Field label="First Name *">
-                                        <input id={`p-fn-${i}`} type="text" value={p.firstName} onChange={e => { updateParent(i, 'firstName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-fn-${i}`); return n; }); }} className={invalidFields.has(`p-fn-${i}`) ? inputErrCls : inputCls} placeholder="First name" />
-                                    </Field>
-                                    <Field label="Last Name *">
-                                        <input id={`p-ln-${i}`} type="text" value={p.lastName} onChange={e => { updateParent(i, 'lastName', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ln-${i}`); return n; }); }} className={invalidFields.has(`p-ln-${i}`) ? inputErrCls : inputCls} placeholder="Last name" />
-                                    </Field>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                    <Field label="Relationship *">
-                                        <select id={`p-rel-${i}`} value={p.relationship} onChange={e => { updateParent(i, 'relationship', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-rel-${i}`); return n; }); }} className={invalidFields.has(`p-rel-${i}`) ? inputErrCls : inputCls}>
-                                            <option value="">Select</option>
-                                            {RELATIONSHIPS.map(r => <option key={r} value={r.toLowerCase()}>{r}</option>)}
-                                        </select>
-                                    </Field>
-                                    <Field label="Phone Number *">
-                                        <input id={`p-ph-${i}`} type="tel" value={p.phone} onChange={e => { updateParent(i, 'phone', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-ph-${i}`); return n; }); }} className={invalidFields.has(`p-ph-${i}`) ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
-                                    </Field>
-                                </div>
-                                <div className="mb-4">
-                                    <Field label="Email Address *">
-                                        <input id={`p-em-${i}`} type="email" value={p.email} onChange={e => { updateParent(i, 'email', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-em-${i}`); return n; }); }} className={invalidFields.has(`p-em-${i}`) ? inputErrCls : inputCls} placeholder="email@example.com" />
-                                    </Field>
-                                </div>
-                                <div className="mb-4">
-                                    <Field label="Address Line 1 *">
-                                        <input id={`p-a1-${i}`} type="text" value={p.addressLine1} onChange={e => { updateParent(i, 'addressLine1', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-a1-${i}`); return n; }); }} className={invalidFields.has(`p-a1-${i}`) ? inputErrCls : inputCls} placeholder="Street address" />
-                                    </Field>
-                                </div>
-                                <div className="mb-4">
-                                    <Field label="Address Line 2">
-                                        <input id={`p-a2-${i}`} type="text" value={p.addressLine2} onChange={e => updateParent(i, 'addressLine2', e.target.value)} className={inputCls} placeholder="Flat, suite, etc. (optional)" />
-                                    </Field>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <Field label="City *">
-                                        <input id={`p-city-${i}`} type="text" value={p.city} onChange={e => { updateParent(i, 'city', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-city-${i}`); return n; }); }} className={invalidFields.has(`p-city-${i}`) ? inputErrCls : inputCls} placeholder="London" />
-                                    </Field>
-                                    <Field label="Postcode *">
-                                        <input id={`p-pc-${i}`} type="text" value={p.postcode} onChange={e => { updateParent(i, 'postcode', e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete(`p-pc-${i}`); return n; }); }} className={invalidFields.has(`p-pc-${i}`) ? inputErrCls : inputCls} placeholder="SE26 4AA" />
-                                    </Field>
-                                </div>
-                            </div>
-                        ))}
-                        <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl bg-card border border-border hover:border-primary/20 transition-colors shadow-sm">
-                            <input id="secondParent" type="checkbox" checked={secondParent} onChange={e => setSecondParent(e.target.checked)} className="w-4 h-4 rounded accent-blue-600" />
-                            <span className="text-muted-foreground text-sm">Add a second parent / carer</span>
-                        </label>
-                    </div>
-                )}
-
-                {/* ── STEP 3: Emergency Contact ───────────────────────────── */}
-                {step === 3 && (
-                    <div>
-                        <h2 className={sectionTitle}>Emergency Contact</h2>
-                        <p className="text-muted-foreground text-sm mb-6">This should be someone other than the parents listed above who we can contact in an emergency.</p>
-                        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-sm">
-                            <Field label="Full Name *">
-                                <input id="ec-name" type="text" value={emergency.name} onChange={e => { setEmergency(v => ({ ...v, name: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-name'); return n; }); }} className={invalidFields.has('ec-name') ? inputErrCls : inputCls} placeholder="Full name" />
-                            </Field>
-                            <Field label="Relationship to Child *">
-                                <input id="ec-rel" type="text" value={emergency.relationship} onChange={e => { setEmergency(v => ({ ...v, relationship: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-rel'); return n; }); }} className={invalidFields.has('ec-rel') ? inputErrCls : inputCls} placeholder="e.g. Grandparent, Aunt" />
-                            </Field>
-                            <Field label="Contact Number *">
-                                <input id="ec-phone" type="tel" value={emergency.phone} onChange={e => { setEmergency(v => ({ ...v, phone: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('ec-phone'); return n; }); }} className={invalidFields.has('ec-phone') ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
-                            </Field>
-                        </div>
-                    </div>
-                )}
-
-                {/* ── STEP 4: Funding — single choice ─────────────────────── */}
-                {step === 4 && (
-                    <div>
-                        <h2 className={sectionTitle}>Funding Information</h2>
-                        <p className="text-muted-foreground text-sm mb-6">All fees must be paid 1 month in advance. How will you be funding your child&apos;s place?</p>
-                        <div className="space-y-3">
-                            {FUNDING_OPTIONS.map(opt => (
-                                <label
-                                    key={opt.value}
-                                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                                        funding.type === opt.value
-                                            ? 'border-primary/20 bg-primary/10 ring-1 ring-blue-500/30'
-                                            : 'border-border bg-card hover:border-primary/20 hover:bg-primary/10/30 shadow-sm'
-                                    }`}
-                                >
-                                    <input
-                                        id={`fund-${opt.value}`}
-                                        type="radio"
-                                        name="funding"
-                                        checked={funding.type === opt.value}
-                                        onChange={() => setFunding(f => ({ ...f, type: opt.value }))}
-                                        className="w-4 h-4 accent-blue-600"
-                                    />
-                                    <span className="text-foreground text-sm font-medium">{opt.label}</span>
-                                </label>
                             ))}
-                            {funding.type === 'other' && (
-                                <div className="pl-2 pt-1">
-                                    <Field label="Please specify">
-                                        <input
-                                            id="fund-other"
-                                            type="text"
-                                            value={funding.other}
-                                            onChange={e => { setFunding(f => ({ ...f, other: e.target.value })); setInvalidFields(flds => { const n = new Set(flds); n.delete('fund-other'); return n; }); }}
-                                            className={invalidFields.has('fund-other') ? inputErrCls : inputCls}
-                                            placeholder="Describe your funding method"
-                                        />
-                                    </Field>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                )}
 
-                {/* ── STEP 5: Special Needs ───────────────────────────────── */}
-                {step === 5 && (
-                    <div>
-                        <h2 className={sectionTitle}>About Your Child</h2>
-                        <p className="text-muted-foreground text-sm mb-6">Please let us know of any special educational needs, medical conditions, or other information that may help us support your child.</p>
-                        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-                            <p className="text-muted-foreground text-sm font-medium mb-4">Does your child have any special needs or medical information we should know about?</p>
-                            <div className="flex gap-4 mb-6">
-                                {[{ v: false, l: 'No' }, { v: true, l: 'Yes' }].map(opt => (
-                                    <label key={String(opt.v)} className={`flex items-center gap-2 px-5 py-3 rounded-xl border cursor-pointer transition-all font-medium text-sm ${
-                                        specialNeeds.has === opt.v
-                                            ? 'border-primary/20 bg-primary/10 text-blue-700 ring-1 ring-blue-500/30'
-                                            : 'border-border text-muted-foreground hover:border-primary/20'
-                                    }`}>
-                                        <input type="radio" name="specialNeeds" checked={specialNeeds.has === opt.v} onChange={() => setSpecialNeeds(s => ({ ...s, has: opt.v }))} className="sr-only" />
-                                        {opt.l}
+                        <div>
+                            <h2 className={sectionTitle}>Funding Information</h2>
+                            <p className="text-muted-foreground text-sm mb-6">All fees must be paid 1 month in advance. How will you be funding your child's place?</p>
+                            <div className="space-y-3">
+                                {FUNDING_OPTIONS.map(opt => (
+                                    <label
+                                        key={opt.value}
+                                        className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                                            funding.type === opt.value
+                                                ? 'border-primary/20 bg-primary/10 ring-1 ring-blue-500/30'
+                                                : 'border-border bg-card hover:border-primary/20 hover:bg-primary/10/30 shadow-sm'
+                                        }`}
+                                    >
+                                        <input
+                                            id={`fund-${opt.value}`}
+                                            type="radio"
+                                            name="funding"
+                                            checked={funding.type === opt.value}
+                                            onChange={() => setFunding(f => ({ ...f, type: opt.value }))}
+                                            className="w-4 h-4 accent-blue-600"
+                                        />
+                                        <span className="text-foreground text-sm font-medium">{opt.label}</span>
                                     </label>
                                 ))}
+                                {funding.type === 'other' && (
+                                    <div className="pl-2 pt-1 animate-in slide-in-from-top-2">
+                                        <Field label="Please specify">
+                                            <input
+                                                id="fund-other"
+                                                type="text"
+                                                value={funding.other}
+                                                onChange={e => { setFunding(f => ({ ...f, other: e.target.value })); setInvalidFields(flds => { const n = new Set(flds); n.delete('fund-other'); return n; }); }}
+                                                onBlur={() => { if(!funding.other.trim()) setInvalidFields(f => new Set(f).add('fund-other')); }}
+                                                className={invalidFields.has('fund-other') ? inputErrCls : inputCls}
+                                                placeholder="Describe your funding method"
+                                            />
+                                            {invalidFields.has('fund-other') && <p className="text-sm text-red-500 mt-1 animate-in slide-in-from-top-1">Funding details are required</p>}
+                                        </Field>
+                                    </div>
+                                )}
                             </div>
-                            {specialNeeds.has && (
-                                <Field label="Please provide details *">
-                                    <textarea
-                                        id="sn-details"
-                                        value={specialNeeds.details}
-                                        onChange={e => { setSpecialNeeds(s => ({ ...s, details: e.target.value })); setInvalidFields(f => { const n = new Set(f); n.delete('sn-details'); return n; }); }}
-                                        className={`${invalidFields.has('sn-details') ? inputErrCls : inputCls} min-h-[120px] resize-none`}
-                                        placeholder="Describe any relevant conditions, allergies, medications, or support needs..."
-                                    />
-                                </Field>
-                            )}
                         </div>
                     </div>
                 )}
 
-                {/* ── STEP 6: Authorised Collectors ─────────────────────────── */}
-                {step === 6 && (
-                    <div>
-                        <h2 className={sectionTitle}>Authorised Collectors</h2>
-                        <p className="text-muted-foreground text-sm mb-6">Please list any individuals authorised to collect your child(ren) from the centre.</p>
-                        
-                        {authorisedCollectors.map((c, i) => (
-                            <div key={i} className="bg-card border border-border rounded-2xl p-6 mb-4 shadow-sm relative">
-                                <button onClick={() => setAuthorisedCollectors(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-destructive text-xs hover:text-destructive font-medium">Remove</button>
-                                <h3 className="text-foreground font-semibold mb-4">Collector {i + 1}</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                    <Field label="Full Name *">
-                                        <input id={`ac-name-${i}`} type="text" value={c.name} onChange={e => { const v = [...authorisedCollectors]; v[i].name = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-name-${i}`); return n; }); }} className={invalidFields.has(`ac-name-${i}`) ? inputErrCls : inputCls} placeholder="Full name" />
-                                    </Field>
-                                    <Field label="Relationship to Child *">
-                                        <input id={`ac-rel-${i}`} type="text" value={c.relationship} onChange={e => { const v = [...authorisedCollectors]; v[i].relationship = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-rel-${i}`); return n; }); }} className={invalidFields.has(`ac-rel-${i}`) ? inputErrCls : inputCls} placeholder="e.g. Grandparent" />
-                                    </Field>
-                                </div>
-                                <div className="mb-2">
-                                    <Field label="Phone Number *">
-                                        <input id={`ac-ph-${i}`} type="tel" value={c.phone} onChange={e => { const v = [...authorisedCollectors]; v[i].phone = e.target.value; setAuthorisedCollectors(v); setInvalidFields(f => { const n = new Set(f); n.delete(`ac-ph-${i}`); return n; }); }} className={invalidFields.has(`ac-ph-${i}`) ? inputErrCls : inputCls} placeholder="07xxx xxxxxx" />
-                                    </Field>
-                                </div>
-                            </div>
-                        ))}
-                        
-                        {authorisedCollectors.length < 3 && (
-                            <button onClick={() => setAuthorisedCollectors(prev => [...prev, { name: '', relationship: '', phone: '' }])} className="w-full py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary/20 hover:text-primary transition-colors text-sm font-medium">
-                                + Add Authorised Collector
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* ── STEP 7: Terms & Submit ──────────────────────────────── */}
-                {step === 7 && (
-                    <div>
+                {/* ── STEP 4: Review & Consent ─────────────────────── */}
+                {step === 4 && (
+                    <div className="animate-in slide-in-from-right-4 duration-200">
                         <h2 className={sectionTitle}>Review &amp; Submit</h2>
 
-                        {/* Summary */}
                         <div className="bg-card border border-border rounded-2xl p-5 mb-5 space-y-3 text-sm shadow-sm">
                             <div><span className="text-muted-foreground uppercase text-xs tracking-wide font-bold">Children</span>
                                 {childList.map((c, i) => <p key={i} className="text-foreground mt-1 font-medium">{c.firstName} {c.lastName} · {c.schoolYear}</p>)}
@@ -1038,7 +1080,6 @@ export default function RegisterPage() {
                             </div>}
                         </div>
 
-                        {/* T&Cs */}
                         {orgInfo?.registrationTerms && (
                             <div className="bg-card border border-border rounded-2xl p-5 mb-5 shadow-sm">
                                 <h3 className="text-foreground font-semibold text-sm mb-3">Terms &amp; Conditions</h3>
@@ -1049,7 +1090,7 @@ export default function RegisterPage() {
                         )}
 
                         <label className={`flex items-start gap-3 p-4 rounded-xl bg-card border cursor-pointer mb-5 hover:border-primary/20 transition-colors shadow-sm ${
-                            invalidFields.has('terms-agree') ? 'border-destructive/20 ring-1 ring-red-400/30' : 'border-border'
+                            invalidFields.has('terms-agree') ? 'border-destructive/20 ring-1 ring-red-400/30 bg-red-50/50' : 'border-border'
                         }`}>
                             <input
                                 id="terms-agree"
@@ -1058,20 +1099,22 @@ export default function RegisterPage() {
                                 onChange={e => { setTermsAgreed(e.target.checked); setInvalidFields(f => { const n = new Set(f); n.delete('terms-agree'); return n; }); }}
                                 className="w-4 h-4 mt-0.5 rounded flex-shrink-0 accent-blue-600"
                             />
-                            <span className="text-muted-foreground text-sm">I confirm that I have read and agree to the Terms and Conditions above, and that the information provided is accurate.</span>
+                            <span className="text-muted-foreground text-sm">I agree to the Terms of Service and confirm the information provided is accurate.</span>
                         </label>
 
-                        {/* Signature */}
-                        <div className="mb-5">
-                            <p className="text-foreground font-semibold text-sm mb-1">Parent / Carer Signature <span className="text-destructive">*</span></p>
-                            <p className="text-muted-foreground text-xs mb-3">By signing below you confirm that all information provided is accurate and that you agree to the terms above.</p>
-                            <SignaturePadWidget
-                                ref={signaturePadRef}
-                                onChange={val => { setSignature(val); setInvalidFields(f => { const n = new Set(f); n.delete('signature-pad'); return n; }); }}
-                                invalid={invalidFields.has('signature-pad')}
+                        <div className="mb-5 bg-card p-6 rounded-2xl border border-border shadow-sm">
+                            <p className="text-foreground font-semibold text-sm mb-1">Digital Signature <span className="text-destructive">*</span></p>
+                            <p className="text-muted-foreground text-xs mb-4">Type your full legal name to sign</p>
+                            <input 
+                                type="text"
+                                value={signature || ''}
+                                onChange={e => { setSignature(e.target.value); setInvalidFields(f => { const n = new Set(f); n.delete('signature-pad'); return n; }); }}
+                                onBlur={() => { if(!signature || !signature.trim()) setInvalidFields(f => new Set(f).add('signature-pad')); }}
+                                className={`${invalidFields.has('signature-pad') ? inputErrCls : inputCls} font-medium text-lg`}
+                                placeholder="Your full name"
                             />
                             {invalidFields.has('signature-pad') && (
-                                <p className="text-destructive text-xs mt-1.5">A signature is required to submit the form.</p>
+                                <p className="text-destructive text-sm mt-2 animate-in slide-in-from-top-1">A signature is required to submit the form.</p>
                             )}
                         </div>
 
@@ -1081,7 +1124,7 @@ export default function RegisterPage() {
                             id="submit-registration"
                             onClick={handleSubmit}
                             disabled={submitting}
-                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-primary-foreground active:bg-primary/80 text-primary-foreground text-foreground font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
+                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 text-foreground font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
                         >
                             {submitting ? (
                                 <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Submitting...</>
@@ -1089,7 +1132,6 @@ export default function RegisterPage() {
                         </button>
                     </div>
                 )}
-
                 {/* ── Navigation ─────────────────────────────────────────── */}
                 <div className="flex justify-between items-center mt-10 pb-4">
                     {step > 1 ? (

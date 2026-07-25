@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
 
 import ReassignCentreModal from './ReassignCentreModal';
-import { getAvatarGradient } from '@/components/ui/utils';
 
 interface BookingsTableProps {
     bookings: unknown[];
@@ -51,6 +50,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     const [isCancelling, setIsCancelling] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
     const [reassignTarget, setReassignTarget] = useState<string | null>(null);
+    const [selectedFlagsBooking, setSelectedFlagsBooking] = useState<any | null>(null);
     
     // Sort and bulk select state
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
@@ -234,15 +234,21 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     };
 
     const getStatusBadge = (status: string) => {
-        // DB enum: confirmed | cancelled | rescheduled | completed | pending | signed_up
-        // confirmed → Booked (blue), completed → Attended (violet), signed_up → Signed-up (emerald)
         const styles: Record<string, string> = {
-            confirmed:   'bg-success/10 text-success border-success/20',
-            completed:   'bg-success/10 text-success border-success/20',
-            signed_up:   'bg-primary/10 text-primary border-primary/20',
-            pending:     'bg-warning/10 text-warning border-warning/20',
-            cancelled:   'bg-destructive/10 text-destructive border-destructive/20',
-            rescheduled: 'bg-secondary text-muted-foreground border-border',
+            confirmed:   'bg-transparent text-foreground border-border',
+            completed:   'bg-transparent text-foreground border-border',
+            signed_up:   'bg-transparent text-foreground border-border',
+            pending:     'bg-transparent text-foreground border-border',
+            cancelled:   'bg-transparent text-muted-foreground border-border opacity-70',
+            rescheduled: 'bg-transparent text-muted-foreground border-border',
+        };
+        const dots: Record<string, string> = {
+            confirmed:   'bg-blue-500',
+            completed:   'bg-violet-500',
+            signed_up:   'bg-emerald-500',
+            pending:     'bg-amber-500',
+            cancelled:   'bg-slate-500',
+            rescheduled: 'bg-indigo-500',
         };
         const labels: Record<string, string> = {
             confirmed: 'Booked',
@@ -252,7 +258,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         const label = labels[status] ?? status;
 
         return (
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${styles[status] || styles.pending}`}>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${styles[status] || styles.pending}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${dots[status] || dots.pending}`} />
                 {label}
             </span>
         );
@@ -514,11 +521,12 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                     <colgroup>
                         <col className="w-12" />          {/* checkbox */}
                         <col className="w-36" />          {/* date & time */}
-                        <col />                           {/* student — flex, takes remaining */}
+                        <col className="flex-1 min-w-[200px]" /> {/* student */}
+                        <col className="w-24" />          {/* flags */}
                         <col className="w-40" />          {/* session type */}
                         <col className="w-44" />          {/* centre */}
                         <col className="w-28" />          {/* status */}
-                        <col className="w-16" />          {/* actions */}
+                        <col className="w-28" />          {/* actions */}
                     </colgroup>
                     <thead>
                         <tr className="border-b border-border">
@@ -555,6 +563,9 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'student' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
                                     </div>
                                 </div>
+                            </th>
+                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                                Flags
                             </th>
                             <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                                 Session Type
@@ -613,7 +624,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                 </td>
                                 <td className="px-4 py-3.5">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${getAvatarGradient(getStudentList(booking).first)} flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0`}>
+                                        <div className={`w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 text-sm font-bold shadow-sm flex-shrink-0`}>
                                             {getStudentInitials(booking)}
                                         </div>
                                         <div className="flex items-center gap-2 min-w-0">
@@ -654,55 +665,30 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     </div>
                                                 );
                                             })()}
-                                            {hasMedicalNote(booking) && (
-                                                <div className="relative group/tooltip flex items-center outline-none">
-                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 cursor-help shadow-sm">
-                                                        <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
-                                                    </div>
-                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                        <div className="font-bold text-destructive mb-1 border-b border-border pb-1 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5"/>Medical / Allergy Alert</div>
-                                                        {getMedicalNotesContent(booking)}
-                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {hasSafeguardingNote(booking) && (
-                                                <div className="relative group/tooltip flex items-center outline-none">
-                                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 cursor-help shadow-sm">
-                                                        <Shield className="w-3.5 h-3.5 text-primary" />
-                                                    </div>
-                                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-56 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[60] whitespace-pre-wrap leading-relaxed font-medium">
-                                                        <div className="font-bold text-primary mb-1 border-b border-border pb-1 flex items-center gap-1.5"><Shield className="w-3.5 h-3.5"/>Safeguarding Alert</div>
-                                                        {getSafeguardingNotesContent(booking)}
-                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover"></div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {(booking.parent?.email || booking.parent?.phone) && (
-                                                <div className="flex items-center gap-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                                    {booking.parent.email && (
-                                                        <a
-                                                            href={`mailto:${booking.parent.email}`}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                                            title={`Email ${booking.parent.firstName}`}
-                                                        >
-                                                            <Mail className="w-3.5 h-3.5" />
-                                                        </a>
-                                                    )}
-                                                    {booking.parent.phone && (
-                                                        <a
-                                                            href={`tel:${booking.parent.phone}`}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                                            title={`Call ${booking.parent.firstName}`}
-                                                        >
-                                                            <Phone className="w-3.5 h-3.5" />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            )}
                                         </div>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                    <div className="flex items-center gap-1.5">
+                                        {hasMedicalNote(booking) && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                                className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors shadow-sm"
+                                            >
+                                                <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+                                            </button>
+                                        )}
+                                        {hasSafeguardingNote(booking) && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                                className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
+                                            >
+                                                <Shield className="w-3.5 h-3.5 text-primary" />
+                                            </button>
+                                        )}
+                                        {!hasMedicalNote(booking) && !hasSafeguardingNote(booking) && (
+                                            <span className="text-xs text-muted-foreground/50">-</span>
+                                        )}
                                     </div>
                                 </td>
                                 <td className="px-4 py-3.5">
@@ -720,17 +706,42 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     {getStatusBadge(booking.status)}
                                 </td>
                                 <td className="px-6 py-3.5 text-right">
-                                    <div className="relative inline-block">
-                                        <button
-                                            suppressHydrationWarning
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
-                                            }}
-                                            className="p-2 hover:bg-secondary rounded-xl transition-colors"
-                                        >
-                                            <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                        </button>
+                                    <div className="flex items-center justify-end gap-1">
+                                        {(booking.parent?.email || booking.parent?.phone) && (
+                                            <div className="flex items-center gap-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                                {booking.parent.email && (
+                                                    <a
+                                                        href={`mailto:${booking.parent.email}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                                                        title={`Email ${booking.parent.firstName}`}
+                                                    >
+                                                        <Mail className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                                {booking.parent.phone && (
+                                                    <a
+                                                        href={`tel:${booking.parent.phone}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                                                        title={`Call ${booking.parent.firstName}`}
+                                                    >
+                                                        <Phone className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="relative inline-block">
+                                            <button
+                                                suppressHydrationWarning
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
+                                                }}
+                                                className="p-2 hover:bg-secondary rounded-xl transition-colors"
+                                            >
+                                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                                            </button>
  
                                         {activeDropdown === booking.id && (
                                             <>
@@ -854,7 +865,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         className="w-4 h-4 rounded appearance-none border border-primary/40 bg-background checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
                                     />
                                 </div>
-                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${getAvatarGradient(getStudentList(booking).first)} flex items-center justify-center text-white text-sm font-bold`}>
+                                <div className={`w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 text-sm font-bold`}>
                                     {getStudentInitials(booking)}
                                 </div>
                                 <div>
@@ -866,52 +877,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         >
                                             {getStudentNames(booking)}
                                         </Link>
-                                        {hasMedicalNote(booking) && (
-                                            <div className="relative group/tooltip flex items-center">
-                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-destructive/10 border border-destructive/20">
-                                                    <AlertTriangle className="w-3 h-3 text-destructive" />
-                                                </div>
-                                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed">
-                                                    <div className="font-bold text-destructive mb-1">Medical Alert</div>
-                                                    {getMedicalNotesContent(booking)}
-                                                    <div className="absolute top-full left-4 border-4 border-transparent border-t-border"></div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {hasSafeguardingNote(booking) && (
-                                            <div className="relative group/tooltip flex items-center">
-                                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 border border-primary/20">
-                                                    <Shield className="w-3 h-3 text-primary" />
-                                                </div>
-                                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-popover border border-border text-foreground text-xs rounded-xl shadow-xl z-[60] whitespace-pre-wrap leading-relaxed">
-                                                    <div className="font-bold text-primary mb-1">Safeguarding Alert</div>
-                                                    {getSafeguardingNotesContent(booking)}
-                                                    <div className="absolute top-full left-4 border-4 border-transparent border-t-border"></div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {(booking.parent?.email || booking.parent?.phone) && (
-                                            <div className="flex items-center gap-1.5 ml-1">
-                                                {booking.parent.email && (
-                                                    <a 
-                                                        href={`mailto:${booking.parent.email}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="p-1 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                                    >
-                                                        <Mail className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                                {booking.parent.phone && (
-                                                    <a 
-                                                        href={`tel:${booking.parent.phone}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="p-1 hover:bg-secondary rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                                    >
-                                                        <Phone className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                            </div>
-                                        )}
                                     </div>
                                     <p className="text-xs text-muted-foreground font-medium mt-0.5">
                                         {booking.centre?.name}
@@ -1002,17 +967,39 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 mb-3 pl-8">
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <CalendarIcon className="w-4 h-4 text-muted-foreground/60" />
-                                {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
-                            </div>
-                            <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                                <Clock className="w-4 h-4 text-muted-foreground/60 mt-0.5" />
-                                <div className="flex flex-col gap-0.5">
-                                    <span>{booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}</span>
+                            <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+                                <span className="font-semibold text-foreground/80">{booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}</span>
+                                <div className="flex items-center gap-1.5">
+                                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                    {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                    {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
                                 </div>
                             </div>
                         </div>
+
+                        {(hasMedicalNote(booking) || hasSafeguardingNote(booking)) && (
+                            <div className="flex items-center gap-2 mb-3 pl-8">
+                                {hasMedicalNote(booking) && (
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors shadow-sm"
+                                    >
+                                        <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+                                    </button>
+                                )}
+                                {hasSafeguardingNote(booking) && (
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
+                                    >
+                                        <Shield className="w-3.5 h-3.5 text-primary" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex mt-3 pl-8">
                             <Link
@@ -1034,40 +1021,41 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
             }`}
         >
-            <div className="bg-popover/90 backdrop-blur-md border border-border shadow-xl rounded-2xl p-2 px-3 flex items-center gap-4 mx-4">
-                <div className="pl-2 pr-4 py-2 border-r border-border flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/30">
-                        {selectedBookings.size}
+            <div className="bg-popover/90 backdrop-blur-md border border-border shadow-xl rounded-2xl p-2 px-3 flex items-center gap-4 mx-4 w-full max-w-2xl justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="pl-2 pr-4 py-2 border-r border-border flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/30">
+                            {selectedBookings.size}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-x-auto">
+                        <button
+                            onClick={() => handleBulkStatus('completed')}
+                            disabled={isProcessingBulk}
+                            title="Marks selected bookings as attended (applies to all children in each booking)"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
+                        >
+                            {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
+                            <span className="hidden sm:inline">Mark as</span> Attended
+                        </button>
+                        <button
+                            onClick={() => handleBulkStatus('signed_up')}
+                            disabled={isProcessingBulk}
+                            className="flex items-center gap-2 px-4 py-2 bg-success/10 hover:bg-success/20 text-success rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
+                        >
+                            {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                            <span className="hidden sm:inline">Mark</span> Signed-up
+                        </button>
                     </div>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pr-1">
-                    <button
-                        onClick={() => handleBulkStatus('completed')}
-                        disabled={isProcessingBulk}
-                        title="Marks selected bookings as attended (applies to all children in each booking)"
-                        className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
-                    >
-                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
-                        Mark as Attended
-                    </button>
-                    <button
-                        onClick={() => handleBulkStatus('signed_up')}
-                        disabled={isProcessingBulk}
-                        className="flex items-center gap-2 px-4 py-2 bg-success/10 hover:bg-success/20 text-success rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
-                    >
-                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                        Mark Signed-up
-                    </button>
-                    <div className="w-px h-6 bg-border/30 mx-1"></div>
-                    <button
-                        onClick={() => setConfirmBulkDelete(true)}
-                        disabled={isProcessingBulk}
-                        className="flex items-center gap-2 px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
-                    >
-                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        Delete
-                    </button>
-                </div>
+                <button
+                    onClick={() => setConfirmBulkDelete(true)}
+                    disabled={isProcessingBulk}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
+                >
+                    {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Delete
+                </button>
             </div>
         </div>
 
@@ -1102,6 +1090,45 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                         >
                             <Trash2 className="w-4 h-4" /> Delete All
                         </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Side Panel for Flags */}
+        {selectedFlagsBooking && (
+            <div className="fixed inset-0 z-[300] flex justify-end bg-black/40 backdrop-blur-sm" onClick={() => setSelectedFlagsBooking(null)}>
+                <div 
+                    className="w-full max-w-sm h-full bg-background border-l border-border shadow-2xl p-6 flex flex-col animate-in slide-in-from-right duration-300"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+                        <h2 className="text-lg font-bold text-foreground">Important Notes</h2>
+                        <button onClick={() => setSelectedFlagsBooking(null)} className="p-2 hover:bg-secondary rounded-full transition-colors">
+                            <X className="w-5 h-5 text-muted-foreground" />
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                        {hasMedicalNote(selectedFlagsBooking) && (
+                            <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-2xl">
+                                <div className="flex items-center gap-2 text-destructive font-bold mb-2">
+                                    <AlertTriangle className="w-4 h-4" /> Medical / Allergy Alert
+                                </div>
+                                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                                    {getMedicalNotesContent(selectedFlagsBooking)}
+                                </div>
+                            </div>
+                        )}
+                        {hasSafeguardingNote(selectedFlagsBooking) && (
+                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                                <div className="flex items-center gap-2 text-primary font-bold mb-2">
+                                    <Shield className="w-4 h-4" /> Safeguarding Alert
+                                </div>
+                                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                                    {getSafeguardingNotesContent(selectedFlagsBooking)}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

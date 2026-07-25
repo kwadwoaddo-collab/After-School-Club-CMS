@@ -256,61 +256,10 @@ export default async function BookingsPage(props: {
             </HeaderPortal>
 
             <HeaderPortal targetId="header-middle">
-                {/* Segmented Status Tabs — Combines Metrics and filtering inside a single clean row */}
-                <div className="flex bg-secondary/60 p-1 rounded-2xl border border-border self-start overflow-x-auto max-w-full scrollbar-none gap-1">
-                    {[
-                        { value: 'all', label: 'All', count: totalAggCount },
-                        { value: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed, color: 'text-blue-400 bg-blue-500/10' },
-                        { value: 'pending', label: 'Pending', count: statusCounts.pending, color: 'text-amber-400 bg-amber-500/10' },
-                        { value: 'completed', label: 'Attended', count: statusCounts.completed, color: 'text-violet-400 bg-violet-500/10' },
-                        { value: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled, color: 'text-slate-400 bg-slate-500/10' },
-                        { value: 'rescheduled', label: 'Rescheduled', count: statusCounts.rescheduled, color: 'text-indigo-400 bg-indigo-500/10' },
-                    ].map((tab) => {
-                        const isActive = (searchParams.status || 'all') === tab.value;
-                        const query = new URLSearchParams();
-                        if (searchParams.search) query.set('search', searchParams.search);
-                        if (searchParams.centre) query.set('centre', searchParams.centre);
-                        if (searchParams.from) query.set('from', searchParams.from);
-                        if (searchParams.to) query.set('to', searchParams.to);
-                        if (tab.value !== 'all') query.set('status', tab.value);
-                        
-                        const href = `/dashboard/bookings${query.toString() ? `?${query.toString()}` : ''}`;
-                        
-                        return (
-                            <Link
-                                key={tab.value}
-                                href={href}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer active:scale-95 duration-150 ${
-                                    isActive
-                                        ? 'bg-card text-foreground shadow-sm border border-border'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                                }`}
-                            >
-                                <span>{tab.label}</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black leading-none ${
-                                    isActive ? 'bg-primary text-primary-foreground shadow-sm' : `${tab.color || 'bg-secondary text-muted-foreground'}`
-                                }`}>
-                                    {tab.count}
-                                </span>
-                            </Link>
-                        );
-                    })}
-                </div>
             </HeaderPortal>
 
             <HeaderPortal targetId="header-right-actions">
-                {/* Today quick filter */}
-                <Link
-                    href={isToday ? '/dashboard/bookings' : '/dashboard/bookings?today=true'}
-                    className={`flex items-center gap-2 px-4 py-2 bg-card hover:bg-secondary border rounded-xl text-xs font-bold transition-all active:scale-95 duration-100 ${
-                        isToday
-                            ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
-                            : 'border-border text-foreground'
-                    }`}
-                >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Today</span>
-                </Link>
+
                 <Link
                     href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
                     className="flex items-center gap-2 px-4 py-2 bg-card hover:bg-secondary border border-border rounded-xl text-xs font-bold text-foreground transition-all active:scale-95 duration-100"
@@ -330,17 +279,28 @@ export default async function BookingsPage(props: {
             {/* Filters — sticky so it stays visible while scrolling through bookings */}
             <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
                 <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
-                    <BookingsFilters centres={orgCentres} resultsCount={totalRecords} />
+                    <BookingsFilters 
+                        centres={orgCentres} 
+                        resultsCount={totalRecords} 
+                        statusCounts={statusCounts} 
+                        totalAggCount={totalAggCount} 
+                    />
                 </Suspense>
             </div>
 
             {/* Bookings Table */}
             <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />
 
-            {/* Server-Side Pagination Controls */}
-            {totalPages > 1 && (
-                <Pagination totalPages={totalPages} currentPage={currentPage} />
-            )}
+            {/* Server-Side Pagination Controls (Sticky Footer) */}
+            <div className="sticky bottom-0 z-30 bg-background/90 backdrop-blur-md border-t border-border p-4 -mx-4 sm:-mx-8 sm:px-8 mt-auto shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                {totalPages > 1 ? (
+                    <Pagination totalPages={totalPages} currentPage={currentPage} />
+                ) : (
+                    <div className="text-center text-xs font-medium text-muted-foreground">
+                        Showing all {totalRecords} booking{totalRecords !== 1 ? 's' : ''}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
