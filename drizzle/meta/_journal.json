@@ -141,6 +141,20 @@
       "when": 1784807283025,
       "tag": "0019_gigantic_dormammu",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784990577396,
+      "tag": "0020_tricky_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784990836005,
+      "tag": "0021_add_portal_notifications",
+      "breakpoints": true
     }
   ]
 }
