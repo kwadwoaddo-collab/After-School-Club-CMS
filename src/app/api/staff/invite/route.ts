@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { users, staffInvites, organisations, centres, centreMemberships } from '@/db/schema';
+import { users, staffInvites, organisations, centres, centreMemberships, orgMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { emailService } from '@/lib/services/email';
@@ -92,31 +92,32 @@ export async function POST(request: NextRequest) {
 
         if (existingUser) {
             // Already a member of THIS org — block
-            if (existingUser.organisationId === session.user.organisationId) {
+            const alreadyMember = await db.query.orgMemberships.findFirst({
+                where: and(
+                    eq(orgMemberships.userId, existingUser.id),
+                    eq(orgMemberships.organisationId, session.user.organisationId)
+                ),
+            });
+            if (alreadyMember) {
                 return NextResponse.json(
                     { error: 'This person is already a member of your organisation' },
                     { status: 409 }
                 );
             }
 
-            // Exists in a different org — move them across
-            const fullName = `${firstName} ${lastName}`.trim();
+            // Exists in another org — add membership to this org (they keep their existing orgs)
+            await db.insert(orgMemberships).values({
+                userId: existingUser.id,
+                organisationId: session.user.organisationId,
+                role,
+            }).onConflictDoNothing();
+
+            // Also set this as their active org so they land here after accepting invite
             await db.update(users)
-                .set({
-                    organisationId: session.user.organisationId,
-                    role,
-                    firstName,
-                    lastName,
-                    name: fullName,
-                })
+                .set({ organisationId: session.user.organisationId, role })
                 .where(eq(users.id, existingUser.id));
 
             invitedUserId = existingUser.id;
-
-            // Remove old centre memberships and assign new one if provided
-            if (centreId) {
-                await db.delete(centreMemberships).where(eq(centreMemberships.userId, existingUser.id));
-            }
         } else {
             // New user — create their account (no password, magic link only)
             const fullName = `${firstName} ${lastName}`.trim();
@@ -141,6 +142,13 @@ export async function POST(request: NextRequest) {
                 role,
             }).onConflictDoNothing();
         }
+
+        // Ensure org membership row exists (idempotent for new users too)
+        await db.insert(orgMemberships).values({
+            userId: invitedUserId,
+            organisationId: session.user.organisationId,
+            role,
+        }).onConflictDoNothing();
 
 
         // Generate invite token (magic link)

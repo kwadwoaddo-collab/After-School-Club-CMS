@@ -30,11 +30,14 @@ import {
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
+import OrgSwitcher from '@/components/dashboard/OrgSwitcher';
 
 interface SidebarProps {
     userName?: string;
     userRole?: string;
     orgName?: string;
+    orgId?: string;
+    userOrgs?: { id: string; name: string; slug: string; role: string }[];
     centres?: { id: string; name: string }[];
 }
 
@@ -52,7 +55,7 @@ const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
     TUTOR: [],
 };
 
-export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'AfterSchool' }: SidebarProps) {
+export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'AfterSchool', orgId, userOrgs = [] }: SidebarProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
     const router = useRouter();
@@ -174,25 +177,13 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                         </button>
                     )}
 
-                    {/* Logo */}
-                    <div className={`flex items-center gap-3 mb-6 overflow-hidden px-2 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
-                        <div
-                            title={collapsed ? orgName : undefined}
-                            className={`
-                            w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0
-                            ring-2 ring-primary/20 shadow-md shadow-primary/10
-                            transition-all duration-300
-                        `}>
-                            {orgName.slice(0, 2).toUpperCase()}
-                        </div>
-                        {!collapsed && (
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-extrabold tracking-tight truncate leading-tight text-foreground">
-                                    {orgName}
-                                </span>
-                            </div>
-                        )}
-                    </div>
+                    {/* Org Switcher / Logo */}
+                    <OrgSwitcher
+                        currentOrgId={orgId}
+                        currentOrgName={orgName}
+                        userOrgs={userOrgs}
+                        collapsed={collapsed}
+                    />
 
 
                     {/* Active Centre Selector — dropdown uses position:fixed so it renders in the

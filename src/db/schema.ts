@@ -187,6 +187,21 @@ export const staffInvites = pgTable('staff_invites', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ==================== ORG MEMBERSHIPS (Multi-tenancy) ====================
+// Maps users to organisations with a role — a user can belong to many orgs.
+// users.organisationId remains as the "currently active org" pointer.
+export const orgMemberships = pgTable('org_memberships', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  role: userRoleEnum('role').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueMembership: unique().on(table.userId, table.organisationId),
+  userIdx: index('org_memberships_user_idx').on(table.userId),
+  orgIdx: index('org_memberships_org_idx').on(table.organisationId),
+}));
+
 // ==================== PARENTS & CHILDREN ====================
 export const parents = pgTable('parents', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -785,10 +800,22 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   bookings: many(bookings),
   memberships: many(centreMemberships),
+  orgMemberships: many(orgMemberships),
   auditEvents: many(auditEvents),
   accounts: many(accounts),
   sessions: many(sessions),
   studentNotes: many(studentNotes),
+}));
+
+export const orgMembershipsRelations = relations(orgMemberships, ({ one }) => ({
+  user: one(users, {
+    fields: [orgMemberships.userId],
+    references: [users.id],
+  }),
+  organisation: one(organisations, {
+    fields: [orgMemberships.organisationId],
+    references: [organisations.id],
+  }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({

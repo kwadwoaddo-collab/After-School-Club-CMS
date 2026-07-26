@@ -72,6 +72,8 @@ export default async function DashboardLayout({
         // Non-critical — fall back to default
     }
 
+    const userOrgs = ((session.user as any).userOrgs ?? []) as { id: string; name: string; slug: string; role: string }[];
+
     // Resolve user's accessible centres and selected centre
     const orgCentres = await getUserAccessibleCentres(session.user.id);
     const validCentreIds = orgCentres.map(c => c.id);
@@ -91,6 +93,8 @@ export default async function DashboardLayout({
                             userName={session.user?.name || undefined}
                             userRole={userRole}
                             orgName={orgName}
+                            orgId={organisationId}
+                            userOrgs={userOrgs}
                             centres={orgCentres}
                         />
 

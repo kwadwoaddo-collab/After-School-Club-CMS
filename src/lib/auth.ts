@@ -12,7 +12,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/db';
-import { users, accounts, sessions, verificationTokens } from '@/db/schema';
+import { users, accounts, sessions, verificationTokens, orgMemberships, organisations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
@@ -195,6 +195,25 @@ const nextAuthResult = NextAuth({
           }
         }
 
+        // Load all org memberships for this user
+        if (user.id) {
+          try {
+            const memberships = await db
+              .select({
+                id: orgMemberships.organisationId,
+                name: organisations.name,
+                slug: organisations.slug,
+                role: orgMemberships.role,
+              })
+              .from(orgMemberships)
+              .innerJoin(organisations, eq(orgMemberships.organisationId, organisations.id))
+              .where(eq(orgMemberships.userId, user.id as string));
+            token.userOrgs = memberships;
+          } catch {
+            token.userOrgs = [];
+          }
+        }
+
         return token;
       }
 
@@ -219,6 +238,7 @@ const nextAuthResult = NextAuth({
         (session as any).user.role = token.role;
         (session as any).user.organisationId = token.organisationId;
         (session as any).user.needsOnboarding = token.needsOnboarding;
+        (session as any).user.userOrgs = token.userOrgs ?? [];
       }
       return session;
     },
@@ -253,6 +273,7 @@ export interface SessionWithOrg {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    userOrgs?: { id: string; name: string; slug: string; role: string }[];
   };
   expires: string;
 }
