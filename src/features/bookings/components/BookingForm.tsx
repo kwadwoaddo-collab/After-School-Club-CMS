@@ -534,7 +534,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
     }
 
     return (
-        <div>
+        <div className="light">
             {brandStyles}
 
             {/* Top Navigation Link */}
