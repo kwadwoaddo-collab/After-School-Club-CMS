@@ -69,7 +69,7 @@ function ErrorAlert({ message, onDismiss }: { message: string; onDismiss: () => 
     );
 }
 
-const SUBJECTS = ['Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech', 'Other'] as const;
+const SUBJECTS = ['Maths', 'English', 'Science', '11+', 'Stem Activities', 'Childcare'] as const;
 const DEFAULT_DURATION = 60;
 const SCHOOL_YEARS = ['Reception', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'];
 
