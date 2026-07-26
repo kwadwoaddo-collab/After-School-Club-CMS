@@ -66,19 +66,6 @@ export async function POST(request: NextRequest) {
 
         const { email, role, firstName, lastName, centreId } = parsed.data;
 
-
-        // Check if user already exists
-        const existingUser = await db.query.users.findFirst({
-            where: eq(users.email, email),
-        });
-
-        if (existingUser) {
-            return NextResponse.json(
-                { error: 'A user with this email already exists' },
-                { status: 409 }
-            );
-        }
-
         // Validate centreId belongs to this org before any writes (prevents cross-org injection)
         if (centreId) {
             const centre = await db.query.centres.findFirst({
@@ -96,26 +83,65 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Create the user account immediately (no password - magic link only)
-        const fullName = `${firstName} ${lastName}`.trim();
-        const [newUser] = await db.insert(users).values({
-            email,
-            firstName,
-            lastName,
-            name: fullName,
-            role,
-            organisationId: session.user.organisationId,
-            emailVerified: null,
-        }).returning({ id: users.id });
+        // Check if user already exists
+        const existingUser = await db.query.users.findFirst({
+            where: eq(users.email, email),
+        });
 
-        // If a centre was selected, assign the user to it immediately
-        if (centreId && newUser?.id) {
+        let invitedUserId: string;
+
+        if (existingUser) {
+            // Already a member of THIS org — block
+            if (existingUser.organisationId === session.user.organisationId) {
+                return NextResponse.json(
+                    { error: 'This person is already a member of your organisation' },
+                    { status: 409 }
+                );
+            }
+
+            // Exists in a different org — move them across
+            const fullName = `${firstName} ${lastName}`.trim();
+            await db.update(users)
+                .set({
+                    organisationId: session.user.organisationId,
+                    role,
+                    firstName,
+                    lastName,
+                    name: fullName,
+                })
+                .where(eq(users.id, existingUser.id));
+
+            invitedUserId = existingUser.id;
+
+            // Remove old centre memberships and assign new one if provided
+            if (centreId) {
+                await db.delete(centreMemberships).where(eq(centreMemberships.userId, existingUser.id));
+            }
+        } else {
+            // New user — create their account (no password, magic link only)
+            const fullName = `${firstName} ${lastName}`.trim();
+            const [newUser] = await db.insert(users).values({
+                email,
+                firstName,
+                lastName,
+                name: fullName,
+                role,
+                organisationId: session.user.organisationId,
+                emailVerified: null,
+            }).returning({ id: users.id });
+
+            invitedUserId = newUser.id;
+        }
+
+        // If a centre was selected, assign the user to it
+        if (centreId && invitedUserId) {
             await db.insert(centreMemberships).values({
                 centreId,
-                userId: newUser.id,
+                userId: invitedUserId,
                 role,
-            });
+            }).onConflictDoNothing();
         }
+
 
         // Generate invite token (magic link)
         const token = crypto.randomBytes(32).toString('hex');
