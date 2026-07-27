@@ -10,6 +10,7 @@ interface OrganisationInfoFormProps {
     org: {
         name: string;
         slug: string;
+        subdomain?: string | null;
         contactEmail?: string | null;
         contactPhone?: string | null;
         address?: string | null;
@@ -28,6 +29,11 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
     const [slug, setSlug] = useState(org.slug);
     const [showConfirmSlug, setShowConfirmSlug] = useState(false);
     const [pendingSlug, setPendingSlug] = useState('');
+
+    const [isEditingSubdomain, setIsEditingSubdomain] = useState(false);
+    const [subdomain, setSubdomain] = useState(org.subdomain || '');
+    const [subdomainSaving, setSubdomainSaving] = useState(false);
+    const [subdomainError, setSubdomainError] = useState<string | null>(null);
  
     const [isEditingContact, setIsEditingContact] = useState(false);
     const [contactEmail, setContactEmail] = useState(org.contactEmail || '');
@@ -87,6 +93,19 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             toast({ title: 'Error', message: e.message || 'Failed to update slug', variant: 'error' });
         }
         finally { setSaving(false); setShowConfirmSlug(false); }
+    };
+
+    const handleSaveSubdomain = async () => {
+        setSubdomainSaving(true); setSubdomainError(null);
+        try {
+            await patchOrg({ subdomain: subdomain.trim() || '' });
+            setIsEditingSubdomain(false);
+            toast({ title: 'Success', message: 'Subdomain updated!', variant: 'success' });
+            router.refresh();
+        } catch (e) {
+            setSubdomainError(e.message);
+            toast({ title: 'Error', message: e.message || 'Failed to update subdomain', variant: 'error' });
+        } finally { setSubdomainSaving(false); }
     };
  
     const handleSaveContact = async () => {
@@ -181,6 +200,64 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     )}
                     <p className="text-[10px] text-muted-foreground/60 mt-1">Used in your sharing links</p>
                 </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Subdomain */}
+            <div>
+                <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        Your Subdomain
+                        <span className="text-[10px] bg-primary/10 text-primary px-1 py-0.5 rounded border border-primary/20">Routing</span>
+                    </label>
+                    {!isEditingSubdomain && (
+                        <button onClick={() => setIsEditingSubdomain(true)}
+                            className="p-1.5 text-muted-foreground/60 hover:text-primary transition-all rounded-lg">
+                            <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                </div>
+                {subdomainError && (
+                    <p className="text-xs text-red-500 mb-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {subdomainError}
+                    </p>
+                )}
+                {isEditingSubdomain ? (
+                    <div className="flex gap-2 items-center">
+                        <div className="flex-1 flex items-center bg-secondary/60 border border-border rounded-xl overflow-hidden">
+                            <input
+                                type="text"
+                                value={subdomain}
+                                onChange={e => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                placeholder="yourclub"
+                                className="flex-1 px-3 py-2 bg-transparent text-sm text-foreground font-mono focus:outline-none"
+                                autoFocus disabled={subdomainSaving}
+                            />
+                            <span className="text-xs text-muted-foreground pr-3 font-mono">.sprintscaleit.co.uk</span>
+                        </div>
+                        <button onClick={handleSaveSubdomain} disabled={subdomainSaving}
+                            className="p-2 bg-primary text-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
+                            <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => { setIsEditingSubdomain(false); setSubdomain(org.subdomain || ''); setSubdomainError(null); }}
+                            className="p-2 text-muted-foreground hover:bg-secondary/60 rounded-xl transition-all">
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="bg-secondary/60 rounded-xl px-3 py-2.5">
+                        {org.subdomain ? (
+                            <a href={`https://${org.subdomain}.sprintscaleit.co.uk`} target="_blank" rel="noopener noreferrer"
+                                className="text-sm font-mono font-bold text-primary hover:underline">
+                                {org.subdomain}.sprintscaleit.co.uk
+                            </a>
+                        ) : (
+                            <span className="text-xs text-muted-foreground/60 italic">Not set — click edit to add one</span>
+                        )}
+                    </div>
+                )}
+                <p className="text-[10px] text-muted-foreground/60 mt-1">Staff can bookmark this URL instead of sprintscaleit.co.uk</p>
             </div>
 
             <div className="border-t border-border" />

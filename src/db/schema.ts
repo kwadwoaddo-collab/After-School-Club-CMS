@@ -71,6 +71,9 @@ export const organisations = pgTable('organisations', {
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+
+  // Per-org subdomain for white-label routing (e.g. 'lewisham' → lewisham.sprintscaleit.co.uk)
+  subdomain: varchar('subdomain', { length: 63 }).unique(),
 });
 
 export const centres = pgTable('centres', {
@@ -94,6 +97,8 @@ export const centres = pgTable('centres', {
   billingPhone: varchar('billing_phone', { length: 20 }),
   billingEmail: varchar('billing_email', { length: 255 }),
   signatureUrl: varchar('signature_url', { length: 500 }),
+  // Per-centre subdomain for white-label routing (e.g. 'dagenham' → dagenham.sprintscaleit.co.uk)
+  subdomain: varchar('subdomain', { length: 63 }).unique(),
   // approvalDate: added in migration 0007 — uncomment after running: ALTER TABLE centres ADD COLUMN approval_date varchar(100)
   // approvalDate: varchar('approval_date', { length: 100 }),
 

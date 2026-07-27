@@ -32,6 +32,35 @@ export async function PATCH(request: NextRequest) {
         if (contactPhone !== undefined) updateData.contactPhone = contactPhone.trim() || null;
         if (address !== undefined) updateData.address = address.trim() || null;
 
+        // Subdomain — for per-org routing (e.g. lewisham.sprintscaleit.co.uk)
+        const { subdomain } = body;
+        const RESERVED = new Set(['app', 'www', 'api', 'mail', 'admin', 'dashboard', 'dev', 'staging', 'preview']);
+        if (subdomain !== undefined) {
+            if (subdomain === '' || subdomain === null) {
+                updateData.subdomain = null; // Allow clearing
+            } else {
+                const cleanSubdomain = String(subdomain).toLowerCase().trim();
+                if (!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(cleanSubdomain)) {
+                    return NextResponse.json({ error: 'Subdomain must be 3–63 lowercase letters, numbers, or hyphens' }, { status: 400 });
+                }
+                if (RESERVED.has(cleanSubdomain)) {
+                    return NextResponse.json({ error: `"${cleanSubdomain}" is a reserved subdomain` }, { status: 400 });
+                }
+                // Uniqueness check across both orgs and centres
+                const existingOrg = await db.query.organisations.findFirst({
+                    where: (o, { and, eq: eqFn, not: notFn }) => and(eqFn(o.subdomain, cleanSubdomain), notFn(eqFn(o.id, organisationId))),
+                });
+                if (existingOrg) return NextResponse.json({ error: 'This subdomain is already taken' }, { status: 409 });
+                const { centres } = await import('@/db/schema');
+                const existingCentre = await db.query.centres.findFirst({
+                    where: (c, { eq: eqFn }) => eqFn(c.subdomain, cleanSubdomain),
+                });
+                if (existingCentre) return NextResponse.json({ error: 'This subdomain is already in use by a centre' }, { status: 409 });
+                updateData.subdomain = cleanSubdomain;
+            }
+        }
+
+
         if (name && typeof name === 'string' && name.trim() !== '') {
             updateData.name = name.trim();
         }
