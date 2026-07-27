@@ -39,6 +39,13 @@ export function middleware(request: NextRequest) {
 
     const { pathname } = request.nextUrl;
 
+    // Already a rewritten centre-portal path — do NOT rewrite again (prevents loop)
+    if (pathname.startsWith('/centre-portal/')) {
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set('x-subdomain', subdomain);
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
     // Always pass through internal/auth/dashboard routes unchanged
     if (PASSTHROUGH_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
         const requestHeaders = new Headers(request.headers);
