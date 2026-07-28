@@ -314,16 +314,35 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-8">
-                            <div className="flex-1 space-y-4">
+                                <div className="flex-1 space-y-4">
                                 <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Student Information</h3>
-                                <div className="bg-secondary/60 rounded-3xl p-6 border border-border">
-                                    <div className="text-lg font-black text-foreground">
-                                        {invoice.child 
-                                            ? `${invoice.child.firstName} ${invoice.child.lastName}`
-                                            : (invoice.childDisplayName || 'Family Invoice')
+                                <div className="bg-secondary/60 rounded-3xl p-6 border border-border space-y-2">
+                                    {(() => {
+                                        // Prefer coveredChildrenJson (multi-child support), fall back to single child
+                                        const covered = invoice.coveredChildrenJson;
+                                        const names: { id: string | null; name: string }[] =
+                                            covered && Array.isArray(covered) && covered.length > 0
+                                                ? covered.map((c: any) => ({ id: c.id || null, name: c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() }))
+                                                : invoice.child
+                                                    ? [{ id: invoice.child.id, name: `${invoice.child.firstName} ${invoice.child.lastName}` }]
+                                                    : invoice.childDisplayName
+                                                        ? [{ id: null, name: invoice.childDisplayName }]
+                                                        : [];
+
+                                        if (names.length === 0) {
+                                            return <div className="text-lg font-black text-foreground">Family Invoice</div>;
                                         }
-                                    </div>
-                                    <div className="text-sm font-medium text-muted-foreground">{invoice.centre?.name}</div>
+                                        return names.map((c, i) => (
+                                            c.id ? (
+                                                <Link key={i} href={`/dashboard/students/${c.id}`} className="flex items-center gap-2 group/child">
+                                                    <div className="text-sm font-black text-foreground group-hover/child:text-primary transition-colors">{c.name}</div>
+                                                </Link>
+                                            ) : (
+                                                <div key={i} className="text-sm font-black text-foreground">{c.name}</div>
+                                            )
+                                        ));
+                                    })()}
+                                    <div className="text-sm font-medium text-muted-foreground pt-1">{invoice.centre?.name}</div>
                                     {invoice.centre?.ofstedId && (
                                         <div className="text-[10px] font-black uppercase tracking-widest text-primary/80 mt-2">
                                             Ofsted Reg No: {invoice.centre.ofstedId}

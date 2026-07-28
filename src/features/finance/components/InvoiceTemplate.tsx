@@ -50,6 +50,19 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
     const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     const balanceRemaining = Math.max(0, Number(amount) - totalPaid);
 
+    // Build the canonical list of all children covered by this invoice.
+    // coveredChildrenJson is the source of truth (supports multiple children);
+    // fall back to the single child relation or free-text childDisplayName.
+    const allChildNames: string[] = (() => {
+        const json = invoice.coveredChildrenJson;
+        if (json && Array.isArray(json) && json.length > 0) {
+            return json.map((c: any) => c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim()).filter(Boolean);
+        }
+        if (child) return [`${child.firstName} ${child.lastName}`];
+        if (childDisplayName) return [childDisplayName];
+        return [];
+    })();
+
     return (
         <Document title={`Invoice-${invoiceNumber}`}>
             <Page size="A4" style={styles.page}>
@@ -116,7 +129,9 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     <View style={styles.period}>
                         <Text style={styles.sectionTitle}>Period Description</Text>
                         <Text style={{ fontWeight: 'bold' }}>Reference: {invoiceNumber}</Text>
-                        {displayChildName && <Text>Child: {displayChildName}</Text>}
+                        {allChildNames.length > 0 && allChildNames.map((name: string, i: number) => (
+                            <Text key={i}>{allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}</Text>
+                        ))}
                         <Text>Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
                         <Text>Centre: {centre?.name || 'HASC Centre'}</Text>
                     </View>
@@ -129,7 +144,11 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                         <Text style={styles.col3}>Total</Text>
                     </View>
                     <View style={styles.tableRow}>
-                        <Text style={styles.col1}>Childcare services</Text>
+                        <Text style={styles.col1}>
+                            {allChildNames.length > 1
+                                ? `Childcare services — ${allChildNames.join(', ')}`
+                                : 'Childcare services'}
+                        </Text>
                         <Text style={styles.col3}>£{Number(amount).toFixed(2)}</Text>
                     </View>
                     {displayNotes ? (
