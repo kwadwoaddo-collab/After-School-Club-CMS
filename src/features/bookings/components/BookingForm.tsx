@@ -243,7 +243,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 firstName: '',
                 lastName: '',
                 subjects: [],
-                schoolYear: 'Y1',
+                schoolYear: 'Reception',
                 dateOfBirth: '',
                 notes: '',
             }],
@@ -445,7 +445,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
     };
 
     const [today] = useState(() => new Date().toISOString().split('T')[0]);
-    const [maxDate] = useState(() => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    const [maxDate] = useState(() => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
     // Dynamic brand styles
     const brandStyles = (
@@ -842,7 +842,8 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                             <div>
                                                 <label className="block text-sm font-medium text-foreground/80 mb-1">School Year *</label>
                                                 <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card">
-                                                    {SCHOOL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                                                    <option value="Reception">Reception</option>
+                                                    {SCHOOL_YEARS.filter(y => y !== 'Reception').map(y => <option key={y} value={y}>{y}</option>)}
                                                 </select>
                                                 {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
                                             </div>
@@ -894,7 +895,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 ))}
                                 <button
                                     type="button"
-                                    onClick={() => append({ firstName: '', lastName: '', subjects: [], schoolYear: 'Y1', dateOfBirth: '' })}
+                                    onClick={() => append({ firstName: '', lastName: '', subjects: [], schoolYear: 'Reception', dateOfBirth: '' })}
                                     className="w-full py-3 border-2 border-dashed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 brand-btn-outline"
                                 >
                                     + Add Another Child
@@ -1022,13 +1023,13 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         <button
                             type="button"
                             onClick={validateStep}
-                            disabled={step === 3 && (!selectedDate || !watchedStartAt || (() => {
-                                const timeVal = watchedStartAt;
-                                if (!timeVal || !daySchedule || !daySchedule.open) return true;
-                                const currentMinTime = daySchedule.start;
-                                const currentMaxTime = daySchedule.end;
-                                return timeVal < currentMinTime || timeVal > currentMaxTime;
-                            })())}
+                            disabled={step === 3 && (!selectedDate || !watchedStartAt || (
+                                // Only enforce time bounds when operating hours ARE configured AND the centre is open that day.
+                                // If daySchedule is null/undefined (no hours set), allow any time.
+                                !!(daySchedule && daySchedule.open && (
+                                    watchedStartAt < daySchedule.start || watchedStartAt > daySchedule.end
+                                ))
+                            ))}
                             className="flex-1 brand-btn py-3 px-6 rounded-lg font-semibold transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             Continue →

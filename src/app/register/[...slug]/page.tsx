@@ -143,6 +143,10 @@ export default function RegisterPage() {
             .then(data => {
                 if (data) {
                     setOrgInfo(data);
+                    // Set browser tab title to the org name for trust/professionalism
+                    if (data.name) {
+                        document.title = `${data.name} — Student Registration`;
+                    }
                     if (data.centres && centreSlugFromUrl) {
                         const preselected = data.centres.find((c: any) => c.slug === centreSlugFromUrl);
                         if (preselected) setSelectedCentreId(preselected.id);

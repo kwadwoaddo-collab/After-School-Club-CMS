@@ -18,7 +18,7 @@ export const parentSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
   phone: z.string().regex(/^\+?[\d\s\-]{7,15}$/, 'Invalid phone format').optional().or(z.literal('')),
-  email: z.string().min(1, 'Email address is required').email('Please enter a valid email address'),
+  email: z.union([z.string().email('Please enter a valid email address'), z.literal('')]).optional(),
   // Task 1: preferredContact is now optional — no longer a required field
   preferredContact: z.enum(['phone', 'email']).optional(),
 });
