@@ -109,11 +109,11 @@ export default function ParentsTable({ parents }: ParentsTableProps) {
                                     </td>
                                     <td className="py-3 px-4 text-right">
                                         {outstanding > 0 ? (
-                                            <span className="text-sm font-bold text-red-600">
+                                            <span className="text-sm font-bold text-destructive">
                                                 £{outstanding.toFixed(2)}
                                             </span>
                                         ) : (
-                                            <span className="text-sm text-slate-400 font-medium">£0.00</span>
+                                            <span className="text-sm text-muted-foreground font-medium">£0.00</span>
                                         )}
                                     </td>
                                     <td className="py-3 px-4">
