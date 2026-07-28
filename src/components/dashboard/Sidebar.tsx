@@ -27,6 +27,8 @@ import {
     Layers,
     Monitor,
     Share2,
+    MessageSquare,
+    AlertTriangle,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
@@ -42,10 +44,10 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Kiosk', 'Registrations', 'Reports'],
-    FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance', 'Kiosk'],
-    TUTOR: ['Dashboard', 'Attendance', 'Kiosk'],
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications'],
+    FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance', 'Incidents', 'Kiosk'],
+    TUTOR: ['Dashboard', 'Attendance', 'Incidents', 'Kiosk'],
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -127,6 +129,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard' },
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
+        { name: 'Communications', icon: MessageSquare, href: '/dashboard/communications' },
         { name: 'Students', icon: Users, href: '/dashboard/students' },
         { name: 'Parents', icon: UserRound, href: '/dashboard/parents', children: [
             { name: 'Recovery Bin', href: '/dashboard/parents/bin' },
@@ -135,7 +138,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Attendance', icon: ClipboardCheck, href: '/dashboard/attendance', children: [
             { name: 'Session Ledger', href: '/dashboard/attendance/ledger' },
         ] },
-
+        { name: 'Incidents', icon: AlertTriangle, href: '/dashboard/incidents' },
         { name: 'Kiosk', icon: Monitor, href: '/dashboard/kiosk' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
