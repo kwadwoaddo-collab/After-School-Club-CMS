@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { MapPin, ArrowLeft, ChevronRight, ArrowRight } from 'lucide-react';
 
 export default async function NewBookingPage(props: {
-    searchParams: Promise<{ centre?: string }>;
+    searchParams: Promise<{ centreId?: string }>;
 }) {
     const session = await auth();
 
@@ -53,8 +53,8 @@ export default async function NewBookingPage(props: {
     }
 
     // Multiple centres — check if one is selected via URL param
-    const selectedCentre = searchParams.centre
-        ? orgCentres.find(c => c.id === searchParams.centre)
+    const selectedCentre = searchParams.centreId
+        ? orgCentres.find(c => c.id === searchParams.centreId)
         : null;
 
     if (selectedCentre) {
@@ -89,7 +89,7 @@ export default async function NewBookingPage(props: {
                     {orgCentres.map(centre => (
                         <Link
                             key={centre.id}
-                            href={`/dashboard/bookings/new?centre=${centre.id}`}
+                            href={`/dashboard/bookings/new?centreId=${centre.id}`}
                             className="group flex items-center justify-between bg-card border border-border hover:border-primary/40 hover:bg-secondary/40 p-6 rounded-2xl transition-all active:scale-[0.985] duration-100"
                         >
                             <div className="flex items-center gap-4">
