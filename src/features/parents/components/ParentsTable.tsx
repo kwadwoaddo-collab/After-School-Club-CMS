@@ -88,15 +88,17 @@ export default function ParentsTable({ parents }: ParentsTableProps) {
                                     </td>
                                     <td className="py-3 px-4">
                                         {parent.childrenList && parent.childrenList.length > 0 ? (
-                                            <div className="flex items-center">
-                                                {parent.childrenList.map((child, idx) => (
-                                                    <div 
-                                                        key={child.id} 
-                                                        className={`w-7 h-7 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[10px] font-bold text-foreground z-[${10 - idx}] ${idx > 0 ? '-ml-2' : ''}`}
+                                            <div className="flex flex-wrap gap-1">
+                                                {parent.childrenList.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={`/dashboard/students/${child.id}`}
+                                                        onClick={(e) => e.stopPropagation()}
                                                         title={`${child.first_name} ${child.last_name}`}
+                                                        className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
                                                     >
-                                                        {getInitials(child.first_name, child.last_name)}
-                                                    </div>
+                                                        {child.first_name} {child.last_name}
+                                                    </Link>
                                                 ))}
                                             </div>
                                         ) : (
