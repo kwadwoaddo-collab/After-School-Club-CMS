@@ -6,6 +6,7 @@ import {
     TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
     AlertCircle, CheckCircle2, Award, Download, Shield, X, Loader2, Users
 } from 'lucide-react';
+import Link from 'next/link';
 import type { StudentLedgerEntry } from '@/features/attendance/actions';
 import { forgiveSessionsAction } from '@/features/attendance/actions';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -151,7 +152,13 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
 
                     {/* Name & schedule */}
                     <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground text-sm">{entry.firstName} {entry.lastName}</p>
+                        {entry.childId ? (
+                            <Link href={`/dashboard/students/${entry.childId}`} className="font-semibold text-foreground text-sm hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                {entry.firstName} {entry.lastName}
+                            </Link>
+                        ) : (
+                            <p className="font-semibold text-foreground text-sm">{entry.firstName} {entry.lastName}</p>
+                        )}
                         <p className="text-xs text-muted-foreground">Year {entry.schoolYear} · {entry.schedule}</p>
                     </div>
 

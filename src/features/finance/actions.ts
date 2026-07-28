@@ -107,55 +107,24 @@ export async function getChildrenByParent(parentId: string) {
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     const results = await db.query.children.findMany({
-        where: eq(children.parentId, parentId),
+        where: and(
+            eq(children.parentId, parentId),
+            eq(children.organisationId, session.user.organisationId)
+        ),
         with: {
-            bookings: {
-                limit: 1,
-                orderBy: (bookings, { desc }) => [desc(bookings.createdAt)]
-            },
-            attendances: {
-                limit: 1,
-                with: { booking: true },
-                orderBy: (attendances, { desc }) => [desc(attendances.updatedAt)]
-            }
-        }
+            centre: { columns: { id: true, name: true } }
+        },
+        orderBy: (children, { asc }) => [asc(children.firstName)]
     });
 
-    // Also fetch registration child links just in case
-    const childIds = results.map(c => c.id);
-    const regChildrenMap: Record<string, string> = {};
-    if (childIds.length > 0) {
-        const regLinks = await db
-            .select({
-                childId: registrationChildren.childId,
-                centreId: registrations.centreId,
-            })
-            .from(registrationChildren)
-            .innerJoin(registrations, eq(registrations.id, registrationChildren.registrationId))
-            .where(inArray(registrationChildren.childId, childIds as string[]));
-            
-        regLinks.forEach(link => {
-            if (link.childId && link.centreId) {
-                regChildrenMap[link.childId] = link.centreId;
-            }
-        });
-    }
-
-    return results.map(child => {
-        let centreId = regChildrenMap[child.id] || null;
-        if (!centreId && child.bookings && child.bookings.length > 0 && child.bookings[0].centreId) {
-            centreId = child.bookings[0].centreId;
-        } else if (!centreId && child.attendances && child.attendances.length > 0 && child.attendances[0].booking?.centreId) {
-            centreId = child.attendances[0].booking.centreId;
-        }
-        
-        // Remove relationships from output for clean serialization
-        const { bookings, attendances, ...cleanChild } = child;
-        return {
-            ...cleanChild,
-            centreId
-        };
-    });
+    return results.map(child => ({
+        id: child.id,
+        firstName: child.firstName,
+        lastName: child.lastName,
+        centreId: child.centreId || null,
+        centreName: child.centre?.name || null,
+        schoolYear: child.schoolYear,
+    }));
 }
 
 export async function createInvoice(data: {

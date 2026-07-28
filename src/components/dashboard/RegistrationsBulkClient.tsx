@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAvatarGradient } from '@/components/ui/utils';
 import Link from 'next/link';
-import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle, Mail, ClipboardList } from 'lucide-react';
+import { CheckCircle2, XCircle, Download, Loader2, X, Trash2, AlertTriangle, Mail, ClipboardList, ChevronRight } from 'lucide-react';
 import { assignRegistrationCentre, deleteRegistrations } from '@/app/dashboard/registrations/actions';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -26,6 +26,7 @@ interface RegistrationRow {
         submittedSessions: string[] | null;
     }[];
     registrationParents: {
+        parentId?: string | null;
         isPrimary: boolean | null;
         submittedFirstName: string;
         submittedLastName: string;
@@ -218,6 +219,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground align-middle">Centre</th>
                             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground align-middle">Start Date</th>
                             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground align-middle text-right">Submitted</th>
+                            <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground align-middle text-right"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -252,7 +254,24 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                                 {(r.registrationChildren[0]?.submittedFirstName?.charAt(0) || '') + (r.registrationChildren[0]?.submittedLastName?.charAt(0) || '')}
                                             </div>
                                             <p className="font-semibold text-foreground truncate max-w-[200px]">
-                                                {childNames || 'None'}
+                                                {r.registrationChildren.length > 0 ? (
+                                                    r.registrationChildren.map((c, i) => (
+                                                        <span key={i}>
+                                                            {c.childId ? (
+                                                                <Link href={`/dashboard/students/${c.childId}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                                    {c.submittedFirstName} {c.submittedLastName}
+                                                                </Link>
+                                                            ) : (
+                                                                <Link href={`/dashboard/registrations/${r.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                                    {c.submittedFirstName} {c.submittedLastName}
+                                                                </Link>
+                                                            )}
+                                                            {i < r.registrationChildren.length - 1 && ', '}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    'None'
+                                                )}
                                             </p>
                                         </div>
                                         </td>
@@ -262,7 +281,15 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                                     {(primary?.submittedFirstName?.[0] || '')}{(primary?.submittedLastName?.[0] || '')}
                                                 </div>
                                                 <span className="font-semibold text-foreground">
-                                                    {primary ? `${primary.submittedFirstName} ${primary.submittedLastName}` : 'Unknown'}
+                                                    {primary ? (
+                                                        primary.parentId ? (
+                                                            <Link href={`/dashboard/parents/${primary.parentId}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                                {primary.submittedFirstName} {primary.submittedLastName}
+                                                            </Link>
+                                                        ) : (
+                                                            `${primary.submittedFirstName} ${primary.submittedLastName}`
+                                                        )
+                                                    ) : 'Unknown'}
                                                 </span>
                                             </div>
                                             {primary?.submittedEmail && (
@@ -309,6 +336,15 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                                     Pending for {formatDistanceToNow(new Date(r.createdAt))}
                                                 </span>
                                             )}
+                                        </td>
+                                        <td className="px-4 py-3 align-middle">
+                                            <Link 
+                                                href={`/dashboard/registrations/${r.id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Link>
                                         </td>
                                     </tr>
                                 );

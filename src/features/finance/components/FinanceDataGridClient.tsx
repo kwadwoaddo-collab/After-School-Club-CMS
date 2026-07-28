@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { 
     FileText, 
     MoreHorizontal, 
@@ -78,30 +79,6 @@ const formatDateSafe = (dateVal: string | Date | null | undefined, formatStr = '
     }
 };
 
-// Slide-out Drawer component with Apple-level glassmorphism & backdrop blur
-function Sheet({ open, onClose, children, title }: { open: boolean, onClose: () => void, children: React.ReactNode, title: string }) {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-md transition-all duration-300 animate-in fade-in">
-            <div className="fixed inset-0" onClick={onClose} />
-            <div className="relative w-full max-w-md h-full bg-card/95 backdrop-blur-xl border-l border-border/80 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                <div className="flex items-center justify-between p-6 border-b border-border/60 bg-secondary/30">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>
-                    <button 
-                        onClick={onClose} 
-                        className="p-2 rounded-full hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-90"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-                <div className="p-6 flex-1 overflow-y-auto space-y-6">
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-}
-
 export default function FinanceDataGridClient({ invoices = [], totalCount = 0, page = 1, pageSize = 50, statusFilter = 'all', centres = [] }: FinanceDataGridClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -109,9 +86,8 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
     const [isPending, startTransition] = useTransition();
 
     const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
-    const [viewInvoice, setViewInvoice] = useState<FinanceInvoice | null>(null);
-    const [paymentAmount, setPaymentAmount] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
 
     // KPI Metrics calculation for summary banner
     const metrics = useMemo(() => {
@@ -182,24 +158,6 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
     };
 
     const totalPages = Math.ceil(totalCount / pageSize);
-
-    const handleRecordPayment = async (invoiceId: string) => {
-        if (!paymentAmount) return addToast('Please enter an amount', 'error');
-        try {
-            await recordPayment({
-                invoiceId,
-                amount: paymentAmount,
-                method: 'bank_transfer',
-                recordedAt: new Date()
-            });
-            addToast('Payment recorded successfully', 'success');
-            setViewInvoice(null);
-            setPaymentAmount('');
-            router.refresh();
-        } catch (error: any) {
-            addToast(error?.message || 'Failed to record payment', 'error');
-        }
-    };
 
     const handleBulkPayment = async () => {
         try {
@@ -392,15 +350,27 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                         </td>
                                         <td className="p-4 font-bold text-primary">
                                             <span 
-                                                onClick={(e) => { e.stopPropagation(); setViewInvoice(invoice); setPaymentAmount(outstanding.toString()); }}
-                                                className="hover:underline hover:text-primary/80 transition-colors"
+                                                onClick={(e) => { e.stopPropagation(); router.push('/dashboard/finance/invoices/' + invoice.id); }}
+                                                className="hover:underline hover:text-primary/80 transition-colors cursor-pointer"
                                             >
                                                 {invoice.invoiceNumber}
                                             </span>
                                         </td>
                                         <td className="p-4">
-                                            <div className="font-bold text-foreground">{invoice.parent?.firstName} {invoice.parent?.lastName}</div>
-                                            {invoice.child && <div className="text-xs text-muted-foreground font-medium">{invoice.child.firstName} {invoice.child.lastName}</div>}
+                                            <div className="font-bold text-foreground">
+                                                {invoice.parent ? (
+                                                    <Link href={`/dashboard/parents/${invoice.parent.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                        {invoice.parent.firstName} {invoice.parent.lastName}
+                                                    </Link>
+                                                ) : null}
+                                            </div>
+                                            {invoice.child && (
+                                                <div className="text-xs text-muted-foreground font-medium">
+                                                    <Link href={`/dashboard/students/${invoice.child.id}`} className="hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                        {invoice.child.firstName} {invoice.child.lastName}
+                                                    </Link>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-4">
                                             <div className="font-medium text-foreground">{formatDateSafe(invoice.invoiceDate)}</div>
@@ -431,9 +401,9 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                         </td>
                                         <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                                             <button 
-                                                onClick={() => {
-                                                    setViewInvoice(invoice);
-                                                    setPaymentAmount(outstanding.toString());
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push('/dashboard/finance/invoices/' + invoice.id);
                                                 }}
                                                 className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-secondary/80 text-foreground text-xs font-bold hover:bg-secondary hover:gap-2 transition-all border border-border/50 shadow-sm"
                                             >
@@ -472,86 +442,6 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 )}
             </div>
 
-            {/* Slide-out Drawer for Invoice Details & Payment */}
-            <Sheet 
-                open={!!viewInvoice} 
-                onClose={() => { setViewInvoice(null); setPaymentAmount(''); }}
-                title={`Invoice #${viewInvoice?.invoiceNumber}`}
-            >
-                {viewInvoice && (
-                    <div className="space-y-6">
-                        <div className="bg-secondary/30 p-4 rounded-2xl border border-border/50">
-                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Billed To</h3>
-                            <div className="text-lg font-bold text-foreground">{viewInvoice.parent?.firstName} {viewInvoice.parent?.lastName}</div>
-                            <div className="text-sm text-muted-foreground font-medium">{viewInvoice.parent?.email}</div>
-                        </div>
-
-                        <div>
-                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Line Items</h3>
-                            <div className="space-y-3 bg-secondary/20 p-4 rounded-2xl border border-border/50">
-                                {viewInvoice.lineItems && viewInvoice.lineItems.length > 0 ? (
-                                    viewInvoice.lineItems.map((item) => (
-                                        <div key={item.id} className="flex justify-between items-center text-sm">
-                                            <span className="text-foreground font-medium">{item.quantity}x {item.description}</span>
-                                            <span className="font-bold tabular-nums text-foreground">£{Number(item.lineTotal).toFixed(2)}</span>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-sm text-muted-foreground font-medium">Standard Recurring Billing</div>
-                                )}
-                                <div className="border-t border-border/60 pt-3 mt-3 flex justify-between items-center font-bold text-base">
-                                    <span className="text-foreground">Total</span>
-                                    <span className="text-primary tabular-nums">£{Number(viewInvoice.amount).toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {viewInvoice.status !== 'paid' && viewInvoice.status !== 'void' && (
-                            <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl space-y-4">
-                                <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                                    <CreditCard className="w-4 h-4" />
-                                    Record Payment
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-muted-foreground mb-1 block">Amount (£)</label>
-                                        <input 
-                                            type="number" 
-                                            step="0.01"
-                                            value={paymentAmount}
-                                            onChange={(e) => setPaymentAmount(e.target.value)}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-bold tabular-nums focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <button 
-                                        onClick={() => handleRecordPayment(viewInvoice.id)}
-                                        className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-xs font-bold shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98]"
-                                    >
-                                        Confirm Payment
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {viewInvoice.payments && viewInvoice.payments.length > 0 && (
-                            <div>
-                                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Payment History</h3>
-                                <div className="space-y-2">
-                                    {viewInvoice.payments.map((p) => (
-                                        <div key={p.id} className="flex justify-between items-center p-3.5 bg-card border border-border/50 rounded-2xl text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                <span className="text-muted-foreground text-xs font-medium">{formatDateSafe(p.recordedAt)}</span>
-                                            </div>
-                                            <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">£{Number(p.amount).toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </Sheet>
 
             {isCreateModalOpen && (
                 <CreateInvoiceModal 

@@ -3,9 +3,10 @@ import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices, centres } from '@/db/schema';
 import { eq, desc, and, count, ne, lt } from 'drizzle-orm';
-import { Download, CreditCard } from 'lucide-react';
+import { Download, CreditCard, Receipt } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { Suspense } from 'react';
+import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
@@ -113,6 +114,13 @@ export default async function FinancePage(props: {
                     <Suspense fallback={<div className="w-[180px] h-[44px] bg-secondary/60 rounded-2xl animate-pulse" />}>
                         <FinanceDashboardFilters centres={orgCentres} />
                     </Suspense>
+                    <Link
+                        href="/dashboard/finance/receipt"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-500/20 shadow-sm transition-all active:scale-95 duration-150"
+                    >
+                        <Receipt className="w-4 h-4" />
+                        Receipts
+                    </Link>
                     <a
                         href={`/api/export/finance?from=${monthStart}&to=${todayStr}`}
                         download={`finance-${monthStart}-to-${todayStr}.csv`}
