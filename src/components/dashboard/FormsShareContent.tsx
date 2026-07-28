@@ -184,7 +184,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                 <div className="lg:col-span-2 space-y-5">
 
                     {/* Setup Card */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
+                    <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-6">
 
                         {/* Card title */}
                         <div className="flex items-center gap-2.5 pb-5 border-b border-border">
@@ -355,7 +355,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                 <div className="space-y-5">
 
                     {/* How It Works Card */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+                    <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
                         <h3 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-3">
                             How It Works
                         </h3>
@@ -372,7 +372,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     </div>
 
                     {/* Platform Embed Guides Card */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+                    <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 border-b border-border pb-3">
                             <Code className="w-4 h-4 text-blue-600" />
                             <h3 className="text-sm font-bold text-foreground tracking-tight">

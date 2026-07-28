@@ -108,7 +108,7 @@ export default async function CentresPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="bg-card border border-border rounded-[32px] overflow-hidden">
+                <div className="glassmorphic-card rounded-[32px] overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>

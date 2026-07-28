@@ -111,7 +111,7 @@ export default function InviteStaffPage() {
             </div>
 
             {/* Invitation Form */}
-            <form onSubmit={handleSubmit} className="bg-card rounded-3xl overflow-hidden border border-border shadow-xl">
+            <form onSubmit={handleSubmit} className="glassmorphic-card rounded-3xl overflow-hidden shadow-xl">
                 <div className="px-8 py-6 border-b border-border">
                     <div className="flex items-center gap-2">
                         <UserPlus className="w-5 h-5 text-muted-foreground" />
