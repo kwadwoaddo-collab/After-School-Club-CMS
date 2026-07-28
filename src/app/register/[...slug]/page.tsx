@@ -131,6 +131,7 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [stepError, setStepError] = useState('');
     const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
+    const [prefillWarning, setPrefillWarning] = useState(false);
 
     useEffect(() => {
         setOrgLoading(true);
@@ -164,7 +165,10 @@ export default function RegisterPage() {
         if (!token) return;
         fetch(`/api/register/prefill?token=${encodeURIComponent(token)}`)
             .then(r => {
-                if (!r.ok) return null;
+                if (!r.ok) {
+                    setPrefillWarning(true);
+                    return null;
+                }
                 return r.json();
             })
             .then(data => {
@@ -197,7 +201,10 @@ export default function RegisterPage() {
                     }
                 }
             })
-            .catch(err => logger.error('[Prefill] Failed to load prefill details:', err));
+            .catch(err => {
+                logger.error('[Prefill] Failed to load prefill details:', err);
+                setPrefillWarning(true);
+            });
     }, [token]);
 
     // ── Child helpers ──────────────────────────────────────────────
@@ -652,6 +659,18 @@ export default function RegisterPage() {
 
             <div className="max-w-2xl mx-auto px-6 py-10 pb-16">
                 <ProgressBar current={step} total={TOTAL_STEPS} />
+
+                {prefillWarning && !isPrefilled && (
+                    <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                            <p className="text-sm font-bold text-amber-500">Booking link expired or invalid</p>
+                            <p className="text-xs text-amber-500/80 font-medium mt-0.5">Your booking link has expired or is invalid. Please fill in the form manually.</p>
+                        </div>
+                    </div>
+                )}
 
                 {isPrefilled && (
                     <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
