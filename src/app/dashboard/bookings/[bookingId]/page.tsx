@@ -237,7 +237,9 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                         <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-muted-foreground" /></div>
                         <div>
                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Parent Name</p>
-                            <p className="text-base font-bold text-foreground">{booking.parent.firstName} {booking.parent.lastName}</p>
+                            <Link href={`/dashboard/parents/${booking.parent.id}`} className="text-base font-bold text-foreground hover:text-primary hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                                {booking.parent.firstName} {booking.parent.lastName}
+                            </Link>
                             <p className="text-xs text-primary font-semibold mt-1">Primary Point of Contact</p>
                         </div>
                     </div>
@@ -267,6 +269,22 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
                     )}
                 </div>
             </div>
+
+            {booking.staff && (
+                <div className="glassmorphic-card rounded-3xl p-8">
+                    <h3 className="text-xl font-bold text-foreground mb-6">Assigned Staff</h3>
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center flex-shrink-0"><User className="w-6 h-6 text-muted-foreground" /></div>
+                        <div>
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Staff Member</p>
+                            <Link href={`/dashboard/staff/${booking.staff.id}`} className="text-base font-bold text-foreground hover:text-primary hover:underline underline-offset-4 decoration-primary/30 transition-colors">
+                                {booking.staff.firstName || booking.staff.name} {booking.staff.lastName}
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Internal Notes Timeline */}
             <div className="glassmorphic-card rounded-3xl p-8">
