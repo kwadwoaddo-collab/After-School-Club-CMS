@@ -61,7 +61,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.subtitle}>Child care services</Text>
+                        <Text style={styles.subtitle}>Childcare Services</Text>
                         <Text style={styles.title}>INVOICE</Text>
                         <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>
                             Ofsted / Ref No: {centre?.ofstedId || 'N/A'}
@@ -85,12 +85,20 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                             <Text style={[
                                 styles.infoValue,
                                 {
-                                    color: status === 'paid' ? '#10b981' : 
-                                           status === 'partially_paid' ? '#d97706' : 
-                                           status === 'void' ? '#dc2626' : '#2563eb',
+                                    color: status === 'paid' ? '#10b981' :
+                                           status === 'partially_paid' ? '#d97706' :
+                                           status === 'void' ? '#94a3b8' :
+                                           status === 'overdue' ? '#dc2626' : '#2563eb',
                                     fontWeight: 'bold'
                                 }
-                            ]}>{(status || 'draft').toUpperCase()}</Text>
+                            ]}>
+                                {status === 'paid' ? 'PAID' :
+                                 status === 'partially_paid' ? 'PART PAID' :
+                                 status === 'sent' ? 'AWAITING PAYMENT' :
+                                 status === 'void' ? 'VOID' :
+                                 status === 'overdue' ? 'OVERDUE' :
+                                 'PENDING'}
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -184,9 +192,18 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                     </Text>
                 </View>
 
-                {/* Manager Name */}
-                <View style={{ marginTop: 20 }}>
-                    <Text style={{ fontSize: 8, color: '#64748b' }}>Manager: {centre?.managerName || '—'}</Text>
+                {/* Authorised By */}
+                <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end' }}>
+                    <View style={{ width: 200 }}>
+                        <View style={{ borderTopWidth: 1, borderTopColor: '#cbd5e1', paddingTop: 6 }}>
+                            <Text style={{ fontSize: 8, color: '#334155', fontWeight: 'bold' }}>
+                                {centre?.managerName || 'Centre Manager'}
+                            </Text>
+                            <Text style={{ fontSize: 7, color: '#64748b', marginTop: 2 }}>Centre Manager</Text>
+                            <Text style={{ fontSize: 7, color: '#64748b', marginTop: 1 }}>{centre?.name || organisationName || ''}</Text>
+                        </View>
+                        <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 4 }}>Authorised signatory</Text>
+                    </View>
                 </View>
 
                 {/* Footer */}
