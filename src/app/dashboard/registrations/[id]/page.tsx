@@ -9,7 +9,7 @@ import { Check, ChevronLeft } from 'lucide-react';
 import RegistrationStatusUpdater from './StatusUpdater';
 import DownloadButton from './DownloadButton';
 import EditRegistrationForm from './EditRegistrationForm';
-
+import BackButton from './BackButton';
 const FUNDING_LABELS: Record<string, string> = {
     tax_free_childcare: 'Tax-Free Childcare',
     childcare_vouchers: 'Childcare Vouchers',
@@ -90,10 +90,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
     return (
         <div className="p-4 sm:p-6 max-w-4xl mx-auto">
             {/* Back link */}
-            <Link href="/dashboard/registrations" className="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-foreground text-sm font-medium transition-colors mb-8 group">
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                All Registrations
-            </Link>
+            <BackButton />
 
             {/* Header */}
             <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
