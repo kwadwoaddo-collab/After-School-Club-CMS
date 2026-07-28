@@ -379,6 +379,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                     )}
                                 </div>
                             </div>
+                                </div>{/* end flex-1 space-y-8 (Billed To + Student Info column) */}
                             <div className="flex-1 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Notes</h3>

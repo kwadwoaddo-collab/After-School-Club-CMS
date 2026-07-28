@@ -4,7 +4,7 @@ import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { reconcilePayment } from '@/features/billing/actions/reconcile-payment';
 import { Button } from '@/components/ui/Button';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/ToastProvider';
 
 type InvoiceDto = {
   id: string;
@@ -26,6 +26,7 @@ export function ReconciliationClient({
   organisationId: string
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>('');
@@ -33,10 +34,10 @@ export function ReconciliationClient({
   const [reference, setReference] = useState<string>('');
 
   const handleReconcile = () => {
-    if (!selectedInvoice) return toast.error('Select an invoice');
+    if (!selectedInvoice) { toast('Please select an invoice', 'error'); return; }
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return toast.error('Invalid amount');
-    if (!reference) return toast.error('Reference is required');
+    if (isNaN(parsedAmount) || parsedAmount <= 0) { toast('Invalid amount', 'error'); return; }
+    if (!reference) { toast('Reference is required', 'error'); return; }
 
     startTransition(async () => {
       const res = await reconcilePayment(organisationId, 'staff-user', {
@@ -47,13 +48,13 @@ export function ReconciliationClient({
       });
 
       if (res.success) {
-        toast.success('Payment reconciled successfully');
+        toast('Payment reconciled successfully', 'success');
         setSelectedInvoice(null);
         setAmount('');
         setReference('');
         router.refresh();
       } else {
-        toast.error(res.error || 'Failed to reconcile payment');
+        toast(res.error || 'Failed to reconcile payment', 'error');
       }
     });
   };
