@@ -314,7 +314,36 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-8">
-                                <div className="flex-1 space-y-4">
+                                <div className="flex-1 space-y-8">
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Billed To</h3>
+                                    <div className="glassmorphic-card rounded-3xl p-6 space-y-2">
+                                        {(() => {
+                                            const activeParent = invoice.parent || (invoice.child && invoice.child.parent);
+                                            const pId = invoice.parentId || activeParent?.id;
+                                            if (!activeParent && !pId) return <div className="text-sm font-medium text-muted-foreground">No parent linked</div>;
+                                            return (
+                                                <>
+                                                    {pId ? (
+                                                        <Link href={`/dashboard/parents/${pId}`} className="text-lg font-black text-primary hover:underline block">
+                                                            {activeParent?.firstName} {activeParent?.lastName}
+                                                        </Link>
+                                                    ) : (
+                                                        <div className="text-lg font-black text-foreground">
+                                                            {activeParent?.firstName} {activeParent?.lastName}
+                                                        </div>
+                                                    )}
+                                                    {activeParent?.email && (
+                                                        <div className="text-sm font-medium text-muted-foreground pt-1">
+                                                            {activeParent.email}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
                                 <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Student Information</h3>
                                 <div className="bg-secondary/60 rounded-3xl p-6 border border-border space-y-2">
                                     {(() => {
