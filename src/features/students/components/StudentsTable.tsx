@@ -93,9 +93,13 @@ const columns: DataTableColumn<StudentRow>[] = [
     header: 'Parent Contact',
     render: (student) => (
       <div className="flex flex-col gap-1.5">
-        <span className="font-semibold text-sm text-foreground">
+        <Link 
+          href={`/dashboard/parents/${student.parentId}`}
+          className="text-primary hover:underline font-medium text-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
           {student.parentFirstName} {student.parentLastName}
-        </span>
+        </Link>
         <div className="flex items-center gap-1.5 -ml-1">
           {student.parentEmail && (
             <a 
