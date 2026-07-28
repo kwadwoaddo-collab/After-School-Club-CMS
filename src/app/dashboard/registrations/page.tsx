@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { registrations, organisations, registrationParents, registrationChildren } from '@/db/schema';
-import { eq, desc, and, inArray, or, ilike } from 'drizzle-orm';
+import { eq, desc, and, inArray, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import CopyRegistrationLink from '@/components/dashboard/CopyRegistrationLink';
@@ -65,26 +65,28 @@ export default async function RegistrationsPage(props: {
 
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
 
-    // Fetch all registrations in the active centre to calculate counts
-    const allActiveCentreRegistrations = await db.query.registrations.findMany({
-        where: and(
-            eq(registrations.organisationId, orgId),
-            activeCentreId !== 'all'
-                ? eq(registrations.centreId, activeCentreId)
-                : centreIds.length > 0
-                    ? inArray(registrations.centreId, centreIds)
-                    : eq(registrations.centreId, 'unauthorized_centre_id')
-        ),
-        columns: {
-            id: true,
-            status: true,
-        }
-    });
+    // Fetch status counts via aggregation
+    const aggWhere = and(
+        eq(registrations.organisationId, orgId),
+        activeCentreId !== 'all'
+            ? eq(registrations.centreId, activeCentreId)
+            : centreIds.length > 0
+                ? inArray(registrations.centreId, centreIds)
+                : eq(registrations.centreId, 'unauthorized_centre_id')
+    );
 
-    const totalCount = allActiveCentreRegistrations.length;
-    const awaitingConfirmationCount = allActiveCentreRegistrations.filter(r => r.status === 'awaiting_confirmation').length;
-    const signedUpCount = allActiveCentreRegistrations.filter(r => r.status === 'signed_up').length;
-    const notInterestedCount = allActiveCentreRegistrations.filter(r => r.status === 'not_interested').length;
+    const statusCountsAgg = await db.select({
+        status: registrations.status,
+        count: sql<number>`count(*)::int`
+    })
+    .from(registrations)
+    .where(aggWhere)
+    .groupBy(registrations.status);
+
+    const awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
+    const signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
+    const notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
+    const totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
 
     let rows: unknown[] = [];
     let searchActiveAndNoResults = false;
