@@ -1,7 +1,10 @@
 import React from 'resolve-node:react';
 import { db } from '@/db';
-import { invoices, parents, children, payments } from '@/db/schema';
+import { invoices, parents, children, payments, centres } from '@/db/schema';
 import { eq, and, sql, notInArray, desc, inArray } from 'drizzle-orm';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { ReconciliationClient } from './reconciliation-client';
 import Header from '@/components/dashboard/Header';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -10,9 +13,24 @@ export const metadata = {
   title: 'Payment Reconciliation',
 };
 
-export default async function ReconciliationPage() {
-  const organisationId = 'org_123';
-  const activeCentreId = 'centre_123';
+export default async function ReconciliationPage(props: {
+  searchParams: Promise<{
+    centre?: string;
+  }>
+}) {
+  const searchParams = await props.searchParams;
+  const session = await auth();
+
+  if (!session?.user) return redirect('/login');
+  if (!session.user.organisationId) return redirect('/onboarding');
+
+  const organisationId = session.user.organisationId;
+  
+  const orgCentresRaw = await db.query.centres.findMany({
+    where: eq(centres.organisationId, organisationId)
+  });
+  const validCentreIds = orgCentresRaw.map((c: { id: string }) => c.id);
+  const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
 
   // Find all invoices that are pending (sent or partially_paid)
   const pendingInvoices = await db.select({
