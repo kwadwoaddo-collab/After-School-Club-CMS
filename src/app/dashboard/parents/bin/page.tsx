@@ -99,7 +99,9 @@ export default async function BinPage() {
                                     return (
                                         <tr key={row.id} className="hover:bg-muted/30 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="font-bold text-foreground">{row.first_name} {row.last_name}</div>
+                                                <Link href={`/dashboard/parents/${row.id}`} className="text-primary hover:underline font-medium">
+                                                    {row.first_name} {row.last_name}
+                                                </Link>
                                                 <div className="text-xs text-muted-foreground">{row.email || 'No email'}</div>
                                             </td>
                                             <td className="px-6 py-4">
