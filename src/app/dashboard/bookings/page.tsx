@@ -87,6 +87,7 @@ export default async function BookingsPage(props: {
     let bookingsData: unknown[] = [];
     let searchActiveAndNoResults = false;
     let matchingIds: string[] = [];
+    let hasFetchError = false;
 
     // Pagination configuration
     const PAGE_SIZE = 50;
@@ -125,6 +126,7 @@ export default async function BookingsPage(props: {
         } catch (error) {
             logger.error('Failed to search bookings:', error);
             searchActiveAndNoResults = true;
+            hasFetchError = true;
         }
     }
 
@@ -220,6 +222,7 @@ export default async function BookingsPage(props: {
         } catch (error) {
             logger.error('Failed to fetch bookings data:', error);
             bookingsData = [];
+            hasFetchError = true;
         }
     }
 
@@ -287,6 +290,13 @@ export default async function BookingsPage(props: {
                     />
                 </Suspense>
             </div>
+
+            {hasFetchError && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-6 py-4 rounded-2xl flex items-center gap-3 animate-in fade-in">
+                    <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                    <p className="text-sm font-semibold">Unable to load bookings — please refresh</p>
+                </div>
+            )}
 
             {/* Bookings Table */}
             <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />

@@ -66,22 +66,31 @@ export default async function FinancePage(props: {
         dbStatusFilter
     );
 
-    const [countResult] = await db.select({ count: count() }).from(invoices).where(combinedFilter);
-    const totalInvoices = Number(countResult?.count || 0);
+    let totalInvoices = 0;
+    let paginatedInvoices: any[] = [];
+    let hasFetchError = false;
 
-    const paginatedInvoices = await db.query.invoices.findMany({
-        where: combinedFilter,
-        limit: pageSize,
-        offset: (page - 1) * pageSize,
-        orderBy: [desc(invoices.createdAt)],
-        with: {
-            centre: true,
-            child: true,
-            parent: true,
-            payments: true,
-            lineItems: true
-        }
-    });
+    try {
+        const [countResult] = await db.select({ count: count() }).from(invoices).where(combinedFilter);
+        totalInvoices = Number(countResult?.count || 0);
+
+        paginatedInvoices = await db.query.invoices.findMany({
+            where: combinedFilter,
+            limit: pageSize,
+            offset: (page - 1) * pageSize,
+            orderBy: [desc(invoices.createdAt)],
+            with: {
+                centre: true,
+                child: true,
+                parent: true,
+                payments: true,
+                lineItems: true
+            }
+        });
+    } catch (err) {
+        logger.error('[finance] fetchInvoices failed:', err);
+        hasFetchError = true;
+    }
 
     const serializedInvoices = serialize(paginatedInvoices);
 
@@ -132,6 +141,13 @@ export default async function FinancePage(props: {
                     </a>
                 </div>
             </div>
+
+            {hasFetchError && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-6 py-4 rounded-2xl flex items-center gap-3 animate-in fade-in">
+                    <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                    <p className="text-sm font-semibold">Unable to load finance data — please refresh</p>
+                </div>
+            )}
 
             {/* Main Finance Data Grid & KPI Summary */}
             <Suspense fallback={<div className="h-[400px] bg-secondary/20 rounded-3xl animate-pulse border border-border/60" />}>
