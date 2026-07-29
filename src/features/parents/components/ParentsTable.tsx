@@ -3,6 +3,8 @@ import { Mail, Phone, ChevronRight } from 'lucide-react';
 import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
 import { getAvatarGradient } from '@/components/ui/utils';
 
+import { AlertTriangle } from 'lucide-react';
+
 export interface ParentRow {
     id: string;
     firstName: string;
@@ -16,13 +18,14 @@ export interface ParentRow {
 
 interface ParentsTableProps {
     parents: ParentRow[];
+    error?: boolean;
 }
 
 function getInitials(firstName: string, lastName: string) {
     return `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase();
 }
 
-export default function ParentsTable({ parents }: ParentsTableProps) {
+export default function ParentsTable({ parents, error }: ParentsTableProps) {
     if (parents.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-dashed border-border rounded-3xl">
@@ -36,9 +39,16 @@ export default function ParentsTable({ parents }: ParentsTableProps) {
     }
 
     return (
-        <div className="bg-card border border-border rounded-[32px] overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full">
+        <div className="space-y-4">
+            {error && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    <p>There was a problem loading all parent data. Some information may be missing or incomplete.</p>
+                </div>
+            )}
+            <div className="bg-card border border-border rounded-[32px] overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
                     <thead>
                         <tr className="border-b border-border bg-secondary/10">
                             <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Parent</th>
@@ -130,6 +140,7 @@ export default function ParentsTable({ parents }: ParentsTableProps) {
                     </tbody>
                 </table>
             </div>
+        </div>
         </div>
     );
 }

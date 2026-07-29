@@ -31,161 +31,175 @@ export default async function ParentsPage({ searchParams }: Props) {
     const orgId = (session.user as any).organisationId;
     if (!orgId) return redirect('/onboarding');
 
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-    const activeCentreId = await resolveActiveCentreId(centreParam, accessibleCentreIds);
+    let hasError = false;
+    let accessibleCentreIds: string[] = [];
+    let activeCentreId: string = 'all';
+    let totalFamilies = 0;
+    let totalChildren = 0;
+    let withOutstanding = 0;
+    let totalOutstanding = 0;
+    let filteredCount = 0;
+    let totalPages = 0;
+    let rows: ParentRow[] = [];
 
-    // 1. Build CTEs for children data and invoices
-    const baseQuery = sql`
-        WITH ChildData AS (
+    try {
+        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        activeCentreId = await resolveActiveCentreId(centreParam, accessibleCentreIds);
+
+        // 1. Build CTEs for children data and invoices
+        const baseQuery = sql`
+            WITH ChildData AS (
+                SELECT
+                    parent_id,
+                    COUNT(*) as child_count,
+                    json_agg(
+                        json_build_object('id', id, 'first_name', first_name, 'last_name', last_name)
+                    ) as children_list
+                FROM children
+                WHERE organisation_id = ${orgId} AND deleted_at IS NULL
+                ${activeCentreId !== 'all' ? sql`AND centre_id = ${activeCentreId}` : sql``}
+                GROUP BY parent_id
+            ),
+            InvoiceSummary AS (
+                SELECT
+                    i.parent_id,
+                    COALESCE(SUM(i.amount), 0) as total_invoiced,
+                    COALESCE(SUM(p.paid), 0) as total_paid
+                FROM invoices i
+                LEFT JOIN (
+                    SELECT invoice_id, SUM(amount) as paid
+                    FROM payments
+                    GROUP BY invoice_id
+                ) p ON i.id = p.invoice_id
+                WHERE i.organisation_id = ${orgId}
+                  AND i.status != 'void'
+                  ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
+                GROUP BY i.parent_id
+            ),
+            ParentBase AS (
+                SELECT
+                    pa.id,
+                    pa.first_name,
+                    pa.last_name,
+                    pa.email,
+                    pa.phone,
+                    COALESCE(cd.child_count, 0) as child_count,
+                    COALESCE(cd.children_list, '[]'::json) as children_list,
+                    GREATEST(0, COALESCE(ins.total_invoiced, 0) - COALESCE(ins.total_paid, 0)) as outstanding
+                FROM parents pa
+                LEFT JOIN ChildData cd ON pa.id = cd.parent_id
+                LEFT JOIN InvoiceSummary ins ON pa.id = ins.parent_id
+                WHERE pa.organisation_id = ${orgId} AND pa.deleted_at IS NULL
+                ${activeCentreId !== 'all' ? sql`AND (cd.child_count > 0 OR pa.id IN (SELECT parent_id FROM children WHERE centre_id = ${activeCentreId} AND deleted_at IS NULL))` : sql``}
+            )
+            SELECT * FROM ParentBase
+            WHERE 1=1
+        `;
+
+        // 2. Add filters
+        const filterClauses = [];
+        if (search) {
+            filterClauses.push(sql`(
+                first_name ILIKE ${'%' + search + '%'} OR
+                last_name ILIKE ${'%' + search + '%'} OR
+                email ILIKE ${'%' + search + '%'} OR
+                phone ILIKE ${'%' + search + '%'} OR
+                EXISTS (
+                    SELECT 1 FROM json_array_elements(children_list) as child
+                    WHERE (child->>'first_name') ILIKE ${'%' + search + '%'}
+                       OR (child->>'last_name') ILIKE ${'%' + search + '%'}
+                )
+            )`);
+        }
+
+        if (status === 'active') {
+            filterClauses.push(sql`child_count > 0`);
+        } else if (status === 'inactive') {
+            filterClauses.push(sql`child_count = 0`);
+        } else if (status === 'arrears') {
+            filterClauses.push(sql`outstanding > 0`);
+        }
+
+        const whereSql = filterClauses.length > 0 
+            ? sql` AND ${sql.join(filterClauses, sql` AND `)}`
+            : sql``;
+
+        // 3. Get total counts (both filtered and total KPIs)
+        const kpisResult = await db.execute(sql`
+            WITH ChildData AS (
+                SELECT parent_id, COUNT(*) as child_count
+                FROM children
+                WHERE organisation_id = ${orgId} AND deleted_at IS NULL
+                ${activeCentreId !== 'all' ? sql`AND centre_id = ${activeCentreId}` : sql``}
+                GROUP BY parent_id
+            ),
+            InvoiceSummary AS (
+                SELECT
+                    i.parent_id,
+                    GREATEST(0, COALESCE(SUM(i.amount), 0) - COALESCE(SUM(p.paid), 0)) as outstanding
+                FROM invoices i
+                LEFT JOIN (
+                    SELECT invoice_id, SUM(amount) as paid
+                    FROM payments
+                    GROUP BY invoice_id
+                ) p ON i.id = p.invoice_id
+                WHERE i.organisation_id = ${orgId} AND i.status != 'void'
+                ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
+                GROUP BY i.parent_id
+            )
             SELECT
-                parent_id,
-                COUNT(*) as child_count,
-                json_agg(
-                    json_build_object('id', id, 'first_name', first_name, 'last_name', last_name)
-                ) as children_list
-            FROM children
-            WHERE organisation_id = ${orgId} AND deleted_at IS NULL
-            ${activeCentreId !== 'all' ? sql`AND centre_id = ${activeCentreId}` : sql``}
-            GROUP BY parent_id
-        ),
-        InvoiceSummary AS (
-            SELECT
-                i.parent_id,
-                COALESCE(SUM(i.amount), 0) as total_invoiced,
-                COALESCE(SUM(p.paid), 0) as total_paid
-            FROM invoices i
-            LEFT JOIN (
-                SELECT invoice_id, SUM(amount) as paid
-                FROM payments
-                GROUP BY invoice_id
-            ) p ON i.id = p.invoice_id
-            WHERE i.organisation_id = ${orgId}
-              AND i.status != 'void'
-              ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
-            GROUP BY i.parent_id
-        ),
-        ParentBase AS (
-            SELECT
-                pa.id,
-                pa.first_name,
-                pa.last_name,
-                pa.email,
-                pa.phone,
-                COALESCE(cd.child_count, 0) as child_count,
-                COALESCE(cd.children_list, '[]'::json) as children_list,
-                GREATEST(0, COALESCE(ins.total_invoiced, 0) - COALESCE(ins.total_paid, 0)) as outstanding
+                COUNT(pa.id) as total_families,
+                COALESCE(SUM(cd.child_count), 0) as total_children,
+                COUNT(pa.id) FILTER (WHERE ins.outstanding > 0) as with_outstanding,
+                COALESCE(SUM(ins.outstanding), 0) as total_outstanding
             FROM parents pa
             LEFT JOIN ChildData cd ON pa.id = cd.parent_id
             LEFT JOIN InvoiceSummary ins ON pa.id = ins.parent_id
             WHERE pa.organisation_id = ${orgId} AND pa.deleted_at IS NULL
-            ${activeCentreId !== 'all' ? sql`AND (cd.child_count > 0 OR pa.id IN (SELECT parent_id FROM children WHERE centre_id = ${activeCentreId} AND deleted_at IS NULL))` : sql``}
-        )
-        SELECT * FROM ParentBase
-        WHERE 1=1
-    `;
+            ${activeCentreId !== 'all' ? sql`AND cd.child_count > 0` : sql``}
+        `);
 
-    // 2. Add filters
-    const filterClauses = [];
-    if (search) {
-        filterClauses.push(sql`(
-            first_name ILIKE ${'%' + search + '%'} OR
-            last_name ILIKE ${'%' + search + '%'} OR
-            email ILIKE ${'%' + search + '%'} OR
-            phone ILIKE ${'%' + search + '%'} OR
-            EXISTS (
-                SELECT 1 FROM json_array_elements(children_list) as child
-                WHERE (child->>'first_name') ILIKE ${'%' + search + '%'}
-                   OR (child->>'last_name') ILIKE ${'%' + search + '%'}
-            )
-        )`);
+        const kpis = kpisResult[0] || { total_families: 0, total_children: 0, with_outstanding: 0, total_outstanding: 0 };
+        totalFamilies = Number(kpis.total_families);
+        totalChildren = Number(kpis.total_children);
+        withOutstanding = Number(kpis.with_outstanding);
+        totalOutstanding = Number(kpis.total_outstanding);
+
+        // 4. Get filtered total for pagination
+        const countQuery = sql`
+            ${baseQuery}
+            ${whereSql}
+        `;
+        
+        const countResult = await db.execute(sql`SELECT COUNT(*)::int as count FROM (${countQuery}) as sub`);
+        filteredCount = Number(countResult[0]?.count || 0);
+        totalPages = Math.ceil(filteredCount / PAGE_SIZE);
+
+        // 5. Get paginated rows
+        const dataQuery = sql`
+            ${baseQuery}
+            ${whereSql}
+            ORDER BY last_name ASC, first_name ASC
+            LIMIT ${PAGE_SIZE}
+            OFFSET ${offset}
+        `;
+
+        const rawRows = await db.execute(dataQuery);
+
+        rows = rawRows.map(row => ({
+            id: row.id as string,
+            firstName: row.first_name as string,
+            lastName: row.last_name as string,
+            email: row.email as string | null,
+            phone: row.phone as string | null,
+            childCount: Number(row.child_count),
+            childrenList: row.children_list as any,
+            outstanding: Number(row.outstanding)
+        }));
+    } catch (e: any) {
+        console.error("Error fetching parents:", e);
+        hasError = true;
     }
-
-    if (status === 'active') {
-        filterClauses.push(sql`child_count > 0`);
-    } else if (status === 'inactive') {
-        filterClauses.push(sql`child_count = 0`);
-    } else if (status === 'arrears') {
-        filterClauses.push(sql`outstanding > 0`);
-    }
-
-    const whereSql = filterClauses.length > 0 
-        ? sql` AND ${sql.join(filterClauses, sql` AND `)}`
-        : sql``;
-
-    // 3. Get total counts (both filtered and total KPIs)
-    // Wait, KPI row needs totals regardless of current pagination or search filter (except maybe centre filter).
-    // Let's get global KPI totals
-    const kpisResult = await db.execute(sql`
-        WITH ChildData AS (
-            SELECT parent_id, COUNT(*) as child_count
-            FROM children
-            WHERE organisation_id = ${orgId} AND deleted_at IS NULL
-            ${activeCentreId !== 'all' ? sql`AND centre_id = ${activeCentreId}` : sql``}
-            GROUP BY parent_id
-        ),
-        InvoiceSummary AS (
-            SELECT
-                i.parent_id,
-                GREATEST(0, COALESCE(SUM(i.amount), 0) - COALESCE(SUM(p.paid), 0)) as outstanding
-            FROM invoices i
-            LEFT JOIN (
-                SELECT invoice_id, SUM(amount) as paid
-                FROM payments
-                GROUP BY invoice_id
-            ) p ON i.id = p.invoice_id
-            WHERE i.organisation_id = ${orgId} AND i.status != 'void'
-            ${activeCentreId !== 'all' ? sql`AND i.centre_id = ${activeCentreId}` : sql``}
-            GROUP BY i.parent_id
-        )
-        SELECT
-            COUNT(pa.id) as total_families,
-            COALESCE(SUM(cd.child_count), 0) as total_children,
-            COUNT(pa.id) FILTER (WHERE ins.outstanding > 0) as with_outstanding,
-            COALESCE(SUM(ins.outstanding), 0) as total_outstanding
-        FROM parents pa
-        LEFT JOIN ChildData cd ON pa.id = cd.parent_id
-        LEFT JOIN InvoiceSummary ins ON pa.id = ins.parent_id
-        WHERE pa.organisation_id = ${orgId} AND pa.deleted_at IS NULL
-        ${activeCentreId !== 'all' ? sql`AND cd.child_count > 0` : sql``}
-    `);
-
-    const kpis = kpisResult[0] || { total_families: 0, total_children: 0, with_outstanding: 0, total_outstanding: 0 };
-    const totalFamilies = Number(kpis.total_families);
-    const totalChildren = Number(kpis.total_children);
-    const withOutstanding = Number(kpis.with_outstanding);
-    const totalOutstanding = Number(kpis.total_outstanding);
-
-    // 4. Get filtered total for pagination
-    const countQuery = sql`
-        ${baseQuery}
-        ${whereSql}
-    `;
-    
-    const countResult = await db.execute(sql`SELECT COUNT(*)::int as count FROM (${countQuery}) as sub`);
-    const filteredCount = Number(countResult[0]?.count || 0);
-    const totalPages = Math.ceil(filteredCount / PAGE_SIZE);
-
-    // 5. Get paginated rows
-    const dataQuery = sql`
-        ${baseQuery}
-        ${whereSql}
-        ORDER BY last_name ASC, first_name ASC
-        LIMIT ${PAGE_SIZE}
-        OFFSET ${offset}
-    `;
-
-    const rawRows = await db.execute(dataQuery);
-
-    const rows: ParentRow[] = rawRows.map(row => ({
-        id: row.id as string,
-        firstName: row.first_name as string,
-        lastName: row.last_name as string,
-        email: row.email as string | null,
-        phone: row.phone as string | null,
-        childCount: Number(row.child_count),
-        childrenList: row.children_list as any,
-        outstanding: Number(row.outstanding)
-    }));
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -254,7 +268,7 @@ export default async function ParentsPage({ searchParams }: Props) {
             </div>
 
             <div className="relative">
-                <ParentsTable parents={rows} />
+                <ParentsTable parents={rows} error={hasError} />
                 
                 {totalPages > 1 && (
                     <div className="sticky bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-md border-t border-border mt-4 rounded-b-3xl">
