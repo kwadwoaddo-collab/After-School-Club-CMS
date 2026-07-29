@@ -435,6 +435,10 @@ export async function recordPayment(data: {
         message: `A £${Number(data.amount).toFixed(2)} payment (${data.method.replace('_', ' ')}) has been recorded.`,
     }).catch(() => {});
 
+    // TODO: Send receipt email after successful payment
+    // Requires email template to be added to EmailService
+    console.log('[recordPayment] TODO: Feature needs email template for payment receipts');
+
     return result;
 }
 
