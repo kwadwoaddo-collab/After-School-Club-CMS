@@ -24,7 +24,7 @@ const SESSION_SLOTS = [
 ];
 
 const input = 'w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 text-sm';
-const label = 'text-xs text-white/50 uppercase tracking-wide mb-1 block';
+const label = 'text-xs text-muted-foreground uppercase tracking-wide mb-1 block';
 
 interface RegParent {
     id: string;
@@ -244,7 +244,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                             <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Child {i + 1}</p>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className={label}>First Name</label>
+                                    <label className={label}>First Name <span className="text-destructive ml-0.5">*</span></label>
                                     {editingSection === 'children' ? (
                                         <input className={input} value={c.firstName} onChange={e => updateChild(i, 'firstName', e.target.value)} />
                                     ) : (
@@ -252,7 +252,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     )}
                                 </div>
                                 <div>
-                                    <label className={label}>Last Name</label>
+                                    <label className={label}>Last Name <span className="text-destructive ml-0.5">*</span></label>
                                     {editingSection === 'children' ? (
                                         <input className={input} value={c.lastName} onChange={e => updateChild(i, 'lastName', e.target.value)} />
                                     ) : (
@@ -260,7 +260,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     )}
                                 </div>
                                 <div>
-                                    <label className={label}>Date of Birth</label>
+                                    <label className={label}>Date of Birth <span className="text-destructive ml-0.5">*</span></label>
                                     {editingSection === 'children' ? (
                                         <input type="date" className={input} value={c.dateOfBirth} onChange={e => updateChild(i, 'dateOfBirth', e.target.value)} />
                                     ) : (
@@ -268,7 +268,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     )}
                                 </div>
                                 <div>
-                                    <label className={label}>Year Group</label>
+                                    <label className={label}>Year Group <span className="text-destructive ml-0.5">*</span></label>
                                     {editingSection === 'children' ? (
                                         <select className={input} value={c.schoolYear} onChange={e => updateChild(i, 'schoolYear', e.target.value)}>
                                             <option value="">Select year</option>
@@ -310,17 +310,17 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className={label}>First Name</label>
+                                <label className={label}>First Name <span className="text-destructive ml-0.5">*</span></label>
                                 {editingSection === `parent-${i}` ? <input className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} /> : <p className="text-sm text-white/90">{p.firstName}</p>}
                             </div>
                             <div>
-                                <label className={label}>Last Name</label>
+                                <label className={label}>Last Name <span className="text-destructive ml-0.5">*</span></label>
                                 {editingSection === `parent-${i}` ? <input className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} /> : <p className="text-sm text-white/90">{p.lastName}</p>}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className={label}>Relationship</label>
+                                <label className={label}>Relationship <span className="text-destructive ml-0.5">*</span></label>
                                 {editingSection === `parent-${i}` ? (
                                     <select className={input} value={p.relationship} onChange={e => updateParent(i, 'relationship', e.target.value)}>
                                         <option value="">Select</option>
@@ -329,12 +329,12 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                 ) : <p className="text-sm text-white/90 capitalize">{p.relationship}</p>}
                             </div>
                             <div>
-                                <label className={label}>Phone</label>
+                                <label className={label}>Phone <span className="text-destructive ml-0.5">*</span></label>
                                 {editingSection === `parent-${i}` ? <input className={input} value={p.phone} onChange={e => updateParent(i, 'phone', e.target.value)} /> : <p className="text-sm text-white/90">{p.phone}</p>}
                             </div>
                         </div>
                         <div>
-                            <label className={label}>Email</label>
+                            <label className={label}>Email <span className="text-destructive ml-0.5">*</span></label>
                             {editingSection === `parent-${i}` ? <input type="email" className={input} value={p.email} onChange={e => updateParent(i, 'email', e.target.value)} /> : <p className="text-sm text-white/90">{p.email}</p>}
                         </div>
                         
@@ -399,11 +399,11 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-white/70 mb-2">Funding Details</h3>
                         <div>
-                            <label className={label}>Requested Start Date</label>
+                            <label className={label}>Requested Start Date <span className="text-destructive ml-0.5">*</span></label>
                             {editingSection === 'funding_ec' ? <input type="date" className={input} value={startDate} onChange={e => setStartDate(e.target.value)} /> : <p className="text-sm text-white/90">{startDate}</p>}
                         </div>
                         <div>
-                            <label className={label}>Funding Method</label>
+                            <label className={label}>Funding Method <span className="text-destructive ml-0.5">*</span></label>
                             {editingSection === 'funding_ec' ? (
                                 <select className={input} value={fundingType} onChange={e => setFundingType(e.target.value)}>
                                     <option value="">Select funding</option>

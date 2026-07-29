@@ -144,7 +144,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div>
-                    <label htmlFor="org-name" className="text-xs font-medium text-muted-foreground mb-1.5 block">Organisation Name</label>
+                    <label htmlFor="org-name" className="text-xs font-medium text-muted-foreground mb-1.5 block">Organisation Name <span className="text-destructive ml-0.5">*</span></label>
                     {isEditingName ? (
                         <div className="flex gap-2">
                             <input id="org-name" type="text" value={name} onChange={e => setName(e.target.value)}
@@ -280,7 +280,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label htmlFor="contact-email" className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><Mail className="w-3 h-3" /> Email</label>
+                                <label htmlFor="contact-email" className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1"><Mail className="w-3 h-3" /> Email <span className="text-destructive ml-0.5">*</span></label>
                                 <input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
                                     className={inp} placeholder="info@yourclub.co.uk" disabled={saving} />
                             </div>
