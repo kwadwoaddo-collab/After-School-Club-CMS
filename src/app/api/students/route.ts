@@ -9,7 +9,7 @@ import { z } from 'zod';
 const schema = z.object({
     firstName: z.string().min(2),
     lastName: z.string().min(2),
-    dateOfBirth: z.string(),
+    dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
     schoolYear: z.string(),
     parentFirstName: z.string().min(2),
     parentLastName: z.string().min(2),
