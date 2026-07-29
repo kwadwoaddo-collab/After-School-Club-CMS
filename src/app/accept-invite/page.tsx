@@ -157,7 +157,7 @@ function AcceptInviteContent() {
                     </button>
 
                     <p className="text-white/30 text-xs mt-6">
-                        This link is single-use and expires in 15 minutes.
+                        This link is single-use and expires in 7 days.
                         For future logins, use the staff login page.
                     </p>
                 </div>
