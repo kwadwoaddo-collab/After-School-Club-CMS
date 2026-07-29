@@ -48,28 +48,43 @@ export async function resolveOrCreateParent(
   data: ParentInput,
   currentOrgId: string
 ) {
-  if (!data.email) {
-    throw new Error('Email is required for parent resolution');
-  }
-  const cleanEmail = data.email.trim();
+  const cleanEmail = data.email?.trim() || null;
 
-  // 1. Search for existing parent by email and organisationId to enforce tenant boundary
-  let parent = await tx.query.parents.findFirst({
-    where: and(
-      ilike(parents.email, cleanEmail),
-      eq(parents.organisationId, currentOrgId)
-    ),
-  });
+  let parent: any = null;
+
+  if (cleanEmail) {
+    // Path A: email provided — look up by email + org (fast, unique)
+    parent = await tx.query.parents.findFirst({
+      where: and(
+        ilike(parents.email, cleanEmail),
+        eq(parents.organisationId, currentOrgId)
+      ),
+    });
+  } else {
+    // Path B: no email — match by first name + last name + org (case-insensitive)
+    // Also narrow by phone if available to reduce collision risk
+    const conditions: any[] = [
+      ilike(parents.firstName, data.firstName.trim()),
+      ilike(parents.lastName, data.lastName.trim()),
+      eq(parents.organisationId, currentOrgId),
+    ];
+    if (data.phone) {
+      conditions.push(eq(parents.phone, data.phone));
+    }
+    parent = await tx.query.parents.findFirst({
+      where: and(...conditions),
+    });
+  }
 
   if (!parent) {
-    // 2. Insert new parent if not found
+    // Insert new parent — email may be null (DB column is nullable)
     const [newParent] = await tx.insert(parents).values({
       firstName: data.firstName.trim(),
       lastName: data.lastName.trim(),
       email: cleanEmail,
       phone: data.phone || null,
       organisationId: currentOrgId,
-      preferredContact: 'email',
+      preferredContact: cleanEmail ? 'email' : 'phone',
       relationship: data.relationship || null,
       addressLine1: data.addressLine1 || null,
       addressLine2: data.addressLine2 || null,
@@ -78,8 +93,9 @@ export async function resolveOrCreateParent(
     }).returning();
     parent = newParent;
   } else {
-    // 3. Enforce data enrichment (update phone and address fields if they were null)
+    // Enrich existing parent with any new data provided
     const updateFields: any = {};
+    if (cleanEmail && !parent.email) updateFields.email = cleanEmail;
     if (data.phone && !parent.phone) updateFields.phone = data.phone;
     if (data.relationship && !parent.relationship) updateFields.relationship = data.relationship;
     if (data.addressLine1 && !parent.addressLine1) updateFields.addressLine1 = data.addressLine1;
@@ -92,7 +108,7 @@ export async function resolveOrCreateParent(
       await tx.update(parents)
         .set(updateFields)
         .where(eq(parents.id, parent.id));
-      
+
       Object.assign(parent, updateFields);
     }
   }
