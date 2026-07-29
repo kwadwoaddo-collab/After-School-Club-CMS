@@ -187,7 +187,7 @@ export default function StudentForm({ accessibleCentres }: StudentFormProps) {
                     <h3 className="text-lg font-bold text-foreground mb-4">Centre Assignment</h3>
                     <div>
                         <label className="block text-sm font-bold text-foreground mb-1">
-                            Assign to Centre <span className="text-rose-500">*</span>
+                            Assign to Centre <span className="text-destructive ml-0.5">*</span>
                         </label>
                         {accessibleCentres.length === 0 ? (
                             <p className="text-on-surface-variant text-sm p-3 bg-secondary/40 rounded-xl border border-outline-variant/10">
