@@ -28,232 +28,253 @@ export default async function StudentsPage(props: {
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 
-    const [org] = await db
-        .select()
-        .from(organisations)
-        .where(eq(organisations.id, session.user.organisationId))
-        .limit(1);
+    let hasError = false;
+    let org: any = null;
+    let accessibleCentreIds: string[] = [];
+    let accessibleCentres: any[] = [];
+    let stats: any = null;
+    let filteredCount = 0;
+    let totalPages = 0;
+    let page = 1;
+    let enrichedStudents: StudentRow[] = [];
+    let showLowAttendance = false;
 
-    if (!org) return redirect('/onboarding');
+    try {
+        const [fetchedOrg] = await db
+            .select()
+            .from(organisations)
+            .where(eq(organisations.id, session.user.organisationId))
+            .limit(1);
 
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        org = fetchedOrg;
+        if (!org) throw new Error("NO_ORG");('/onboarding');
 
-    if (accessibleCentreIds.length === 0) {
-        return (
-            <div className="space-y-8 animate-in fade-in duration-700">
-                <div className="flex items-end justify-between">
-                    <div>
-                        <h1 className="text-3xl font-black text-foreground tracking-tight">Students</h1>
-                        <p className="text-muted-foreground font-medium mt-1">
-                            View all registered students and their details
-                        </p>
+        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+
+        if (accessibleCentreIds.length === 0) {
+            return (
+                <div className="space-y-8 animate-in fade-in duration-700">
+                    <div className="flex items-end justify-between">
+                        <div>
+                            <h1 className="text-3xl font-black text-foreground tracking-tight">Students</h1>
+                            <p className="text-muted-foreground font-medium mt-1">
+                                View all registered students and their details
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard/students/add"
+                            className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-lg shadow-primary/30 glow-btn"
+                        >
+                            <Plus className="w-4 h-4" /> Add Student
+                        </Link>
                     </div>
-                    <Link
-                        href="/dashboard/students/add"
-                        className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-lg shadow-primary/30 glow-btn"
-                    >
-                        <Plus className="w-4 h-4" /> Add Student
-                    </Link>
+                    <StudentsTable students={[]} />
                 </div>
-                <StudentsTable students={[]} />
-            </div>
-        );
-    }
-
-    const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
-    const accessibleCentres = await getUserAccessibleCentres(session.user.id);
-
-    const conditions = [
-        eq(children.organisationId, org.id),
-        isNull(children.deletedAt),
-        isNull(parents.deletedAt)
-    ];
-
-    if (activeCentreId !== 'all') {
-        conditions.push(eq(children.centreId, activeCentreId));
-    } else {
-        conditions.push(
-            or(
-                inArray(children.centreId, accessibleCentreIds),
-                sql`${children.centreId} IS NULL`
-            )!
-        );
-    }
-
-    if (searchParams.search) {
-        const searchPattern = `%${searchParams.search}%`;
-        const searchCondition = or(
-            ilike(children.firstName, searchPattern),
-            ilike(children.lastName, searchPattern),
-            ilike(parents.firstName, searchPattern),
-            ilike(parents.lastName, searchPattern),
-            ilike(parents.email, searchPattern),
-            ilike(parents.phone, searchPattern)
-        );
-        if (searchCondition) {
-            conditions.push(searchCondition);
+            );
         }
-    }
 
-    // Since we are changing filters to MultiSelect, year might be a comma-separated list
-    // Wait, the spec says "Multi-Select Dropdown". "Year Groups (All)" or "Year Groups (2 Selected)".
-    // So year param can be a comma-separated string, or multiple 'year' params. Let's assume comma-separated.
-    if (searchParams.year && searchParams.year !== 'all') {
-        const years = searchParams.year.split(',');
-        if (years.length > 0) {
-            conditions.push(inArray(children.schoolYear, years));
+        const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
+        accessibleCentres = await getUserAccessibleCentres(session.user.id);
+
+        const conditions = [
+            eq(children.organisationId, org.id),
+            isNull(children.deletedAt),
+            isNull(parents.deletedAt)
+        ];
+
+        if (activeCentreId !== 'all') {
+            conditions.push(eq(children.centreId, activeCentreId));
+        } else {
+            conditions.push(
+                or(
+                    inArray(children.centreId, accessibleCentreIds),
+                    sql`${children.centreId} IS NULL`
+                )!
+            );
         }
+
+        if (searchParams.search) {
+            const searchPattern = `%${searchParams.search}%`;
+            const searchCondition = or(
+                ilike(children.firstName, searchPattern),
+                ilike(children.lastName, searchPattern),
+                ilike(parents.firstName, searchPattern),
+                ilike(parents.lastName, searchPattern),
+                ilike(parents.email, searchPattern),
+                ilike(parents.phone, searchPattern)
+            );
+            if (searchCondition) {
+                conditions.push(searchCondition);
+            }
+        }
+
+        // Since we are changing filters to MultiSelect, year might be a comma-separated list
+        // Wait, the spec says "Multi-Select Dropdown". "Year Groups (All)" or "Year Groups (2 Selected)".
+        // So year param can be a comma-separated string, or multiple 'year' params. Let's assume comma-separated.
+        if (searchParams.year && searchParams.year !== 'all') {
+            const years = searchParams.year.split(',');
+            if (years.length > 0) {
+                conditions.push(inArray(children.schoolYear, years));
+            }
+        }
+
+        showLowAttendance = searchParams.status === 'low-attendance';
+        if (searchParams.status && searchParams.status !== 'all' && !showLowAttendance) {
+            conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
+        }
+
+        // Base subqueries for counts
+        const centreFilterSql = activeCentreId !== 'all' 
+            ? sql`AND b.centre_id = ${activeCentreId}` 
+            : sql`AND b.centre_id IN ${sql`(${sql.join(accessibleCentreIds.map(id => sql`${id}`), sql`, `)})`}`;
+
+        // Instead of raw text list of accessibleCentreIds, we might need a better way if it's dynamic.
+        // Drizzle `inArray` can be used via sql. Or we just simplify since we are passing activeCentreId or we just check if it's 'all'
+        // Let's build a simpler subquery logic.
+        // Actually, joining all these inside CTE is easier.
+
+        // Let's do it using Drizzle sql``
+        const pastCountQuery = sql<number>`(
+            SELECT count(*)::int FROM ${bookingAttendees} ba
+            INNER JOIN ${bookings} b ON ba.booking_id = b.id
+            WHERE ba.child_id = ${children.id} AND b.start_at <= now()
+            ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+        )`;
+
+        const presentCountQuery = sql<number>`(
+            SELECT count(*)::int FROM ${bookingAttendees} ba
+            INNER JOIN ${bookings} b ON ba.booking_id = b.id
+            WHERE ba.child_id = ${children.id} AND b.start_at <= now()
+            AND COALESCE(ba.attendance_status::text, CASE WHEN b.status = 'completed' THEN 'present' ELSE NULL END) = 'present'
+            ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+        )`;
+
+        const totalCountQuery = sql<number>`(
+            SELECT count(*)::int FROM ${bookingAttendees} ba
+            INNER JOIN ${bookings} b ON ba.booking_id = b.id
+            WHERE ba.child_id = ${children.id}
+            ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+        )`;
+
+        const nextAssessmentQuery = sql<Date | null>`(
+            SELECT min(b.start_at) FROM ${bookingAttendees} ba
+            INNER JOIN ${bookings} b ON ba.booking_id = b.id
+            WHERE ba.child_id = ${children.id} AND b.start_at > now()
+            ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
+        )`;
+
+        const hasMedicalNotesQuery = sql<boolean>`(
+            EXISTS (
+                SELECT 1 FROM ${studentNotes} sn 
+                WHERE sn.child_id = ${children.id} AND sn.category = 'Medical'
+            )
+        )`;
+        const hasSafeguardingNotesQuery = sql<boolean>`(
+            EXISTS (
+                SELECT 1 FROM ${studentNotes} sn 
+                WHERE sn.child_id = ${children.id} AND sn.category = 'Safeguarding'
+            )
+        )`;
+
+        // Aggregate stats query
+        const statsQuery = db
+            .select({
+                totalCount: sql<number>`count(*)::int`,
+                registeredCount: sql<number>`count(*) filter (where ${children.isRegistered} = true)::int`,
+                leadCount: sql<number>`count(*) filter (where ${children.isRegistered} = false)::int`,
+                medicalAlertCount: sql<number>`count(*) filter (where ${hasMedicalNotesQuery} = true OR ${hasSafeguardingNotesQuery} = true)::int`,
+                lowAttendanceCount: sql<number>`count(*) filter (where ${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75)::int`,
+            })
+            .from(children)
+            .innerJoin(parents, eq(children.parentId, parents.id))
+            .where(and(...conditions));
+
+        if (showLowAttendance) {
+            conditions.push(sql`${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75`);
+        }
+
+        const [fetchedStats] = await statsQuery;
+        stats = fetchedStats;
+
+        const PAGE_SIZE = 20;
+        page = Math.max(1, parseInt(searchParams.page || '1', 10));
+        const offset = (page - 1) * PAGE_SIZE;
+
+        // We also need the filtered total count for pagination
+        const [{ filteredCount: fc }] = await db
+        filteredCount = fc;
+            .select({ filteredCount: sql<number>`count(*)::int` })
+            .from(children)
+            .innerJoin(parents, eq(children.parentId, parents.id))
+            .where(and(...conditions));
+
+        totalPages = Math.ceil(filteredCount / PAGE_SIZE);
+
+        const studentsList = await db
+            .select({
+                id: children.id,
+                firstName: children.firstName,
+                lastName: children.lastName,
+                dateOfBirth: children.dateOfBirth,
+                schoolYear: children.schoolYear,
+                isRegistered: children.isRegistered,
+                source: children.source,
+                parentFirstName: parents.firstName,
+                parentLastName: parents.lastName,
+                parentEmail: parents.email,
+                parentPhone: parents.phone,
+                parentId: parents.id,
+                bookingCount: totalCountQuery,
+                pastCount: pastCountQuery,
+                presentCount: presentCountQuery,
+                nextAssessment: nextAssessmentQuery,
+                hasMedicalNotes: hasMedicalNotesQuery,
+                hasSafeguardingNotes: hasSafeguardingNotesQuery,
+            })
+            .from(children)
+            .innerJoin(parents, eq(children.parentId, parents.id))
+            .where(and(...conditions))
+            .orderBy(asc(children.lastName), asc(children.firstName))
+            .limit(PAGE_SIZE)
+            .offset(offset);
+
+        const LOW_ATTENDANCE_THRESHOLD = 75;
+        const MIN_SESSIONS_FOR_ALERT = 3;
+
+        enrichedStudents StudentRow[] = studentsList.map((student) => {
+            const pastCount = Number(student.pastCount || 0);
+            const presentCount = Number(student.presentCount || 0);
+            const bookingCount = Number(student.bookingCount || 0);
+            const attendanceRate = pastCount > 0 ? (presentCount / pastCount) * 100 : 0;
+
+            return {
+                id: student.id,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
+                schoolYear: student.schoolYear ?? null,
+                isRegistered: !!student.isRegistered,
+                source: student.source,
+                parentId: student.parentId,
+                parentFirstName: student.parentFirstName,
+                parentLastName: student.parentLastName,
+                parentEmail: student.parentEmail,
+                parentPhone: student.parentPhone,
+                bookingCount,
+                completedCount: presentCount,
+                attendanceRate,
+                lowAttendance: pastCount >= MIN_SESSIONS_FOR_ALERT && attendanceRate < LOW_ATTENDANCE_THRESHOLD,
+                nextAssessment: student.nextAssessment ?? null,
+                medicalNotes: student.hasMedicalNotes ? ['Medical Note'] : [],
+                safeguardingNotes: student.hasSafeguardingNotes ? ['Safeguarding Note'] : [],
+            };
+        });
+
+    } catch (e: any) {
+        if (e.message === "NO_ORG") return redirect("/onboarding");
+        console.error("Error fetching students:", e);
+        hasError = true;
     }
-
-    const showLowAttendance = searchParams.status === 'low-attendance';
-    if (searchParams.status && searchParams.status !== 'all' && !showLowAttendance) {
-        conditions.push(eq(children.isRegistered, searchParams.status === 'registered'));
-    }
-
-    // Base subqueries for counts
-    const centreFilterSql = activeCentreId !== 'all' 
-        ? sql`AND b.centre_id = ${activeCentreId}` 
-        : sql`AND b.centre_id IN ${sql`(${sql.join(accessibleCentreIds.map(id => sql`${id}`), sql`, `)})`}`;
-    
-    // Instead of raw text list of accessibleCentreIds, we might need a better way if it's dynamic.
-    // Drizzle `inArray` can be used via sql. Or we just simplify since we are passing activeCentreId or we just check if it's 'all'
-    // Let's build a simpler subquery logic.
-    // Actually, joining all these inside CTE is easier.
-
-    // Let's do it using Drizzle sql``
-    const pastCountQuery = sql<number>`(
-        SELECT count(*)::int FROM ${bookingAttendees} ba
-        INNER JOIN ${bookings} b ON ba.booking_id = b.id
-        WHERE ba.child_id = ${children.id} AND b.start_at <= now()
-        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
-    )`;
-
-    const presentCountQuery = sql<number>`(
-        SELECT count(*)::int FROM ${bookingAttendees} ba
-        INNER JOIN ${bookings} b ON ba.booking_id = b.id
-        WHERE ba.child_id = ${children.id} AND b.start_at <= now()
-        AND COALESCE(ba.attendance_status::text, CASE WHEN b.status = 'completed' THEN 'present' ELSE NULL END) = 'present'
-        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
-    )`;
-
-    const totalCountQuery = sql<number>`(
-        SELECT count(*)::int FROM ${bookingAttendees} ba
-        INNER JOIN ${bookings} b ON ba.booking_id = b.id
-        WHERE ba.child_id = ${children.id}
-        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
-    )`;
-
-    const nextAssessmentQuery = sql<Date | null>`(
-        SELECT min(b.start_at) FROM ${bookingAttendees} ba
-        INNER JOIN ${bookings} b ON ba.booking_id = b.id
-        WHERE ba.child_id = ${children.id} AND b.start_at > now()
-        ${activeCentreId !== 'all' ? sql`AND b.centre_id = ${activeCentreId}` : sql``}
-    )`;
-
-    const hasMedicalNotesQuery = sql<boolean>`(
-        EXISTS (
-            SELECT 1 FROM ${studentNotes} sn 
-            WHERE sn.child_id = ${children.id} AND sn.category = 'Medical'
-        )
-    )`;
-    const hasSafeguardingNotesQuery = sql<boolean>`(
-        EXISTS (
-            SELECT 1 FROM ${studentNotes} sn 
-            WHERE sn.child_id = ${children.id} AND sn.category = 'Safeguarding'
-        )
-    )`;
-
-    // Aggregate stats query
-    const statsQuery = db
-        .select({
-            totalCount: sql<number>`count(*)::int`,
-            registeredCount: sql<number>`count(*) filter (where ${children.isRegistered} = true)::int`,
-            leadCount: sql<number>`count(*) filter (where ${children.isRegistered} = false)::int`,
-            medicalAlertCount: sql<number>`count(*) filter (where ${hasMedicalNotesQuery} = true OR ${hasSafeguardingNotesQuery} = true)::int`,
-            lowAttendanceCount: sql<number>`count(*) filter (where ${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75)::int`,
-        })
-        .from(children)
-        .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(and(...conditions));
-
-    if (showLowAttendance) {
-        conditions.push(sql`${pastCountQuery} >= 3 AND (${presentCountQuery}::float / ${pastCountQuery}::float) < 0.75`);
-    }
-
-    const [stats] = await statsQuery;
-
-    const PAGE_SIZE = 20;
-    const page = Math.max(1, parseInt(searchParams.page || '1', 10));
-    const offset = (page - 1) * PAGE_SIZE;
-
-    // We also need the filtered total count for pagination
-    const [{ filteredCount }] = await db
-        .select({ filteredCount: sql<number>`count(*)::int` })
-        .from(children)
-        .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(and(...conditions));
-
-    const totalPages = Math.ceil(filteredCount / PAGE_SIZE);
-
-    const studentsList = await db
-        .select({
-            id: children.id,
-            firstName: children.firstName,
-            lastName: children.lastName,
-            dateOfBirth: children.dateOfBirth,
-            schoolYear: children.schoolYear,
-            isRegistered: children.isRegistered,
-            source: children.source,
-            parentFirstName: parents.firstName,
-            parentLastName: parents.lastName,
-            parentEmail: parents.email,
-            parentPhone: parents.phone,
-            parentId: parents.id,
-            bookingCount: totalCountQuery,
-            pastCount: pastCountQuery,
-            presentCount: presentCountQuery,
-            nextAssessment: nextAssessmentQuery,
-            hasMedicalNotes: hasMedicalNotesQuery,
-            hasSafeguardingNotes: hasSafeguardingNotesQuery,
-        })
-        .from(children)
-        .innerJoin(parents, eq(children.parentId, parents.id))
-        .where(and(...conditions))
-        .orderBy(asc(children.lastName), asc(children.firstName))
-        .limit(PAGE_SIZE)
-        .offset(offset);
-
-    const LOW_ATTENDANCE_THRESHOLD = 75;
-    const MIN_SESSIONS_FOR_ALERT = 3;
-
-    const enrichedStudents: StudentRow[] = studentsList.map((student) => {
-        const pastCount = Number(student.pastCount || 0);
-        const presentCount = Number(student.presentCount || 0);
-        const bookingCount = Number(student.bookingCount || 0);
-        const attendanceRate = pastCount > 0 ? (presentCount / pastCount) * 100 : 0;
-        
-        return {
-            id: student.id,
-            firstName: student.firstName,
-            lastName: student.lastName,
-            dateOfBirth: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
-            schoolYear: student.schoolYear ?? null,
-            isRegistered: !!student.isRegistered,
-            source: student.source,
-            parentId: student.parentId,
-            parentFirstName: student.parentFirstName,
-            parentLastName: student.parentLastName,
-            parentEmail: student.parentEmail,
-            parentPhone: student.parentPhone,
-            bookingCount,
-            completedCount: presentCount,
-            attendanceRate,
-            lowAttendance: pastCount >= MIN_SESSIONS_FOR_ALERT && attendanceRate < LOW_ATTENDANCE_THRESHOLD,
-            nextAssessment: student.nextAssessment ?? null,
-            medicalNotes: student.hasMedicalNotes ? ['Medical Note'] : [],
-            safeguardingNotes: student.hasSafeguardingNotes ? ['Safeguarding Note'] : [],
-        };
-    });
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -364,7 +385,7 @@ export default async function StudentsPage(props: {
             </div>
 
             <div className="relative">
-                <StudentsTable students={enrichedStudents} />
+                <StudentsTable students={enrichedStudents} error={hasError} />
                 
                 {totalPages > 1 && (
                     <div className="sticky bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-md border-t border-border mt-4 rounded-b-3xl">
