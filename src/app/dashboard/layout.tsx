@@ -164,7 +164,7 @@ export default async function DashboardLayout({
                             {/* Dynamic Page Content */}
                             <main
                                 id="main-content"
-                                className="p-4 sm:p-8 pb-24 lg:pb-8 flex-1 dashboard-main-content"
+                                className="p-4 sm:p-8 pb-24 lg:pb-8 flex-1 min-w-0 dashboard-main-content"
                                 tabIndex={-1}
                             >
                                 {children}
