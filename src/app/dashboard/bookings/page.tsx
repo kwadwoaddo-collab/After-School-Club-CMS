@@ -49,11 +49,24 @@ export default async function BookingsPage(props: {
 
     const orgId = session.user.organisationId;
 
-    const [org] = await db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, orgId)).limit(1);
-    if (!org) redirect('/onboarding');
+    let org;
+    let orgCentres;
+    let centreIds: string[] = [];
+    
+    try {
+        const [fetchedOrg] = await db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, orgId)).limit(1);
+        org = fetchedOrg;
+        
+        if (org) {
+            orgCentres = await getUserAccessibleCentres(session.user.id);
+            centreIds = orgCentres.map((c: any) => c.id);
+        }
+    } catch (e) {
+        logger.error('Failed to validate org:', e);
+        redirect('/dashboard');
+    }
 
-    const orgCentres = await getUserAccessibleCentres(session.user.id);
-    const centreIds = orgCentres.map(c => c.id);
+    if (!org) redirect('/onboarding');
 
     if (centreIds.length === 0) {
         return (
