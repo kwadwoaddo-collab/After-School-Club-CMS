@@ -241,7 +241,7 @@ export default async function StudentsPage(props: {
         const LOW_ATTENDANCE_THRESHOLD = 75;
         const MIN_SESSIONS_FOR_ALERT = 3;
 
-        enrichedStudents StudentRow[] = studentsList.map((student) => {
+        const enrichedStudents: StudentRow[] = studentsList.map((student) => {
             const pastCount = Number(student.pastCount || 0);
             const presentCount = Number(student.presentCount || 0);
             const bookingCount = Number(student.bookingCount || 0);
