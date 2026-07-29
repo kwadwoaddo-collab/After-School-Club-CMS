@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { organisations, centres, bookings } from '@/db/schema';
 import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, MapPin, ChevronRight, BarChart3, Building2 } from 'lucide-react';
+import { Plus, MapPin, ChevronRight, BarChart3, Building2, AlertTriangle } from 'lucide-react';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { LoadForecast } from '@/components/dashboard/LoadForecast';
 import { getAvatarGradient } from '@/components/ui/utils';
@@ -18,59 +18,74 @@ export default async function CentresPage() {
     const userRole = (session.user as any).role;
     if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) return redirect('/dashboard');
 
-    const [org] = await db
-        .select()
-        .from(organisations)
-        .where(eq(organisations.id, session.user.organisationId))
-        .limit(1);
-
-    if (!org) return redirect('/onboarding');
-
-    // Fetch all centres for this organisation
-    const centresList = await db
-        .select()
-        .from(centres)
-        .where(eq(centres.organisationId, org.id));
-
-    const centreIds = centresList.map(c => c.id);
+    let hasError = false;
+    let org = null;
+    let centresList: any[] = [];
+    let centreIds: string[] = [];
+    let bookingCounts: any[] = [];
+    let centresWithStats: any[] = [];
 
     const now = new Date();
     const next7Days = addDays(now, 7);
 
-    // Fetch booking counts for the next 7 days ONLY for these centres (Data Isolation)
-    const bookingCounts = centreIds.length > 0 ? await db
-        .select({
-            centreId: bookings.centreId,
-            day: sql<string>`date_trunc('day', ${bookings.startAt})`,
-            count: sql<number>`count(*)::int`
-        })
-        .from(bookings)
-        .where(and(
-            inArray(bookings.centreId, centreIds),
-            gte(bookings.startAt, startOfDay(now)),
-            lt(bookings.startAt, endOfDay(next7Days)),
-            eq(bookings.status, 'confirmed')
-        ))
-        .groupBy(bookings.centreId, sql`date_trunc('day', ${bookings.startAt})`) : [];
+    try {
+        const [foundOrg] = await db
+            .select()
+            .from(organisations)
+            .where(eq(organisations.id, session.user.organisationId))
+            .limit(1);
+        org = foundOrg;
 
-    // Map counts to centres
-    const centresWithStats = centresList.map(centre => {
-        const centreStats = bookingCounts.filter(bc => bc.centreId === centre.id);
-        const todayStats = centreStats.find(bc => {
-            if (!bc.day) return false;
-            const d = new Date(bc.day);
-            return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        });
-        
-        return {
-            ...centre,
-            todayCount: Number(todayStats?.count || 0),
-            forecast: centreStats.map(bc => ({
-                day: new Date(bc.day!),
-                count: Number(bc.count || 0)
-            }))
-        };
-    });
+        if (org) {
+            // Fetch all centres for this organisation
+            centresList = await db
+                .select()
+                .from(centres)
+                .where(eq(centres.organisationId, org.id));
+
+            centreIds = centresList.map(c => c.id);
+
+            // Fetch booking counts for the next 7 days ONLY for these centres (Data Isolation)
+            bookingCounts = centreIds.length > 0 ? await db
+                .select({
+                    centreId: bookings.centreId,
+                    day: sql<string>`date_trunc('day', ${bookings.startAt})`,
+                    count: sql<number>`count(*)::int`
+                })
+                .from(bookings)
+                .where(and(
+                    inArray(bookings.centreId, centreIds),
+                    gte(bookings.startAt, startOfDay(now)),
+                    lt(bookings.startAt, endOfDay(next7Days)),
+                    eq(bookings.status, 'confirmed')
+                ))
+                .groupBy(bookings.centreId, sql`date_trunc('day', ${bookings.startAt})`) : [];
+
+            // Map counts to centres
+            centresWithStats = centresList.map(centre => {
+                const centreStats = bookingCounts.filter(bc => bc.centreId === centre.id);
+                const todayStats = centreStats.find(bc => {
+                    if (!bc.day) return false;
+                    const d = new Date(bc.day);
+                    return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                });
+                
+                return {
+                    ...centre,
+                    todayCount: Number(todayStats?.count || 0),
+                    forecast: centreStats.map(bc => ({
+                        day: new Date(bc.day!),
+                        count: Number(bc.count || 0)
+                    }))
+                };
+            });
+        }
+    } catch (e: any) {
+        console.error("Error fetching centres data:", e);
+        hasError = true;
+    }
+
+    if (!org && !hasError) return redirect('/onboarding');
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -89,6 +104,13 @@ export default async function CentresPage() {
                     <Plus className="w-4 h-4" /> Add Centre
                 </Link>
             </div>
+
+            {hasError && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    <p>There was a problem loading all centre data. Some information may be missing or incomplete.</p>
+                </div>
+            )}
 
             {/* Centres Table */}
             {centresList.length === 0 ? (
