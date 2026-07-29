@@ -1398,9 +1398,9 @@ export class EmailService {
 
     try {
       await resend.emails.send({
-        from: \`\${params.organisationName} via SprintScale <\${FROM_EMAIL}>\`,
+        from: `${params.organisationName} via SprintScale <${FROM_EMAIL}>`,
         to: params.parentEmail,
-        subject: \`Payment Receipt — Invoice \${params.invoiceNumber}\`,
+        subject: `Payment Receipt — Invoice ${params.invoiceNumber}`,
         html: htmlContent,
       });
     } catch (err) {
