@@ -8,7 +8,7 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, addDays, subDays, format } from 'date-fns';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download, AlertTriangle } from 'lucide-react';
 import AttendanceRollCall from './AttendanceRollCall';
 import { compileDailyRegisterSlots } from '@/lib/attendance';
 
@@ -18,11 +18,6 @@ export default async function AttendancePage(props: {
     const rawParams = await props.searchParams;
     const session = await auth();
     if (!session?.user?.organisationId) redirect('/login');
-
-    const orgCentres = await getUserAccessibleCentres(session.user.id);
-    const centreIds = orgCentres.map(c => c.id);
-    const activeCentreId = await resolveActiveCentreId(rawParams.centre, centreIds);
-
     let targetDate = new Date();
     if (rawParams.date) {
         const parsed = new Date(rawParams.date);
@@ -38,29 +33,43 @@ export default async function AttendancePage(props: {
     const targetStr = format(targetDate, 'yyyy-MM-dd');
     const isToday = targetStr === todayStr;
 
-    const centreFilter = activeCentreId !== 'all'
-        ? eq(bookings.centreId, activeCentreId)
-        : centreIds.length > 0
-            ? inArray(bookings.centreId, centreIds)
-            : eq(bookings.centreId, 'no-centre');
+    let hasError = false;
+    let orgCentres: any[] = [];
+    let centreIds: string[] = [];
+    let activeCentreId = 'all';
+    let allChildrenAtCentre: any[] = [];
+    let dayBookings: any[] = [];
 
-    const targetDayName = format(targetDate, 'EEEE'); // e.g. "Monday"
+    try {
+        orgCentres = await getUserAccessibleCentres(session.user.id);
+        centreIds = orgCentres.map(c => c.id);
+        activeCentreId = await resolveActiveCentreId(rawParams.centre, centreIds);
 
-    const centreChildrenCondition = activeCentreId !== 'all'
-        ? eq(children.centreId, activeCentreId)
-        : centreIds.length > 0
-            ? inArray(children.centreId, centreIds)
-            : eq(children.centreId, 'no-centre');
+        const centreFilter = activeCentreId !== 'all'
+            ? eq(bookings.centreId, activeCentreId)
+            : centreIds.length > 0
+                ? inArray(bookings.centreId, centreIds)
+                : eq(bookings.centreId, 'no-centre');
 
-    const allChildrenAtCentre = await db.query.children.findMany({
-        where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
-        with: { parent: true, centre: true },
-    });
+        const centreChildrenCondition = activeCentreId !== 'all'
+            ? eq(children.centreId, activeCentreId)
+            : centreIds.length > 0
+                ? inArray(children.centreId, centreIds)
+                : eq(children.centreId, 'no-centre');
 
-    const dayBookings = await db.query.bookings.findMany({
-        where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
-        with: { parent: true, centre: true, attendees: { with: { child: true } } },
-    });
+        allChildrenAtCentre = await db.query.children.findMany({
+            where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
+            with: { parent: true, centre: true },
+        });
+
+        dayBookings = await db.query.bookings.findMany({
+            where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
+            with: { parent: true, centre: true, attendees: { with: { child: true } } },
+        });
+    } catch (e: any) {
+        console.error("Error fetching attendance:", e);
+        hasError = true;
+    }
 
     const sortedSlots = compileDailyRegisterSlots({
         targetDate,
@@ -171,6 +180,13 @@ export default async function AttendancePage(props: {
                             Register complete for this day
                         </p>
                     )}
+                </div>
+            )}
+
+            {hasError && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    <p>There was a problem loading all attendance data. Some information may be missing or incomplete.</p>
                 </div>
             )}
 
