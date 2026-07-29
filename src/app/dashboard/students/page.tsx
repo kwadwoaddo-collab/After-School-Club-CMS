@@ -202,11 +202,11 @@ export default async function StudentsPage(props: {
 
         // We also need the filtered total count for pagination
         const [{ filteredCount: fc }] = await db
-        filteredCount = fc;
             .select({ filteredCount: sql<number>`count(*)::int` })
             .from(children)
             .innerJoin(parents, eq(children.parentId, parents.id))
             .where(and(...conditions));
+        filteredCount = fc;
 
         totalPages = Math.ceil(filteredCount / PAGE_SIZE);
 
