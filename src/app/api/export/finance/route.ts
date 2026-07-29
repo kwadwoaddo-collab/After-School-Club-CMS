@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
         }
 
         const role = (session.user as any).role as string;
-        if (role !== 'ORG_OWNER' && role !== 'MANAGER') {
-            return new NextResponse('Forbidden: insufficient permissions', { status: 403 });
+        if (role !== 'ORG_OWNER') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const { searchParams } = new URL(req.url);
