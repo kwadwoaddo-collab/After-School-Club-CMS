@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Users, Mail, Shield, Building2, Trash2, ChevronDown,
-    Clock, CheckCircle2, XCircle, UserCog, Loader2, Crown
+    Clock, CheckCircle2, XCircle, UserCog, Loader2, Crown, AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
@@ -40,9 +40,10 @@ interface Props {
     pendingInvites: PendingInvite[];
     orgCentres: OrgCentre[];
     currentUserId: string;
+    error?: boolean;
 }
 
-export default function StaffDashboardClient({ staff, pendingInvites, orgCentres, currentUserId }: Props) {
+export default function StaffDashboardClient({ staff, pendingInvites, orgCentres, currentUserId, error }: Props) {
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
@@ -67,7 +68,7 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
             if (!res.ok) throw new Error(data.error || 'Failed to revoke invite');
             toast({ title: 'Invite revoked', message: 'The pending invite has been cancelled.', variant: 'success' });
             startTransition(() => router.refresh());
-        } catch (err) {
+        } catch (err: any) {
             toast({ title: 'Error', message: err.message, variant: 'error' });
         }
     };
@@ -81,6 +82,13 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
 
     return (
         <div className="space-y-8">
+            {error && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    <p>There was a problem loading all staff data. Some information may be missing or incomplete.</p>
+                </div>
+            )}
+
             {/* Stats Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {(['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'] as const).map(role => {

@@ -26,67 +26,79 @@ export default async function StaffPage() {
         redirect('/dashboard');
     }
 
-    // Fetch all staff in the org
-    const staffList = await db
-        .select({
-            id: users.id,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            name: users.name,
-            email: users.email,
-            role: users.role,
-            createdAt: users.createdAt,
-        })
-        .from(users)
-        .where(eq(users.organisationId, orgId))
-        .orderBy(desc(users.createdAt));
+    let hasError = false;
+    let staffList: any[] = [];
+    let memberships: any[] = [];
+    let orgCentres: any[] = [];
+    let pendingInvites: any[] = [];
+    let enrichedStaff: any[] = [];
 
-    // Fetch centre memberships for all staff
-    const memberships = await db
-        .select({
-            userId: centreMemberships.userId,
-            centreId: centreMemberships.centreId,
-            centreName: centres.name,
-        })
-        .from(centreMemberships)
-        .innerJoin(centres, eq(centreMemberships.centreId, centres.id))
-        .where(eq(centres.organisationId, orgId));
+    try {
+        // Fetch all staff in the org
+        staffList = await db
+            .select({
+                id: users.id,
+                firstName: users.firstName,
+                lastName: users.lastName,
+                name: users.name,
+                email: users.email,
+                role: users.role,
+                createdAt: users.createdAt,
+            })
+            .from(users)
+            .where(eq(users.organisationId, orgId))
+            .orderBy(desc(users.createdAt));
 
-    // Fetch all org centres (for reassignment UI)
-    const orgCentres = await db
-        .select({ id: centres.id, name: centres.name })
-        .from(centres)
-        .where(eq(centres.organisationId, orgId))
-        .orderBy(centres.name);
+        // Fetch centre memberships for all staff
+        memberships = await db
+            .select({
+                userId: centreMemberships.userId,
+                centreId: centreMemberships.centreId,
+                centreName: centres.name,
+            })
+            .from(centreMemberships)
+            .innerJoin(centres, eq(centreMemberships.centreId, centres.id))
+            .where(eq(centres.organisationId, orgId));
 
-    // Fetch pending invites (unused only)
-    const pendingInvites = await db
-        .select({
-            id: staffInvites.id,
-            email: staffInvites.email,
-            role: staffInvites.role,
-            expiresAt: staffInvites.expiresAt,
-            usedAt: staffInvites.usedAt,
-            createdAt: staffInvites.createdAt,
-        })
-        .from(staffInvites)
-        .where(eq(staffInvites.organisationId, orgId))
-        .orderBy(desc(staffInvites.createdAt));
+        // Fetch all org centres (for reassignment UI)
+        orgCentres = await db
+            .select({ id: centres.id, name: centres.name })
+            .from(centres)
+            .where(eq(centres.organisationId, orgId))
+            .orderBy(centres.name);
 
-    // Group memberships by userId
-    const membershipMap: Record<string, { centreId: string; centreName: string }[]> = {};
-    for (const m of memberships) {
-        if (!membershipMap[m.userId]) membershipMap[m.userId] = [];
-        membershipMap[m.userId].push({ centreId: m.centreId, centreName: m.centreName });
+        // Fetch pending invites (unused only)
+        pendingInvites = await db
+            .select({
+                id: staffInvites.id,
+                email: staffInvites.email,
+                role: staffInvites.role,
+                expiresAt: staffInvites.expiresAt,
+                usedAt: staffInvites.usedAt,
+                createdAt: staffInvites.createdAt,
+            })
+            .from(staffInvites)
+            .where(eq(staffInvites.organisationId, orgId))
+            .orderBy(desc(staffInvites.createdAt));
+
+        // Group memberships by userId
+        const membershipMap: Record<string, { centreId: string; centreName: string }[]> = {};
+        for (const m of memberships) {
+            if (!membershipMap[m.userId]) membershipMap[m.userId] = [];
+            membershipMap[m.userId].push({ centreId: m.centreId, centreName: m.centreName });
+        }
+
+        enrichedStaff = staffList.map(s => ({
+            ...s,
+            displayName: s.firstName && s.lastName
+                ? `${s.firstName} ${s.lastName}`
+                : (s.name ?? s.email),
+            centres: membershipMap[s.id] ?? [],
+        }));
+    } catch (e: any) {
+        console.error("Error fetching staff data:", e);
+        hasError = true;
     }
-
-    const enrichedStaff = staffList.map(s => ({
-        ...s,
-        displayName: s.firstName && s.lastName
-            ? `${s.firstName} ${s.lastName}`
-            : (s.name ?? s.email),
-        centres: membershipMap[s.id] ?? [],
-    }));
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -113,6 +125,7 @@ export default async function StaffPage() {
                 pendingInvites={pendingInvites.filter(i => !i.usedAt)}
                 orgCentres={orgCentres}
                 currentUserId={session.user.id}
+                error={hasError}
             />
         </div>
     );
