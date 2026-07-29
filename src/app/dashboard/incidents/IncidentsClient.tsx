@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getIncidents } from '@/features/incidents/actions';
-import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText } from 'lucide-react';
+import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle } from 'lucide-react';
 import NewIncidentModal from './NewIncidentModal';
 
 export default function IncidentsClient({ centreId }: { centreId: string }) {
@@ -92,8 +92,19 @@ export default function IncidentsClient({ centreId }: { centreId: string }) {
                             </tr>
                         ) : filteredIncidents.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground italic">
-                                    No records found.
+                                <td colSpan={4} className="p-6">
+                                    <div className="glassmorphic-card rounded-3xl p-12 text-center flex flex-col items-center gap-4">
+                                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                        <AlertTriangle className="w-8 h-8 text-primary" />
+                                      </div>
+                                      <div>
+                                        <p className="text-lg font-black text-foreground">No incidents yet</p>
+                                        <p className="text-sm text-muted-foreground mt-1">Log your first incident</p>
+                                      </div>
+                                      <button onClick={() => setIsModalOpen(true)} className="px-6 py-3 bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold rounded-2xl text-sm hover:opacity-90 transition-opacity">
+                                        Log Incident
+                                      </button>
+                                    </div>
                                 </td>
                             </tr>
                         ) : (

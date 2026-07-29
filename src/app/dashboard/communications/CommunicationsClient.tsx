@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Send, Users, History, AlertCircle, Loader2, X } from 'lucide-react';
+import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare } from 'lucide-react';
 import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre } from '@/features/communications/actions';
 
 type Broadcast = any;
@@ -208,7 +208,20 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
                                 </tr>
                             ) : broadcasts.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground italic">No broadcasts sent yet.</td>
+                                    <td colSpan={4} className="p-6">
+                                        <div className="glassmorphic-card rounded-3xl p-12 text-center flex flex-col items-center gap-4">
+                                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                            <MessageSquare className="w-8 h-8 text-primary" />
+                                          </div>
+                                          <div>
+                                            <p className="text-lg font-black text-foreground">No messages yet</p>
+                                            <p className="text-sm text-muted-foreground mt-1">Send your first broadcast to parents and staff</p>
+                                          </div>
+                                          <button onClick={() => setActiveTab('compose')} className="px-6 py-3 bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white font-bold rounded-2xl text-sm hover:opacity-90 transition-opacity">
+                                            Compose Message
+                                          </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ) : (
                                 broadcasts.map((b) => (
