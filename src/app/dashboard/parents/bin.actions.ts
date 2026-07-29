@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { parents, children } from '@/db/schema';
-import { eq, isNull, and, sql } from 'drizzle-orm';
+import { eq, isNull, and, sql, gte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 
@@ -59,15 +59,28 @@ export async function restoreParent(parentId: string) {
     }
 
     await db.transaction(async (tx) => {
+        // Get parent's deletedAt timestamp
+        const parentToRestore = await tx.query.parents.findFirst({
+            where: eq(parents.id, parentId),
+            columns: { deletedAt: true }
+        });
+
         // Restore parent
         await tx.update(parents)
             .set({ deletedAt: null })
             .where(eq(parents.id, parentId));
 
-        // Restore children
-        await tx.update(children)
-            .set({ deletedAt: null })
-            .where(eq(children.parentId, parentId));
+        // Only restore children deleted at the SAME TIME as the parent (not before)
+        if (parentToRestore?.deletedAt) {
+            await tx.update(children)
+                .set({ deletedAt: null })
+                .where(
+                    and(
+                        eq(children.parentId, parentId),
+                        gte(children.deletedAt, parentToRestore.deletedAt)
+                    )
+                );
+        }
     });
 
     revalidatePath('/dashboard/parents');
