@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useMemo } from 'react';
+import React, { useState, useTransition, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -87,6 +87,12 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
     const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('create') === '1' || searchParams.get('create') === 'true') {
+            setIsCreateModalOpen(true);
+        }
+    }, [searchParams]);
 
 
     // KPI Metrics calculation for summary banner

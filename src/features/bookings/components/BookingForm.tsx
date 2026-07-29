@@ -636,7 +636,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
                         {bookingMode === 'existing' && (
                             <div className="relative mb-6">
-                                <label className="block text-sm font-medium text-slate-800 mb-1">Search Parent *</label>
+                                <label className="block text-sm font-medium text-slate-800 mb-1">Search Parent <span className="text-destructive ml-0.5">*</span></label>
                                 <div className="relative">
                                     <input
                                         type="text"
@@ -674,12 +674,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                         <h2 className="text-xl font-semibold text-foreground">Parent Details {selectedParentId && <span className="text-xs font-normal text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/25">✓ Linked</span>}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name *</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
                                 <input {...register('parent.firstName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter first name" />
                                 {errors.parent?.firstName && <p className="text-red-600 text-sm mt-1">{errors.parent.firstName.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name *</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name <span className="text-destructive ml-0.5">*</span></label>
                                 <input {...register('parent.lastName')} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Enter last name" />
                                 {errors.parent?.lastName && <p className="text-red-600 text-sm mt-1">{errors.parent.lastName.message}</p>}
                             </div>
@@ -689,7 +689,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                 {errors.parent?.email && <p className="text-red-600 text-sm mt-1">{errors.parent.email.message}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-foreground/80 mb-1">Phone *</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-1">Phone <span className="text-destructive ml-0.5">*</span></label>
                                 <input type="tel" {...register('parent.phone')} placeholder="07xxx xxxxxx" className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" />
                                 {errors.parent?.phone && <p className="text-red-600 text-sm mt-1">{errors.parent.phone.message}</p>}
                             </div>
@@ -747,7 +747,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                     {isSelected && childFormIndex !== -1 && (
                                                         <div className="pt-4 border-t border-border/65 space-y-4 animate-fadeIn">
                                                             <div>
-                                                                <label className="block text-sm font-semibold text-foreground/80 mb-2">Club Activities / Interests *</label>
+                                                                <label className="block text-sm font-semibold text-foreground/80 mb-2">Club Activities / Interests <span className="text-destructive ml-0.5">*</span></label>
                                                                 <Controller
                                                                     name={`children.${childFormIndex}.subjects`}
                                                                     control={control}
@@ -807,12 +807,12 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name *</label>
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">First Name <span className="text-destructive ml-0.5">*</span></label>
                                                 <input {...register(`children.${index}.firstName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's first name" />
                                                 {errors.children?.[index]?.firstName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.firstName?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name *</label>
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">Last Name <span className="text-destructive ml-0.5">*</span></label>
                                                 <input {...register(`children.${index}.lastName`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card" placeholder="Child's last name" />
                                                 {errors.children?.[index]?.lastName && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.lastName?.message}</p>}
                                             </div>
@@ -837,7 +837,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 {errors.children?.[index]?.dateOfBirth && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.dateOfBirth?.message}</p>}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-foreground/80 mb-1">School Year *</label>
+                                                <label className="block text-sm font-medium text-foreground/80 mb-1">School Year <span className="text-destructive ml-0.5">*</span></label>
                                                 <select {...register(`children.${index}.schoolYear`)} className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-foreground bg-card">
                                                     <option value="Reception">Reception</option>
                                                     {SCHOOL_YEARS.filter(y => y !== 'Reception').map(y => <option key={y} value={y}>{y}</option>)}
@@ -845,7 +845,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                 {errors.children?.[index]?.schoolYear && <p className="text-red-600 text-sm mt-1">{errors.children[index]?.schoolYear?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-foreground/80 mb-2">Club Activities / Interests *</label>
+                                                <label className="block text-sm font-medium text-foreground/80 mb-2">Club Activities / Interests <span className="text-destructive ml-0.5">*</span></label>
                                                 <Controller
                                                     name={`children.${index}.subjects`}
                                                     control={control}
@@ -935,7 +935,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
 
                             <div>
                                 {/* Task 4: Date is now mandatory — label updated and helptext added */}
-                                <label className="block text-sm font-medium text-foreground/80 mb-2">Select Date *</label>
+                                <label className="block text-sm font-medium text-foreground/80 mb-2">Select Date <span className="text-destructive ml-0.5">*</span></label>
                                 <input
                                     type="date"
                                     value={selectedDate}
@@ -1002,7 +1002,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                             <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
                                 <label className="flex items-start gap-3 cursor-pointer">
                                     <input type="checkbox" {...register('consent.communications')} className="mt-1 h-5 w-5 brand-checkbox rounded focus:ring-0" style={{ accentColor: brandColor }} />
-                                    <span className="text-sm text-amber-800 dark:text-amber-200">I consent to {centreName} processing my data. *</span>
+                                    <span className="text-sm text-amber-800 dark:text-amber-200">I consent to {centreName} processing my data. <span className="text-destructive ml-0.5">*</span></span>
                                 </label>
                                 {errors.consent?.communications && <p className="text-red-600 text-sm mt-2">{errors.consent.communications.message}</p>}
                             </div>

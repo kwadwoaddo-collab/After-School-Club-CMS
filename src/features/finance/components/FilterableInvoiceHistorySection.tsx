@@ -70,7 +70,7 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
                 </span>
                 {isOwner && (
                     <Link
-                        href="/dashboard/finance"
+                        href="/dashboard/finance?create=1"
                         className="flex items-center gap-2 px-4 py-2.5 h-10 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
                     >
                         <Plus className="w-4 h-4" />
