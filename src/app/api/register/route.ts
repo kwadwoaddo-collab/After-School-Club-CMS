@@ -482,43 +482,48 @@ export async function GET(req: NextRequest) {
     const userRole = (session.user as any).role as string | undefined;
 
     let results;
-    if (userRole === 'ORG_OWNER') {
-        results = await db.query.registrations.findMany({
-            where: status
-                ? and(eq(registrations.organisationId, orgId), eq(registrations.status, status as any))
-                : eq(registrations.organisationId, orgId),
-            with: {
-                registrationChildren: true,
-                registrationParents: true,
-            },
-            orderBy: (r, { desc }) => [desc(r.createdAt)],
-        });
-    } else {
-        // Non-owners: restrict to registrations whose centreId is in their
-        // accessible set. Registrations with centreId = null are excluded
-        // because no centre membership can cover them.
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        if (accessibleCentreIds.length === 0) {
-            return NextResponse.json([]);
+    try {
+        if (userRole === 'ORG_OWNER') {
+            results = await db.query.registrations.findMany({
+                where: status
+                    ? and(eq(registrations.organisationId, orgId), eq(registrations.status, status as any))
+                    : eq(registrations.organisationId, orgId),
+                with: {
+                    registrationChildren: true,
+                    registrationParents: true,
+                },
+                orderBy: (r, { desc }) => [desc(r.createdAt)],
+            });
+        } else {
+            // Non-owners: restrict to registrations whose centreId is in their
+            // accessible set. Registrations with centreId = null are excluded
+            // because no centre membership can cover them.
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (accessibleCentreIds.length === 0) {
+                return NextResponse.json([]);
+            }
+            const centreCondition = inArray(registrations.centreId, accessibleCentreIds);
+            results = await db.query.registrations.findMany({
+                where: status
+                    ? and(
+                        eq(registrations.organisationId, orgId),
+                        centreCondition,
+                        eq(registrations.status, status as any)
+                      )
+                    : and(
+                        eq(registrations.organisationId, orgId),
+                        centreCondition
+                      ),
+                with: {
+                    registrationChildren: true,
+                    registrationParents: true,
+                },
+                orderBy: (r, { desc }) => [desc(r.createdAt)],
+            });
         }
-        const centreCondition = inArray(registrations.centreId, accessibleCentreIds);
-        results = await db.query.registrations.findMany({
-            where: status
-                ? and(
-                    eq(registrations.organisationId, orgId),
-                    centreCondition,
-                    eq(registrations.status, status as any)
-                  )
-                : and(
-                    eq(registrations.organisationId, orgId),
-                    centreCondition
-                  ),
-            with: {
-                registrationChildren: true,
-                registrationParents: true,
-            },
-            orderBy: (r, { desc }) => [desc(r.createdAt)],
-        });
+    } catch (error) {
+        logger.error('[Registration API GET] Error:', error);
+        return NextResponse.json({ error: 'Failed to load registrations', status: 500 }, { status: 500 });
     }
 
     return NextResponse.json(results);
