@@ -435,9 +435,30 @@ export async function recordPayment(data: {
         message: `A £${Number(data.amount).toFixed(2)} payment (${data.method.replace('_', ' ')}) has been recorded.`,
     }).catch(() => {});
 
-    // TODO: Send receipt email after successful payment
-    // Requires email template to be added to EmailService
-    console.log('[recordPayment] TODO: Feature needs email template for payment receipts');
+    // Send receipt email after successful payment (non-blocking)
+    try {
+        const { organisations } = await import('@/db/schema');
+        const invoiceRecord = await db.query.invoices.findFirst({
+            where: eq(invoices.id, data.invoiceId),
+            with: { parent: true }
+        });
+        const orgRecord = await db.query.organisations.findFirst({
+            where: eq(organisations.id, orgId)
+        });
+        
+        if (invoiceRecord?.parent?.email) {
+            await emailService.sendPaymentReceiptEmail({
+                parentEmail: invoiceRecord.parent.email,
+                parentName: invoiceRecord.parent.firstName,
+                invoiceNumber: invoiceRecord.invoiceNumber,
+                amountPaid: Number(data.amount),
+                organisationName: orgRecord?.name || 'Our Centre',
+                invoiceId: data.invoiceId
+            });
+        }
+    } catch (err) {
+        logger.error('[recordPayment] Failed to send receipt email:', err);
+    }
 
     return result;
 }

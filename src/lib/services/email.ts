@@ -1371,6 +1371,42 @@ export class EmailService {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
   }
+
+  /**
+   * Send payment receipt email
+   */
+  async sendPaymentReceiptEmail(params: {
+    parentEmail: string;
+    parentName: string;
+    invoiceNumber: string;
+    amountPaid: number;
+    organisationName: string;
+    invoiceId: string;
+  }): Promise<void> {
+    if (!resend) {
+      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
+      return;
+    }
+
+    const htmlContent = `
+   <h2>Payment Receipt — ${params.organisationName}</h2>
+   <p>Dear ${params.parentName},</p>
+   <p>We have received your payment of £${params.amountPaid} for invoice #${params.invoiceNumber}.</p>
+   <p>Thank you. Your account is now up to date.</p>
+   <p>Best regards,<br/>${params.organisationName}</p>
+    `;
+
+    try {
+      await resend.emails.send({
+        from: \`\${params.organisationName} via SprintScale <\${FROM_EMAIL}>\`,
+        to: params.parentEmail,
+        subject: \`Payment Receipt — Invoice \${params.invoiceNumber}\`,
+        html: htmlContent,
+      });
+    } catch (err) {
+      logger.error('[EmailService] Failed to send payment receipt email:', err);
+    }
+  }
 }
 
 // Export singleton instance
