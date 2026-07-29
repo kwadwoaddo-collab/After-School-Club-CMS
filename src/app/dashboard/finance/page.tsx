@@ -34,43 +34,49 @@ export default async function FinancePage(props: {
 
     const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
 
-    // Fetch centres for the modal (JSON serialized for RSC boundary safety)
-    const orgCentresRaw = await db.query.centres.findMany({
-        where: eq(centres.organisationId, session.user.organisationId)
-    });
-    const orgCentres = serialize(orgCentresRaw);
-
-    const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
-    const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
-
-    const centreFilter = activeCentreId !== 'all' ? eq(invoices.centreId, activeCentreId) : undefined;
-
     const page = Number(searchParams.page) || 1;
     const pageSize = 50;
     const statusFilter = searchParams.status || 'all';
 
-    let dbStatusFilter = undefined;
-    if (statusFilter === 'paid') {
-        dbStatusFilter = eq(invoices.status, 'paid');
-    } else if (statusFilter === 'overdue') {
-        dbStatusFilter = and(
-            ne(invoices.status, 'paid'),
-            ne(invoices.status, 'void'),
-            lt(invoices.dueDate, new Date())
-        );
-    }
-
-    const combinedFilter = and(
-        eq(invoices.organisationId, session.user.organisationId),
-        centreFilter,
-        dbStatusFilter
-    );
-
+    let orgCentres: any[] = [];
+    let activeCentreId = 'all';
     let totalInvoices = 0;
     let paginatedInvoices: any[] = [];
     let hasFetchError = false;
 
     try {
+        let orgCentresRaw: any[] = [];
+        try {
+            orgCentresRaw = await db.query.centres.findMany({
+                where: eq(centres.organisationId, session.user.organisationId)
+            });
+        } catch (e) {
+            orgCentresRaw = [];
+        }
+        orgCentres = serialize(orgCentresRaw);
+
+        const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
+        activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
+
+        const centreFilter = activeCentreId !== 'all' ? eq(invoices.centreId, activeCentreId) : undefined;
+
+        let dbStatusFilter = undefined;
+        if (statusFilter === 'paid') {
+            dbStatusFilter = eq(invoices.status, 'paid');
+        } else if (statusFilter === 'overdue') {
+            dbStatusFilter = and(
+                ne(invoices.status, 'paid'),
+                ne(invoices.status, 'void'),
+                lt(invoices.dueDate, new Date())
+            );
+        }
+
+        const combinedFilter = and(
+            eq(invoices.organisationId, session.user.organisationId),
+            centreFilter,
+            dbStatusFilter
+        );
+
         const [countResult] = await db.select({ count: count() }).from(invoices).where(combinedFilter);
         totalInvoices = Number(countResult?.count || 0);
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Mail, Phone, Users, Plus, TrendingDown } from 'lucide-react';
+import { ShieldAlert, Mail, Phone, Users, Plus, TrendingDown, AlertTriangle } from 'lucide-react';
 import DataTable, { DataTableColumn } from '@/components/ui/DataTable';
 import { AttendanceRadial } from '@/components/ui/AttendanceRadial';
 import StudentActions from '@/features/students/components/StudentActions';
@@ -222,10 +222,17 @@ function StudentsEmptyState() {
 
 interface StudentsTableProps {
   students: StudentRow[];
+  error?: boolean;
 }
 
-export default function StudentsTable({ students }: StudentsTableProps) {
+export default function StudentsTable({ students, error }: StudentsTableProps) {
   const router = useRouter();
+
+  if (error) {
+    return (
+      <div className="glassmorphic-card p-6 rounded-3xl text-center"><AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" /><p className="font-bold text-foreground">Unable to load students</p><p className="text-sm text-muted-foreground">Please refresh the page</p></div>
+    );
+  }
 
   return (
     <DataTable<StudentRow>
