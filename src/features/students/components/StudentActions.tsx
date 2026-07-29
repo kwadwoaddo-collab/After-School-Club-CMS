@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Trash2, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import AlertModal from '@/components/ui/AlertModal';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface DeleteStudentButtonProps {
     studentId: string;
@@ -16,17 +17,21 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
     const [isDeleting, setIsDeleting] = useState(false);
     const [alertError, setAlertError] = useState<string | null>(null);
     const router = useRouter();
+    const { toast } = useToast();
 
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
             const res = await fetch(`/api/students/${studentId}`, { method: 'DELETE' });
             if (res.ok) {
+                toast('Student deleted successfully', 'success');
                 router.push('/dashboard/students');
             } else {
+                toast('Failed to delete student — please try again', 'error');
                 setAlertError('Failed to delete student. Please try again.');
             }
         } catch {
+            toast('Failed to delete student — please try again', 'error');
             setAlertError('An error occurred. Please try again.');
         } finally {
             setIsDeleting(false);

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, Loader2 } from 'lucide-react';
 import { softDeleteParent } from '@/app/dashboard/parents/bin.actions';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Props {
     parentId: string;
@@ -17,14 +18,17 @@ export default function DeleteParentButton({ parentId, parentName, childCount, v
     const [showConfirm, setShowConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
+    const { toast } = useToast();
 
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
             await softDeleteParent(parentId);
+            toast('Parent deleted successfully', 'success');
             router.push('/dashboard/parents');
         } catch (e) {
             logger.error('Failed to delete parent', e);
+            toast('Failed to delete parent — please try again', 'error');
         } finally {
             setIsDeleting(false);
             setShowConfirm(false);
