@@ -515,18 +515,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                     </p>
                 </div>
 
-                <div className="mt-10">
+                <div className="mt-10 flex flex-col items-center gap-4">
                     <Link
-                        href={backToCentresUrl || '#'}
-                        onClick={(e) => {
-                            if (!backToCentresUrl) {
-                                e.preventDefault();
-                                router.refresh();
-                            }
-                        }}
+                        href={backToCentresUrl || '/dashboard/bookings'}
                         className="brand-btn inline-block py-3 px-12 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                         Done
+                    </Link>
+                    <Link href="/dashboard/bookings" className="text-sm text-muted-foreground hover:text-primary underline">
+                        View all bookings →
                     </Link>
                 </div>
             </div>
