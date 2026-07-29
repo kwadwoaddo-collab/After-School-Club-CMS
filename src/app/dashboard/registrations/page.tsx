@@ -48,53 +48,64 @@ export default async function RegistrationsPage(props: {
     const orgId = (session.user as any).organisationId;
     if (!orgId) redirect('/onboarding');
 
-    // Fetch org slug for the registration link
-    const [org] = await db
-        .select({ slug: organisations.slug, name: organisations.name })
-        .from(organisations)
-        .where(eq(organisations.id, orgId))
-        .limit(1);
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
-    const registrationUrl = org ? `${baseUrl.replace(/^https?:\/\//, '')}/r/${org.slug}` : null;
-    const fullRegistrationUrl = org ? `${baseUrl}/r/${org.slug}` : null;
-
-    // Get accessible centres
-    const orgCentres = await getUserAccessibleCentres(session.user.id);
-    const centreIds = orgCentres.map(c => c.id);
-
-    const activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
-
-    // Fetch status counts via aggregation
-    const aggWhere = and(
-        eq(registrations.organisationId, orgId),
-        activeCentreId !== 'all'
-            ? eq(registrations.centreId, activeCentreId)
-            : centreIds.length > 0
-                ? inArray(registrations.centreId, centreIds)
-                : eq(registrations.centreId, 'unauthorized_centre_id')
-    );
-
-    const statusCountsAgg = await db.select({
-        status: registrations.status,
-        count: sql<number>`count(*)::int`
-    })
-    .from(registrations)
-    .where(aggWhere)
-    .groupBy(registrations.status);
-
-    const awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
-    const signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
-    const notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
-    const totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
-
+    let hasError = false;
+    let org: any = null;
+    let orgCentres: any[] = [];
+    let centreIds: string[] = [];
+    let activeCentreId = 'all';
+    let statusCountsAgg: any[] = [];
+    let awaitingConfirmationCount = 0;
+    let signedUpCount = 0;
+    let notInterestedCount = 0;
+    let totalCount = 0;
     let rows: unknown[] = [];
     let searchActiveAndNoResults = false;
     let matchingIds: string[] = [];
+    let fullRegistrationUrl: string | null = null;
 
-    if (searchParams.search) {
-        const searchPattern = `%${searchParams.search}%`;
-        try {
+    try {
+        // Fetch org slug for the registration link
+        const [fetchedOrg] = await db
+            .select({ slug: organisations.slug, name: organisations.name })
+            .from(organisations)
+            .where(eq(organisations.id, orgId))
+            .limit(1);
+        org = fetchedOrg;
+
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
+        fullRegistrationUrl = org ? `${baseUrl}/r/${org.slug}` : null;
+
+        // Get accessible centres
+        orgCentres = await getUserAccessibleCentres(session.user.id);
+        centreIds = orgCentres.map(c => c.id);
+
+        activeCentreId = await resolveActiveCentreId(searchParams.centre, centreIds);
+
+        // Fetch status counts via aggregation
+        const aggWhere = and(
+            eq(registrations.organisationId, orgId),
+            activeCentreId !== 'all'
+                ? eq(registrations.centreId, activeCentreId)
+                : centreIds.length > 0
+                    ? inArray(registrations.centreId, centreIds)
+                    : eq(registrations.centreId, 'unauthorized_centre_id')
+        );
+
+        statusCountsAgg = await db.select({
+            status: registrations.status,
+            count: sql<number>`count(*)::int`
+        })
+        .from(registrations)
+        .where(aggWhere)
+        .groupBy(registrations.status);
+
+        awaitingConfirmationCount = statusCountsAgg.find(s => s.status === 'awaiting_confirmation')?.count || 0;
+        signedUpCount = statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0;
+        notInterestedCount = statusCountsAgg.find(s => s.status === 'not_interested')?.count || 0;
+        totalCount = statusCountsAgg.reduce((sum, s) => sum + s.count, 0);
+
+        if (searchParams.search) {
+            const searchPattern = `%${searchParams.search}%`;
             const matchingRegistrations = await db
                 .select({ id: registrations.id })
                 .from(registrations)
@@ -122,45 +133,46 @@ export default async function RegistrationsPage(props: {
             if (matchingIds.length === 0) {
                 searchActiveAndNoResults = true;
             }
-        } catch (error) {
-            logger.error('Failed to search registrations:', error);
-            searchActiveAndNoResults = true;
-        }
-    }
-
-    if (!searchActiveAndNoResults) {
-        const conditions = [eq(registrations.organisationId, orgId)];
-
-        if (activeCentreId !== 'all') {
-            conditions.push(eq(registrations.centreId, activeCentreId));
-        } else if (centreIds.length > 0) {
-            conditions.push(inArray(registrations.centreId, centreIds));
-        } else {
-            conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
         }
 
-        if (searchParams.status && searchParams.status !== 'all') {
-            conditions.push(eq(registrations.status, searchParams.status as any));
-        }
+        if (!searchActiveAndNoResults) {
+            const conditions = [eq(registrations.organisationId, orgId)];
 
-        if (searchParams.search) {
-            if (matchingIds.length > 0) {
-                conditions.push(inArray(registrations.id, matchingIds));
+            if (activeCentreId !== 'all') {
+                conditions.push(eq(registrations.centreId, activeCentreId));
+            } else if (centreIds.length > 0) {
+                conditions.push(inArray(registrations.centreId, centreIds));
             } else {
-                conditions.push(eq(registrations.id, '00000000-0000-0000-0000-000000000000'));
+                conditions.push(eq(registrations.centreId, 'unauthorized_centre_id'));
             }
-        }
 
-        // Use relational query to fetch all registration data in ONE trip
-        rows = await db.query.registrations.findMany({
-            where: and(...conditions),
-            with: {
-                registrationChildren: true,
-                registrationParents: true,
-            },
-            orderBy: [desc(registrations.createdAt)],
-        });
+            if (searchParams.status && searchParams.status !== 'all') {
+                conditions.push(eq(registrations.status, searchParams.status as any));
+            }
+
+            if (searchParams.search) {
+                if (matchingIds.length > 0) {
+                    conditions.push(inArray(registrations.id, matchingIds));
+                } else {
+                    conditions.push(eq(registrations.id, '00000000-0000-0000-0000-000000000000'));
+                }
+            }
+
+            // Use relational query to fetch all registration data in ONE trip
+            rows = await db.query.registrations.findMany({
+                where: and(...conditions),
+                with: {
+                    registrationChildren: true,
+                    registrationParents: true,
+                },
+                orderBy: [desc(registrations.createdAt)],
+            });
+        }
+    } catch (e: any) {
+        console.error("Error fetching registrations:", e);
+        hasError = true;
     }
+
     const isFiltered = !!(
         searchParams.search ||
         (searchParams.status && searchParams.status !== 'all') ||
@@ -279,6 +291,7 @@ export default async function RegistrationsPage(props: {
                     centres={orgCentres}
                     isFiltered={isFiltered}
                     totalCount={totalCount}
+                    error={hasError}
                 />
             )}
         </div>

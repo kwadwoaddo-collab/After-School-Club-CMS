@@ -42,6 +42,7 @@ interface Props {
     centres: { id: string; name: string }[];
     isFiltered?: boolean;
     totalCount?: number;
+    error?: boolean;
 }
 
 const FUNDING_LABELS: Record<string, string> = {
@@ -53,7 +54,7 @@ const FUNDING_LABELS: Record<string, string> = {
     other: 'Other',
 };
 
-export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres, isFiltered = false, totalCount }: Props) {
+export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel, centres, isFiltered = false, totalCount, error }: Props) {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
     const [bulkMessage, setBulkMessage] = useState('');
@@ -199,7 +200,13 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
     };
 
     return (
-        <div>
+        <div className="space-y-4">
+            {error && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    <p>There was a problem loading all registration data. Some information may be missing or incomplete.</p>
+                </div>
+            )}
             <div className="w-full overflow-x-auto bg-card border border-border rounded-2xl shadow-sm">
                 <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
                     <thead>
