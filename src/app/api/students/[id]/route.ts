@@ -71,57 +71,62 @@ export async function PATCH(
     req: Request,
     props: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session?.user?.organisationId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id } = await props.params;
-    const role = (session.user as any).role as string;
-    const orgId = session.user.organisationId;
-
-    const { student, error } = await verifyStudentAccess(id, orgId, role, session.user.id!);
-    if (error) return error;
-
-    const body = patchSchema.safeParse(await req.json());
-    if (!body.success) {
-        return NextResponse.json({ error: 'Invalid request body', details: body.error.flatten() }, { status: 400 });
-    }
-
-    const data = body.data;
-
-    // If centreId is being changed, verify the new centre belongs to the same org
-    if (data.centreId !== undefined && data.centreId !== null) {
-        const [centre] = await db
-            .select({ organisationId: centres.organisationId })
-            .from(centres)
-            .where(eq(centres.id, data.centreId))
-            .limit(1);
-        if (!centre || centre.organisationId !== orgId) {
-            return NextResponse.json({ error: 'Invalid centre' }, { status: 400 });
+    try {
+        const session = await auth();
+        if (!session?.user?.organisationId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const { id } = await props.params;
+        const role = (session.user as any).role as string;
+        const orgId = session.user.organisationId;
+
+        const { student, error } = await verifyStudentAccess(id, orgId, role, session.user.id!);
+        if (error) return error;
+
+        const body = patchSchema.safeParse(await req.json());
+        if (!body.success) {
+            return NextResponse.json({ error: 'Invalid request body', details: body.error.flatten() }, { status: 400 });
+        }
+
+        const data = body.data;
+
+        // If centreId is being changed, verify the new centre belongs to the same org
+        if (data.centreId !== undefined && data.centreId !== null) {
+            const [centre] = await db
+                .select({ organisationId: centres.organisationId })
+                .from(centres)
+                .where(eq(centres.id, data.centreId))
+                .limit(1);
+            if (!centre || centre.organisationId !== orgId) {
+                return NextResponse.json({ error: 'Invalid centre' }, { status: 400 });
+            }
+        }
+
+        const updates: Record<string, any> = {
+            updatedAt: new Date(),
+        };
+        if (data.firstName !== undefined) updates.firstName = data.firstName.trim();
+        if (data.lastName !== undefined) updates.lastName = data.lastName.trim();
+        if (data.dateOfBirth !== undefined) updates.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+        if (data.schoolYear !== undefined) updates.schoolYear = data.schoolYear;
+        if (data.notes !== undefined) updates.notes = data.notes;
+        if (data.centreId !== undefined) updates.centreId = data.centreId;
+        if (data.flagHomework !== undefined) updates.flagHomework = data.flagHomework;
+        if (data.flagBehaviour !== undefined) updates.flagBehaviour = data.flagBehaviour;
+        if (data.flagNote !== undefined) updates.flagNote = data.flagNote;
+
+        const [updated] = await db
+            .update(children)
+            .set(updates)
+            .where(eq(children.id, id))
+            .returning();
+
+        return NextResponse.json({ success: true, student: updated });
+    } catch (error) {
+        console.error('[Students API] Error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    const updates: Record<string, any> = {
-        updatedAt: new Date(),
-    };
-    if (data.firstName !== undefined) updates.firstName = data.firstName.trim();
-    if (data.lastName !== undefined) updates.lastName = data.lastName.trim();
-    if (data.dateOfBirth !== undefined) updates.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
-    if (data.schoolYear !== undefined) updates.schoolYear = data.schoolYear;
-    if (data.notes !== undefined) updates.notes = data.notes;
-    if (data.centreId !== undefined) updates.centreId = data.centreId;
-    if (data.flagHomework !== undefined) updates.flagHomework = data.flagHomework;
-    if (data.flagBehaviour !== undefined) updates.flagBehaviour = data.flagBehaviour;
-    if (data.flagNote !== undefined) updates.flagNote = data.flagNote;
-
-    const [updated] = await db
-        .update(children)
-        .set(updates)
-        .where(eq(children.id, id))
-        .returning();
-
-    return NextResponse.json({ success: true, student: updated });
 }
 
 // ── DELETE /api/students/[id] ─────────────────────────────────────────────────
@@ -130,20 +135,25 @@ export async function DELETE(
     req: Request,
     props: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session?.user?.organisationId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    try {
+        const session = await auth();
+        if (!session?.user?.organisationId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { id } = await props.params;
+        const role = (session.user as any).role as string;
+        const orgId = session.user.organisationId;
+
+        const { student, error } = await verifyStudentAccess(id, orgId, role, session.user.id!);
+        if (error) return error;
+
+        // Delete the student (cascade handles notes, attendees, registration links)
+        await db.delete(children).where(eq(children.id, id));
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('[Students API] Error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    const { id } = await props.params;
-    const role = (session.user as any).role as string;
-    const orgId = session.user.organisationId;
-
-    const { student, error } = await verifyStudentAccess(id, orgId, role, session.user.id!);
-    if (error) return error;
-
-    // Delete the student (cascade handles notes, attendees, registration links)
-    await db.delete(children).where(eq(children.id, id));
-
-    return NextResponse.json({ success: true });
 }
