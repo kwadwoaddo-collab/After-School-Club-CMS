@@ -103,7 +103,6 @@ export default function ParentsTable({ parents, error }: ParentsTableProps) {
                                                     <Link
                                                         key={child.id}
                                                         href={`/dashboard/students/${child.id}`}
-                                                        onClick={(e) => e.stopPropagation()}
                                                         title={`${child.first_name} ${child.last_name}`}
                                                         className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
                                                     >
