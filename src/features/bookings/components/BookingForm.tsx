@@ -152,7 +152,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                 toast({ title: 'Error', message: 'Failed to load parent details.', variant: 'error' });
             }
         } catch (err) {
-            logger.error(err);
+            logger.error('Error loading parent details:', err);
             toast({ title: 'Error', message: 'Error loading parent details.', variant: 'error' });
         }
     };
@@ -387,7 +387,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         }
 
         // If we reach here, validation for the current step passed
-        logger.info('[BOOKING] Step', step, 'Validation OK');
+        logger.info(`[BOOKING] Step ${step} Validation OK`);
         setStep(prev => prev + 1);
     };
 
@@ -873,15 +873,15 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
                                                         </div>
                                                     )}
                                                 />
-                                                {watchedChildren[index]?.subjects?.includes('Other') && (
-                                                    <div className="mt-2 animate-fadeIn">
-                                                        <input
-                                                            {...register(`children.${index}.customSubject`)}
-                                                            placeholder="Please specify subject..."
-                                                            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 brand-ring focus:border-transparent outline-none text-sm bg-card text-foreground"
-                                                        />
-                                                    </div>
-                                                )}
+                                                {/* The "specify a custom subject" input used to show here when
+                                                    'Other' was selected. Commit f1832a8 removed 'Other' from the
+                                                    SUBJECTS list above without removing this check, so it has been
+                                                    unreachable dead code ever since — 'Other' can no longer be
+                                                    selected, so this condition was always false. Removed rather
+                                                    than fixed in place: reintroducing a working "custom subject"
+                                                    option is a product decision (which activities are offered)
+                                                    outside this milestone's scope. See architecture-decisions.md
+                                                    ("booking subjects enum drift"). */}
                                                 {errors.children?.[index]?.subjects && <p className="text-red-600 text-sm mt-2">{errors.children[index]?.subjects?.message}</p>}
                                             </div>
                                             <div className="md:col-span-2">

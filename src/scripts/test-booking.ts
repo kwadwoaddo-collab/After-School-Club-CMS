@@ -30,7 +30,7 @@ async function main() {
           lastName: 'BALDE',
           schoolYear: 'Y1',
           dateOfBirth: '2016-04-12',
-          subjects: ['Science & Tech', 'Homework Help'],
+          subjects: ['Maths', 'Science'],
           notes: 'Test notes',
         }
       ],
@@ -47,8 +47,7 @@ async function main() {
     });
     logger.info('Booking created successfully:', result);
   } catch (error) {
-    logger.error('Booking failed with error:');
-    logger.error(error);
+    logger.error('Booking failed with error:', error);
   }
 }
 

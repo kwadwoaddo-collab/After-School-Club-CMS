@@ -8,7 +8,16 @@ export const childSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').max(100),
   dateOfBirth: z.string().optional(),
   schoolYear: z.enum(SCHOOL_YEARS, { message: 'Please select a valid school year' }),
-  subjects: z.array(z.enum(['Maths', 'English', 'Science', 'Other', 'Homework Help', 'Creative Arts', 'Sports & Games', 'Science & Tech'])).min(1, 'Please select at least one activity'),
+  // Kept in sync with BookingForm.tsx's SUBJECTS constant, the only place
+  // that actually renders this list for selection. This enum previously
+  // listed a different, older set of activities (from before commit
+  // f1832a8 renamed the club's activities to Maths/English/Science/11+/Stem
+  // Activities/Childcare) — meaning the client-side zodResolver on
+  // BookingForm rejected 3 of the 6 selectable activities ('11+', 'Stem
+  // Activities', 'Childcare') outright, silently blocking submission
+  // whenever a parent picked one of them. See architecture-decisions.md
+  // ("booking subjects enum drift").
+  subjects: z.array(z.enum(['Maths', 'English', 'Science', '11+', 'Stem Activities', 'Childcare'])).min(1, 'Please select at least one activity'),
   customSubject: z.string().max(100).optional(),
   notes: z.string().max(1000).optional(),
   imageUrl: z.string().url().optional(),
