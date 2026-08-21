@@ -7,6 +7,12 @@ const RESERVED_SUBDOMAINS = new Set([
     'dev', 'staging', 'preview', 'localhost',
 ]);
 
+// The only apex domain centre subdomains are ever issued under
+// (<centre>.sprintscaleit.co.uk). A host is only eligible to be read as
+// <subdomain>.<apex> when everything after its first label matches this
+// exactly — see the baseDomain check below for why this is needed.
+const APEX_DOMAIN = 'sprintscaleit.co.uk';
+
 // Routes that should always pass through to the normal Next.js app unchanged
 // even when accessed on a centre subdomain (e.g. dagenham.sprintscaleit.co.uk/dashboard)
 const PASSTHROUGH_PREFIXES = [
@@ -22,7 +28,7 @@ const PASSTHROUGH_PREFIXES = [
 
 export function middleware(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
-    const host = hostname.split(':')[0]; // strip port for local dev
+    const host = hostname.split(':')[0].toLowerCase(); // strip port for local dev, normalise case
     const parts = host.split('.');
 
     // Need at least 3 parts: subdomain.domain.tld
@@ -31,6 +37,22 @@ export function middleware(request: NextRequest) {
     }
 
     const subdomain = parts[0];
+
+    // Only treat this as <subdomain>.sprintscaleit.co.uk when the rest of the
+    // host actually IS sprintscaleit.co.uk. Without this, any host with 3+
+    // dot-separated labels satisfies the length check above and has its first
+    // label misread as a centre subdomain — most importantly, Vercel's own
+    // preview/deployment hostnames (e.g. <project>-<hash>-<team>.vercel.app,
+    // baseDomain "vercel.app") were being rewritten to /centre-portal/<project-hash-team>,
+    // which 404s since no such centre exists. This check excludes every
+    // *.vercel.app host (current and future — nothing here is tied to any
+    // specific deployment hash) without needing to special-case vercel.app by
+    // name, and without affecting real centre subdomains or the main app host
+    // (app.sprintscaleit.co.uk, handled below via RESERVED_SUBDOMAINS).
+    const baseDomain = parts.slice(1).join('.');
+    if (baseDomain !== APEX_DOMAIN) {
+        return NextResponse.next();
+    }
 
     // Skip reserved and numeric subdomains
     if (RESERVED_SUBDOMAINS.has(subdomain) || /^\d+$/.test(subdomain)) {
