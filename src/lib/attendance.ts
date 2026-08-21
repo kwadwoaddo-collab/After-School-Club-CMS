@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { format } from 'date-fns';
 import { formatInTimezone } from './datetime';
+import { InferSelectModel } from 'drizzle-orm';
+import { children, parents, centres, bookings, bookingAttendees } from '@/db/schema';
 
 /**
  * Attendance utilities — Phase B (read-path only)
@@ -161,10 +162,40 @@ export interface CompiledSlot {
   catchups: CompiledAttendee[];
 }
 
+// Shapes actually returned by the callers' Drizzle relational queries — see
+// src/app/dashboard/attendance/page.tsx and src/app/dashboard/kiosk/page.tsx:
+//   db.query.children.findMany({ with: { parent: true, centre: true } })
+//   db.query.bookings.findMany({ with: { parent: true, centre: true, attendees: { with: { child: true } } } })
+type Child = InferSelectModel<typeof children>;
+type Parent = InferSelectModel<typeof parents>;
+type Centre = InferSelectModel<typeof centres>;
+type Booking = InferSelectModel<typeof bookings>;
+type BookingAttendee = InferSelectModel<typeof bookingAttendees>;
+
+export interface RegisterChild extends Child {
+  parent: Parent | null;
+  centre: Centre | null;
+}
+
+export interface RegisterBookingAttendee extends BookingAttendee {
+  child: Child;
+}
+
+export interface RegisterBooking extends Booking {
+  // Optional: src/app/dashboard/attendance/page.tsx fetches `with: { parent:
+  // true, ... }`, but src/app/dashboard/kiosk/page.tsx's equivalent query
+  // doesn't — `booking?.parent` below is already only a fallback, never a
+  // hard requirement, so the type reflects that rather than forcing kiosk's
+  // caller to fetch a relation it doesn't otherwise need.
+  parent?: Parent | null;
+  centre: Centre | null;
+  attendees: RegisterBookingAttendee[];
+}
+
 export function compileDailyRegisterSlots(params: {
   targetDate: Date;
-  allChildrenAtCentre: unknown[];
-  dayBookings: unknown[];
+  allChildrenAtCentre: RegisterChild[];
+  dayBookings: RegisterBooking[];
 }): CompiledSlot[] {
   const { targetDate, allChildrenAtCentre, dayBookings } = params;
   const targetDayName = format(targetDate, 'EEEE'); // e.g. "Monday"
@@ -228,15 +259,15 @@ export function compileDailyRegisterSlots(params: {
       // Check if there is an actual booking for today at this time containing this child
       const bookingMatch = dayBookings.find(b => {
         const bTime = format(new Date(b.startAt), 'HH:mm');
-        const hasChild = b.attendees.some((a: any) => a.childId === child.id);
+        const hasChild = b.attendees.some((a) => a.childId === child.id);
         return hasChild && bTime === parsedTime;
       });
 
       if (bookingMatch) {
-        const att = bookingMatch.attendees.find((a: any) => a.childId === child.id)!;
+        const att = bookingMatch.attendees.find((a) => a.childId === child.id)!;
         
         const parentInfo =
-          allChildrenAtCentre.find((c: any) => c.id === child.id)?.parent ||
+          allChildrenAtCentre.find((c) => c.id === child.id)?.parent ||
           child?.parent ||
           bookingMatch?.parent;
 
@@ -261,7 +292,7 @@ export function compileDailyRegisterSlots(params: {
         });
       } else {
         const parentInfo =
-          allChildrenAtCentre.find((c: any) => c.id === child.id)?.parent ||
+          allChildrenAtCentre.find((c) => c.id === child.id)?.parent ||
           child?.parent;
 
         slotsMap[parsedTime].regulars.push({
@@ -310,9 +341,12 @@ export function compileDailyRegisterSlots(params: {
       });
 
       if (!isRegular) {
+        // Note: att.child is only the bare children row here (the query's
+        // `attendees: { with: { child: true } }` doesn't nest child.parent
+        // another level deep), so a `att.child?.parent` fallback here would
+        // always be undefined — removed rather than kept as dead code.
         const parentInfo =
-          allChildrenAtCentre.find((c: any) => c.id === att.childId)?.parent ||
-          att.child?.parent ||
+          allChildrenAtCentre.find((c) => c.id === att.childId)?.parent ||
           booking?.parent;
 
         slotsMap[bookingTime].catchups.push({

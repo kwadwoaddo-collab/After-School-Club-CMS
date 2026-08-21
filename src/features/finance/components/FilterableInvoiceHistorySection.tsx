@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { Search, ChevronDown, Plus } from 'lucide-react';
 import { InvoiceTable } from './FinanceDashboardClient';
 import Link from 'next/link';
+import type { InvoiceWithRelations } from '@/features/finance/types';
 
 type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue';
 
 interface Props {
-    initialInvoices: unknown[];
+    initialInvoices: InvoiceWithRelations[];
     isOwner: boolean;
 }
 

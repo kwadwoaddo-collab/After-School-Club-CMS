@@ -9,6 +9,46 @@ interface LogContext {
   [key: string]: unknown;
 }
 
+/**
+ * Every call site in this codebase logs like `logger.error('message', err)`
+ * or `logger.error('message', someValue)` — i.e. treats the second argument
+ * the way `console.error(message, ...args)` works, not as a structured
+ * `LogContext` object. That is the actual, consistent calling convention
+ * (see architecture-decisions.md, "Logger context typing"), so the public
+ * signature accepts it directly instead of requiring ~350 call sites to be
+ * rewritten to fit a shape nothing actually uses.
+ *
+ * normalizeContext turns whatever was passed into a LogContext for `log()`
+ * to redact/serialize. This also fixes a real runtime bug, not just a type
+ * mismatch: `Error` instances have non-enumerable `message`/`stack`
+ * properties (`JSON.stringify(new Error('x'))` is `"{}"`), so every prior
+ * `logger.error('msg', someError)` call was silently logging an empty
+ * object and forwarding no error detail to Sentry's `extra`. Every other
+ * non-object value (a string, a number, an array, a caught `unknown`) hit
+ * the same problem — `...redactedContext` spreads nothing useful from a
+ * non-plain-object. This wraps those cases so the detail is actually kept.
+ */
+function normalizeContext(context: unknown): LogContext | undefined {
+  if (context === undefined || context === null) return undefined;
+
+  if (context instanceof Error) {
+    return {
+      errorName: context.name,
+      errorMessage: context.message,
+      stack: context.stack,
+    };
+  }
+
+  if (typeof context === 'object' && !Array.isArray(context)) {
+    return context as LogContext;
+  }
+
+  // Primitives, arrays, or a caught `unknown` that isn't an Error instance
+  // (e.g. a thrown string) — wrap so it's still captured instead of
+  // silently dropped by the `...redactedContext` spread below.
+  return { detail: context };
+}
+
 // Recursive PII Redactor
 function redact(obj: unknown): unknown {
   if (!obj) return obj;
@@ -54,8 +94,9 @@ function redact(obj: unknown): unknown {
 }
 
 export const logger = {
-  log(level: LogLevel, message: string, context?: LogContext) {
-    const redactedContext = context ? (redact(context) as LogContext) : undefined;
+  log(level: LogLevel, message: string, context?: unknown) {
+    const normalizedContext = normalizeContext(context);
+    const redactedContext = normalizedContext ? (redact(normalizedContext) as LogContext) : undefined;
     const logData = {
       timestamp: new Date().toISOString(),
       level,
@@ -92,19 +133,19 @@ export const logger = {
     }
   },
 
-  debug(message: string, context?: LogContext) {
+  debug(message: string, context?: unknown) {
     this.log('debug', message, context);
   },
 
-  info(message: string, context?: LogContext) {
+  info(message: string, context?: unknown) {
     this.log('info', message, context);
   },
 
-  warn(message: string, context?: LogContext) {
+  warn(message: string, context?: unknown) {
     this.log('warn', message, context);
   },
 
-  error(message: string, context?: LogContext) {
+  error(message: string, context?: unknown) {
     this.log('error', message, context);
   },
 };

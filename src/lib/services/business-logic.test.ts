@@ -145,7 +145,20 @@ describe('Business Logic', () => {
   });
 
   describe('Plan Service', () => {
-    it('materialises plan correctly skipping exceptions', async () => {
+    // materialiseBookingPlan has no caller anywhere in the app (no route,
+    // action, or cron references it) and `bookingPlans` has no creation
+    // path outside a dev reset script — it's unfinished, unwired
+    // scaffolding, not a working feature. Its `bookings` insert was
+    // missing required parentId/modality/confirmationCode/magicLinkToken
+    // and never created the corresponding bookingAttendees row either, so
+    // it would fail its NOT NULL constraints (or silently write orphaned
+    // rows) if actually invoked. Rather than fabricate that missing
+    // booking-domain design here, it now fails loudly and explicitly —
+    // see architecture-decisions.md. This test now asserts that honest
+    // failure, while still exercising (via the thrown message) that the
+    // occurrence-calculation itself — term dates, weekday matching, and
+    // exception-day exclusion — is computed correctly.
+    it('correctly computes occurrences (excluding exception dates) but refuses to persist incomplete booking rows', async () => {
       // Mock plan
       mockDb.query.bookingPlans.findFirst.mockResolvedValueOnce({
         id: 'plan-1',
@@ -166,21 +179,22 @@ describe('Business Logic', () => {
         }
       });
 
-      // One exception on the 8th
+      // One exception on the 8th. Field is `exceptionDate` (see
+      // sessionExceptions in db/schema.ts) — this fixture previously used
+      // `date`, silently matching a same-named bug in plan.ts's read of
+      // this field (see architecture-decisions.md), so this test passed
+      // without ever actually exercising exception-day exclusion.
       mockDb.query.sessionExceptions.findMany.mockResolvedValueOnce([
-        { date: new Date('2026-09-08') }
+        { exceptionDate: '2026-09-08' }
       ]);
 
-      const count = await materialiseBookingPlan('plan-1');
-      
-      // We expect 1 booking created (Sept 1st), because Sept 8th is an exception
-      expect(count).toBe(1);
-      expect(mockDb.insert).toHaveBeenCalled();
-      
-      const insertArg = mockValues.mock.calls[0][0];
-      expect(insertArg.length).toBe(1);
-      expect(insertArg[0].startAt.getHours()).toBe(15);
-      expect(insertArg[0].startAt.getMinutes()).toBe(30);
+      // 1 computed occurrence (Sept 1st) — Sept 8th correctly excluded as
+      // an exception. The function throws instead of persisting, and its
+      // error message reports the count it computed, so this still proves
+      // the exception-exclusion logic worked (a stale `date`-vs-
+      // `exceptionDate` regression here would report 2, not 1).
+      await expect(materialiseBookingPlan('plan-1')).rejects.toThrow(/cannot persist 1 computed booking/);
+      expect(mockDb.insert).not.toHaveBeenCalled();
     });
   });
 });

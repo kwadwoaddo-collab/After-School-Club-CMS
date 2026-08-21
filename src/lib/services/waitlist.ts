@@ -32,7 +32,10 @@ export async function addToWaitlist(
   const [entry] = await db.insert(waitlistEntries).values({
     organisationId,
     clubSessionId,
-    sessionDate,
+    // waitlistEntries.sessionDate is a `date` column (string, "YYYY-MM-DD"),
+    // same as elsewhere in this file (see the query above) — was passed as
+    // a raw Date here instead of converting it first.
+    sessionDate: sessionDate ? sessionDate.toISOString().split('T')[0] : null,
     termId,
     childId,
     position: nextPosition,

@@ -47,8 +47,12 @@ export async function materialiseBookingPlan(planId: string) {
 
     if (mappedDay === targetWeekday) {
       // Check if it's an exception (inset day, etc)
-      const isException = exceptions.some(ex => 
-        ex.date && isSameDay(new Date(ex.date), currentDate)
+      // sessionExceptions.exceptionDate (schema drift: this read `ex.date`,
+      // a property that doesn't exist on the row — always undefined, so
+      // isException was always false and no exception ever excluded a
+      // date). See architecture-decisions.md.
+      const isException = exceptions.some(ex =>
+        ex.exceptionDate && isSameDay(new Date(ex.exceptionDate), currentDate)
       );
 
       if (!isException) {
@@ -80,7 +84,34 @@ export async function materialiseBookingPlan(planId: string) {
   }
 
   if (bookingsToCreate.length > 0) {
-    await db.insert(bookings).values(bookingsToCreate);
+    // This function has never been callable end-to-end: `bookings` requires
+    // `parentId`, `modality`, `confirmationCode`, and `magicLinkToken` (all
+    // NOT NULL) and has no `childId` column at all — child linkage happens
+    // via a separate `bookingAttendees` row, which this never created
+    // either. None of that was ever filled in here, so this insert would
+    // fail its NOT NULL constraints (or, if those were merely patched in
+    // with placeholder values, would silently create parent-less, unlinked
+    // booking rows — worse than failing loudly).
+    //
+    // Confirmed via `materialiseBookingPlan`/`bookingPlans` having no
+    // caller anywhere in the app (no route, action, or cron references
+    // either) and `bookingPlans` itself having no creation path outside a
+    // dev reset script — this is unfinished, unwired scaffolding, not a
+    // regression in a working feature. See architecture-decisions.md
+    // ("materialiseBookingPlan is incomplete") for the full reasoning on
+    // why this is fixed by failing clearly rather than by inventing the
+    // missing parent/token/attendee-linkage design here, which would be
+    // booking-domain feature work outside this milestone's scope.
+    //
+    // The occurrence-calculation above (term dates, weekday matching,
+    // exception exclusion) is correct and is left in place for whoever
+    // completes this feature.
+    throw new Error(
+      `materialiseBookingPlan: cannot persist ${bookingsToCreate.length} computed booking(s) — ` +
+      'this function does not yet populate the required parentId/modality/confirmationCode/' +
+      'magicLinkToken fields or create the corresponding bookingAttendees row(s). ' +
+      'See architecture-decisions.md.'
+    );
   }
 
   return bookingsToCreate.length;
