@@ -69,6 +69,7 @@
     "@types/node": "^20.19.31",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^9.0.8",
     "@vitejs/plugin-react": "^6.0.4",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9",
@@ -78,6 +79,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
+    "uuid": "^9.0.1",
     "vitest": "^4.1.6"
   }
 }
