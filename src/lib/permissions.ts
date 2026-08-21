@@ -295,7 +295,27 @@ export async function getVisibleChildIds(
 }
 
 /**
- * Require a specific role globally. Used in server actions.
+ * Role hierarchy, lowest to highest privilege. `requirePermission(role)` allows
+ * `role` and anything above it — e.g. requirePermission('MANAGER') allows
+ * MANAGER and ORG_OWNER, matching the ORG_OWNER/MANAGER safeguarding pairing
+ * used throughout the app (see canUserAccessSafeguardingRecords above).
+ */
+const ROLE_HIERARCHY: Array<'TUTOR' | 'FRONT_DESK' | 'MANAGER' | 'ORG_OWNER'> = [
+    'TUTOR',
+    'FRONT_DESK',
+    'MANAGER',
+    'ORG_OWNER',
+];
+
+/**
+ * Require a specific role (or higher) globally. Used in server actions.
+ *
+ * Fails closed: any requiredRole this function doesn't recognise throws,
+ * rather than silently allowing the request through. Previously this checked
+ * only 'ORG_OWNER' and 'MANAGER' explicitly and returned successfully for any
+ * other value (including two real call sites that passed the non-existent
+ * literal 'MANAGE_ORG') — see architecture-decisions.md for the incident this
+ * caused (safeguarding-record read/write access effectively unrestricted).
  */
 export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 'FRONT_DESK' | 'TUTOR') {
     const session = await import('@/lib/auth').then(m => m.auth());
@@ -307,12 +327,16 @@ export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 
 
     if (!user) throw new Error('User not found');
 
-    if (requiredRole === 'ORG_OWNER' && user.role !== 'ORG_OWNER') {
-        throw new Error('Forbidden: ORG_OWNER required');
+    const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole);
+    const userIndex = ROLE_HIERARCHY.indexOf(user.role as (typeof ROLE_HIERARCHY)[number]);
+
+    if (requiredIndex === -1) {
+        // Defensive: an unrecognised requiredRole must never silently pass.
+        throw new Error(`Forbidden: unknown required role "${requiredRole}"`);
     }
-    
-    if (requiredRole === 'MANAGER' && user.role !== 'ORG_OWNER' && user.role !== 'MANAGER') {
-        throw new Error('Forbidden: MANAGER required');
+
+    if (userIndex < requiredIndex) {
+        throw new Error(`Forbidden: ${requiredRole} or higher required`);
     }
 
     return user;

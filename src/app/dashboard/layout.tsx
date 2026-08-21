@@ -15,18 +15,15 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 import { CentreFilterProvider } from '@/components/dashboard/CentreFilterContext';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 
-// Which roles can access which route prefixes
-const ROUTE_PERMISSIONS: Record<string, string[]> = {
-    '/dashboard/staff': ['ORG_OWNER'],
-    '/dashboard/settings': ['ORG_OWNER'],
-    '/dashboard/centres': ['ORG_OWNER', 'MANAGER'],
-    '/dashboard/bookings/new': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
-    '/dashboard/share': ['ORG_OWNER', 'MANAGER'],
-    // Student data — tutors cannot access
-    '/dashboard/students': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
-    '/dashboard/registrations': ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'],
-};
-
+// NOTE: role gating used to live here as a ROUTE_PERMISSIONS map, matched
+// against `currentPath` derived from headers this app's own middleware never
+// actually sets (x-invoke-path / x-pathname / next-url all resolve empty in
+// production) — so the match never fired and access was silently ungated.
+// Milestone 1 replaced this with per-page requireAuth({ roles }) calls, which
+// each page can always answer correctly for itself. See
+// architecture-decisions.md ("Dashboard authorisation enforcement pattern").
+// `currentPath` below is kept ONLY for the cosmetic hideSearch prop — it is
+// not a security boundary and must never become one again.
 
 export default async function DashboardLayout({
     children,
@@ -47,16 +44,12 @@ export default async function DashboardLayout({
     const userRole = (session.user as any).role || 'TUTOR';
     const organisationId = (session.user as any).organisationId as string;
 
+    // Cosmetic only (see note above) — not used for any access-control decision.
     const headersList = await headers();
-    const currentPath = headersList.get('x-invoke-path') 
+    const currentPath = headersList.get('x-invoke-path')
         || headersList.get('x-pathname')
         || headersList.get('next-url')
         || '';
-    for (const [prefix, allowedRoles] of Object.entries(ROUTE_PERMISSIONS)) {
-        if (currentPath.startsWith(prefix) && !allowedRoles.includes(userRole)) {
-            return redirect('/dashboard');
-        }
-    }
 
     // ── Subdomain-based routing ─────────────────────────────────────
     // Middleware sets x-subdomain for org/centre-specific subdomains.

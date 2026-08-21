@@ -1,7 +1,6 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { registrations, organisations, registrationParents, registrationChildren } from '@/db/schema';
 import { eq, desc, and, inArray, or, ilike, sql } from 'drizzle-orm';
@@ -42,11 +41,8 @@ export default async function RegistrationsPage(props: {
         status: Array.isArray(rawSearchParams.status) ? rawSearchParams.status[0] : rawSearchParams.status,
     };
 
-    const session = await auth();
-    if (!session?.user) redirect('/login');
-
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const orgId = (session.user as any).organisationId;
-    if (!orgId) redirect('/onboarding');
 
     let hasError = false;
     let org: any = null;

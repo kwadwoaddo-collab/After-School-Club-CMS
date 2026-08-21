@@ -13,7 +13,10 @@ export async function triggerWondeSync() {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     
-    await requirePermission('MANAGE_ORG');
+    // Was 'MANAGE_ORG' — not a valid role literal, so requirePermission silently
+    // allowed any authenticated user through (see the same fix + explanation in
+    // src/features/incidents/actions.ts). 'MANAGER' also passes ORG_OWNER.
+    await requirePermission('MANAGER');
     
     const centreIds = await getUserAccessibleCentreIds(session.user.id);
     const centreId = await resolveActiveCentreId(undefined, centreIds);

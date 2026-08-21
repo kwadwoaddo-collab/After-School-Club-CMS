@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { organisations, centres, bookings } from '@/db/schema';
 import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
@@ -11,12 +11,7 @@ import { LoadForecast } from '@/components/dashboard/LoadForecast';
 import { getAvatarGradient } from '@/components/ui/utils';
 
 export default async function CentresPage() {
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
-    const userRole = (session.user as any).role;
-    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) return redirect('/dashboard');
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     let hasError = false;
     let org = null;

@@ -39,7 +39,15 @@ export async function getIncidents(centreId: string) {
 
     // Filter safeguarding incidents - only ORG_OWNER and MANAGER can see them
     try {
-        await requirePermission('MANAGE_ORG');
+        // 'MANAGER' also passes ORG_OWNER (see requirePermission in permissions.ts) —
+        // this is the ORG_OWNER/MANAGER safeguarding pairing used throughout the app
+        // (canUserAccessSafeguardingRecords). Previously called with the non-existent
+        // role literal 'MANAGE_ORG', which requirePermission silently treated as "no
+        // restriction" instead of throwing, since it doesn't match either of the
+        // function's two explicit branches — every authenticated user, including
+        // TUTOR, could read and create 'safeguarding'-type incident records. Fixed
+        // as part of Milestone 1 Workstream 2 (see architecture-decisions.md).
+        await requirePermission('MANAGER');
         return results;
     } catch {
         return results.filter(i => i.type !== 'safeguarding');
@@ -62,7 +70,15 @@ export async function createIncident(data: {
     if (!session.user.organisationId) throw new Error('No organisation context');
 
     if (data.type === 'safeguarding') {
-        await requirePermission('MANAGE_ORG');
+        // 'MANAGER' also passes ORG_OWNER (see requirePermission in permissions.ts) —
+        // this is the ORG_OWNER/MANAGER safeguarding pairing used throughout the app
+        // (canUserAccessSafeguardingRecords). Previously called with the non-existent
+        // role literal 'MANAGE_ORG', which requirePermission silently treated as "no
+        // restriction" instead of throwing, since it doesn't match either of the
+        // function's two explicit branches — every authenticated user, including
+        // TUTOR, could read and create 'safeguarding'-type incident records. Fixed
+        // as part of Milestone 1 Workstream 2 (see architecture-decisions.md).
+        await requirePermission('MANAGER');
     }
 
     const [newIncident] = await db.insert(incidents).values({

@@ -1,5 +1,4 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -10,11 +9,7 @@ import { MapPin, ArrowLeft, ChevronRight, ArrowRight } from 'lucide-react';
 export default async function NewBookingPage(props: {
     searchParams: Promise<{ centreId?: string }>;
 }) {
-    const session = await auth();
-
-    if (!session?.user?.organisationId) {
-        redirect('/onboarding');
-    }
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     const searchParams = await props.searchParams;
 

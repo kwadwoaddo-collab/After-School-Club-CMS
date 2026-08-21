@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import { users } from '@/db/schema';
@@ -13,11 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SharePage() {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-        redirect('/login');
-    }
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     const user = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
@@ -33,12 +28,6 @@ export default async function SharePage() {
     });
 
     if (!user?.organisation) {
-        redirect('/dashboard');
-    }
-
-    // Exclude owners or managers if restricted, but anyone allowed in ROLE_NAV is safe
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         redirect('/dashboard');
     }
 

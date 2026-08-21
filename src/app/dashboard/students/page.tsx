@@ -1,5 +1,5 @@
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
 import { eq, desc, asc, sql, inArray, and, or, ilike, isNull } from 'drizzle-orm';
@@ -23,10 +23,9 @@ export default async function StudentsPage(props: {
     }>
 }) {
     const searchParams = await props.searchParams;
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
+    // Student data — TUTOR cannot access (see architecture-decisions.md,
+    // "Dashboard authorisation enforcement pattern", and security-p6.test.ts)
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     let hasError = false;
     let org: any = null;

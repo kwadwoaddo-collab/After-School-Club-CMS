@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { organisations, centres } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -13,11 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
-    if ((session.user as any).role !== 'ORG_OWNER') return redirect('/dashboard');
+    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
 
     const [org] = await db
         .select()

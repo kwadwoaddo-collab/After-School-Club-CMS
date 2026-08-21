@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { users, centreMemberships, centres, staffInvites } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -15,16 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function StaffPage() {
-    const session = await auth();
-    if (!session?.user?.organisationId) redirect('/onboarding');
+    // Only ORG_OWNER can manage staff
+    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
 
     const orgId = session.user.organisationId;
     const userRole = (session.user as any).role as string;
-
-    // Only ORG_OWNER can manage staff
-    if (userRole !== 'ORG_OWNER') {
-        redirect('/dashboard');
-    }
 
     let hasError = false;
     let staffList: any[] = [];

@@ -1,5 +1,5 @@
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -9,9 +9,13 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export default async function IncidentsPage() {
-    const session = await auth();
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
+    // Incidents are safeguarding-sensitive records. Previously unrestricted to
+    // any authenticated role (relying solely on the layout's fragile path-header
+    // gate, which didn't even list this route) — now scoped to the same
+    // ORG_OWNER/MANAGER pairing already codified in canUserAccessSafeguardingRecords
+    // (src/lib/permissions.ts), which existed but was never actually called
+    // anywhere. See architecture-decisions.md.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     let org = null;
     let centreIds: string[] = [];
