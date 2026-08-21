@@ -4,7 +4,12 @@
 
 import { db } from '@/db';
 import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calendarBusy, children, parents, centres, organisations } from '@/db/schema';
-import { eq, and, gt, gte, lte, or, desc } from 'drizzle-orm';
+import { eq, and, gt, gte, lte, or, desc, type InferInsertModel } from 'drizzle-orm';
+
+// Partial update payload shared by the two attendance-marking branches below
+// (existing-booking and on-demand-booking paths) — both build the same
+// column subset of bookingAttendees conditionally before a single .set() call.
+type AttendeeUpdateFields = Partial<InferInsertModel<typeof bookingAttendees>>;
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import type { AttendanceStatus } from '@/lib/attendance';
@@ -89,7 +94,8 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
             })
             .where(eq(bookings.id, bookingId));
     } catch (e) {
-        if (e.code === '23505') { // Postgres unique violation (double booking)
+        const code = e instanceof Error && 'code' in e ? (e as Error & { code?: unknown }).code : undefined;
+        if (code === '23505') { // Postgres unique violation (double booking)
             throw new Error('This slot is already booked.');
         }
         throw e;
@@ -208,6 +214,10 @@ export async function markAttendeeAttendance(params: {
 
     const { bookingId, attendeeId, status, note, lateMinutes, childId, dateStr, sessionTime, centreId } = params;
 
+    // 'check_out' is a UI-only pseudo-status: it sets checkOutAt but the persisted
+    // attendanceStatus stays 'present' (the DB enum has no 'check_out' value).
+    const finalStatus = status === 'check_out' ? 'present' : status;
+
     const hasBooking = bookingId && !bookingId.startsWith('temp-');
 
     if (hasBooking) {
@@ -229,8 +239,7 @@ export async function markAttendeeAttendance(params: {
             throw new Error('Attendee not found in this booking');
         }
 
-        let finalStatus = status === 'check_out' ? 'present' : status;
-        const updateFields: any = {
+        const updateFields: AttendeeUpdateFields = {
             attendanceStatus: finalStatus,
             attendanceNote: note || null,
             lateMinutes: lateMinutes || null,
@@ -238,7 +247,7 @@ export async function markAttendeeAttendance(params: {
             attendanceMarkedBy: session.user.id,
             updatedAt: new Date()
         };
-        
+
         if (status === 'check_out') {
             updateFields.checkOutAt = new Date();
         } else if (status === 'present' || status === 'late') {
@@ -300,8 +309,21 @@ export async function markAttendeeAttendance(params: {
                 const existingAttendee = existingBooking.attendees.find(a => a.childId === childId);
                 if (existingAttendee) {
                     finalAttendeeId = existingAttendee.id;
+                    const onDemandUpdateFields: AttendeeUpdateFields = {
+                        attendanceStatus: finalStatus,
+                        attendanceNote: note || null,
+                        lateMinutes: lateMinutes || null,
+                        attendanceMarkedAt: new Date(),
+                        attendanceMarkedBy: session.user.id,
+                        updatedAt: new Date()
+                    };
+                    if (status === 'check_out') {
+                        onDemandUpdateFields.checkOutAt = new Date();
+                    } else if (status === 'present' || status === 'late') {
+                        onDemandUpdateFields.checkInAt = new Date();
+                    }
                     await tx.update(bookingAttendees)
-                        .set(updateFields)
+                        .set(onDemandUpdateFields)
                         .where(eq(bookingAttendees.id, finalAttendeeId));
                 } else {
                     const [newAtt] = await tx.insert(bookingAttendees).values({
@@ -367,7 +389,7 @@ export async function markAttendeeAttendance(params: {
                     finalAttendeeId = existingAtt.id;
                     await tx.update(bookingAttendees)
                         .set({
-                            attendanceStatus: status,
+                            attendanceStatus: finalStatus,
                             attendanceNote: note || null,
                             lateMinutes: lateMinutes || null,
                             attendanceMarkedAt: new Date(),
@@ -380,7 +402,7 @@ export async function markAttendeeAttendance(params: {
                     const [newAtt] = await tx.insert(bookingAttendees).values({
                         bookingId: finalBookingId,
                         childId: childId,
-                        attendanceStatus: status,
+                        attendanceStatus: finalStatus,
                         attendanceNote: note || null,
                         lateMinutes: lateMinutes || null,
                         attendanceMarkedAt: new Date(),
