@@ -11,27 +11,11 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { nanoid } from 'nanoid';
 import { auth } from '@/lib/auth';
+import { validateImageContent } from '@/lib/file-validation';
 
 const UPLOAD_DIR = 'public/uploads/logos';
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-
-// Magic bytes for each allowed type (to prevent MIME-type spoofing)
-const MAGIC_SIGNATURES: { sig: number[]; type: string }[] = [
-  { sig: [0x89, 0x50, 0x4e, 0x47], type: 'image/png' },  // PNG
-  { sig: [0xff, 0xd8, 0xff], type: 'image/jpeg' },        // JPEG
-  { sig: [0x52, 0x49, 0x46, 0x46], type: 'image/webp' },  // WEBP (RIFF header)
-];
-
-function detectMimeFromBytes(buf: Buffer): string | null {
-  for (const { sig, type } of MAGIC_SIGNATURES) {
-    if (sig.every((byte, i) => buf[i] === byte)) return type;
-  }
-  // SVG is XML text — check for '<svg' or '<?xml' prefix after stripping whitespace
-  const prefix = buf.slice(0, 100).toString('utf8').trimStart();
-  if (prefix.startsWith('<svg') || prefix.startsWith('<?xml')) return 'image/svg+xml';
-  return null;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,14 +38,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type against user-supplied MIME type first
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Allowed: PNG, JPEG, WebP, SVG' },
-        { status: 400 }
-      );
-    }
-
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
@@ -70,22 +46,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Re-validate actual content via magic bytes (prevents MIME-type spoofing)
+    // Validate declared type + actual byte content (magic bytes) together —
+    // prevents MIME-type spoofing (shared with /api/upload, see file-validation.ts)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const actualMime = detectMimeFromBytes(buffer);
-    // For SVG we allow the declared type; for binary types compare strictly
-    if (file.type !== 'image/svg+xml' && actualMime !== file.type) {
-      return NextResponse.json(
-        { error: 'File content does not match declared type' },
-        { status: 400 }
-      );
-    }
-    if (!actualMime) {
-      return NextResponse.json(
-        { error: 'Could not determine file type' },
-        { status: 400 }
-      );
+    const contentError = validateImageContent(file.type, buffer, ALLOWED_TYPES, { allowSvg: true });
+    if (contentError) {
+      return NextResponse.json({ error: contentError }, { status: 400 });
     }
 
     // Get file extension

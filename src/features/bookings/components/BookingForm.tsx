@@ -400,6 +400,7 @@ export default function BookingForm({ centreId, centreName, operatingHours, bran
         try {
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('centreId', centreId);
             const res = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
