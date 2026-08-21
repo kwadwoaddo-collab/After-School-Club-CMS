@@ -67,7 +67,8 @@ export default function GenerateInvoiceModal({
                 setStep('success');
                 onSuccess();
             } catch (e) {
-                setError(e.message ?? 'Failed to generate invoice. Please try again.');
+                const message = e instanceof Error ? e.message : String(e);
+                setError(message ?? 'Failed to generate invoice. Please try again.');
             }
         });
     };

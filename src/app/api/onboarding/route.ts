@@ -80,7 +80,15 @@ export async function POST(req: Request) {
             }, { status: 400 });
         }
 
-        const pgErrorCode = error?.code || error?.cause?.code;
+        const getCode = (value: unknown): unknown =>
+            typeof value === 'object' && value !== null && 'code' in value
+                ? (value as { code?: unknown }).code
+                : undefined;
+        const getCause = (value: unknown): unknown =>
+            typeof value === 'object' && value !== null && 'cause' in value
+                ? (value as { cause?: unknown }).cause
+                : undefined;
+        const pgErrorCode = getCode(error) || getCode(getCause(error));
         if (pgErrorCode === '23505') {
             return NextResponse.json({
                 error: 'An organisation with this name already exists. Please choose a different name.'

@@ -52,7 +52,7 @@ export default function InviteStaffPage() {
 
             router.push('/dashboard/staff?invited=true');
         } catch (err) {
-            setError(err.message);
+            setError(err instanceof Error ? err.message : String(err));
             setLoading(false);
         }
     };

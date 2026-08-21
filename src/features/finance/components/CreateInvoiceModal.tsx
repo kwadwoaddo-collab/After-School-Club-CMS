@@ -24,6 +24,11 @@ import {
 import { getParents, getChildrenByParent, createInvoice, createLegacyFamilyAndInvoice, createAdHocInvoice } from '../actions';
 import { useRouter } from 'next/navigation';
 
+interface CentreOption {
+    id: string;
+    name: string;
+}
+
 interface CreateInvoiceModalProps {
     centres: unknown[];
     onClose: () => void;
@@ -31,7 +36,8 @@ interface CreateInvoiceModalProps {
 
 type Step = 'select-parent' | 'legacy-onboarding' | 'adhoc-invoice' | 'invoice-details';
 
-export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceModalProps) {
+export default function CreateInvoiceModal({ centres: rawCentres, onClose }: CreateInvoiceModalProps) {
+    const centres = rawCentres as CentreOption[];
     const router = useRouter();
     const [step, setStep] = useState<Step>('select-parent');
     const { toast } = useToast();
@@ -89,7 +95,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                 const parents = await getParents(parentSearch);
                 setSearchResults(parents);
             } catch (err) {
-                logger.error(err);
+                logger.error('Failed to search parents', err);
             } finally {
                 setIsLoading(false);
             }
@@ -123,16 +129,18 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
                 setSelectedChildIds([targetId]);
                 const c = children.find((ch: any) => ch.id === targetId);
                 if (c?.centreId) {
-                    setInvoiceData(prev => ({...prev, centreId: c.centreId}));
+                    const centreId = c.centreId;
+                    setInvoiceData(prev => ({...prev, centreId}));
                 }
             } else {
                 setSelectedChildIds(children.map((c: any) => c.id));
                 if (children[0]?.centreId) {
-                    setInvoiceData(prev => ({...prev, centreId: children[0].centreId}));
+                    const centreId = children[0].centreId;
+                    setInvoiceData(prev => ({...prev, centreId}));
                 }
             }
         } catch (err) {
-            logger.error(err);
+            logger.error('Failed to fetch children for parent', err);
         } finally {
             setIsLoading(false);
         }
@@ -212,7 +220,7 @@ export default function CreateInvoiceModal({ centres, onClose }: CreateInvoiceMo
             router.refresh();
             onClose();
         } catch (err) {
-            logger.error(err);
+            logger.error('Failed to create invoice', err);
             toast({ title: 'Error', message: 'Failed to create invoice', variant: 'error' });
         } finally {
             setIsSaving(false);

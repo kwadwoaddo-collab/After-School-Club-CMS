@@ -57,7 +57,8 @@ export default function ProgressNoteForm({ childId, childName }: ProgressNoteFor
                 setIsExpanded(false);
                 toast({ title: 'Success', message: 'Progress note saved.', variant: 'success' });
             } catch (e) {
-                toast({ title: 'Error', message: e.message || 'Failed to save note', variant: 'error' });
+                const message = e instanceof Error ? e.message : undefined;
+                toast({ title: 'Error', message: message || 'Failed to save note', variant: 'error' });
             }
         });
     };

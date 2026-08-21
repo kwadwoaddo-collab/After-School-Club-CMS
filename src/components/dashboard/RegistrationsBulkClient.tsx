@@ -121,7 +121,8 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
             setSelected(new Set());
             router.refresh();
         } catch (err) {
-            setBulkMessage(err.message || 'Failed to delete. Please try again.');
+            const message = err instanceof Error ? err.message : undefined;
+            setBulkMessage(message || 'Failed to delete. Please try again.');
         } finally {
             setBulkLoading(false);
         }
@@ -146,7 +147,8 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
             setBulkMessage(parts.join(' · '));
             setSelected(new Set());
         } catch (err) {
-            setBulkMessage(err.message || 'Email sending failed.');
+            const message = err instanceof Error ? err.message : undefined;
+            setBulkMessage(message || 'Email sending failed.');
         } finally {
             setBulkLoading(false);
         }

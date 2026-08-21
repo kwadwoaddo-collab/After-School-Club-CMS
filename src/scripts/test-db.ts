@@ -66,8 +66,7 @@ async function test() {
     }
     
   } catch (e) {
-    logger.error("DB QUERY FAILED:");
-    logger.error(e);
+    logger.error("DB QUERY FAILED:", e);
   }
   process.exit(0);
 }

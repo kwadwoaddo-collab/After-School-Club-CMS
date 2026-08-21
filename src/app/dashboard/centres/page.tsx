@@ -179,7 +179,7 @@ export default async function CentresPage() {
                                             </td>
                                             <td className="py-4 px-4">
                                                 <Link href={`/dashboard/centres/${centre.id}/settings`} className="block w-[120px]">
-                                                    <LoadForecast data={centre.forecast} max={10} hideYAxis={true} />
+                                                    <LoadForecast data={centre.forecast} max={10} />
                                                 </Link>
                                             </td>
                                             <td className="py-4 px-4">

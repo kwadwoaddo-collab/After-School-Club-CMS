@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 import { db } from '@/db';
 import { centres, centreAvailabilityRules, bookings, slotHolds } from '@/db/schema';
-import { eq, and, gte, lt } from 'drizzle-orm';
+import { eq, and, gte, lt, InferSelectModel } from 'drizzle-orm';
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { googleCalendarService } from './google-calendar';
 
@@ -116,7 +116,7 @@ export class AvailabilityService {
         const resourceKey = centreId ? `${centreId}_${modality}` : `online_${modality}`;
 
         // Get existing bookings
-        let existingBookings: unknown[] = [];
+        let existingBookings: InferSelectModel<typeof bookings>[] = [];
         try {
             existingBookings = await db.query.bookings.findMany({
                 where: and(
@@ -132,7 +132,7 @@ export class AvailabilityService {
         }
 
         // Get active slot holds
-        let activeHolds: unknown[] = [];
+        let activeHolds: InferSelectModel<typeof slotHolds>[] = [];
         try {
             const now = new Date();
             activeHolds = await db.query.slotHolds.findMany({

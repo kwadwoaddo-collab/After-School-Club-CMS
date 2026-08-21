@@ -58,7 +58,8 @@ export default function AttendanceDropdown({
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
-            setError(err.message || 'Failed to save attendance');
+            const message = err instanceof Error ? err.message : undefined;
+            setError(message || 'Failed to save attendance');
         } finally {
             setIsSaving(false);
         }

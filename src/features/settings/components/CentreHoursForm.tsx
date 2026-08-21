@@ -4,7 +4,19 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Save, Clock, Calendar, Plus, X, Loader2 } from 'lucide-react';
-import { type Centre } from '@/db/schema';
+
+// Only the fields this form actually reads (id, name, operatingHours,
+// sessionSlots) — not the full Centre row. The caller,
+// src/features/settings/components/CentreHoursTab.tsx, already only has
+// (and only needs) this subset, so this keeps both files honest about
+// what's really required instead of forcing a full DB-row type through a
+// component that uses four fields of it.
+interface CentreHoursFormCentre {
+    id: string;
+    name: string;
+    operatingHours: string | null;
+    sessionSlots: string | null;
+}
 
 type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 const DAYS: Day[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -29,7 +41,7 @@ type FormData = {
     slots: string[];
 };
 
-export default function CentreHoursForm({ centre }: { centre: Centre }) {
+export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCentre }) {
     const { toast } = useToast();
     const [newSlot, setNewSlot] = useState('');
     const [saving, setSaving] = useState(false);

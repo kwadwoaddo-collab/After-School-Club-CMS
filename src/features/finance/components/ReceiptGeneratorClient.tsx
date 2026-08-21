@@ -35,7 +35,8 @@ interface Props {
     children: unknown[];
 }
 
-export default function ReceiptGeneratorClient({ organisation, centres, children }: Props) {
+export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren }: Props) {
+    const children = rawChildren as Child[];
     // Generate random receipt number
     const generateReceiptNumber = () => {
         const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';

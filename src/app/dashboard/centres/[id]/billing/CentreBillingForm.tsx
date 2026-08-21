@@ -60,7 +60,8 @@ export default function CentreBillingForm({ centre }: CentreBillingFormProps) {
             setSaved(true);
             router.refresh();
         } catch (err) {
-            setError(err.message || 'Failed to save. Please try again.');
+            const message = err instanceof Error ? err.message : String(err);
+            setError(message || 'Failed to save. Please try again.');
         } finally {
             setIsSaving(false);
         }

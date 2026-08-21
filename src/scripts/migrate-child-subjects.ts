@@ -12,7 +12,7 @@ async function main() {
       await client.unsafe(`ALTER TABLE child_subjects ADD PRIMARY KEY (id);`);
       logger.info('✅ Primary key (id) restored.');
     } catch (e) {
-      logger.info('Primary key restoration notice:', e.message);
+      logger.info('Primary key restoration notice:', e instanceof Error ? e.message : String(e));
     }
 
     logger.info('Dropping incorrect unique constraints...');

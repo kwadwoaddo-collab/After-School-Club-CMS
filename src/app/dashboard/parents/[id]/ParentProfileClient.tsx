@@ -74,7 +74,7 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
             toast({ title: 'Contact updated', message: 'Parent details saved successfully.', variant: 'success' });
             router.refresh();
         } catch (err) {
-            toast({ title: 'Update failed', message: err.message || 'Please try again.', variant: 'error' });
+            toast({ title: 'Update failed', message: (err instanceof Error ? err.message : String(err)) || 'Please try again.', variant: 'error' });
         } finally {
             setIsSavingContact(false);
         }

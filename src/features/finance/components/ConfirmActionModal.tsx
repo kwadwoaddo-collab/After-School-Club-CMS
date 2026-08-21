@@ -56,7 +56,8 @@ export default function ConfirmActionModal({
             await onConfirm();
             onClose();
         } catch (err) {
-            setError(err.message || 'An unexpected error occurred.');
+            const message = err instanceof Error ? err.message : String(err);
+            setError(message || 'An unexpected error occurred.');
         } finally {
             setIsLoading(false);
         }

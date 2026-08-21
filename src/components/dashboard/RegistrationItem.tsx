@@ -40,7 +40,7 @@ export default function RegistrationItem({ registration: r, statusBadge, statusL
             try {
                 await assignRegistrationCentre(r.id, value);
             } catch (err) {
-                logger.error(err);
+                logger.error('Failed to assign registration centre', err);
             }
         });
     };

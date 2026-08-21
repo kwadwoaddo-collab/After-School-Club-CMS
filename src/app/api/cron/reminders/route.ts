@@ -1,5 +1,4 @@
 import { logger } from '@/lib/logger';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { bookings, invoices, payments } from '@/db/schema';
@@ -7,6 +6,20 @@ import { and, gte, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { emailService } from '@/lib/services/email';
 import { Resend } from 'resend';
+import { InferSelectModel } from 'drizzle-orm';
+import { parents, centres, organisations, bookingAttendees, children } from '@/db/schema';
+
+// Shape returned by the db.query.bookings.findMany call below —
+// `with: { parent, centre: { with: { organisation } }, attendees: { with: { child } } }`.
+type ReminderBooking = InferSelectModel<typeof bookings> & {
+    parent: InferSelectModel<typeof parents> | null;
+    centre: (InferSelectModel<typeof centres> & {
+        organisation: InferSelectModel<typeof organisations> | null;
+    }) | null;
+    attendees: (InferSelectModel<typeof bookingAttendees> & {
+        child: InferSelectModel<typeof children>;
+    })[];
+};
 
 const resend = process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith('re_xxx')
     ? new Resend(process.env.RESEND_API_KEY)
@@ -42,7 +55,7 @@ export async function POST(req: NextRequest) {
     const tomorrowEnd = endOfDay(tomorrow);
 
     // ── 2. Fetch tomorrow's confirmed bookings ───────────────────────────────
-    let upcomingBookings: unknown[];
+    let upcomingBookings: ReminderBooking[];
     try {
         upcomingBookings = await db.query.bookings.findMany({
             where: and(
@@ -80,7 +93,7 @@ export async function POST(req: NextRequest) {
         const sessionDate = booking.startAt.toLocaleDateString('en-GB', {
             weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/London'
         });
-        const childNames = (booking.attendees ?? []).map((a: any) => a.child?.firstName).filter(Boolean).join(', ');
+        const childNames = (booking.attendees ?? []).map((a) => a.child?.firstName).filter(Boolean).join(', ');
 
         const html = `<!DOCTYPE html>
 <html>
@@ -131,7 +144,10 @@ export async function POST(req: NextRequest) {
             });
             sent++;
         } catch (err) {
-            logger.error('[Reminder] Failed to send for booking', booking.id, err);
+            // Previously called as logger.error(msg, booking.id, err) — a
+            // 3rd positional argument logger.error doesn't accept, so
+            // booking.id was silently dropped and never actually logged.
+            logger.error('[Reminder] Failed to send for booking', { bookingId: booking.id, error: err });
             errors++;
         }
     }
@@ -156,7 +172,7 @@ export async function POST(req: NextRequest) {
             if (!invoice.parent?.email) continue;
 
             // Only count verified payments against the balance
-            const verifiedTotal = (invoice.payments || []).reduce((sum: number, p: any) =>
+            const verifiedTotal = (invoice.payments || []).reduce((sum: number, p) =>
                 p.status === 'verified' ? sum + Number(p.amount) : sum, 0);
             const amountDue = Number(invoice.amount) - verifiedTotal;
             if (amountDue <= 0) continue; // Already paid, skip

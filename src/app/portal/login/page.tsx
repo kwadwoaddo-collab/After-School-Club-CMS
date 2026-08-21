@@ -36,7 +36,7 @@ function PortalLoginForm() {
                 setError(data.error || 'Failed to send link. Please try again.');
             }
         } catch (err) {
-            logger.error(err);
+            logger.error('Portal login failed', err);
             setError('Something went wrong. Please try again.');
         } finally {
             setIsSubmitting(false);

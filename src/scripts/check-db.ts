@@ -13,6 +13,26 @@ import { db } from '../db';
 import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
 
+interface DatabaseError {
+    code?: string;
+    cause?: unknown;
+}
+
+function getErrorCode(err: unknown): string | undefined {
+    if (err instanceof Error && 'code' in err) {
+        const code = (err as Error & DatabaseError).code;
+        return typeof code === 'string' ? code : undefined;
+    }
+    return undefined;
+}
+
+function getErrorCause(err: unknown): unknown {
+    if (err instanceof Error && 'cause' in err) {
+        return (err as Error & DatabaseError).cause;
+    }
+    return undefined;
+}
+
 async function checkDatabase() {
     logger.info('--- Database Connection Check ---');
 
@@ -56,10 +76,11 @@ async function checkDatabase() {
                 await sqlConnection.unsafe(`SELECT 1 FROM "${table}" LIMIT 1`);
                 logger.info(`✅ Table '${table}' exists`);
             } catch (err) {
-                if (err.code === '42P01') {
+                if (getErrorCode(err) === '42P01') {
                     logger.info(`❌ Table '${table}' DOES NOT exist`);
                 } else {
-                    logger.info(`⚠️ Error checking '${table}': ${err.message}`);
+                    const message = err instanceof Error ? err.message : String(err);
+                    logger.info(`⚠️ Error checking '${table}': ${message}`);
                 }
             }
         }
@@ -67,9 +88,12 @@ async function checkDatabase() {
         await sqlConnection.end();
         process.exit(0);
     } catch (error) {
-        logger.error('❌ Connection Failed:', error.message);
-        if (error.code) logger.error('Error Code:', error.code);
-        if (error.cause) logger.error('Cause:', error.cause);
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('❌ Connection Failed:', message);
+        const code = getErrorCode(error);
+        if (code) logger.error('Error Code:', code);
+        const cause = getErrorCause(error);
+        if (cause) logger.error('Cause:', cause);
         process.exit(1);
     }
 }

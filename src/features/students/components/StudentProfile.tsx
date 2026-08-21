@@ -59,6 +59,7 @@ interface AssessmentProfileProps {
         registrationId?: string | null;
         centreId?: string | null;
         organisationId?: string | null;
+        sessionSlots?: string | null;
         parent: { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; };
         bookings: Array<{
             id: string; startAt: Date; status: string; centreName: string; attendeeId: string;
@@ -204,7 +205,8 @@ export default function StudentProfile({
             toast({ title: 'Student updated', message: 'Details saved successfully.', variant: 'success' });
             router.refresh();
         } catch (err) {
-            toast({ title: 'Update failed', message: err.message || 'Please try again.', variant: 'error' });
+            const message = err instanceof Error ? err.message : undefined;
+            toast({ title: 'Update failed', message: message || 'Please try again.', variant: 'error' });
         } finally {
             setIsSavingDetails(false);
         }
@@ -225,7 +227,8 @@ export default function StudentProfile({
                     setShowPrefillModal(false);
                 }
             } catch (err) {
-                toast({ title: 'Could not generate link', message: err.message || 'Please try again.', variant: 'error' });
+                const message = err instanceof Error ? err.message : undefined;
+                toast({ title: 'Could not generate link', message: message || 'Please try again.', variant: 'error' });
             }
         });
     };
@@ -247,7 +250,8 @@ export default function StudentProfile({
                 toast({ title: 'Status updated', message: `Registration marked as "${STATUS_CONFIG[status]?.label ?? status}".`, variant: 'success' });
                 router.refresh();
             } catch (err) {
-                toast({ title: 'Update failed', message: err.message || 'Please try again.', variant: 'error' });
+                const message = err instanceof Error ? err.message : undefined;
+                toast({ title: 'Update failed', message: message || 'Please try again.', variant: 'error' });
             }
         });
     };

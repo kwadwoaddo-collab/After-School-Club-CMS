@@ -19,7 +19,7 @@ async function main() {
 
     // Verify
     const centres = await db.execute(sql`SELECT name, subdomain FROM centres WHERE subdomain IS NOT NULL`);
-    console.log('Centres with subdomains:', centres.rows);
+    console.log('Centres with subdomains:', centres);
     process.exit(0);
 }
 main().catch((e) => { console.error('Migration failed:', e); process.exit(1); });

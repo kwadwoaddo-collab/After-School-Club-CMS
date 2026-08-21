@@ -194,7 +194,8 @@ function EditForm({
                 }
                 onSaved();
             } catch (e) {
-                setError(e.message ?? 'Something went wrong. Please try again.');
+                const message = e instanceof Error ? e.message : String(e);
+                setError(message ?? 'Something went wrong. Please try again.');
             }
         });
     };

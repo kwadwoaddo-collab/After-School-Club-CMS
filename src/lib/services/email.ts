@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
  * Handles booking confirmation emails and other transactional notifications.
  */
 
-import { Resend } from 'resend';
+import { Resend, type Attachment } from 'resend';
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
@@ -1339,7 +1339,7 @@ export class EmailService {
   </div>
 </body></html>`;
 
-    let attachments: unknown[] | undefined = undefined;
+    let attachments: Attachment[] | undefined = undefined;
     if (data.attachmentBase64) {
       try {
         const parts = data.attachmentBase64.split(';base64,');
@@ -1411,3 +1411,43 @@ export class EmailService {
 
 // Export singleton instance
 export const emailService = new EmailService();
+
+/**
+ * Send a plain transactional email.
+ *
+ * Generic counterpart to the templated methods above, for callers (e.g.
+ * broadcasts) that build their own HTML rather than using one of the
+ * dedicated `EmailService` templates.
+ */
+export async function sendEmail(data: {
+  to: string;
+  subject: string;
+  html: string;
+  organisationId?: string;
+}): Promise<EmailResult> {
+  if (!resend) {
+    logger.warn('[EmailService] Resend client not initialized. Email not sent.');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+    });
+
+    if (error) {
+      logger.error('[EmailService] Failed to send email:', error);
+      return { success: false, error: error.message };
+    }
+
+    logger.info(`[EmailService] Email sent: ${result?.id}`, { organisationId: data.organisationId });
+    return { success: true, messageId: result?.id };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('[EmailService] Error sending email:', error);
+    return { success: false, error: errorMessage };
+  }
+}

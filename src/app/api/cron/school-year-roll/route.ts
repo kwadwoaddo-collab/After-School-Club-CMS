@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, rolledCount });
   } catch (err) {
     logger.error('[Cron Roll] Failed to run rollover cron:', err);
-    return NextResponse.json({ error: err.message || 'Internal database error' }, { status: 500 });
+    return NextResponse.json({ error: (err instanceof Error ? err.message : String(err)) || 'Internal database error' }, { status: 500 });
   }
 }
 

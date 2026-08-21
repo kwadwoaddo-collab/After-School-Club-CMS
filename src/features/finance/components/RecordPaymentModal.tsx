@@ -53,7 +53,8 @@ export default function RecordPaymentModal({
             onSuccess();
             onClose();
         } catch (error) {
-            toast(error.message || 'Failed to record payment', 'error');
+            const message = error instanceof Error ? error.message : String(error);
+            toast(message || 'Failed to record payment', 'error');
         } finally {
             setIsSubmitting(false);
         }

@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { parents, children, broadcasts, bookings, clubSessions } from '@/db/schema';
 import { eq, inArray, and, sql } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
-import { emailService } from '@/lib/services/email';
+import { sendEmail } from '@/lib/services/email';
 
 export async function sendBroadcast(data: {
   organisationId: string;
@@ -47,7 +47,7 @@ export async function sendBroadcast(data: {
         continue;
       }
       try {
-        await emailService.sendEmail({
+        await sendEmail({
           to: parent.email,
           subject: data.subject,
           html: `<p>Dear ${parent.firstName},</p><p>${data.message}</p>`,

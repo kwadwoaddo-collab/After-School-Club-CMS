@@ -64,7 +64,8 @@ export function DataExportSection() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setError(e.message || 'Download failed');
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message || 'Download failed');
     } finally {
       setLoading(null);
     }

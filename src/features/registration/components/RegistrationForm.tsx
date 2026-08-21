@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, type Path } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registrationSchema, type RegistrationInput } from '@/lib/validations/registration';
 
@@ -97,7 +97,7 @@ export default function RegistrationForm({ centreId, centreName }: RegistrationF
     };
 
     const nextStep = async () => {
-        let fieldsToValidate: unknown[] = [];
+        let fieldsToValidate: Path<RegistrationInput>[] = [];
         if (step === 1) fieldsToValidate = ['parent'];
         if (step === 2) fieldsToValidate = ['child'];
         if (step === 3) fieldsToValidate = ['preferences'];

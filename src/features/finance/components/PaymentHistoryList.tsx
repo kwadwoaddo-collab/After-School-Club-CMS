@@ -54,7 +54,8 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                 toast({ title: 'Success', message: 'Payment verified successfully.', variant: 'success' });
             }
         } catch (e) {
-            toast({ title: 'Error', message: e.message || 'Failed to verify payment', variant: 'error' });
+            const message = e instanceof Error ? e.message : String(e);
+            toast({ title: 'Error', message: message || 'Failed to verify payment', variant: 'error' });
         } finally {
             setProcessingId(null);
         }
@@ -68,7 +69,8 @@ export default function PaymentHistoryList({ payments }: PaymentHistoryListProps
                 toast({ title: 'Success', message: 'Payment marked as failed.', variant: 'success' });
             }
         } catch (e) {
-            toast({ title: 'Error', message: e.message || 'Failed to update payment', variant: 'error' });
+            const message = e instanceof Error ? e.message : String(e);
+            toast({ title: 'Error', message: message || 'Failed to update payment', variant: 'error' });
         } finally {
             setProcessingId(null);
         }

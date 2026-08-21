@@ -79,10 +79,11 @@ export async function rollSchoolYearsAction(): Promise<RollResult> {
     };
   } catch (err) {
     logger.error('[Roll Action] Failed to roll school years:', err);
+    const message = err instanceof Error ? err.message : undefined;
     return {
       success: false,
       rolledCount: 0,
-      message: err.message || 'Failed to roll school years. Check system logs.',
+      message: message || 'Failed to roll school years. Check system logs.',
     };
   }
 }

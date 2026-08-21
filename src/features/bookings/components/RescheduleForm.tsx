@@ -96,7 +96,8 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                 router.refresh();
             }, 1500);
         } catch (err) {
-            setError(err.message);
+            const message = err instanceof Error ? err.message : String(err);
+            setError(message);
         } finally {
             setLoading(false);
         }

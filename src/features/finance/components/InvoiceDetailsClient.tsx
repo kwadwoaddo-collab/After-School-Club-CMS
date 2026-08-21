@@ -44,7 +44,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             router.refresh();
             toast({ title: 'Date updated', message: 'Invoice issue date updated.', variant: 'success' });
         } catch (err) {
-            toast({ title: 'Update failed', message: err.message || 'Failed to update date', variant: 'error' });
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'Update failed', message: message || 'Failed to update date', variant: 'error' });
         } finally {
             setIsUpdatingDate(false);
         }
@@ -71,7 +72,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
             router.refresh();
             toast({ title: 'Notes saved', message: 'Invoice notes updated.', variant: 'success' });
         } catch (err) {
-            toast({ title: 'Update failed', message: err.message || 'Failed to update notes', variant: 'error' });
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'Update failed', message: message || 'Failed to update notes', variant: 'error' });
         } finally {
             setIsUpdatingNotes(false);
         }

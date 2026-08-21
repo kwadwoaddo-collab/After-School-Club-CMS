@@ -226,7 +226,7 @@ export default function DiscountsForm({ initialRules = [] }: { initialRules?: Di
             toast({ title: 'Success', message: 'Discount rules saved successfully!', variant: 'success' });
             setTimeout(() => setSuccess(false), 3000);
         } catch (e) {
-            const errMsg = e.message || 'Failed to save discount rules';
+            const errMsg = (e instanceof Error ? e.message : undefined) || 'Failed to save discount rules';
             setError(errMsg);
             toast({ title: 'Error', message: errMsg, variant: 'error' });
         } finally {

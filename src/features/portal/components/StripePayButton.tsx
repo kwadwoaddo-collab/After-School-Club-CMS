@@ -32,7 +32,7 @@ export default function StripePayButton({ invoiceId, amountDue }: StripePayButto
                 window.location.href = data.sessionUrl;
             }
         } catch (err) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError((err instanceof Error ? err.message : String(err)) || 'Something went wrong. Please try again.');
             setLoading(false);
         }
     };

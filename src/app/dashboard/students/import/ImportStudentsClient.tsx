@@ -190,10 +190,11 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
       const res = await importStudentsAction(importRows, centreId || null);
       setResult(res);
     } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
       setResult({
         success: false,
         stats: { totalRows: csvRows.length, createdParents: 0, matchedParents: 0, createdStudents: 0, skippedStudents: 0 },
-        errors: [{ row: 0, message: err.message || 'An unexpected error occurred.' }],
+        errors: [{ row: 0, message: message || 'An unexpected error occurred.' }],
       });
     } finally {
       setIsImporting(false);

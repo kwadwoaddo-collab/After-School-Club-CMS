@@ -10,8 +10,8 @@ import { CancelBookingButton } from '@/features/portal/components/CancelBookingB
 import NotificationBell from '@/features/portal/components/NotificationBell';
 import { getNotifications } from '@/app/portal/notifications/actions';
 import { db } from '@/db';
-import { invoices } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { invoices, bookingAttendees } from '@/db/schema';
+import { eq, inArray } from 'drizzle-orm';
 
 export default async function PortalDashboard() {
     const parent = await getCurrentParent();
@@ -42,6 +42,16 @@ export default async function PortalDashboard() {
     const pastBookings = allBookings
         .filter(b => new Date(b.startAt) < new Date())
         .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+
+    // Bookings link to children via the booking_attendees join table (a booking has no
+    // direct childId column), so resolve the attendee child for each booking here.
+    const bookingIds = allBookings.map(b => b.id);
+    const attendeeRows = bookingIds.length > 0
+        ? await db.query.bookingAttendees.findMany({
+            where: inArray(bookingAttendees.bookingId, bookingIds),
+        })
+        : [];
+    const childIdByBookingId = new Map(attendeeRows.map(a => [a.bookingId, a.childId]));
 
     return (
         <div className="min-h-screen bg-surface text-on-surface pb-12">
@@ -193,7 +203,7 @@ export default async function PortalDashboard() {
                                             }
                                             return null;
                                         })()}
-                                        <Link href={`/portal/children/${booking.childId}`} className="text-xs font-bold text-primary hover:text-primary/80 transition-colors min-h-[44px] flex items-center">
+                                        <Link href={`/portal/children/${childIdByBookingId.get(booking.id) ?? ''}`} className="text-xs font-bold text-primary hover:text-primary/80 transition-colors min-h-[44px] flex items-center">
                                             Details ›
                                         </Link>
                                     </div>

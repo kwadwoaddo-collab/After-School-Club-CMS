@@ -13,7 +13,7 @@ async function main() {
     
     // Verify
     const result = await db.execute(sql`SELECT COUNT(*) as count FROM org_memberships`);
-    console.log(`✅ org_memberships table created with ${result.rows[0].count} rows seeded`);
+    console.log(`✅ org_memberships table created with ${result[0].count} rows seeded`);
     process.exit(0);
 }
 

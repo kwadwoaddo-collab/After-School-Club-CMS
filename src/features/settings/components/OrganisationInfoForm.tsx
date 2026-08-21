@@ -66,9 +66,10 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             toast({ title: 'Success', message: 'Organisation name updated successfully!', variant: 'success' });
             router.refresh(); 
         }
-        catch (e) { 
-            setError(e.message); 
-            toast({ title: 'Error', message: e.message || 'Failed to update organisation name', variant: 'error' });
+        catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            setError(message);
+            toast({ title: 'Error', message: message || 'Failed to update organisation name', variant: 'error' });
         }
         finally { setSaving(false); }
     };
@@ -88,9 +89,10 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             toast({ title: 'Success', message: 'Slug updated successfully!', variant: 'success' });
             router.refresh(); 
         }
-        catch (e) { 
-            setError(e.message); 
-            toast({ title: 'Error', message: e.message || 'Failed to update slug', variant: 'error' });
+        catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            setError(message);
+            toast({ title: 'Error', message: message || 'Failed to update slug', variant: 'error' });
         }
         finally { setSaving(false); setShowConfirmSlug(false); }
     };
@@ -103,8 +105,9 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             toast({ title: 'Success', message: 'Subdomain updated!', variant: 'success' });
             router.refresh();
         } catch (e) {
-            setSubdomainError(e.message);
-            toast({ title: 'Error', message: e.message || 'Failed to update subdomain', variant: 'error' });
+            const message = e instanceof Error ? e.message : String(e);
+            setSubdomainError(message);
+            toast({ title: 'Error', message: message || 'Failed to update subdomain', variant: 'error' });
         } finally { setSubdomainSaving(false); }
     };
  
@@ -115,9 +118,10 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
             setIsEditingContact(false); 
             toast({ title: 'Success', message: 'Contact details updated successfully!', variant: 'success' });
             router.refresh();
-        } catch (e) { 
-            setError(e.message); 
-            toast({ title: 'Error', message: e.message || 'Failed to update contact details', variant: 'error' });
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            setError(message);
+            toast({ title: 'Error', message: message || 'Failed to update contact details', variant: 'error' });
         }
         finally { setSaving(false); }
     };

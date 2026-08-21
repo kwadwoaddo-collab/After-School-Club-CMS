@@ -280,11 +280,12 @@ export async function importStudentsAction(
 
     } catch (err) {
       logger.error(`Error importing row ${rowNumber}:`, err);
+      const message = err instanceof Error ? err.message : undefined;
       errors.push({
         row: rowNumber,
         email: row.parentEmail,
         name: `${row.studentFirstName} ${row.studentLastName}`,
-        message: err.message || 'Database error occurred.',
+        message: message || 'Database error occurred.',
       });
     }
   }

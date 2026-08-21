@@ -81,7 +81,6 @@ export async function createPortalBooking({
                 const [newBooking] = await tx.insert(bookings).values({
                     parentId: parent.id,
                     centreId,
-                    childId, // deprecated but still present
                     startAt: startDate,
                     duration,
                     modality: 'in_person',
@@ -100,7 +99,8 @@ export async function createPortalBooking({
                 return code;
             });
         } catch (e) {
-            return { success: false, error: e.message || 'Failed to complete booking.' };
+            const message = e instanceof Error ? e.message : undefined;
+            return { success: false, error: message || 'Failed to complete booking.' };
         }
  
         revalidatePath('/portal');
@@ -205,7 +205,8 @@ export async function reschedulePortalBooking({
                 return code;
             });
         } catch (e) {
-            return { success: false, error: e.message || 'Failed to reschedule booking.' };
+            const message = e instanceof Error ? e.message : undefined;
+            return { success: false, error: message || 'Failed to reschedule booking.' };
         }
 
         revalidatePath('/portal');

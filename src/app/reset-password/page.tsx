@@ -54,7 +54,7 @@ function ResetPasswordForm() {
             // Redirect to login after 3 seconds
             setTimeout(() => router.push('/login'), 3000);
         } catch (err) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError((err instanceof Error ? err.message : String(err)) || 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }

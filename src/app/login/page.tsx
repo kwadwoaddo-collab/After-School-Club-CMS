@@ -141,7 +141,7 @@ function LoginForm() {
                 try {
                   await signIn('google', { callbackUrl: '/dashboard' });
                 } catch (err) {
-                  logger.error(err);
+                  logger.error('Google sign-in failed', err);
                   setGoogleError('Failed to sign in with Google. Please try again.');
                   setGoogleLoading(false);
                 }

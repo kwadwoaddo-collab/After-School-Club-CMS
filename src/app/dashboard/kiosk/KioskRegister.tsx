@@ -437,7 +437,7 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         const handleOnline = async () => {
             const actions = await getUnsyncedActions();
             if (actions.length > 0) {
-                toast({ title: 'You are back online!', message: `Syncing ${actions.length} offline actions...`, variant: 'default' });
+                toast({ title: 'You are back online!', message: `Syncing ${actions.length} offline actions...`, variant: 'info' });
                 for (const action of actions) {
                     try {
                         await markAttendeeAttendance({

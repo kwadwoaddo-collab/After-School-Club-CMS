@@ -71,14 +71,14 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
     const handlePin = (noteId: string, currentlyPinned: boolean) => {
         startTransition(async () => {
             try { await toggleStudentNotePin(noteId, !currentlyPinned); }
-            catch (e) { toast({ title: 'Error', message: e.message || 'Failed to pin note', variant: 'error' }); }
+            catch (e) { const message = e instanceof Error ? e.message : undefined; toast({ title: 'Error', message: message || 'Failed to pin note', variant: 'error' }); }
         });
     };
 
     const handleDelete = (noteId: string) => {
         startTransition(async () => {
             try { await deleteStudentNote(noteId); toast({ title: 'Success', message: 'Note deleted', variant: 'success' }); }
-            catch (e) { toast({ title: 'Error', message: e.message || 'Failed to delete note', variant: 'error' }); }
+            catch (e) { const message = e instanceof Error ? e.message : undefined; toast({ title: 'Error', message: message || 'Failed to delete note', variant: 'error' }); }
         });
     };
 
@@ -86,7 +86,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
         if (!editingContent.trim()) return;
         startTransition(async () => {
             try { await editStudentNote(noteId, editingContent); setEditingId(null); toast({ title: 'Success', message: 'Note updated', variant: 'success' }); }
-            catch (e) { toast({ title: 'Error', message: e.message || 'Failed to update note', variant: 'error' }); }
+            catch (e) { const message = e instanceof Error ? e.message : undefined; toast({ title: 'Error', message: message || 'Failed to update note', variant: 'error' }); }
         });
     };
 

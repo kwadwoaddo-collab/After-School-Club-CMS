@@ -28,7 +28,7 @@ function AcceptInviteContent() {
                 setInviteData(data);
                 setStep('ready');
             } catch (err) {
-                setError(err.message);
+                setError(err instanceof Error ? err.message : String(err));
                 setStep('error');
             }
         };
@@ -61,7 +61,7 @@ function AcceptInviteContent() {
                 window.location.href = '/dashboard';
             }, 1500);
         } catch (err) {
-            setError(err.message);
+            setError(err instanceof Error ? err.message : String(err));
             setStep('error');
         }
     };

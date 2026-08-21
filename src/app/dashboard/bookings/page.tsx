@@ -50,16 +50,17 @@ export default async function BookingsPage(props: {
     const orgId = session.user.organisationId;
 
     let org;
-    let orgCentres;
+    let orgCentres: { id: string; name: string }[] = [];
     let centreIds: string[] = [];
-    
+
     try {
         const [fetchedOrg] = await db.select({ id: organisations.id }).from(organisations).where(eq(organisations.id, orgId)).limit(1);
         org = fetchedOrg;
-        
+
         if (org) {
-            orgCentres = await getUserAccessibleCentres(session.user.id);
-            centreIds = orgCentres.map((c: any) => c.id);
+            const fetchedCentres = await getUserAccessibleCentres(session.user.id);
+            orgCentres = fetchedCentres.map((c) => ({ id: c.id, name: c.name }));
+            centreIds = fetchedCentres.map((c) => c.id);
         }
     } catch (e) {
         logger.error('Failed to validate org:', e);
@@ -186,7 +187,7 @@ export default async function BookingsPage(props: {
     const aggWhere = aggConds.length === 1 ? aggConds[0] : (aggConds.length > 0 ? and(...aggConds) : undefined);
 
     let totalRecords = 0;
-    let statusCountsAgg: unknown[] = [];
+    let statusCountsAgg: { status: string; count: number }[] = [];
 
     if (!searchActiveAndNoResults) {
         try {
@@ -271,8 +272,7 @@ export default async function BookingsPage(props: {
                 </div>
             </HeaderPortal>
 
-            <HeaderPortal targetId="header-middle">
-            </HeaderPortal>
+            <HeaderPortal targetId="header-middle">{null}</HeaderPortal>
 
             <HeaderPortal targetId="header-right-actions">
 

@@ -1,4 +1,3 @@
-import React from 'resolve-node:react';
 import { db } from '@/db';
 import { invoices, parents, children, payments, centres } from '@/db/schema';
 import { eq, and, sql, notInArray, desc, inArray } from 'drizzle-orm';
@@ -6,7 +5,6 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { ReconciliationClient } from './reconciliation-client';
-import Header from '@/components/dashboard/Header';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export const metadata = {
@@ -87,11 +85,13 @@ export default async function ReconciliationPage(props: {
 
   return (
     <div className="flex flex-col h-full bg-[--color-background]">
-      <Header 
-        title="Payment Reconciliation" 
-        description="Match incoming Tax-Free Childcare and voucher payments to pending invoices."
-      />
-      
+      <div className="p-6 pb-0">
+        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">Payment Reconciliation</h1>
+        <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
+          Match incoming Tax-Free Childcare and voucher payments to pending invoices.
+        </p>
+      </div>
+
       <div className="p-6 flex-1">
         {enhancedInvoices.length === 0 ? (
           <EmptyState 

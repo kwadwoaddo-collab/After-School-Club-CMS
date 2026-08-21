@@ -18,6 +18,11 @@ interface BookingsTableProps {
     isFiltered?: boolean;
 }
 
+interface ChildNote {
+    content: string;
+    category?: string | null;
+}
+
 type SortKey = 'date' | 'student' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
 
@@ -325,7 +330,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     };
 
     const getMedicalNotesContent = (booking: any) => {
-        let notes: unknown[] = [];
+        let notes: ChildNote[] = [];
         if (booking.attendees && booking.attendees.length > 0) {
             booking.attendees.forEach((a: any) => {
                 if (a.child?.notes) {
@@ -351,7 +356,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     };
 
     const getSafeguardingNotesContent = (booking: any) => {
-        let notes: unknown[] = [];
+        let notes: ChildNote[] = [];
         if (booking.attendees && booking.attendees.length > 0) {
             booking.attendees.forEach((a: any) => {
                 if (a.child?.notes) {

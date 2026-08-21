@@ -243,8 +243,8 @@ function AttendeeCard({
                             {attendee.firstName} {attendee.lastName}
                         </Link>
                         {isExtra && <span className="text-[9px] font-bold bg-warning/10 text-warning px-1.5 py-0.5 rounded border border-warning/20">EXTRA</span>}
-                        {attendee.flagBehaviour && <AlertTriangle title="Behaviour Note" className="w-3.5 h-3.5 text-error" />}
-                        {attendee.flagHomework && <BookOpen title="Homework Note" className="w-3.5 h-3.5 text-warning" />}
+                        {attendee.flagBehaviour && <span title="Behaviour Note"><AlertTriangle className="w-3.5 h-3.5 text-error" /></span>}
+                        {attendee.flagHomework && <span title="Homework Note"><BookOpen className="w-3.5 h-3.5 text-warning" /></span>}
                         {derivedLate !== null && isIn && (
                             <span className="text-[10px] font-bold text-warning ml-1">Late {derivedLate}m</span>
                         )}

@@ -65,7 +65,8 @@ function ForgivModal({
                 toast({ title: 'Sessions forgiven', message: `${amount} session(s) written off for ${entry.firstName}.`, variant: 'success' });
                 onClose();
             } catch (e) {
-                toast({ title: 'Could not forgive sessions', message: e.message, variant: 'error' });
+                const message = e instanceof Error ? e.message : String(e);
+                toast({ title: 'Could not forgive sessions', message, variant: 'error' });
             }
         });
     };

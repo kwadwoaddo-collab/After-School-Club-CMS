@@ -363,7 +363,7 @@ export default function RegisterPage() {
             }
             setSubmitted(true);
         } catch (e) {
-            setError(e.message);
+            setError(e instanceof Error ? e.message : String(e));
         } finally {
             setSubmitting(false);
         }

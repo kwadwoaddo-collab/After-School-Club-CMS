@@ -212,7 +212,7 @@ export default function SignupPage() {
                   try {
                     await signIn('google', { callbackUrl: '/onboarding' });
                   } catch (err) {
-                    logger.error(err);
+                    logger.error('Google sign-in failed', err);
                     setGoogleError('Could not open Google sign-in. Please try again.');
                     setGoogleLoading(false);
                   }

@@ -82,7 +82,7 @@ const formatDateSafe = (dateVal: string | Date | null | undefined, formatStr = '
 export default function FinanceDataGridClient({ invoices = [], totalCount = 0, page = 1, pageSize = 50, statusFilter = 'all', centres = [] }: FinanceDataGridClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { addToast } = useToast();
+    const { toast: addToast } = useToast();
     const [isPending, startTransition] = useTransition();
 
     const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
