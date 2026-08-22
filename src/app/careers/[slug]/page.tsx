@@ -4,14 +4,15 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 interface Props {
-    params: {
+    params: Promise<{
         slug: string;
-    }
+    }>;
 }
 
 export default async function TeacherApplicationPage({ params }: Props) {
+    const { slug } = await params;
     const centre = await db.query.centres.findFirst({
-        where: eq(centres.slug, params.slug),
+        where: eq(centres.slug, slug),
     });
 
     if (!centre) {
