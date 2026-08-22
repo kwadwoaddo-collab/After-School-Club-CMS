@@ -1,4 +1,4 @@
-import { db } from './src/db';
+import { db } from '../src/db';
 import { sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import fs from 'fs';
