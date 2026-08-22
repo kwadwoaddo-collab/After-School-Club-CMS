@@ -1,6 +1,9 @@
 'use client';
 
 import { MapPin, Check } from 'lucide-react';
+import { Card, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface Centre {
     id: string;
@@ -39,64 +42,53 @@ export default function StaffCentreAssignment({
     };
 
     return (
-        <div className="bg-card rounded-[24px] overflow-hidden border border-border shadow-sm animate-in fade-in duration-500">
-            <div className="px-6 py-5 border-b border-border flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-muted-foreground" />
-                    <h2 className="text-lg font-bold text-foreground">Centre Assignments</h2>
+        <Card>
+            <div className="flex items-center justify-between flex-wrap gap-3 border-b border-border-subtle px-5 py-4">
+                <div className="flex items-center gap-2.5">
+                    <MapPin className="w-4 h-4 text-text-muted" />
+                    <CardTitle>Centre assignments</CardTitle>
                 </div>
                 {allCentres.length > 0 && (
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleSelectAll}
-                            className="text-xs font-bold text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg bg-primary/10"
-                        >
-                            Select All
-                        </button>
-                        <button
-                            onClick={handleClearAll}
-                            className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-secondary"
-                        >
-                            Clear All
-                        </button>
+                        <Button variant="ghost" size="sm" onClick={handleSelectAll}>Select all</Button>
+                        <Button variant="ghost" size="sm" onClick={handleClearAll}>Clear all</Button>
                     </div>
                 )}
             </div>
 
-            <div className="p-6">
+            <CardContent>
                 {allCentres.length === 0 ? (
-                    <div className="text-center py-12">
-                        <MapPin className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-foreground mb-2">No centres available</h3>
-                        <p className="text-sm text-muted-foreground">Create centres first to assign staff members.</p>
-                    </div>
+                    <EmptyState
+                        icon={<MapPin className="w-8 h-8" />}
+                        title="No centres available"
+                        description="Create centres first to assign staff members."
+                    />
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                             {allCentres.map((centre) => {
                                 const isSelected = selectedCentres.includes(centre.id);
                                 return (
                                     <label
                                         key={centre.id}
-                                        className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                                            isSelected
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-border hover:border-border/80 bg-card'
-                                        }`}
+                                        className={`flex items-center justify-between p-3 border rounded-md cursor-pointer transition-colors ${isSelected
+                                                ? 'border-accent bg-accent-soft'
+                                                : 'border-border-subtle hover:border-border bg-page'
+                                            }`}
                                     >
                                         <div className="flex-1 min-w-0 pr-3">
-                                            <div className="font-bold text-sm text-foreground truncate">{centre.name}</div>
-                                            <div className="text-xs text-muted-foreground font-medium truncate">{centre.slug}</div>
+                                            <div className="text-small-body font-medium text-text truncate">{centre.name}</div>
+                                            <div className="text-metadata truncate">{centre.slug}</div>
                                         </div>
                                         <div className="flex-shrink-0 flex items-center">
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
                                                 onChange={() => handleToggleCentre(centre.id)}
-                                                className="sr-only" // hidden but accessible
+                                                className="sr-only"
                                             />
-                                            <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${isSelected ? 'bg-primary' : 'bg-secondary border border-border'}`}>
-                                                {isSelected && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                                            <div className={`w-5 h-5 rounded-sm flex items-center justify-center transition-colors ${isSelected ? 'bg-accent' : 'bg-surface border border-border'}`}>
+                                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                             </div>
                                         </div>
                                     </label>
@@ -104,25 +96,23 @@ export default function StaffCentreAssignment({
                             })}
                         </div>
 
-                        {/* Summary & Warning */}
                         {selectedCentres.length === 0 ? (
-                            <div className="p-4 bg-warning/10 border border-warning/20 rounded-xl">
-                                <p className="text-sm text-warning font-semibold leading-relaxed">
-                                    ⚠️ <span className="font-bold">{staffName}</span> won&apos;t be able to access
-                                    any bookings or students without at least one centre assignment.
+                            <div className="p-3 rounded-md bg-warning-soft border border-warning/20">
+                                <p className="text-metadata leading-relaxed">
+                                    <strong className="text-text font-medium">{staffName}</strong> won&apos;t be able to access any bookings or students without at least one centre assignment.
                                 </p>
                             </div>
                         ) : (
-                            <div className="p-4 bg-secondary/40 rounded-xl border border-border flex items-center gap-2 text-sm font-medium">
-                                <span className="font-bold text-foreground">Selected: </span>
-                                <span className="text-muted-foreground font-semibold">
+                            <div className="p-3 rounded-md bg-page border border-border-subtle text-small-body">
+                                <span className="font-medium text-text">Selected: </span>
+                                <span className="text-text-secondary">
                                     {selectedCentres.length === 1 ? '1 centre' : `${selectedCentres.length} centres`}
                                 </span>
                             </div>
                         )}
                     </>
                 )}
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 }

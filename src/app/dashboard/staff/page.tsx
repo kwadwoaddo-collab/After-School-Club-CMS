@@ -2,24 +2,34 @@
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { users, centreMemberships, centres, staffInvites } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import Link from 'next/link';
-import { UserPlus } from 'lucide-react';
-import StaffDashboardClient from './StaffDashboardClient';
+import { UserPlus, Crown, Briefcase, MonitorSmartphone, GraduationCap } from 'lucide-react';
 import type { Metadata } from 'next';
 import { logger } from '@/lib/logger';
+import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import StaffDashboardClient from './StaffDashboardClient';
+import { ROLE_LABELS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
 
 export const metadata: Metadata = {
     title: 'Staff Management',
     description: 'Manage your team, roles, and centre assignments.',
 };
 
+const ROLE_ICONS: Record<string, any> = {
+    ORG_OWNER: Crown,
+    MANAGER: Briefcase,
+    FRONT_DESK: MonitorSmartphone,
+    TUTOR: GraduationCap,
+};
+
 export default async function StaffPage() {
-    // Only ORG_OWNER can manage staff
+    // Only ORG_OWNER can manage staff — see project-notes/milestone-3c-staff-audit.md §5.
     const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
 
     const orgId = session.user.organisationId;
-    const userRole = (session.user as any).role as string;
 
     let hasError = false;
     let staffList: any[] = [];
@@ -95,29 +105,52 @@ export default async function StaffPage() {
         hasError = true;
     }
 
+    const pendingUnused = pendingInvites.filter(i => !i.usedAt);
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <header className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-                        Staff Management
-                    </h1>
-                    <p className="text-muted-foreground mt-2 font-medium">
-                        {enrichedStaff.length} team member{enrichedStaff.length !== 1 ? 's' : ''} · {pendingInvites.filter(i => !i.usedAt).length} pending invite{pendingInvites.filter(i => !i.usedAt).length !== 1 ? 's' : ''}
-                    </p>
+        <div className="space-y-6">
+            <HeaderPortal targetId="header-left">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-page-title text-text">Staff</h1>
+                    <span className="px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-muted text-xs font-medium">
+                        {enrichedStaff.length}
+                    </span>
                 </div>
-                <Link
-                    href="/dashboard/staff/invite"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-sm shadow-primary/20 glow-btn flex-shrink-0"
-                >
-                    <UserPlus className="w-4 h-4" />
-                    Invite Staff
-                </Link>
-            </header>
+            </HeaderPortal>
+
+            <HeaderPortal targetId="header-right-actions">
+                <Button asChild>
+                    <Link href="/dashboard/staff/invite">
+                        <UserPlus className="w-3.5 h-3.5" />
+                        Invite Staff
+                    </Link>
+                </Button>
+            </HeaderPortal>
+
+            {/* Role-count stat cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {(['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'] as const).map(role => {
+                    const count = enrichedStaff.filter(s => s.role === role).length;
+                    const Icon = ROLE_ICONS[role];
+                    return (
+                        <Card key={role}>
+                            <div className="p-4 flex items-center gap-3">
+                                <span className={`flex size-9 shrink-0 items-center justify-center rounded-md ${ROLE_AVATAR_COLORS[role]}`}>
+                                    <Icon className="w-4 h-4" />
+                                </span>
+                                <div>
+                                    <p className="text-financial-total text-text">{count}</p>
+                                    <p className="text-metadata">{ROLE_LABELS[role]}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    );
+                })}
+            </div>
 
             <StaffDashboardClient
                 staff={enrichedStaff}
-                pendingInvites={pendingInvites.filter(i => !i.usedAt)}
+                pendingInvites={pendingUnused}
                 orgCentres={orgCentres}
                 currentUserId={session.user.id}
                 error={hasError}

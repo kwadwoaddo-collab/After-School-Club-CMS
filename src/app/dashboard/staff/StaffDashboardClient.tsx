@@ -3,13 +3,17 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-    Users, Mail, Shield, Building2, Trash2, ChevronDown,
-    Clock, CheckCircle2, XCircle, UserCog, Loader2, Crown, AlertTriangle
+    Users, Mail, Building2, Clock, AlertTriangle, Search, X, Filter,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ROLE_LABELS, ROLE_COLORS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
+import { ROLE_LABELS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import StaffGrid from '@/features/staff/components/StaffGrid';
 
 interface StaffMember {
     id: string;
@@ -43,23 +47,22 @@ interface Props {
     error?: boolean;
 }
 
-export default function StaffDashboardClient({ staff, pendingInvites, orgCentres, currentUserId, error }: Props) {
+function getInitials(name: string, email: string) {
+    if (name && name.trim().length > 0) {
+        const parts = name.trim().split(' ').filter(Boolean);
+        const raw = parts.map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        return raw.length === 1 ? raw + raw : raw;
+    }
+    return (email || 'S').charAt(0).toUpperCase().repeat(2);
+}
+
+export default function StaffDashboardClient({ staff, pendingInvites, currentUserId, error }: Props) {
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string | 'ALL'>('ALL');
     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'PENDING'>('ACTIVE');
-
-    const getInitials = (name: string, email: string) => {
-        if (name && name.trim().length > 0) {
-            const parts = name.trim().split(' ').filter(Boolean);
-            const raw = parts.map(n => n[0]).join('').toUpperCase().slice(0, 2);
-            return raw.length === 1 ? raw + raw : raw;
-        }
-        return (email || 'S').charAt(0).toUpperCase().repeat(2);
-    };
-
 
     const handleRevokeInvite = async (inviteId: string) => {
         try {
@@ -73,184 +76,239 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
         }
     };
 
+    const hasActiveFilters = !!(searchQuery || roleFilter !== 'ALL');
+
     const filteredStaff = staff.filter(member => {
-        const matchesSearch = member.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = member.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRole = roleFilter === 'ALL' || member.role === roleFilter;
         return matchesSearch && matchesRole;
     });
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {error && (
-                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                    <p>There was a problem loading all staff data. Some information may be missing or incomplete.</p>
+                <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-danger flex-shrink-0" />
+                    <p className="text-small-body text-text">There was a problem loading all staff data. Some information may be missing or incomplete.</p>
                 </div>
             )}
 
-            {/* Stats Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {(['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'] as const).map(role => {
-                    const count = staff.filter(s => s.role === role).length;
-                    return (
-                        <div key={role} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center border text-xs font-black ${ROLE_COLORS[role]}`}>
-                                {count}
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{ROLE_LABELS[role]}</p>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
             {/* Segmented Control */}
-            <div className="flex bg-secondary p-1 rounded-xl w-full sm:w-fit">
+            <div className="flex bg-page p-1 rounded-md w-full sm:w-fit border border-border-subtle">
                 <button
                     onClick={() => setActiveTab('ACTIVE')}
-                    className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'ACTIVE' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`flex-1 sm:flex-none px-5 py-1.5 rounded-sm text-sm font-medium transition-colors ${activeTab === 'ACTIVE' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
                 >
                     Active Staff ({staff.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('PENDING')}
-                    className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'PENDING' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`flex-1 sm:flex-none px-5 py-1.5 rounded-sm text-sm font-medium transition-colors ${activeTab === 'PENDING' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
                 >
                     Pending Invites {pendingInvites.length > 0 && `(${pendingInvites.length})`}
                 </button>
             </div>
 
-            {/* List View */}
+            {/* Active tab */}
             {activeTab === 'ACTIVE' && (
-                <div className="bg-card border border-border rounded-3xl overflow-hidden">
-                    {/* Search & Filter Bar */}
-                    <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between">
-                        <input
-                            type="text"
-                            placeholder="Search staff..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full sm:max-w-xs px-4 py-2 bg-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                        <div className="relative w-full sm:w-auto">
+                <div className="space-y-4">
+                    {/* Search & role filter */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex-1 min-w-[220px] relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Search staff by name or email…"
+                                aria-label="Search staff"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full h-9 pl-9 pr-9 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
+                                    aria-label="Clear search"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="relative">
                             <select
                                 value={roleFilter}
                                 onChange={e => setRoleFilter(e.target.value)}
-                                className="w-full sm:w-48 px-4 py-2 bg-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none pr-8 font-semibold text-foreground"
+                                aria-label="Filter by role"
+                                className="h-9 pl-3 pr-8 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface"
                             >
-                                <option value="ALL">All Roles</option>
+                                <option value="ALL">All roles</option>
                                 {Object.entries(ROLE_LABELS).map(([val, label]) => (
                                     <option key={val} value={val}>{label}</option>
                                 ))}
                             </select>
-                            <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
                         </div>
-                    </div>
-
-                    <div className="divide-y divide-border">
-                        {filteredStaff.map(member => {
-                            const isCurrentUser = member.id === currentUserId;
-                            const isOwner = member.role === 'ORG_OWNER';
-
-                            return (
-                                <Link href={`/dashboard/staff/${member.id}`} key={member.id} className="block group">
-                                    <div className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30 transition-all active:scale-[0.99] duration-100 cursor-pointer">
-                                        {/* Avatar */}
-                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm border flex-shrink-0 ${ROLE_AVATAR_COLORS[member.role] ?? 'bg-secondary text-foreground border-border'}`}>
-                                            {getInitials(member.displayName, member.email)}
-                                        </div>
-
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="font-bold text-foreground text-sm truncate">{member.displayName}</p>
-                                                {isCurrentUser && (
-                                                    <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">You</span>
-                                                )}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                                        </div>
-
-                                        {/* Role badge */}
-                                        <span className={`hidden sm:inline-flex text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-xl border ${ROLE_COLORS[member.role] ?? 'bg-secondary border-border text-muted-foreground'}`}>
-                                            {ROLE_LABELS[member.role] ?? member.role}
-                                        </span>
-
-                                        {/* Centre count */}
-                                        <div className="hidden sm:flex w-24 items-center gap-1 text-xs text-muted-foreground">
-                                            <Building2 className="w-3.5 h-3.5" />
-                                            <span className="truncate">{isOwner ? 'Global' : `${member.centres.length} Centres`}</span>
-                                        </div>
-
-                                        {/* Last Login */}
-                                        <div className="hidden md:flex w-32 items-center gap-1 text-xs text-muted-foreground">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span className="truncate">{member.lastLoginAt ? `${formatDistanceToNow(new Date(member.lastLoginAt))} ago` : 'Never'}</span>
-                                        </div>
-
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                        {filteredStaff.length === 0 && (
-                            <div className="px-6 py-12 text-center text-muted-foreground text-sm font-medium">
-                                No staff found matching your criteria.
-                            </div>
+                        {hasActiveFilters && (
+                            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setRoleFilter('ALL'); }}>
+                                <X className="w-3.5 h-3.5" />
+                                Clear
+                            </Button>
                         )}
                     </div>
+
+                    {staff.length === 0 ? (
+                        <EmptyState
+                            icon={<Users className="w-8 h-8" />}
+                            title="No staff yet"
+                            description="Invite your first team member to get started — they'll appear here once they accept."
+                        />
+                    ) : filteredStaff.length === 0 ? (
+                        <EmptyState
+                            icon={<Search className="w-8 h-8" />}
+                            title="No staff match these filters"
+                            description="Try a different search or role — or clear filters to see everyone."
+                        />
+                    ) : (
+                        <>
+                            {/* Desktop / tablet — table. Collapses to stacked cards below `md`. */}
+                            <div className="hidden md:block rounded-lg border border-border bg-surface overflow-hidden">
+                                <Table caption="Staff list">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Staff member</TableHead>
+                                            <TableHead>Role</TableHead>
+                                            <TableHead>Centres</TableHead>
+                                            <TableHead>Last active</TableHead>
+                                            <TableHead align="right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredStaff.map(member => {
+                                            const isCurrentUser = member.id === currentUserId;
+                                            const isOwner = member.role === 'ORG_OWNER';
+                                            const initials = getInitials(member.displayName, member.email);
+
+                                            return (
+                                                <TableRow key={member.id} className="group">
+                                                    <TableCell>
+                                                        <Link href={`/dashboard/staff/${member.id}`} className="flex items-center gap-3">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${ROLE_AVATAR_COLORS[member.role] ?? 'bg-page text-text border border-border'}`}>
+                                                                {initials}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-table-value font-medium text-text truncate group-hover:text-accent transition-colors">
+                                                                        {member.displayName}
+                                                                    </span>
+                                                                    {isCurrentUser && <Badge variant="info">You</Badge>}
+                                                                </div>
+                                                                <span className="text-metadata truncate flex items-center gap-1">
+                                                                    <Mail className="w-3 h-3" />
+                                                                    {member.email}
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge>{ROLE_LABELS[member.role] ?? member.role}</Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="text-table-value text-text-secondary flex items-center gap-1.5">
+                                                            <Building2 className="w-3.5 h-3.5 text-text-muted" />
+                                                            {isOwner ? 'All centres' : `${member.centres.length} ${member.centres.length === 1 ? 'centre' : 'centres'}`}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="text-table-value text-text-secondary flex items-center gap-1.5">
+                                                            <Clock className="w-3.5 h-3.5 text-text-muted" />
+                                                            {member.lastLoginAt ? `${formatDistanceToNow(new Date(member.lastLoginAt))} ago` : 'Never'}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        <Link
+                                                            href={`/dashboard/staff/${member.id}`}
+                                                            className="text-small-body font-medium text-accent hover:underline"
+                                                        >
+                                                            Manage
+                                                        </Link>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Mobile — stacked record cards. */}
+                            <div className="md:hidden">
+                                <StaffGrid staff={filteredStaff} currentUserId={currentUserId} />
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 
-            {/* Pending Invites View */}
+            {/* Pending tab */}
             {activeTab === 'PENDING' && (
-                <div className="bg-card border border-border rounded-3xl overflow-hidden">
-                    <div className="px-6 py-5 border-b border-border flex items-center gap-3">
-                        <Clock className="w-4 h-4 text-amber-500" />
-                        <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Pending Invites</h2>
-                        <span className="ml-auto text-xs text-muted-foreground font-semibold">{pendingInvites.length}</span>
+                pendingInvites.length === 0 ? (
+                    <EmptyState
+                        icon={<Clock className="w-8 h-8" />}
+                        title="No pending invites"
+                        description="Invitations you send will appear here until they're accepted, revoked, or expire."
+                    />
+                ) : (
+                    <div className="rounded-lg border border-border bg-surface overflow-hidden">
+                        <Table caption="Pending staff invitations">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead>Sent</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead align="right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {pendingInvites.map(invite => {
+                                    const isExpired = new Date(invite.expiresAt) < new Date();
+                                    return (
+                                        <TableRow key={invite.id}>
+                                            <TableCell>
+                                                <span className="flex items-center gap-2 font-medium text-text">
+                                                    <Mail className="w-3.5 h-3.5 text-text-muted" />
+                                                    {invite.email}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge>{ROLE_LABELS[invite.role] ?? invite.role}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-text-secondary">
+                                                {format(new Date(invite.createdAt), 'd MMM yyyy')}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={isExpired ? 'error' : 'warning'}>
+                                                    {isExpired ? 'Expired' : 'Pending'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    disabled={isPending}
+                                                    onClick={() => handleRevokeInvite(invite.id)}
+                                                    className="text-danger hover:bg-danger-soft"
+                                                >
+                                                    Revoke
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
                     </div>
-                    {pendingInvites.length === 0 ? (
-                        <div className="px-6 py-12 text-center text-muted-foreground text-sm font-medium">
-                            No pending invites.
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-border">
-                            {pendingInvites.map(invite => {
-                                const isExpired = new Date(invite.expiresAt) < new Date();
-                                return (
-                                    <div key={invite.id} className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4">
-                                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20">
-                                                <Mail className="w-4 h-4 text-amber-500" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-bold text-sm text-foreground truncate">{invite.email}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {ROLE_LABELS[invite.role] ?? invite.role} · Sent {format(new Date(invite.createdAt), 'd MMM yyyy')}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 self-end sm:self-auto">
-                                            {isExpired ? (
-                                                <span className="text-[10px] font-black text-rose-500 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-xl uppercase tracking-widest">Expired</span>
-                                            ) : (
-                                                <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl uppercase tracking-widest">Pending</span>
-                                            )}
-                                            <button
-                                                onClick={() => handleRevokeInvite(invite.id)}
-                                                className="text-xs font-bold text-rose-500 hover:text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg transition-all active:scale-95 duration-100"
-                                            >
-                                                Revoke
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                )
             )}
         </div>
     );

@@ -1,13 +1,15 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, UserPlus, Shield, MapPin, Building2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Mail, UserPlus, Shield, MapPin, Building2, AlertCircle, Loader2 } from 'lucide-react';
 
 import { logger } from '@/lib/logger';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { ROLE_LABELS } from '@/lib/staff-constants';
 
 export default function InviteStaffForm() {
     const router = useRouter();
@@ -57,244 +59,198 @@ export default function InviteStaffForm() {
         }
     };
 
-    const roles = [
-        {
-            value: 'MANAGER',
-            label: 'Manager',
-            description: 'Can manage bookings, students, and assigned centres',
-        },
-        {
-            value: 'FRONT_DESK',
-            label: 'Front Desk',
-            description: 'Can manage bookings and check-in students',
-        },
-        {
-            value: 'TUTOR',
-            label: 'Tutor',
-            description: 'Can view sessions and add feedback',
-        },
+    const roleOptions: Array<{ value: 'MANAGER' | 'FRONT_DESK' | 'TUTOR'; description: string }> = [
+        { value: 'MANAGER', description: 'Can manage bookings, students, and assigned centres' },
+        { value: 'FRONT_DESK', description: 'Can manage bookings and check-in students' },
+        { value: 'TUTOR', description: 'Can view sessions and add feedback' },
     ];
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-300">
-            {/* Back Button */}
+        <div className="max-w-2xl mx-auto space-y-5">
             <Link
                 href="/dashboard/staff"
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition-all active:scale-95 duration-100"
+                className="inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors"
             >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Team
+                <ChevronLeft className="w-4 h-4" />
+                Back to staff
             </Link>
 
-            {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-foreground tracking-tight">Invite Staff Member</h1>
-                <p className="text-muted-foreground font-medium mt-1">
+                <h1 className="text-page-title text-text">Invite staff member</h1>
+                <p className="text-small-body text-text-secondary mt-1">
                     Add a new team member and assign them to specific centres
                 </p>
             </div>
 
-            {/* Info Card */}
-            <div className="bg-card border border-border shadow-sm rounded-2xl p-6">
-                <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Shield className="w-5 h-5 text-primary" />
-                    </div>
+            {/* Info card */}
+            <Card>
+                <div className="p-4 flex gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
+                        <Shield className="w-4 h-4" />
+                    </span>
                     <div>
-                        <h3 className="font-bold text-foreground mb-1">Centre-Level Access</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                            After inviting, you'll assign this staff member to specific centres.
-                            They'll only see bookings and students from their assigned centres.
+                        <p className="text-small-body font-medium text-text mb-0.5">Centre-level access</p>
+                        <p className="text-metadata leading-relaxed">
+                            After inviting, you&apos;ll assign this staff member to specific centres. They&apos;ll only see bookings and students from their assigned centres.
                         </p>
                     </div>
                 </div>
-            </div>
+            </Card>
 
-            {/* Invitation Form */}
-            <form onSubmit={handleSubmit} className="glassmorphic-card rounded-3xl overflow-hidden shadow-xl">
-                <div className="px-8 py-6 border-b border-border">
-                    <div className="flex items-center gap-2">
-                        <UserPlus className="w-5 h-5 text-muted-foreground" />
-                        <h2 className="text-lg font-bold text-foreground">Staff Details</h2>
-                    </div>
-                </div>
-
-                <div className="p-8 space-y-6">
-                    {error && (
-                        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-bold text-sm">
-                            {error}
+            <form onSubmit={handleSubmit}>
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2.5">
+                            <UserPlus className="w-4 h-4 text-text-muted" />
+                            <CardTitle>Staff details</CardTitle>
                         </div>
-                    )}
+                    </CardHeader>
 
-                    {/* Email */}
-                    <div>
-                        <label className="block text-sm font-bold text-foreground mb-2">
-                            Email Address *
-                        </label>
-                        <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <input
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full pl-12 pr-4 py-3 bg-secondary border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                placeholder="staff@example.com"
-                                required
-                            />
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            They'll receive an invitation email to set up their account
-                        </p>
-                    </div>
+                    <CardContent className="space-y-5">
+                        {error && (
+                            <div className="p-3 rounded-md bg-danger-soft border border-danger/20 text-small-body text-danger font-medium">
+                                {error}
+                            </div>
+                        )}
 
-                    {/* Name Fields */}
-                    <div className="grid grid-cols-2 gap-4">
+                        {/* Email */}
                         <div>
-                            <label className="block text-sm font-bold text-foreground mb-2">
-                                First Name
+                            <label htmlFor="invite-email" className="block text-label text-text-muted mb-1.5">
+                                Email address *
                             </label>
-                            <input
-                                type="text"
-                                value={formData.firstName}
-                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                placeholder="John"
-                            />
-                            <p className="text-[10px] text-muted-foreground mt-1 font-medium">
-                                Optional — invitee will be prompted on first login
-                            </p>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                                <input
+                                    id="invite-email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full h-9 pl-9 pr-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                                    placeholder="staff@example.com"
+                                    required
+                                />
+                            </div>
+                            <p className="text-metadata mt-1.5">They&apos;ll receive an invitation email to set up their account</p>
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-foreground mb-2">
-                                Last Name
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.lastName}
-                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                placeholder="Doe"
-                            />
-                            <p className="text-[10px] text-muted-foreground mt-1 font-medium">
-                                Optional — invitee will be prompted on first login
-                            </p>
-                        </div>
-                    </div>
 
-                    {/* Centre Selection */}
-                    {centres.length > 0 && (
-                        <div>
-                            <label className="block text-sm font-bold text-foreground mb-2">
-                                <span className="flex items-center gap-2">
-                                    <Building2 className="w-4 h-4 text-muted-foreground" />
-                                    Primary Centre (optional)
-                                </span>
-                            </label>
-                            <select
-                                value={formData.centreId}
-                                onChange={(e) => setFormData({ ...formData, centreId: e.target.value })}
-                                className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&>option]:bg-card"
-                            >
-                                <option value="" className="text-muted-foreground">Select a centre (optional)</option>
-                                {centres.map((centre) => (
-                                    <option key={centre.id} value={centre.id}>
-                                        {centre.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                The invitation email will mention this centre. You can assign more centres after they join.
-                            </p>
-                            {!formData.centreId && formData.role !== 'MANAGER' && (
-                                <p className="mt-1.5 text-[10px] font-bold text-warning flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    This staff member will have no data access until you assign a centre.
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Role Selection */}
-                    <div>
-                        <label className="block text-sm font-bold text-foreground mb-3">
-                            Role *
-                        </label>
-                        <div className="space-y-3">
-                            {roles.map((role) => (
-                                <label
-                                    key={role.value}
-                                    className={`flex items-start gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all active:scale-[0.99] duration-100 ${formData.role === role.value
-                                        ? 'border-primary bg-primary/10'
-                                        : 'border-border hover:border-primary/30'
-                                        }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value={role.value}
-                                        checked={formData.role === role.value}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                role: e.target.value as any,
-                                            })
-                                        }
-                                        className="mt-1 accent-primary"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-bold text-foreground mb-1">{role.label}</div>
-                                        <div className="text-sm text-muted-foreground">{role.description}</div>
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Note about centre assignment */}
-                    <div className="bg-card border border-border shadow-sm rounded-2xl p-4">
-                        <div className="flex gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                                <MapPin className="w-5 h-5 text-amber-500" />
+                        {/* Name fields */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="invite-first-name" className="block text-label text-text-muted mb-1.5">First name</label>
+                                <input
+                                    id="invite-first-name"
+                                    type="text"
+                                    value={formData.firstName}
+                                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                    className="w-full h-9 px-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                                    placeholder="John"
+                                />
+                                <p className="text-metadata mt-1">Optional — prompted on first login</p>
                             </div>
                             <div>
-                                <h4 className="font-bold text-foreground text-sm mb-1">
-                                    Centre Assignment - Next Step
-                                </h4>
-                                <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                                    After sending the invitation, you'll be able to assign this staff member to
-                                    specific centres. They'll only have access to data from those centres.
+                                <label htmlFor="invite-last-name" className="block text-label text-text-muted mb-1.5">Last name</label>
+                                <input
+                                    id="invite-last-name"
+                                    type="text"
+                                    value={formData.lastName}
+                                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                    className="w-full h-9 px-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                                    placeholder="Doe"
+                                />
+                                <p className="text-metadata mt-1">Optional — prompted on first login</p>
+                            </div>
+                        </div>
+
+                        {/* Centre selection */}
+                        {centres.length > 0 && (
+                            <div>
+                                <label htmlFor="invite-centre" className="block text-label text-text-muted mb-1.5">
+                                    <span className="flex items-center gap-1.5">
+                                        <Building2 className="w-3.5 h-3.5" />
+                                        Primary centre (optional)
+                                    </span>
+                                </label>
+                                <select
+                                    id="invite-centre"
+                                    value={formData.centreId}
+                                    onChange={(e) => setFormData({ ...formData, centreId: e.target.value })}
+                                    className="w-full h-9 px-3 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
+                                >
+                                    <option value="">Select a centre (optional)</option>
+                                    {centres.map((centre) => (
+                                        <option key={centre.id} value={centre.id}>{centre.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-metadata mt-1.5">
+                                    The invitation email will mention this centre. You can assign more centres after they join.
+                                </p>
+                                {!formData.centreId && formData.role !== 'MANAGER' && (
+                                    <p className="mt-1.5 text-metadata text-warning flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        This staff member will have no data access until you assign a centre.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Role selection */}
+                        <div>
+                            <label className="block text-label text-text-muted mb-2">Role *</label>
+                            <div className="space-y-2">
+                                {roleOptions.map((role) => (
+                                    <label
+                                        key={role.value}
+                                        className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer transition-colors ${formData.role === role.value
+                                                ? 'border-accent bg-accent-soft'
+                                                : 'border-border-subtle hover:border-border bg-page'
+                                            }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="role"
+                                            value={role.value}
+                                            checked={formData.role === role.value}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, role: e.target.value as any })
+                                            }
+                                            className="mt-1 accent-accent"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="text-small-body font-medium text-text mb-0.5">{ROLE_LABELS[role.value]}</div>
+                                            <div className="text-metadata">{role.description}</div>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Note about centre assignment */}
+                        <div className="p-3 rounded-md bg-page border border-border-subtle flex gap-3">
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-warning-soft text-warning">
+                                <MapPin className="w-4 h-4" />
+                            </span>
+                            <div>
+                                <p className="text-small-body font-medium text-text mb-0.5">Centre assignment — next step</p>
+                                <p className="text-metadata leading-relaxed">
+                                    After sending the invitation, you&apos;ll be able to assign this staff member to specific centres. They&apos;ll only have access to data from those centres.
                                 </p>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
 
-                {/* Form Actions */}
-                <div className="px-8 py-6 border-t border-border flex items-center justify-between">
-                    <Link
-                        href="/dashboard/staff"
-                        className="px-6 py-3 text-muted-foreground hover:text-foreground font-bold transition-all active:scale-95 duration-100"
-                    >
-                        Cancel
-                    </Link>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 duration-100 disabled:opacity-50 disabled:bg-secondary disabled:shadow-none shadow-lg shadow-primary/30 glow-btn"
-                    >
-                        {loading ? (
-                            <>
-                                <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                                Sending Invitation...
-                            </>
-                        ) : (
-                            <>
-                                <Mail className="w-5 h-5" />
-                                Send Invitation
-                            </>
-                        )}
-                    </button>
-                </div>
+                    <CardFooter className="justify-between">
+                        <Button variant="ghost" asChild>
+                            <Link href="/dashboard/staff">Cancel</Link>
+                        </Button>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" /> Sending invitation…</>
+                            ) : (
+                                <><Mail className="w-4 h-4" /> Send invitation</>
+                            )}
+                        </Button>
+                    </CardFooter>
+                </Card>
             </form>
         </div>
     );

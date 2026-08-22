@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, AlertTriangle, Trash2, Loader2, CheckCircle2 } from 'lucide-react';
+import { Save, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import StaffRoleSelector from './StaffRoleSelector';
 import StaffCentreAssignment from './StaffCentreAssignment';
 import { updateStaffRole } from '@/features/staff/staff-actions';
@@ -37,7 +39,7 @@ export default function StaffProfileForm({
 }: StaffProfileFormProps) {
     const router = useRouter();
     const { toast } = useToast();
-    
+
     const [selectedRole, setSelectedRole] = useState(currentRole);
     const [selectedCentres, setSelectedCentres] = useState<string[]>(currentAssignments);
     const [saving, setSaving] = useState(false);
@@ -115,16 +117,16 @@ export default function StaffProfileForm({
     };
 
     return (
-        <div className="space-y-6 relative pb-24">
-            <StaffRoleSelector 
+        <div className="space-y-5 relative pb-24">
+            <StaffRoleSelector
                 currentRole={currentRole}
                 selectedRole={selectedRole}
                 onRoleChange={setSelectedRole}
                 ownerCount={ownerCount}
             />
-            
+
             {selectedRole !== 'ORG_OWNER' && (
-                <StaffCentreAssignment 
+                <StaffCentreAssignment
                     staffName={staffName}
                     allCentres={allCentres}
                     selectedCentres={selectedCentres}
@@ -132,89 +134,67 @@ export default function StaffProfileForm({
                 />
             )}
 
-            {/* Remove Staff Member */}
-            <div className="bg-card rounded-[24px] p-6 border border-border shadow-sm">
-                {!showRemoveConfirm ? (
+            {/* Remove staff member */}
+            <Card>
+                <div className="p-5">
                     <button
+                        type="button"
                         onClick={() => setShowRemoveConfirm(true)}
-                        className="flex items-center gap-2 text-sm font-bold text-destructive hover:text-destructive/80 transition-colors cursor-pointer"
+                        className="flex items-center gap-2 text-small-body font-medium text-danger hover:opacity-80 transition-opacity"
                     >
                         <Trash2 className="w-4 h-4" />
                         Remove {staffName} from organisation
                     </button>
-                ) : (
-                    <div className="p-5 bg-destructive/10 border border-destructive/20 rounded-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-bold text-foreground text-sm">Remove {staffName}?</p>
-                                <p className="text-sm text-destructive/80 font-semibold mt-1 leading-relaxed">
-                                    They will immediately lose access to the dashboard on their next page load. Their account is not deleted — they just lose access to this organisation.
-                                </p>
-                            </div>
+                </div>
+            </Card>
+
+            {/* Remove confirmation modal — same pattern as the Parents module's
+                destructive-action dialogs (BinActions / DeleteParentButton). */}
+            {showRemoveConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full">
+                        <div className="w-11 h-11 bg-danger-soft rounded-md flex items-center justify-center mb-4">
+                            <AlertTriangle className="w-5 h-5 text-danger" />
                         </div>
+                        <h3 className="text-section-title text-text mb-2">Remove {staffName}?</h3>
+                        <p className="text-small-body text-text-secondary mb-6">
+                            They will immediately lose access to the dashboard on their next page load. Their account is not deleted — they just lose access to this organisation.
+                        </p>
                         <div className="flex gap-3">
-                            <button
-                                onClick={handleRemoveStaff}
-                                disabled={removing}
-                                className="flex items-center gap-2 px-4 py-2 bg-destructive hover:bg-destructive/90 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
-                            >
-                                {removing ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                )}
-                                Yes, remove access
-                            </button>
-                            <button
-                                onClick={() => setShowRemoveConfirm(false)}
-                                disabled={removing}
-                                className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            >
+                            <Button variant="secondary" className="flex-1" onClick={() => setShowRemoveConfirm(false)} disabled={removing}>
                                 Cancel
-                            </button>
+                            </Button>
+                            <Button variant="destructive" className="flex-1" onClick={handleRemoveStaff} disabled={removing}>
+                                {removing ? <><Loader2 className="w-4 h-4 animate-spin" /> Removing…</> : 'Yes, remove access'}
+                            </Button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* Sticky Action Bar */}
+            {/* Sticky action bar */}
             {isDirty && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-4xl bg-card border border-border shadow-2xl rounded-2xl p-4 flex items-center justify-between z-50 animate-in slide-in-from-bottom-8 duration-300">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-4xl bg-surface border border-border shadow-[var(--shadow-popover)] rounded-lg p-4 flex items-center justify-between z-40 gap-4 flex-wrap">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <AlertTriangle className="w-5 h-5 text-primary" />
+                        <div className="w-9 h-9 rounded-full bg-accent-soft flex items-center justify-center flex-shrink-0">
+                            <AlertTriangle className="w-4 h-4 text-accent" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-foreground">Unsaved changes</p>
-                            <p className="text-xs text-muted-foreground font-medium">You have modified this staff member&apos;s profile.</p>
+                            <p className="text-small-body font-medium text-text">Unsaved changes</p>
+                            <p className="text-metadata">You have modified this staff member&apos;s profile.</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={handleDiscard}
-                            disabled={saving}
-                            className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
-                        >
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" onClick={handleDiscard} disabled={saving}>
                             Discard
-                        </button>
-                        <button
-                            onClick={handleSaveAll}
-                            disabled={saving}
-                            className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all shadow-sm shadow-primary/20 disabled:opacity-50 cursor-pointer"
-                        >
+                        </Button>
+                        <Button onClick={handleSaveAll} disabled={saving}>
                             {saving ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Saving...
-                                </>
+                                <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
                             ) : (
-                                <>
-                                    <Save className="w-4 h-4" />
-                                    Save Changes
-                                </>
+                                <><Save className="w-4 h-4" /> Save changes</>
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}

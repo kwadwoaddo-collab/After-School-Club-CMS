@@ -2,13 +2,15 @@
 import { requireAuth } from '@/lib/require-auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { users, organisations, centres, centreMemberships } from '@/db/schema';
+import { users, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { ArrowLeft, Crown, Briefcase, MonitorSmartphone, GraduationCap, Mail, MapPin, Calendar, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Mail, MapPin, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import StaffProfileForm from '@/features/staff/components/StaffProfileForm';
 import { format } from 'date-fns';
-import { ROLE_COLORS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { ROLE_LABELS, ROLE_AVATAR_COLORS } from '@/lib/staff-constants';
 
 interface PageProps {
     params: Promise<{ userId: string }>;
@@ -38,25 +40,10 @@ export default async function EditStaffPage({ params }: PageProps) {
         .select({ id: users.id })
         .from(users)
         .where(and(eq(users.organisationId, session.user.organisationId), eq(users.role, 'ORG_OWNER')));
-    
+
     const ownerCount = allOrgOwners.length;
 
     const currentAssignments = staffMember.memberships.map((m) => m.centreId);
-
-    const getRoleIcon = (role: string, className?: string) => {
-        if (role === 'ORG_OWNER') return <Crown className={className} />;
-        if (role === 'MANAGER') return <Briefcase className={className} />;
-        if (role === 'FRONT_DESK') return <MonitorSmartphone className={className} />;
-        return <GraduationCap className={className} />;
-    };
-
-    const getRolePermissions = (role: string): string[] => {
-        if (role === 'ORG_OWNER') return ['Full system access', 'Manage all centres', 'Manage staff & invites', 'View all reports', 'Manage billing'];
-        if (role === 'MANAGER') return ['Manage bookings', 'Manage students', 'View assigned centres', 'View reports'];
-        if (role === 'FRONT_DESK') return ['View & manage bookings', 'Check-in students', 'View assigned centre data'];
-        return ['View assigned sessions', 'Add session feedback', 'Mark attendance'];
-    };
-
 
     const initials = (() => {
         if (staffMember.firstName && staffMember.lastName) {
@@ -70,61 +57,65 @@ export default async function EditStaffPage({ params }: PageProps) {
         return (staffMember.email || 'S').charAt(0).toUpperCase().repeat(2);
     })();
 
-    return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-            {/* Back Button */}
-            <div className="flex items-center justify-between">
-                <Link href="/dashboard/staff" className="group inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all active:scale-95 duration-100">
-                    <div className="w-8 h-8 rounded-full bg-secondary/60 border border-border flex items-center justify-center group-hover:bg-secondary transition-all">
-                        <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    Back to Team
-                </Link>
-            </div>
+    const displayName = staffMember.firstName && staffMember.lastName
+        ? `${staffMember.firstName} ${staffMember.lastName}`
+        : staffMember.name || staffMember.email;
 
-            {/* Profile Header */}
-            <div className="bg-card rounded-[32px] p-8 border border-border shadow-sm">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    {/* Avatar */}
-                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black flex-shrink-0 ${ROLE_AVATAR_COLORS[staffMember.role] ?? 'bg-secondary text-foreground border border-border'}`}>
-                        {initials}
+    return (
+        <div className="max-w-4xl mx-auto space-y-5">
+            {/* Navigation bar */}
+            <Link
+                href="/dashboard/staff"
+                className="group inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors"
+            >
+                <ChevronLeft className="w-4 h-4" />
+                Back to staff
+            </Link>
+
+            {/* Header card */}
+            <Card>
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-5">
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${ROLE_AVATAR_COLORS[staffMember.role] ?? 'bg-page text-text border border-border'}`}>
+                        <span className="text-page-title select-none">{initials}</span>
                     </div>
-                    {/* Info */}
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">
-                            {staffMember.firstName && staffMember.lastName
-                                ? `${staffMember.firstName} ${staffMember.lastName}`
-                                : staffMember.name
-                                    ? staffMember.name
-                                    : <span className="text-muted-foreground italic">{staffMember.email}</span>
-                            }
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-3 mb-3">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border ${ROLE_COLORS[staffMember.role] ?? 'bg-secondary/40 text-foreground border-border'}`}>
-                                {getRoleIcon(staffMember.role, "w-3.5 h-3.5")}
-                                {staffMember.role.replace(/_/g, ' ')}
+
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-page-title text-text truncate">{displayName}</h1>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            <Badge>{ROLE_LABELS[staffMember.role] ?? staffMember.role}</Badge>
+                            <span className="text-metadata flex items-center gap-1">
+                                <Mail className="w-3 h-3" />
+                                {staffMember.email}
                             </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground font-semibold">
-                            <span className="flex items-center gap-1.5"><Mail className="w-4 h-4 text-muted-foreground" /> {staffMember.email}</span>
-                            {staffMember.role === 'ORG_OWNER' ? (
-                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-muted-foreground" /> All Centres</span>
-                            ) : (
-                                <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-muted-foreground" /> {staffMember.memberships.length} Centre{staffMember.memberships.length !== 1 ? 's' : ''} Assigned</span>
-                            )}
-                            <span className="flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4 text-muted-foreground" />
-                                Joined {format(new Date(staffMember.createdAt), 'MMMM d, yyyy')}
+                    </div>
+
+                    {/* Key metrics */}
+                    <div className="flex sm:flex-col gap-2 sm:min-w-[170px]">
+                        <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
+                            <span className="text-metadata flex items-center gap-1.5">
+                                <MapPin className="w-3.5 h-3.5" /> Centres
+                            </span>
+                            <span className="text-small-body font-semibold text-text">
+                                {staffMember.role === 'ORG_OWNER' ? 'All' : staffMember.memberships.length}
+                            </span>
+                        </div>
+                        <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
+                            <span className="text-metadata flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5" /> Joined
+                            </span>
+                            <span className="text-small-body font-semibold text-text">
+                                {format(new Date(staffMember.createdAt), 'd MMM yyyy')}
                             </span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </Card>
 
-            {/* Unified Form */}
+            {/* Role, centres, and remove-from-org form */}
             <StaffProfileForm
                 userId={userId}
-                staffName={staffMember.name || staffMember.email}
+                staffName={displayName}
                 currentRole={staffMember.role as any}
                 ownerCount={ownerCount}
                 allCentres={allCentres}
