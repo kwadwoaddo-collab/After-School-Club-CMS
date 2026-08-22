@@ -1,18 +1,17 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import CentreSettingsClient from './CentreSettingsClient';
 
 export default async function CentreSettingsPage({ params }: { params: Promise<{ id: string }> }) {
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
-    const userRole = (session.user as any).role;
-    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) return redirect('/dashboard');
+    // Milestone 3D: normalised from a raw auth() + manual role check to the
+    // established requireAuth helper, matching the Centres List and Add
+    // Centre pages. Behaviour is unchanged — this page was already
+    // correctly ['ORG_OWNER','MANAGER']-only; see
+    // project-notes/milestone-3d-centres-audit.md §3.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     const resolvedParams = await params;
     
