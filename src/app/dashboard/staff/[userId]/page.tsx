@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireAuth } from '@/lib/require-auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { users, organisations, centres, centreMemberships } from '@/db/schema';
@@ -16,13 +16,11 @@ interface PageProps {
 
 export default async function EditStaffPage({ params }: PageProps) {
     const { userId } = await params;
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
-
-    const [currentUser] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
-    if (!currentUser || currentUser.role !== 'ORG_OWNER') return redirect('/dashboard/staff');
+    // Milestone 3C: normalised from a raw auth() + manual role check to the
+    // established requireAuth helper, matching /dashboard/staff and every
+    // other gated page. Behaviour is unchanged — this page was already
+    // correctly ORG_OWNER-only; see project-notes/milestone-3c-staff-audit.md §5.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
 
     const staffMember = await db.query.users.findFirst({
         where: eq(users.id, userId),
