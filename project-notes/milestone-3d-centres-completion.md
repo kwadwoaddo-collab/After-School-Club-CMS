@@ -2,7 +2,7 @@
 
 **Status: COMPLETE.** Stage-A audit done, security defects fixed with regression tests, List/Add Centre/Settings/Billing modernised, verified in both themes at 1440/834/375, full quality gate clean, production-style verification with seeded data performed, git bundle produced. Per the ticket's explicit stop condition, this milestone stops here — Bookings, Attendance, and every other module are untouched, and no further module work has begun.
 
-Base SHA: `6524d05` (Staff completion, Milestone 3C). Final SHA: `cbec556`. Five commits.
+Base SHA: `6524d05` (Staff completion, Milestone 3C). Final SHA: not hardcoded here — see the note in §6 on why a commit cannot self-reference its own hash; read it from `git log 6524d05..HEAD` on the delivered branch, or from the delivered bundle's own `git bundle verify` output, both of which are authoritative and cannot go stale the way a number typed into this file can.
 
 ---
 
@@ -106,15 +106,20 @@ No area is rated below CLOSE.
 
 ## 6. Git handoff
 
-Base SHA: `6524d05`. Final SHA: `cbec556` (this report's own commit, the last in the milestone). Five commits:
+Base SHA: `6524d05`.
+
+**Why no "Final SHA" is hardcoded below:** a git commit's hash is computed from that commit's own content. A file committed alongside the rest of a change set — this report included — cannot correctly name the hash of the commit that contains it, because writing that hash into the file changes the file's content, which changes the hash. Any attempt to "correct" this file to state its own final SHA just produces a new commit whose hash the file still doesn't contain, one step behind, forever. This is a structural property of content-addressed storage, not a mistake to fix by editing this file again. The authoritative tip of `rebuild/cms-modernisation` for this milestone is therefore whatever `git log 6524d05..HEAD` reports on the actual repository at delivery time, or equivalently the ref printed by `git bundle verify` on the delivered bundle — both computed outside this file's own tracked content, so neither can go stale the way a number typed in here can.
+
+Commits in this milestone, oldest first (the last one or two are documentation-only and its exact count/hashes should be read from `git log`, not assumed from this list):
 
 1. `f72dbfc` — docs+fix: Stage-A audit; fix two evidenced authorization gaps
 2. `2d67aa9` — feat: modernise Centres List and Add Centre
 3. `5375070` — feat: modernise Centre Settings and Billing
 4. `1990c8f` — fix: session-builder time-input clipping found in Playwright verification
-5. `cbec556` — docs: this completion report
+5. `cbec556` — docs: Centres completion report (this report's first version)
+6. and one or more subsequent documentation-only commits correcting this section, if any — see `git log` for the true count and tip.
 
-Push to `origin` is expected to remain blocked by the sandbox's git-proxy restriction (403, "not in this session's authorized repository set"), consistent with every prior milestone this session. One incremental bundle was produced instead: `milestone-3d-centres.bundle`, covering `6524d05..cbec556`, verified with `git bundle verify` and sanity-tested against a scratch clone.
+Push to `origin` is expected to remain blocked by the sandbox's git-proxy restriction (403, "not in this session's authorized repository set"), consistent with every prior milestone this session. An incremental bundle was produced instead — `milestone-3d-centres.bundle`, covering `6524d05..HEAD` at the time it was built — verified with `git bundle verify` and sanity-tested against a scratch clone; the exact tip it contains is whatever `git bundle verify` reports for that specific file, not a hash typed into this document.
 
 ---
 
