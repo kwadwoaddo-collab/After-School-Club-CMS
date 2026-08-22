@@ -18,7 +18,7 @@
   --color-popover: hsl(var(--popover));
   --color-primary-foreground: hsl(var(--primary-foreground));
 
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-geist-sans);
   --line-height-display: 1.05;
   --line-height-heading: 1.1;
   --line-height-body: 1.5;

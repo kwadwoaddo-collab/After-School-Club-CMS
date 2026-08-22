@@ -45,6 +45,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "esbuild": "^0.28.1",
+    "geist": "^1.7.2",
     "googleapis": "^171.2.0",
     "jose": "^6.2.3",
     "lucide-react": "^0.563.0",

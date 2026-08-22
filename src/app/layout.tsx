@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  display: "swap",
-});
+// Milestone 2 Correction Pass — Font Decision: switched from next/font/google's
+// Inter to the `geist` package's GeistSans (InvoiceFlow's own typeface).
+// GeistSans ships as local static font files bundled at install time, so it
+// needs no network fetch during `next build` — this also permanently removes
+// the CMS's pre-existing Google-Fonts build fragility (the
+// NEXT_FONT_GOOGLE_MOCKED_RESPONSES workaround required for webpack builds,
+// with no working equivalent under Turbopack). See the Milestone 2 Correction
+// Pass completion report ("Font Decision") for the full rationale.
+
 
 
 export const metadata: Metadata = {
@@ -69,7 +72,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} font-sans antialiased`}
+        className={`${GeistSans.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
         <SessionProvider>
