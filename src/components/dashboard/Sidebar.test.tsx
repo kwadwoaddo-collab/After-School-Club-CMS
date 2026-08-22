@@ -66,50 +66,50 @@ describe('Sidebar Polish (R2) Enhancements', () => {
         expect(html).toContain('shadow-primary/10');
     });
 
-    it('applies subtle left accent bar to the active nav item and maintains bg-primary/10', () => {
+    it('applies a distinguishing accent style (left indicator bar + accent token) to the active nav item', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
-        
-        // Since pathname is mocked to '/dashboard', the Dashboard link is active
+
+        // Since pathname is mocked to '/dashboard', the Dashboard link is active.
+        // Milestone 2: flattened from a pill/glow treatment to InvoiceFlow's
+        // left-rule + soft accent background — assert on the current tokens
+        // rather than the pre-Milestone-2 exact class strings.
         expect(html).toContain('before:absolute');
         expect(html).toContain('before:left-0');
-        expect(html).toContain('before:top-2');
-        expect(html).toContain('before:bottom-2');
-        expect(html).toContain('before:w-[3px]');
-        expect(html).toContain('before:bg-primary');
-        expect(html).toContain('before:rounded-r-full');
-        expect(html).toContain('bg-primary/10');
+        expect(html).toContain('before:bg-accent');
+        expect(html).toContain('bg-accent-soft');
+        expect(html).toContain('text-accent');
     });
 
-    it('uses updated spacing (space-y-1) and padding (py-2.5) on nav items', () => {
+    it('renders nav items with consistent vertical rhythm', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
-        
+
         expect(html).toContain('space-y-1');
-        expect(html).toContain('py-2.5');
+        expect(html).toContain('py-2');
     });
 
-    it('applies correct contrast and tracking style changes to section labels', () => {
+    it('renders the collapsible sub-nav (children) items under their parent', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
-        
-        expect(html).toContain('text-muted-foreground/80');
-        expect(html).toContain('tracking-[0.12em]');
+
+        // Parents and Attendance both declare nested `children` in navItems
+        expect(html).toContain('Recovery Bin');
+        expect(html).toContain('Session Ledger');
     });
 
-    it('renders premium user profile footer with initials, name, and role, matching light/dark modes', () => {
+    it('renders the user profile footer with initials, name, and role', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
-        
+
         // Shows user details when expanded
         expect(html).toContain('John Doe');
         expect(html).toContain('Org Owner'); // Formatted role
         expect(html).toContain('JD'); // Initials
-        
-        // Shows premium styling
-        expect(html).toContain('bg-primary/10');
-        expect(html).toContain('ring-1');
-        expect(html).toContain('ring-primary/20');
+
+        // Avatar chip uses the accent token, not the old primary/glassmorphism styling
+        expect(html).toContain('bg-accent-soft');
+        expect(html).toContain('text-accent');
     });
 
     it('handles collapsed state by hiding text labels, centering items, and showing tooltips', () => {

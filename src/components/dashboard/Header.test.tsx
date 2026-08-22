@@ -43,31 +43,35 @@ describe('Header Polish (R3) Enhancements', () => {
         expect(html).toContain('border-border/60');
     });
 
-    it('upgrades the search input container form element with h-10, rounded-2xl, and premium focus/hover styles', () => {
+    it('renders a focusable search field with the InvoiceFlow-aligned flat input treatment', () => {
         const html = renderHeader();
         expect(html).toContain('h-10');
-        expect(html).toContain('rounded-2xl');
-        expect(html).toContain('focus-within:border-primary/40');
-        expect(html).toContain('hover:border-primary/40');
-        expect(html).toContain('hover:ring-primary/10');
+        expect(html).toContain('rounded-md');
+        expect(html).toContain('focus-within:outline-accent');
+        expect(html).toContain('Search students, bookings');
     });
 
-    it('renders the tactile theme toggle (Sun/Moon/Cloud) button cycling through system -> light -> dark states', () => {
+    it('renders the theme toggle button reflecting the initial (pre-hydration) theme state', () => {
         const html = renderHeader();
-        expect(html).toContain('active:scale-95');
-        expect(html).toContain('transition-transform');
-        expect(html).toContain('duration-200');
-        expect(html).toContain('aria-label="Toggle theme (currently system)"');
+        // Header's `theme` state initialises to 'dark' (matching the anti-flash
+        // inline script's own 'dark' fallback in src/app/layout.tsx) and only
+        // reconciles with localStorage after mount — a static server render
+        // (as here) always reflects that initial value, not 'system'. This
+        // was a pre-existing stale assertion (documented in
+        // project-notes/milestone-1-final-closure.md's test baseline),
+        // fixed while this file was already being touched for Milestone 2.
+        expect(html).toContain('aria-label="Toggle theme (currently dark)"');
     });
 
-    it('upgrades the user avatar / initials button with transition-all duration-200 and ring-2 ring-border group-hover:ring-primary/40', () => {
+    it('renders the user avatar / initials button on the new accent token', () => {
         const html = renderHeader({ userInitial: 'U' });
         expect(html).toContain('ring-2');
         expect(html).toContain('ring-border');
-        expect(html).toContain('group-hover:ring-primary/40');
+        expect(html).toContain('group-hover:ring-accent/40');
+        expect(html).toContain('bg-accent-soft');
+        expect(html).toContain('text-accent');
         expect(html).toContain('font-semibold');
         expect(html).toContain('text-sm');
-        expect(html).toContain('tracking-tight');
         expect(html).toContain('U');
     });
 });
