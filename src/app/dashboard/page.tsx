@@ -98,7 +98,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const registrationsCentreCondition = activeCentreId !== 'all' ? eq(registrations.centreId, activeCentreId) : (hasCentres ? inArray(registrations.centreId, accessibleCentreIds) : sql`false`);
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700 pb-12">
+        <div className="space-y-8 animate-in fade-in duration-700">
             <DashboardHero firstName={firstName} orgName={org.name}>
                 <Suspense fallback={<div role="status" className="w-auto min-w-[140px] h-[44px] bg-secondary rounded-xl animate-pulse" aria-label="Loading date filter" />}>
                     <DashboardFilter currentView={currentView} currentDateIso={targetDate.toISOString()} dateLabel={dateLabel} />

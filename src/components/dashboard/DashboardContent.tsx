@@ -15,7 +15,8 @@ export default function DashboardContent({ children }: { children: React.ReactNo
               h-14 (56px) at every breakpoint (Milestone 2 Correction Pass —
               previously h-16 mobile / h-20 sm+, responsive height was itself
               part of the "too much old-CMS chrome" problem).
-              Mobile bottom nav clearance handled in <main pb-24 lg:pb-8> in layout.tsx
+              Mobile bottom nav clearance handled by the `.dashboard-main-content`
+              rule in globals.css (Milestone 3A) — not a padding-bottom utility here.
             */}
             <div className="flex-1 flex flex-col pt-14">
                 {children}

@@ -936,3 +936,67 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
    classes) without introducing a second design-system framework. Focus
    rings reuse the same pattern: `focus-visible:outline focus-visible:outline-2
    focus-visible:outline-offset-2 focus-visible:outline-accent`. */
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Milestone 3A — global shell fixes (Students closure pass)
+   ─────────────────────────────────────────────────────────────────────────
+   Both rules below are plain, unlayered CSS (not inside @layer utilities/
+   components), so per the CSS Cascade Layers spec they win over ANY
+   Tailwind utility class regardless of source order or breakpoint —
+   exactly what's needed here, since both defects were utility-ordering
+   accidents, not missing styles. This is also why no individual route
+   needs its own padding-bottom hack to compensate: the shell's own
+   elements (`dashboard-main-content` on <main>, `skip-to-content` on the
+   skip link) are the single point of truth. See
+   project-notes/milestone-3a-students-closure.md.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* "Skip to main content" — was entirely unstyled (a plain <a> with only a
+   `.skip-to-content` class hook and no matching CSS anywhere in the repo),
+   so it rendered as a normal, fully visible link at the very top of every
+   page instead of being hidden until keyboard focus. */
+.skip-to-content {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-150%);
+  background: var(--if-accent);
+  color: #fff;
+  padding: 0.625rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-popover);
+  transition: transform 0.15s ease;
+}
+
+.skip-to-content:focus {
+  transform: translateY(0);
+}
+
+/* Dashboard shell's scrollable <main> — reserves clearance under the fixed
+   mobile/tablet bottom nav (h-16 = 64px) so the last piece of page content
+   can scroll fully clear of it, with a safe-area-inset allowance for
+   devices with a home indicator. Below `lg` (1024px) the bottom nav is
+   shown; at `lg` and up it's hidden and the sidebar shell takes over.
+
+   Root cause this replaces: the previous `pb-24 lg:pb-8` utility pair on
+   <main> was silently overridden for the entire 640–1023px tablet range by
+   the earlier `sm:p-8` utility (padding on all four sides, same
+   specificity, later in Tailwind's generated stylesheet) — dropping
+   clearance to 32px in exactly the range where the 64px nav is still
+   visible. That produced the confirmed overlap on Dashboard, Student
+   Detail and Student Create at the 834px breakpoint. Two routes had grown
+   their own `pb-12` compensating hack (dashboard/page.tsx, Student Detail
+   page.tsx) that didn't fully close the gap and, once this global fix
+   landed, would have caused double-padding — both were removed. */
+.dashboard-main-content {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 2rem);
+}
+
+@media (min-width: 1024px) {
+  .dashboard-main-content {
+    padding-bottom: 2rem;
+  }
+}

@@ -216,21 +216,18 @@ export default async function StudentProfilePage(
     }
 
     return (
-        <div className="pb-12">
-            <StudentProfile
-                student={{
-                    ...student,
-                    bookings: studentBookings,
-                    attendanceStats: attendanceResults
-                }}
-                initialNotes={initialNotes}
-                currentUserId={session.user.id}
-                currentUserRole={userRole}
-                billingConfig={billingConfig}
-                siblings={siblings}
-                registrationDetail={registrationDetail}
-            />
-
-        </div>
+        <StudentProfile
+            student={{
+                ...student,
+                bookings: studentBookings,
+                attendanceStats: attendanceResults
+            }}
+            initialNotes={initialNotes}
+            currentUserId={session.user.id}
+            currentUserRole={userRole}
+            billingConfig={billingConfig}
+            siblings={siblings}
+            registrationDetail={registrationDetail}
+        />
     );
 }

@@ -155,9 +155,15 @@ export default async function DashboardLayout({
                             />
 
                             {/* Dynamic Page Content */}
+                            {/*
+                              Bottom-nav clearance is handled entirely by the
+                              `.dashboard-main-content` rule in globals.css,
+                              not by a `pb-*` utility here — see that rule's
+                              comment for why (Milestone 3A).
+                            */}
                             <main
                                 id="main-content"
-                                className="p-4 sm:p-8 pb-24 lg:pb-8 flex-1 min-w-0 dashboard-main-content"
+                                className="p-4 sm:p-8 flex-1 min-w-0 dashboard-main-content"
                                 tabIndex={-1}
                             >
                                 {children}
