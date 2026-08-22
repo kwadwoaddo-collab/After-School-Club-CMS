@@ -58,6 +58,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
         }
 
+        // Prevent removing another ORG_OWNER — same safeguard as
+        // DELETE /api/staff/[id]. Owners must be demoted (role change) before
+        // they can be removed, so a single ORG_OWNER can't unilaterally strip
+        // every other owner from the org.
+        if (targetUser.role === 'ORG_OWNER') {
+            return NextResponse.json({ error: 'Cannot remove another owner. Change their role first.' }, { status: 400 });
+        }
+
         // Remove all centre memberships
         await db
             .delete(centreMemberships)
