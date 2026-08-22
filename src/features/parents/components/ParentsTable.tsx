@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { Mail, Phone, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Mail, Phone, Users, Search, ChevronRight } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { EmptyState } from '@/components/ui/EmptyState';
 import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
-import { getAvatarGradient } from '@/components/ui/utils';
-
-import { AlertTriangle } from 'lucide-react';
+import ParentsGrid from '@/features/parents/components/ParentsGrid';
 
 export interface ParentRow {
     id: string;
@@ -19,84 +19,107 @@ export interface ParentRow {
 interface ParentsTableProps {
     parents: ParentRow[];
     error?: boolean;
+    /** True when a search/filter is active — used to pick the right empty state. */
+    hasActiveFilters?: boolean;
 }
 
 function getInitials(firstName: string, lastName: string) {
     return `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase();
 }
 
-export default function ParentsTable({ parents, error }: ParentsTableProps) {
-    if (parents.length === 0) {
+function NoParentsEmptyState() {
+    return (
+        <EmptyState
+            icon={<Users className="w-8 h-8" />}
+            title="No parents yet"
+            description="Parent and family records appear here once a student registers or is added, and are linked to their contact automatically."
+        />
+    );
+}
+
+function NoFilterMatchesEmptyState() {
+    return (
+        <EmptyState
+            icon={<Search className="w-8 h-8" />}
+            title="No parents match these filters"
+            description="Try a different search or status — or clear filters to see every family."
+        />
+    );
+}
+
+export default function ParentsTable({ parents, error, hasActiveFilters }: ParentsTableProps) {
+    if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-dashed border-border rounded-3xl">
-                <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-4 text-3xl">👪</div>
-                <h3 className="text-foreground font-bold mb-2">No parents found</h3>
-                <p className="text-muted-foreground text-sm max-w-xs">
-                    Try adjusting your search or filters.
-                </p>
+            <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 text-center">
+                <AlertTriangle className="w-6 h-6 text-danger mx-auto mb-2" />
+                <p className="text-card-heading text-text">Unable to load parents</p>
+                <p className="text-small-body text-text-secondary">Some information may be missing or incomplete — please refresh the page.</p>
             </div>
         );
     }
 
+    if (parents.length === 0) {
+        return hasActiveFilters ? <NoFilterMatchesEmptyState /> : <NoParentsEmptyState />;
+    }
+
     return (
-        <div className="space-y-4">
-            {error && (
-                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                    <p>There was a problem loading all parent data. Some information may be missing or incomplete.</p>
-                </div>
-            )}
-            <div className="bg-card border border-border rounded-[32px] overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                    <thead>
-                        <tr className="border-b border-border bg-secondary/10">
-                            <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Parent</th>
-                            <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Contact</th>
-                            <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Linked Children</th>
-                            <th className="py-4 px-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Balance</th>
-                            <th className="py-4 px-4 w-10" />
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
+        <>
+            {/* Desktop / tablet — table. Collapses to stacked cards below `md`,
+                mirroring the Students list's mobile pattern. */}
+            <div className="hidden md:block rounded-lg border border-border bg-surface overflow-hidden">
+                <Table caption="Parents list">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Parent</TableHead>
+                            <TableHead>Contact</TableHead>
+                            <TableHead>Linked children</TableHead>
+                            <TableHead align="right">Balance</TableHead>
+                            <TableHead align="right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {parents.map((parent) => {
                             const fullName = `${parent.firstName} ${parent.lastName}`;
                             const initials = getInitials(parent.firstName, parent.lastName);
-                            const gradient = getAvatarGradient(parent.firstName);
-                            const outstanding = parent.outstanding;
 
                             return (
-                                <tr key={parent.id} className="group hover:bg-secondary/40 transition-colors cursor-pointer">
-                                    <td className="py-3 px-6">
-                                        <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3 active:scale-[0.985] transition-all duration-100">
-                                            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-sm`}>
+                                <TableRow key={parent.id} className="group">
+                                    <TableCell>
+                                        <Link href={`/dashboard/parents/${parent.id}`} className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center text-xs font-semibold flex-shrink-0">
                                                 {initials}
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                                                    {fullName}
-                                                </p>
-                                            </div>
+                                            <span className="text-table-value font-medium text-text truncate group-hover:text-accent transition-colors">
+                                                {fullName}
+                                            </span>
                                         </Link>
-                                    </td>
-                                    <td className="py-3 px-4">
-                                        <div className="flex items-center gap-2">
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1 -ml-1">
                                             {parent.phone && (
-                                                <a href={`tel:${parent.phone}`} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors" title={parent.phone}>
-                                                    <Phone className="w-4 h-4" />
+                                                <a
+                                                    href={`tel:${parent.phone}`}
+                                                    className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
+                                                    title={parent.phone}
+                                                >
+                                                    <Phone className="w-3.5 h-3.5" />
                                                 </a>
                                             )}
                                             {parent.email && (
-                                                <a href={`mailto:${parent.email}`} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors" title={parent.email}>
-                                                    <Mail className="w-4 h-4" />
+                                                <a
+                                                    href={`mailto:${parent.email}`}
+                                                    className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors inline-flex items-center justify-center"
+                                                    title={parent.email}
+                                                >
+                                                    <Mail className="w-3.5 h-3.5" />
                                                 </a>
                                             )}
                                             {!parent.phone && !parent.email && (
-                                                <span className="text-xs text-muted-foreground/50">—</span>
+                                                <span className="text-text-muted">—</span>
                                             )}
                                         </div>
-                                    </td>
-                                    <td className="py-3 px-4">
+                                    </TableCell>
+                                    <TableCell>
                                         {parent.childrenList && parent.childrenList.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
                                                 {parent.childrenList.map((child) => (
@@ -104,42 +127,46 @@ export default function ParentsTable({ parents, error }: ParentsTableProps) {
                                                         key={child.id}
                                                         href={`/dashboard/students/${child.id}`}
                                                         title={`${child.first_name} ${child.last_name}`}
-                                                        className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
+                                                        className="inline-flex items-center px-2 py-0.5 rounded-sm bg-accent-soft text-accent text-xs font-medium hover:opacity-80 transition-opacity whitespace-nowrap"
                                                     >
                                                         {child.first_name} {child.last_name}
                                                     </Link>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
-                                                No children
-                                            </span>
+                                            <span className="text-text-muted">No children</span>
                                         )}
-                                    </td>
-                                    <td className="py-3 px-4 text-right">
-                                        {outstanding > 0 ? (
-                                            <span className="text-sm font-bold text-destructive">
-                                                £{outstanding.toFixed(2)}
-                                            </span>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        {parent.outstanding > 0 ? (
+                                            <span className="font-medium text-danger">£{parent.outstanding.toFixed(2)}</span>
                                         ) : (
-                                            <span className="text-sm text-muted-foreground font-medium">£0.00</span>
+                                            <span className="text-text-secondary">£0.00</span>
                                         )}
-                                    </td>
-                                    <td className="py-3 px-4">
-                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <div className="flex items-center justify-end gap-1">
                                             <DeleteParentButton parentId={parent.id} parentName={fullName} childCount={parent.childCount} />
-                                            <Link href={`/dashboard/parents/${parent.id}`} className="p-2 text-muted-foreground hover:text-primary transition-colors active:scale-90 duration-100">
+                                            <Link
+                                                href={`/dashboard/parents/${parent.id}`}
+                                                className="p-1.5 text-text-muted hover:text-accent hover:bg-page rounded-sm transition-colors inline-flex items-center justify-center"
+                                                title={`View ${fullName}`}
+                                            >
                                                 <ChevronRight className="w-4 h-4" />
                                             </Link>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             );
                         })}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
-        </div>
-        </div>
+
+            {/* Mobile — stacked record cards, not a horizontally-scrolled table. */}
+            <div className="md:hidden">
+                <ParentsGrid parents={parents} />
+            </div>
+        </>
     );
 }
