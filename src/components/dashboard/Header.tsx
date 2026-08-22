@@ -249,11 +249,9 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className={`h-16 sm:h-20 fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b transition-all duration-300 ${
-            isScrolled
-                ? 'bg-header/80 backdrop-blur-2xl border-border/60 shadow-sm'
-                : 'bg-header/45 backdrop-blur-xl border-border/60'
-        } ${collapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
+        <header className={`h-16 sm:h-20 fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-border bg-surface/90 backdrop-blur-md transition-shadow duration-200 ${
+            isScrolled ? 'shadow-sm' : ''
+        } ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'}`}>
 
             {/* Spotlight-Style Search Focus Backdrop Overlay */}
             {isSearchFocused && (
@@ -263,7 +261,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             {/* Hamburger — mobile only */}
             <button
                 suppressHydrationWarning
-                className="md:hidden p-2 rounded-xl hover:bg-secondary text-muted-foreground transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="lg:hidden p-2 rounded-sm hover:bg-page text-text-muted transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
             >
@@ -279,7 +277,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                     {!hideSearch && (
                         <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-1">
                             <span className="text-lg leading-none">{greeting.emoji}</span>
-                            <span className="text-sm font-semibold text-foreground/80">
+                            <span className="text-sm font-semibold text-text/80">
                                 {greeting.text}{userName ? `, ${userName.split(' ')[0]}` : ''}
                             </span>
                         </div>
@@ -294,8 +292,8 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 /* Search Bar */
                 !hideSearch && (
                     <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
-                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-secondary/40 border border-border/60 rounded-2xl transition-all duration-200 hover:border-primary/40 hover:ring-1 hover:ring-primary/10 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40">
-                            <Search className="ml-3.5 w-4 h-4 text-muted-foreground flex-shrink-0 transition-colors group-focus-within:text-primary pointer-events-none" />
+                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-page border border-border/60 rounded-md transition-all duration-200 hover:border-accent/40  focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+                            <Search className="ml-3.5 w-4 h-4 text-text-muted flex-shrink-0 transition-colors group-focus-within:text-accent pointer-events-none" />
                             <input
                                 suppressHydrationWarning
                                 ref={searchInputRef}
@@ -310,26 +308,26 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings…"
-                                className="flex-1 h-full bg-transparent px-3 py-0 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
+                                className="flex-1 h-full bg-transparent px-3 py-0 text-sm text-text placeholder:text-text-muted/60 outline-none"
                             />
                             {isSearching && (
-                                <Loader2 className="mr-4 w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+                                <Loader2 className="mr-4 w-4 h-4 text-text-muted animate-spin flex-shrink-0" />
                             )}
                             {!searchQuery && !isSearching && (
                                 <div className="mr-3 flex items-center gap-1 pointer-events-none opacity-40 flex-shrink-0">
-                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-border text-muted-foreground font-mono">⌘</span>
-                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-border text-muted-foreground font-mono">K</span>
+                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-border text-text-muted font-mono">⌘</span>
+                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-border text-text-muted font-mono">K</span>
                                 </div>
                             )}
                         </form>
 
                         {/* Search Results Dropdown */}
                         {showSearchResults && searchQuery.trim().length >= 2 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                 {searchResults.length === 0 && !isSearching ? (
                                     <div className="p-6 text-center">
                                         <p className="text-2xl mb-2">🔍</p>
-                                        <p className="text-sm text-muted-foreground">No results for &ldquo;<span className="text-foreground font-semibold">{searchQuery}</span>&rdquo;</p>
+                                        <p className="text-sm text-text-muted">No results for &ldquo;<span className="text-text font-semibold">{searchQuery}</span>&rdquo;</p>
                                     </div>
                                 ) : (
                                     <div className="max-h-96 overflow-y-auto">
@@ -341,17 +339,17 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                                     setShowSearchResults(false);
                                                     setSearchQuery('');
                                                 }}
-                                                className="p-3 border-b border-border hover:bg-secondary/60 cursor-pointer transition-colors flex items-center justify-between group"
+                                                className="p-3 border-b border-border hover:bg-page cursor-pointer transition-colors flex items-center justify-between group"
                                             >
                                                 <div>
-                                                    <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                                                    <p className="font-semibold text-sm text-text group-hover:text-accent transition-colors">
                                                         {result.title}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                    <p className="text-xs text-text-muted mt-0.5">
                                                         {result.subtitle}
                                                     </p>
                                                 </div>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-text-muted">
                                                     {result.type}
                                                 </span>
                                             </div>
@@ -372,7 +370,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <button
                     suppressHydrationWarning
                     onClick={toggleTheme}
-                    className="keep-shape p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground active:scale-95 transition-transform duration-200 flex items-center justify-center"
+                    className="keep-shape p-2.5 rounded-sm hover:bg-page text-text-muted hover:text-text transition-transform duration-200 flex items-center justify-center"
                     aria-label={`Toggle theme (currently ${theme})`}
                 >
                     {theme === 'system' && <Cloud className="w-5 h-5" />}
@@ -388,7 +386,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         aria-expanded={showNotifications}
                         aria-haspopup="menu"
                         aria-controls="notifications-menu"
-                        className="keep-shape p-2.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground relative transition-all duration-200 active:scale-95"
+                        className="keep-shape p-2.5 rounded-sm hover:bg-page text-text-muted hover:text-text relative transition-all duration-200"
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
@@ -404,13 +402,13 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         <div
                             id="notifications-menu"
                             role="menu"
-                            className="absolute right-0 mt-2 w-80 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                            className="absolute right-0 mt-2 w-80 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
                         >
                             <div className="p-4 border-b border-border flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-bold text-foreground">Notifications</h3>
+                                    <h3 className="font-bold text-text">Notifications</h3>
                                     {unreadCount > 0 && (
-                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                        <p className="text-xs text-text-muted mt-0.5">
                                             {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
                                         </p>
                                     )}
@@ -424,34 +422,34 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                             <div className="max-h-96 overflow-y-auto">
                                 {isLoadingNotifications ? (
                                     <div className="p-8 text-center">
-                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground mx-auto mb-2" />
-                                        <p className="text-sm text-muted-foreground">Loading…</p>
+                                        <Loader2 className="w-6 h-6 animate-spin text-text-muted mx-auto mb-2" />
+                                        <p className="text-sm text-text-muted">Loading…</p>
                                     </div>
                                 ) : notifications.length === 0 ? (
                                     <div className="p-8 text-center">
                                         <div className="text-3xl mb-3">🔔</div>
-                                        <p className="font-semibold text-foreground mb-1">All caught up!</p>
-                                        <p className="text-sm text-muted-foreground">No notifications yet</p>
+                                        <p className="font-semibold text-text mb-1">All caught up!</p>
+                                        <p className="text-sm text-text-muted">No notifications yet</p>
                                     </div>
                                 ) : (
                                     notifications.map((notification) => (
                                         <div
                                             key={notification.id}
                                             onClick={() => handleNotificationClick(notification)}
-                                            className={`p-4 border-b border-border hover:bg-secondary/60 cursor-pointer transition-colors ${!notification.read ? 'bg-primary/5' : ''}`}
+                                            className={`p-4 border-b border-border hover:bg-page cursor-pointer transition-colors ${!notification.read ? 'bg-accent-soft' : ''}`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 {!notification.read && (
-                                                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0 shadow-[0_0_8px_hsl(var(--primary))]" />
+                                                    <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0" />
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-sm text-foreground">
+                                                    <p className="font-semibold text-sm text-text">
                                                         {notification.title}
                                                     </p>
-                                                    <p className="text-sm text-foreground/80 mt-1">
+                                                    <p className="text-sm text-text/80 mt-1">
                                                         {notification.message}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground mt-2">
+                                                    <p className="text-xs text-text-muted mt-2">
                                                         {notification.time}
                                                     </p>
                                                 </div>
@@ -460,11 +458,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     ))
                                 )}
                             </div>
-                            <div className="p-3 border-t border-border bg-secondary/20">
+                            <div className="p-3 border-t border-border bg-page">
                                 <button
                                     suppressHydrationWarning
                                     onClick={handleMarkAllAsRead}
-                                    className="text-xs font-semibold text-primary hover:text-primary/80 w-full text-center transition-colors"
+                                    className="text-xs font-semibold text-accent hover:text-accent/80 w-full text-center transition-colors"
                                 >
                                     Mark all as read
                                 </button>
@@ -484,30 +482,30 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         aria-expanded={showUserMenu}
                         aria-haspopup="menu"
                         aria-controls="user-profile-menu"
-                        className="keep-shape flex items-center gap-3.5 px-3 py-1.5 rounded-xl hover:bg-secondary transition-all duration-200 mr-2 group active:scale-95"
+                        className="keep-shape flex items-center gap-3.5 px-3 py-1.5 rounded-sm hover:bg-page transition-all duration-200 mr-2 group"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block min-w-0">
-                            <p className="text-sm font-bold text-foreground leading-tight truncate">
+                            <p className="text-sm font-bold text-text leading-tight truncate">
                                 {userName || 'Admin User'}
                             </p>
-                            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
+                            <p className="text-[10px] font-medium text-text-muted mt-0.5">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                         </div>
-                        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm tracking-tight flex-shrink-0 shadow-[0_0_12px_hsl(var(--primary)/0.12)] ring-2 ring-border group-hover:ring-primary/40 transition-all duration-200">
+                        <div className="w-9 h-9 rounded-sm bg-accent-soft flex items-center justify-center text-accent font-semibold text-sm tracking-tight flex-shrink-0 ring-2 ring-border group-hover:ring-accent/40 transition-colors">
                             {userInitial || 'A'}
                         </div>
-                        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
                     </button>
 
                     {showUserMenu && (
                         <div
                             id="user-profile-menu"
                             role="menu"
-                            className="absolute right-0 mt-2 w-56 bg-popover/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                            className="absolute right-0 mt-2 w-56 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150"
                         >
                             <div className="p-4 border-b border-border">
-                                <p className="font-bold text-foreground text-sm truncate">{userName || 'Admin User'}</p>
-                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                <p className="font-bold text-text text-sm truncate">{userName || 'Admin User'}</p>
+                                <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-transparent">
                                     {userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}
                                 </span>
                             </div>
@@ -515,7 +513,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 <button
                                     suppressHydrationWarning
                                     onClick={() => signOut({ callbackUrl: '/login' })}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold group"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold group"
                                 >
                                     <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                     Sign Out

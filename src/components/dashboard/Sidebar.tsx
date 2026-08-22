@@ -151,7 +151,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             {/* Mobile Overlay */}
             {!collapsed && (
                 <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={() => setCollapsed(true)}
                 />
             )}
@@ -160,11 +160,11 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
             <aside
                 className={`
                     fixed inset-y-0 left-0 z-50
-                    bg-sidebar/45 backdrop-blur-2xl text-foreground flex flex-col
+                    bg-surface text-text flex flex-col
                     transition-all duration-300 ease-in-out
                     w-64
-                    ${collapsed ? '-translate-x-full md:translate-x-0 md:w-20' : 'translate-x-0'}
-                    border-r border-sidebar-border
+                    ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0'}
+                    border-r border-border
                 `}
             >
                 {/* Header / Logo area */}
@@ -172,7 +172,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     {!collapsed && (
                         <button
                             suppressHydrationWarning
-                            className="absolute top-5 right-5 md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="absolute top-5 right-5 lg:hidden p-1.5 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                             onClick={() => setCollapsed(true)}
                             aria-label="Close menu"
                         >
@@ -201,8 +201,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         role="option"
                                         aria-selected={selectedCentreId === 'all'}
                                         onClick={() => { selectCentre('all'); closeCentreDropdown(); }}
-                                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
-                                            selectedCentreId === 'all' ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
+                                        className={`w-full text-left px-3 py-2 text-[13px] font-medium flex items-center gap-2.5 rounded-sm transition-colors ${
+                                            selectedCentreId === 'all' ? 'text-accent bg-accent-soft font-semibold' : 'text-text-secondary hover:text-text hover:bg-page'
                                         }`}
                                     >
                                         <Layers className="w-4 h-4 flex-shrink-0" />
@@ -214,8 +214,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                             role="option"
                                             aria-selected={selectedCentreId === centre.id}
                                             onClick={() => { selectCentre(centre.id); closeCentreDropdown(); }}
-                                            className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center gap-2.5 hover:bg-secondary/60 transition-colors ${
-                                                selectedCentreId === centre.id ? 'text-primary bg-primary/10 font-bold' : 'text-muted-foreground hover:text-foreground'
+                                            className={`w-full text-left px-3 py-2 text-[13px] font-medium flex items-center gap-2.5 rounded-sm transition-colors ${
+                                                selectedCentreId === centre.id ? 'text-accent bg-accent-soft font-semibold' : 'text-text-secondary hover:text-text hover:bg-page'
                                             }`}
                                         >
                                             <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -223,12 +223,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         </button>
                                     ))}
                                 </div>
-                                <div className="h-px bg-border my-1" />
+                                <div className="h-px bg-border-subtle my-1" />
                                 <Link
                                     href="/dashboard/centres"
-                                    onClick={() => { closeCentreDropdown(); if (window.innerWidth < 768) setCollapsed(true); }}
-                                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center gap-2.5 hover:bg-secondary/60 text-primary hover:text-primary/80 transition-colors ${
-                                        isCentresPageActive ? 'bg-primary/5 font-bold' : ''
+                                    onClick={() => { closeCentreDropdown(); if (window.innerWidth < 1024) setCollapsed(true); }}
+                                    className={`w-full text-left px-3 py-2 text-[13px] font-medium flex items-center gap-2.5 rounded-sm hover:bg-page text-accent transition-colors ${
+                                        isCentresPageActive ? 'bg-accent-soft font-semibold' : ''
                                     }`}
                                 >
                                     <School className="w-4 h-4 flex-shrink-0" />
@@ -248,29 +248,29 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         aria-controls="centre-dropdown-menu"
                                         className={`
                                             keep-shape
-                                            flex items-center justify-between w-full px-3 py-2.5 rounded-xl
-                                            transition-all group text-left active:scale-[0.97] duration-100
+                                            flex items-center justify-between w-full px-3 py-2 rounded-sm border border-border
+                                            transition-colors group text-left
                                             ${isCentresPageActive
-                                                ? 'text-primary bg-primary/10 font-bold'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                                ? 'text-accent bg-accent-soft font-semibold'
+                                                : 'text-text-secondary hover:text-text hover:bg-page'
                                             }
                                         `}
                                     >
                                         <div className="flex items-center gap-3 overflow-hidden">
                                             {selectedCentreId === 'all'
-                                                ? <Layers className="w-5 h-5 text-primary flex-shrink-0" />
-                                                : <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                                                ? <Layers className="w-5 h-5 text-accent flex-shrink-0" />
+                                                : <MapPin className="w-5 h-5 text-accent flex-shrink-0" />
                                             }
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider leading-none mb-0.5">Active Centre</span>
-                                                <span className="font-semibold truncate text-sm">
+                                                <span className="text-label leading-none mb-0.5">Active Centre</span>
+                                                <span className="font-medium truncate text-sm">
                                                     {selectedCentreId === 'all'
                                                         ? 'Combined View'
                                                         : centres.find(c => c.id === selectedCentreId)?.name || 'Select Centre'}
                                                 </span>
                                             </div>
                                         </div>
-                                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
+                                        <ChevronDown className={`w-4 h-4 text-text-muted transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''} flex-shrink-0`} />
                                     </button>
                                 ) : (
                                     <button
@@ -279,20 +279,20 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         aria-haspopup="listbox"
                                         aria-expanded={dropdownOpen}
                                         aria-controls="centre-dropdown-menu"
-                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2.5 rounded-xl transition-all group active:scale-[0.95] duration-100 ${
-                                            isCentresPageActive ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2 rounded-sm border border-border transition-colors group ${
+                                            isCentresPageActive ? 'text-accent bg-accent-soft' : 'text-text-secondary hover:text-text hover:bg-page'
                                         }`}
                                         title={selectedCentreId === 'all' ? 'Combined View' : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
                                     >
                                         {selectedCentreId === 'all'
-                                            ? <Layers className="w-5 h-5 text-primary" />
-                                            : <MapPin className="w-5 h-5 text-primary" />
+                                            ? <Layers className="w-5 h-5 text-accent" />
+                                            : <MapPin className="w-5 h-5 text-accent" />
                                         }
                                     </button>
                                 )}
 
                                 {/* Portal dropdown — renders into document.body, escaping
-                                    the aside's compositing layer (backdrop-blur + translate) */}
+                                    the aside's compositing layer */}
                                 {dropdownOpen && dropdownAnchor && portalMounted && createPortal(
                                     <>
                                         <div className="fixed inset-0 z-[199]" onClick={closeCentreDropdown} />
@@ -300,7 +300,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                             id="centre-dropdown-menu"
                                             role="listbox"
                                             aria-label="Active Centre Selection"
-                                            className="fixed bg-popover border border-border rounded-2xl shadow-2xl z-[200] py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+                                            className="fixed bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-[200] py-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
                                             style={{ top: dropdownAnchor.top, left: dropdownAnchor.left, width: dropdownAnchor.width, minWidth: '220px' }}
                                         >
                                             {dropdownContent}
@@ -325,42 +325,42 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         href={item.href}
                                         prefetch={true}
                                         onClick={() => {
-                                            if (window.innerWidth < 768) {
+                                            if (window.innerWidth < 1024) {
                                                 setCollapsed(true);
                                             }
                                         }}
                                         className={`
-                                            flex items-center gap-4 px-4 py-2.5 rounded-full
-                                            transition-all duration-300 ease-out group relative overflow-hidden active:scale-[0.97]
+                                            flex items-center gap-3 px-3 py-2 rounded-sm
+                                            transition-colors group relative
                                             ${isActive
-                                                ? 'text-primary bg-primary/10 font-bold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:bg-primary before:rounded-r-full'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                                ? 'text-accent bg-accent-soft font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-accent before:rounded-full'
+                                                : 'text-text-secondary hover:text-text hover:bg-page'
                                             }
                                             ${collapsed ? 'justify-center' : ''}
                                         `}
                                         title={item.name}
                                     >
-                                        <item.icon className={`w-5 h-5 flex-shrink-0 transition-all duration-350 ease-out ${
-                                            isActive ? 'scale-105 text-primary' : 'text-muted-foreground group-hover:scale-102 group-hover:text-primary'
+                                        <item.icon className={`w-5 h-5 flex-shrink-0 ${
+                                            isActive ? 'text-accent' : 'text-text-muted group-hover:text-text'
                                         } ${collapsed ? 'mx-auto' : ''}`} />
                                         {!collapsed && (
-                                            <span className="font-semibold text-sm tracking-tight">{item.name}</span>
+                                            <span className="text-sm font-medium">{item.name}</span>
                                         )}
                                     </Link>
                                     {/* Sub-items (children) */}
                                     {!collapsed && (item as any).children && (
-                                        <div className="ml-9 mt-0.5 space-y-0.5">
+                                        <div className="ml-8 mt-0.5 space-y-0.5">
                                             {(item as any).children.map((child: { name: string; href: string }) => {
                                                 const childActive = pathname.startsWith(child.href);
                                                 return (
                                                     <Link
                                                         key={child.href}
                                                         href={child.href}
-                                                        onClick={() => { if (window.innerWidth < 768) setCollapsed(true); }}
-                                                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                                                        onClick={() => { if (window.innerWidth < 1024) setCollapsed(true); }}
+                                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-sm text-[13px] font-medium transition-colors ${
                                                             childActive
-                                                                ? 'text-primary bg-primary/10'
-                                                                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                                                                ? 'text-accent bg-accent-soft'
+                                                                : 'text-text-muted hover:text-text hover:bg-page'
                                                         }`}
                                                     >
                                                         <span className="w-1 h-1 rounded-full bg-current flex-shrink-0" />
@@ -379,7 +379,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                     {/* Utility Area & User Profile Footer */}
                     <div className="mt-auto pt-4 flex-shrink-0 flex flex-col">
-                        <div className="h-px bg-border/60 mb-4" />
+                        <div className="h-px bg-border-subtle mb-4" />
 
                         {/* Share Portals Utility */}
                         {(allowedActions.includes('booking-link') || allowedActions.includes('registration-link')) && (
@@ -387,24 +387,22 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 <Link
                                     href="/dashboard/share"
                                     className={`
-                                        flex items-center gap-3 px-3 py-2
-                                        text-slate-500 dark:text-slate-400
-                                        hover:text-slate-900 dark:hover:text-slate-50
-                                        hover:bg-slate-100/50 dark:hover:bg-slate-800/50
-                                        active:scale-[0.98] transition-colors duration-150 ease-out
-                                        ${pathname === '/dashboard/share' ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20' : ''}
-                                        ${collapsed ? 'w-10 h-10 rounded-xl justify-center px-0 mx-auto' : 'w-full rounded-xl'}
+                                        flex items-center gap-3 px-3 py-2 rounded-sm
+                                        text-text-muted hover:text-text hover:bg-page
+                                        transition-colors
+                                        ${pathname === '/dashboard/share' ? 'text-accent bg-accent-soft' : ''}
+                                        ${collapsed ? 'w-10 h-10 justify-center px-0 mx-auto' : 'w-full'}
                                     `}
                                 >
                                     <Share2 strokeWidth={1.5} className="w-5 h-5 flex-shrink-0" />
                                     {!collapsed && (
-                                        <span className="text-sm font-medium tracking-tight">
+                                        <span className="text-sm font-medium">
                                             Share Portals
                                         </span>
                                     )}
                                 </Link>
                                 {collapsed && (
-                                    <div className="absolute left-full ml-4 top-1/2 translate-y-[calc(-50%+4px)] group-hover/tooltip:-translate-y-1/2 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-all duration-200 delay-200 z-[100] px-2.5 py-1.5 bg-slate-900 dark:bg-slate-800 text-slate-50 text-xs font-medium rounded-md shadow-lg whitespace-nowrap hidden md:block">
+                                    <div className="absolute left-full ml-4 top-1/2 translate-y-[calc(-50%+4px)] group-hover/tooltip:-translate-y-1/2 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-all duration-200 delay-200 z-[100] px-2.5 py-1.5 bg-text text-surface text-xs font-medium rounded-sm shadow-[var(--shadow-popover)] whitespace-nowrap hidden lg:block">
                                         Share Portals
                                     </div>
                                 )}
@@ -413,12 +411,12 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                         <div
                             className={`
-                                flex items-center gap-3 p-2 rounded-xl transition-colors hover:bg-secondary/40
+                                flex items-center gap-3 p-2 rounded-sm transition-colors hover:bg-page
                                 ${collapsed ? 'justify-center px-0' : 'px-3'}
                             `}
                             title={collapsed ? `${userName || 'Staff'} (${(userRole || 'TUTOR').toLowerCase().replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())})` : undefined}
                         >
-                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0 ring-1 ring-primary/20">
+                            <div className="w-9 h-9 rounded-full bg-accent-soft text-accent flex items-center justify-center font-semibold text-sm flex-shrink-0">
                                 {(userName || 'Staff')
                                     .split(' ')
                                     .map(n => n[0])
@@ -428,10 +426,10 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                             </div>
                             {!collapsed && (
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-sm font-bold text-foreground truncate leading-tight">
+                                    <span className="text-sm font-semibold text-text truncate leading-tight">
                                         {userName || 'Staff Member'}
                                     </span>
-                                    <span className="text-xs text-muted-foreground truncate mt-0.5">
+                                    <span className="text-xs text-text-muted truncate mt-0.5">
                                         {(userRole || 'TUTOR').toLowerCase().replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                                     </span>
                                 </div>
@@ -445,19 +443,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     onClick={() => setCollapsed(!collapsed)}
                     className={`
                         absolute -right-3 top-20
-                        w-6 h-6 bg-card rounded-full
+                        w-6 h-6 bg-surface rounded-full
                         flex items-center justify-center
-                        shadow-md border border-border
-                        hover:bg-secondary transition-all duration-200
-                        active:scale-90
-                        group z-50 hidden md:flex
+                        shadow-[var(--shadow-popover)] border border-border
+                        hover:bg-page transition-colors
+                        group z-50 hidden lg:flex
                     `}
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
                     {collapsed ? (
-                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <ChevronRight className="w-3.5 h-3.5 text-text-muted group-hover:text-accent transition-colors" />
                     ) : (
-                        <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <ChevronLeft className="w-3.5 h-3.5 text-text-muted group-hover:text-accent transition-colors" />
                     )}
                 </button>
             </aside>

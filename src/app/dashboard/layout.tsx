@@ -128,7 +128,7 @@ export default async function DashboardLayout({
                     <a href="#main-content" className="skip-to-content">
                         Skip to main content
                     </a>
-                    <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300">
+                    <div className="flex min-h-screen bg-page text-text">
                         {/* Collapsible Sidebar */}
                         <Sidebar
                             userName={session.user?.name || undefined}
