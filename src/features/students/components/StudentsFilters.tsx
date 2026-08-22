@@ -4,6 +4,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, Filter, X, ChevronDown, Check } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 interface StudentsFiltersProps {
     centres: { id: string; name: string }[];
@@ -16,12 +18,12 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     const { selectedCentreId, setSelectedCentreId } = useCentreFilter();
 
     const [search, setSearch] = useState(searchParams.get('search') || '');
-    
+
     const initialYearParam = searchParams.get('year') || 'all';
     const initialYears = initialYearParam === 'all' ? [] : initialYearParam.split(',');
     const [selectedYears, setSelectedYears] = useState<string[]>(initialYears);
     const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
-    
+
     const [status, setStatus] = useState(searchParams.get('status') || 'all');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -35,9 +37,9 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     ];
 
     const statusOptions = [
-        { value: 'all', label: 'All Statuses' },
+        { value: 'all', label: 'All statuses' },
         { value: 'registered', label: 'Registered' },
-        { value: 'unregistered', label: 'Leads / Unregistered' },
+        { value: 'unregistered', label: 'Leads / unregistered' },
     ];
 
     const hasActiveFilters = !!(
@@ -84,8 +86,8 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     }, [applyFilters]);
 
     const toggleYear = (val: string) => {
-        const newYears = selectedYears.includes(val) 
-            ? selectedYears.filter(y => y !== val) 
+        const newYears = selectedYears.includes(val)
+            ? selectedYears.filter(y => y !== val)
             : [...selectedYears, val];
         setSelectedYears(newYears);
         applyFilters({ newYears });
@@ -117,23 +119,24 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
     }, []);
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-300">
-            {/* Unified Filter Bar */}
-            <div className="flex items-center gap-3 flex-wrap">
+        <div className="space-y-3">
+            {/* Toolbar */}
+            <div className="flex items-center gap-2 flex-wrap">
                 {/* Search */}
-                <div className="flex-1 min-w-[240px] relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
+                <div className="flex-1 min-w-[220px] relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder="Search by student, parent, email..."
-                        className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-secondary/50 border-border"
+                        placeholder="Search by student, parent, email…"
+                        aria-label="Search students"
+                        className="w-full h-9 pl-9 pr-9 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface"
                     />
                     {search && (
                         <button
                             onClick={() => handleSearchChange('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
                             aria-label="Clear search"
                         >
                             <X className="w-3.5 h-3.5" />
@@ -141,39 +144,41 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                     )}
                 </div>
 
-                {/* Multi-Select Year Dropdown */}
-                <div className="relative min-w-[180px]" ref={dropdownRef}>
+                {/* Multi-select year dropdown */}
+                <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-                        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-foreground focus:ring-2 focus:ring-primary/20 transition-all outline-none border bg-secondary/50 border-border"
+                        className="h-9 flex items-center justify-between gap-2 px-3 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface min-w-[170px]"
+                        aria-haspopup="listbox"
+                        aria-expanded={isYearDropdownOpen}
                     >
                         <span>
-                            {selectedYears.length === 0 ? 'Year Groups (All)' : `Year Groups (${selectedYears.length} Selected)`}
+                            {selectedYears.length === 0 ? 'Year groups (all)' : `Year groups (${selectedYears.length})`}
                         </span>
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        <ChevronDown className="w-4 h-4 text-text-muted" />
                     </button>
-                    
+
                     {isYearDropdownOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto p-2">
+                        <div className="absolute top-full left-0 mt-1.5 w-56 bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-50 max-h-64 overflow-y-auto p-1">
                             <button
                                 onClick={toggleAllYears}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium hover:bg-secondary/50 rounded-lg text-left"
+                                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-page rounded-sm text-left text-text"
                             >
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedYears.length === yearOptions.length ? 'bg-primary border-primary text-white' : 'border-border'}`}>
+                                <span className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${selectedYears.length === yearOptions.length ? 'bg-accent border-accent text-white' : 'border-border'}`}>
                                     {selectedYears.length === yearOptions.length && <Check className="w-3 h-3" />}
-                                </div>
-                                Select All
+                                </span>
+                                Select all
                             </button>
-                            <div className="h-px bg-border my-1 mx-2"></div>
+                            <div className="h-px bg-border-subtle my-1 mx-2" />
                             {yearOptions.map((opt) => (
                                 <button
                                     key={opt.value}
                                     onClick={() => toggleYear(opt.value)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium hover:bg-secondary/50 rounded-lg text-left"
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-page rounded-sm text-left text-text"
                                 >
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedYears.includes(opt.value) ? 'bg-primary border-primary text-white' : 'border-border'}`}>
+                                    <span className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${selectedYears.includes(opt.value) ? 'bg-accent border-accent text-white' : 'border-border'}`}>
                                         {selectedYears.includes(opt.value) && <Check className="w-3 h-3" />}
-                                    </div>
+                                    </span>
                                     {opt.label}
                                 </button>
                             ))}
@@ -181,8 +186,8 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                     )}
                 </div>
 
-                {/* Status Filter */}
-                <div className="relative min-w-[160px]">
+                {/* Status filter */}
+                <div className="relative">
                     <select
                         value={status}
                         onChange={(e) => {
@@ -190,50 +195,40 @@ export default function StudentsFilters({ centres, resultsCount = 0 }: StudentsF
                             setStatus(val);
                             applyFilters({ newStatus: val });
                         }}
-                        className="w-full px-4 py-2.5 rounded-2xl text-sm font-bold text-foreground focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none cursor-pointer border pr-8 bg-secondary/50 border-border"
+                        aria-label="Filter by status"
+                        className="h-9 pl-3 pr-8 rounded-sm text-sm text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors appearance-none cursor-pointer border border-border bg-surface"
                     >
                         {statusOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
-                    <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
+                    <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none" />
                 </div>
 
-                {/* Clear Filters */}
+                {/* Clear filters */}
                 {hasActiveFilters && (
-                    <button
-                        onClick={handleClearFilters}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-bold text-foreground transition-all cursor-pointer border border-border"
-                    >
-                        <X className="w-4 h-4" />
+                    <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                        <X className="w-3.5 h-3.5" />
                         Clear
-                    </button>
+                    </Button>
                 )}
             </div>
 
-            {/* Active Filters Display */}
+            {/* Active filter summary */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Active:</span>
+                    <span className="text-label text-text-muted">Active:</span>
                     {searchParams.get('search') && (
-                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">
-                            &quot;{searchParams.get('search')}&quot; ({resultsCount} results)
-                        </span>
+                        <Badge variant="info">&quot;{searchParams.get('search')}&quot; ({resultsCount} results)</Badge>
                     )}
                     {selectedYears.length > 0 && (
-                        <span className="px-3 py-1 bg-secondary text-foreground text-xs font-bold rounded-full border border-border flex flex-wrap gap-1">
-                            {selectedYears.map(y => yearOptions.find(o => o.value === y)?.label || y).join(', ')}
-                        </span>
+                        <Badge>{selectedYears.map(y => yearOptions.find(o => o.value === y)?.label || y).join(', ')}</Badge>
                     )}
                     {status !== 'all' && (
-                        <span className="px-3 py-1 bg-tertiary/10 text-tertiary text-xs font-bold rounded-full border border-tertiary/20">
-                            {statusOptions.find((o) => o.value === status)?.label || status}
-                        </span>
+                        <Badge>{statusOptions.find((o) => o.value === status)?.label || status}</Badge>
                     )}
                     {selectedCentreId !== 'all' && (
-                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 text-xs font-bold rounded-full border border-emerald-500/20">
-                            Centre: {centres.find((c) => c.id === selectedCentreId)?.name || 'Selected'}
-                        </span>
+                        <Badge variant="success">Centre: {centres.find((c) => c.id === selectedCentreId)?.name || 'Selected'}</Badge>
                     )}
                 </div>
             )}

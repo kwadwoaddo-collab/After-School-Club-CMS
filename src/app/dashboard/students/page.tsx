@@ -13,6 +13,8 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import StudentsFilters from '@/features/students/components/StudentsFilters';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import Pagination from '@/components/ui/Pagination';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/logger';
 
 type StudentsStats = {
@@ -47,6 +49,7 @@ export default async function StudentsPage(props: {
     let page = 1;
     let enrichedStudents: StudentRow[] = [];
     let showLowAttendance = false;
+    let hasActiveFilters = false;
 
     try {
         const [fetchedOrg] = await db
@@ -62,21 +65,17 @@ export default async function StudentsPage(props: {
 
         if (accessibleCentreIds.length === 0) {
             return (
-                <div className="space-y-8 animate-in fade-in duration-700">
-                    <div className="flex items-end justify-between">
-                        <div>
-                            <h1 className="text-3xl font-black text-foreground tracking-tight">Students</h1>
-                            <p className="text-muted-foreground font-medium mt-1">
-                                View all registered students and their details
-                            </p>
-                        </div>
-                        <Link
-                            href="/dashboard/students/add"
-                            className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-lg shadow-primary/30 glow-btn"
-                        >
-                            <Plus className="w-4 h-4" /> Add Student
-                        </Link>
-                    </div>
+                <div className="space-y-6">
+                    <HeaderPortal targetId="header-left">
+                        <h1 className="text-page-title text-text">Students</h1>
+                    </HeaderPortal>
+                    <HeaderPortal targetId="header-right-actions">
+                        <Button asChild>
+                            <Link href="/dashboard/students/add">
+                                <Plus className="w-4 h-4" /> Add student
+                            </Link>
+                        </Button>
+                    </HeaderPortal>
                     <StudentsTable students={[]} />
                 </div>
             );
@@ -84,6 +83,13 @@ export default async function StudentsPage(props: {
 
         const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
         accessibleCentres = await getUserAccessibleCentres(session.user.id);
+
+        hasActiveFilters = !!(
+            searchParams.search ||
+            (searchParams.year && searchParams.year !== 'all') ||
+            (searchParams.status && searchParams.status !== 'all') ||
+            activeCentreId !== 'all'
+        );
 
         const conditions = [
             eq(children.organisationId, org.id),
@@ -286,118 +292,110 @@ export default async function StudentsPage(props: {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-700">
+        <div className="space-y-6">
             {/* Header Portals */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Students</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-card/5 border border-border text-muted-foreground text-[10px] font-bold">
+                    <h1 className="text-page-title text-text">Students</h1>
+                    <span className="px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-muted text-xs font-medium">
                         {stats?.totalCount || 0}
                     </span>
                 </div>
             </HeaderPortal>
 
             <HeaderPortal targetId="header-right-actions">
-                <Link
-                    href="/dashboard/students/import"
-                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-bold text-foreground transition-all active:scale-95 duration-100 cursor-pointer"
-                >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Import CSV</span>
-                </Link>
-                <Link
-                    href="/dashboard/students/add"
-                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100 cursor-pointer"
-                >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Student</span>
-                </Link>
+                <Button variant="secondary" asChild>
+                    <Link href="/dashboard/students/import">
+                        <Upload className="w-3.5 h-3.5" />
+                        Import CSV
+                    </Link>
+                </Button>
+                <Button asChild>
+                    <Link href="/dashboard/students/add">
+                        <Plus className="w-3.5 h-3.5" />
+                        Add student
+                    </Link>
+                </Button>
             </HeaderPortal>
 
-            {/* KPI Stats Cards */}
+            {/* KPI stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {/* Total Students */}
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary flex-shrink-0">
-                            <Users className="w-5 h-5" />
-                        </div>
+                <Card>
+                    <div className="p-4 flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
+                            <Users className="w-4 h-4" />
+                        </span>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.totalCount || 0}</p>
-                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Total Students</p>
+                            <p className="text-financial-total text-text">{stats?.totalCount || 0}</p>
+                            <p className="text-metadata">Total students</p>
                         </div>
                     </div>
-                </div>
+                </Card>
 
-                {/* Registered */}
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-success/10 text-success flex-shrink-0">
-                            <GraduationCap className="w-5 h-5" />
-                        </div>
+                <Card>
+                    <div className="p-4 flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success-soft text-success">
+                            <GraduationCap className="w-4 h-4" />
+                        </span>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.registeredCount || 0}</p>
-                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Registered</p>
+                            <p className="text-financial-total text-text">{stats?.registeredCount || 0}</p>
+                            <p className="text-metadata">Registered</p>
                         </div>
                     </div>
-                </div>
+                </Card>
 
-                {/* Leads */}
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-warning/10 text-warning flex-shrink-0">
-                            <Sparkles className="w-5 h-5" />
-                        </div>
+                <Card>
+                    <div className="p-4 flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-page border border-border text-text-secondary">
+                            <Sparkles className="w-4 h-4" />
+                        </span>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.leadCount || 0}</p>
-                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Leads</p>
+                            <p className="text-financial-total text-text">{stats?.leadCount || 0}</p>
+                            <p className="text-metadata">Leads</p>
                         </div>
                     </div>
-                </div>
+                </Card>
 
-                {/* Medical Alerts */}
-                <div className="bg-card border border-destructive/20 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-destructive/10 text-destructive flex-shrink-0">
-                            <AlertTriangle className="w-5 h-5" />
-                        </div>
+                <Card>
+                    <div className="p-4 flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-danger-soft text-danger">
+                            <AlertTriangle className="w-4 h-4" />
+                        </span>
                         <div>
-                            <p className="text-2xl font-bold text-foreground tracking-tight">{stats?.medicalAlertCount || 0}</p>
-                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Medical Alerts</p>
+                            <p className="text-financial-total text-text">{stats?.medicalAlertCount || 0}</p>
+                            <p className="text-metadata">Medical alerts</p>
                         </div>
                     </div>
-                </div>
+                </Card>
 
-                {/* Low Attendance */}
-                <Link
-                    href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'}
-                    className={`rounded-2xl p-5 transition-all bg-card border ${showLowAttendance ? 'border-warning/40 ring-1 ring-warning/20' : 'border-border hover:border-warning/30 active:scale-[0.985] active:opacity-95'} shadow-sm duration-100`}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-warning/10 text-warning flex-shrink-0">
-                            <TrendingDown className="w-5 h-5" />
+                <Link href={showLowAttendance ? '/dashboard/students' : '/dashboard/students?status=low-attendance'} className="block">
+                    <Card className={showLowAttendance ? 'ring-1 ring-warning/40 border-warning/40' : 'hover:border-warning/30 transition-colors'}>
+                        <div className="p-4 flex items-center gap-3">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-warning-soft text-warning">
+                                <TrendingDown className="w-4 h-4" />
+                            </span>
+                            <div>
+                                <p className={`text-financial-total ${(stats?.lowAttendanceCount || 0) > 0 ? 'text-warning' : 'text-text'}`}>{stats?.lowAttendanceCount || 0}</p>
+                                <p className="text-metadata">Low attendance</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className={`text-2xl font-bold tracking-tight ${(stats?.lowAttendanceCount || 0) > 0 ? 'text-warning' : 'text-foreground'}`}>{stats?.lowAttendanceCount || 0}</p>
-                            <p className="text-[10px] text-muted-foreground font-bold mt-0.5 uppercase tracking-wider">Low Attendance</p>
-                        </div>
-                    </div>
+                    </Card>
                 </Link>
             </div>
 
-            {/* Filters — sticky */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
+            {/* Toolbar — sticky */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
                 <StudentsFilters
                     centres={accessibleCentres}
                     resultsCount={filteredCount}
                 />
             </div>
 
-            <div className="relative">
-                <StudentsTable students={enrichedStudents} error={hasError} />
-                
+            <div>
+                <StudentsTable students={enrichedStudents} error={hasError} hasActiveFilters={hasActiveFilters} />
+
                 {totalPages > 1 && (
-                    <div className="sticky bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-md border-t border-border mt-4 rounded-b-3xl">
+                    <div className="mt-4">
                         <Pagination currentPage={page} totalPages={totalPages} />
                     </div>
                 )}
