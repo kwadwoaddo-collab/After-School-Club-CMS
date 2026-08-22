@@ -10,6 +10,7 @@ import {
     ClipboardList,
     UserCircle2,
 } from 'lucide-react';
+import { useSidebar } from './SidebarContext';
 
 interface MobileNavProps {
     userRole?: string;
@@ -33,8 +34,16 @@ const ALL_NAV = [
 
 export default function MobileBottomNav({ userRole = 'TUTOR' }: MobileNavProps) {
     const pathname = usePathname();
+    const { collapsed } = useSidebar();
     const allowed = ROLE_NAV[userRole] || ROLE_NAV['TUTOR'];
     const items = ALL_NAV.filter(i => allowed.includes(i.name)).slice(0, 5);
+
+    // Hidden while the full-height mobile nav drawer (Sidebar.tsx, `!collapsed`
+    // on <lg) is open — both are the "mobile navigation" surface, and showing
+    // the tab bar drawn on top of the drawer at equal z-index (a layering
+    // detail that predates Milestone 2) was confusing. `collapsed` has no
+    // effect at `lg` and up, where the drawer never renders.
+    if (!collapsed) return null;
 
     return (
         <nav
