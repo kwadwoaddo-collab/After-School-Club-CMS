@@ -105,21 +105,21 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                 <button
                     type="button"
                     onClick={() => setActiveTab('general')}
-                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-5 py-1.5 rounded-sm text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-1.5 rounded-sm text-xs sm:text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
                 >
                     <Building2 className="w-3.5 h-3.5" /> General
                 </button>
                 <button
                     type="button"
                     onClick={() => setActiveTab('sessions')}
-                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-5 py-1.5 rounded-sm text-sm font-medium transition-colors ${activeTab === 'sessions' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-1.5 rounded-sm text-xs sm:text-sm font-medium transition-colors ${activeTab === 'sessions' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
                 >
                     <Calendar className="w-3.5 h-3.5" /> Sessions
                 </button>
                 <button
                     type="button"
                     onClick={() => setActiveTab('billing')}
-                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-5 py-1.5 rounded-sm text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-1.5 rounded-sm text-xs sm:text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-surface text-text shadow-sm border border-border' : 'text-text-secondary hover:text-text'}`}
                 >
                     <CreditCard className="w-3.5 h-3.5" /> Billing
                 </button>
@@ -182,30 +182,32 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                             <div className="space-y-3">
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="p-4 rounded-md border border-border-subtle bg-page">
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                            {/* Times */}
-                                            <div className="md:col-span-3 flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <label className="block text-label text-text-muted mb-1">Start</label>
-                                                    <input
-                                                        type="time"
-                                                        {...register(`sessionSlots.${index}.startTime` as const, { required: true })}
-                                                        className={`${inputCls} font-mono px-2`}
-                                                    />
-                                                </div>
-                                                <span className="text-text-muted mt-4">–</span>
-                                                <div className="flex-1">
-                                                    <label className="block text-label text-text-muted mb-1">End</label>
-                                                    <input
-                                                        type="time"
-                                                        {...register(`sessionSlots.${index}.endTime` as const, { required: true })}
-                                                        className={`${inputCls} font-mono px-2`}
-                                                    />
-                                                </div>
+                                        {/* Times — own row; native time inputs need real width for
+                                            locale-formatted "HH:MM AM/PM" and were clipping when
+                                            squeezed into the grid below alongside every other field. */}
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-36">
+                                                <label className="block text-label text-text-muted mb-1">Start</label>
+                                                <input
+                                                    type="time"
+                                                    {...register(`sessionSlots.${index}.startTime` as const, { required: true })}
+                                                    className={`${inputCls} font-mono`}
+                                                />
                                             </div>
+                                            <span className="text-text-muted mt-4">–</span>
+                                            <div className="w-36">
+                                                <label className="block text-label text-text-muted mb-1">End</label>
+                                                <input
+                                                    type="time"
+                                                    {...register(`sessionSlots.${index}.endTime` as const, { required: true })}
+                                                    className={`${inputCls} font-mono`}
+                                                />
+                                            </div>
+                                        </div>
 
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                                             {/* Details */}
-                                            <div className="md:col-span-4">
+                                            <div className="md:col-span-6">
                                                 <label className="block text-label text-text-muted mb-1">Session name</label>
                                                 <input
                                                     {...register(`sessionSlots.${index}.name` as const, { required: true })}
@@ -234,7 +236,7 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                                             </div>
 
                                             {/* Delete */}
-                                            <div className="md:col-span-1 flex items-end justify-end pb-0.5">
+                                            <div className="md:col-span-2 flex items-end justify-end pb-0.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => remove(index)}
