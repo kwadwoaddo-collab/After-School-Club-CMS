@@ -6,6 +6,7 @@ import {
     User, Building2, Users, Globe, FileText, Share2, CalendarDays
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
 
 interface ChecklistStep {
     id: string;
@@ -32,6 +33,15 @@ const STEP_ICONS: Record<string, React.ElementType> = {
     'first-booking': CalendarDays,
 };
 
+/**
+ * Milestone 2 Correction Pass: this component's LOGIC is unchanged — same
+ * progress tracking, auto-expand of the first incomplete step, dismissal
+ * persistence, and completion celebration. Only the presentation changed:
+ * the oversized rounded-[24px] outer card, background glow blur, primary/blue
+ * gradients, and deeply-nested bordered expansion panel have been replaced
+ * with InvoiceFlow-aligned flat surfaces, restrained accent usage, smaller
+ * radii, and the shared Button primitive for the step CTA.
+ */
 export default function OnboardingChecklist({ steps, completedCount }: OnboardingChecklistProps) {
     const [dismissed, setDismissed] = useState(false);
     const [celebrating, setCelebrating] = useState(false);
@@ -76,54 +86,51 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
 
     if (celebrating) {
         return (
-            <div className="bg-gradient-to-br from-emerald-500/10 to-primary/10 border border-emerald-500/30 rounded-[24px] p-6 text-center animate-in fade-in duration-500 shadow-sm">
-                <div className="text-4xl mb-3">🎉</div>
-                <h2 className="text-lg font-black text-foreground">You&apos;re all set!</h2>
-                <p className="text-sm text-muted-foreground mt-1">Your club is live and ready to accept bookings.</p>
+            <div className="rounded-lg border border-border bg-surface p-5 text-center animate-in fade-in duration-500">
+                <div className="text-3xl mb-2">🎉</div>
+                <h2 className="text-section-title text-text">You&apos;re all set!</h2>
+                <p className="text-small-body text-text-secondary mt-1">Your club is live and ready to accept bookings.</p>
             </div>
         );
     }
 
     return (
-        <div className="bg-gradient-to-br from-card to-secondary/20 border border-border rounded-[24px] p-6 shadow-sm relative overflow-hidden animate-in fade-in duration-500">
-            {/* Background glow */}
-            <div className="absolute -right-16 -top-16 w-56 h-56 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="rounded-lg border border-border bg-surface p-5 relative animate-in fade-in duration-500">
             {/* Dismiss */}
             <button
                 onClick={handleDismiss}
                 id="checklist-dismiss-btn"
-                className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="absolute top-3 right-3 p-1.5 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
                 title="Dismiss setup guide"
                 aria-label="Dismiss setup guide"
             >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
             </button>
 
             {/* Header + progress */}
-            <div className="flex items-start gap-4 mb-4 pr-8">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">🚀</span>
+            <div className="flex items-start gap-3 mb-4 pr-8">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent-soft">
+                    <span className="text-base">🚀</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h2 className="text-foreground font-bold text-base">Set up your club</h2>
-                    <p className="text-muted-foreground text-xs mt-0.5">
+                    <h2 className="text-text font-semibold text-sm">Set up your club</h2>
+                    <p className="text-text-muted text-xs mt-0.5">
                         {completedCount} of {total} steps complete
                     </p>
                 </div>
-                <span className="text-xs font-black text-primary flex-shrink-0">{pct}%</span>
+                <span className="text-xs font-semibold text-accent flex-shrink-0">{pct}%</span>
             </div>
 
             {/* Progress bar */}
-            <div className="h-1.5 bg-secondary rounded-full mb-5 overflow-hidden">
+            <div className="h-1.5 bg-page rounded-full mb-4 overflow-hidden">
                 <div
-                    className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full transition-all duration-700"
+                    className="h-full bg-accent rounded-full transition-all duration-700"
                     style={{ width: `${pct}%` }}
                 />
             </div>
 
             {/* Steps */}
-            <div className="space-y-1.5">
+            <div className="space-y-0.5">
                 {steps.map(step => {
                     const Icon = STEP_ICONS[step.id] || Circle;
                     const isExpanded = expandedId === step.id;
@@ -132,10 +139,10 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
                         return (
                             <div
                                 key={step.id}
-                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl opacity-50"
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-md opacity-60"
                             >
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                                <p className="text-sm font-semibold text-muted-foreground line-through flex-1 min-w-0 truncate">
+                                <CheckCircle2 className="size-4 text-success flex-shrink-0" />
+                                <p className="text-sm text-text-secondary line-through flex-1 min-w-0 truncate">
                                     {step.label}
                                 </p>
                             </div>
@@ -143,38 +150,34 @@ export default function OnboardingChecklist({ steps, completedCount }: Onboardin
                     }
 
                     return (
-                        <div key={step.id} className="rounded-xl overflow-hidden">
+                        <div key={step.id} className="rounded-md">
                             <button
                                 onClick={() => setExpandedId(isExpanded ? null : step.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors text-left ${
                                     isExpanded
-                                        ? 'bg-primary/10 border border-primary/20'
-                                        : 'hover:bg-secondary/60'
+                                        ? 'bg-accent-soft'
+                                        : 'hover:bg-page'
                                 }`}
                                 id={`step-btn-${step.id}`}
                                 aria-expanded={isExpanded}
                             >
-                                <div className={`w-4 h-4 flex-shrink-0 transition-colors ${isExpanded ? 'text-primary' : 'text-muted-foreground/60'}`}>
-                                    <Icon className="w-4 h-4" />
-                                </div>
-                                <p className={`text-sm font-semibold flex-1 min-w-0 text-left ${isExpanded ? 'text-primary' : 'text-foreground'}`}>
+                                <Icon className={`size-4 flex-shrink-0 transition-colors ${isExpanded ? 'text-accent' : 'text-text-muted'}`} />
+                                <p className={`text-sm font-medium flex-1 min-w-0 text-left ${isExpanded ? 'text-accent' : 'text-text'}`}>
                                     {step.label}
                                 </p>
-                                <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-primary' : 'text-muted-foreground/40'}`} />
+                                <ChevronRight className={`size-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-accent' : 'text-text-muted'}`} />
                             </button>
 
-                            {/* Expanded content */}
+                            {/* Expanded content — no nested bordered panel, just indented copy + CTA */}
                             {isExpanded && (
-                                <div className="px-3 pb-3 pt-1 bg-primary/5 border-x border-b border-primary/20 rounded-b-xl animate-in slide-in-from-top-1 duration-200">
-                                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{step.description}</p>
-                                    <Link
-                                        href={step.href}
-                                        id={`step-cta-${step.id}`}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-all"
-                                    >
-                                        Go to {step.label.split(' ').slice(0, 3).join(' ')}
-                                        <ChevronRight className="w-3 h-3" />
-                                    </Link>
+                                <div className="px-3 pb-3 pt-1.5 animate-in slide-in-from-top-1 duration-200">
+                                    <p className="text-xs text-text-secondary mb-2.5 leading-relaxed">{step.description}</p>
+                                    <Button asChild size="sm" id={`step-cta-${step.id}`}>
+                                        <Link href={step.href}>
+                                            Go to {step.label.split(' ').slice(0, 3).join(' ')}
+                                            <ChevronRight className="size-3.5" />
+                                        </Link>
+                                    </Button>
                                 </div>
                             )}
                         </div>

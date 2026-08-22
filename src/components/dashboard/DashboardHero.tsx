@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, ReactNode } from 'react';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface DashboardHeroProps {
     firstName: string;
@@ -8,6 +9,18 @@ interface DashboardHeroProps {
     children: ReactNode;
 }
 
+/**
+ * Milestone 2 Correction Pass: previously a two-tier "sticky title bar +
+ * oversized greeting hero" (text-display heading, standalone org label,
+ * separate supporting paragraph) — a treatment InvoiceFlow's authenticated
+ * product never uses (it has no marketing-style hero on any dashboard page).
+ * Rebuilt on the shared PageHeader primitive so the Dashboard reads as an
+ * application page, not a landing screen: one page title, one quiet
+ * application-context line, and the date filter presented as a page-header
+ * action rather than a separate chrome band. Greeting logic, organisation
+ * context, and the supporting copy are all preserved — just compacted into
+ * a single description line instead of a dedicated hero section.
+ */
 export default function DashboardHero({ firstName, orgName, children }: DashboardHeroProps) {
     const [greeting, setGreeting] = useState('Hello');
 
@@ -21,22 +34,10 @@ export default function DashboardHero({ firstName, orgName, children }: Dashboar
     const displayGreeting = firstName ? `${greeting}, ${firstName}` : greeting;
 
     return (
-        <div className="flex flex-col gap-5 w-full">
-            {/* Pinned page header */}
-            <div className="sticky top-16 sm:top-20 z-30 bg-surface border-b border-border -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h1 className="text-page-title text-text">Dashboard</h1>
-                <div className="flex flex-col items-end">
-                    {children}
-                    <span className="text-metadata mt-1">Filters KPIs and analytics</span>
-                </div>
-            </div>
-
-            {/* Greeting */}
-            <div className="flex flex-col gap-1">
-                {orgName && <span className="text-label text-accent">{orgName}</span>}
-                <h2 className="text-display text-text">{displayGreeting}</h2>
-                <p className="text-small-body text-text-secondary">Here&apos;s how things are looking today.</p>
-            </div>
-        </div>
+        <PageHeader
+            title="Dashboard"
+            description={`${displayGreeting}${orgName ? ` · ${orgName}` : ''} — here's how things are looking today.`}
+            actions={<div aria-label="Filters KPIs and analytics">{children}</div>}
+        />
     );
 }

@@ -55,15 +55,15 @@ function TrendBadge({ trend }: { trend: Trend }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-semibold',
-        isPositive && 'bg-success-soft text-emerald-700 dark:text-emerald-400',
+        'flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-xs font-medium',
+        isPositive && 'bg-success-soft text-success',
         isNegative && 'bg-danger-soft text-danger',
         !isPositive && !isNegative && 'bg-page text-text-muted'
       )}
     >
-      {isPositive && <ArrowUpRight className="w-3 h-3" />}
-      {isNegative && <ArrowDownRight className="w-3 h-3" />}
-      {!isPositive && !isNegative && <Minus className="w-3 h-3" />}
+      {isPositive && <ArrowUpRight className="size-3" />}
+      {isNegative && <ArrowDownRight className="size-3" />}
+      {!isPositive && !isNegative && <Minus className="size-3" />}
       {trend.text}
     </div>
   );
@@ -100,11 +100,16 @@ export function KpiGrid({
       value: bookingsActive,
       subtext: `${formatNumber(bookingsTotal)} total bookings`,
       icon: CalendarCheck,
-      iconBg: 'bg-info-soft',
-      iconColor: 'text-blue-600 dark:text-blue-400',
+      // Neutral, not blue — Milestone 2 Correction Pass: this tile has no
+      // "info" semantic state, and mixing bright blue with the accent teal
+      // weakened the InvoiceFlow "same product family" impression. InvoiceFlow
+      // reserves colour for states (success/warning/danger/info); a plain
+      // count tile gets the neutral treatment instead.
+      iconBg: 'bg-page border border-border',
+      iconColor: 'text-text-secondary',
       trend: bookingsTrend,
       sparkline: growthStats,
-      sparklineColor: 'stroke-blue-500',
+      sparklineColor: 'stroke-text-muted',
       href: '/dashboard/bookings',
     },
     {
@@ -113,7 +118,7 @@ export function KpiGrid({
       subtext: `${formatNumber(registrationsTotal)} total registrations`,
       icon: ClipboardList,
       iconBg: 'bg-success-soft',
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconColor: 'text-success',
       trend: registrationsTrend,
       sparkline: growthStats,
       sparklineColor: 'stroke-emerald-500',
@@ -125,7 +130,7 @@ export function KpiGrid({
       subtext: 'Awaiting coordinator review',
       icon: Clock,
       iconBg: 'bg-warning-soft',
-      iconColor: 'text-amber-700 dark:text-amber-400',
+      iconColor: 'text-warning',
       href: '/dashboard/registrations?status=awaiting_confirmation',
     },
   ];
@@ -145,8 +150,8 @@ export function KpiGrid({
 
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
-                  <span className={cn('flex size-9 items-center justify-center rounded-md', stat.iconBg, stat.iconColor)}>
-                    <stat.icon className="w-4 h-4" />
+                  <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-md', stat.iconBg, stat.iconColor)}>
+                    <stat.icon className="size-4" />
                   </span>
                   {stat.trend && (stat.value ?? 0) > 0 ? <TrendBadge trend={stat.trend} /> : null}
                 </div>
