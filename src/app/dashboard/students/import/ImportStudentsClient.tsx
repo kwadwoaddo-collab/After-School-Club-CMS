@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Upload, ArrowRight, Download, CheckCircle2, AlertCircle, RefreshCw, ChevronLeft, FileSpreadsheet, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/components/ui/utils';
+import { Button } from '@/components/ui/Button';
 import { importStudentsAction, StudentImportRow, ImportResult } from '@/features/students/import-actions';
 
 interface Centre {
@@ -76,19 +78,20 @@ function StepIndicator({ current }: { current: number }) {
         const done = num < current;
         return (
           <div key={label} className="flex items-center">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${
-              active ? 'bg-primary text-white shadow-sm shadow-primary/20' :
-              done   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                       'text-muted-foreground'
-            }`}>
+            <div className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium transition-colors',
+              active ? 'bg-accent text-white' :
+              done   ? 'bg-success-soft text-emerald-700 dark:text-emerald-400' :
+                       'text-text-muted'
+            )}>
               {done
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
-                : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${active ? 'bg-card/20' : 'bg-secondary text-muted-foreground'}`}>{num}</span>
+                : <span className={cn('w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold', active ? 'bg-white/20' : 'bg-page text-text-muted')}>{num}</span>
               }
               {label}
             </div>
             {i < steps.length - 1 && (
-              <ArrowRight className={`w-3.5 h-3.5 mx-1 ${done ? 'text-emerald-400' : 'text-gray-300'}`} />
+              <ArrowRight className={cn('w-3.5 h-3.5 mx-1', done ? 'text-emerald-500' : 'text-text-muted/40')} />
             )}
           </div>
         );
@@ -204,9 +207,9 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
   const reset = () => { setStep(1); setFile(null); setCsvRows([]); setHeaders([]); setMappings({}); setResult(null); };
 
   // ── Shared card shell ────────────────────────────────────────────────────────
-  const card = 'bg-card border border-border rounded-3xl shadow-sm';
-  const label = 'block text-xs font-semibold text-foreground mb-1.5';
-  const input = 'w-full bg-card text-foreground border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all';
+  const card = 'bg-surface border border-border-subtle rounded-md';
+  const label = 'text-label text-text-muted block mb-1.5';
+  const input = 'w-full bg-surface text-text border border-border rounded-sm px-3 py-2 text-small-body focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors';
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -215,25 +218,22 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
       {/* ── Step 1: Upload ───────────────────────────────────────────────────── */}
       {step === 1 && (
-        <div className={`${card} p-8 space-y-6`}>
+        <div className={cn(card, 'p-6 space-y-6')}>
           {/* Download template */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/20">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-md bg-accent-soft">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                <FileSpreadsheet className="w-4 h-4 text-primary-foreground" />
+              <div className="w-8 h-8 rounded-sm bg-accent flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FileSpreadsheet className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground text-sm">Download Template</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Use our premade structure to align your columns automatically.</p>
+                <h3 className="text-card-heading text-text">Download Template</h3>
+                <p className="text-metadata mt-0.5">Use our premade structure to align your columns automatically.</p>
               </div>
             </div>
-            <button
-              onClick={handleDownloadTemplate}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-primary/20 text-primary rounded-xl text-xs font-bold hover:bg-primary/10 transition-all shadow-sm flex-shrink-0"
-            >
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="flex-shrink-0">
               <Download className="w-3.5 h-3.5" />
               Download template.csv
-            </button>
+            </Button>
           </div>
 
           {/* Centre assignment */}
@@ -243,7 +243,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               <option value="">No Centre Assignment (Assign later)</option>
               {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-metadata mt-2">
               Select which centre all imported students should belong to by default. You can change this on individual records later.
             </p>
           </div>
@@ -253,18 +253,19 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all ${
-              dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30 hover:bg-secondary/40'
-            }`}
+            className={cn(
+              'border-2 border-dashed rounded-md p-10 flex flex-col items-center justify-center text-center transition-colors',
+              dragOver ? 'border-accent bg-accent-soft' : 'border-border-subtle hover:border-accent/30 hover:bg-page'
+            )}
           >
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${dragOver ? 'bg-primary/10' : 'bg-secondary/60'}`}>
-              <Upload className={`w-6 h-6 ${dragOver ? 'text-primary' : 'text-muted-foreground'}`} />
+            <div className={cn('w-12 h-12 rounded-md flex items-center justify-center mb-4 transition-colors', dragOver ? 'bg-accent-soft' : 'bg-page')}>
+              <Upload className={cn('w-5 h-5', dragOver ? 'text-accent' : 'text-text-muted')} />
             </div>
-            <h4 className="font-bold text-foreground text-base mb-1">Upload your CSV spreadsheet</h4>
-            <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
+            <h4 className="text-card-heading text-text mb-1">Upload your CSV spreadsheet</h4>
+            <p className="text-small-body text-text-muted max-w-xs mb-6 leading-relaxed">
               Drag and drop your spreadsheet here, or click to browse. Max size 5MB.
             </p>
-            <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm shadow-primary/20">
+            <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-small-body font-medium rounded-sm cursor-pointer transition-colors">
               <Upload className="w-4 h-4" />
               Browse Files
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
@@ -275,45 +276,42 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
       {/* ── Step 2: Map Fields ───────────────────────────────────────────────── */}
       {step === 2 && (
-        <div className={`${card} p-8 space-y-7`}>
+        <div className={cn(card, 'p-6 space-y-6')}>
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-foreground text-lg">Map Spreadsheet Fields</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <h3 className="text-section-title text-text">Map Spreadsheet Fields</h3>
+              <p className="text-small-body text-text-muted mt-0.5">
                 Match each app field to a column in your CSV. We've pre-matched what we could.
               </p>
             </div>
-            <button
-              onClick={reset}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-secondary/60 hover:bg-secondary text-foreground rounded-xl text-xs font-semibold transition-all flex-shrink-0"
-            >
+            <Button variant="secondary" size="sm" onClick={reset} className="flex-shrink-0">
               <ChevronLeft className="w-3.5 h-3.5" /> Back
-            </button>
+            </Button>
           </div>
 
           {/* File info banner */}
           {file && (
-            <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span className="text-sm font-semibold text-emerald-800">{file.name}</span>
-              <span className="text-xs text-emerald-600 ml-auto">{csvRows.length} data rows detected</span>
+            <div className="flex items-center gap-3 px-3.5 py-2.5 bg-success-soft rounded-md">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
+              <span className="text-small-body font-medium text-emerald-700 dark:text-emerald-400">{file.name}</span>
+              <span className="text-metadata ml-auto">{csvRows.length} data rows detected</span>
             </div>
           )}
 
           {/* Required fields */}
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Required Fields</p>
+            <p className="text-label text-text-muted mb-3">Required Fields</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(REQUIRED_FIELDS).map(([key, lbl]) => (
                 <div key={key}>
                   <label className={label}>
-                    {lbl} <span className="text-red-500 font-black">*</span>
+                    {lbl} <span className="text-danger font-semibold">*</span>
                   </label>
                   <select
                     value={mappings[key] || ''}
                     onChange={e => setMappings(p => ({ ...p, [key]: e.target.value }))}
-                    className={`${input} ${mappings[key] ? 'border-emerald-300 bg-emerald-50' : ''}`}
+                    className={cn(input, mappings[key] && 'border-emerald-400/50 bg-success-soft')}
                   >
                     <option value="">— Select Column —</option>
                     {headers.map((h, i) => <option key={i} value={i.toString()}>{h}</option>)}
@@ -325,7 +323,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
           {/* Optional fields */}
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Optional Fields</p>
+            <p className="text-label text-text-muted mb-3">Optional Fields</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(OPTIONAL_FIELDS).map(([key, lbl]) => (
                 <div key={key}>
@@ -333,7 +331,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                   <select
                     value={mappings[key] || ''}
                     onChange={e => setMappings(p => ({ ...p, [key]: e.target.value }))}
-                    className={`${input} ${mappings[key] ? 'border-blue-200 bg-blue-50' : ''}`}
+                    className={cn(input, mappings[key] && 'border-info-soft bg-info-soft')}
                   >
                     <option value="">— Ignore / Skip —</option>
                     {headers.map((h, i) => <option key={i} value={i.toString()}>{h}</option>)}
@@ -345,9 +343,9 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
 
           {/* Row 1 preview */}
           {csvRows.length > 0 && (
-            <div className="p-5 bg-secondary/40 rounded-2xl border border-border">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Row 1 Preview
+            <div className="p-4 bg-page rounded-md border border-border-subtle">
+              <p className="text-label text-text-muted mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Row 1 Preview
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 {Object.entries({ ...REQUIRED_FIELDS, ...OPTIONAL_FIELDS }).map(([key, lbl]) => {
@@ -355,8 +353,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
                   const val = i !== undefined && i !== '' ? csvRows[0][parseInt(i, 10)] : null;
                   return (
                     <div key={key} className="min-w-0">
-                      <span className="text-muted-foreground text-[10px] block truncate">{lbl}</span>
-                      <span className={`font-semibold block truncate mt-0.5 ${val ? 'text-foreground' : 'text-gray-300 italic'}`}>
+                      <span className="text-text-muted text-[10px] block truncate">{lbl}</span>
+                      <span className={cn('font-medium block truncate mt-0.5', val ? 'text-text' : 'text-text-muted italic')}>
                         {val || 'Not mapped'}
                       </span>
                     </div>
@@ -367,33 +365,29 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
           )}
 
           {/* Footer */}
-          <div className="pt-2 border-t border-border flex items-center justify-between gap-4">
-            <span className="text-xs text-muted-foreground font-medium">
-              Ready to import <strong className="text-foreground">{csvRows.length} rows</strong> of student data
+          <div className="pt-2 border-t border-border-subtle flex items-center justify-between gap-4">
+            <span className="text-metadata">
+              Ready to import <strong className="text-text font-semibold">{csvRows.length} rows</strong> of student data
             </span>
-            <button
-              onClick={handleStartImport}
-              disabled={!isMappingValid()}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-sm shadow-primary/20"
-            >
+            <Button onClick={handleStartImport} disabled={!isMappingValid()}>
               Confirm and Start Import
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* ── Step 3: Results ──────────────────────────────────────────────────── */}
       {step === 3 && (
-        <div className={`${card} p-8 space-y-6`}>
+        <div className={cn(card, 'p-6 space-y-6')}>
           {isImporting ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <RefreshCw className="w-7 h-7 text-primary animate-spin" />
+              <div className="w-14 h-14 rounded-full bg-accent-soft flex items-center justify-center">
+                <RefreshCw className="w-6 h-6 text-accent animate-spin" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">Importing Students…</h3>
-                <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                <h3 className="text-section-title text-text">Importing Students…</h3>
+                <p className="text-small-body text-text-muted max-w-sm mt-1">
                   Parsing rows, deduplicating parent records, and building attendance structures. Please don't refresh.
                 </p>
               </div>
@@ -403,31 +397,28 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               {/* Header */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-bold text-foreground text-lg">Import Results</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">Summary of your student roster migration</p>
+                  <h3 className="text-section-title text-text">Import Results</h3>
+                  <p className="text-small-body text-text-muted mt-0.5">Summary of your student roster migration</p>
                 </div>
-                <button
-                  onClick={reset}
-                  className="px-4 py-2 bg-secondary/60 hover:bg-secondary text-foreground rounded-xl text-xs font-bold transition-all flex-shrink-0"
-                >
+                <Button variant="secondary" size="sm" onClick={reset} className="flex-shrink-0">
                   Import Another File
-                </button>
+                </Button>
               </div>
 
               {/* Status banner */}
               {result?.success ? (
-                <div className="flex items-center gap-3 p-4 bg-success/5 border border-success/20 rounded-2xl">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                  <p className="text-sm font-semibold text-success">
+                <div className="flex items-center gap-3 p-3.5 bg-success-soft rounded-md">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
+                  <p className="text-small-body font-medium text-emerald-700 dark:text-emerald-400">
                     Roster migration completed successfully! All records imported without errors.
                   </p>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 p-4 bg-error/5 border border-error/20 rounded-2xl">
-                  <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-3.5 bg-danger-soft rounded-md">
+                  <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-bold text-error">Import completed with warnings</p>
-                    <p className="text-xs text-error/80 mt-0.5">Some records could not be created. See the error log below.</p>
+                    <p className="text-small-body font-semibold text-danger">Import completed with warnings</p>
+                    <p className="text-metadata mt-0.5">Some records could not be created. See the error log below.</p>
                   </div>
                 </div>
               )}
@@ -435,39 +426,39 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { value: result?.stats.totalRows || 0,      label: 'Rows Processed',  color: 'text-foreground' },
-                  { value: result?.stats.createdStudents || 0, label: 'Students Created', color: 'text-emerald-600' },
-                  { value: result?.stats.createdParents || 0,  label: 'Parents Created',  color: 'text-blue-600' },
-                  { value: result?.stats.matchedParents || 0,  label: 'Parents Matched',  color: 'text-amber-600' },
+                  { value: result?.stats.totalRows || 0,      label: 'Rows Processed',  color: 'text-text' },
+                  { value: result?.stats.createdStudents || 0, label: 'Students Created', color: 'text-emerald-700 dark:text-emerald-400' },
+                  { value: result?.stats.createdParents || 0,  label: 'Parents Created',  color: 'text-accent' },
+                  { value: result?.stats.matchedParents || 0,  label: 'Parents Matched',  color: 'text-amber-700 dark:text-amber-400' },
                 ].map(({ value, label: lbl, color }) => (
-                  <div key={lbl} className="bg-secondary/40 border border-border rounded-2xl p-4 text-center">
-                    <p className={`text-2xl font-black ${color}`}>{value}</p>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">{lbl}</p>
+                  <div key={lbl} className="bg-page border border-border-subtle rounded-md p-3.5 text-center">
+                    <p className={cn('text-financial-total', color)}>{value}</p>
+                    <p className="text-label text-text-muted mt-1">{lbl}</p>
                   </div>
                 ))}
               </div>
 
               {/* Skipped */}
               {(result?.stats.skippedStudents ?? 0) > 0 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-warning/5 border border-warning/20 rounded-xl text-sm">
-                  <span className="text-warning font-medium">Skipped duplicates (already exist)</span>
-                  <span className="font-bold text-warning/80">{result!.stats.skippedStudents}</span>
+                <div className="flex items-center justify-between px-3.5 py-2.5 bg-warning-soft rounded-sm text-small-body">
+                  <span className="text-amber-700 dark:text-amber-400 font-medium">Skipped duplicates (already exist)</span>
+                  <span className="font-semibold text-amber-700 dark:text-amber-400">{result!.stats.skippedStudents}</span>
                 </div>
               )}
 
               {/* Errors */}
               {result?.errors && result.errors.length > 0 && (
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-error mb-2">Error Log ({result.errors.length})</p>
-                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-error/20 divide-y divide-error/10 bg-error/5">
+                  <p className="text-label text-danger mb-2">Error Log ({result.errors.length})</p>
+                  <div className="max-h-60 overflow-y-auto rounded-md border border-danger/20 divide-y divide-danger/10 bg-danger-soft">
                     {result.errors.map((err, i) => (
-                      <div key={i} className="p-3.5 text-xs flex justify-between items-start gap-4">
+                      <div key={i} className="p-3 text-xs flex justify-between items-start gap-4">
                         <div>
-                          <span className="px-2 py-0.5 rounded-md bg-error/10 text-error text-[10px] font-bold">Row {err.row}</span>
-                          {err.name && <span className="text-foreground font-bold ml-2">{err.name}</span>}
-                          <p className="text-muted-foreground mt-1">{err.message}</p>
+                          <span className="px-1.5 py-0.5 rounded-sm bg-danger/10 text-danger text-[10px] font-semibold">Row {err.row}</span>
+                          {err.name && <span className="text-text font-semibold ml-2">{err.name}</span>}
+                          <p className="text-text-secondary mt-1">{err.message}</p>
                         </div>
-                        {err.email && <span className="text-[10px] text-muted-foreground font-mono">{err.email}</span>}
+                        {err.email && <span className="text-[10px] text-text-muted font-mono">{err.email}</span>}
                       </div>
                     ))}
                   </div>
@@ -475,14 +466,13 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
               )}
 
               {/* Done */}
-              <div className="pt-2 border-t border-border flex justify-end">
-                <Link
-                  href="/dashboard/students"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-primary/20"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Done — View Students
-                </Link>
+              <div className="pt-2 border-t border-border-subtle flex justify-end">
+                <Button asChild>
+                  <Link href="/dashboard/students">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Done — View Students
+                  </Link>
+                </Button>
               </div>
             </div>
           )}

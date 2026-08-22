@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useState, useTransition } from 'react';
 import { deleteStudentNote, toggleStudentNotePin, editStudentNote } from '@/features/students/notes.actions';
+import { cn } from '@/components/ui/utils';
+import { Button } from '@/components/ui/Button';
 import { Pin, Trash2, Edit3, BookOpen, Users, Star, Stethoscope, Clock, Smile, ThumbsUp, Meh, ThumbsDown, AlertTriangle, TrendingUp } from 'lucide-react';
 
 type NoteType = 'general' | 'progress' | 'behaviour' | 'subject_feedback' | 'attendance_concern' | 'medical' | null;
@@ -28,21 +30,24 @@ interface ProgressTimelineProps {
     currentUserRole?: string;
 }
 
+// Same soft-token pairing as Badge.tsx (bg-*-soft + literal color-700/400
+// text with a dark: pair — --color-success/warning/info are fixed hexes,
+// not theme-toggling tokens, so the text color needs its own dark variant).
 const NOTE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeClass: string }> = {
-    general:            { label: 'General',    icon: <BookOpen className="w-3 h-3" />,      badgeClass: 'bg-secondary/60 text-muted-foreground' },
-    progress:           { label: 'Progress',   icon: <TrendingUp className="w-3 h-3" />,    badgeClass: 'bg-primary/10 text-primary' },
-    subject_feedback:   { label: 'Activity',   icon: <Star className="w-3 h-3" />,          badgeClass: 'bg-primary/15 text-primary' },
-    behaviour:          { label: 'Behaviour',  icon: <Users className="w-3 h-3" />,         badgeClass: 'bg-warning/10 text-warning' },
-    attendance_concern: { label: 'Attendance', icon: <Clock className="w-3 h-3" />,         badgeClass: 'bg-warning/10 text-warning' },
-    medical:            { label: 'Medical',    icon: <Stethoscope className="w-3 h-3" />,   badgeClass: 'bg-destructive/10 text-destructive' },
+    general:            { label: 'General',    icon: <BookOpen className="w-3 h-3" />,      badgeClass: 'bg-page text-text-secondary border border-border-subtle' },
+    progress:           { label: 'Progress',   icon: <TrendingUp className="w-3 h-3" />,    badgeClass: 'bg-accent-soft text-accent' },
+    subject_feedback:   { label: 'Activity',   icon: <Star className="w-3 h-3" />,          badgeClass: 'bg-accent-soft text-accent' },
+    behaviour:          { label: 'Behaviour',  icon: <Users className="w-3 h-3" />,         badgeClass: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
+    attendance_concern: { label: 'Attendance', icon: <Clock className="w-3 h-3" />,         badgeClass: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
+    medical:            { label: 'Medical',    icon: <Stethoscope className="w-3 h-3" />,   badgeClass: 'bg-danger-soft text-danger' },
 };
 
 const RATING_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeClass: string }> = {
-    excellent:         { label: 'Excellent',         icon: <Smile className="w-3 h-3" />,         badgeClass: 'bg-success/10 text-success' },
-    good:              { label: 'Good',              icon: <ThumbsUp className="w-3 h-3" />,       badgeClass: 'bg-primary/10 text-primary' },
-    satisfactory:      { label: 'Satisfactory',      icon: <Meh className="w-3 h-3" />,            badgeClass: 'bg-warning/10 text-warning' },
-    needs_improvement: { label: 'Needs Improvement', icon: <ThumbsDown className="w-3 h-3" />,     badgeClass: 'bg-warning/10 text-warning' },
-    unsatisfactory:    { label: 'Unsatisfactory',    icon: <AlertTriangle className="w-3 h-3" />,  badgeClass: 'bg-destructive/10 text-destructive' },
+    excellent:         { label: 'Excellent',         icon: <Smile className="w-3 h-3" />,         badgeClass: 'bg-success-soft text-emerald-700 dark:text-emerald-400' },
+    good:              { label: 'Good',              icon: <ThumbsUp className="w-3 h-3" />,       badgeClass: 'bg-accent-soft text-accent' },
+    satisfactory:      { label: 'Satisfactory',      icon: <Meh className="w-3 h-3" />,            badgeClass: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
+    needs_improvement: { label: 'Needs Improvement', icon: <ThumbsDown className="w-3 h-3" />,     badgeClass: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
+    unsatisfactory:    { label: 'Unsatisfactory',    icon: <AlertTriangle className="w-3 h-3" />,  badgeClass: 'bg-danger-soft text-danger' },
 };
 
 const FILTER_OPTIONS = ['All', 'General', 'Progress', 'Activity', 'Behaviour', 'Medical'];
@@ -98,27 +103,28 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                     <button
                         key={opt}
                         onClick={() => setFilter(opt)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        className={cn(
+                            'px-2.5 py-1 rounded-sm text-xs font-medium transition-colors',
                             filter === opt
-                                ? 'bg-primary text-primary-foreground shadow-sm'
-                                : 'bg-secondary/60 text-muted-foreground hover:bg-secondary'
-                        }`}
+                                ? 'bg-accent text-white'
+                                : 'bg-page text-text-secondary border border-border-subtle hover:border-border'
+                        )}
                     >
                         {opt}
                     </button>
                 ))}
-                <span className="ml-auto text-xs text-muted-foreground font-medium">
+                <span className="ml-auto text-metadata">
                     {filtered.length} note{filtered.length !== 1 ? 's' : ''}
                 </span>
             </div>
 
             {sortedNotes.length === 0 ? (
-                <div className="py-10 flex flex-col items-center text-center border-2 border-dashed border-border rounded-2xl bg-secondary/40">
-                    <BookOpen className="w-8 h-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">No {filter !== 'All' ? filter.toLowerCase() + ' ' : ''}notes yet.</p>
+                <div className="py-8 flex flex-col items-center text-center border border-dashed border-border-subtle rounded-md bg-page">
+                    <BookOpen className="w-6 h-6 text-text-muted mb-2" />
+                    <p className="text-small-body text-text-muted">No {filter !== 'All' ? filter.toLowerCase() + ' ' : ''}notes yet.</p>
                 </div>
             ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                     {sortedNotes.map(note => {
                         const typeKey    = (note.noteType || 'general') as string;
                         const typeConfig  = NOTE_TYPE_CONFIG[typeKey] || NOTE_TYPE_CONFIG.general;
@@ -131,29 +137,29 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                         return (
                             <div
                                 key={note.id}
-                                className={`relative group border rounded-2xl p-4 transition-all ${
-                                    isPinned
-                                        ? 'border-primary/20 bg-primary/10'
-                                        : 'border-border bg-card hover:border-border'
-                                }`}
+                                className={cn(
+                                    'relative group rounded-md border p-3.5 transition-colors',
+                                    isPinned ? 'border-accent/30 bg-accent-soft' : 'border-border-subtle bg-surface'
+                                )}
                             >
                                 {/* Pin dot */}
                                 {isPinned && (
-                                    <div className="absolute top-3.5 right-10 text-primary">
+                                    <div className="absolute top-3 right-9 text-accent">
                                         <Pin className="w-3 h-3 fill-current" />
                                     </div>
                                 )}
 
                                 {/* Hover actions */}
-                                <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                     {canPin && (
                                         <button
                                             onClick={() => handlePin(note.id, isPinned)}
                                             disabled={isPending}
                                             title={isPinned ? 'Unpin' : 'Pin to top'}
-                                            className={`p-1.5 rounded-lg transition-colors ${
-                                                isPinned ? 'text-primary bg-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-primary/20'
-                                            }`}
+                                            className={cn(
+                                                'p-1.5 rounded-sm transition-colors',
+                                                isPinned ? 'text-accent bg-accent-soft' : 'text-text-muted hover:text-accent hover:bg-accent-soft'
+                                            )}
                                         >
                                             <Pin className="w-3.5 h-3.5" />
                                         </button>
@@ -163,7 +169,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             onClick={() => { setEditingId(note.id); setEditingContent(note.content); }}
                                             disabled={isPending}
                                             title="Edit note"
-                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/20 transition-colors"
+                                            className="p-1.5 rounded-sm text-text-muted hover:text-accent hover:bg-accent-soft transition-colors"
                                         >
                                             <Edit3 className="w-3.5 h-3.5" />
                                         </button>
@@ -173,7 +179,7 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                             onClick={() => handleDelete(note.id)}
                                             disabled={isPending}
                                             title="Delete note"
-                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/20 transition-colors"
+                                            className="p-1.5 rounded-sm text-text-muted hover:text-danger hover:bg-danger-soft transition-colors"
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
@@ -181,17 +187,17 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
                                 </div>
 
                                 {/* Badges */}
-                                <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${typeConfig.badgeClass}`}>
+                                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                                    <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[11px] font-medium', typeConfig.badgeClass)}>
                                         {typeConfig.icon} {typeConfig.label}
                                     </span>
                                     {note.subject && (
-                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-secondary/60 text-muted-foreground">
+                                        <span className="px-1.5 py-0.5 rounded-sm text-[11px] font-medium bg-page text-text-secondary border border-border-subtle">
                                             {note.subject}
                                         </span>
                                     )}
                                     {ratingConfig && (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${ratingConfig.badgeClass}`}>
+                                        <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[11px] font-medium', ratingConfig.badgeClass)}>
                                             {ratingConfig.icon} {ratingConfig.label}
                                         </span>
                                     )}
@@ -199,36 +205,28 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
 
                                 {/* Content */}
                                 {editingId === note.id ? (
-                                    <div className="space-y-2.5 mt-1">
+                                    <div className="space-y-2 mt-1">
                                         <textarea
                                             value={editingContent}
                                             onChange={e => setEditingContent(e.target.value)}
-                                            className="w-full bg-card border border-border text-foreground rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 resize-y min-h-[80px] transition-all"
+                                            className="w-full bg-surface border border-border rounded-sm p-2.5 text-small-body text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent resize-y min-h-[80px] transition-colors"
                                             disabled={isPending}
                                         />
                                         <div className="flex justify-end gap-2">
-                                            <button
-                                                onClick={() => setEditingId(null)}
-                                                disabled={isPending}
-                                                className="px-3 py-1.5 rounded-lg bg-secondary/60 text-foreground hover:bg-secondary text-xs font-bold transition-all"
-                                            >
+                                            <Button variant="secondary" size="sm" onClick={() => setEditingId(null)} disabled={isPending}>
                                                 Cancel
-                                            </button>
-                                            <button
-                                                onClick={() => handleSaveEdit(note.id)}
-                                                disabled={!editingContent.trim() || isPending}
-                                                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all disabled:opacity-50"
-                                            >
+                                            </Button>
+                                            <Button size="sm" onClick={() => handleSaveEdit(note.id)} disabled={!editingContent.trim() || isPending}>
                                                 {isPending ? 'Saving…' : 'Save'}
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                                    <p className="text-small-body text-text leading-relaxed whitespace-pre-wrap">{note.content}</p>
                                 )}
 
                                 {/* Footer */}
-                                <p className="text-[11px] text-muted-foreground font-medium mt-2.5">
+                                <p className="text-metadata mt-2">
                                     {note.authorName} · {format(new Date(note.createdAt), 'MMM d, yyyy · h:mm a')}
                                 </p>
                             </div>
