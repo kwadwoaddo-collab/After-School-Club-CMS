@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect, notFound } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
+import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { parents, children, invoices, payments } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import ParentProfileClient from './ParentProfileClient';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import DeleteParentButton from '@/features/parents/components/DeleteParentButton';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 
 interface ParentPageProps {
     params: Promise<{ id: string }>;
@@ -15,9 +17,11 @@ interface ParentPageProps {
 
 export default async function ParentProfilePage({ params }: ParentPageProps) {
     const { id } = await params;
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
+    // Same role rule as the Parents list and the rest of the People module —
+    // see project-notes/milestone-3b-parents-audit.md §4. Previously this
+    // page only checked for a session, so any authenticated org member
+    // (including TUTOR) could view a family's contact details and ledger.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const organisationId = (session.user as any).organisationId;
 
     // 1. Fetch Parent & Children
@@ -53,47 +57,73 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
         const paid = inv.payments?.reduce((s, p) => s + Number(p.amount), 0) || 0;
         return sum + paid;
     }, 0);
+    const outstanding = totalOwed - totalPaid;
+
+    const fullName = `${parent.firstName} ${parent.lastName}`;
+    const initials = `${(parent.firstName || '')[0] ?? ''}${(parent.lastName || '')[0] ?? ''}`.toUpperCase();
+    const childCount = parent.children.length;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Header / Navigation */}
-            <div>
-                <Link 
+        <div className="max-w-4xl mx-auto space-y-5">
+
+            {/* ── Navigation bar ──────────────────────────────────────────── */}
+            <div className="flex items-center justify-between">
+                <Link
                     href="/dashboard/parents"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group mb-2 text-xs uppercase tracking-widest active:scale-95 duration-100"
+                    className="group inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors"
                 >
-                    <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-                    Back to Directory
+                    <ChevronLeft className="w-4 h-4" />
+                    Back to parents
                 </Link>
-                <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 text-2xl font-black">
-                        {(parent.firstName || '')[0] || ''}{(parent.lastName || '')[0] || ''}
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-black text-foreground tracking-tight">
-                            {parent.firstName} {parent.lastName}
-                        </h1>
-                        <p className="text-muted-foreground font-medium mt-1">
-                            Family Account Profile & Ledger
-                        </p>
-                    </div>
-                </div>
-                <DeleteParentButton 
-                    parentId={parent.id} 
-                    parentName={`${parent.firstName} ${parent.lastName}`} 
-                    childCount={parent.children.length} 
-                    variant="button" 
+                <DeleteParentButton
+                    parentId={parent.id}
+                    parentName={fullName}
+                    childCount={childCount}
+                    variant="button"
                 />
             </div>
 
-            {/* Client Component for Tabs & Interaction */}
-            <ParentProfileClient 
+            {/* ── Header card ─────────────────────────────────────────────── */}
+            <Card>
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-5">
+                    <div className="w-14 h-14 rounded-full bg-accent-soft text-accent flex items-center justify-center flex-shrink-0">
+                        <span className="text-page-title select-none">{initials}</span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-page-title text-text truncate">{fullName}</h1>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            <Badge>
+                                {childCount} {childCount === 1 ? 'child' : 'children'}
+                            </Badge>
+                            <span className="text-metadata">Family account &amp; ledger</span>
+                        </div>
+                    </div>
+
+                    {/* Key metrics */}
+                    <div className="flex sm:flex-col gap-2 sm:min-w-[150px]">
+                        <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
+                            <span className="text-metadata">Balance</span>
+                            <span className={outstanding > 0 ? 'text-small-body font-semibold text-danger' : 'text-small-body font-semibold text-text'}>
+                                £{outstanding.toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2 rounded-sm border border-border-subtle bg-page">
+                            <span className="text-metadata">Total invoiced</span>
+                            <span className="text-small-body font-semibold text-text">£{totalOwed.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </Card>
+
+            {/* ── Tabs & tab content ──────────────────────────────────────── */}
+            <ParentProfileClient
                 parent={parent}
                 invoices={familyInvoices}
                 stats={{
                     totalOwed,
                     totalPaid,
-                    outstanding: totalOwed - totalPaid
+                    outstanding
                 }}
                 isOwner={(session.user as any).role === 'ORG_OWNER'}
             />

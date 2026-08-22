@@ -1,29 +1,29 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-    CreditCard, 
-    Users, 
-    History, 
-    ChevronRight, 
-    Mail, 
-    Phone, 
+import {
+    CreditCard,
+    History,
+    ChevronRight,
+    Mail,
+    Phone,
     MapPin,
     Baby,
-    TrendingUp,
     AlertCircle,
     Edit2,
     Loader2,
     Check,
     X,
+    LayoutGrid,
 } from 'lucide-react';
-import { format } from 'date-fns';
 import Link from 'next/link';
+import { cn } from '@/components/ui/utils';
 import { InvoiceTable } from '@/features/finance/components/FinanceDashboardClient';
 import { useToast } from '@/components/ui/ToastProvider';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface ParentProfileClientProps {
     parent: any;
@@ -36,8 +36,19 @@ interface ParentProfileClientProps {
     isOwner?: boolean;
 }
 
+type TabId = 'overview' | 'finance';
+
+const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'finance', label: 'Finance / Ledger', icon: CreditCard },
+];
+
+function SubPanel({ children, className }: { children: React.ReactNode; className?: string }) {
+    return <div className={cn('rounded-md border border-border-subtle bg-page p-4', className)}>{children}</div>;
+}
+
 export default function ParentProfileClient({ parent, invoices, stats, isOwner }: ParentProfileClientProps) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'finance'>('overview');
+    const [activeTab, setActiveTab] = useState<TabId>('overview');
     const router = useRouter();
     const { toast } = useToast();
     const [isEditingContact, setIsEditingContact] = useState(false);
@@ -81,268 +92,283 @@ export default function ParentProfileClient({ parent, invoices, stats, isOwner }
     };
 
     return (
-        <div className="space-y-6">
-            {/* Tabs */}
-            <div className="flex items-center gap-2 p-1 bg-card rounded-2xl w-fit border border-outline-variant/10">
-                <button 
-                    onClick={() => setActiveTab('overview')}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 duration-100 ${
-                        activeTab === 'overview' 
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    Overview
-                </button>
-                <button 
-                    onClick={() => setActiveTab('finance')}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 duration-100 ${
-                        activeTab === 'finance' 
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    Finance / Ledger
-                </button>
+        <div className="space-y-5">
+            {/* ── Tabs ────────────────────────────────────────────────────── */}
+            <div className="flex border-b border-border gap-1">
+                {TABS.map(({ id, label, icon: Icon }) => (
+                    <button
+                        key={id}
+                        onClick={() => setActiveTab(id)}
+                        className={cn(
+                            'flex items-center gap-1.5 px-3 py-2.5 text-small-body font-medium border-b-2 -mb-px transition-colors',
+                            activeTab === id
+                                ? 'border-accent text-text'
+                                : 'border-transparent text-text-muted hover:text-text'
+                        )}
+                    >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{label}</span>
+                    </button>
+                ))}
             </div>
 
-            {activeTab === 'overview' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Contact Info */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="glassmorphic-card rounded-[40px] p-8 space-y-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em]">Contact Details</h3>
-                                {!isEditingContact ? (
-                                    <button
-                                        onClick={() => setIsEditingContact(true)}
-                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
-                                    >
-                                        <Edit2 className="w-3.5 h-3.5" /> Edit
-                                    </button>
-                                ) : (
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => setIsEditingContact(false)}
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors active:scale-95 duration-100"
-                                        >
-                                            <X className="w-3.5 h-3.5" /> Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleSaveContact}
-                                            disabled={isSavingContact}
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50 active:scale-95 duration-100"
-                                        >
-                                            {isSavingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                            Save
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+            {/* ── Tab panels ──────────────────────────────────────────────── */}
+            <Card>
+                <div className="p-5 sm:p-6">
 
-                            {isEditingContact ? (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">First Name</label>
-                                            <input
-                                                type="text"
-                                                value={contactForm.firstName}
-                                                onChange={e => setContactForm(f => ({ ...f, firstName: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                            />
+                {/* Overview tab */}
+                {activeTab === 'overview' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                        {/* Left column — contact + children */}
+                        <div className="lg:col-span-2 space-y-4">
+
+                            {/* Contact details (editable) */}
+                            <SubPanel>
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-label text-text-muted">Contact details</p>
+                                    {!isEditingContact ? (
+                                        <button
+                                            onClick={() => setIsEditingContact(true)}
+                                            className="inline-flex items-center gap-1 text-metadata font-medium text-accent hover:text-accent-hover transition-colors"
+                                        >
+                                            <Edit2 className="w-3 h-3" /> Edit
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => setIsEditingContact(false)}
+                                                className="inline-flex items-center gap-1 text-metadata font-medium text-text-muted hover:text-text transition-colors"
+                                            >
+                                                <X className="w-3 h-3" /> Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleSaveContact}
+                                                disabled={isSavingContact}
+                                                className="inline-flex items-center gap-1 text-metadata font-medium text-success hover:opacity-80 transition-colors disabled:opacity-50"
+                                            >
+                                                {isSavingContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                Save
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isEditingContact ? (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-label text-text-muted block mb-1">First name</label>
+                                                <input
+                                                    type="text"
+                                                    value={contactForm.firstName}
+                                                    onChange={e => setContactForm(f => ({ ...f, firstName: e.target.value }))}
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-label text-text-muted block mb-1">Last name</label>
+                                                <input
+                                                    type="text"
+                                                    value={contactForm.lastName}
+                                                    onChange={e => setContactForm(f => ({ ...f, lastName: e.target.value }))}
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-label text-text-muted block mb-1">Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={contactForm.email}
+                                                    onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-label text-text-muted block mb-1">Phone</label>
+                                                <input
+                                                    type="tel"
+                                                    value={contactForm.phone}
+                                                    onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                                                />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Last Name</label>
-                                            <input
-                                                type="text"
-                                                value={contactForm.lastName}
-                                                onChange={e => setContactForm(f => ({ ...f, lastName: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Email</label>
-                                            <input
-                                                type="email"
-                                                value={contactForm.email}
-                                                onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Phone</label>
-                                            <input
-                                                type="tel"
-                                                value={contactForm.phone}
-                                                onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Address</label>
+                                            <label className="text-label text-text-muted block mb-1">Address</label>
                                             <input
                                                 type="text"
                                                 value={contactForm.addressLine1}
                                                 onChange={e => setContactForm(f => ({ ...f, addressLine1: e.target.value }))}
                                                 placeholder="Street address"
-                                                className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">City</label>
+                                                <label className="text-label text-text-muted block mb-1">City</label>
                                                 <input
                                                     type="text"
                                                     value={contactForm.city}
                                                     onChange={e => setContactForm(f => ({ ...f, city: e.target.value }))}
-                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1.5">Postcode</label>
+                                                <label className="text-label text-text-muted block mb-1">Postcode</label>
                                                 <input
                                                     type="text"
                                                     value={contactForm.postcode}
                                                     onChange={e => setContactForm(f => ({ ...f, postcode: e.target.value }))}
-                                                    className="w-full px-3 py-2.5 bg-secondary/40 border border-outline-variant/20 rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                                    className="w-full h-9 px-3 bg-surface border border-border rounded-sm text-small-body font-medium text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
-                                            <Mail className="w-5 h-5" />
+                                ) : (
+                                    // Stacked label-above-value rows (not a justify-between row) —
+                                    // matches StudentProfile's InfoRow pattern. A justify-between
+                                    // row was tried here first but collided a long email address
+                                    // against its label at 375px; stacking is robust at any width
+                                    // and reuses the pattern Students already established.
+                                    <div className="space-y-0">
+                                        <div className="flex items-start gap-3 py-3 border-b border-border-subtle">
+                                            <Mail className="w-4 h-4 text-text-muted mt-0.5 flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-label text-text-muted">Email</p>
+                                                <p className="text-small-body font-medium text-text mt-0.5 break-words">{parent.email || 'Not provided'}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Email Address</p>
-                                            <p className="font-bold text-foreground">{parent.email || 'Not provided'}</p>
+                                        <div className="flex items-start gap-3 py-3 border-b border-border-subtle">
+                                            <Phone className="w-4 h-4 text-text-muted mt-0.5 flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-label text-text-muted">Phone</p>
+                                                <p className="text-small-body font-medium text-text mt-0.5">{parent.phone || 'Not provided'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3 py-3">
+                                            <MapPin className="w-4 h-4 text-text-muted mt-0.5 flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-label text-text-muted">Billing address</p>
+                                                <p className="text-small-body font-medium text-text mt-0.5 break-words">
+                                                    {parent.addressLine1 ? `${parent.addressLine1}, ${parent.city || ''} ${parent.postcode || ''}` : 'No address on file'}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
-                                            <Phone className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Phone Number</p>
-                                            <p className="font-bold text-foreground">{parent.phone || 'Not provided'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4 md:col-span-2">
-                                        <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-primary">
-                                            <MapPin className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Billing Address</p>
-                                            <p className="font-bold text-foreground">
-                                                {parent.addressLine1 ? `${parent.addressLine1}, ${parent.city || ''} ${parent.postcode || ''}` : 'No address on file'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </SubPanel>
 
-                        {/* Children List */}
-                        <div className="glassmorphic-card rounded-[40px] p-8">
-                            <h3 className="text-sm font-black text-on-surface-variant uppercase tracking-[0.2em] mb-4">Associated Children</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {parent.children?.map((child: any) => (
-                                    <Link 
-                                        key={child.id}
-                                        href={`/dashboard/students/${child.id}`}
-                                        className="flex items-center justify-between p-4 bg-secondary/40 border border-outline-variant/5 rounded-2xl hover:bg-primary/5 hover:border-primary/20 active:scale-[0.985] active:opacity-95 transition-all group duration-100"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center text-emerald-400">
-                                                <Baby className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-foreground">{child.firstName} {child.lastName}</p>
-                                                <p className="text-xs text-on-surface-variant">Year {child.schoolYear}</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-on-surface-variant group-hover:text-primary transition-all" />
-                                    </Link>
-                                ))}
+                            {/* Associated children */}
+                            <div>
+                                <p className="text-label text-text-muted mb-2">Associated children</p>
+                                {parent.children && parent.children.length > 0 ? (
+                                    <SubPanel className="p-0 divide-y divide-border-subtle overflow-hidden">
+                                        {parent.children.map((child: any) => (
+                                            <Link
+                                                key={child.id}
+                                                href={`/dashboard/students/${child.id}`}
+                                                className="flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-success-soft text-success flex items-center justify-center flex-shrink-0">
+                                                        <Baby className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-small-body font-medium text-text">{child.firstName} {child.lastName}</p>
+                                                        <p className="text-metadata">{child.schoolYear ? `Year ${child.schoolYear}` : 'Year not set'}</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                                            </Link>
+                                        ))}
+                                    </SubPanel>
+                                ) : (
+                                    <EmptyState
+                                        icon={<Baby className="w-6 h-6" />}
+                                        title="No children linked yet"
+                                        description="Children appear here once they're registered or added under this family."
+                                        className="m-0 py-8"
+                                    />
+                                )}
                             </div>
                         </div>
-                    </div>
 
-                    {/* Financial Summary Sidebar */}
-                    <div className="space-y-6">
-                        <div className="bg-primary/10 border border-primary/20 rounded-[40px] p-8 text-center relative overflow-hidden ring-1 ring-primary/30">
-                            <div className="relative z-10">
-                                <TrendingUp className="w-10 h-10 text-primary mx-auto mb-4" />
-                                <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Current Balance</p>
-                                <h2 className={`text-4xl font-black ${stats.outstanding > 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
+                        {/* Right column — financial summary */}
+                        <div className="space-y-4">
+                            <SubPanel className="text-center">
+                                <p className="text-label text-text-muted mb-2">Current balance</p>
+                                <p className={cn('text-page-title', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>
                                     £{stats.outstanding.toFixed(2)}
-                                </h2>
-                                <p className="text-xs text-on-surface-variant mt-2 font-bold uppercase tracking-widest mb-6">Outstanding amount</p>
+                                </p>
+                                <p className="text-metadata mt-1 mb-4">Outstanding amount</p>
                                 <button
                                     onClick={() => setActiveTab('finance')}
-                                    className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm hover:bg-primary/90 transition-all active:scale-95 duration-100 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                    className="w-full py-2 px-3 bg-accent text-white rounded-sm text-small-body font-medium hover:bg-accent-hover transition-colors inline-flex items-center justify-center gap-1.5"
                                 >
-                                    View Full Ledger <ChevronRight className="w-4 h-4" />
+                                    View full ledger <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
+                            </SubPanel>
+
+                            <SubPanel className="space-y-0">
+                                <div className="flex items-center justify-between py-2 border-b border-border-subtle">
+                                    <span className="text-metadata">Total invoiced</span>
+                                    <span className="text-small-body font-medium text-text">£{stats.totalOwed.toFixed(2)}</span>
+                                </div>
+                                <div className="flex items-center justify-between py-2">
+                                    <span className="text-metadata">Total paid</span>
+                                    <span className="text-small-body font-medium text-success">£{stats.totalPaid.toFixed(2)}</span>
+                                </div>
+                            </SubPanel>
+                        </div>
+                    </div>
+                )}
+
+                {/* Finance / Ledger tab */}
+                {activeTab === 'finance' && (
+                    <div className="space-y-4">
+                        {/* Stats strip */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <SubPanel className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-label text-text-muted">Total family billing</p>
+                                    <p className="text-financial-total text-text mt-0.5">£{stats.totalOwed.toFixed(2)}</p>
+                                </div>
+                                <CreditCard className="w-6 h-6 text-text-muted" />
+                            </SubPanel>
+                            <SubPanel className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-label text-text-muted">Paid to date</p>
+                                    <p className="text-financial-total text-success mt-0.5">£{stats.totalPaid.toFixed(2)}</p>
+                                </div>
+                                <History className="w-6 h-6 text-success" />
+                            </SubPanel>
+                            <div className={cn(
+                                'rounded-md border p-4 flex items-center justify-between',
+                                stats.outstanding > 0 ? 'bg-danger-soft border-danger/30' : 'bg-success-soft border-success/30'
+                            )}>
+                                <div>
+                                    <p className={cn('text-label', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>Amount due</p>
+                                    <p className={cn('text-financial-total mt-0.5', stats.outstanding > 0 ? 'text-danger' : 'text-success')}>£{stats.outstanding.toFixed(2)}</p>
+                                </div>
+                                <AlertCircle className={cn('w-6 h-6', stats.outstanding > 0 ? 'text-danger' : 'text-success')} />
                             </div>
                         </div>
 
-                        <div className="glassmorphic-card rounded-[40px] p-6 space-y-4">
-                            <div className="flex items-center justify-between px-2">
-                                <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Invoiced</span>
-                                <span className="font-bold text-foreground">£{stats.totalOwed.toFixed(2)}</span>
+                        {/* Full ledger table */}
+                        <div className="rounded-md border border-border-subtle overflow-hidden">
+                            <div className="px-4 py-3 border-b border-border-subtle bg-page">
+                                <p className="text-label text-text-muted">Transaction history</p>
+                                <p className="text-metadata mt-0.5">Consolidated family invoices and payments</p>
                             </div>
-                            <div className="h-px bg-border/30" />
-                            <div className="flex items-center justify-between px-2">
-                                <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Paid</span>
-                                <span className="font-bold text-emerald-400">£{stats.totalPaid.toFixed(2)}</span>
-                            </div>
+                            <InvoiceTable invoices={invoices} isOwner={isOwner} />
                         </div>
                     </div>
+                )}
                 </div>
-            )}
-
-            {activeTab === 'finance' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Stats strip for Finance tab */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="glassmorphic-card p-6 rounded-3xl flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total Family Billing</p>
-                                <p className="text-xl font-black text-foreground mt-1">£{stats.totalOwed.toFixed(2)}</p>
-                            </div>
-                            <CreditCard className="w-8 h-8 text-primary/40" />
-                        </div>
-                        <div className="glassmorphic-card p-6 rounded-3xl flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Paid to Date</p>
-                                <p className="text-xl font-black text-emerald-400 mt-1">£{stats.totalPaid.toFixed(2)}</p>
-                            </div>
-                            <History className="w-8 h-8 text-emerald-400/40" />
-                        </div>
-                        <div className={`p-6 border rounded-3xl flex items-center justify-between ${stats.outstanding > 0 ? 'bg-rose-500/5 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
-                            <div>
-                                <p className={`text-[10px] font-black uppercase tracking-widest ${stats.outstanding > 0 ? 'text-rose-500' : 'text-emerald-400'}`}>Amount Due</p>
-                                <p className={`text-xl font-black mt-1 ${stats.outstanding > 0 ? 'text-rose-500' : 'text-emerald-400'}`}>£{stats.outstanding.toFixed(2)}</p>
-                            </div>
-                            <AlertCircle className={`w-8 h-8 ${stats.outstanding > 0 ? 'text-rose-500/40' : 'text-emerald-400/40'}`} />
-                        </div>
-                    </div>
-
-                    {/* Full Ledger Table */}
-                    <div className="glassmorphic-card rounded-[40px] overflow-hidden">
-                        <div className="px-8 py-6 border-b border-outline-variant/5 bg-secondary/40/50">
-                            <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Transaction History</h3>
-                            <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mt-1">Consolidated family invoices and payments</p>
-                        </div>
-                        <InvoiceTable invoices={invoices} isOwner={isOwner} />
-                    </div>
-                </div>
-            )}
+            </Card>
         </div>
     );
 }
