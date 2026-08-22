@@ -2,6 +2,19 @@ import { db } from '@/db';
 import { bookings, bookingAttendees, clubSessions } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 
+interface OccupancySessionRow {
+  session_id: string;
+  type: string;
+  capacity: number;
+  total_bookings: number | string;
+}
+
+interface AttendanceStatsRow {
+  total_attendees: number | string;
+  present_count: number | string;
+  absent_count: number | string;
+}
+
 export async function getOccupancyStats(centreId: string, startDate: Date, endDate: Date) {
   // Simple approximation: total bookings vs total capacity for the period.
   // We join clubSessions to get capacity.
@@ -19,8 +32,8 @@ export async function getOccupancyStats(centreId: string, startDate: Date, endDa
   `;
 
   const results = await db.execute(query);
-  
-  return results.map((r: any) => ({
+
+  return (results as unknown as OccupancySessionRow[]).map((r) => ({
     sessionId: r.session_id,
     type: r.type,
     capacity: r.capacity,
@@ -41,7 +54,7 @@ export async function getAttendanceStats(centreId: string, startDate: Date, endD
   `;
 
   const results = await db.execute(query);
-  const row = results[0] as any || { total_attendees: 0, present_count: 0, absent_count: 0 };
+  const row = (results[0] as unknown as AttendanceStatsRow) || { total_attendees: 0, present_count: 0, absent_count: 0 };
   
   const total = Number(row.total_attendees);
   const present = Number(row.present_count);

@@ -8,10 +8,18 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
+import type { FinanceInvoice } from '@/features/finance/components/FinanceDataGridClient';
 import FinanceDashboardFilters from '@/features/finance/components/FinanceDashboardFilters';
 import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
 import { logger } from '@/lib/logger';
+
+async function fetchOrgCentres(organisationId: string) {
+    return db.query.centres.findMany({
+        where: eq(centres.organisationId, organisationId)
+    });
+}
+type OrgCentre = Awaited<ReturnType<typeof fetchOrgCentres>>[number];
 
 export default async function FinancePage(props: {
     searchParams: Promise<{
@@ -32,24 +40,24 @@ export default async function FinancePage(props: {
         return redirect('/dashboard');
     }
 
-    const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
+    function serialize<T>(obj: T): T {
+        return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? Number(value) : value));
+    }
 
     const page = Number(searchParams.page) || 1;
     const pageSize = 50;
     const statusFilter = searchParams.status || 'all';
 
-    let orgCentres: any[] = [];
+    let orgCentres: OrgCentre[] = [];
     let activeCentreId = 'all';
     let totalInvoices = 0;
-    let paginatedInvoices: any[] = [];
+    let paginatedInvoices: FinanceInvoice[] = [];
     let hasFetchError = false;
 
     try {
-        let orgCentresRaw: any[] = [];
+        let orgCentresRaw: OrgCentre[] = [];
         try {
-            orgCentresRaw = await db.query.centres.findMany({
-                where: eq(centres.organisationId, session.user.organisationId)
-            });
+            orgCentresRaw = await fetchOrgCentres(session.user.organisationId);
         } catch (e) {
             orgCentresRaw = [];
         }
@@ -176,7 +184,7 @@ export default async function FinancePage(props: {
                     </h2>
                 </div>
                 <BillingCyclesTab
-                    cycles={serializedBillingCycles as any}
+                    cycles={serializedBillingCycles}
                     centreId={activeCentreId}
                 />
             </div>

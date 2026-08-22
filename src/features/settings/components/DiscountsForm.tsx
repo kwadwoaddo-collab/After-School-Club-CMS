@@ -19,7 +19,7 @@ import {
     GraduationCap,
 } from 'lucide-react';
  
-type DiscountRule = {
+export type DiscountRule = {
     id: string;
     type: 'sibling' | 'pupil_premium' | 'percentage' | 'fixed';
     label: string;

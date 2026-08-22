@@ -68,8 +68,8 @@ export default function StaffDashboardClient({ staff, pendingInvites, orgCentres
             if (!res.ok) throw new Error(data.error || 'Failed to revoke invite');
             toast({ title: 'Invite revoked', message: 'The pending invite has been cancelled.', variant: 'success' });
             startTransition(() => router.refresh());
-        } catch (err: any) {
-            toast({ title: 'Error', message: err.message, variant: 'error' });
+        } catch (err) {
+            toast({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to revoke invite', variant: 'error' });
         }
     };
 

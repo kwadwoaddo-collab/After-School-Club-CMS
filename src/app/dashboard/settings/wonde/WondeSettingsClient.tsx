@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Loader2, RefreshCw, Key, Database, CheckCircle2 } from 'lucide-react';
 import { triggerWondeSync } from '@/features/wonde/actions';
 
+type WondeSyncResult = Awaited<ReturnType<typeof triggerWondeSync>>;
+
 export default function WondeSettingsClient({ orgName, lastSync }: { orgName: string; lastSync: Date | null }) {
     const [apiKey, setApiKey] = useState('wonde_test_key_12345');
     const [isSyncing, setIsSyncing] = useState(false);
-    const [syncResult, setSyncResult] = useState<any>(null);
+    const [syncResult, setSyncResult] = useState<WondeSyncResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const handleSync = async () => {
@@ -18,8 +20,8 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
         try {
             const results = await triggerWondeSync();
             setSyncResult(results);
-        } catch (err: any) {
-            setError(err.message || 'Failed to sync with Wonde');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to sync with Wonde');
         } finally {
             setIsSyncing(false);
         }

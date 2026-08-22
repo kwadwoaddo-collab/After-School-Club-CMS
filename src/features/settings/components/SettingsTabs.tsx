@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Building2, Palette, Clock, FileText, Wallet, Tag, ShieldCheck, GraduationCap, RefreshCw } from 'lucide-react';
+import type { InferSelectModel } from 'drizzle-orm';
+import type { centres as centresTable } from '@/db/schema';
 import OrganisationInfoForm from './OrganisationInfoForm';
 import CentreHoursTab from './CentreHoursTab';
 import BrandingForm from './BrandingForm';
 import FinancePricingForm from './FinancePricingForm';
 import RegistrationTermsForm from './RegistrationTermsForm';
-import DiscountsForm from './DiscountsForm';
+import DiscountsForm, { type DiscountRule } from './DiscountsForm';
 import GdprExportButton from '@/app/dashboard/settings/GdprExportButton';
 import { rollSchoolYearsAction } from '@/features/students/roll-actions';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -25,9 +27,9 @@ interface SettingsTabsProps {
         brandColor?: string | null;
         logoUrl?: string | null;
         registrationTerms?: string | null;
-        discountRules?: any[];
+        discountRules?: DiscountRule[];
     };
-    centres: any[];
+    centres: InferSelectModel<typeof centresTable>[];
     baseUrl: string;
 }
 
@@ -52,8 +54,8 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
             } else {
                 toast({ title: 'Error', message: res.message, variant: 'error' });
             }
-        } catch (err: any) {
-            toast({ title: 'Error', message: err.message || 'Failed to roll school years.', variant: 'error' });
+        } catch (err) {
+            toast({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to roll school years.', variant: 'error' });
         } finally {
             setIsRolling(false);
         }

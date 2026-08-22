@@ -6,7 +6,10 @@ import { Calendar, ChevronRight } from 'lucide-react';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import { cn } from '@/components/ui/utils';
 
-export default async function DashboardSchedule({ org }: { org: any }) {
+// Only the field this component actually reads (id) — not the full
+// organisation row, mirroring the narrow-prop-type convention used by
+// CentreHoursForm.tsx elsewhere in this feature area.
+export default async function DashboardSchedule({ org }: { org: { id: string } }) {
     const now = new Date();
     const todayBookings = await db.select({
         id: bookings.id,
@@ -43,7 +46,7 @@ export default async function DashboardSchedule({ org }: { org: any }) {
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto">
-                    {todayBookings.map((booking: any) => (
+                    {todayBookings.map((booking) => (
                     <Link key={booking.id} href={`/dashboard/bookings/${booking.id}`}
                         className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <span className="text-xs font-mono text-muted-foreground w-10 flex-shrink-0">

@@ -14,10 +14,14 @@ interface Centre {
     slug: string;
 }
 
+// Mirrors the StaffRole union in StaffRoleSelector.tsx (not exported from
+// there, so restated here structurally rather than importing).
+type StaffRole = 'TUTOR' | 'FRONT_DESK' | 'MANAGER' | 'ORG_OWNER';
+
 interface StaffProfileFormProps {
     userId: string;
     staffName: string;
-    currentRole: any;
+    currentRole: StaffRole;
     ownerCount: number;
     allCentres: Centre[];
     currentAssignments: string[];
@@ -69,10 +73,10 @@ export default function StaffProfileForm({
                 variant: 'success'
             });
             router.refresh();
-        } catch (err: any) {
+        } catch (err) {
             toast({
                 title: 'Error saving changes',
-                message: err.message,
+                message: err instanceof Error ? err.message : 'Failed to save changes',
                 variant: 'error'
             });
         } finally {
@@ -94,10 +98,10 @@ export default function StaffProfileForm({
             }
             router.push('/dashboard/staff');
             router.refresh();
-        } catch (err: any) {
+        } catch (err) {
             toast({
                 title: 'Error removing staff',
-                message: err.message,
+                message: err instanceof Error ? err.message : 'Failed to remove staff member',
                 variant: 'error'
             });
             setRemoving(false);

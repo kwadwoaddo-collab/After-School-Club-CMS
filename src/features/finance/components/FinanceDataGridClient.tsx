@@ -183,8 +183,8 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             addToast('Bulk payments recorded successfully', 'success');
             setSelectedInvoices(new Set());
             router.refresh();
-        } catch (error: any) {
-            addToast(error?.message || 'Failed to record bulk payment', 'error');
+        } catch (error) {
+            addToast(error instanceof Error ? error.message : 'Failed to record bulk payment', 'error');
         }
     };
 

@@ -10,7 +10,7 @@ export default async function WondeSettingsPage() {
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 
-    const userRole = (session.user as any).role as string;
+    const userRole = session.user.role;
     if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         return redirect('/dashboard/settings');
     }

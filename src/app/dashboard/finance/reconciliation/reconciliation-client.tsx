@@ -126,7 +126,7 @@ export function ReconciliationClient({
                 <label className="text-sm font-medium text-[--color-text]">Payment Method</label>
                 <select 
                   value={method} 
-                  onChange={e => setMethod(e.target.value as any)}
+                  onChange={e => setMethod(e.target.value as 'tax_free_childcare' | 'voucher' | 'bank_transfer')}
                   className="w-full p-2.5 rounded-lg border border-[--color-border] bg-[--color-background]"
                 >
                   <option value="tax_free_childcare">Tax-Free Childcare</option>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Save, Clock, Calendar, Plus, X, Loader2 } from 'lucide-react';
 
@@ -60,17 +60,21 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
         } catch { }
     }
 
-    const { control, handleSubmit, watch, setValue, formState: { isDirty } } = useForm<FormData>({
+    const { control, handleSubmit, setValue, formState: { isDirty } } = useForm<FormData>({
         defaultValues: {
             hours: initialHours,
             slots: initialSlots,
         }
     });
 
-    const hours = watch('hours');
-    const slots = watch('slots');
+    // useWatch (not methods.watch()) — react-hook-form's watch() escape hatch
+    // is flagged by the React Compiler as an incompatible-library pattern
+    // (react-hooks/incompatible-library); useWatch is the compiler-safe
+    // subscription API and preserves identical reactive behaviour here.
+    const hours = useWatch({ control, name: 'hours' });
+    const slots = useWatch({ control, name: 'slots' });
 
-    const updateDay = (day: Day, field: 'open' | 'start' | 'end', value: any) => {
+    const updateDay = (day: Day, field: 'open' | 'start' | 'end', value: boolean | string) => {
         setValue(`hours.${day}.${field}`, value, { shouldDirty: true });
     };
 
@@ -100,8 +104,8 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
             });
             if (!res.ok) throw new Error('Failed to save changes');
             toast({ title: 'Success', message: 'Hours and session slots saved.', variant: 'success' });
-        } catch (error: any) {
-            toast({ title: 'Error', message: error.message || 'Failed to save', variant: 'error' });
+        } catch (error) {
+            toast({ title: 'Error', message: error instanceof Error ? error.message : 'Failed to save', variant: 'error' });
         } finally {
             setSaving(false);
         }
