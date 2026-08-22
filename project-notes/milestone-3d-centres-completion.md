@@ -2,7 +2,7 @@
 
 **Status: COMPLETE.** Stage-A audit done, security defects fixed with regression tests, List/Add Centre/Settings/Billing modernised, verified in both themes at 1440/834/375, full quality gate clean, production-style verification with seeded data performed, git bundle produced. Per the ticket's explicit stop condition, this milestone stops here — Bookings, Attendance, and every other module are untouched, and no further module work has begun.
 
-Base SHA: `6524d05` (Staff completion, Milestone 3C). Final SHA: `1990c8f`. Four commits.
+Base SHA: `6524d05` (Staff completion, Milestone 3C). Final SHA: `cbec556`. Five commits.
 
 ---
 
@@ -106,14 +106,15 @@ No area is rated below CLOSE.
 
 ## 6. Git handoff
 
-Base SHA: `6524d05`. Final SHA: `1990c8f`. Four commits:
+Base SHA: `6524d05`. Final SHA: `cbec556` (this report's own commit, the last in the milestone). Five commits:
 
 1. `f72dbfc` — docs+fix: Stage-A audit; fix two evidenced authorization gaps
 2. `2d67aa9` — feat: modernise Centres List and Add Centre
 3. `5375070` — feat: modernise Centre Settings and Billing
 4. `1990c8f` — fix: session-builder time-input clipping found in Playwright verification
+5. `cbec556` — docs: this completion report
 
-Push to `origin` is expected to remain blocked by the sandbox's git-proxy restriction (403, "not in this session's authorized repository set"), consistent with every prior milestone this session. One incremental bundle was produced instead: `milestone-3d-centres.bundle`, covering `6524d05..1990c8f`, verified with `git bundle verify` and sanity-tested against a scratch clone.
+Push to `origin` is expected to remain blocked by the sandbox's git-proxy restriction (403, "not in this session's authorized repository set"), consistent with every prior milestone this session. One incremental bundle was produced instead: `milestone-3d-centres.bundle`, covering `6524d05..cbec556`, verified with `git bundle verify` and sanity-tested against a scratch clone.
 
 ---
 
