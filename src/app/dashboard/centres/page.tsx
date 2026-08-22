@@ -5,11 +5,14 @@ import { db } from '@/db';
 import { organisations, centres, bookings } from '@/db/schema';
 import { eq, and, gte, lt, sql, inArray } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, MapPin, ChevronRight, BarChart3, Building2, AlertTriangle } from 'lucide-react';
+import { Plus, MapPin, ChevronRight, Building2, AlertTriangle } from 'lucide-react';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { LoadForecast } from '@/components/dashboard/LoadForecast';
-import { getAvatarGradient } from '@/components/ui/utils';
 import { logger } from '@/lib/logger';
+import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 
 export default async function CentresPage() {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
@@ -84,117 +87,139 @@ export default async function CentresPage() {
     if (!org && !hasError) return redirect('/onboarding');
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Page Header */}
-            <div className="flex items-end justify-between">
-                <div>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">Centres</h1>
-                    <p className="text-on-surface-variant font-medium mt-1">
-                        Manage your club centres and locations
-                    </p>
+        <div className="space-y-6">
+            <HeaderPortal targetId="header-left">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-page-title text-text">Centres</h1>
+                    <span className="px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-muted text-xs font-medium">
+                        {centresWithStats.length}
+                    </span>
                 </div>
-                <Link
-                    href="/dashboard/centres/add"
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/30 glow-btn duration-100"
-                >
-                    <Plus className="w-4 h-4" /> Add Centre
-                </Link>
-            </div>
+            </HeaderPortal>
+
+            <HeaderPortal targetId="header-right-actions">
+                <Button asChild>
+                    <Link href="/dashboard/centres/add">
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Centre
+                    </Link>
+                </Button>
+            </HeaderPortal>
 
             {hasError && (
-                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                <div className="rounded-md bg-danger-soft border border-danger/20 text-small-body text-danger font-medium px-4 py-3 flex items-center gap-3">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     <p>There was a problem loading all centre data. Some information may be missing or incomplete.</p>
                 </div>
             )}
 
-            {/* Centres Table */}
             {centresList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-dashed border-border rounded-3xl">
-                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <MapPin className="w-8 h-8 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">No centres yet</h3>
-                    <p className="text-on-surface-variant mb-6 max-w-xs">
-                        Get started by adding your first centre
-                    </p>
-                    <Link
-                        href="/dashboard/centres/add"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 shadow-lg glow-btn shadow-primary/30 duration-100"
-                    >
-                        <Plus className="w-4 h-4" /> Add Your First Centre
-                    </Link>
-                </div>
+                <EmptyState
+                    icon={<MapPin className="w-8 h-8" />}
+                    title="No centres yet"
+                    description="Get started by adding your first centre."
+                    action={
+                        <Button asChild>
+                            <Link href="/dashboard/centres/add">
+                                <Plus className="w-4 h-4" /> Add your first centre
+                            </Link>
+                        </Button>
+                    }
+                />
             ) : (
-                <div className="glassmorphic-card rounded-[32px] overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-border bg-secondary/10">
-                                    <th className="py-4 px-6 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Centre Identity</th>
-                                    <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Compliance</th>
-                                    <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
-                                    <th className="py-4 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">7-Day Forecast</th>
-                                    <th className="py-4 px-4 w-10" />
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {centresWithStats.map((centre) => {
-                                    const gradient = getAvatarGradient(centre.name);
-                                    
-                                    return (
-                                        <tr key={centre.id} className="group hover:bg-secondary/40 transition-colors cursor-pointer">
-                                            <td className="py-4 px-6">
-                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-center gap-3 active:scale-[0.985] transition-all duration-100">
-                                                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-sm`}>
-                                                        <Building2 className="w-5 h-5" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                                                            {centre.name}
-                                                        </p>
-                                                        {centre.address && (
-                                                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[250px]">
-                                                                {centre.address}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </Link>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="block">
-                                                    {centre.ofstedId ? (
-                                                        <span className="font-mono text-slate-500 text-xs px-2 py-1 bg-secondary rounded-md border border-border">
-                                                            {centre.ofstedId}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground/50">—</span>
-                                                    )}
-                                                </Link>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                                                    <span className="text-sm font-medium text-foreground">Active</span>
-                                                </Link>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="block w-[120px]">
-                                                    <LoadForecast data={centre.forecast} max={10} />
-                                                </Link>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <Link href={`/dashboard/centres/${centre.id}/settings`} className="p-2 text-muted-foreground hover:text-primary transition-colors active:scale-90 duration-100 flex justify-end opacity-0 group-hover:opacity-100">
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                <>
+                    {/* Desktop / tablet — table. Collapses to stacked cards below `md`,
+                        matching the People-module mobile table pattern. */}
+                    <div className="hidden md:block rounded-lg border border-border bg-surface overflow-hidden">
+                        <Table caption="Centres list">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Centre</TableHead>
+                                    <TableHead>Address</TableHead>
+                                    <TableHead>Ofsted ID</TableHead>
+                                    <TableHead>7-day forecast</TableHead>
+                                    <TableHead align="right"><span className="sr-only">View</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {centresWithStats.map((centre) => (
+                                    <TableRow key={centre.id} clickable>
+                                        <TableCell>
+                                            <Link href={`/dashboard/centres/${centre.id}/settings`} className="flex items-center gap-3 focus:outline-none">
+                                                <div className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center flex-shrink-0">
+                                                    <Building2 className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-table-value font-medium text-text">{centre.name}</span>
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell className="text-text-secondary">
+                                            <Link href={`/dashboard/centres/${centre.id}/settings`} className="block truncate max-w-[280px] focus:outline-none">
+                                                {centre.address || <span className="text-text-muted">—</span>}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Link href={`/dashboard/centres/${centre.id}/settings`} className="block focus:outline-none">
+                                                {centre.ofstedId ? (
+                                                    <span className="font-mono text-xs px-2 py-1 rounded-sm border border-border-subtle bg-page text-text-secondary">
+                                                        {centre.ofstedId}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-text-muted">—</span>
+                                                )}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Link href={`/dashboard/centres/${centre.id}/settings`} className="block w-[120px] focus:outline-none">
+                                                <LoadForecast data={centre.forecast} max={10} />
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <Link
+                                                href={`/dashboard/centres/${centre.id}/settings`}
+                                                className="inline-flex p-1.5 text-text-muted hover:text-text transition-colors focus:outline-none"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Link>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
-                </div>
+
+                    {/* Mobile — stacked record cards, not a horizontally-scrolled table. */}
+                    <div className="md:hidden flex flex-col gap-3">
+                        {centresWithStats.map((centre) => (
+                            <Link
+                                key={centre.id}
+                                href={`/dashboard/centres/${centre.id}/settings`}
+                                className="block rounded-lg border border-border bg-surface p-4 active:bg-page/60 transition-colors"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-accent-soft text-accent flex items-center justify-center flex-shrink-0">
+                                        <Building2 className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-table-value font-medium text-text truncate">{centre.name}</p>
+                                        {centre.address && (
+                                            <p className="text-small-body text-text-secondary truncate mt-0.5">{centre.address}</p>
+                                        )}
+                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                            {centre.ofstedId ? (
+                                                <span className="font-mono text-xs px-2 py-1 rounded-sm border border-border-subtle bg-page text-text-secondary">
+                                                    {centre.ofstedId}
+                                                </span>
+                                            ) : (
+                                                <span className="text-metadata">No Ofsted ID</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-text-muted flex-shrink-0 mt-1" />
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </>
             )}
         </div>
     );

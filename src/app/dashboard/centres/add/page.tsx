@@ -1,18 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import AddCentreForm from './AddCentreForm';
- 
+
 export default async function AddCentrePage() {
-    const session = await auth();
- 
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
- 
-    const userRole = (session.user as any).role;
-    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
-        return redirect('/dashboard');
-    }
- 
+    // Milestone 3D: normalised from a raw auth() + manual role check to the
+    // established requireAuth helper, matching /dashboard/centres and every
+    // other gated Centres page. Behaviour is unchanged — this page was
+    // already correctly ['ORG_OWNER','MANAGER']-only; see
+    // project-notes/milestone-3d-centres-audit.md §3.
+    await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
+
     return <AddCentreForm />;
 }

@@ -4,53 +4,67 @@ import { useActionState } from 'react';
 import { createCentre } from './actions';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
-import { MapPin } from 'lucide-react';
+import { ChevronLeft, MapPin, Loader2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-primary/30 text-lg font-bold text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.985] glow-btn transition-all duration-100"
-        >
-            {pending ? 'Creating…' : 'Create Centre'}
-        </button>
+        <Button type="submit" disabled={pending}>
+            {pending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</>
+            ) : (
+                <>Create centre</>
+            )}
+        </Button>
     );
 }
 
 const initialState = { message: '' };
 
-const inputCls = 'appearance-none rounded-2xl block w-full px-4 py-3 bg-secondary border border-border placeholder:text-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm';
-const labelCls = 'block text-sm font-bold text-foreground mb-2';
+const inputCls = 'w-full h-9 px-3 rounded-sm text-sm text-text placeholder:text-text-muted focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors border border-border bg-surface';
 
 export default function AddCentreForm() {
     const [state, formAction] = useActionState(createCentre, initialState);
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="max-w-2xl mx-auto w-full space-y-8 glassmorphic-card p-10 rounded-[32px]">
-                <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                            Add a New Centre
-                        </h2>
-                        <p className="mt-1 text-muted-foreground text-sm">
-                            or{' '}
-                            <Link href="/dashboard/centres" className="font-bold text-primary hover:text-primary/80 transition-colors">
-                                cancel and return to centres
-                            </Link>
-                        </p>
-                    </div>
-                </div>
+        <div className="max-w-2xl mx-auto space-y-5">
+            <Link
+                href="/dashboard/centres"
+                className="inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors"
+            >
+                <ChevronLeft className="w-4 h-4" />
+                Back to centres
+            </Link>
 
-                <form className="space-y-6" action={formAction}>
-                    <div className="space-y-5">
+            <div>
+                <h1 className="text-page-title text-text">Add a new centre</h1>
+                <p className="text-small-body text-text-secondary mt-1">
+                    Create a centre, then configure its sessions and billing details
+                </p>
+            </div>
+
+            <form action={formAction}>
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2.5">
+                            <MapPin className="w-4 h-4 text-text-muted" />
+                            <CardTitle>Centre details</CardTitle>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-5">
+                        {state?.message && (
+                            <div className="p-3 rounded-md bg-danger-soft border border-danger/20 text-small-body text-danger font-medium">
+                                {state.message}
+                            </div>
+                        )}
+
                         <div>
-                            <label htmlFor="name" className={labelCls}>Centre Name *</label>
+                            <label htmlFor="name" className="block text-label text-text-muted mb-1.5">
+                                Centre name *
+                            </label>
                             <input
                                 id="name"
                                 name="name"
@@ -59,30 +73,31 @@ export default function AddCentreForm() {
                                 className={inputCls}
                                 placeholder="e.g. Dagenham Branch"
                             />
+                            <p className="text-metadata mt-1.5">At least 3 characters</p>
                         </div>
+
                         <div>
-                            <label htmlFor="address" className={labelCls}>Address <span className="text-muted-foreground font-normal">(optional)</span></label>
+                            <label htmlFor="address" className="block text-label text-text-muted mb-1.5">
+                                Address <span className="text-text-muted font-normal">(optional)</span>
+                            </label>
                             <textarea
                                 id="address"
                                 name="address"
-                                className={inputCls}
-                                placeholder="Full address of the centre"
                                 rows={3}
+                                className={`${inputCls} h-auto py-2`}
+                                placeholder="Full address of the centre"
                             />
                         </div>
-                    </div>
+                    </CardContent>
 
-                    {state?.message && (
-                        <div className="text-rose-500 bg-rose-500/5 border border-rose-500/20 p-3 rounded-xl text-sm text-center font-bold">
-                            {state.message}
-                        </div>
-                    )}
-
-                    <div className="pt-2">
+                    <CardFooter className="justify-between">
+                        <Button variant="ghost" asChild>
+                            <Link href="/dashboard/centres">Cancel</Link>
+                        </Button>
                         <SubmitButton />
-                    </div>
-                </form>
-            </div>
+                    </CardFooter>
+                </Card>
+            </form>
         </div>
     );
 }
