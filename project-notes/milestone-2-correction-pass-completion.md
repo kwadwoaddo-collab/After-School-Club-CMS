@@ -93,10 +93,11 @@ Captured against a local Postgres instance seeded with real data, a real NextAut
 - **Previous interim HEAD referenced in an earlier report:** `a5ae4b0` ("hide the mobile bottom nav while the nav drawer is open").
 - **Previously-delivered bundle's actual HEAD:** `776187a` ("Milestone 2: completion report").
 - **SHA discrepancy explained:** these are not divergent branches or lost work — `776187a` is one commit *after* `a5ae4b0` on the same linear history: `a5ae4b0` was the last code commit, and `776187a` added only the completion-report document on top of it. A report referencing `a5ae4b0` was simply pointing at the last code-bearing commit rather than the report-bearing commit at the true HEAD. Both SHAs are present, in order, in the bundle below.
-- **Final HEAD after this correction pass:** `371359a`.
+- **Final HEAD after this correction pass:** `44bf771`.
 - **Complete commit list, `951cd76..HEAD`:**
 
   ```
+  44bf771 Milestone 2 Correction Pass: completion report
   371359a Milestone 2 Correction Pass: align Dashboard loading skeletons to the new geometry
   f5f470f Milestone 2 Correction Pass — Font Decision: adopt Geist, drop next/font/google
   d96ff0d Milestone 2 Correction Pass: declutter Dashboard hero/filter/onboarding/KPIs
@@ -116,6 +117,7 @@ Captured against a local Postgres instance seeded with real data, a real NextAut
   3. `d96ff0d` — DashboardHero/DashboardFilter/OnboardingChecklist/WelcomeModal decluttering and KPI accent-token correction.
   4. `f5f470f` — Font decision: Geist adoption at the root layout.
   5. `371359a` — Dashboard loading-skeleton geometry brought in line with the reworked components.
+  6. `44bf771` — this completion report.
 
 - **Final bundle:** one bundle, `milestone-2-cms-rebuild-CORRECTED.bundle`, built from `951cd76..HEAD` (contains all eleven commits above, including the six from the original Milestone 2 delivery). **This supersedes and replaces** the previously-delivered `milestone-2-cms-rebuild.bundle` — do not apply both. To apply:
 
