@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 import { requireAuth } from '@/lib/require-auth';
 import StudentForm from '@/features/students/components/StudentForm';
+import { Card } from '@/components/ui/Card';
 import { db } from '@/db';
-import { centres, centreMemberships } from '@/db/schema';
+import { centres } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
@@ -38,18 +41,23 @@ export default async function AddStudentPage() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="max-w-2xl mx-auto">
-                <header className="flex justify-between items-start mb-8">
-                    <div>
-                        <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight headline-lg">Add New Student</h1>
-                        <p className="text-on-surface-variant body-md mt-2">Register a new student to your centre</p>
-                    </div>
-                </header>
-                <div className="bg-card rounded-2xl shadow-xl border border-outline-variant/10 p-6">
+        <div className="max-w-2xl mx-auto space-y-5">
+            <div>
+                <Link
+                    href="/dashboard/students"
+                    className="inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors mb-3"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                    Back to students
+                </Link>
+                <h1 className="text-page-title text-text">Add student</h1>
+                <p className="text-small-body text-text-secondary mt-1">Register a new student to your centre</p>
+            </div>
+            <Card>
+                <div className="p-5 sm:p-6">
                     <StudentForm accessibleCentres={accessibleCentres} />
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

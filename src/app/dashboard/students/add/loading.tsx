@@ -1,15 +1,24 @@
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Card } from '@/components/ui/Card';
+
 export default function AddStudentLoading() {
     return (
-        <div className="space-y-6 animate-pulse max-w-2xl mx-auto">
-            <div className="h-8 w-48 bg-secondary rounded-xl" />
-            <div className="glassmorphic-card p-8 rounded-3xl space-y-4">
-                {[1,2,3,4,5].map(i => (
-                    <div key={i} className="space-y-2">
-                        <div className="h-4 w-32 bg-muted/60 rounded-lg" />
-                        <div className="h-11 w-full bg-secondary rounded-2xl" />
-                    </div>
-                ))}
+        <div className="max-w-2xl mx-auto space-y-5">
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-7 w-40" />
+                <Skeleton className="h-4 w-56" />
             </div>
+            <Card>
+                <div className="p-6 space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="space-y-1.5">
+                            <Skeleton className="h-3 w-24" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    ))}
+                </div>
+            </Card>
         </div>
     );
 }
