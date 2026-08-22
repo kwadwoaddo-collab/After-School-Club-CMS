@@ -15,6 +15,18 @@ export async function PATCH(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Milestone 3D: this route previously had no role check beyond org
+    // membership, so any authenticated user of any role — including
+    // TUTOR — could change or clear a centre's public subdomain. Fixed to
+    // match the Centres List/Settings page gate, since the subdomain is
+    // an operational/identity setting reachable from that surface, not a
+    // billing field — see project-notes/milestone-3d-centres-audit.md §5.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id: centreId } = await params;
     const body = await request.json();
     const { subdomain } = body;
