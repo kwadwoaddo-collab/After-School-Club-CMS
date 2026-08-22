@@ -7,6 +7,7 @@ import { Building2, Calendar, CreditCard, Plus, Trash2, Save, ArrowLeft } from '
 import Link from 'next/link';
 import { updateCentreAction } from './actions';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface SessionSlot {
     name: string;
@@ -42,7 +43,7 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
         try {
             parsedSessions = typeof centre.sessionSlots === 'string' ? JSON.parse(centre.sessionSlots) : centre.sessionSlots;
         } catch (e) {
-            console.error('Failed to parse session slots', e);
+            logger.error('Failed to parse session slots', e);
         }
     }
 
@@ -74,7 +75,7 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
             await updateCentreAction(centre.id, data);
             router.refresh();
         } catch (error) {
-            console.error('Failed to update centre', error);
+            logger.error('Failed to update centre', error);
         } finally {
             setIsSaving(false);
         }

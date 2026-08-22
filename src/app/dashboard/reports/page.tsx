@@ -6,6 +6,7 @@ import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { AlertTriangle } from 'lucide-react';
 import ReportsClient from './ReportsClient';
+import { logger } from '@/lib/logger';
 
 export default async function ReportsPage() {
     const session = await auth();
@@ -28,8 +29,8 @@ export default async function ReportsPage() {
             .where(eq(organisations.id, session.user.organisationId))
             .limit(1);
         org = foundOrg;
-    } catch (e: any) {
-        console.error("Error fetching org for reports page:", e);
+    } catch (e) {
+        logger.error("Error fetching org for reports page", e);
         hasError = true;
     }
 

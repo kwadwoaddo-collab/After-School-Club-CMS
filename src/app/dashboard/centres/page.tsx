@@ -9,6 +9,7 @@ import { Plus, MapPin, ChevronRight, BarChart3, Building2, AlertTriangle } from 
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { LoadForecast } from '@/components/dashboard/LoadForecast';
 import { getAvatarGradient } from '@/components/ui/utils';
+import { logger } from '@/lib/logger';
 
 export default async function CentresPage() {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
@@ -75,8 +76,8 @@ export default async function CentresPage() {
                 };
             });
         }
-    } catch (e: any) {
-        console.error("Error fetching centres data:", e);
+    } catch (e) {
+        logger.error("Error fetching centres data", e);
         hasError = true;
     }
 

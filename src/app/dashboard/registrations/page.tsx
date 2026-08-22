@@ -165,7 +165,7 @@ export default async function RegistrationsPage(props: {
             });
         }
     } catch (e: any) {
-        console.error("Error fetching registrations:", e);
+        logger.error("Error fetching registrations", e);
         hasError = true;
     }
 

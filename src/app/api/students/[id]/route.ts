@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // ── Shared helper: verify student belongs to session org ──────────────────────
 async function verifyStudentAccess(
@@ -124,7 +125,7 @@ export async function PATCH(
 
         return NextResponse.json({ success: true, student: updated });
     } catch (error) {
-        console.error('[Students API] Error:', error);
+        logger.error('[Students API] Error', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
@@ -153,7 +154,7 @@ export async function DELETE(
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('[Students API] Error:', error);
+        logger.error('[Students API] Error', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

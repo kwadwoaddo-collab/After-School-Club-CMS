@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { organisations, children, parents, bookings, bookingAttendees, studentNotes, centres } from '@/db/schema';
 import { eq, desc, asc, sql, inArray, and, or, ilike, isNull } from 'drizzle-orm';
+import type { InferSelectModel } from 'drizzle-orm';
 import Link from 'next/link';
 import { Plus, Users, GraduationCap, Sparkles, AlertTriangle, TrendingDown, Upload } from 'lucide-react';
 import { getUserAccessibleCentreIds, getUserAccessibleCentres } from '@/lib/permissions';
@@ -12,6 +13,15 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import StudentsFilters from '@/features/students/components/StudentsFilters';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import Pagination from '@/components/ui/Pagination';
+import { logger } from '@/lib/logger';
+
+type StudentsStats = {
+    totalCount: number;
+    registeredCount: number;
+    leadCount: number;
+    medicalAlertCount: number;
+    lowAttendanceCount: number;
+};
 
 export default async function StudentsPage(props: {
     searchParams: Promise<{
@@ -28,10 +38,10 @@ export default async function StudentsPage(props: {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     let hasError = false;
-    let org: any = null;
+    let org: InferSelectModel<typeof organisations> | null = null;
     let accessibleCentreIds: string[] = [];
-    let accessibleCentres: any[] = [];
-    let stats: any = null;
+    let accessibleCentres: Awaited<ReturnType<typeof getUserAccessibleCentres>> = [];
+    let stats: StudentsStats | null = null;
     let filteredCount = 0;
     let totalPages = 0;
     let page = 1;
@@ -46,7 +56,7 @@ export default async function StudentsPage(props: {
             .limit(1);
 
         org = fetchedOrg;
-        if (!org) throw new Error("NO_ORG");('/onboarding');
+        if (!org) throw new Error("NO_ORG");
 
         accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
 
@@ -269,9 +279,9 @@ export default async function StudentsPage(props: {
             };
         });
 
-    } catch (e: any) {
-        if (e.message === "NO_ORG") return redirect("/onboarding");
-        console.error("Error fetching students:", e);
+    } catch (e) {
+        if (e instanceof Error && e.message === "NO_ORG") return redirect("/onboarding");
+        logger.error("Error fetching students", e);
         hasError = true;
     }
 

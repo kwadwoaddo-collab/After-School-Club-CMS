@@ -2,8 +2,9 @@ import { db } from '@/db';
 import { waitlistEntries, bookings, children, parents } from '@/db/schema';
 import { eq, and, lt, asc } from 'drizzle-orm';
 import { checkSessionCapacity } from './capacity';
+import { logger } from '@/lib/logger';
 // Assuming we have an email/notification service
-// import { sendNotification } from './notifications'; 
+// import { sendNotification } from './notifications';
 
 /**
  * Adds a child to the waitlist for a specific session-date
@@ -90,7 +91,7 @@ export async function cascadeWaitlist(
       //   title: 'Waitlist Offer',
       //   message: `A spot has opened up for ${child.firstName}! You have 24 hours to claim it.`
       // });
-      console.log(`[Waitlist Cascade] Offer sent to ${child.parent.email} for ${child.firstName}`);
+      logger.info(`[Waitlist Cascade] Offer sent to ${child.parent.email} for ${child.firstName}`);
     }
   }
 }

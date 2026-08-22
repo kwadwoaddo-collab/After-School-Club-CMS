@@ -11,6 +11,7 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import ParentsTable, { ParentRow } from '@/features/parents/components/ParentsTable';
 import ParentsFilters from '@/features/parents/components/ParentsFilters';
 import Pagination from '@/components/ui/Pagination';
+import { logger } from '@/lib/logger';
 
 interface Props {
     searchParams: Promise<{ search?: string; centre?: string; status?: string; page?: string }>;
@@ -197,7 +198,7 @@ export default async function ParentsPage({ searchParams }: Props) {
             outstanding: Number(row.outstanding)
         }));
     } catch (e: any) {
-        console.error("Error fetching parents:", e);
+        logger.error("Error fetching parents", e);
         hasError = true;
     }
 

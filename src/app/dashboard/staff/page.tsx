@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { UserPlus } from 'lucide-react';
 import StaffDashboardClient from './StaffDashboardClient';
 import type { Metadata } from 'next';
+import { logger } from '@/lib/logger';
 
 export const metadata: Metadata = {
     title: 'Staff Management',
@@ -90,7 +91,7 @@ export default async function StaffPage() {
             centres: membershipMap[s.id] ?? [],
         }));
     } catch (e: any) {
-        console.error("Error fetching staff data:", e);
+        logger.error("Error fetching staff data", e);
         hasError = true;
     }
 

@@ -1,7 +1,8 @@
 'use client';
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 export default function ImportError({ error, reset }: { error: Error; reset: () => void }) {
-    useEffect(() => { console.error(error); }, [error]);
+    useEffect(() => { logger.error('Import failed', error); }, [error]);
     return (
         <div className="glassmorphic-card p-8 rounded-3xl text-center max-w-lg mx-auto mt-12">
             <p className="text-destructive font-bold text-lg mb-2">Import failed</p>

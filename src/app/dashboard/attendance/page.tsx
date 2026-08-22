@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download, AlertTriangle } from 'lucide-react';
 import AttendanceRollCall from './AttendanceRollCall';
 import { compileDailyRegisterSlots } from '@/lib/attendance';
+import { logger } from '@/lib/logger';
 
 export default async function AttendancePage(props: {
     searchParams: Promise<{ date?: string; centre?: string }>;
@@ -66,8 +67,8 @@ export default async function AttendancePage(props: {
             where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
             with: { parent: true, centre: true, attendees: { with: { child: true } } },
         });
-    } catch (e: any) {
-        console.error("Error fetching attendance:", e);
+    } catch (e) {
+        logger.error("Error fetching attendance", e);
         hasError = true;
     }
 
