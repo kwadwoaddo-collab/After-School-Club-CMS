@@ -5,6 +5,7 @@ import { parents, children, broadcasts, bookings, clubSessions } from '@/db/sche
 import { eq, inArray, and, sql } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { sendEmail } from '@/lib/services/email';
+import { logger } from '@/lib/logger';
 
 export async function sendBroadcast(data: {
   organisationId: string;
@@ -65,7 +66,7 @@ export async function sendBroadcast(data: {
       .where(eq(broadcasts.id, broadcast.id));
   };
 
-  sendEmailsTask().catch(console.error);
+  sendEmailsTask().catch((e) => logger.error('Broadcast email task failed', e));
 
   return { success: true, count: targetParents.length, sent: 0, failed: 0 };
 }

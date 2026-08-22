@@ -7,6 +7,7 @@ import { AlertTriangle } from 'lucide-react';
 import CommunicationsClient from './CommunicationsClient';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 export default async function CommunicationsPage() {
     const session = await auth();
@@ -28,8 +29,8 @@ export default async function CommunicationsPage() {
         
         centreIds = await getUserAccessibleCentreIds(session.user.id);
         activeCentreId = await resolveActiveCentreId(undefined, centreIds);
-    } catch (e: any) {
-        console.error("Error fetching communications data:", e);
+    } catch (e) {
+        logger.error("Error fetching communications data", e);
         hasError = true;
     }
 

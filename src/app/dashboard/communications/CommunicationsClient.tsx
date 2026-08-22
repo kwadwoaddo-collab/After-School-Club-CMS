@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare } from 'lucide-react';
 import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre } from '@/features/communications/actions';
+import { logger } from '@/lib/logger';
 
-type Broadcast = any;
-type Parent = any;
-type ClubSession = any;
+type Broadcast = Awaited<ReturnType<typeof getBroadcasts>>[number];
+type Parent = Awaited<ReturnType<typeof getParentsForCentre>>[number];
+type ClubSession = Awaited<ReturnType<typeof getClassesForCentre>>[number];
 
 export default function CommunicationsClient({ organisationId, centreId }: { organisationId: string; centreId: string }) {
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
@@ -22,11 +23,7 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
     const [isSending, setIsSending] = useState(false);
     const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number } | null>(null);
 
-    useEffect(() => {
-        loadData();
-    }, [centreId, selectedClassId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setIsLoading(true);
         try {
             const [bData, pData, cData] = await Promise.all([
@@ -38,11 +35,15 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
             setParents(pData);
             setClasses(cData);
         } catch (error) {
-            console.error('Failed to load data:', error);
+            logger.error('Failed to load data', error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [centreId, selectedClassId]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,7 +69,7 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
                 loadData();
             }
         } catch (error) {
-            console.error('Failed to send broadcast:', error);
+            logger.error('Failed to send broadcast', error);
         } finally {
             setIsSending(false);
         }
