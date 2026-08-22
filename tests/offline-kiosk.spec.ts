@@ -35,7 +35,10 @@ test.describe('Offline Kiosk Queue', () => {
     // Since we don't know the exact button selectors, we evaluate a script to queue an action directly
     // to prove the mechanism works.
     await page.evaluate(async () => {
-      // @ts-ignore
+      // @ts-expect-error — dynamic import by absolute browser path with a .ts
+      // extension; not a resolvable TS module specifier, but intentional here
+      // since this callback runs in-browser via page.evaluate(), not through
+      // the app's normal module graph.
       const offlineSync = await import('/src/lib/offline-sync.ts').catch(() => null);
       if (offlineSync) {
         await offlineSync.queueOfflineAction({
