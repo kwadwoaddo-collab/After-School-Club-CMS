@@ -4,12 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { Loader2, X, AlertTriangle } from 'lucide-react';
 import { createIncident, getCentreChildren } from '@/features/incidents/actions';
 import SignatureCanvas from 'react-signature-canvas';
+import { logger } from '@/lib/logger';
 
 type NewIncidentModalProps = {
     centreId: string;
     onClose: () => void;
     onSuccess: () => void;
 };
+
+const INCIDENT_TYPES = ['accident', 'incident', 'medication', 'safeguarding'] as const;
 
 export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIncidentModalProps) {
     const [children, setChildren] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
@@ -30,7 +33,7 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
             setChildren(data);
             setIsLoading(false);
         }).catch(err => {
-            console.error(err);
+            logger.error('Failed to load centre children', err);
             setIsLoading(false);
         });
     }, [centreId]);
@@ -56,8 +59,8 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
                 staffSignature: signature
             });
             onSuccess();
-        } catch (err: any) {
-            setError(err.message || 'Failed to submit incident');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to submit incident');
         } finally {
             setIsSubmitting(false);
         }
@@ -103,11 +106,11 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
                         <div>
                             <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Record Type</label>
                             <div className="grid grid-cols-2 gap-3">
-                                {['accident', 'incident', 'medication', 'safeguarding'].map(t => (
+                                {INCIDENT_TYPES.map(t => (
                                     <button
                                         key={t}
                                         type="button"
-                                        onClick={() => setType(t as any)}
+                                        onClick={() => setType(t)}
                                         className={`px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wide border transition-all ${
                                             type === t 
                                             ? (t === 'safeguarding' ? 'bg-destructive text-white border-destructive' : 'bg-primary text-white border-primary')

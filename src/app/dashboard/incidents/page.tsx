@@ -7,6 +7,7 @@ import { AlertTriangle } from 'lucide-react';
 import IncidentsClient from './IncidentsClient';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 export default async function IncidentsPage() {
     // Incidents are safeguarding-sensitive records. Previously unrestricted to
@@ -32,8 +33,8 @@ export default async function IncidentsPage() {
         
         centreIds = await getUserAccessibleCentreIds(session.user.id);
         activeCentreId = await resolveActiveCentreId(undefined, centreIds);
-    } catch (e: any) {
-        console.error("Error fetching incidents data:", e);
+    } catch (e) {
+        logger.error("Error fetching incidents data", e);
         hasError = true;
     }
 

@@ -1,31 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getIncidents } from '@/features/incidents/actions';
 import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle } from 'lucide-react';
 import NewIncidentModal from './NewIncidentModal';
+import { logger } from '@/lib/logger';
+
+type Incident = Awaited<ReturnType<typeof getIncidents>>[number];
 
 export default function IncidentsClient({ centreId }: { centreId: string }) {
-    const [incidents, setIncidents] = useState<any[]>([]);
+    const [incidents, setIncidents] = useState<Incident[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        loadIncidents();
-    }, [centreId]);
-
-    const loadIncidents = async () => {
+    const loadIncidents = useCallback(async () => {
         setIsLoading(true);
         try {
             const data = await getIncidents(centreId);
             setIncidents(data);
         } catch (error) {
-            console.error('Failed to load incidents:', error);
+            logger.error('Failed to load incidents', error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [centreId]);
+
+    useEffect(() => {
+        loadIncidents();
+    }, [loadIncidents]);
 
     const getTypeIcon = (type: string) => {
         switch (type) {

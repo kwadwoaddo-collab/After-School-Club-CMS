@@ -13,7 +13,7 @@ export async function getIncidents(centreId: string) {
     if (!session.user.organisationId) throw new Error('No organisation context');
 
     // Fetch all incidents for the centre
-    let query = db.select({
+    const query = db.select({
         id: incidents.id,
         type: incidents.type,
         date: incidents.date,
@@ -62,7 +62,10 @@ export async function createIncident(data: {
     description: string;
     treatment?: string;
     witnesses?: string;
-    bodyMapCoordinates?: any;
+    // Points marking injury locations on a body diagram (see incidents.bodyMapCoordinates
+    // schema comment). No current UI populates this field; the shape is not constrained by
+    // any existing contract, so this is the minimal real type implied by the column's intent.
+    bodyMapCoordinates?: { x: number; y: number }[];
     staffSignature?: string;
 }) {
     const session = await auth();
