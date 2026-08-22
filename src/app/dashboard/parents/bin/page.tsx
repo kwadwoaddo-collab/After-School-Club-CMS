@@ -1,20 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { parents, children } from '@/db/schema';
-import { eq, isNotNull, sql } from 'drizzle-orm';
-import { Archive, Trash2, ArrowLeft, Clock } from 'lucide-react';
+import { sql } from 'drizzle-orm';
+import { Archive, ArrowLeft, Clock } from 'lucide-react';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
 import Link from 'next/link';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 import BinActions from '@/features/parents/components/BinActions';
 import { purgeStaleBinItems } from '../bin.actions';
 
 export default async function BinPage() {
-    const session = await auth();
-    if (!session?.user) return redirect('/login');
+    // Same role rule as the rest of the Parents module — see
+    // project-notes/milestone-3b-parents-audit.md §4.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const orgId = (session.user as any).organisationId;
-    if (!orgId) return redirect('/onboarding');
 
     // Fire-and-forget purge of items older than 30 days
     await purgeStaleBinItems();
@@ -27,16 +28,16 @@ export default async function BinPage() {
             WHERE organisation_id = ${orgId}
             GROUP BY parent_id
         )
-        SELECT 
-            pa.id, 
-            pa.first_name, 
-            pa.last_name, 
-            pa.email, 
+        SELECT
+            pa.id,
+            pa.first_name,
+            pa.last_name,
+            pa.email,
             pa.deleted_at,
             COALESCE(cc.child_count, 0) as child_count
         FROM parents pa
         LEFT JOIN ChildCounts cc ON pa.id = cc.parent_id
-        WHERE pa.organisation_id = ${orgId} 
+        WHERE pa.organisation_id = ${orgId}
           AND pa.deleted_at IS NOT NULL
         ORDER BY pa.deleted_at DESC
     `);
@@ -51,84 +52,79 @@ export default async function BinPage() {
     }>;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <HeaderPortal targetId="header-right-actions">
-                <div className="flex items-center gap-4">
-                    <Link href="/dashboard/parents" className="p-2 bg-secondary text-muted-foreground hover:bg-secondary/80 rounded-xl transition-all active:scale-90 duration-100">
-                        <ArrowLeft className="w-5 h-5" />
+        <div className="space-y-6">
+            <HeaderPortal targetId="header-left">
+                <div className="flex items-center gap-3">
+                    <Link
+                        href="/dashboard/parents"
+                        className="p-2 -ml-2 text-text-muted hover:text-text hover:bg-page rounded-sm transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
                     </Link>
                     <div>
-                        <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Recovery Bin</h1>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold">
-                            Items are permanently deleted after 30 days
-                        </p>
+                        <h1 className="text-page-title text-text">Recovery Bin</h1>
+                        <p className="text-metadata">Items are permanently deleted after 30 days</p>
                     </div>
                 </div>
             </HeaderPortal>
 
             {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 bg-card border border-border rounded-3xl shadow-sm text-center">
-                    <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-4">
-                        <Archive className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">Bin is empty</h3>
-                    <p className="text-muted-foreground">No recently deleted items found.</p>
-                </div>
+                <EmptyState
+                    icon={<Archive className="w-8 h-8" />}
+                    title="Bin is empty"
+                    description="No recently deleted families found."
+                />
             ) : (
-                <div className="bg-card border border-border rounded-3xl shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse whitespace-nowrap">
-                            <thead>
-                                <tr className="border-b border-border bg-muted/30">
-                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Family</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Children</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Deleted On</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Expires In</th>
-                                    <th className="px-6 py-4 text-right"></th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {rows.map((row) => {
-                                    const deletedDate = new Date(row.deleted_at);
-                                    const expiryDate = new Date(deletedDate);
-                                    expiryDate.setDate(expiryDate.getDate() + 30);
-                                    
-                                    const daysLeft = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                                    const isExpiringSoon = daysLeft <= 3;
+                <div className="rounded-lg border border-border bg-surface overflow-hidden">
+                    <Table caption="Deleted parents">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Family</TableHead>
+                                <TableHead>Children</TableHead>
+                                <TableHead>Deleted on</TableHead>
+                                <TableHead>Expires in</TableHead>
+                                <TableHead align="right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {rows.map((row) => {
+                                const deletedDate = new Date(row.deleted_at);
+                                const expiryDate = new Date(deletedDate);
+                                expiryDate.setDate(expiryDate.getDate() + 30);
 
-                                    return (
-                                        <tr key={row.id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <Link href={`/dashboard/parents/${row.id}`} className="text-primary hover:underline font-medium">
-                                                    {row.first_name} {row.last_name}
-                                                </Link>
-                                                <div className="text-xs text-muted-foreground">{row.email || 'No email'}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-secondary text-muted-foreground text-xs font-bold">
-                                                    {row.child_count} children
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-muted-foreground font-medium">
-                                                {deletedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold ${
-                                                    isExpiringSoon ? 'text-destructive bg-destructive/10' : 'text-warning bg-warning/10'
-                                                }`}>
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    {daysLeft} days
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <BinActions parentId={row.id} parentName={`${row.first_name} ${row.last_name}`} />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                const daysLeft = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                                const isExpiringSoon = daysLeft <= 3;
+
+                                return (
+                                    <TableRow key={row.id}>
+                                        <TableCell>
+                                            <Link href={`/dashboard/parents/${row.id}`} className="text-accent hover:underline font-medium">
+                                                {row.first_name} {row.last_name}
+                                            </Link>
+                                            <div className="text-metadata mt-0.5">{row.email || 'No email'}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-secondary text-xs font-medium">
+                                                {row.child_count} {row.child_count === 1 ? 'child' : 'children'}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-text-secondary">
+                                            {deletedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={isExpiringSoon ? 'error' : 'warning'}>
+                                                <Clock className="w-3 h-3" />
+                                                {daysLeft} days
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <BinActions parentId={row.id} parentName={`${row.first_name} ${row.last_name}`} />
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
                 </div>
             )}
         </div>

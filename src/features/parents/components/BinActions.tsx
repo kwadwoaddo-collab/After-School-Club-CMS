@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCcw, Trash2, Loader2 } from 'lucide-react';
 import { restoreParent, hardDeleteParent } from '@/app/dashboard/parents/bin.actions';
+import { Button } from '@/components/ui/Button';
 
 interface Props {
     parentId: string;
@@ -39,58 +40,62 @@ export default function BinActions({ parentId, parentName }: Props) {
     };
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-1">
             <button
                 onClick={() => setShowRestore(true)}
-                className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 active:scale-95 duration-100"
+                className="px-2.5 py-1.5 text-accent hover:bg-accent-soft text-xs font-medium rounded-sm inline-flex items-center gap-1.5 transition-colors"
             >
                 <RefreshCcw className="w-3.5 h-3.5" /> Restore
             </button>
             <button
                 onClick={() => setShowDelete(true)}
-                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all active:scale-90 duration-100"
-                title="Delete Forever"
+                className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
+                title="Delete forever"
             >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
             </button>
 
-            {/* Restore Modal */}
+            {/* Restore confirmation */}
             {showRestore && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-card border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                        <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                            <RefreshCcw className="w-7 h-7 text-primary" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full">
+                        <div className="w-11 h-11 bg-accent-soft rounded-md flex items-center justify-center mb-4">
+                            <RefreshCcw className="w-5 h-5 text-accent" />
                         </div>
-                        <h3 className="text-lg font-bold text-foreground text-center mb-2">Restore Family?</h3>
-                        <p className="text-sm text-muted-foreground text-center mb-6">
-                            This will restore <strong>{parentName}</strong> and their children. They will reappear in all lists and rosters.
+                        <h3 className="text-section-title text-text mb-2">Restore family?</h3>
+                        <p className="text-small-body text-text-secondary mb-6">
+                            This will restore <strong className="text-text font-medium">{parentName}</strong> and their children. They will reappear in all lists and rosters.
                         </p>
                         <div className="flex gap-3">
-                            <button onClick={() => setShowRestore(false)} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold transition-all active:scale-95 duration-100">Cancel</button>
-                            <button onClick={handleRestore} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-bold transition-all active:scale-95 duration-100 flex items-center justify-center gap-2">
-                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Yes, Restore'}
-                            </button>
+                            <Button variant="secondary" className="flex-1" onClick={() => setShowRestore(false)} disabled={isLoading}>
+                                Cancel
+                            </Button>
+                            <Button className="flex-1" onClick={handleRestore} disabled={isLoading}>
+                                {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Restoring…</> : 'Yes, restore'}
+                            </Button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Hard Delete Modal */}
+            {/* Permanent delete confirmation */}
             {showDelete && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-card border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                        <div className="w-14 h-14 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                            <Trash2 className="w-7 h-7 text-destructive" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full">
+                        <div className="w-11 h-11 bg-danger-soft rounded-md flex items-center justify-center mb-4">
+                            <Trash2 className="w-5 h-5 text-danger" />
                         </div>
-                        <h3 className="text-lg font-bold text-foreground text-center mb-2">Permanently Delete?</h3>
-                        <p className="text-sm text-muted-foreground text-center mb-6">
-                            This will permanently destroy the record for <strong>{parentName}</strong> and their children. <strong className="text-destructive">This action cannot be undone.</strong>
+                        <h3 className="text-section-title text-text mb-2">Permanently delete?</h3>
+                        <p className="text-small-body text-text-secondary mb-6">
+                            This will permanently destroy the record for <strong className="text-text font-medium">{parentName}</strong> and their children. <strong className="text-danger font-medium">This action cannot be undone.</strong>
                         </p>
                         <div className="flex gap-3">
-                            <button onClick={() => setShowDelete(false)} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold transition-all active:scale-95 duration-100">Cancel</button>
-                            <button onClick={handleHardDelete} disabled={isLoading} className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-2xl text-sm font-bold transition-all active:scale-95 duration-100 flex items-center justify-center gap-2">
-                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete Forever'}
-                            </button>
+                            <Button variant="secondary" className="flex-1" onClick={() => setShowDelete(false)} disabled={isLoading}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" className="flex-1" onClick={handleHardDelete} disabled={isLoading}>
+                                {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Delete forever'}
+                            </Button>
                         </div>
                     </div>
                 </div>
