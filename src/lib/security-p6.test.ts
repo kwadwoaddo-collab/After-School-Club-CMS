@@ -276,6 +276,65 @@ describe('Dashboard page authorisation — denial paths', () => {
       StudentsPage({ searchParams: Promise.resolve({}) } as any)
     ).rejects.toThrow('REDIRECT:/login');
   });
+
+  // Milestone 3 — Students detail/attendance/add/import previously had no
+  // role check at all (project-notes/milestone-3-people-audit.md §2), so a
+  // TUTOR excluded from the Students list could still reach an individual
+  // student's full profile, attendance history, or add/import a student
+  // directly. These four now use the same requireAuth({ roles }) gate as
+  // the list page above.
+  const VALID_STUDENT_ID = '11111111-1111-4111-8111-111111111111';
+
+  it('/dashboard/students/[id] denies TUTOR (detail page)', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
+    const { default: StudentDetailPage } = await import('@/app/dashboard/students/[id]/page');
+
+    await expect(
+      StudentDetailPage({ params: Promise.resolve({ id: VALID_STUDENT_ID }) } as any)
+    ).rejects.toThrow('REDIRECT:/dashboard');
+  });
+
+  it('/dashboard/students/[id]/attendance denies TUTOR', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
+    const { default: StudentAttendancePage } = await import('@/app/dashboard/students/[id]/attendance/page');
+
+    await expect(
+      StudentAttendancePage({ params: Promise.resolve({ id: VALID_STUDENT_ID }) } as any)
+    ).rejects.toThrow('REDIRECT:/dashboard');
+  });
+
+  it('/dashboard/students/add denies TUTOR', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
+    const { default: AddStudentPage } = await import('@/app/dashboard/students/add/page');
+
+    await expect(AddStudentPage()).rejects.toThrow('REDIRECT:/dashboard');
+  });
+
+  it('/dashboard/students/import denies TUTOR', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('TUTOR'));
+    const { default: StudentImportPage } = await import('@/app/dashboard/students/import/page');
+
+    await expect(StudentImportPage()).rejects.toThrow('REDIRECT:/dashboard');
+  });
+
+  it.each(['ORG_OWNER', 'MANAGER', 'FRONT_DESK'])(
+    '/dashboard/students/add allows %s (passes the auth gate)',
+    async (role) => {
+      const { auth } = await import('@/lib/auth');
+      (auth as any).mockResolvedValueOnce(sessionFor(role));
+      const { db } = await import('@/db');
+      (db.select as any).mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([]) }) });
+      const { default: AddStudentPage } = await import('@/app/dashboard/students/add/page');
+
+      // Getting past the auth gate means we reach the centre-loading query
+      // instead of redirecting — proves the fix isn't a blanket deny.
+      await expect(AddStudentPage()).resolves.toBeTruthy();
+    }
+  );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

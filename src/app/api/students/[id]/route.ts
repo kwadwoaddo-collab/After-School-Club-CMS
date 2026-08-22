@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { children, parents, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -73,16 +73,21 @@ export async function PATCH(
     props: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.organisationId) {
+        // Same role rule as the rest of the Students module — see
+        // project-notes/milestone-3-people-audit.md §2. verifyStudentAccess
+        // below only ever special-cased ORG_OWNER for centre-scoping; it
+        // never rejected a role outright, so any authenticated org member
+        // (including TUTOR) could edit a student they had centre access to.
+        const authResult = await requireApiAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
+        if (!authResult) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { id } = await props.params;
-        const role = (session.user as any).role as string;
-        const orgId = session.user.organisationId;
+        const role = authResult.user.role;
+        const orgId = authResult.organisationId;
 
-        const { student, error } = await verifyStudentAccess(id, orgId, role, session.user.id!);
+        const { student, error } = await verifyStudentAccess(id, orgId, role, authResult.user.id);
         if (error) return error;
 
         const body = patchSchema.safeParse(await req.json());
@@ -137,16 +142,18 @@ export async function DELETE(
     props: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.organisationId) {
+        // Same role rule as PATCH above — see
+        // project-notes/milestone-3-people-audit.md §2.
+        const authResult = await requireApiAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
+        if (!authResult) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { id } = await props.params;
-        const role = (session.user as any).role as string;
-        const orgId = session.user.organisationId;
+        const role = authResult.user.role;
+        const orgId = authResult.organisationId;
 
-        const { student, error } = await verifyStudentAccess(id, orgId, role, session.user.id!);
+        const { student, error } = await verifyStudentAccess(id, orgId, role, authResult.user.id);
         if (error) return error;
 
         // Delete the student (cascade handles notes, attendees, registration links)

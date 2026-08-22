@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import StudentForm from '@/features/students/components/StudentForm';
 import { db } from '@/db';
 import { centres, centreMemberships } from '@/db/schema';
@@ -8,11 +7,12 @@ import { eq, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export default async function AddStudentPage() {
-    const session = await auth();
-
-    if (!session?.user?.organisationId) {
-        redirect('/onboarding');
-    }
+    // Same role rule as the rest of the Students module — see
+    // project-notes/milestone-3-people-audit.md §2. Previously this page
+    // only checked for an organisationId, so any authenticated staff member
+    // (including TUTOR, who cannot even see the Students list) could add a
+    // student directly via this URL.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     // Load the centres the logged-in user can assign students to.
     // ORG_OWNER sees all org centres. Others see only their accessible centres.

@@ -1,15 +1,14 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import ImportStudentsClient from './ImportStudentsClient';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
 export default async function StudentImportPage() {
-  const session = await auth();
-  if (!session?.user) {
-    return redirect('/login');
-  }
+  // Same role rule as the rest of the Students module — see
+  // project-notes/milestone-3-people-audit.md §2. Previously this page had
+  // no organisation check and no role check at all.
+  const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
   const centres = await getUserAccessibleCentres(session.user.id);
 

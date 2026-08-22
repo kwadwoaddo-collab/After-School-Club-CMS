@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import { auth } from '@/lib/auth';
+import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { parents, children, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -21,11 +21,16 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-    const session = await auth();
-    const orgId = session?.user?.organisationId;
-    if (!orgId) {
+    // Same role rule as the rest of the Students module — see
+    // project-notes/milestone-3-people-audit.md §2. This endpoint is the
+    // page-level "Add student" form's actual mutation; gating the page
+    // without gating this would leave the create pathway reachable by a
+    // direct request.
+    const authResult = await requireApiAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
+    if (!authResult) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const orgId = authResult.organisationId;
 
     try {
         const body = await req.json();

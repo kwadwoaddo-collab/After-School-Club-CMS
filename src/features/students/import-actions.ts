@@ -1,7 +1,7 @@
 'use server';
 import { logger } from '@/lib/logger';
 
-import { auth } from '@/lib/auth';
+import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { parents, children, studentNotes } from '@/db/schema';
 import { eq, and, or, ilike } from 'drizzle-orm';
@@ -34,12 +34,18 @@ export async function importStudentsAction(
   rows: StudentImportRow[],
   defaultCentreId: string | null
 ): Promise<ImportResult> {
-  const session = await auth();
-  if (!session?.user?.organisationId) {
+  // Same role rule as the rest of the Students module — see
+  // project-notes/milestone-3-people-audit.md §2. This server action is the
+  // CSV import page's actual mutation; previously it only checked for an
+  // organisationId, with no role check at all.
+  const authResult = await requireApiAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
+  if (!authResult) {
     throw new Error('Unauthorized');
   }
 
-  const organisationId = session.user.organisationId;
+  const organisationId = authResult.organisationId;
+  const importedByUserId = authResult.user.id;
+  const importedByName = authResult.user.name || 'System Import';
 
   // ─── Deduplicate Rows in Memory ───
   const uniqueRows: StudentImportRow[] = [];
@@ -238,8 +244,8 @@ export async function importStudentsAction(
           if (row.studentNotes?.trim()) {
             await tx.insert(studentNotes).values({
               childId: existingChild.id,
-              userId: session.user.id,
-              authorName: session.user.name || 'System Import',
+              userId: importedByUserId,
+              authorName: importedByName,
               content: `Import Notes: ${row.studentNotes.trim()}`,
               category: 'General',
               noteType: 'general',
@@ -268,8 +274,8 @@ export async function importStudentsAction(
           if (row.studentNotes?.trim()) {
             await tx.insert(studentNotes).values({
               childId: newChild.id,
-              userId: session.user.id,
-              authorName: session.user.name || 'System Import',
+              userId: importedByUserId,
+              authorName: importedByName,
               content: row.studentNotes.trim(),
               category: 'General',
               noteType: 'general',

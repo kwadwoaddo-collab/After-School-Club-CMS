@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
@@ -24,10 +24,9 @@ export default async function StudentAttendanceHistoryPage(
         notFound();
     }
 
-    const session = await auth();
-
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
+    // Same role rule as the Students list and detail page — see
+    // project-notes/milestone-3-people-audit.md §2.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     const userRole = (session.user as any).role as string | undefined;
     const isOwner = userRole === 'ORG_OWNER';

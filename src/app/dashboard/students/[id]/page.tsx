@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents } from '@/db/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
@@ -23,10 +23,13 @@ export default async function StudentProfilePage(
         notFound();
     }
  
-    const session = await auth();
- 
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
+    // Same role rule as the Students list (/dashboard/students, requireAuth
+    // roles below) and security-p6.test.ts's "TUTOR cannot access student
+    // data" case — the list page enforced this, the detail page didn't, so a
+    // TUTOR who knew/guessed a student ID could still reach their full
+    // profile (medical notes, safeguarding notes, billing, emergency
+    // contacts). See project-notes/milestone-3-people-audit.md §2.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
 
     const userRole = (session.user as any).role as string | undefined;
     const isOwner = userRole === 'ORG_OWNER';
