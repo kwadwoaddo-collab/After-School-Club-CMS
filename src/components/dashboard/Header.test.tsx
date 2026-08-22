@@ -38,9 +38,15 @@ function renderHeader(props = {}) {
 }
 
 describe('Header Polish (R3) Enhancements', () => {
-    it('renders the header border styling with semi-transparent border-border/60', () => {
+    it('renders a fixed InvoiceFlow-height (h-14) top bar with a solid border-border', () => {
+        // Milestone 2 Correction Pass: the responsive h-16/h-20 header and its
+        // semi-transparent border-border/60 were replaced with InvoiceFlow's
+        // exact top-bar.tsx treatment — a single fixed h-14 and a plain
+        // border-border (no opacity modifier).
         const html = renderHeader();
-        expect(html).toContain('border-border/60');
+        expect(html).toContain('h-14');
+        expect(html).toContain('border-border');
+        expect(html).not.toContain('border-border/60');
     });
 
     it('renders a focusable search field with the InvoiceFlow-aligned flat input treatment', () => {

@@ -49,43 +49,42 @@ function renderSidebar(props = {}) {
 }
 
 describe('Sidebar Polish (R2) Enhancements', () => {
-    it('renders the organization logo badge container with gradient, depth ring, and shadow classes', () => {
+    it('renders the organization logo chip with InvoiceFlow\'s flat solid-accent treatment (no gradient/ring/glow)', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
-        
+
         // Assert org name is visible
         expect(html).toContain('Acme Academy');
-        
-        // Assert organization logo badge container contains refined style classes
-        expect(html).toContain('bg-gradient-to-br');
-        expect(html).toContain('from-primary');
-        expect(html).toContain('to-primary/80');
-        expect(html).toContain('ring-2');
-        expect(html).toContain('ring-primary/20');
-        expect(html).toContain('shadow-md');
-        expect(html).toContain('shadow-primary/10');
+
+        // Milestone 2 Correction Pass: OrgSwitcher's badge was rebuilt to match
+        // InvoiceFlow's business-switcher.tsx chip exactly — a flat rounded-md
+        // bg-accent chip, not the old gradient/ring/shadow-glow treatment.
+        expect(html).not.toContain('bg-gradient-to-br');
+        expect(html).not.toContain('ring-primary/20');
+        expect(html).not.toContain('shadow-primary/10');
+        expect(html).toContain('bg-accent');
+        expect(html).toContain('rounded-md');
     });
 
-    it('applies a distinguishing accent style (left indicator bar + accent token) to the active nav item', () => {
+    it('applies InvoiceFlow\'s solid-fill accent style (no left indicator bar) to the active nav item', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
 
         // Since pathname is mocked to '/dashboard', the Dashboard link is active.
-        // Milestone 2: flattened from a pill/glow treatment to InvoiceFlow's
-        // left-rule + soft accent background — assert on the current tokens
-        // rather than the pre-Milestone-2 exact class strings.
-        expect(html).toContain('before:absolute');
-        expect(html).toContain('before:left-0');
-        expect(html).toContain('before:bg-accent');
+        // Milestone 2 Correction Pass: InvoiceFlow's sidebar-nav.tsx uses a plain
+        // solid bg-accent-soft fill with no left-rule/pseudo-element decoration —
+        // the earlier `before:` accent bar has been removed to match exactly.
+        expect(html).not.toContain('before:absolute');
+        expect(html).not.toContain('before:bg-accent');
         expect(html).toContain('bg-accent-soft');
         expect(html).toContain('text-accent');
     });
 
-    it('renders nav items with consistent vertical rhythm', () => {
+    it('renders nav items with InvoiceFlow-aligned tight vertical rhythm', () => {
         mockCollapsed.value = false;
         const html = renderSidebar();
 
-        expect(html).toContain('space-y-1');
+        expect(html).toContain('space-y-0.5');
         expect(html).toContain('py-2');
     });
 

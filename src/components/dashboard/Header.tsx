@@ -32,18 +32,10 @@ const ROLE_LABELS: Record<string, string> = {
     STAFF: 'Staff',
 };
 
-function getGreeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return { text: 'Good morning', emoji: '☀️' };
-    if (hour < 17) return { text: 'Good afternoon', emoji: '🌤️' };
-    return { text: 'Good evening', emoji: '🌙' };
-}
-
 export default function Header({ userName, userInitial, userRole, hideSearch }: HeaderProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -113,17 +105,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     const isListPage = pathname.startsWith('/dashboard/registrations') ||
                        pathname.startsWith('/dashboard/bookings') ||
                        pathname.startsWith('/dashboard/students');
-
-    // Scroll-based blur backdrop
-    const [isScrolled, setIsScrolled] = useState(false);
-    useEffect(() => {
-        const handleScroll = () => setIsScrolled(window.scrollY > 10);
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    // Greeting - computed once on first render, no flash
-    const [greeting] = useState(() => getGreeting());
 
     // Fetch real notifications from API
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -234,7 +215,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
             }
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
                 setShowSearchResults(false);
-                setIsSearchFocused(false);
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
@@ -249,40 +229,25 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     };
 
     return (
-        <header className={`h-16 sm:h-20 fixed top-0 right-0 z-40 px-4 sm:px-8 flex items-center justify-between gap-4 border-b border-border bg-surface/90 backdrop-blur-md transition-shadow duration-200 ${
-            isScrolled ? 'shadow-sm' : ''
-        } ${collapsed ? 'left-0 lg:left-20' : 'left-0 lg:left-64'}`}>
-
-            {/* Spotlight-Style Search Focus Backdrop Overlay */}
-            {isSearchFocused && (
-                <div className="fixed inset-0 bg-black/15 dark:bg-black/40 backdrop-blur-[1.5px] z-[-1] pointer-events-none animate-in fade-in duration-200" />
-            )}
+        <header className={`h-14 fixed top-0 right-0 z-40 px-4 lg:px-6 flex items-center gap-3 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 ${
+            collapsed ? 'left-0 lg:left-[72px]' : 'left-0 lg:left-60'
+        }`}>
 
             {/* Hamburger — mobile only */}
             <button
                 suppressHydrationWarning
-                className="lg:hidden p-2 rounded-sm hover:bg-page text-text-muted transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="lg:hidden rounded-md hover:bg-page text-text-muted transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={() => setCollapsed(false)}
                 aria-label="Open menu"
             >
-                <Menu className="w-5 h-5" />
+                <Menu className="size-5" />
             </button>
 
-            {/* Title / Greeting Portal Insertion */}
-            {isListPage ? (
+            {/* Title Portal Insertion — list pages render their own heading here;
+                other pages carry no header-left content (greeting now lives only
+                in DashboardHero, not duplicated in the top bar). */}
+            {isListPage && (
                 <div id="header-left" className="flex items-center gap-2 flex-shrink-0" />
-            ) : (
-                <>
-                    {/* Greeting — hidden on mobile, hidden when search is focused */}
-                    {!hideSearch && (
-                        <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-1">
-                            <span className="text-lg leading-none">{greeting.emoji}</span>
-                            <span className="text-sm font-semibold text-text/80">
-                                {greeting.text}{userName ? `, ${userName.split(' ')[0]}` : ''}
-                            </span>
-                        </div>
-                    )}
-                </>
             )}
 
             {/* Middle Section: Tabs Portal or Global Search */}
@@ -292,7 +257,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 /* Search Bar */
                 !hideSearch && (
                     <div className="hidden sm:block flex-1 max-w-xl relative" ref={searchContainerRef}>
-                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-page border border-border/60 rounded-md transition-all duration-200 hover:border-accent/40  focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+                        <form onSubmit={handleSearch} className="relative group w-full flex items-center h-10 bg-page border border-border rounded-md transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
                             <Search className="ml-3.5 w-4 h-4 text-text-muted flex-shrink-0 transition-colors group-focus-within:text-accent pointer-events-none" />
                             <input
                                 suppressHydrationWarning
@@ -304,7 +269,6 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     setShowSearchResults(true);
                                 }}
                                 onFocus={() => {
-                                    setIsSearchFocused(true);
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings…"
@@ -362,7 +326,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 )
             )}
 
-            <div className="flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-2">
                 {isListPage && (
                     <div id="header-right-actions" className="hidden md:flex items-center gap-2" />
                 )}
@@ -370,12 +334,12 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 <button
                     suppressHydrationWarning
                     onClick={toggleTheme}
-                    className="keep-shape p-2.5 rounded-sm hover:bg-page text-text-muted hover:text-text transition-transform duration-200 flex items-center justify-center"
+                    className="keep-shape size-9 rounded-md hover:bg-page text-text-muted hover:text-text transition-colors flex items-center justify-center flex-shrink-0"
                     aria-label={`Toggle theme (currently ${theme})`}
                 >
-                    {theme === 'system' && <Cloud className="w-5 h-5" />}
-                    {theme === 'light' && <Sun className="w-5 h-5" />}
-                    {theme === 'dark' && <Moon className="w-5 h-5" />}
+                    {theme === 'system' && <Cloud className="size-4" />}
+                    {theme === 'light' && <Sun className="size-4" />}
+                    {theme === 'dark' && <Moon className="size-4" />}
                 </button>
 
                 {/* Notifications */}
@@ -386,10 +350,10 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         aria-expanded={showNotifications}
                         aria-haspopup="menu"
                         aria-controls="notifications-menu"
-                        className="keep-shape p-2.5 rounded-sm hover:bg-page text-text-muted hover:text-text relative transition-all duration-200"
+                        className="keep-shape size-9 rounded-md hover:bg-page text-text-muted hover:text-text relative transition-colors flex items-center justify-center flex-shrink-0"
                         aria-label="Notifications"
                     >
-                        <Bell className="w-5 h-5" />
+                        <Bell className="size-4" />
                         {unreadCount > 0 && (
                             <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
@@ -472,7 +436,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                 </div>
 
                 {/* Divider */}
-                <div className="h-8 w-px bg-border/60" />
+                <div className="h-6 w-px bg-border" />
 
                 {/* User Profile Dropdown */}
                 <div className="relative" ref={userMenuRef}>
@@ -482,19 +446,19 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                         aria-expanded={showUserMenu}
                         aria-haspopup="menu"
                         aria-controls="user-profile-menu"
-                        className="keep-shape flex items-center gap-3.5 px-3 py-1.5 rounded-sm hover:bg-page transition-all duration-200 mr-2 group"
+                        className="keep-shape flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-page transition-colors group"
                         aria-label="User menu"
                     >
                         <div className="text-right hidden sm:block min-w-0">
-                            <p className="text-sm font-bold text-text leading-tight truncate">
+                            <p className="text-sm font-medium text-text leading-tight truncate">
                                 {userName || 'Admin User'}
                             </p>
-                            <p className="text-[10px] font-medium text-text-muted mt-0.5">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
+                            <p className="text-xs text-text-muted mt-0.5">{userRole ? (ROLE_LABELS[userRole] ?? userRole) : 'Admin'}</p>
                         </div>
-                        <div className="w-9 h-9 rounded-sm bg-accent-soft flex items-center justify-center text-accent font-semibold text-sm tracking-tight flex-shrink-0 ring-2 ring-border group-hover:ring-accent/40 transition-colors">
+                        <div className="size-9 rounded-full bg-accent-soft flex items-center justify-center text-accent font-semibold text-sm tracking-tight flex-shrink-0 ring-2 ring-border group-hover:ring-accent/40 transition-colors">
                             {userInitial || 'A'}
                         </div>
-                        <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`size-4 text-text-muted transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
                     </button>
 
                     {showUserMenu && (
@@ -513,7 +477,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 <button
                                     suppressHydrationWarning
                                     onClick={() => signOut({ callbackUrl: '/login' })}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-red-500 hover:bg-red-500/10 transition-colors text-sm font-semibold group"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-danger hover:bg-danger-soft transition-colors text-sm font-medium group"
                                 >
                                     <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                     Sign Out

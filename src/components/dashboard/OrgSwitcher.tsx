@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Check, ChevronDown, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, Loader2 } from 'lucide-react';
 
 interface OrgEntry {
     id: string;
@@ -25,18 +25,19 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
 
     // Only show switcher if user has more than one org
     if (!userOrgs || userOrgs.length <= 1) {
-        // Render just the org name (no dropdown)
+        // Render just the org name (no dropdown) — InvoiceFlow-aligned flat chip,
+        // no gradient/ring/glow.
         return (
-            <div className={`flex items-center gap-3 mb-6 overflow-hidden px-2 ${collapsed ? 'justify-center mt-0 px-0' : 'mt-2'}`}>
-                <div
+            <div className={`flex items-center gap-2 mb-5 overflow-hidden ${collapsed ? 'justify-center px-0' : 'px-1'}`}>
+                <span
                     title={collapsed ? currentOrgName : undefined}
-                    className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0 ring-2 ring-primary/20 shadow-md shadow-primary/10 transition-all duration-300"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white"
                 >
                     {currentOrgName.slice(0, 2).toUpperCase()}
-                </div>
+                </span>
                 {!collapsed && (
                     <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-extrabold tracking-tight truncate leading-tight text-foreground">
+                        <span className="text-sm font-medium truncate leading-tight text-text">
                             {currentOrgName}
                         </span>
                     </div>
@@ -60,26 +61,26 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
     };
 
     return (
-        <div className={`relative mb-6 ${collapsed ? 'flex justify-center' : ''}`}>
+        <div className={`relative mb-5 ${collapsed ? 'flex justify-center' : ''}`}>
             <button
                 onClick={() => setOpen(o => !o)}
                 title={collapsed ? currentOrgName : undefined}
-                className={`flex items-center gap-3 w-full rounded-xl transition-all duration-200 hover:bg-secondary/50 ${collapsed ? 'justify-center p-1' : 'px-2 py-1.5'}`}
+                className={`flex items-center gap-2 rounded-md border border-border bg-surface text-left transition-colors hover:bg-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${collapsed ? 'justify-center p-1.5' : 'w-full px-2.5 py-2'}`}
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center font-bold text-primary-foreground text-xs flex-shrink-0 ring-2 ring-primary/20 shadow-md shadow-primary/10">
-                    {switching ? <Loader2 className="w-4 h-4 animate-spin" /> : currentOrgName.slice(0, 2).toUpperCase()}
-                </div>
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-white">
+                    {switching ? <Loader2 className="size-4 animate-spin" /> : currentOrgName.slice(0, 2).toUpperCase()}
+                </span>
                 {!collapsed && (
                     <>
-                        <div className="flex flex-col min-w-0 flex-1 text-left">
-                            <span className="text-sm font-extrabold tracking-tight truncate leading-tight text-foreground">
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-text">
                                 {currentOrgName}
                             </span>
-                            <span className="text-[10px] text-muted-foreground truncate">Switch organisation</span>
-                        </div>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                            <span className="block truncate text-xs text-text-muted">Switch organisation</span>
+                        </span>
+                        <ChevronDown className={`size-4 shrink-0 text-text-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
                     </>
                 )}
             </button>
@@ -91,12 +92,13 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
                     <div className="fixed inset-0 z-[199]" onClick={() => setOpen(false)} />
                     <div
                         role="listbox"
-                        className="absolute left-0 top-full mt-1 w-64 bg-card border border-border rounded-xl shadow-xl z-[200] overflow-hidden animate-fadeIn"
+                        aria-label="Your Organisations"
+                        className="absolute left-0 top-full mt-1 w-64 bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-[200] overflow-hidden py-1"
                     >
-                        <div className="px-3 py-2 border-b border-border">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Your Organisations</p>
+                        <div className="px-3 py-1.5 border-b border-border-subtle mb-1">
+                            <p className="text-xs font-medium text-text-muted uppercase tracking-wide">Your Organisations</p>
                         </div>
-                        <div className="max-h-60 overflow-y-auto py-1">
+                        <div className="max-h-60 overflow-y-auto px-1">
                             {userOrgs.map(org => {
                                 const isActive = org.id === currentOrgId;
                                 return (
@@ -105,18 +107,18 @@ export default function OrgSwitcher({ currentOrgId, currentOrgName, userOrgs, co
                                         role="option"
                                         aria-selected={isActive}
                                         onClick={() => handleSwitch(org.id)}
-                                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-secondary/60 ${isActive ? 'bg-primary/10' : ''}`}
+                                        className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-sm text-sm transition-colors hover:bg-page ${isActive ? 'bg-accent-soft' : ''}`}
                                     >
-                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-[10px] font-bold text-primary-foreground flex-shrink-0">
+                                        <span className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-accent-soft text-xs font-semibold text-accent">
                                             {org.name.slice(0, 2).toUpperCase()}
-                                        </div>
-                                        <div className="flex-1 text-left min-w-0">
-                                            <p className={`font-semibold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>
+                                        </span>
+                                        <span className="flex-1 text-left min-w-0">
+                                            <span className={`block font-medium truncate ${isActive ? 'text-accent' : 'text-text'}`}>
                                                 {org.name}
-                                            </p>
-                                            <p className="text-[10px] text-muted-foreground capitalize">{org.role.replace('_', ' ').toLowerCase()}</p>
-                                        </div>
-                                        {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
+                                            </span>
+                                            <span className="block text-xs text-text-muted capitalize">{org.role.replace('_', ' ').toLowerCase()}</span>
+                                        </span>
+                                        {isActive && <Check className="size-4 text-accent flex-shrink-0" aria-hidden="true" />}
                                     </button>
                                 );
                             })}

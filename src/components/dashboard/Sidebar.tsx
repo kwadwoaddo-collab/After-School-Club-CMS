@@ -162,8 +162,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     fixed inset-y-0 left-0 z-50
                     bg-surface text-text flex flex-col
                     transition-all duration-300 ease-in-out
-                    w-64
-                    ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0'}
+                    w-60
+                    ${collapsed ? '-translate-x-full lg:translate-x-0 lg:w-[72px]' : 'translate-x-0'}
                     border-r border-border
                 `}
             >
@@ -248,18 +248,18 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         aria-controls="centre-dropdown-menu"
                                         className={`
                                             keep-shape
-                                            flex items-center justify-between w-full px-3 py-2 rounded-sm border border-border
-                                            transition-colors group text-left
+                                            flex items-center justify-between w-full px-3 py-2 rounded-md border border-border
+                                            transition-colors group text-left text-sm font-medium
                                             ${isCentresPageActive
-                                                ? 'text-accent bg-accent-soft font-semibold'
+                                                ? 'text-accent bg-accent-soft'
                                                 : 'text-text-secondary hover:text-text hover:bg-page'
                                             }
                                         `}
                                     >
-                                        <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="flex items-center gap-2.5 overflow-hidden">
                                             {selectedCentreId === 'all'
-                                                ? <Layers className="w-5 h-5 text-accent flex-shrink-0" />
-                                                : <MapPin className="w-5 h-5 text-accent flex-shrink-0" />
+                                                ? <Layers className="size-4 text-accent flex-shrink-0" />
+                                                : <MapPin className="size-4 text-accent flex-shrink-0" />
                                             }
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-label leading-none mb-0.5">Active Centre</span>
@@ -279,14 +279,14 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                         aria-haspopup="listbox"
                                         aria-expanded={dropdownOpen}
                                         aria-controls="centre-dropdown-menu"
-                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2 rounded-sm border border-border transition-colors group ${
+                                        className={`keep-shape flex items-center justify-center w-full px-4 py-2 rounded-md border border-border transition-colors group ${
                                             isCentresPageActive ? 'text-accent bg-accent-soft' : 'text-text-secondary hover:text-text hover:bg-page'
                                         }`}
                                         title={selectedCentreId === 'all' ? 'Combined View' : centres.find(c => c.id === selectedCentreId)?.name || 'Centre'}
                                     >
                                         {selectedCentreId === 'all'
-                                            ? <Layers className="w-5 h-5 text-accent" />
-                                            : <MapPin className="w-5 h-5 text-accent" />
+                                            ? <Layers className="size-4 text-accent" />
+                                            : <MapPin className="size-4 text-accent" />
                                         }
                                     </button>
                                 )}
@@ -314,7 +314,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                     {/* Navigation */}
                     <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
-                    <nav className="space-y-1">
+                    <nav className="space-y-0.5">
                         {navItems.map((item) => {
                             const isActive = item.href === '/dashboard'
                                 ? pathname === item.href
@@ -330,21 +330,21 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                             }
                                         }}
                                         className={`
-                                            flex items-center gap-3 px-3 py-2 rounded-sm
-                                            transition-colors group relative
+                                            flex items-center gap-2.5 px-3 py-2 rounded-md
+                                            text-sm font-medium transition-colors group
                                             ${isActive
-                                                ? 'text-accent bg-accent-soft font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:bg-accent before:rounded-full'
+                                                ? 'text-accent bg-accent-soft'
                                                 : 'text-text-secondary hover:text-text hover:bg-page'
                                             }
                                             ${collapsed ? 'justify-center' : ''}
                                         `}
                                         title={item.name}
                                     >
-                                        <item.icon className={`w-5 h-5 flex-shrink-0 ${
+                                        <item.icon className={`size-4 shrink-0 ${
                                             isActive ? 'text-accent' : 'text-text-muted group-hover:text-text'
-                                        } ${collapsed ? 'mx-auto' : ''}`} />
+                                        } ${collapsed ? 'mx-auto' : ''}`} aria-hidden="true" />
                                         {!collapsed && (
-                                            <span className="text-sm font-medium">{item.name}</span>
+                                            <span>{item.name}</span>
                                         )}
                                     </Link>
                                     {/* Sub-items (children) */}
@@ -387,16 +387,16 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                 <Link
                                     href="/dashboard/share"
                                     className={`
-                                        flex items-center gap-3 px-3 py-2 rounded-sm
-                                        text-text-muted hover:text-text hover:bg-page
+                                        flex items-center gap-2.5 px-3 py-2 rounded-md
+                                        text-sm font-medium text-text-secondary hover:text-text hover:bg-page
                                         transition-colors
                                         ${pathname === '/dashboard/share' ? 'text-accent bg-accent-soft' : ''}
                                         ${collapsed ? 'w-10 h-10 justify-center px-0 mx-auto' : 'w-full'}
                                     `}
                                 >
-                                    <Share2 strokeWidth={1.5} className="w-5 h-5 flex-shrink-0" />
+                                    <Share2 className="size-4 shrink-0" aria-hidden="true" />
                                     {!collapsed && (
-                                        <span className="text-sm font-medium">
+                                        <span>
                                             Share Portals
                                         </span>
                                     )}
@@ -411,22 +411,22 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                         <div
                             className={`
-                                flex items-center gap-3 p-2 rounded-sm transition-colors hover:bg-page
+                                flex items-center gap-2.5 p-2 rounded-md transition-colors hover:bg-page
                                 ${collapsed ? 'justify-center px-0' : 'px-3'}
                             `}
                             title={collapsed ? `${userName || 'Staff'} (${(userRole || 'TUTOR').toLowerCase().replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())})` : undefined}
                         >
-                            <div className="w-9 h-9 rounded-full bg-accent-soft text-accent flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent">
                                 {(userName || 'Staff')
                                     .split(' ')
                                     .map(n => n[0])
                                     .join('')
                                     .slice(0, 2)
                                     .toUpperCase()}
-                            </div>
+                            </span>
                             {!collapsed && (
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-sm font-semibold text-text truncate leading-tight">
+                                    <span className="text-sm font-medium text-text truncate leading-tight">
                                         {userName || 'Staff Member'}
                                     </span>
                                     <span className="text-xs text-text-muted truncate mt-0.5">
