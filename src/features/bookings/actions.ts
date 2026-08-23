@@ -4,7 +4,7 @@
 
 import { db } from '@/db';
 import { bookings, centreAvailabilityRules, bookingAttendees, slotHolds, calendarBusy, children, parents, centres, organisations } from '@/db/schema';
-import { eq, and, gt, gte, lte, or, desc, type InferInsertModel } from 'drizzle-orm';
+import { eq, and, gt, gte, lte, or, desc, inArray, type InferInsertModel } from 'drizzle-orm';
 
 // Partial update payload shared by the two attendance-marking branches below
 // (existing-booking and on-demand-booking paths) — both build the same
@@ -15,7 +15,7 @@ import { auth } from '@/lib/auth';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { emailService } from '@/lib/services/email';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
-import { canUserAccessCentre } from '@/lib/permissions';
+import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await auth();
@@ -431,14 +431,31 @@ export async function markAttendeeAttendance(params: {
     }
 }
 
+/**
+ * Milestone 3I, O.1/O.2: this is Reports' bookings-CSV-export data source
+ * (its only caller is src/app/dashboard/reports/ReportsClient.tsx — grep
+ * verified). It previously blocked only TUTOR — unlike the Reports *page*,
+ * which also redirects FRONT_DESK away — and this being a server action
+ * means it is independently callable regardless of the page-level redirect.
+ * It also had no centre scoping at all (org-gated only), unlike the frozen
+ * Bookings list page (src/app/dashboard/bookings/page.tsx:166-172), which
+ * always restricts its own "all centres" view to the caller's accessible
+ * centres. Both fixed narrowly to match those two established precedents;
+ * this function's own callers and behaviour are otherwise unchanged. See
+ * project-notes/milestone-3i-reports-audit.md, O.1/O.2.
+ */
 export async function getExportData() {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
-    // Tutors are not allowed to export data
-    if ((session.user as any).role === 'TUTOR') {
-        throw new Error('Forbidden: Tutors cannot export reports');
+    // Only Owner/Manager may export reports (Tutor and Front Desk cannot)
+    const exportRole = (session.user as any).role;
+    if (exportRole === 'TUTOR' || exportRole === 'FRONT_DESK') {
+        throw new Error('Forbidden: only Owner/Manager may export reports');
     }
+
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    if (accessibleCentreIds.length === 0) return [];
 
     return await db
         .select({
@@ -458,7 +475,10 @@ export async function getExportData() {
         .innerJoin(children, eq(bookingAttendees.childId, children.id))
         .innerJoin(parents, eq(children.parentId, parents.id))
         .innerJoin(centres, eq(bookings.centreId, centres.id))
-        .where(eq(centres.organisationId, session.user.organisationId))
+        .where(and(
+            eq(centres.organisationId, session.user.organisationId),
+            inArray(bookings.centreId, accessibleCentreIds),
+        ))
         .orderBy(desc(bookings.startAt));
 }
 

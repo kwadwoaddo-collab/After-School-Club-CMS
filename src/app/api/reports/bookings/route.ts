@@ -7,6 +7,7 @@ import { bookings, bookingAttendees, children, parents, centres } from '@/db/sch
 import { eq, and, inArray } from 'drizzle-orm';
 import { format } from 'date-fns';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { neutralizeCsvFormula } from '@/lib/csv-safety';
 
 export async function GET() {
   const session = await auth();
@@ -72,7 +73,7 @@ export async function GET() {
     ];
 
     const escape = (val: string | null | undefined) =>
-      `"${(val ?? '').toString().replace(/"/g, '""')}"`;
+      `"${neutralizeCsvFormula((val ?? '').toString()).replace(/"/g, '""')}"`;
 
     const csvRows = rows.map(r => [
       escape(r.bookingId),

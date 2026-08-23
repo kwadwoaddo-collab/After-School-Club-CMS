@@ -7,6 +7,7 @@ import { getExportData } from '@/features/bookings/actions';
 import { getStudentExportData } from '@/features/students/actions';
 import { cn } from '@/components/ui/utils';
 import { resolveAttendanceStatus } from '@/lib/attendance';
+import { neutralizeCsvFormula } from '@/lib/csv-safety';
 import WeeklyReportTab from './WeeklyReportTab';
 import type { AttendanceStatus } from '@/lib/attendance';
 
@@ -173,7 +174,7 @@ export default function ReportsClient() {
     const downloadCSV = (headers: string[], rows: (string | number | null | undefined)[][], fileName: string) => {
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))
+            ...rows.map(row => row.map(cell => `"${neutralizeCsvFormula((cell || '').toString()).replace(/"/g, '""')}"`).join(','))
         ].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

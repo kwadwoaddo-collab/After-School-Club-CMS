@@ -74,13 +74,23 @@ export interface WeeklyReportData {
     }[];
 }
 
+// Milestone 3I: covers every value of both bookingStatusEnum and
+// registrationStatusEnum2 (this map is shared across both — see the two
+// call sites below). Previously omitted 'rescheduled' and 'not_interested',
+// which fell back to the raw, lowercase enum string via `?? r.status` —
+// confirmed live in Stage C (a "rescheduled" booking rendered as lowercase
+// "rescheduled" next to properly-cased "Confirmed"/"Cancelled" badges).
+// Cosmetic only — the underlying value was always accurate — but a
+// one-line, zero-risk fix once seen live.
 const STATUS_LABELS: Record<string, string> = {
     awaiting_confirmation: 'Pending Review',
     signed_up: 'Approved',
+    not_interested: 'Not Interested',
     cancelled: 'Cancelled',
     pending: 'Pending',
     confirmed: 'Confirmed',
     completed: 'Completed',
+    rescheduled: 'Rescheduled',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
