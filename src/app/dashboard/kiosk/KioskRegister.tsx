@@ -262,7 +262,11 @@ function StudentCard({
     const style = status ? statusStyle[status] : { ring: 'bg-surface border-border', avatar: 'bg-page text-text-muted' };
     const pad = isLarge ? 'p-5' : 'p-4';
     const avatarSize = isLarge ? 'w-14 h-14 text-xl' : 'w-11 h-11 text-base';
-    const btnSize = isLarge ? 'h-16 text-sm gap-2 px-4 min-w-[88px]' : 'h-11 text-xs gap-1.5 px-3 min-w-[72px]';
+    // Note: the min-w floor is gated behind `sm:` so the action-button row (pencil +
+    // In/Late/Out) can flex-shrink to fit narrow kiosk viewports (375px) instead of
+    // overflowing past the card's left edge under `justify-end`; at sm+ widths the
+    // original fixed touch-target width is preserved unchanged.
+    const btnSize = isLarge ? 'h-16 text-sm gap-2 px-4 min-w-0 sm:min-w-[88px]' : 'h-11 text-xs gap-1.5 px-3 min-w-0 sm:min-w-[72px]';
 
     return (
         <div className="space-y-2">

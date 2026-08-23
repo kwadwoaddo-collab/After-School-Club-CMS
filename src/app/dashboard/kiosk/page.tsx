@@ -9,6 +9,7 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, format } from 'date-fns';
 import KioskRegister from './KioskRegister';
 import { compileDailyRegisterSlots } from '@/lib/attendance';
+import { logger } from '@/lib/logger';
 
 export default async function KioskPage(props: {
     searchParams: Promise<{ centre?: string }>;
@@ -25,36 +26,51 @@ export default async function KioskPage(props: {
     const dayStart = startOfDay(now);
     const dayEnd = endOfDay(now);
 
-    const centreFilter = activeCentreId !== 'all'
-        ? eq(bookings.centreId, activeCentreId)
-        : centreIds.length > 0
-            ? inArray(bookings.centreId, centreIds)
-            : eq(bookings.centreId, 'no-centre');
-
     const targetDayName = format(now, 'EEEE'); // e.g. "Monday"
 
-    const centreChildrenCondition = activeCentreId !== 'all'
-        ? eq(children.centreId, activeCentreId)
-        : centreIds.length > 0
-            ? inArray(children.centreId, centreIds)
-            : eq(children.centreId, 'no-centre');
+    // A user with zero accessible centres (e.g. a TUTOR with no centre
+    // memberships) resolves activeCentreId to 'all' with an empty centreIds
+    // list. Previously this fell through to `eq(bookings.centreId, 'no-centre')`
+    // — comparing a uuid column against a non-uuid literal — which Postgres
+    // rejects with a type error and crashed the page (Milestone 3F, K7).
+    // Skip both queries entirely in that case and render the same "no
+    // sessions" empty state Kiosk already shows for a quiet day.
+    let allChildrenAtCentre: any[] = [];
+    let todayBookings: any[] = [];
+    const hasQueryableScope = activeCentreId !== 'all' || centreIds.length > 0;
 
-    const allChildrenAtCentre = await db.query.children.findMany({
-        where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
-        with: { parent: true, centre: true },
-    });
+    if (hasQueryableScope) {
+        const centreFilter = activeCentreId !== 'all'
+            ? eq(bookings.centreId, activeCentreId)
+            : inArray(bookings.centreId, centreIds);
 
-    const todayBookings = await db.query.bookings.findMany({
-        where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
-        with: {
-            centre: true,
-            attendees: {
+        const centreChildrenCondition = activeCentreId !== 'all'
+            ? eq(children.centreId, activeCentreId)
+            : inArray(children.centreId, centreIds);
+
+        try {
+            allChildrenAtCentre = await db.query.children.findMany({
+                where: and(centreChildrenCondition, eq(children.isRegistered, true), isNull(children.deletedAt)),
+                with: { parent: true, centre: true },
+            });
+
+            todayBookings = await db.query.bookings.findMany({
+                where: and(centreFilter, gte(bookings.startAt, dayStart), lte(bookings.startAt, dayEnd)),
                 with: {
-                    child: true
-                }
-            }
-        },
-    });
+                    centre: true,
+                    attendees: {
+                        with: {
+                            child: true
+                        }
+                    }
+                },
+            });
+        } catch (e) {
+            logger.error("Error fetching kiosk register", e);
+            allChildrenAtCentre = [];
+            todayBookings = [];
+        }
+    }
 
     const sortedSlots = compileDailyRegisterSlots({
         targetDate: now,
