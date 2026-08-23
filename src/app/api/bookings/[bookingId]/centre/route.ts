@@ -1,11 +1,12 @@
 import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { bookings, centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { canUserAccessCentre } from '@/lib/permissions';
+import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const reassignSchema = z.object({
     centreId: z.string().uuid(),
@@ -52,6 +53,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
         if (booking.centre.organisationId !== session.user.organisationId) {
              return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Centre membership check on the booking's CURRENT centre for
+        // non-ORG_OWNER users — matches the check already applied by the
+        // sibling cancel/reschedule/status endpoints. Without this, a user
+        // could reassign a booking away from a centre they have no
+        // membership in, as long as they had access to the target centre
+        // (already checked above via canUserAccessCentre).
+        const userRole = (session.user as any).role as string | undefined;
+        if (userRole !== 'ORG_OWNER' && booking.centreId) {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(booking.centreId)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
         }
 
         const newCentre = await db.query.centres.findFirst({

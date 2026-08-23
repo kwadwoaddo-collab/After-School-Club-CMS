@@ -1,9 +1,11 @@
 import { logger } from '@/lib/logger';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 interface RouteContext {
     params: Promise<{ bookingId: string }>;
@@ -41,6 +43,18 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
         if (booking.centre.organisationId !== session.user.organisationId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Centre membership check for non-ORG_OWNER users — matches the check
+        // already applied by the sibling bulk-delete endpoint
+        // (POST /api/bookings/bulk-delete) for this identical action; this
+        // single-booking DELETE was missing it.
+        const userRole = (session.user as any).role as string | undefined;
+        if (userRole !== 'ORG_OWNER' && booking.centreId) {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(booking.centreId)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
         }
 
         // Hard delete — booking_attendees are removed via ON DELETE CASCADE

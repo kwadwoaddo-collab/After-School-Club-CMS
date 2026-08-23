@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
@@ -10,7 +11,7 @@ import MarkAttendedButton from '@/features/bookings/components/MarkAttendedButto
 import StudentNotesPanel from '@/features/students/components/StudentNotesPanel';
 import InternalNotesTimeline from '@/features/students/components/InternalNotesTimeline';
 import { getStudentNotes } from '@/features/students/notes.actions';
-import { getUserAccessibleCentres } from '@/lib/permissions';
+import { getUserAccessibleCentres, getUserAccessibleCentreIds } from '@/lib/permissions';
 import ReassignCentreButton from '@/features/bookings/components/ReassignCentreButton';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import AttendanceDropdown from './AttendanceDropdown';
@@ -48,6 +49,19 @@ export default async function BookingDetailPage({ params }: BookingPageProps) {
 
     if (!booking) return notFound();
     if (!booking.centre || booking.centre.organisationId !== session.user.organisationId) return notFound();
+
+    // Centre membership check for non-ORG_OWNER users — matches the check
+    // already enforced by the mutation APIs acting on this same record
+    // (cancel/reschedule/status/PATCH .../centre) and by the List page's
+    // query scoping (which only ever fetches bookings from the viewer's
+    // accessible centres). This detail page previously had no equivalent
+    // check, so a staff member could view another centre's booking (child
+    // name/DOB, parent phone/email, notes) by navigating directly to its URL.
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole !== 'ORG_OWNER' && booking.centreId) {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(booking.centreId)) return notFound();
+    }
 
     const orgCentres = await getUserAccessibleCentres(session.user.id);
 

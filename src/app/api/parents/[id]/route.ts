@@ -94,6 +94,19 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Role gate — deliberately left unrestricted in Milestone 3B pending a
+        // properly-scoped Bookings/cross-module audit (see
+        // project-notes/milestone-3b-parents-audit.md §4). That audit has now
+        // been done as part of Milestone 3E: this route's own PATCH handler
+        // (above) already restricts to this exact tuple, the Parents detail
+        // page requires the same tuple, and BookingForm's only authenticated
+        // host page (/dashboard/bookings/new) also requires the same tuple —
+        // so applying it here breaks no evidenced legitimate caller.
+        const userRole = (session.user as any).role;
+        if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { id } = await props.params;
 
         // Fetch parent details and their children in a single relational query
