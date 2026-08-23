@@ -36,7 +36,9 @@ Working tree was clean at the start of this milestone.
 
 **API routes (`/api/bookings/**`):**
 
-`POST /api/bookings` (public, rate-limited, by design — see §D), `GET`/`DELETE` `[bookingId]`, `POST [bookingId]/cancel`, `PATCH [bookingId]/centre`, `POST [bookingId]/reschedule`, `PATCH [bookingId]/status`, `DELETE bulk-delete`, `PATCH bulk-update`. All except the public `POST` require `auth()`; role/centre enforcement is inconsistent — see §E/§G.
+`POST /api/bookings` (public, rate-limited, by design — see §D), `DELETE [bookingId]` (no `GET` — see §L), `POST [bookingId]/cancel`, `PATCH [bookingId]/centre`, `POST [bookingId]/reschedule`, `PATCH [bookingId]/status`, `DELETE bulk-delete`, `PATCH bulk-update`. All except the public `POST` require `auth()`; role/centre enforcement is inconsistent — see §E/§G.
+
+*Correction:* an earlier draft of this table listed "`GET`/`DELETE [bookingId]`" as one row. Only `DELETE` is implemented — see §L for the orchestrator-requested confirmation.
 
 **Cross-module consumers / dependencies (not themselves redesigned):**
 
@@ -116,6 +118,88 @@ Regression tests: `src/features/bookings/authorization.test.ts` (new, 8 tests) c
 
 `centres.sessionSlots` / `CentreHoursForm` shape mismatch (pre-existing, documented in Milestone 3D, irrelevant to this module per §C above). `src/app/portal/book/**`'s legacy `bg-surface`/`rounded-2xl` visual language — this is the Parent Portal, not the staff-facing Bookings module this ticket scopes; out of scope. `getAvatarGradient` (shared legacy utility, already flagged in every prior milestone). The unrelated `src/features/communications/actions.test.ts` collection failure (present since Milestone 2.5).
 
-## K. Proposed Stage B implementation scope
+## L. Stage-A Review Follow-up (orchestrator-requested, pre-Stage-B)
+
+The orchestrator reviewed this audit, accepted the Stage A findings and
+fixes (§G) provisionally, and required two further items to be resolved
+before visual work begins.
+
+### L.1 `/dashboard/bookings/[bookingId]/reschedule`
+
+**Prior behaviour:** `auth()` checked only that a session existed and that
+`session.user.organisationId` was set. The booking was fetched with
+`where(eq(bookings.id, bookingId))` — no organisation filter, no centre
+filter, and no post-fetch check comparing the booking's organisation (via
+its centre) to the caller's. This is **worse** than Booking Detail's
+pre-fix state, which at least checked organisation match; this page had no
+isolation at all.
+
+**Data exposed:** parent first/last name, parent email, centre name,
+centre operating hours, booking date/time/status, and (via a second query)
+the first attendee's child first/last name — rendered directly into the
+page before any reschedule action is taken.
+
+**Organisation check:** none, prior to this fix.
+
+**Centre check:** none, prior to this fix.
+
+**Direct-navigation exposure:** confirmed live. A throwaway
+organisation/centre/parent/booking were seeded, and an authenticated user
+from a *different* organisation was navigated directly to
+`/dashboard/bookings/{other-org-booking-id}/reschedule` via Playwright
+against the running dev server. Before the fix this would have rendered the
+other organisation's booking details; the fix (below) was verified to
+redirect to `/dashboard/bookings` with zero data in the response body,
+confirmed by asserting none of the throwaway record's identifying text
+appeared anywhere in `document.body.innerText`. Throwaway data was deleted
+immediately after verification.
+
+**Decision:** confirmed defect — narrow centre/organisation-isolation gap,
+identical in kind to the Booking Detail defect closed in Stage A.
+
+**Fix:** added the same two checks Booking Detail and the reschedule
+mutation (`POST /api/bookings/[bookingId]/reschedule`) already use —
+organisation match (via `centres.organisationId`, now selected alongside
+the rest of the booking row) and, for non-`ORG_OWNER` users,
+`getUserAccessibleCentreIds` membership of `booking.centreId`. Both
+failures redirect to `/dashboard/bookings`, matching this page's own
+existing "booking not found" redirect (rather than introducing a
+distinguishable 404, which this file didn't have a precedent for).
+
+**Regression tests:** `src/features/bookings/authorization.test.ts`
+(`ReschedulePage — organisation + centre isolation`, 4 tests): cross-org
+denial, cross-centre same-org denial, same-centre allow, and `ORG_OWNER`
+bypass of the centre check.
+
+### L.2 `GET /api/bookings/[bookingId]`
+
+**Finding: this endpoint does not exist.** `src/app/api/bookings/[bookingId]/route.ts`
+exports only `DELETE`. Confirmed two ways: (1) static — the file's only
+top-level export is `DELETE`; (2) live — `curl` against the running dev
+server returns `405 Method Not Allowed` with no response body, before any
+application code (auth, DB query) executes, which is Next.js App Router's
+standard behaviour for a route file with no handler for the requested
+method.
+
+**Response payload:** none — no route to return one.
+**Legitimate consumers:** none found (`grep` across `src/` for
+`` `/api/bookings/${...}` `` with no further path segment shows only the
+`DELETE` call in `BookingsTable.tsx`).
+**Authentication / organisation scoping / role checks / centre-membership
+checks / `ORG_OWNER` vs. non-owner behaviour / cross-org or
+cross-centre access:** not applicable — there is no code path for a `GET`
+request to reach.
+
+**Decision:** no defect, no change. The Stage A surface-inventory table's
+"`GET`/`DELETE [bookingId]`" row was corrected (§A) to avoid implying a
+`GET` handler exists.
+
+**Regression test:** `src/features/bookings/authorization.test.ts`
+(`GET /api/bookings/[bookingId] — confirmed absent`) asserts the route
+module has no `GET` export and does have `DELETE`, so a future PR that adds
+an unprotected `GET` handler here fails this test rather than shipping
+silently.
+
+## M. Proposed Stage B implementation scope
 
 Modernise the staff-facing dashboard surfaces onto the frozen design system while preserving the calendar/scheduling-appropriate layout latitude the ticket explicitly grants: List (`page.tsx`, `BookingsTable`, `BookingsFilters`), Detail (`page.tsx`, `AttendanceDropdown`), New/Create host (`new/page.tsx` wrapper — `BookingForm` itself is shared with two public hosts and will be restyled carefully to avoid breaking those), Reschedule (`reschedule/page.tsx`, `RescheduleForm`), and the reassign-centre modal. Full responsive/theme verification, RSC boundary re-check under real seeded data, and the completion report follow per the ticket's process — all as a subsequent piece of this milestone's work.

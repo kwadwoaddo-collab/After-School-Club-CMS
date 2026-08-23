@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
@@ -7,6 +8,7 @@ import Link from 'next/link';
 import { ChevronLeft, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import RescheduleForm from '@/features/bookings/components/RescheduleForm';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export default async function ReschedulePage({ params }: { params: Promise<{ bookingId: string }> }) {
     const session = await auth();
@@ -28,6 +30,7 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
             parentEmail: parents.email,
             centreName: centres.name,
             centreId: centres.id,
+            centreOrganisationId: centres.organisationId,
             centreOperatingHours: centres.operatingHours,
         })
         .from(bookings)
@@ -38,6 +41,25 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
 
     if (!booking) {
         return redirect('/dashboard/bookings');
+    }
+
+    // Organisation-ownership check — this page previously had none at all
+    // (unlike Booking Detail, which at least checked organisation match).
+    // A booking with no centre (centreOrganisationId null) has no
+    // resolvable organisation and is treated as inaccessible.
+    if (!booking.centreOrganisationId || booking.centreOrganisationId !== session.user.organisationId) {
+        return redirect('/dashboard/bookings');
+    }
+
+    // Centre-membership check for non-ORG_OWNER users — matches the check
+    // already enforced by the reschedule mutation
+    // (POST /api/bookings/[bookingId]/reschedule) and by Booking Detail.
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole !== 'ORG_OWNER' && booking.centreId) {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(booking.centreId)) {
+            return redirect('/dashboard/bookings');
+        }
     }
 
     // Fetch attendees separately

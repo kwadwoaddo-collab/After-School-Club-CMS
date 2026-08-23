@@ -22,6 +22,23 @@
  * The GET /api/parents/[id] role-gate fix (the mandatory §18 audit item) is
  * covered by src/features/parents/authorization.test.ts, alongside its
  * pre-existing Parents-module coverage.
+ *
+ * Orchestrator follow-up (post Stage-A review) adds:
+ *
+ * 4. /dashboard/bookings/[bookingId]/reschedule had NO organisation check at
+ *    all (worse than Booking Detail's pre-fix state) — any authenticated
+ *    user of any organisation could view another organisation's booking
+ *    (parent name/email, child name, centre name, date/time) by navigating
+ *    directly to its URL. Fixed with the same organisation + centre checks
+ *    already applied to Booking Detail and to the reschedule mutation
+ *    (POST /api/bookings/[bookingId]/reschedule).
+ * 5. GET /api/bookings/[bookingId] does not exist — only DELETE is
+ *    implemented in that route file. Confirmed live (curl against the dev
+ *    server returns 405 Method Not Allowed with no payload, before any
+ *    application code runs). The Stage-A surface inventory's table row
+ *    listing "GET/DELETE [bookingId]" together was inaccurate; corrected in
+ *    the audit doc. No code change — a regression test guards against a
+ *    future unprotected GET being added silently.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -51,10 +68,26 @@ vi.mock('@/db', () => ({
       bookings: { findFirst: vi.fn(), findMany: vi.fn() },
       centres: { findFirst: vi.fn() },
     },
+    select: vi.fn(),
     update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn().mockResolvedValue([]) })) })) })),
     delete: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
   },
 }));
+
+// Chainable stand-in for drizzle's fluent select builder — supports both
+// call shapes used by the reschedule page: `.select().from()...limit(1)`
+// (awaited via .limit) and `.select().from()...where(...)` (awaited
+// directly, via the thenable `.then`).
+function selectChain(result: any[]) {
+  const node: any = {
+    from: () => node,
+    leftJoin: () => node,
+    where: () => node,
+    limit: () => Promise.resolve(result),
+    then: (resolve: any, reject: any) => Promise.resolve(result).then(resolve, reject),
+  };
+  return node;
+}
 
 vi.mock('@/lib/db-notifications', () => ({ notifyOwners: vi.fn() }));
 vi.mock('@/lib/services/notifications', () => ({
@@ -288,5 +321,158 @@ describe('BookingDetailPage — centre membership on view (closed in Milestone 3
       BookingDetailPage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
     ).resolves.toBeTruthy();
     expect(getUserAccessibleCentreIds).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. /dashboard/bookings/[bookingId]/reschedule — orchestrator follow-up
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('ReschedulePage — organisation + centre isolation (closed post Stage-A review)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('redirects to the bookings list for a booking belonging to a DIFFERENT organisation', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('ORG_OWNER', { organisationId: 'org-1' }));
+    const { db } = await import('@/db');
+    (db.select as any).mockReturnValueOnce(
+      selectChain([{
+        id: BOOKING_ID,
+        startAt: new Date(),
+        duration: 60,
+        modality: 'in_person',
+        status: 'confirmed',
+        parentFirstName: 'Other',
+        parentLastName: 'Org Parent',
+        parentEmail: 'other@example.com',
+        centreName: 'Their Centre',
+        centreId: CENTRE_B,
+        centreOrganisationId: 'org-OTHER', // different org
+        centreOperatingHours: null,
+      }])
+    );
+
+    const { default: ReschedulePage } = await import('@/app/dashboard/bookings/[bookingId]/reschedule/page');
+
+    await expect(
+      ReschedulePage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
+    ).rejects.toThrow('REDIRECT:/dashboard/bookings');
+  });
+
+  it('redirects for a non-ORG_OWNER user with no membership to the (same-org) booking centre', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK', { organisationId: 'org-1' }));
+    const { db } = await import('@/db');
+    (db.select as any).mockReturnValueOnce(
+      selectChain([{
+        id: BOOKING_ID,
+        startAt: new Date(),
+        duration: 60,
+        modality: 'in_person',
+        status: 'confirmed',
+        parentFirstName: 'P',
+        parentLastName: 'L',
+        parentEmail: 'p@example.com',
+        centreName: 'Centre B',
+        centreId: CENTRE_B,
+        centreOrganisationId: 'org-1', // same org
+        centreOperatingHours: null,
+      }])
+    );
+    const { getUserAccessibleCentreIds } = await import('@/lib/permissions');
+    (getUserAccessibleCentreIds as any).mockResolvedValueOnce([CENTRE_A]); // no access to CENTRE_B
+
+    const { default: ReschedulePage } = await import('@/app/dashboard/bookings/[bookingId]/reschedule/page');
+
+    await expect(
+      ReschedulePage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
+    ).rejects.toThrow('REDIRECT:/dashboard/bookings');
+  });
+
+  it('renders for a non-ORG_OWNER user with membership to the booking centre', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK', { organisationId: 'org-1' }));
+    const { db } = await import('@/db');
+    (db.select as any)
+      .mockReturnValueOnce(
+        selectChain([{
+          id: BOOKING_ID,
+          startAt: new Date(),
+          duration: 60,
+          modality: 'in_person',
+          status: 'confirmed',
+          parentFirstName: 'P',
+          parentLastName: 'L',
+          parentEmail: 'p@example.com',
+          centreName: 'Centre A',
+          centreId: CENTRE_A,
+          centreOrganisationId: 'org-1',
+          centreOperatingHours: null,
+        }])
+      )
+      .mockReturnValueOnce(selectChain([])); // attendees query
+    const { getUserAccessibleCentreIds } = await import('@/lib/permissions');
+    (getUserAccessibleCentreIds as any).mockResolvedValueOnce([CENTRE_A]);
+
+    const { default: ReschedulePage } = await import('@/app/dashboard/bookings/[bookingId]/reschedule/page');
+
+    await expect(
+      ReschedulePage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
+    ).resolves.toBeTruthy();
+  });
+
+  it('ORG_OWNER is not subject to the centre-membership check', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('ORG_OWNER', { organisationId: 'org-1' }));
+    const { db } = await import('@/db');
+    (db.select as any)
+      .mockReturnValueOnce(
+        selectChain([{
+          id: BOOKING_ID,
+          startAt: new Date(),
+          duration: 60,
+          modality: 'in_person',
+          status: 'confirmed',
+          parentFirstName: 'P',
+          parentLastName: 'L',
+          parentEmail: 'p@example.com',
+          centreName: 'Centre B',
+          centreId: CENTRE_B,
+          centreOrganisationId: 'org-1',
+          centreOperatingHours: null,
+        }])
+      )
+      .mockReturnValueOnce(selectChain([]));
+    const { getUserAccessibleCentreIds } = await import('@/lib/permissions');
+
+    const { default: ReschedulePage } = await import('@/app/dashboard/bookings/[bookingId]/reschedule/page');
+
+    await expect(
+      ReschedulePage({ params: Promise.resolve({ bookingId: BOOKING_ID }) } as any)
+    ).resolves.toBeTruthy();
+    expect(getUserAccessibleCentreIds).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. GET /api/bookings/[bookingId] — confirmed not to exist
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Orchestrator follow-up item B. Live-verified against the dev server:
+// `curl` returns 405 Method Not Allowed with no payload, before any
+// application code runs (Next.js App Router's default behaviour for a
+// route file with no matching HTTP-method export). This test guards
+// against a future GET handler being added to this file without centre
+// isolation — if one is ever added, this test starts failing and forces
+// deliberate review rather than silent exposure.
+
+describe('GET /api/bookings/[bookingId] — confirmed absent (no route to isolate)', () => {
+  it('the route module exports no GET handler', async () => {
+    const routeModule = await import('@/app/api/bookings/[bookingId]/route');
+    expect((routeModule as any).GET).toBeUndefined();
+    expect((routeModule as any).DELETE).toBeDefined();
   });
 });
