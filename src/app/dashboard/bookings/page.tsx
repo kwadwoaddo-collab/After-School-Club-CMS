@@ -7,12 +7,14 @@ import { organisations, bookings, centres, bookingAttendees, parents, children }
 import { alias } from 'drizzle-orm/pg-core';
 import { eq, desc, and, gte, lte, inArray, or, ilike, sql } from 'drizzle-orm';
 import Link from 'next/link';
-import { Plus, Download, Calendar, Filter, Search } from 'lucide-react';
+import { Plus, Download, Calendar, AlertTriangle } from 'lucide-react';
 import { Suspense } from 'react';
 import BookingsTable from '@/features/bookings/components/BookingsTable';
 import BookingsFilters from '@/features/bookings/components/BookingsFilters';
 import Pagination from '@/components/ui/Pagination';
 import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import { getUserAccessibleCentres } from '@/lib/permissions';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { startOfDay, endOfDay, format } from 'date-fns';
@@ -71,21 +73,23 @@ export default async function BookingsPage(props: {
 
     if (centreIds.length === 0) {
         return (
-            <div className="space-y-8 animate-in fade-in duration-700">
-                <div>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">Bookings</h1>
-                    <p className="text-muted-foreground text-sm font-medium mt-1">Manage upcoming and past appointments</p>
-                </div>
-                <div className="glassmorphic-card rounded-[32px] p-12 text-center">
-                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Calendar className="w-8 h-8 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">No centres found</h3>
-                    <p className="text-muted-foreground mb-6">Please set up a centre first before creating bookings</p>
-                    <Link href="/dashboard/centres/add" className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 duration-100">
-                        <Plus className="w-4 h-4" /> Add Centre
-                    </Link>
-                </div>
+            <div className="space-y-6">
+                <HeaderPortal targetId="header-left">
+                    <h1 className="text-page-title text-text">Bookings</h1>
+                </HeaderPortal>
+                <EmptyState
+                    icon={<Calendar className="w-8 h-8" />}
+                    title="No centres found"
+                    description="Please set up a centre first before creating bookings."
+                    action={
+                        <Button asChild>
+                            <Link href="/dashboard/centres/add">
+                                <Plus className="w-3.5 h-3.5" />
+                                Add Centre
+                            </Link>
+                        </Button>
+                    }
+                />
             </div>
         );
     }
@@ -112,6 +116,19 @@ export default async function BookingsPage(props: {
         const searchPattern = `%${searchParams.search}%`;
         const attendeeChildren = alias(children, 'attendee_children');
         try {
+            // Stage B finding: this query referenced the bare `children`
+            // table in its WHERE clause (children.firstName/lastName)
+            // without ever joining it — bookings has no direct child
+            // reference, only bookingAttendees -> children, which is what
+            // `attendeeChildren` (the aliased join actually present below)
+            // already covers. Postgres rejected every search with
+            // "invalid reference to FROM-clause entry for table
+            // \"children\"", which the catch block below silently turned
+            // into "Unable to load bookings" + an always-empty result —
+            // i.e. booking search was completely non-functional. Narrow,
+            // evidenced fix: drop the two unjoined, duplicate conditions;
+            // attendeeChildren.firstName/lastName already provide the
+            // identical child-name search.
             const matchingBookings = await db
                 .select({ id: bookings.id })
                 .from(bookings)
@@ -128,8 +145,6 @@ export default async function BookingsPage(props: {
                             ilike(parents.lastName, searchPattern),
                             ilike(parents.email, searchPattern),
                             ilike(parents.phone, searchPattern),
-                            ilike(children.firstName, searchPattern),
-                            ilike(children.lastName, searchPattern),
                             ilike(attendeeChildren.firstName, searchPattern),
                             ilike(attendeeChildren.lastName, searchPattern)
                         )
@@ -249,24 +264,34 @@ export default async function BookingsPage(props: {
     );
 
     // Status counts for Segmented Status Tabs
+    //
+    // Stage B finding: this map previously omitted 'signed_up' — one of the
+    // six VALID_BOOKING_STATUSES defined above and one of the six variants
+    // BookingsTable/Booking Detail already render a status badge for — so a
+    // booking in that status was invisible to every status tab and silently
+    // missing from totalAggCount, producing a visibly wrong "X of Y" header
+    // count (X could exceed Y) whenever any booking held that status. Narrow,
+    // evidenced fix: complete the map to match VALID_BOOKING_STATUSES, no new
+    // status or business rule introduced.
     const statusCounts = {
         confirmed:   statusCountsAgg.find(s => s.status === 'confirmed')?.count || 0,
+        signed_up:   statusCountsAgg.find(s => s.status === 'signed_up')?.count || 0,
         pending:     statusCountsAgg.find(s => s.status === 'pending')?.count || 0,
         completed:   statusCountsAgg.find(s => s.status === 'completed')?.count || 0,
         cancelled:   statusCountsAgg.find(s => s.status === 'cancelled')?.count || 0,
         rescheduled: statusCountsAgg.find(s => s.status === 'rescheduled')?.count || 0,
     };
 
-    const totalAggCount = statusCounts.confirmed + statusCounts.pending + statusCounts.completed + statusCounts.cancelled + statusCounts.rescheduled;
+    const totalAggCount = statusCounts.confirmed + statusCounts.signed_up + statusCounts.pending + statusCounts.completed + statusCounts.cancelled + statusCounts.rescheduled;
     const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-700">
+        <div className="space-y-6">
             {/* Header Portals — Fuses page header into the global header bar */}
             <HeaderPortal targetId="header-left">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Bookings</h1>
-                    <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground text-[10px] font-bold">
+                    <h1 className="text-page-title text-text">Bookings</h1>
+                    <span className="px-2 py-0.5 rounded-sm bg-page border border-border-subtle text-text-muted text-xs font-medium">
                         {isFiltered ? `${totalRecords} of ${totalAggCount}` : totalAggCount}
                     </span>
                 </div>
@@ -275,52 +300,46 @@ export default async function BookingsPage(props: {
             <HeaderPortal targetId="header-middle">{null}</HeaderPortal>
 
             <HeaderPortal targetId="header-right-actions">
-
-                <Link
-                    href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}
-                    className="flex items-center gap-2 px-4 py-2 bg-card hover:bg-secondary border border-border rounded-xl text-xs font-bold text-foreground transition-all active:scale-95 duration-100"
-                >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Export</span>
-                </Link>
-                <Link
-                    href="/dashboard/bookings/new"
-                    className="flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 glow-btn active:scale-95 duration-100"
-                >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>New Booking</span>
-                </Link>
+                <Button variant="outline" asChild>
+                    <Link href={`/api/bookings/export?centre=${activeCentreId}&status=${searchParams.status || 'all'}`}>
+                        <Download className="w-3.5 h-3.5" />
+                        Export
+                    </Link>
+                </Button>
+                <Button asChild>
+                    <Link href="/dashboard/bookings/new">
+                        <Plus className="w-3.5 h-3.5" />
+                        New Booking
+                    </Link>
+                </Button>
             </HeaderPortal>
 
-            {/* Filters — sticky so it stays visible while scrolling through bookings */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border">
-                <Suspense fallback={<div className="h-10 animate-pulse bg-slate-800/50 rounded-xl w-full" />}>
-                    <BookingsFilters 
-                        centres={orgCentres} 
-                        resultsCount={totalRecords} 
-                        statusCounts={statusCounts} 
-                        totalAggCount={totalAggCount} 
+            {/* Toolbar — sticky */}
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
+                <Suspense fallback={<div className="h-10 animate-pulse bg-page rounded-sm w-full" />}>
+                    <BookingsFilters
+                        centres={orgCentres}
+                        resultsCount={totalRecords}
+                        statusCounts={statusCounts}
+                        totalAggCount={totalAggCount}
                     />
                 </Suspense>
             </div>
 
             {hasFetchError && (
-                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-6 py-4 rounded-2xl flex items-center gap-3 animate-in fade-in">
-                    <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                    <p className="text-sm font-semibold">Unable to load bookings — please refresh</p>
+                <div className="rounded-md bg-danger-soft border border-danger/20 text-small-body text-danger font-medium px-4 py-3 flex items-center gap-3">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <p>Unable to load bookings — please refresh.</p>
                 </div>
             )}
 
             {/* Bookings Table */}
-            <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />
+            <div>
+                <BookingsTable bookings={bookingsData as any} centres={orgCentres} isFiltered={isFiltered} />
 
-            {/* Server-Side Pagination Controls (Sticky Footer) */}
-            <div className="sticky bottom-0 z-30 bg-background/90 backdrop-blur-md border-t border-border p-4 -mx-4 sm:-mx-8 sm:px-8 mt-auto shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-                {totalPages > 1 ? (
-                    <Pagination totalPages={totalPages} currentPage={currentPage} />
-                ) : (
-                    <div className="text-center text-xs font-medium text-muted-foreground">
-                        Showing all {totalRecords} booking{totalRecords !== 1 ? 's' : ''}
+                {totalPages > 1 && (
+                    <div className="mt-4">
+                        <Pagination currentPage={currentPage} totalPages={totalPages} />
                     </div>
                 )}
             </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, MapPin, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
+import { Button } from '@/components/ui/Button';
 
 interface ReassignCentreModalProps {
     bookingId: string;
@@ -52,74 +53,75 @@ export default function ReassignCentreModal({ bookingId, currentCentreId, centre
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-secondary border border-outline-variant/10 rounded-[32px] shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 overflow-hidden">
-                <div className="p-8">
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+            onClick={e => { if (e.target === e.currentTarget && !isSaving) onClose(); }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reassign-centre-title"
+        >
+            <div className="relative w-full max-w-md bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-6">
                     <div className="flex justify-between items-start mb-6">
-                        <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center">
-                            <MapPin className="w-7 h-7 text-indigo-400" />
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-accent-soft">
+                            <MapPin className="w-5 h-5 text-accent" />
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full transition-colors">
-                            <X className="w-5 h-5 text-slate-400" />
+                        <button
+                            onClick={onClose}
+                            disabled={isSaving}
+                            className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
+                            aria-label="Close"
+                        >
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
 
-                    <h3 className="text-xl font-bold text-foreground mb-2">Reassign Centre</h3>
-                    <p className="text-sm text-slate-400 mb-6 font-medium">
+                    <h3 id="reassign-centre-title" className="text-section-title text-text mb-1.5">Reassign Centre</h3>
+                    <p className="text-small-body text-text-secondary mb-5">
                         Move this booking to a different centre. Only centres you have access to are shown.
                     </p>
 
                     {availableCentres.length === 0 ? (
-                        <div className="bg-amber-500/10 text-amber-400 p-4 rounded-2xl text-sm mb-6 border border-amber-500/20 font-medium">
-                            You don't have access to any other centres to reassign this booking to.
+                        <div className="bg-warning-soft text-warning p-3 rounded-md text-small-body mb-6 border border-warning/20">
+                            You don&apos;t have access to any other centres to reassign this booking to.
                         </div>
                     ) : (
-                        <div className="mb-8">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <div className="mb-6">
+                            <label htmlFor="reassign-centre-select" className="block text-label text-text-muted mb-2">
                                 New Centre
                             </label>
-                            <div className="relative">
-                                <select
-                                    value={selectedCentreId}
-                                    onChange={(e) => setSelectedCentreId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-secondary border border-border rounded-2xl text-foreground font-medium focus:ring-2 focus:ring-primary/20 appearance-none outline-none"
-                                >
-                                    <option value="" disabled className="bg-secondary">Select a new centre</option>
-                                    <optgroup label="Current Centre" className="bg-secondary">
-                                        <option value={currentCentreId} disabled>
-                                            {centres.find(c => c.id === currentCentreId)?.name || 'Unknown'} (Current)
-                                        </option>
-                                    </optgroup>
-                                    <optgroup label="Available Centres" className="bg-secondary">
-                                        {availableCentres.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                    </svg>
-                                </div>
-                            </div>
+                            <select
+                                id="reassign-centre-select"
+                                value={selectedCentreId}
+                                onChange={(e) => setSelectedCentreId(e.target.value)}
+                                className="w-full h-9 px-3 rounded-sm border border-border bg-surface text-text text-small-body focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                            >
+                                <option value="" disabled>Select a new centre</option>
+                                <optgroup label="Current Centre">
+                                    <option value={currentCentreId} disabled>
+                                        {centres.find(c => c.id === currentCentreId)?.name || 'Unknown'} (Current)
+                                    </option>
+                                </optgroup>
+                                <optgroup label="Available Centres">
+                                    {availableCentres.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
                         </div>
                     )}
 
                     <div className="flex gap-3">
-                        <button
-                            onClick={onClose}
-                            disabled={isSaving}
-                            className="flex-1 px-4 py-3 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all shadow-sm"
-                        >
+                        <Button variant="secondary" className="flex-1" onClick={onClose} disabled={isSaving}>
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            className="flex-1"
                             onClick={handleSave}
                             disabled={isSaving || !selectedCentreId || selectedCentreId === currentCentreId || availableCentres.length === 0}
-                            className="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 rounded-2xl text-sm font-bold text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-primary/20 glow-btn"
                         >
-                            {isSaving ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : 'Save Changes'}
-                        </button>
+                            {isSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : 'Save Changes'}
+                        </Button>
                     </div>
                 </div>
             </div>

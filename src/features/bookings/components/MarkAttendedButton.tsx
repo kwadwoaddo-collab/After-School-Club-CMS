@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Loader2, Check } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 interface MarkAttendedButtonProps {
     bookingId: string;
@@ -20,9 +23,9 @@ export default function MarkAttendedButton({ bookingId, initialStatus }: MarkAtt
     // Already marked — show inert badge
     if (status === 'completed') {
         return (
-            <span className="px-6 py-3 bg-violet-100 text-violet-700 rounded-2xl text-sm font-bold ring-1 ring-violet-600/20 select-none">
-                ✓ Attended
-            </span>
+            <Badge variant="success" className="select-none">
+                <Check className="w-3 h-3" /> Attended
+            </Badge>
         );
     }
 
@@ -52,25 +55,18 @@ export default function MarkAttendedButton({ bookingId, initialStatus }: MarkAtt
 
     return (
         <div className="flex flex-col items-end gap-1">
-            <button
-                onClick={handleClick}
-                disabled={loading}
-                className="px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
-            >
+            <Button onClick={handleClick} disabled={loading}>
                 {loading ? (
                     <>
-                        <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
+                        <Loader2 className="w-4 h-4 animate-spin" />
                         Saving…
                     </>
                 ) : (
                     'Mark as Attended'
                 )}
-            </button>
+            </Button>
             {error && (
-                <p className="text-xs text-red-600 font-medium">{error}</p>
+                <p className="text-xs text-danger font-medium">{error}</p>
             )}
         </div>
     );

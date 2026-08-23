@@ -9,6 +9,7 @@ import { ChevronLeft, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import RescheduleForm from '@/features/bookings/components/RescheduleForm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { Card } from '@/components/ui/Card';
 
 export default async function ReschedulePage({ params }: { params: Promise<{ bookingId: string }> }) {
     const session = await auth();
@@ -75,41 +76,41 @@ export default async function ReschedulePage({ params }: { params: Promise<{ boo
     const firstChild = attendees[0];
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
+        <div className="max-w-2xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <Link
                     href={`/dashboard/bookings/${bookingId}`}
-                    className="p-2 hover:bg-card/10 rounded-xl transition-all active:scale-90 duration-100"
+                    className="p-2 rounded-sm text-text-muted hover:text-text hover:bg-page transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+                    <ChevronLeft className="w-5 h-5" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Reschedule Booking</h1>
-                    <p className="text-muted-foreground font-medium mt-1">
+                    <h1 className="text-page-title text-text">Reschedule Booking</h1>
+                    <p className="text-text-secondary text-small-body mt-0.5">
                         Select a new date and time for {firstChild?.childFirstName || 'child'} {firstChild?.childLastName || ''}
                     </p>
                 </div>
             </div>
 
             {/* Current Booking Info */}
-            <div className="glassmorphic-card rounded-[32px] p-8">
-                <h3 className="text-lg font-bold text-foreground mb-4">Current Booking</h3>
+            <Card className="p-6">
+                <h3 className="text-section-title text-text mb-4">Current Booking</h3>
                 <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-foreground">
-                        <Calendar className="w-5 h-5 text-primary" />
-                        <span className="font-medium">
+                    <div className="flex items-center gap-3 text-text">
+                        <Calendar className="w-4 h-4 text-accent" />
+                        <span className="text-small-body font-medium">
                             {booking.startAt && !isNaN(new Date(booking.startAt).getTime()) ? format(new Date(booking.startAt), 'EEEE, MMMM d, yyyy') : 'Date TBD'}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 text-foreground">
-                        <Clock className="w-5 h-5 text-primary" />
-                        <span className="font-medium">
+                    <div className="flex items-center gap-3 text-text">
+                        <Clock className="w-4 h-4 text-accent" />
+                        <span className="text-small-body font-medium">
                             {booking.startAt && !isNaN(new Date(booking.startAt).getTime()) ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
                         </span>
                     </div>
                 </div>
-            </div>
+            </Card>
 
             {/* Reschedule Form */}
             <RescheduleForm

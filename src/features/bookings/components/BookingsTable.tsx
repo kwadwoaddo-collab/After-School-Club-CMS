@@ -8,7 +8,10 @@ import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
-import { getAvatarGradient } from '@/components/ui/utils';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 import ReassignCentreModal from './ReassignCentreModal';
 
@@ -26,11 +29,46 @@ interface ChildNote {
 type SortKey = 'date' | 'student' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
 
+const STATUS_LABELS: Record<string, string> = {
+    confirmed: 'Booked',
+    signed_up: 'Signed-up',
+    completed: 'Attended',
+    pending: 'Pending',
+    cancelled: 'Cancelled',
+    rescheduled: 'Rescheduled',
+};
+
+const STATUS_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
+    confirmed: 'info',
+    signed_up: 'success',
+    completed: 'success',
+    pending: 'warning',
+    cancelled: 'default',
+    rescheduled: 'default',
+};
+
+function StatusBadge({ status }: { status: string }) {
+    return (
+        <Badge variant={STATUS_VARIANTS[status] || 'default'} className={status === 'cancelled' ? 'opacity-70' : ''}>
+            {STATUS_LABELS[status] ?? status}
+        </Badge>
+    );
+}
+
+function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
+    return (
+        <div className={`flex flex-col ml-1 ${active ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
+            <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${active && direction === 'asc' ? 'text-accent' : 'text-text-muted'}`} />
+            <ChevronDown className={`w-[10px] h-[10px] ${active && direction === 'desc' ? 'text-accent' : 'text-text-muted'}`} />
+        </div>
+    );
+}
+
 export default function BookingsTable({ bookings: initialBookings, centres = [], isFiltered }: BookingsTableProps) {
     const [bookings, setBookings] = useState<any[]>(initialBookings);
-    
+
     const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
-    
+
     // Sync external props (e.g., from server-side filtering) to internal state
     useEffect(() => {
         setBookings(initialBookings);
@@ -57,7 +95,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
     const [reassignTarget, setReassignTarget] = useState<string | null>(null);
     const [selectedFlagsBooking, setSelectedFlagsBooking] = useState<any | null>(null);
-    
+
     // Sort and bulk select state
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: null, direction: 'asc' });
     const [isProcessingBulk, setIsProcessingBulk] = useState(false);
@@ -106,11 +144,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             });
             if (response.ok) {
                 setBookings(prev => prev.map(b => ids.includes(b.id) ? { ...b, status } : b));
-                const labels: Record<string, string> = {
-                    signed_up: 'Signed-up',
-                    completed: 'Attended',
-                };
-                toast(`Updated ${ids.length} bookings to "${labels[status] || status}".`, 'success');
+                toast(`Updated ${ids.length} bookings to "${STATUS_LABELS[status] || status}".`, 'success');
                 setSelectedBookings(new Set());
             } else {
                 toast('Failed to update bookings.', 'error');
@@ -166,12 +200,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 setBookings(prev =>
                     prev.map(b => b.id === bookingId ? { ...b, status } : b)
                 );
-                const labels: Record<string, string> = {
-                    signed_up: 'Signed-up',
-                    confirmed: 'Booked',
-                    completed: 'Attended',
-                };
-                toast(`Status updated to "${labels[status] ?? status}".`, 'success');
+                toast(`Status updated to "${STATUS_LABELS[status] ?? status}".`, 'success');
             } else {
                 toast('Failed to update status. Please try again.', 'error');
             }
@@ -239,38 +268,6 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        const styles: Record<string, string> = {
-            confirmed:   'bg-transparent text-foreground border-border',
-            completed:   'bg-transparent text-foreground border-border',
-            signed_up:   'bg-transparent text-foreground border-border',
-            pending:     'bg-transparent text-foreground border-border',
-            cancelled:   'bg-transparent text-muted-foreground border-border opacity-70',
-            rescheduled: 'bg-transparent text-muted-foreground border-border',
-        };
-        const dots: Record<string, string> = {
-            confirmed:   'bg-blue-500',
-            completed:   'bg-violet-500',
-            signed_up:   'bg-emerald-500',
-            pending:     'bg-amber-500',
-            cancelled:   'bg-slate-500',
-            rescheduled: 'bg-indigo-500',
-        };
-        const labels: Record<string, string> = {
-            confirmed: 'Booked',
-            signed_up: 'Signed-up',
-            completed: 'Attended',
-        };
-        const label = labels[status] ?? status;
-
-        return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${styles[status] || styles.pending}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${dots[status] || dots.pending}`} />
-                {label}
-            </span>
-        );
-    };
-
     const getStudentNames = (booking: any) => {
         if (booking.attendees && booking.attendees.length > 0) {
             return booking.attendees.map((a: any) =>
@@ -319,7 +316,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
     const hasMedicalNote = (booking: any) => {
         if (booking.attendees && booking.attendees.length > 0) {
-            return booking.attendees.some((a: any) => 
+            return booking.attendees.some((a: any) =>
                 a.child?.notes?.some((n: any) => n.category === 'Medical')
             );
         }
@@ -345,7 +342,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
     const hasSafeguardingNote = (booking: any) => {
         if (booking.attendees && booking.attendees.length > 0) {
-            return booking.attendees.some((a: any) => 
+            return booking.attendees.some((a: any) =>
                 a.child?.notes?.some((n: any) => n.category === 'Safeguarding')
             );
         }
@@ -374,7 +371,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
         if (!sortConfig.key) return 0;
         let aValue: any;
         let bValue: any;
-        
+
         if (sortConfig.key === 'date') {
             aValue = new Date(a.startAt || 0).getTime();
             bValue = new Date(b.startAt || 0).getTime();
@@ -385,7 +382,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             aValue = a.status;
             bValue = b.status;
         }
-        
+
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -393,523 +390,441 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
     if (bookings.length === 0) {
         if (isFiltered) {
-        return (
-            <div className="rounded-3xl border border-border bg-card/50 p-16 text-center shadow-sm">
-                <div className="w-20 h-20 bg-secondary border border-border rounded-3xl flex items-center justify-center mx-auto mb-6">
-                    <SearchX className="w-10 h-10 text-muted-foreground" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground mb-3">No results found</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                    We couldn&apos;t find any bookings matching your current filters. Try adjusting your search term, centre, or status.
-                </p>
-                <button
-                    onClick={() => router.push('/dashboard/bookings')}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/80 text-foreground rounded-2xl text-sm font-bold transition-all border border-border shadow-sm"
-                >
-                    Clear All Filters
-                </button>
-            </div>
-        );
+            return (
+                <EmptyState
+                    icon={<SearchX className="w-8 h-8" />}
+                    title="No results found"
+                    description="We couldn't find any bookings matching your current filters. Try adjusting your search term, centre, or status."
+                    action={
+                        <Button variant="secondary" onClick={() => router.push('/dashboard/bookings')}>
+                            Clear All Filters
+                        </Button>
+                    }
+                />
+            );
         }
 
         return (
-            <div className="rounded-3xl border border-border bg-card/50 p-16 text-center shadow-sm">
-                <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-primary/30">
-                    <CalendarIcon className="w-10 h-10 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground mb-3">No bookings found</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                    Upcoming or past bookings will appear here once they are created.
-                    Try adjusting your filters or create a new session booking.
-                </p>
-                <Link
-                    href="/dashboard/bookings/new"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-sm font-bold transition-all active:scale-95 duration-100 shadow-lg shadow-primary/25"
-                >
-                    + Book Session
-                </Link>
-            </div>
+            <EmptyState
+                icon={<CalendarIcon className="w-8 h-8" />}
+                title="No bookings found"
+                description="Upcoming or past bookings will appear here once they are created. Try adjusting your filters or create a new session booking."
+                action={
+                    <Button asChild>
+                        <Link href="/dashboard/bookings/new">+ Book Session</Link>
+                    </Button>
+                }
+            />
         );
     }
 
     return (
         <>
-        {/* Cancel Confirmation Modal */}
-        {confirmCancel && (
-            <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="cancel-dialog-title"
-            >
-                <div className="bg-popover border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 bg-warning/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-warning/20">
-                        <X className="w-7 h-7 text-warning" />
-                    </div>
-                    <h3 id="cancel-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">Cancel Booking?</h3>
-                    <p className="text-sm text-muted-foreground text-center mb-6">
-                        The booking will be marked as <strong className="text-foreground">cancelled</strong>. The record will be kept for your records but no longer shown as confirmed.
-                    </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setConfirmCancel(null)}
-                            disabled={isCancelling}
-                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100 border border-border"
-                        >
-                            Keep Booking
-                        </button>
-                        <button
-                            onClick={handleCancelConfirm}
-                            disabled={isCancelling}
-                            className="flex-1 px-4 py-2.5 bg-warning hover:bg-warning/90 rounded-2xl text-sm font-bold text-primary-foreground transition-all active:scale-95 duration-100 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isCancelling ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : 'Yes, Cancel'}
-                        </button>
+            {/* Cancel Confirmation Modal */}
+            {confirmCancel && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="cancel-dialog-title"
+                >
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 rounded-md bg-warning-soft flex items-center justify-center mx-auto mb-4">
+                            <X className="w-6 h-6 text-amber-700 dark:text-amber-400" />
+                        </div>
+                        <h3 id="cancel-dialog-title" className="text-section-title text-text text-center mb-2">Cancel Booking?</h3>
+                        <p className="text-small-body text-text-secondary text-center mb-6">
+                            The booking will be marked as <strong className="text-text">cancelled</strong>. The record is kept for your records but no longer shown as confirmed.
+                        </p>
+                        <div className="flex gap-3">
+                            <Button variant="secondary" className="flex-1" disabled={isCancelling} onClick={() => setConfirmCancel(null)}>
+                                Keep Booking
+                            </Button>
+                            <Button className="flex-1" disabled={isCancelling} onClick={handleCancelConfirm}>
+                                {isCancelling ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : 'Yes, Cancel'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
+            )}
 
-        {/* Task 6: Confirmation dialog */}
-        {confirmDelete && (
-            <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="delete-dialog-title"
-            >
-                <div className="bg-popover border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto mb-5 ring-1 ring-destructive/20">
-                        <Trash2 className="w-7 h-7 text-destructive" />
-                    </div>
-                    <h3 id="delete-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">Delete Booking?</h3>
-                    <p className="text-sm text-muted-foreground text-center mb-6">
-                        This will permanently remove the booking record. This action <strong className="text-foreground">cannot be undone</strong>.
-                    </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setConfirmDelete(null)}
-                            disabled={isDeleting}
-                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100 border border-border"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-destructive-foreground transition-all active:scale-95 duration-100 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Yes, Delete'}
-                        </button>
+            {/* Delete Confirmation Modal */}
+            {confirmDelete && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="delete-dialog-title"
+                >
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 rounded-md bg-danger-soft flex items-center justify-center mx-auto mb-4">
+                            <Trash2 className="w-6 h-6 text-danger" />
+                        </div>
+                        <h3 id="delete-dialog-title" className="text-section-title text-text text-center mb-2">Delete Booking?</h3>
+                        <p className="text-small-body text-text-secondary text-center mb-6">
+                            This will permanently remove the booking record. This action <strong className="text-text">cannot be undone</strong>.
+                        </p>
+                        <div className="flex gap-3">
+                            <Button variant="secondary" className="flex-1" disabled={isDeleting} onClick={() => setConfirmDelete(null)}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" className="flex-1" disabled={isDeleting} onClick={handleDelete}>
+                                {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Yes, Delete'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
-        
-        {/* Reassign Centre Modal */}
-        {reassignTarget && (
-            <ReassignCentreModal
-                bookingId={reassignTarget}
-                currentCentreId={bookings.find(b => b.id === reassignTarget)?.centreId || ''}
-                centres={centres}
-                onClose={() => setReassignTarget(null)}
-                onSuccess={(newCentreId) => {
-                    // Update the booking optimistically or force refresh
-                    router.refresh();
-                }}
-            />
-        )}
+            )}
 
-        <div className="glassmorphic-card rounded-[32px] overflow-hidden relative">
-            {/* Table for Desktop */}
-            <div className="hidden lg:block overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative scrollbar-thin">
-                <table className="w-full table-fixed">
-                    <colgroup>
-                        <col className="w-12" />          {/* checkbox */}
-                        <col className="w-36" />          {/* date & time */}
-                        <col className="flex-1 min-w-[200px]" /> {/* student */}
-                        <col className="w-24" />          {/* flags */}
-                        <col className="w-40" />          {/* session type */}
-                        <col className="w-44" />          {/* centre */}
-                        <col className="w-28" />          {/* status */}
-                        <col className="w-28" />          {/* actions */}
-                    </colgroup>
-                    <thead>
-                        <tr className="border-b border-border">
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-5 py-4 w-12">
-                                <div className="flex items-center justify-center">
-                                    <input 
-                                        type="checkbox" 
+            {/* Reassign Centre Modal */}
+            {reassignTarget && (
+                <ReassignCentreModal
+                    bookingId={reassignTarget}
+                    currentCentreId={bookings.find(b => b.id === reassignTarget)?.centreId || ''}
+                    centres={centres}
+                    onClose={() => setReassignTarget(null)}
+                    onSuccess={() => {
+                        router.refresh();
+                    }}
+                />
+            )}
+
+            <div className="bg-surface border border-border rounded-lg overflow-hidden relative">
+                {/* Table for Desktop */}
+                <div className="hidden lg:block overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-12">
+                                    <input
+                                        type="checkbox"
                                         checked={bookings.length > 0 && selectedBookings.size === bookings.length}
                                         onChange={handleSelectAll}
-                                        className="w-4 h-4 rounded appearance-none border border-primary/40 bg-background checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                        aria-label="Select all bookings"
+                                        className="w-4 h-4 rounded-sm border border-border accent-accent cursor-pointer"
                                     />
-                                </div>
-                            </th>
-                            <th 
-                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none whitespace-nowrap"
-                                onClick={() => handleSort('date')}
-                            >
-                                <div className="flex items-center gap-2">
-                                    Date &amp; Time
-                                    <div className={`flex flex-col ml-1 ${sortConfig.key === 'date' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
-                                        <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'date' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                                        <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'date' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                                    </div>
-                                </div>
-                            </th>
-                            <th 
-                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none whitespace-nowrap"
-                                onClick={() => handleSort('student')}
-                            >
-                                <div className="flex items-center gap-2">
-                                    Student(s)
-                                    <div className={`flex flex-col ml-1 ${sortConfig.key === 'student' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
-                                        <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'student' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                                        <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'student' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                                    </div>
-                                </div>
-                            </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                                Flags
-                            </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                                Session Type
-                            </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                                Centre
-                            </th>
-                            <th 
-                                className="sticky top-0 z-10 bg-card border-b border-border text-left px-4 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-secondary/60 transition-colors group select-none whitespace-nowrap"
-                                onClick={() => handleSort('status')}
-                            >
-                                <div className="flex items-center gap-2">
-                                    Status
-                                    <div className={`flex flex-col ml-1 ${sortConfig.key === 'status' ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'} transition-opacity`}>
-                                        <ChevronUp className={`w-[10px] h-[10px] -mb-[4px] ${sortConfig.key === 'status' && sortConfig.direction === 'asc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                                        <ChevronDown className={`w-[10px] h-[10px] ${sortConfig.key === 'status' && sortConfig.direction === 'desc' ? 'text-primary' : 'text-muted-foreground/50'}`} />
-                                    </div>
-                                </div>
-                            </th>
-                            <th className="sticky top-0 z-10 bg-card border-b border-border text-right px-6 py-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                        {sortedBookings.map((booking) => (
-                            <tr
-                                key={booking.id}
-                                onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                                className={`cursor-pointer hover:bg-secondary/40 transition-colors group ${selectedBookings.has(booking.id) ? 'bg-primary/5 border-l-2 border-primary' : ''}`}
-                            >
-                                <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex items-center justify-center">
-                                        <input 
-                                            type="checkbox" 
+                                </TableHead>
+                                <TableHead>
+                                    <button className="flex items-center gap-1 group" onClick={() => handleSort('date')}>
+                                        Date &amp; Time
+                                        <SortIcon active={sortConfig.key === 'date'} direction={sortConfig.direction} />
+                                    </button>
+                                </TableHead>
+                                <TableHead>
+                                    <button className="flex items-center gap-1 group" onClick={() => handleSort('student')}>
+                                        Student(s)
+                                        <SortIcon active={sortConfig.key === 'student'} direction={sortConfig.direction} />
+                                    </button>
+                                </TableHead>
+                                <TableHead>Flags</TableHead>
+                                <TableHead>Session Type</TableHead>
+                                <TableHead>Centre</TableHead>
+                                <TableHead>
+                                    <button className="flex items-center gap-1 group" onClick={() => handleSort('status')}>
+                                        Status
+                                        <SortIcon active={sortConfig.key === 'status'} direction={sortConfig.direction} />
+                                    </button>
+                                </TableHead>
+                                <TableHead align="right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedBookings.map((booking) => (
+                                <TableRow
+                                    key={booking.id}
+                                    clickable
+                                    onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
+                                    className={`group ${selectedBookings.has(booking.id) ? 'bg-accent-soft' : ''}`}
+                                >
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
                                             checked={selectedBookings.has(booking.id)}
                                             onChange={() => handleSelectRow(booking.id)}
-                                            className="w-4 h-4 rounded appearance-none border border-primary/40 bg-background checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
+                                            aria-label="Select booking"
+                                            className="w-4 h-4 rounded-sm border border-border accent-accent cursor-pointer"
                                         />
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-foreground whitespace-nowrap">
-                                            {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d') : 'N/A'}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground font-medium mt-0.5 whitespace-nowrap">
-                                            {booking.startAt && booking.endAt
-                                                ? `${format(new Date(booking.startAt), 'h:mm a')} – ${format(new Date(booking.endAt), 'h:mm a')}`
-                                                : booking.startAt
-                                                    ? format(new Date(booking.startAt), 'h:mm a')
-                                                    : 'Time TBD'
-                                            }
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient(booking.attendees?.[0]?.child?.firstName || booking.child?.firstName)} flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0`}>
-                                            {getStudentInitials(booking)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-text whitespace-nowrap">
+                                                {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d') : 'N/A'}
+                                            </span>
+                                            <span className="text-metadata mt-0.5 whitespace-nowrap">
+                                                {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2 min-w-0">
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-9 h-9 rounded-full bg-accent-soft flex items-center justify-center text-accent text-xs font-semibold flex-shrink-0">
+                                                {getStudentInitials(booking)}
+                                            </div>
                                             {(() => {
                                                 const { first, rest, firstId } = getStudentList(booking);
                                                 const targetId = firstId || booking.attendees?.[0]?.child?.id || booking.child?.id;
-                                                const isLong = first.length > 18;
                                                 return (
-                                                    <div className="flex flex-col min-w-0">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <Link
-                                                                href={`/dashboard/students/${targetId}`}
-                                                                className={`font-semibold text-foreground group-hover:text-primary transition-colors hover:underline truncate ${
-                                                                    isLong ? 'text-xs' : 'text-sm'
-                                                                }`}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                {first}
-                                                            </Link>
-                                                            {rest.length > 0 && (
-                                                                <div className="relative group/more flex-shrink-0">
-                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-bold cursor-default border border-border">
-                                                                        +{rest.length}
-                                                                    </span>
-                                                                    {/* Tooltip with all extra names */}
-                                                                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover/more:block min-w-[160px] max-w-[220px] p-3 bg-popover border border-border rounded-2xl shadow-xl z-[60]">
-                                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">All Students</p>
-                                                                        <div className="flex flex-col gap-1">
-                                                                            <span className="text-xs font-semibold text-foreground">{first}</span>
-                                                                            {rest.map((name, i) => (
-                                                                                <span key={i} className="text-xs font-semibold text-foreground">{name}</span>
-                                                                            ))}
-                                                                        </div>
+                                                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                                        <Link
+                                                            href={`/dashboard/students/${targetId}`}
+                                                            className="font-medium text-text group-hover:text-accent transition-colors hover:underline truncate"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {first}
+                                                        </Link>
+                                                        {rest.length > 0 && (
+                                                            <div className="relative group/more flex-shrink-0">
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-page text-text-muted text-[10px] font-semibold cursor-default border border-border">
+                                                                    +{rest.length}
+                                                                </span>
+                                                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover/more:block min-w-[160px] max-w-[220px] p-3 bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-[60]">
+                                                                    <p className="text-label text-text-muted mb-2">All Students</p>
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <span className="text-sm font-medium text-text">{first}</span>
+                                                                        {rest.map((name, i) => (
+                                                                            <span key={i} className="text-sm font-medium text-text">{name}</span>
+                                                                        ))}
                                                                     </div>
                                                                 </div>
-                                                            )}
-                                                        </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             })()}
                                         </div>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                    <div className="flex items-center gap-1.5">
-                                        {hasMedicalNote(booking) && (
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                                className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors shadow-sm"
-                                            >
-                                                <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
-                                            </button>
-                                        )}
-                                        {hasSafeguardingNote(booking) && (
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                                className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
-                                            >
-                                                <Shield className="w-3.5 h-3.5 text-primary" />
-                                            </button>
-                                        )}
-                                        {!hasMedicalNote(booking) && !hasSafeguardingNote(booking) && (
-                                            <span className="text-xs text-muted-foreground/50">-</span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                    <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-xl text-xs font-bold whitespace-nowrap">
-                                        {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
-                                        <span className="truncate">{booking.centre?.name || 'Unknown'}</span>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                    {getStatusBadge(booking.status)}
-                                </td>
-                                <td className="px-6 py-3.5 text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                        {(booking.parent?.email || booking.parent?.phone) && (
-                                            <div className="flex items-center gap-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                                {booking.parent.email && (
-                                                    <a
-                                                        href={`mailto:${booking.parent.email}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                                        title={`Email ${booking.parent.firstName}`}
-                                                    >
-                                                        <Mail className="w-4 h-4" />
-                                                    </a>
-                                                )}
-                                                {booking.parent.phone && (
-                                                    <a
-                                                        href={`tel:${booking.parent.phone}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                                        title={`Call ${booking.parent.firstName}`}
-                                                    >
-                                                        <Phone className="w-4 h-4" />
-                                                    </a>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1.5">
+                                            {hasMedicalNote(booking) && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                                    className="flex items-center justify-center w-6 h-6 rounded-full bg-danger-soft hover:opacity-80 transition-opacity"
+                                                    title="Medical / allergy alert"
+                                                >
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                                                </button>
+                                            )}
+                                            {hasSafeguardingNote(booking) && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                                    className="flex items-center justify-center w-6 h-6 rounded-full bg-accent-soft hover:opacity-80 transition-opacity"
+                                                    title="Safeguarding alert"
+                                                >
+                                                    <Shield className="w-3.5 h-3.5 text-accent" />
+                                                </button>
+                                            )}
+                                            {!hasMedicalNote(booking) && !hasSafeguardingNote(booking) && (
+                                                <span className="text-text-muted">–</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge>
+                                            {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1.5 text-text-secondary">
+                                            <MapPin className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                                            <span className="truncate">{booking.centre?.name || 'Unknown'}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <StatusBadge status={booking.status} />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            {(booking.parent?.email || booking.parent?.phone) && (
+                                                <div className="flex items-center gap-1 mr-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                                    {booking.parent.email && (
+                                                        <a
+                                                            href={`mailto:${booking.parent.email}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors"
+                                                            title={`Email ${booking.parent.firstName}`}
+                                                        >
+                                                            <Mail className="w-4 h-4" />
+                                                        </a>
+                                                    )}
+                                                    {booking.parent.phone && (
+                                                        <a
+                                                            href={`tel:${booking.parent.phone}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="p-1.5 hover:bg-page rounded-sm text-text-muted hover:text-text transition-colors"
+                                                            title={`Call ${booking.parent.firstName}`}
+                                                        >
+                                                            <Phone className="w-4 h-4" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <div className="relative inline-block">
+                                                <button
+                                                    suppressHydrationWarning
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
+                                                    }}
+                                                    className="p-2 hover:bg-page rounded-sm transition-colors"
+                                                    aria-label="Booking actions"
+                                                >
+                                                    <MoreVertical className="w-4 h-4 text-text-muted" />
+                                                </button>
+
+                                                {activeDropdown === booking.id && (
+                                                    <div className="absolute right-0 top-full mt-1 w-52 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border py-1.5 z-20">
+                                                        <Link
+                                                            href={`/dashboard/bookings/${booking.id}`}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                            View Details
+                                                        </Link>
+                                                        {(booking.attendees?.[0]?.child?.id || booking.child?.id) && (
+                                                            <Link
+                                                                href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
+                                                                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-accent transition-colors"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                </svg>
+                                                                View Student Profile
+                                                            </Link>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
+                                                        >
+                                                            <CalendarIcon className="w-4 h-4" />
+                                                            Reschedule
+                                                        </button>
+                                                        {centres.length > 1 && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
+                                                                className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
+                                                            >
+                                                                <MapPin className="w-4 h-4 text-accent" />
+                                                                Reassign Centre
+                                                            </button>
+                                                        )}
+                                                        <div className="mx-3 my-1 border-t border-border-subtle" />
+                                                        <p className="px-4 py-1 text-label text-text-muted">Quick Status</p>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
+                                                            disabled={updatingStatus === booking.id}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
+                                                        >
+                                                            <BookOpen className="w-4 h-4" />
+                                                            Mark as Booked
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
+                                                            disabled={updatingStatus === booking.id}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4" />
+                                                            Mark as Signed-up
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
+                                                            disabled={updatingStatus === booking.id}
+                                                            title="Marks entire booking as attended (applies to all children)"
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
+                                                        >
+                                                            <GraduationCap className="w-4 h-4" />
+                                                            Mark as Attended
+                                                        </button>
+                                                        <div className="mx-3 my-1 border-t border-border-subtle" />
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                            Cancel Booking
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
+                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                            Delete Booking
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
-                                        )}
-                                        <div className="relative inline-block">
-                                            <button
-                                                suppressHydrationWarning
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
-                                                }}
-                                                className="p-2 hover:bg-secondary rounded-xl transition-colors"
-                                            >
-                                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                            </button>
- 
-                                        {activeDropdown === booking.id && (
-                                            <>
-                                                <div className="absolute right-0 top-full mt-2 w-52 bg-popover/90 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-20">
-                                                    <Link
-                                                        href={`/dashboard/bookings/${booking.id}`}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary/60 text-sm font-medium text-foreground transition-colors"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                        View Details
-                                                    </Link>
-                                                    {(booking.attendees?.[0]?.child?.id || booking.child?.id) && (
-                                                        <Link
-                                                            href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-primary transition-colors"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                            </svg>
-                                                            View Student Profile
-                                                        </Link>
-                                                    )}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors w-full text-left"
-                                                    >
-                                                        <CalendarIcon className="w-4 h-4" />
-                                                        Reschedule
-                                                    </button>
-                                                    {centres.length > 1 && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
-                                                            className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors w-full text-left"
-                                                        >
-                                                            <MapPin className="w-4 h-4 text-primary" />
-                                                            Reassign Centre
-                                                        </button>
-                                                    )}
-                                                    {/* Task 33: Quick status updates */}
-                                                    <div className="mx-3 my-1 border-t border-border" />
-                                                    <p className="px-4 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Quick Status</p>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
-                                                        disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-primary transition-colors w-full text-left disabled:opacity-50"
-                                                    >
-                                                        <BookOpen className="w-4 h-4" />
-                                                        Mark as Booked
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
-                                                        disabled={updatingStatus === booking.id}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-success transition-colors w-full text-left disabled:opacity-50"
-                                                    >
-                                                        <CheckCircle className="w-4 h-4" />
-                                                        Mark as Signed-up
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
-                                                        disabled={updatingStatus === booking.id}
-                                                        title="Marks entire booking as attended (applies to all children)"
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-primary transition-colors w-full text-left disabled:opacity-50"
-                                                    >
-                                                        <GraduationCap className="w-4 h-4" />
-                                                        Mark as Attended
-                                                    </button>
-                                                    <div className="mx-3 my-1 border-t border-border" />
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-destructive/10 text-sm font-medium text-destructive transition-colors w-full text-left"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                        Cancel Booking
-                                                    </button>
-                                                    <div className="mx-3 my-1 border-t border-border" />
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-destructive/10 text-sm font-medium text-destructive transition-colors w-full text-left"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                        Delete Booking
-                                                    </button>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Card View for Mobile */}
-            <div className="lg:hidden divide-y divide-border">
-                {/* Simplified Mobile Select All */}
-                <div className="p-4 bg-secondary/30 flex items-center justify-between border-b border-border">
-                    <div className="flex items-center gap-3">
-                        <input 
-                            type="checkbox" 
-                            checked={bookings.length > 0 && selectedBookings.size === bookings.length}
-                            onChange={handleSelectAll}
-                            className="w-4 h-4 rounded appearance-none border border-primary/40 bg-background checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
-                        />
-                        <span className="text-sm font-bold text-foreground">Select All</span>
-                    </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
-                {sortedBookings.map((booking) => (
-                    <div 
-                        key={booking.id} 
-                        onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
-                        className={`p-5 cursor-pointer hover:bg-secondary/40 transition-colors ${selectedBookings.has(booking.id) ? 'bg-primary/5 border-l-2 border-primary' : ''}`}
-                    >
-                        <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                                <div onClick={(e) => e.stopPropagation()} className="pt-1">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={selectedBookings.has(booking.id)}
-                                        onChange={() => handleSelectRow(booking.id)}
-                                        className="w-4 h-4 rounded appearance-none border border-primary/40 bg-background checked:bg-primary checked:border-primary flex items-center justify-center transition-all cursor-pointer relative checked:before:content-[''] checked:before:absolute checked:before:left-[5px] checked:before:top-[1px] checked:before:w-1.5 checked:before:h-2.5 checked:before:border-r-2 checked:before:border-b-2 checked:before:border-white checked:before:rotate-45"
-                                    />
-                                </div>
-                                <div className={`w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 text-sm font-bold`}>
-                                    {getStudentInitials(booking)}
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <Link 
+
+                {/* Card View for Mobile */}
+                <div className="lg:hidden divide-y divide-border-subtle">
+                    <div className="p-4 bg-page flex items-center justify-between border-b border-border">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                checked={bookings.length > 0 && selectedBookings.size === bookings.length}
+                                onChange={handleSelectAll}
+                                aria-label="Select all bookings"
+                                className="w-4 h-4 rounded-sm border border-border accent-accent cursor-pointer"
+                            />
+                            <span className="text-sm font-medium text-text">Select All</span>
+                        </div>
+                    </div>
+                    {sortedBookings.map((booking) => (
+                        <div
+                            key={booking.id}
+                            onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
+                            className={`p-4 cursor-pointer hover:bg-page/60 transition-colors ${selectedBookings.has(booking.id) ? 'bg-accent-soft' : ''}`}
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedBookings.has(booking.id)}
+                                            onChange={() => handleSelectRow(booking.id)}
+                                            aria-label="Select booking"
+                                            className="w-4 h-4 rounded-sm border border-border accent-accent cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center text-accent text-xs font-semibold">
+                                        {getStudentInitials(booking)}
+                                    </div>
+                                    <div>
+                                        <Link
                                             href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
-                                            className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors"
+                                            className="text-sm font-medium text-text hover:text-accent hover:underline transition-colors"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             {getStudentNames(booking)}
                                         </Link>
+                                        <p className="text-metadata mt-0.5">{booking.centre?.name}</p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                                        {booking.centre?.name}
-                                    </p>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {getStatusBadge(booking.status)}
-                                <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                        suppressHydrationWarning
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActiveDropdown(activeDropdown === `mobile-${booking.id}` ? null : `mobile-${booking.id}`);
-                                        }}
-                                        className="p-1.5 hover:bg-secondary rounded-lg transition-colors -mr-1"
-                                    >
-                                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                    </button>
-                                    
-                                    {activeDropdown === `mobile-${booking.id}` && (
-                                        <>
-                                            <div className="absolute right-0 top-full mt-2 w-52 bg-popover/90 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-20">
+                                <div className="flex items-center gap-2">
+                                    <StatusBadge status={booking.status} />
+                                    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            suppressHydrationWarning
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActiveDropdown(activeDropdown === `mobile-${booking.id}` ? null : `mobile-${booking.id}`);
+                                            }}
+                                            className="p-1.5 hover:bg-page rounded-sm transition-colors -mr-1"
+                                            aria-label="Booking actions"
+                                        >
+                                            <MoreVertical className="w-4 h-4 text-text-muted" />
+                                        </button>
+
+                                        {activeDropdown === `mobile-${booking.id}` && (
+                                            <div className="absolute right-0 top-full mt-1 w-52 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border py-1.5 z-20">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors w-full text-left"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
                                                 >
                                                     <CalendarIcon className="w-4 h-4" />
                                                     Reschedule
@@ -917,18 +832,18 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 {centres.length > 1 && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setReassignTarget(booking.id); setActiveDropdown(null); }}
-                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-foreground transition-colors w-full text-left"
+                                                        className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
                                                     >
-                                                        <MapPin className="w-4 h-4 text-primary" />
+                                                        <MapPin className="w-4 h-4 text-accent" />
                                                         Reassign Centre
                                                     </button>
                                                 )}
-                                                <div className="mx-3 my-1 border-t border-border" />
-                                                <p className="px-4 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Quick Status</p>
+                                                <div className="mx-3 my-1 border-t border-border-subtle" />
+                                                <p className="px-4 py-1 text-label text-text-muted">Quick Status</p>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'confirmed'); }}
                                                     disabled={updatingStatus === booking.id}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-primary transition-colors w-full text-left disabled:opacity-50"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
                                                 >
                                                     <BookOpen className="w-4 h-4" />
                                                     Mark as Booked
@@ -936,7 +851,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'signed_up'); }}
                                                     disabled={updatingStatus === booking.id}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-success transition-colors w-full text-left disabled:opacity-50"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
                                                     Mark as Signed-up
@@ -945,201 +860,196 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     onClick={(e) => { e.stopPropagation(); handleQuickStatus(booking.id, 'completed'); }}
                                                     disabled={updatingStatus === booking.id}
                                                     title="Marks entire booking as attended (applies to all children)"
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-secondary text-sm font-medium text-primary transition-colors w-full text-left disabled:opacity-50"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left disabled:opacity-50"
                                                 >
                                                     <GraduationCap className="w-4 h-4" />
                                                     Mark as Attended
                                                 </button>
-                                                <div className="mx-3 my-1 border-t border-border" />
+                                                <div className="mx-3 my-1 border-t border-border-subtle" />
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); openCancelModal(booking.id); }}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-destructive/10 text-sm font-medium text-destructive transition-colors w-full text-left"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
                                                 >
                                                     <X className="w-4 h-4" />
                                                     Cancel Booking
                                                 </button>
-                                                <div className="mx-3 my-1 border-t border-border" />
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setConfirmDelete(booking.id); setActiveDropdown(null); }}
-                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-destructive/10 text-sm font-medium text-destructive transition-colors w-full text-left"
+                                                    className="flex items-center gap-3 px-4 py-2 hover:bg-danger-soft text-sm text-danger transition-colors w-full text-left"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                     Delete Booking
                                                 </button>
                                             </div>
-                                        </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mb-3 pl-8">
+                                <div className="flex flex-col gap-1.5 text-metadata">
+                                    <span className="font-medium text-text-secondary">{booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <CalendarIcon className="w-3.5 h-3.5 text-text-muted" />
+                                        {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-text-muted" />
+                                        {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {(hasMedicalNote(booking) || hasSafeguardingNote(booking)) && (
+                                <div className="flex items-center gap-2 mb-3 pl-8">
+                                    {hasMedicalNote(booking) && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-danger-soft"
+                                        >
+                                            <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                                        </button>
+                                    )}
+                                    {hasSafeguardingNote(booking) && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
+                                            className="flex items-center justify-center w-6 h-6 rounded-full bg-accent-soft"
+                                        >
+                                            <Shield className="w-3.5 h-3.5 text-accent" />
+                                        </button>
                                     )}
                                 </div>
+                            )}
+
+                            <div className="flex mt-3 pl-8">
+                                <Button variant="secondary" size="sm" className="w-full" asChild>
+                                    <Link href={`/dashboard/bookings/${booking.id}`}>
+                                        <Eye className="w-4 h-4" />
+                                        View Details
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-3 mb-3 pl-8">
-                            <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
-                                <span className="font-semibold text-foreground/80">{booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}</span>
-                                <div className="flex items-center gap-1.5">
-                                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground/60" />
-                                    {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-muted-foreground/60" />
-                                    {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
-                                </div>
-                            </div>
-                        </div>
-
-                        {(hasMedicalNote(booking) || hasSafeguardingNote(booking)) && (
-                            <div className="flex items-center gap-2 mb-3 pl-8">
-                                {hasMedicalNote(booking) && (
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10 border border-destructive/20 hover:bg-destructive/20 transition-colors shadow-sm"
-                                    >
-                                        <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
-                                    </button>
-                                )}
-                                {hasSafeguardingNote(booking) && (
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); setSelectedFlagsBooking(booking); }}
-                                        className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors shadow-sm"
-                                    >
-                                        <Shield className="w-3.5 h-3.5 text-primary" />
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="flex mt-3 pl-8">
-                            <Link
-                                href={`/dashboard/bookings/${booking.id}`}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-xl text-sm font-semibold text-foreground transition-all border border-border"
-                            >
-                                <Eye className="w-4 h-4" />
-                                View Details
-                            </Link>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-
-        {/* Floating Action Bar */}
-        <div 
-            className={`fixed bottom-0 left-0 right-0 z-[100] flex justify-center pb-6 transition-all duration-300 ${
-                selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
-            }`}
-        >
-            <div className="bg-popover/90 backdrop-blur-md border border-border shadow-xl rounded-2xl p-2 px-3 flex items-center gap-4 mx-4 w-full max-w-2xl justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="pl-2 pr-4 py-2 border-r border-border flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/30">
-                            {selectedBookings.size}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 overflow-x-auto">
-                        <button
-                            onClick={() => handleBulkStatus('completed')}
-                            disabled={isProcessingBulk}
-                            title="Marks selected bookings as attended (applies to all children in each booking)"
-                            className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
-                        >
-                            {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
-                            <span className="hidden sm:inline">Mark as</span> Attended
-                        </button>
-                        <button
-                            onClick={() => handleBulkStatus('signed_up')}
-                            disabled={isProcessingBulk}
-                            className="flex items-center gap-2 px-4 py-2 bg-success/10 hover:bg-success/20 text-success rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
-                        >
-                            {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                            <span className="hidden sm:inline">Mark</span> Signed-up
-                        </button>
-                    </div>
+                    ))}
                 </div>
-                <button
-                    onClick={() => setConfirmBulkDelete(true)}
-                    disabled={isProcessingBulk}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 active:scale-95 duration-100"
-                >
-                    {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    Delete
-                </button>
             </div>
-        </div>
 
-        {/* Bulk Delete Confirmation Modal */}
-        {confirmBulkDelete && (
+            {/* Floating Action Bar */}
             <div
-                className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="bulk-delete-dialog-title"
+                className={`fixed bottom-0 left-0 right-0 z-[100] flex justify-center pb-6 transition-all duration-300 ${
+                    selectedBookings.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+                }`}
             >
-                <div className="bg-popover/90 backdrop-blur-md border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-destructive/20">
-                        <Trash2 className="w-7 h-7 text-destructive" />
+                <div className="bg-surface-elevated border border-border shadow-[var(--shadow-popover)] rounded-md p-2 px-3 flex items-center gap-4 mx-4 w-full max-w-2xl justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="pl-2 pr-4 py-2 border-r border-border-subtle flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded-full bg-accent-soft text-accent flex items-center justify-center font-semibold text-xs">
+                                {selectedBookings.size}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 overflow-x-auto">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleBulkStatus('completed')}
+                                disabled={isProcessingBulk}
+                                title="Marks selected bookings as attended (applies to all children in each booking)"
+                            >
+                                {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <GraduationCap className="w-4 h-4" />}
+                                <span className="hidden sm:inline">Mark as</span> Attended
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleBulkStatus('signed_up')}
+                                disabled={isProcessingBulk}
+                            >
+                                {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                <span className="hidden sm:inline">Mark</span> Signed-up
+                            </Button>
+                        </div>
                     </div>
-                    <h3 id="bulk-delete-dialog-title" className="text-lg font-bold text-foreground text-center mb-2">
-                        Delete {selectedBookings.size} Booking{selectedBookings.size !== 1 ? 's' : ''}?
-                    </h3>
-                    <p className="text-sm text-muted-foreground text-center mb-6">
-                        This will permanently remove <strong className="text-foreground">{selectedBookings.size} booking{selectedBookings.size !== 1 ? 's' : ''}</strong>. This action <strong className="text-foreground">cannot be undone</strong>.
-                    </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setConfirmBulkDelete(false)}
-                            className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-2xl text-sm font-semibold text-foreground transition-all active:scale-95 duration-100 border border-border"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleBulkDelete}
-                            className="flex-1 px-4 py-2.5 bg-destructive hover:bg-destructive/90 rounded-2xl text-sm font-bold text-destructive-foreground transition-all active:scale-95 duration-100 flex items-center justify-center gap-2"
-                        >
-                            <Trash2 className="w-4 h-4" /> Delete All
-                        </button>
-                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmBulkDelete(true)}
+                        disabled={isProcessingBulk}
+                        className="text-danger hover:bg-danger-soft"
+                    >
+                        {isProcessingBulk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        Delete
+                    </Button>
                 </div>
             </div>
-        )}
 
-        {/* Side Panel for Flags */}
-        {selectedFlagsBooking && (
-            <div className="fixed inset-0 z-[300] flex justify-end bg-black/40 backdrop-blur-sm" onClick={() => setSelectedFlagsBooking(null)}>
-                <div 
-                    className="w-full max-w-sm h-full bg-background border-l border-border shadow-2xl p-6 flex flex-col animate-in slide-in-from-right duration-300"
-                    onClick={(e) => e.stopPropagation()}
+            {/* Bulk Delete Confirmation Modal */}
+            {confirmBulkDelete && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="bulk-delete-dialog-title"
                 >
-                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-                        <h2 className="text-lg font-bold text-foreground">Important Notes</h2>
-                        <button onClick={() => setSelectedFlagsBooking(null)} className="p-2 hover:bg-secondary rounded-full transition-colors">
-                            <X className="w-5 h-5 text-muted-foreground" />
-                        </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-                        {hasMedicalNote(selectedFlagsBooking) && (
-                            <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-2xl">
-                                <div className="flex items-center gap-2 text-destructive font-bold mb-2">
-                                    <AlertTriangle className="w-4 h-4" /> Medical / Allergy Alert
-                                </div>
-                                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                                    {getMedicalNotesContent(selectedFlagsBooking)}
-                                </div>
-                            </div>
-                        )}
-                        {hasSafeguardingNote(selectedFlagsBooking) && (
-                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
-                                <div className="flex items-center gap-2 text-primary font-bold mb-2">
-                                    <Shield className="w-4 h-4" /> Safeguarding Alert
-                                </div>
-                                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                                    {getSafeguardingNotesContent(selectedFlagsBooking)}
-                                </div>
-                            </div>
-                        )}
+                    <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 rounded-md bg-danger-soft flex items-center justify-center mx-auto mb-4">
+                            <Trash2 className="w-6 h-6 text-danger" />
+                        </div>
+                        <h3 id="bulk-delete-dialog-title" className="text-section-title text-text text-center mb-2">
+                            Delete {selectedBookings.size} Booking{selectedBookings.size !== 1 ? 's' : ''}?
+                        </h3>
+                        <p className="text-small-body text-text-secondary text-center mb-6">
+                            This will permanently remove <strong className="text-text">{selectedBookings.size} booking{selectedBookings.size !== 1 ? 's' : ''}</strong>. This action <strong className="text-text">cannot be undone</strong>.
+                        </p>
+                        <div className="flex gap-3">
+                            <Button variant="secondary" className="flex-1" onClick={() => setConfirmBulkDelete(false)}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" className="flex-1" onClick={handleBulkDelete}>
+                                <Trash2 className="w-4 h-4" /> Delete All
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
+            )}
+
+            {/* Side Panel for Flags */}
+            {selectedFlagsBooking && (
+                <div className="fixed inset-0 z-[300] flex justify-end bg-black/40" onClick={() => setSelectedFlagsBooking(null)}>
+                    <div
+                        className="w-full max-w-sm h-full bg-surface border-l border-border shadow-[var(--shadow-popover)] p-6 flex flex-col animate-in slide-in-from-right duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+                            <h2 className="text-section-title text-text">Important Notes</h2>
+                            <button onClick={() => setSelectedFlagsBooking(null)} className="p-2 hover:bg-page rounded-full transition-colors">
+                                <X className="w-5 h-5 text-text-muted" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                            {hasMedicalNote(selectedFlagsBooking) && (
+                                <div className="p-4 bg-danger-soft rounded-md">
+                                    <div className="flex items-center gap-2 text-danger font-semibold mb-2">
+                                        <AlertTriangle className="w-4 h-4" /> Medical / Allergy Alert
+                                    </div>
+                                    <div className="text-sm text-text whitespace-pre-wrap leading-relaxed">
+                                        {getMedicalNotesContent(selectedFlagsBooking)}
+                                    </div>
+                                </div>
+                            )}
+                            {hasSafeguardingNote(selectedFlagsBooking) && (
+                                <div className="p-4 bg-accent-soft rounded-md">
+                                    <div className="flex items-center gap-2 text-accent font-semibold mb-2">
+                                        <Shield className="w-4 h-4" /> Safeguarding Alert
+                                    </div>
+                                    <div className="text-sm text-text whitespace-pre-wrap leading-relaxed">
+                                        {getSafeguardingNotesContent(selectedFlagsBooking)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

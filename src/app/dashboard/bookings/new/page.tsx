@@ -4,7 +4,10 @@ import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import BookingForm from '@/features/bookings/components/BookingForm';
 import Link from 'next/link';
-import { MapPin, ArrowLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { MapPin, ChevronLeft, ArrowRight } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default async function NewBookingPage(props: {
     searchParams: Promise<{ centreId?: string }>;
@@ -21,22 +24,17 @@ export default async function NewBookingPage(props: {
 
     if (orgCentres.length === 0) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <div className="glassmorphic-card p-12 rounded-[40px] text-center max-w-md">
-                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-primary/20">
-                        <MapPin className="w-8 h-8 text-primary" />
-                    </div>
-                    <h2 className="text-2xl font-black text-foreground mb-4">No Centres Found</h2>
-                    <p className="text-muted-foreground font-medium mb-8">
-                        You need to create a centre before you can book sessions.
-                    </p>
-                    <Link
-                        href="/dashboard/centres"
-                        className="px-8 py-4 bg-primary text-primary-foreground font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all inline-block glow-btn"
-                    >
-                        Go to Centres
-                    </Link>
-                </div>
+            <div className="max-w-2xl mx-auto">
+                <EmptyState
+                    icon={<MapPin className="w-8 h-8" />}
+                    title="No centres found"
+                    description="You need to create a centre before you can book sessions."
+                    action={
+                        <Button asChild>
+                            <Link href="/dashboard/centres">Go to Centres</Link>
+                        </Button>
+                    }
+                />
             </div>
         );
     }
@@ -58,54 +56,44 @@ export default async function NewBookingPage(props: {
 
     // Show centre picker
     return (
-        <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto">
-                {/* Back link */}
+        <div className="max-w-2xl mx-auto space-y-5">
+            <div>
                 <Link
                     href="/dashboard/bookings"
-                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold mb-10 group active:scale-95 duration-100"
+                    className="inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors mb-3"
                 >
-                    <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
-                        <ArrowLeft className="w-4 h-4" />
-                    </div>
+                    <ChevronLeft className="w-4 h-4" />
                     Back to Bookings
                 </Link>
+                <h1 className="text-page-title text-text">New Session Booking</h1>
+                <p className="text-small-body text-text-secondary mt-1">Select the centre for this booking</p>
+            </div>
 
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl font-black text-foreground tracking-tight mb-2">
-                        New Session Booking
-                    </h1>
-                    <p className="text-muted-foreground font-medium">
-                        Select the centre for this booking
-                    </p>
-                </div>
-
-                <div className="space-y-3">
-                    {orgCentres.map(centre => (
-                        <Link
-                            key={centre.id}
-                            href={`/dashboard/bookings/new?centreId=${centre.id}`}
-                            className="group flex items-center justify-between bg-card border border-border hover:border-primary/40 hover:bg-secondary/40 p-6 rounded-2xl transition-all active:scale-[0.985] duration-100"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
-                                    <MapPin className="w-5 h-5 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="font-black text-foreground text-lg leading-tight">
-                                        {centre.name}
-                                    </p>
-                                    {centre.address && (
-                                        <p className="text-sm text-muted-foreground font-medium mt-0.5">
-                                            {centre.address}
-                                        </p>
-                                    )}
-                                </div>
+            <div className="space-y-2">
+                {orgCentres.map(centre => (
+                    <Link
+                        key={centre.id}
+                        href={`/dashboard/bookings/new?centreId=${centre.id}`}
+                        className="group flex items-center justify-between bg-surface border border-border hover:border-accent/40 hover:bg-page p-4 rounded-md transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-soft">
+                                <MapPin className="w-5 h-5 text-accent" />
                             </div>
-                            <ArrowRight className="w-5 h-5 text-primary opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                        </Link>
-                    ))}
-                </div>
+                            <div>
+                                <p className="font-semibold text-text text-small-body leading-tight">
+                                    {centre.name}
+                                </p>
+                                {centre.address && (
+                                    <p className="text-xs text-text-muted mt-0.5">
+                                        {centre.address}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                    </Link>
+                ))}
             </div>
         </div>
     );
@@ -115,32 +103,24 @@ export default async function NewBookingPage(props: {
 
 function BookingPageContent({ centre }: { centre: { id: string; name: string; operatingHours?: string | null; address?: string | null } }) {
     return (
-        <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-                {/* Back link */}
-                <div className="mb-10">
-                    <Link
-                        href="/dashboard/bookings"
-                        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-bold group active:scale-95 duration-100"
-                    >
-                        <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
-                            <ArrowLeft className="w-4 h-4" />
-                        </div>
-                        Back to Bookings
-                    </Link>
+        <div className="max-w-4xl mx-auto space-y-5">
+            <div>
+                <Link
+                    href="/dashboard/bookings"
+                    className="inline-flex items-center gap-1.5 text-small-body font-medium text-text-secondary hover:text-text transition-colors mb-3"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                    Back to Bookings
+                </Link>
+                <h1 className="text-page-title text-text">New Session Booking</h1>
+                <div className="inline-flex items-center gap-1.5 text-text-muted text-xs font-medium mt-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {centre.name}
                 </div>
+            </div>
 
-                <div className="mb-10 text-center">
-                    <h1 className="text-4xl font-black text-foreground tracking-tight mb-2">
-                        New Session Booking
-                    </h1>
-                    <div className="inline-flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-xs">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {centre.name}
-                    </div>
-                </div>
-
-                <div className="glassmorphic-card p-8 md:p-12 rounded-[48px]">
+            <Card>
+                <div className="p-5 sm:p-8">
                     <BookingForm
                         centreId={centre.id}
                         centreName={centre.name}
@@ -148,7 +128,7 @@ function BookingPageContent({ centre }: { centre: { id: string; name: string; op
                         backToCentresUrl="/dashboard/bookings"
                     />
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

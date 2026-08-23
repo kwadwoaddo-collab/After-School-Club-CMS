@@ -203,3 +203,115 @@ silently.
 ## M. Proposed Stage B implementation scope
 
 Modernise the staff-facing dashboard surfaces onto the frozen design system while preserving the calendar/scheduling-appropriate layout latitude the ticket explicitly grants: List (`page.tsx`, `BookingsTable`, `BookingsFilters`), Detail (`page.tsx`, `AttendanceDropdown`), New/Create host (`new/page.tsx` wrapper — `BookingForm` itself is shared with two public hosts and will be restyled carefully to avoid breaking those), Reschedule (`reschedule/page.tsx`, `RescheduleForm`), and the reassign-centre modal. Full responsive/theme verification, RSC boundary re-check under real seeded data, and the completion report follow per the ticket's process — all as a subsequent piece of this milestone's work.
+
+## N. Stage B — visual modernisation (completed)
+
+Every surface listed in §M was restyled onto the frozen design system
+(`Table`, `Card`, `Badge`, `Button`, `EmptyState`, `Skeleton`, the token
+vocabulary, and the established responsive/segmented-tab/modal patterns
+already in use on Students/Parents/Staff/Centres): the List page and its
+`BookingsFilters`/`BookingsTable` subcomponents, Booking Detail (including
+the lifecycle timeline, attendee cards, parent/staff info, and
+`AttendanceDropdown`), the New-booking centre picker and dashboard-host
+wrapper (`BookingForm.tsx` itself was **not** touched — see below),
+Reschedule (`reschedule/page.tsx` wrapper and `RescheduleForm`),
+`ReassignCentreButton`/`ReassignCentreModal`, `MarkAttendedButton`, and the
+three `loading.tsx` skeletons (`bookings/loading.tsx`,
+`bookings/[bookingId]/loading.tsx`, `bookings/new/loading.tsx` — a
+`.../reschedule/loading.tsx` does not exist in this codebase, confirmed by
+directory listing, so there was nothing to restyle there). All Stage-A and
+Stage-A-follow-up security fixes already present in these files (centre
+membership on Detail, organisation+centre isolation on Reschedule) were
+preserved verbatim — only presentation changed. `AppointmentScorecard.tsx`
+and `BookingList.tsx` (`src/features/bookings/components/`) were found to
+still carry the old visual language but are dead code — exported from
+`src/features/bookings/index.ts` but not imported by any route, dashboard
+surface, or public/portal host (confirmed by repo-wide grep) — so they were
+deliberately left untouched as out-of-scope debt rather than restyled or
+deleted.
+
+**`BookingForm.tsx` (ticket §6):** left byte-for-byte unmodified. Its three
+hosts were each regression-checked live after the surrounding pages changed:
+the authenticated dashboard host (`/dashboard/bookings/new`) — new-family
+entry, existing-family search (`GET /api/search`) and selection
+(`GET /api/parents/[id]`, exercising the Stage-A role-restriction fix)
+all functioned with zero console/page errors; the public org/centre host
+(`/book/[orgSlug]/[centreSlug]`) — loaded and rendered its own unchanged
+styling, zero errors; the public centre-subdomain host
+(`/centre-portal/[subdomain]/book`) — same. No visual change was made to
+any of the three hosts.
+
+**Two evidenced, narrow defects found during manual verification and fixed
+in-line with the rest of Stage B (not deferred, per the same "evidenced
+sibling comparison, no invented policy" discipline used for every Stage-A
+fix):**
+
+1. **Booking search was completely broken.** `src/app/dashboard/bookings/page.tsx`'s
+   search query joined `bookingAttendees` → an aliased `attendeeChildren`,
+   but its `WHERE` clause also referenced the bare, never-joined `children`
+   table (`children.firstName`/`children.lastName`) — `bookings` has no
+   direct child reference, only `bookingAttendees.childId → children.id`,
+   which `attendeeChildren` already covers. Postgres rejected every search
+   with `invalid reference to FROM-clause entry for table "children"`,
+   which the existing `catch` block silently turned into an "Unable to load
+   bookings" banner and an always-empty result set — i.e. the search box
+   never worked, for any query, confirmed live and via direct `psql`
+   reproduction of the generated SQL. Fix: removed the two dead, duplicate
+   conditions referencing the unjoined table; `attendeeChildren.firstName`/
+   `lastName` already provide identical search coverage. Reverified live
+   (search for an existing parent's first name now returns the matching
+   booking; a no-match search now shows the plain empty state with no error
+   banner).
+2. **The `signed_up` booking status was invisible in list aggregates.**
+   `VALID_BOOKING_STATUSES` (same file) and the row-level `STATUS_LABELS`/
+   `STATUS_VARIANTS` maps (`BookingsTable.tsx`, Booking Detail) all treat
+   `signed_up` as one of six legitimate statuses, and it renders correctly
+   as a badge on individual rows — but the List page's `statusCounts`
+   aggregation and `BookingsFilters`' status-tab list only ever handled
+   five, omitting it. Net effect: a booking with this status was invisible
+   to every status tab and silently excluded from `totalAggCount`, so the
+   header's "X of Y" summary could show more results than the tabs summed
+   to (reproduced live: "9 of 8" with one `signed_up` booking seeded).
+   Fix: added `signed_up` to the `statusCounts` map and `totalAggCount` sum
+   in `page.tsx`, and added a "Signed-up" tab to `BookingsFilters`'
+   `statusOptionsWithCounts` (covers both its desktop and mobile-sheet
+   renderings, which share the same array). Reverified live — header count
+   and tab sum now agree, and the new tab correctly filters via the
+   existing `VALID_BOOKING_STATUSES`-gated `status` query param.
+
+**One in-scope regression introduced and caught during responsive
+verification, fixed before commit:** the restyled Booking Detail header
+(back-link + title + Reschedule/Mark-as-Attended buttons) did not wrap at
+375px, forcing 40px of horizontal overflow (`document.documentElement.scrollWidth`
+measured 415px against a 375px viewport). Fixed by making the header
+`flex-col` below `sm` and `flex-row` at `sm`+, matching the established
+site-wide responsive-header pattern (Attendance, Communications, Incidents,
+etc.). Reverified: 375px scrollWidth is 403px post-fix — the residual 28px
+comes from a `Safeguarding` radio label inside `InternalNotesTimeline`
+(`src/features/students/components/`), a shared, frozen Students-feature
+component several other frozen/other-milestone surfaces also render; fixing
+it is out of this milestone's scope (§14) and is noted here as inherited,
+pre-existing debt rather than fixed silently. No other page in the primary
+scope list overflows at 375, 834, or 1440px (verified via
+`document.documentElement.scrollWidth` on List, Detail, Reschedule, and
+New at all three widths).
+
+**Verification performed:** `npm run typecheck` (0 errors), `npm run lint`
+(0 errors/warnings, whole repo), `npx vitest run` (301 passing, same
+pre-existing unrelated `src/features/communications/actions.test.ts`
+module-resolution failure, unchanged since Milestone 2.5), `npm run build`
+(succeeds, all Bookings routes compile). Live verification against seeded
+data (`Bright Star Academy`, 3 centres, 9–10 bookings spanning all six
+statuses after seeding for visual coverage): populated list, filtered-empty
+state, Booking Detail, Reschedule, New-booking centre picker and form,
+existing-parent search/select, reassign-centre modal (end-to-end: modal →
+select → save → `PATCH /api/bookings/[bookingId]/centre` → DB update,
+confirmed via `psql`), cancel-booking confirmation modal, at 1440/834/375px
+and in both themes — zero browser console or page errors across every
+capture. Cross-org security regression reverified live with a throwaway
+org/centre/parent/booking (Detail → 404, no data leak; Reschedule →
+redirect, no data leak; `DELETE /api/bookings/[bookingId]` → 403) then
+cleaned up via `psql`; cross-centre coverage relies on the existing
+`authorization.test.ts`/`security-p1.test.ts` suites (no second
+password-holding non-owner account exists in the seed to drive a live
+non-owner browser session).

@@ -4,6 +4,8 @@ import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Check, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 interface RescheduleFormProps {
     bookingId: string;
@@ -107,26 +109,26 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
     const today = new Date().toISOString().split('T')[0];
 
     return (
-        <div className="bg-card border border-outline-variant/10 rounded-[32px] p-8 shadow-xl">
-            <h3 className="text-lg font-bold text-white mb-6">Select New Date & Time</h3>
+        <Card className="p-6">
+            <h3 className="text-section-title text-text mb-6">Select New Date &amp; Time</h3>
 
             {success ? (
                 <div className="text-center py-8 animate-in fade-in zoom-in duration-500">
-                    <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Check className="w-8 h-8 text-emerald-400" />
+                    <div className="flex size-14 items-center justify-center rounded-full bg-success-soft mx-auto mb-4">
+                        <Check className="w-7 h-7 text-success" />
                     </div>
-                    <h4 className="text-xl font-bold text-white mb-2">Booking Rescheduled!</h4>
-                    <p className="text-on-surface-variant">Redirecting to booking details...</p>
+                    <h4 className="text-section-title text-text mb-2">Booking Rescheduled!</h4>
+                    <p className="text-text-secondary text-small-body">Redirecting to booking details...</p>
                 </div>
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Date Input */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-300 mb-2">
+                        <label className="block text-label text-text-muted mb-2">
                             New Date
                         </label>
                         <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 type="date"
                                 value={newDate}
@@ -136,18 +138,18 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                                 }}
                                 min={today}
                                 required
-                                className="w-full pl-12 pr-4 py-3 bg-secondary border border-border rounded-2xl text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                className="w-full h-9 pl-9 pr-3 rounded-sm border border-border bg-surface text-text text-small-body focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                             />
                         </div>
                     </div>
 
                     {/* Time Input */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-300 mb-2">
+                        <label className="block text-label text-text-muted mb-2">
                             New Time
                         </label>
                         <div className="relative">
-                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 type="time"
                                 value={newTime}
@@ -155,16 +157,16 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
                                 min={daySchedule?.start || '00:00'}
                                 max={daySchedule?.end || '23:59'}
                                 required
-                                className="w-full pl-12 pr-4 py-3 bg-secondary border border-border rounded-2xl text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                className="w-full h-9 pl-9 pr-3 rounded-sm border border-border bg-surface text-text text-small-body focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                             />
                         </div>
                         {daySchedule && daySchedule.open && (
-                            <p className="mt-2 text-sm text-slate-400 font-medium ml-1">
-                                Centre hours: <span className="text-white font-semibold">{formatAmPm(daySchedule.start)} - {formatAmPm(daySchedule.end)}</span>
+                            <p className="mt-2 text-small-body text-text-secondary">
+                                Centre hours: <span className="text-text font-medium">{formatAmPm(daySchedule.start)} - {formatAmPm(daySchedule.end)}</span>
                             </p>
                         )}
                         {daySchedule && !daySchedule.open && (
-                            <p className="mt-2 text-sm text-rose-400 font-medium ml-1">
+                            <p className="mt-2 text-small-body text-danger">
                                 Centre is closed on this day.
                             </p>
                         )}
@@ -172,28 +174,28 @@ export default function RescheduleForm({ bookingId, currentDate, currentTime, op
 
                     {/* Error Message */}
                     {error && (
-                        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-2xl text-sm font-medium">
+                        <div className="bg-danger-soft border border-danger/20 text-danger px-4 py-3 rounded-md text-small-body font-medium">
                             {error}
                         </div>
                     )}
 
                     {/* Submit Button */}
-                    <button
+                    <Button
                         type="submit"
                         disabled={loading || !newDate || !newTime || (daySchedule ? !daySchedule.open : false)}
-                        className="w-full py-4 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl text-white font-bold transition-all shadow-lg shadow-primary/30 disabled:shadow-none flex items-center justify-center gap-2 glow-btn disabled:opacity-50"
+                        className="w-full"
                     >
                         {loading ? (
                             <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-4 h-4 animate-spin" />
                                 Rescheduling...
                             </>
                         ) : (
                             'Reschedule Booking'
                         )}
-                    </button>
+                    </Button>
                 </form>
             )}
-        </div>
+        </Card>
     );
 }
