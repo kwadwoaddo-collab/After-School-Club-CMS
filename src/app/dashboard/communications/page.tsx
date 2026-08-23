@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
@@ -8,11 +7,22 @@ import CommunicationsClient from './CommunicationsClient';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { requireAuth } from '@/lib/require-auth';
 
+/**
+ * Milestone 3H, C8: this page previously had no role restriction at all —
+ * any authenticated org member (including FRONT_DESK/TUTOR) could view it,
+ * and since sendBroadcast (the underlying server action) also had no role
+ * check of its own (see C1/C8 in project-notes/
+ * milestone-3h-communications-audit.md), effectively anyone could send an
+ * organisation-wide broadcast. Restricted to ORG_OWNER/MANAGER, matching
+ * this codebase's one existing sibling precedent for bulk messaging
+ * (src/app/api/register/bulk-email/route.ts). sendBroadcast itself also
+ * independently enforces this — page-level gating alone is never treated
+ * as sufficient authorization for a server action in this codebase.
+ */
 export default async function CommunicationsPage() {
-    const session = await auth();
-    if (!session?.user) return redirect('/login');
-    if (!session.user.organisationId) return redirect('/onboarding');
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     let org = null;
     let centreIds: string[] = [];
@@ -59,7 +69,7 @@ export default async function CommunicationsPage() {
             )}
 
             {/* Content */}
-            <CommunicationsClient organisationId={session.user.organisationId} centreId={activeCentreId} />
+            <CommunicationsClient centreId={activeCentreId} />
         </div>
     );
 }

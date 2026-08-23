@@ -9,7 +9,7 @@ type Broadcast = Awaited<ReturnType<typeof getBroadcasts>>[number];
 type Parent = Awaited<ReturnType<typeof getParentsForCentre>>[number];
 type ClubSession = Awaited<ReturnType<typeof getClassesForCentre>>[number];
 
-export default function CommunicationsClient({ organisationId, centreId }: { organisationId: string; centreId: string }) {
+export default function CommunicationsClient({ centreId }: { centreId: string }) {
     const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [parents, setParents] = useState<Parent[]>([]);
@@ -21,7 +21,7 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number } | null>(null);
+    const [sendResult, setSendResult] = useState<{ success: boolean; count: number; sent: number; failed: number; error?: string } | null>(null);
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -56,7 +56,6 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
         setSendResult(null);
         try {
             const result = await sendBroadcast({
-                organisationId,
                 centreId,
                 audienceParentIds,
                 subject,
@@ -105,9 +104,15 @@ export default function CommunicationsClient({ organisationId, centreId }: { org
                     <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
                         <h2 className="text-xl font-bold text-foreground mb-6">Compose Message</h2>
                         
-                        {sendResult && (
+                        {sendResult && sendResult.success && (
                             <div className="mb-6 p-4 rounded-xl bg-success/10 border border-success/20 text-success text-sm font-medium">
-                                Successfully queued message to {sendResult.count} parents ({sendResult.sent} sent, {sendResult.failed} failed).
+                                Successfully queued message to {sendResult.count} parents.
+                            </div>
+                        )}
+                        {sendResult && !sendResult.success && (
+                            <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                {sendResult.error || 'Could not send this broadcast.'}
                             </div>
                         )}
 
