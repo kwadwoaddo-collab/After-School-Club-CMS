@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripeService } from '@/lib/services/stripe';
 import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 /**
  * POST /api/webhooks/stripe-invoice
@@ -56,6 +56,21 @@ export async function POST(req: NextRequest) {
         const amountPaid = session.amount_total ? session.amount_total / 100 : 0;
 
         try {
+            // Milestone 3G, L4: Stripe redelivers webhooks on retry (a normal
+            // part of its delivery model, not a hypothetical), and this
+            // handler previously had no guard against inserting the same
+            // payment twice — unlike reconcilePayment's own transactionReference
+            // uniqueness check. session.id is stable per checkout session, so
+            // it doubles as the idempotency key here too.
+            const existingPayment = await db.query.payments.findFirst({
+                where: and(eq(payments.invoiceId, invoiceId), eq(payments.transactionReference, session.id)),
+                columns: { id: true },
+            });
+            if (existingPayment) {
+                logger.info(`[stripe-invoice webhook] Duplicate delivery for session ${session.id} on invoice ${invoiceId} — skipping.`);
+                return NextResponse.json({ ok: true, duplicate: true });
+            }
+
             // 1. Record the payment
             await db.insert(payments).values({
                 invoiceId,

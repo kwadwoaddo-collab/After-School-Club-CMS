@@ -127,6 +127,18 @@ export async function getChildrenByParent(parentId: string) {
     }));
 }
 
+/**
+ * Milestone 3G, L2a/L2: this function previously checked only that the
+ * caller belonged to an organisation — it never verified that the supplied
+ * parentId/childIds/centreId actually belonged to that organisation, and had
+ * no role restriction at all, unlike every other Finance mutation in this
+ * file (deleteInvoice/voidInvoice/resendInvoiceEmail are ORG_OWNER-only;
+ * recordPayment/updateInvoiceDate/updateInvoiceNotes/verifyPayment/
+ * failPayment allow non-owner + centre-check). This applies the same
+ * ORG_OWNER-or-centre-check policy plus explicit org-ownership verification
+ * of every caller-supplied id. See
+ * project-notes/milestone-3g-finance-audit.md, L2a.
+ */
 export async function createInvoice(data: {
     parentId: string;
     childIds: string[];
@@ -140,12 +152,40 @@ export async function createInvoice(data: {
 }) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
 
-    // Fetch child names for the description if multiple are selected
-    const selectedChildren = await db.select().from(children).where(inArray(children.id, data.childIds));
-    
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(data.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
+
+    // Verify the centre belongs to this organisation
+    const centreRecord = await db.query.centres.findFirst({
+        where: and(eq(centres.id, data.centreId), eq(centres.organisationId, orgId)),
+        columns: { id: true }
+    });
+    if (!centreRecord) throw new Error('Centre not found');
+
+    // Verify the parent belongs to this organisation
+    const parentRecord = await db.query.parents.findFirst({
+        where: and(eq(parents.id, data.parentId), eq(parents.organisationId, orgId)),
+        columns: { id: true }
+    });
+    if (!parentRecord) throw new Error('Parent not found');
+
+    // Fetch child names for the description if multiple are selected — org-scoped
+    const selectedChildren = data.childIds.length > 0
+        ? await db.select().from(children).where(and(inArray(children.id, data.childIds), eq(children.organisationId, orgId)))
+        : [];
+    if (selectedChildren.length !== data.childIds.length) {
+        throw new Error('One or more children not found');
+    }
+
     const coveredChildren = selectedChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
-    
+
     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 
     // Execute database operations atomically in a transaction
@@ -207,6 +247,20 @@ export async function createLegacyFamilyAndInvoice(data: {
 }) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(data.invoice.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
+    const centreRecord = await db.query.centres.findFirst({
+        where: and(eq(centres.id, data.invoice.centreId), eq(centres.organisationId, orgId)),
+        columns: { id: true }
+    });
+    if (!centreRecord) throw new Error('Centre not found');
 
     return await db.transaction(async (tx) => {
         // 1. Create Parent
@@ -272,6 +326,27 @@ export async function createAdHocInvoice(data: {
 }) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(data.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
+    const centreRecord = await db.query.centres.findFirst({
+        where: and(eq(centres.id, data.centreId), eq(centres.organisationId, orgId)),
+        columns: { id: true }
+    });
+    if (!centreRecord) throw new Error('Centre not found');
+    if (data.parentId) {
+        const existingParent = await db.query.parents.findFirst({
+            where: and(eq(parents.id, data.parentId), eq(parents.organisationId, orgId)),
+            columns: { id: true }
+        });
+        if (!existingParent) throw new Error('Parent not found');
+    }
 
     return await db.transaction(async (tx) => {
         // 1. Resolve parent — either existing or create a minimal new one
@@ -316,11 +391,29 @@ export async function createAdHocInvoice(data: {
 export async function getInvoiceDetails(invoiceId: string) {
     const session = await auth();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    // Milestone 3G, L2b: this read previously had no role or centre check —
+    // only org scoping. Applying the same non-owner centre-check pattern
+    // used by recordPayment/verifyPayment/etc for defense in depth, since
+    // this is an independently-callable server action regardless of the
+    // ORG_OWNER-only page that's currently the only UI surface reaching it.
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        const target = await db.query.invoices.findFirst({
+            where: and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)),
+            columns: { centreId: true }
+        });
+        if (!target || !accessibleCentreIds.includes(target.centreId)) {
+            throw new Error('Unauthorized: No access to this centre');
+        }
+    }
 
     const result = await db.query.invoices.findFirst({
         where: and(
             eq(invoices.id, invoiceId),
-            eq(invoices.organisationId, session.user.organisationId)
+            eq(invoices.organisationId, orgId)
         ),
         with: {
             centre: true,

@@ -84,7 +84,7 @@ export default async function ReconciliationPage(props: {
   }).filter(i => i.remainingBalance > 0);
 
   return (
-    <div className="flex flex-col h-full bg-[--color-background]">
+    <div className="flex flex-col h-full bg-background">
       <div className="p-6 pb-0">
         <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">Payment Reconciliation</h1>
         <p className="text-muted-foreground font-medium mt-1 text-sm sm:text-base">
@@ -100,7 +100,7 @@ export default async function ReconciliationPage(props: {
             icon="CheckCircle"
           />
         ) : (
-          <ReconciliationClient invoices={enhancedInvoices} organisationId={organisationId} />
+          <ReconciliationClient invoices={enhancedInvoices} />
         )}
       </div>
     </div>

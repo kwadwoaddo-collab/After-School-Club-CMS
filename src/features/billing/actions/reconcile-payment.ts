@@ -5,6 +5,8 @@ import { invoices, payments, children, parents } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { auth } from '@/lib/auth';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const ReconcileSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -13,14 +15,43 @@ const ReconcileSchema = z.object({
   reference: z.string().min(1),
 });
 
+/**
+ * Milestone 3G, L1: this action previously took `organisationId` and
+ * `staffId` as caller-supplied arguments and never called `auth()` at all —
+ * any request that could reach this endpoint could reconcile a payment
+ * against an arbitrary organisation, with the audit trail permanently
+ * recording the literal string 'staff-user' rather than a real user id (see
+ * project-notes/milestone-3g-finance-audit.md, L1). Both values are now
+ * derived from the session, matching the org/centre-check pattern already
+ * established for every other Finance mutation in this codebase
+ * (src/features/finance/actions.ts's recordPayment et al.).
+ */
 export async function reconcilePayment(
-  organisationId: string,
-  staffId: string,
   input: z.infer<typeof ReconcileSchema>
 ): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.organisationId) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  const organisationId = session.user.organisationId;
+  const staffId = session.user.id;
+
   try {
     const data = ReconcileSchema.parse(input);
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session.user.role isn't in the base NextAuth type; same cast pattern used throughout src/features/finance/actions.ts
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+      const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+      const targetInvoice = await db.query.invoices.findFirst({
+        where: and(eq(invoices.id, data.invoiceId), eq(invoices.organisationId, organisationId)),
+        columns: { centreId: true },
+      });
+      if (!targetInvoice || !accessibleCentreIds.includes(targetInvoice.centreId)) {
+        return { success: false, error: 'Unauthorized: No access to this centre' };
+      }
+    }
+
     return await db.transaction(async (tx) => {
       // 1. Check idempotency: does this reference already exist for this invoice?
       const [existing] = await tx.select()
@@ -33,7 +64,7 @@ export async function reconcilePayment(
         );
 
       if (existing) {
-        logger.info(`[Reconcile] Idempotency hit: Payment \${data.reference} already applied to \${data.invoiceId}`);
+        logger.info(`[Reconcile] Idempotency hit: Payment ${data.reference} already applied to ${data.invoiceId}`);
         return { success: true };
       }
 
@@ -73,7 +104,7 @@ export async function reconcilePayment(
         await tx.update(invoices).set({ status: 'partially_paid' }).where(eq(invoices.id, data.invoiceId));
       }
 
-      logger.info(`[Reconcile] Staff \${staffId} reconciled £\${data.amount} via \${data.method} to invoice \${data.invoiceId}`);
+      logger.info(`[Reconcile] Staff ${staffId} reconciled £${data.amount} via ${data.method} to invoice ${data.invoiceId}`);
       return { success: true };
     });
   } catch (err) {

@@ -40,7 +40,7 @@ export class InstalmentService {
     }
 
     await db.insert(invoiceInstalments).values(instalmentsData);
-    logger.info(`[InstalmentService] Created \${numberOfMonths} instalments for invoice \${invoiceId}`);
+    logger.info(`[InstalmentService] Created ${numberOfMonths} instalments for invoice ${invoiceId}`);
   }
 }
 

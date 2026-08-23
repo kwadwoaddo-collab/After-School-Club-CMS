@@ -48,7 +48,7 @@ export class CreditService {
       type: 'credit',
       reason,
     });
-    logger.info(`[CreditService] Issued £\${amount} credit to parent \${parentId}: \${reason}`);
+    logger.info(`[CreditService] Issued £${amount} credit to parent ${parentId}: ${reason}`);
   }
 
   /**
@@ -101,14 +101,14 @@ export class CreditService {
 
       // 3. Idempotency Check
       // We look for a debit record with reason starting with 'Applied to invoice {invoiceId}'
-      const idempotencyReason = `Applied to invoice \${invoiceId}`;
+      const idempotencyReason = `Applied to invoice ${invoiceId}`;
       const [existingDebit] = await tx.select()
         .from(parentCredits)
         .where(
           and(
             eq(parentCredits.parentId, parentId),
             eq(parentCredits.type, 'debit'),
-            sql`\${parentCredits.reason} LIKE \${idempotencyReason + '%'}`
+            sql`${parentCredits.reason} LIKE ${idempotencyReason + '%'}`
           )
         );
 
@@ -159,7 +159,7 @@ export class CreditService {
         amount: creditToApply.toFixed(2),
         method: 'other',
         status: 'verified',
-        transactionReference: `CREDIT-\${Date.now()}`,
+        transactionReference: `CREDIT-${Date.now()}`,
       });
 
       // 7. Update invoice status if fully paid
@@ -173,7 +173,7 @@ export class CreditService {
           .where(eq(invoices.id, invoiceId));
       }
 
-      logger.info(`[CreditService] Applied £\${creditToApply} credit to invoice \${invoiceId}`);
+      logger.info(`[CreditService] Applied £${creditToApply} credit to invoice ${invoiceId}`);
       return { success: true, appliedAmount: creditToApply };
     });
   }

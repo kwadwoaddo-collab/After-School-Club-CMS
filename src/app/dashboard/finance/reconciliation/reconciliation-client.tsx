@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { reconcilePayment } from '@/features/billing/actions/reconcile-payment';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastProvider';
+import { CheckCircle2, Landmark, Ticket, Wallet } from 'lucide-react';
 
 type InvoiceDto = {
   id: string;
@@ -18,12 +19,22 @@ type InvoiceDto = {
   childFirstName: string | null;
 };
 
-export function ReconciliationClient({ 
-  invoices, 
-  organisationId 
-}: { 
-  invoices: InvoiceDto[],
-  organisationId: string
+const METHODS: { id: 'tax_free_childcare' | 'voucher' | 'bank_transfer'; label: string; icon: typeof Landmark }[] = [
+  { id: 'tax_free_childcare', label: 'Tax-Free Childcare', icon: Wallet },
+  { id: 'voucher', label: 'Childcare Voucher', icon: Ticket },
+  { id: 'bank_transfer', label: 'Bank Transfer', icon: Landmark },
+];
+
+// Milestone 3G: `organisationId` is no longer forwarded to reconcilePayment —
+// the server action now derives both organisationId and staffId from the
+// authenticated session itself (see project-notes/milestone-3g-finance-audit.md,
+// L1). The prop is kept optional for backwards compatibility with the parent
+// page but is intentionally unused here.
+export function ReconciliationClient({
+  invoices,
+}: {
+  invoices: InvoiceDto[];
+  organisationId?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -40,7 +51,7 @@ export function ReconciliationClient({
     if (!reference) { toast('Reference is required', 'error'); return; }
 
     startTransition(async () => {
-      const res = await reconcilePayment(organisationId, 'staff-user', {
+      const res = await reconcilePayment({
         invoiceId: selectedInvoice,
         amount: parsedAmount,
         method,
@@ -62,111 +73,123 @@ export function ReconciliationClient({
   const invoice = invoices.find(i => i.id === selectedInvoice);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-[--color-text]">Pending Invoices</h2>
-        <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto">
+        <h2 className="text-lg font-bold text-foreground">Pending Invoices</h2>
+        <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-1">
           {invoices.map(inv => (
-            <div 
+            <button
               key={inv.id}
+              type="button"
               onClick={() => setSelectedInvoice(inv.id)}
-              className={`p-4 border rounded-xl cursor-pointer transition-colors \${
-                selectedInvoice === inv.id 
-                  ? 'border-[--color-primary] bg-[--color-primary]/5' 
-                  : 'border-[--color-border] hover:border-[--color-primary]/50 bg-white dark:bg-black/20'
+              className={`text-left p-4 border rounded-2xl transition-all ${
+                selectedInvoice === inv.id
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  : 'border-border hover:border-primary/40 bg-card'
               }`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <div className="font-medium text-[--color-text]">
+              <div className="flex justify-between items-start mb-2 gap-3">
+                <div className="min-w-0">
+                  <div className="font-bold text-foreground truncate">
                     {inv.parentFirstName} {inv.parentLastName}
                   </div>
-                  <div className="text-sm text-[--color-text-secondary]">
+                  <div className="text-sm text-muted-foreground">
                     {inv.invoiceNumber}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold text-[--color-text]">
+                <div className="text-right shrink-0">
+                  <div className="font-black text-foreground tabular-nums">
                     £{inv.remainingBalance.toFixed(2)}
                   </div>
-                  <div className="text-xs text-[--color-text-secondary]">
+                  <div className="text-xs text-muted-foreground tabular-nums">
                     of £{inv.totalAmount.toFixed(2)}
                   </div>
                 </div>
               </div>
-              
+
               {inv.childTfcRef && (
-                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   TFC Ref: {inv.childTfcRef}
                 </div>
               )}
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
-      <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-[--color-text]">Reconcile Payment</h2>
-        
-        <div className="p-6 border border-[--color-border] rounded-xl bg-white dark:bg-black/20 space-y-4">
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-foreground">Reconcile Payment</h2>
+
+        <div className="p-6 border border-border rounded-[32px] bg-card space-y-5">
           {!selectedInvoice ? (
-            <div className="text-center text-[--color-text-secondary] py-8">
+            <div className="text-center text-muted-foreground py-12 flex flex-col items-center gap-3">
+              <CheckCircle2 className="w-10 h-10 text-muted-foreground/30" />
               Select an invoice from the list to reconcile a payment.
             </div>
           ) : (
             <>
-              <div className="pb-4 border-b border-[--color-border]">
-                <div className="text-sm text-[--color-text-secondary]">Reconciling for</div>
-                <div className="font-medium text-[--color-text] text-lg">
+              <div className="pb-4 border-b border-border">
+                <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Reconciling for</div>
+                <div className="font-bold text-foreground text-lg">
                   {invoice?.parentFirstName} {invoice?.parentLastName} ({invoice?.invoiceNumber})
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[--color-text]">Payment Method</label>
-                <select 
-                  value={method} 
-                  onChange={e => setMethod(e.target.value as 'tax_free_childcare' | 'voucher' | 'bank_transfer')}
-                  className="w-full p-2.5 rounded-lg border border-[--color-border] bg-[--color-background]"
-                >
-                  <option value="tax_free_childcare">Tax-Free Childcare</option>
-                  <option value="voucher">Childcare Voucher</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                </select>
+                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Payment Method</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {METHODS.map(m => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setMethod(m.id)}
+                      className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
+                        method === m.id
+                          ? 'bg-primary/10 border-primary ring-1 ring-primary'
+                          : 'bg-secondary/40 border-border hover:bg-secondary/60'
+                      }`}
+                    >
+                      <m.icon className={`w-4 h-4 ${method === m.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className={`text-sm font-bold ${method === m.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {m.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[--color-text]">Amount (£)</label>
-                <input 
-                  type="number" 
+                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Amount (£)</label>
+                <input
+                  type="number"
                   step="0.01"
                   min="0.01"
                   max={invoice?.remainingBalance}
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  placeholder={`Max: \${invoice?.remainingBalance.toFixed(2)}`}
-                  className="w-full p-2.5 rounded-lg border border-[--color-border] bg-[--color-background]"
+                  placeholder={`Max: ${invoice?.remainingBalance.toFixed(2)}`}
+                  className="w-full p-3 rounded-2xl border border-border bg-secondary/40 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[--color-text]">Payment Reference</label>
-                <input 
-                  type="text" 
+                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Payment Reference</label>
+                <input
+                  type="text"
                   value={reference}
                   onChange={e => setReference(e.target.value)}
                   placeholder="e.g. JSMIT12345TFC"
-                  className="w-full p-2.5 rounded-lg border border-[--color-border] bg-[--color-background]"
+                  className="w-full p-3 rounded-2xl border border-border bg-secondary/40 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
-                <p className="text-xs text-[--color-text-secondary]">
+                <p className="text-xs text-muted-foreground">
                   Must be unique per invoice to prevent double-applying.
                 </p>
               </div>
 
-              <Button 
-                onClick={handleReconcile} 
+              <Button
+                onClick={handleReconcile}
                 disabled={isPending || !amount || !reference}
-                className="w-full mt-4"
+                className="w-full mt-2"
               >
                 {isPending ? 'Reconciling...' : 'Reconcile Payment'}
               </Button>

@@ -73,15 +73,31 @@ describe('CreditService', () => {
       ]); // available = 150
 
       const result = await creditService.applyCreditToInvoice('org-1', 'parent-1', 'inv-1');
-      
+
       expect(result.success).toBe(true);
       expect(result.appliedAmount).toBe(80); // Capped at remaining invoice balance
 
       // Should have inserted a debit of 80
       expect(txMock.insert).toHaveBeenCalledTimes(2); // One debit, one payment
-      
+
       // Should have updated invoice to paid
       expect(txMock.update).toHaveBeenCalled();
+
+      // Milestone 3G, L3 regression: `idempotencyReason` was previously built
+      // from a template literal with an escaped `\${invoiceId}`, so the
+      // debit's `reason` column (and, via the sql`` tag, the LIKE-based
+      // idempotency check itself) would store/match the literal text
+      // "Applied to invoice ${invoiceId}" for every invoice instead of the
+      // real invoice id. Both existing tests above passed against that bug
+      // because this mock never inspected the actual string content — this
+      // assertion does.
+      const debitInsertArgs = txMock.values.mock.calls[0][0];
+      expect(debitInsertArgs.reason).toBe('Applied to invoice inv-1');
+      expect(debitInsertArgs.reason).not.toContain('${invoiceId}');
+
+      const paymentInsertArgs = txMock.values.mock.calls[1][0];
+      expect(paymentInsertArgs.transactionReference).toMatch(/^CREDIT-\d+$/);
+      expect(paymentInsertArgs.transactionReference).not.toContain('${');
     });
 
     it('skips if already idempotently applied', async () => {

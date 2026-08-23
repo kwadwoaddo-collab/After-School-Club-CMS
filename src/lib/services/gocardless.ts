@@ -53,10 +53,10 @@ export class GoCardlessService {
       throw new Error('GoCardless not configured');
     }
 
-    const res = await fetch(`\${API_BASE}\${path}`, {
+    const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers: {
-        'Authorization': `Bearer \${GOCARDLESS_ACCESS_TOKEN}`,
+        'Authorization': `Bearer ${GOCARDLESS_ACCESS_TOKEN}`,
         'GoCardless-Version': '2015-07-06',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -67,7 +67,7 @@ export class GoCardlessService {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       logger.error('[GoCardlessService] API error:', errorData);
-      throw new Error(`GoCardless API error: \${res.statusText}`);
+      throw new Error(`GoCardless API error: ${res.statusText}`);
     }
 
     return res.json();
@@ -79,8 +79,8 @@ export class GoCardlessService {
    */
   async createCustomer(input: CreateCustomerInput): Promise<string> {
     if (!this.isConfigured()) {
-      logger.info(`[GoCardlessService] Stub: Created customer for \${input.email}`);
-      return `CU\${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      logger.info(`[GoCardlessService] Stub: Created customer for ${input.email}`);
+      return `CU${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     }
 
     try {
@@ -110,12 +110,12 @@ export class GoCardlessService {
    */
   async createMandateCheckout(customerId: string, successUrl: string, cancelUrl: string): Promise<{ id: string, sessionUrl: string }> {
     if (!this.isConfigured()) {
-      logger.info(`[GoCardlessService] Stub: Created mandate checkout for \${customerId}`);
-      const stubId = `BR\${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      logger.info(`[GoCardlessService] Stub: Created mandate checkout for ${customerId}`);
+      const stubId = `BR${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
       // For stub testing, we just simulate an immediate success redirect
       return { 
         id: stubId, 
-        sessionUrl: `\${successUrl}?billing_request=\${stubId}` 
+        sessionUrl: `${successUrl}?billing_request=${stubId}` 
       };
     }
 
@@ -164,9 +164,9 @@ export class GoCardlessService {
    */
   async createPayment(input: CreatePaymentInput): Promise<{ id: string, status: string }> {
     if (!this.isConfigured()) {
-      logger.info(`[GoCardlessService] Stub: Processed payment of £\${(input.amountPence / 100).toFixed(2)} against mandate \${input.mandateId}`);
+      logger.info(`[GoCardlessService] Stub: Processed payment of £${(input.amountPence / 100).toFixed(2)} against mandate ${input.mandateId}`);
       return {
-        id: `PM\${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+        id: `PM${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
         status: 'pending_submission'
       };
     }
