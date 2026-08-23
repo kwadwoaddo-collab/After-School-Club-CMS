@@ -12,6 +12,9 @@ import { ChevronLeft, ChevronRight, Users, CheckCircle2, CalendarCheck, Download
 import AttendanceRollCall from './AttendanceRollCall';
 import { compileDailyRegisterSlots } from '@/lib/attendance';
 import { logger } from '@/lib/logger';
+import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 export default async function AttendancePage(props: {
     searchParams: Promise<{ date?: string; centre?: string }>;
@@ -98,95 +101,105 @@ export default async function AttendancePage(props: {
     const attendanceRate = totalStudents > 0 ? Math.round((present / totalStudents) * 100) : 0;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Attendance Roll-Call</h1>
-                    <p className="text-muted-foreground font-medium mt-1">Mark attendance for today&apos;s sessions</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    {/* Jump to today */}
-                    {!isToday && (
-                        <Link href="/dashboard/attendance" className="px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-all active:scale-95 duration-100 flex items-center gap-1.5">
+        <div className="space-y-6">
+            <HeaderPortal targetId="header-left">
+                <h1 className="text-page-title text-text">Attendance</h1>
+            </HeaderPortal>
+
+            <HeaderPortal targetId="header-right-actions">
+                {!isToday && (
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/attendance">
                             <CalendarCheck className="w-3.5 h-3.5" />
                             Go to Today
                         </Link>
-                    )}
-                    {/* Export CSV */}
+                    </Button>
+                )}
+                <Button variant="outline" asChild>
                     <a
                         href={`/api/export/register?date=${targetStr}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`}
                         download={`register-${targetStr}.csv`}
-                        className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold hover:bg-emerald-500/20 transition-all active:scale-95 duration-100 flex items-center gap-1.5"
                         title={`Download register for ${format(targetDate, 'd MMM yyyy')} as CSV`}
                     >
                         <Download className="w-3.5 h-3.5" />
                         Export CSV
                     </a>
-                    <Link href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all active:scale-90 duration-100">
+                </Button>
+            </HeaderPortal>
+
+            {/* Date navigation */}
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href={`/dashboard/attendance?date=${prevDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} aria-label="Previous day">
                         <ChevronLeft className="w-4 h-4" />
                     </Link>
-                    <div className="px-4 py-2 rounded-xl bg-secondary border border-border">
-                        <p className="text-foreground font-bold text-sm">
-                            {format(targetDate, 'EEEE, d MMM yyyy')}
-                            {isToday && <span className="ml-2 text-primary text-xs font-bold uppercase tracking-wider">Today</span>}
-                        </p>
-                    </div>
-                    <Link href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} className="p-2 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all active:scale-90 duration-100">
+                </Button>
+                <div className="px-4 py-2 rounded-md bg-surface border border-border">
+                    <p className="text-text font-medium text-sm">
+                        {format(targetDate, 'EEEE, d MMM yyyy')}
+                        {isToday && <span className="ml-2 text-accent text-xs font-semibold uppercase tracking-wider">Today</span>}
+                    </p>
+                </div>
+                <Button variant="outline" size="icon" asChild>
+                    <Link href={`/dashboard/attendance?date=${nextDay}${activeCentreId !== 'all' ? `&centre=${activeCentreId}` : ''}`} aria-label="Next day">
                         <ChevronRight className="w-4 h-4" />
                     </Link>
-                </div>
+                </Button>
             </div>
 
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {[
-                    { label: 'Sessions', value: dayBookings.length, color: 'text-primary', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-primary/10' },
-                    { label: 'Students', value: totalStudents, color: 'text-foreground', icon: <Users className="w-4 h-4" />, iconBg: 'bg-secondary' },
-                    { label: 'Present', value: present, color: 'text-emerald-600', icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-emerald-500/10' },
-                    { label: 'Absent', value: absent, color: 'text-red-600', icon: <Users className="w-4 h-4" />, iconBg: 'bg-red-500/10' },
+                    { label: 'Sessions', value: dayBookings.length, color: 'text-accent', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-accent-soft' },
+                    { label: 'Students', value: totalStudents, color: 'text-text', icon: <Users className="w-4 h-4" />, iconBg: 'bg-page' },
+                    { label: 'Present', value: present, color: 'text-emerald-700 dark:text-emerald-400', icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-success-soft' },
+                    { label: 'Absent', value: absent, color: 'text-danger', icon: <Users className="w-4 h-4" />, iconBg: 'bg-danger-soft' },
                     {
                         label: 'Rate',
                         value: `${attendanceRate}%`,
-                        color: attendanceRate >= 80 ? 'text-emerald-600' : attendanceRate >= 50 ? 'text-amber-600' : 'text-red-600',
+                        color: attendanceRate >= 80 ? 'text-emerald-700 dark:text-emerald-400' : attendanceRate >= 50 ? 'text-amber-700 dark:text-amber-400' : 'text-danger',
                         icon: <CheckCircle2 className="w-4 h-4" />,
-                        iconBg: attendanceRate >= 80 ? 'bg-emerald-500/10' : attendanceRate >= 50 ? 'bg-amber-500/10' : 'bg-red-500/10'
+                        iconBg: attendanceRate >= 80 ? 'bg-success-soft' : attendanceRate >= 50 ? 'bg-warning-soft' : 'bg-danger-soft'
                     },
                 ].map(stat => (
-                    <div key={stat.label} className="bg-card border border-border rounded-xl p-3.5 shadow-sm flex flex-col justify-between min-h-[85px] hover:scale-[1.01] transition-transform duration-150">
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">{stat.label}</span>
-                            <div className={`w-6 h-6 rounded-md ${stat.iconBg} flex items-center justify-center ${stat.color} flex-shrink-0`}>
-                                <div className="scale-[0.8]">{stat.icon}</div>
+                    <Card key={stat.label}>
+                        <div className="p-3.5 flex flex-col justify-between min-h-[85px]">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <span className="text-label text-text-muted">{stat.label}</span>
+                                <div className={`w-6 h-6 rounded-md ${stat.iconBg} flex items-center justify-center ${stat.color} flex-shrink-0`}>
+                                    <div className="scale-[0.8]">{stat.icon}</div>
+                                </div>
                             </div>
+                            <p className={`text-xl sm:text-2xl font-semibold leading-none tracking-tight ${stat.color}`}>{stat.value}</p>
                         </div>
-                        <p className={`text-xl sm:text-2xl font-black leading-none tracking-tight ${stat.color}`}>{stat.value}</p>
-                    </div>
+                    </Card>
                 ))}
             </div>
 
             {/* Progress bar */}
             {totalStudents > 0 && (
-                <div className="bg-card border border-border rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-muted-foreground">Register completion</p>
-                        <p className="text-sm font-bold text-foreground">{marked}/{totalStudents} marked</p>
+                <Card>
+                    <div className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-small-body text-text-secondary">Register completion</p>
+                            <p className="text-small-body font-semibold text-text">{marked}/{totalStudents} marked</p>
+                        </div>
+                        <div className="h-2 bg-page rounded-full overflow-hidden">
+                            <div className="h-full bg-accent rounded-full transition-all duration-700" style={{ width: `${Math.round((marked / totalStudents) * 100)}%` }} />
+                        </div>
+                        {marked === totalStudents && (
+                            <p className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold mt-2">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Register complete for this day
+                            </p>
+                        )}
                     </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full transition-all duration-700" style={{ width: `${Math.round((marked / totalStudents) * 100)}%` }} />
-                    </div>
-                    {marked === totalStudents && (
-                        <p className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold mt-2">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Register complete for this day
-                        </p>
-                    )}
-                </div>
+                </Card>
             )}
 
             {hasError && (
-                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                <div className="rounded-md bg-danger-soft border border-danger/20 text-small-body text-danger font-medium px-4 py-3 flex items-center gap-3">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     <p>There was a problem loading all attendance data. Some information may be missing or incomplete.</p>
                 </div>
             )}

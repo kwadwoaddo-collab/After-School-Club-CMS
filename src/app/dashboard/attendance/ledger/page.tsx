@@ -1,12 +1,10 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { db } from '@/db';
-import { centres } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import LedgerClient from './LedgerClient';
 import { getSessionLedger } from '@/features/attendance/actions';
 import { getAcademicYear } from '@/features/attendance/utils';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 
 export default async function AttendanceLedgerPage({
     searchParams,
@@ -19,10 +17,13 @@ export default async function AttendanceLedgerPage({
     const params = await searchParams;
     const selectedYear = params.year ?? getAcademicYear();
 
-    // Get all centres for this org
-    const allCentres = await db.query.centres.findMany({
-        where: eq(centres.organisationId, session.user.organisationId),
-    });
+    // Scope to centres the user is actually assigned to (ORG_OWNER sees all
+    // org centres) — matches the pattern used by the register and kiosk
+    // pages. Previously this queried every centre in the organisation
+    // regardless of the caller's own centre membership, which let
+    // `resolveActiveCentreId` accept a `?centre=` value for a centre the
+    // caller isn't assigned to.
+    const allCentres = await getUserAccessibleCentres(session.user.id);
 
     const centreIds = allCentres.map(c => c.id);
 

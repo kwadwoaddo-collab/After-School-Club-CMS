@@ -12,6 +12,11 @@ import { forgiveSessionsAction } from '@/features/attendance/actions';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useCentreFilter } from '@/components/dashboard/CentreFilterContext';
 import { getAvatarGradient } from '@/components/ui/utils';
+import HeaderPortal from '@/components/dashboard/HeaderPortal';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface Props {
     ledger: StudentLedgerEntry[];
@@ -23,22 +28,22 @@ interface Props {
 
 function BalancePill({ balance }: { balance: number }) {
     if (balance > 0) return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-success/10 text-success border border-success/20">
+        <Badge variant="success">
             <TrendingUp className="w-3 h-3" />
             +{balance} ahead
-        </span>
+        </Badge>
     );
     if (balance < 0) return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-error-container/10 text-error border border-error/20">
+        <Badge variant="error">
             <TrendingDown className="w-3 h-3" />
             {balance} owed
-        </span>
+        </Badge>
     );
     return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-secondary/60 text-muted-foreground border border-border">
+        <Badge variant="default">
             <Minus className="w-3 h-3" />
             Even
-        </span>
+        </Badge>
     );
 }
 
@@ -72,57 +77,53 @@ function ForgivModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-            <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-md animate-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-surface border border-border rounded-lg shadow-[var(--shadow-popover)] w-full max-w-md">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
                     <div>
-                        <h3 className="text-base font-bold text-foreground">Forgive Sessions</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{entry.firstName} {entry.lastName} · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}</p>
+                        <h3 className="text-section-title text-text">Forgive Sessions</h3>
+                        <p className="text-xs text-text-muted mt-0.5">{entry.firstName} {entry.lastName} · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all active:scale-90 duration-100">
+                    <Button variant="ghost" size="icon" onClick={onClose}>
                         <X className="w-4 h-4" />
-                    </button>
+                    </Button>
                 </div>
                 <div className="p-6 space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">Sessions to forgive</label>
+                        <label className="block text-label text-text-muted mb-2">Sessions to forgive</label>
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setAmount(Math.max(1, amount - 1))}
-                                className="w-10 h-10 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 text-foreground font-bold text-lg flex items-center justify-center transition-all active:scale-90 duration-100"
+                                className="w-10 h-10 rounded-sm border border-border bg-page hover:bg-border-subtle text-text font-bold text-lg flex items-center justify-center transition-colors"
                             >−</button>
-                            <span className="text-2xl font-black text-foreground w-8 text-center">{amount}</span>
+                            <span className="text-2xl font-bold text-text w-8 text-center">{amount}</span>
                             <button
                                 onClick={() => setAmount(amount + 1)}
-                                className="w-10 h-10 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/60 text-foreground font-bold text-lg flex items-center justify-center transition-all active:scale-90 duration-100"
+                                className="w-10 h-10 rounded-sm border border-border bg-page hover:bg-border-subtle text-text font-bold text-lg flex items-center justify-center transition-colors"
                             >+</button>
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">Reason (required) *</label>
+                        <label className="block text-label text-text-muted mb-2">Reason (required) *</label>
                         <textarea
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             rows={3}
                             placeholder="e.g. Parent agreement on 14/07/26 — illness period waived"
-                            className="w-full px-4 py-3 rounded-2xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
+                            className="w-full px-4 py-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors resize-none"
                         />
                     </div>
-                    <div className="p-3 rounded-2xl bg-warning/10 border border-warning/20 text-warning text-xs font-medium">
-                        ⚠ This action is permanent and recorded in the audit log with your name.
+                    <div className="p-3 rounded-md bg-warning-soft border border-transparent text-amber-700 dark:text-amber-400 text-xs font-medium">
+                        This action is permanent and recorded in the audit log with your name.
                     </div>
                 </div>
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
-                    <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary/40 text-sm font-semibold transition-all active:scale-95 duration-100">Cancel</button>
-                    <button
-                        onClick={submit}
-                        disabled={isPending}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl transition-all active:scale-95 duration-100 disabled:opacity-50"
-                    >
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button onClick={submit} disabled={isPending}>
                         {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <Shield className="w-3.5 h-3.5" />
                         Confirm Forgiveness
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
@@ -134,16 +135,16 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
     const [showForgive, setShowForgive] = useState(false);
 
     const statusColor = entry.netBalance < 0
-        ? 'border-l-4 border-l-error'
+        ? 'border-l-4 border-l-danger'
         : entry.netBalance > 0
-            ? 'border-l-4 border-l-tertiary'
+            ? 'border-l-4 border-l-emerald-500'
             : 'border-l-4 border-l-border';
 
     return (
         <>
-            <div className={`bg-card border border-border rounded-2xl overflow-hidden ${statusColor} transition-all hover:shadow-sm`}>
+            <Card className={`overflow-hidden ${statusColor}`}>
                 <div
-                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-secondary/20 active:scale-[0.99] transition-all duration-100"
+                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-page/40 transition-colors"
                     onClick={() => setExpanded(!expanded)}
                 >
                     {/* Avatar */}
@@ -154,29 +155,29 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                     {/* Name & schedule */}
                     <div className="flex-1 min-w-0">
                         {entry.childId ? (
-                            <Link href={`/dashboard/students/${entry.childId}`} className="font-semibold text-foreground text-sm hover:underline hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                            <Link href={`/dashboard/students/${entry.childId}`} className="font-semibold text-text text-sm hover:underline hover:text-accent transition-colors" onClick={(e) => e.stopPropagation()}>
                                 {entry.firstName} {entry.lastName}
                             </Link>
                         ) : (
-                            <p className="font-semibold text-foreground text-sm">{entry.firstName} {entry.lastName}</p>
+                            <p className="font-semibold text-text text-sm">{entry.firstName} {entry.lastName}</p>
                         )}
-                        <p className="text-xs text-muted-foreground">Year {entry.schoolYear} · {entry.schedule}</p>
+                        <p className="text-xs text-text-muted">Year {entry.schoolYear} · {entry.schedule}</p>
                     </div>
 
                     {/* Stats */}
                     <div className="hidden sm:flex items-center gap-6 text-center">
                         <div>
-                            <p className="text-xs text-muted-foreground font-medium">Absences</p>
-                            <p className="text-sm font-bold text-foreground">{entry.scheduledAbsences}</p>
+                            <p className="text-xs text-text-muted font-medium">Absences</p>
+                            <p className="text-sm font-bold text-text">{entry.scheduledAbsences}</p>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground font-medium">Extras</p>
-                            <p className="text-sm font-bold text-tertiary">+{entry.extraSessionsAttended}</p>
+                            <p className="text-xs text-text-muted font-medium">Extras</p>
+                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">+{entry.extraSessionsAttended}</p>
                         </div>
                         {entry.forgivenSessions > 0 && (
                             <div>
-                                <p className="text-xs text-muted-foreground font-medium">Forgiven</p>
-                                <p className="text-sm font-bold text-primary">+{entry.forgivenSessions}</p>
+                                <p className="text-xs text-text-muted font-medium">Forgiven</p>
+                                <p className="text-sm font-bold text-accent">+{entry.forgivenSessions}</p>
                             </div>
                         )}
                     </div>
@@ -184,27 +185,27 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                     {/* Balance */}
                     <div className="flex items-center gap-3">
                         <BalancePill balance={entry.netBalance} />
-                        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                        {expanded ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />}
                     </div>
                 </div>
 
                 {/* Expanded detail */}
                 {expanded && (
-                    <div className="border-t border-border bg-secondary/40 px-5 py-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="border-t border-border-subtle bg-page/60 px-5 py-4 space-y-4">
                         {/* Mobile stats row */}
-                        <div className="flex sm:hidden items-center gap-6 text-center pb-3 border-b border-border">
+                        <div className="flex sm:hidden items-center gap-6 text-center pb-3 border-b border-border-subtle">
                             <div>
-                                <p className="text-xs text-muted-foreground">Absences</p>
-                                <p className="text-sm font-bold text-foreground">{entry.scheduledAbsences}</p>
+                                <p className="text-xs text-text-muted">Absences</p>
+                                <p className="text-sm font-bold text-text">{entry.scheduledAbsences}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">Extras</p>
-                                <p className="text-sm font-bold text-tertiary">+{entry.extraSessionsAttended}</p>
+                                <p className="text-xs text-text-muted">Extras</p>
+                                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">+{entry.extraSessionsAttended}</p>
                             </div>
                             {entry.forgivenSessions > 0 && (
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Forgiven</p>
-                                    <p className="text-sm font-bold text-primary">+{entry.forgivenSessions}</p>
+                                    <p className="text-xs text-text-muted">Forgiven</p>
+                                    <p className="text-sm font-bold text-accent">+{entry.forgivenSessions}</p>
                                 </div>
                             )}
                         </div>
@@ -212,10 +213,10 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                         {/* Missed dates */}
                         {entry.missedDates.length > 0 && (
                             <div>
-                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Missed Sessions ({entry.missedDates.length})</p>
+                                <p className="text-label text-text-muted mb-2">Missed Sessions ({entry.missedDates.length})</p>
                                 <div className="flex flex-wrap gap-2">
                                     {entry.missedDates.map(d => (
-                                        <span key={d} className="px-2.5 py-1 rounded-lg bg-error-container/10 text-error text-xs font-semibold border border-error/15">{d}</span>
+                                        <span key={d} className="px-2.5 py-1 rounded-sm bg-danger-soft text-danger text-xs font-semibold border border-transparent">{d}</span>
                                     ))}
                                 </div>
                             </div>
@@ -224,10 +225,10 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                         {/* Extra dates */}
                         {entry.extraDates.length > 0 && (
                             <div>
-                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Extra Sessions ⭐ ({entry.extraDates.length})</p>
+                                <p className="text-label text-text-muted mb-2">Extra Sessions ⭐ ({entry.extraDates.length})</p>
                                 <div className="flex flex-wrap gap-2">
                                     {entry.extraDates.map(d => (
-                                        <span key={d} className="px-2.5 py-1 rounded-lg bg-tertiary-container/10 text-tertiary text-xs font-semibold border border-tertiary/15">{d}</span>
+                                        <span key={d} className="px-2.5 py-1 rounded-sm bg-success-soft text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-transparent">{d}</span>
                                     ))}
                                 </div>
                             </div>
@@ -236,14 +237,14 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                         {/* Forgiven entries */}
                         {entry.forgivenEntries.length > 0 && (
                             <div>
-                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Admin Forgiveness</p>
+                                <p className="text-label text-text-muted mb-2">Admin Forgiveness</p>
                                 <div className="space-y-2">
                                     {entry.forgivenEntries.map((f, i) => (
-                                        <div key={i} className="px-3 py-2 rounded-xl bg-info/10 border border-info/20 text-xs">
-                                            <span className="font-bold text-info">+{f.amount} session{f.amount > 1 ? 's' : ''} forgiven</span>
-                                            <span className="text-info/80"> on {f.date}</span>
-                                            {f.adminName && <span className="text-info/70"> by {f.adminName}</span>}
-                                            {f.note && <p className="text-info/80 mt-0.5 italic">"{f.note}"</p>}
+                                        <div key={i} className="px-3 py-2 rounded-sm bg-info-soft border border-transparent text-xs">
+                                            <span className="font-bold text-blue-700 dark:text-blue-400">+{f.amount} session{f.amount > 1 ? 's' : ''} forgiven</span>
+                                            <span className="text-blue-700/80 dark:text-blue-400/80"> on {f.date}</span>
+                                            {f.adminName && <span className="text-blue-700/70 dark:text-blue-400/70"> by {f.adminName}</span>}
+                                            {f.note && <p className="text-blue-700/80 dark:text-blue-400/80 mt-0.5 italic">"{f.note}"</p>}
                                         </div>
                                     ))}
                                 </div>
@@ -251,21 +252,23 @@ function LedgerRow({ entry, onRefresh }: { entry: StudentLedgerEntry; onRefresh:
                         )}
 
                         {/* Formula */}
-                        <div className="flex items-center justify-between pt-2 border-t border-border">
-                            <p className="text-xs text-muted-foreground font-mono">
-                                {entry.extraSessionsAttended} extras + {entry.forgivenSessions} forgiven − {entry.scheduledAbsences} absences = <span className="font-bold text-foreground">{entry.netBalance > 0 ? '+' : ''}{entry.netBalance}</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
+                            <p className="text-xs text-text-muted font-mono">
+                                {entry.extraSessionsAttended} extras + {entry.forgivenSessions} forgiven − {entry.scheduledAbsences} absences = <span className="font-bold text-text">{entry.netBalance > 0 ? '+' : ''}{entry.netBalance}</span>
                             </p>
-                            <button
+                            <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={e => { e.stopPropagation(); setShowForgive(true); }}
-                                className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-primary/8 transition-all active:scale-95 duration-100"
+                                className="text-accent hover:text-accent-hover"
                             >
                                 <Shield className="w-3.5 h-3.5" />
                                 Forgive Sessions
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
-            </div>
+            </Card>
 
             {showForgive && (
                 <ForgivModal entry={entry} onClose={() => { setShowForgive(false); onRefresh(); }} />
@@ -376,34 +379,31 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-foreground">Session Ledger</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Track absences, catch-ups, and session balances — academic year {selectedYear}</p>
-                </div>
-                <button
-                    onClick={exportCsv}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-card border border-border text-foreground text-sm font-semibold rounded-xl hover:bg-secondary/40 transition-all active:scale-95 duration-100 shadow-sm"
-                >
+            <HeaderPortal targetId="header-left">
+                <h1 className="text-page-title text-text">Session Ledger</h1>
+            </HeaderPortal>
+            <HeaderPortal targetId="header-right-actions">
+                <Button variant="outline" onClick={exportCsv}>
                     <Download className="w-4 h-4" />
                     Export CSV
-                </button>
-            </div>
+                </Button>
+            </HeaderPortal>
+
+            <p className="text-small-body text-text-secondary -mt-2">Track absences, catch-ups, and session balances — academic year {selectedYear}</p>
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row items-center gap-3">
                 <select
                     value={selectedCentreId}
                     onChange={e => handleCentreChange(e.target.value)}
-                    className="w-full sm:w-auto h-10 px-3 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                    className="w-full sm:w-auto h-9 px-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                 >
                     {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <select
                     value={selectedYear}
                     onChange={e => handleYearChange(e.target.value)}
-                    className="w-full sm:w-auto h-10 px-3 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                    className="w-full sm:w-auto h-9 px-3 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                 >
                     {academicYears.map(y => <option key={y} value={y}>{y} Academic Year</option>)}
                 </select>
@@ -413,7 +413,7 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         placeholder="Search students..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full h-10 pl-4 pr-4 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                        className="w-full h-9 pl-4 pr-4 rounded-sm border border-border bg-surface text-text text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                     />
                 </div>
             </div>
@@ -421,26 +421,28 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Students', value: ledger.length, icon: <Award className="w-4 h-4" />, iconBg: 'bg-primary/15 text-primary', valueColor: 'text-foreground' },
-                    { label: 'In Arrears', value: arrearsCount, icon: <TrendingDown className="w-4 h-4" />, iconBg: 'bg-error-container/15 text-error', valueColor: 'text-error' },
-                    { label: 'All Even', value: evenCount, icon: <Minus className="w-4 h-4" />, iconBg: 'bg-secondary text-muted-foreground', valueColor: 'text-foreground' },
-                    { label: 'Ahead', value: aheadCount, icon: <TrendingUp className="w-4 h-4" />, iconBg: 'bg-tertiary-container/15 text-tertiary', valueColor: 'text-tertiary' },
+                    { label: 'Total Students', value: ledger.length, icon: <Award className="w-4 h-4" />, iconBg: 'bg-accent-soft text-accent', valueColor: 'text-text' },
+                    { label: 'In Arrears', value: arrearsCount, icon: <TrendingDown className="w-4 h-4" />, iconBg: 'bg-danger-soft text-danger', valueColor: 'text-danger' },
+                    { label: 'All Even', value: evenCount, icon: <Minus className="w-4 h-4" />, iconBg: 'bg-page text-text-muted', valueColor: 'text-text' },
+                    { label: 'Ahead', value: aheadCount, icon: <TrendingUp className="w-4 h-4" />, iconBg: 'bg-success-soft text-emerald-700 dark:text-emerald-400', valueColor: 'text-emerald-700 dark:text-emerald-400' },
                 ].map(s => (
-                    <div key={s.label} className="relative overflow-hidden p-5 rounded-2xl bg-card border border-border shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className={`p-2 rounded-xl ${s.iconBg}`}>
-                                {s.icon}
+                    <Card key={s.label}>
+                        <div className="p-5 flex flex-col justify-between">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className={`p-2 rounded-md ${s.iconBg}`}>
+                                    {s.icon}
+                                </div>
+                                <span className="text-label text-text-muted">{s.label}</span>
                             </div>
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{s.label}</span>
+                            <p className={`text-3xl font-bold tabular-nums ${s.valueColor}`}>{s.value}</p>
                         </div>
-                        <p className={`text-3xl font-black tabular-nums ${s.valueColor}`}>{s.value}</p>
-                    </div>
+                    </Card>
                 ))}
             </div>
 
             {/* Date-range preset chips — C-5 */}
             <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">Period:</span>
+                <span className="text-label text-text-muted mr-1">Period:</span>
                 {([
                     { id: 'this_week',  label: 'This Week'  },
                     { id: 'this_month', label: 'This Month' },
@@ -450,10 +452,10 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
                         key={chip.id}
                         onClick={() => setDatePreset(chip.id)}
                         aria-pressed={datePreset === chip.id}
-                        className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all active:scale-95 duration-100 ${
+                        className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
                             datePreset === chip.id
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-card border-border text-muted-foreground hover:border-primary/40'
+                                ? 'bg-accent text-white border-accent'
+                                : 'bg-surface border-border text-text-muted hover:border-accent/40'
                         }`}
                     >
                         {chip.label}
@@ -462,15 +464,15 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-secondary/60 rounded-xl w-fit">
+            <div className="flex items-center gap-1 p-1 bg-page rounded-md w-fit">
                 {TABS.map(t => (
                     <button
                         key={t.id}
                         onClick={() => setTab(t.id)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 duration-100 ${
+                        className={`px-4 py-2 rounded-sm text-xs font-semibold transition-colors ${
                             tab === t.id
-                                ? 'bg-card text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-surface text-text shadow-sm'
+                                : 'text-text-muted hover:text-text'
                         }`}
                     >
                         {t.label}
@@ -481,20 +483,20 @@ export default function LedgerClient({ ledger, centres, selectedCentreId, select
             {/* Ledger rows */}
             <div className="space-y-2">
                 {filtered.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
-                        <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-                        <p className="font-semibold text-muted-foreground">No students found</p>
-                        <p className="text-sm mt-1">Try changing the filter or selecting a different centre.</p>
-                    </div>
+                    <EmptyState
+                        icon={<Users className="w-8 h-8" />}
+                        title="No students found"
+                        description="Try changing the filter or selecting a different centre."
+                    />
                 ) : (
                     filtered.map(entry => <LedgerRow key={entry.childId} entry={entry} onRefresh={() => router.refresh()} />)
                 )}
             </div>
 
             {arrearsCount > 0 && tab === 'all' && (
-                <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-2xl">
-                    <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-warning">
+                <div className="flex items-start gap-3 p-4 bg-warning-soft border border-transparent rounded-md">
+                    <AlertCircle className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
                         <strong>{arrearsCount} student{arrearsCount > 1 ? 's are' : ' is'}</strong> in arrears for the {selectedYear} academic year.
                         Switch to the <strong>In Arrears</strong> tab to see only these students and take action.
                     </p>

@@ -14,6 +14,7 @@ import {
     deriveLateMinutes,
 } from './utils';
 import { parseInTimezone } from '@/lib/datetime';
+import { canUserAccessCentre } from '@/lib/permissions';
 
 // ─── Update attendance with check-in/out times ────────────────────────────────
 
@@ -30,9 +31,26 @@ export interface UpdateAttendanceParams {
 
 export async function updateAttendanceTimelog(params: UpdateAttendanceParams) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error('Unauthorized');
+    if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
     const { attendeeId, checkInTime, checkOutTime, dateStr, absenceReason, attendanceNote, sessionTime } = params;
+
+    // Verify the target attendee's booking belongs to the caller's organisation
+    // and centre before mutating — attendeeId is client-supplied and must not
+    // be trusted blindly (it is not scoped by the UI alone).
+    const attendee = await db.query.bookingAttendees.findFirst({
+        where: eq(bookingAttendees.id, attendeeId),
+        with: { booking: { with: { centre: true } } },
+    });
+
+    if (!attendee || !attendee.booking || !attendee.booking.centre ||
+        attendee.booking.centre.organisationId !== session.user.organisationId) {
+        throw new Error('Attendance record not found or unauthorized');
+    }
+
+    if (!(await canUserAccessCentre(session.user.id as string, attendee.booking.centre.id))) {
+        throw new Error('Attendance record not found or unauthorized');
+    }
 
     // Determine attendance status from the time log
     let attendanceStatus: 'present' | 'absent' | 'late' | null = null;
@@ -88,7 +106,14 @@ export async function getSessionLedger(
     academicYear?: string,
 ): Promise<StudentLedgerEntry[]> {
     const session = await auth();
-    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    if (!session?.user?.id || !session?.user?.organisationId) throw new Error('Unauthorized');
+
+    // centreId is client-supplied — verify it belongs to the caller's
+    // organisation and that the caller is actually assigned to it (or is
+    // ORG_OWNER) before running any queries scoped by it.
+    if (!(await canUserAccessCentre(session.user.id, centreId))) {
+        throw new Error('Centre not found or unauthorized');
+    }
 
     const year = academicYear ?? getAcademicYear();
     const { start, end } = getAcademicYearRange(year);
@@ -205,11 +230,24 @@ export async function forgiveSessionsAction(params: {
     academicYear?: string;
 }) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error('Unauthorized');
+    if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
     const role = (session.user as any).role as string;
     if (role !== 'ORG_OWNER' && role !== 'MANAGER') {
         throw new Error('Only managers and owners can forgive sessions');
+    }
+
+    // childId is client-supplied — verify it belongs to the caller's
+    // organisation (and, for non-owners, an accessible centre) before
+    // granting a session credit against it.
+    const targetChild = await db.query.children.findFirst({
+        where: eq(children.id, params.childId),
+    });
+    if (!targetChild || targetChild.organisationId !== session.user.organisationId) {
+        throw new Error('Child not found or unauthorized');
+    }
+    if (targetChild.centreId && !(await canUserAccessCentre(session.user.id, targetChild.centreId))) {
+        throw new Error('Child not found or unauthorized');
     }
 
     const year = params.academicYear ?? getAcademicYear();
@@ -234,7 +272,18 @@ export async function updateChildFlags(params: {
     flagNote?: string | null;
 }) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error('Unauthorized');
+    if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
+
+    // childId is client-supplied — verify org/centre ownership before writing.
+    const targetChild = await db.query.children.findFirst({
+        where: eq(children.id, params.childId),
+    });
+    if (!targetChild || targetChild.organisationId !== session.user.organisationId) {
+        throw new Error('Child not found or unauthorized');
+    }
+    if (targetChild.centreId && !(await canUserAccessCentre(session.user.id, targetChild.centreId))) {
+        throw new Error('Child not found or unauthorized');
+    }
 
     await db.update(children)
         .set({

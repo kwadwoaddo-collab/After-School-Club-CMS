@@ -15,6 +15,7 @@ import { auth } from '@/lib/auth';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { emailService } from '@/lib/services/email';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
+import { canUserAccessCentre } from '@/lib/permissions';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await auth();
@@ -234,6 +235,10 @@ export async function markAttendeeAttendance(params: {
             throw new Error('Unauthorized access to this booking');
         }
 
+        if (!(await canUserAccessCentre(session.user.id as string, booking.centre.id))) {
+            throw new Error('Unauthorized access to this booking');
+        }
+
         const attendeeExists = booking.attendees.some(a => a.id === attendeeId);
         if (!attendeeExists) {
             throw new Error('Attendee not found in this booking');
@@ -283,6 +288,10 @@ export async function markAttendeeAttendance(params: {
 
         if (!child || child.organisationId !== orgId) {
             throw new Error('Child not found or unauthorized');
+        }
+
+        if (!(await canUserAccessCentre(session.user.id, centreId))) {
+            throw new Error('Centre not found or unauthorized');
         }
 
         // Form startAt date
@@ -495,6 +504,10 @@ export async function registerWalkInChild(params: {
         throw new Error('Centre not found or unauthorized');
     }
 
+    if (!(await canUserAccessCentre(session.user.id, centreId))) {
+        throw new Error('Centre not found or unauthorized');
+    }
+
     // 2. Perform operations in a transaction for integrity
     await db.transaction(async (tx) => {
         // Resolve or create parent
@@ -573,6 +586,10 @@ export async function registerExistingChildWalkIn(params: {
     });
 
     if (!targetCentre) {
+        throw new Error('Centre not found or unauthorized');
+    }
+
+    if (!(await canUserAccessCentre(session.user.id, centreId))) {
         throw new Error('Centre not found or unauthorized');
     }
 

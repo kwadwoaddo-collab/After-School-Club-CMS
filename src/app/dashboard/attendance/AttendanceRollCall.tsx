@@ -11,6 +11,10 @@ import {
     Users, Sparkles, UserCheck, LogIn, LogOut, ChevronDown, BookOpen, AlertTriangle, BookMarked
 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_show' | 'excused' | null;
@@ -222,34 +226,34 @@ function AttendeeCard({
     // ── Status-driven visual tokens ──────────────────────────────────────────
     // Left border bar + card background
     const cardClass = isAbsent
-        ? 'border-l-4 border-l-error bg-error-container/10 border border-error/20'
+        ? 'border-l-4 border-l-danger bg-danger-soft/40 border border-danger/20'
         : (isIn && isOut)
-        ? 'border-l-4 border-l-primary bg-primary/8 border border-primary/20'
+        ? 'border-l-4 border-l-accent bg-accent-soft/40 border border-accent/20'
         : isIn
-        ? 'border-l-4 border-l-tertiary bg-tertiary-container/10 border border-tertiary/20'
-        : 'border-l-4 border-l-border bg-card border border-border hover:border-primary/40';
+        ? 'border-l-4 border-l-emerald-500 bg-success-soft/40 border border-emerald-500/20'
+        : 'border-l-4 border-l-border bg-surface border border-border hover:border-accent/40';
 
     const avatarClass = `bg-gradient-to-br ${getAvatarGradient(attendee.firstName)} text-white`;
 
     return (
-        <div className={`group flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-3 border-b border-border hover:bg-secondary/20 transition-colors ${isAbsent ? 'opacity-70' : ''}`}>
+        <div className={`group flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-3 rounded-md ${cardClass} hover:bg-page/40 transition-colors ${isAbsent ? 'opacity-70' : ''}`}>
             <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${avatarClass}`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarClass}`}>
                     {initials}
                 </div>
                 <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/dashboard/students/${attendee.childId}`} className="font-bold text-foreground hover:text-primary transition-colors text-sm">
+                        <Link href={`/dashboard/students/${attendee.childId}`} className="font-semibold text-text hover:text-accent transition-colors text-sm">
                             {attendee.firstName} {attendee.lastName}
                         </Link>
-                        {isExtra && <span className="text-[9px] font-bold bg-warning/10 text-warning px-1.5 py-0.5 rounded border border-warning/20">EXTRA</span>}
-                        {attendee.flagBehaviour && <span title="Behaviour Note"><AlertTriangle className="w-3.5 h-3.5 text-error" /></span>}
-                        {attendee.flagHomework && <span title="Homework Note"><BookOpen className="w-3.5 h-3.5 text-warning" /></span>}
+                        {isExtra && <Badge variant="warning">Extra</Badge>}
+                        {attendee.flagBehaviour && <span title="Behaviour Note"><AlertTriangle className="w-3.5 h-3.5 text-danger" /></span>}
+                        {attendee.flagHomework && <span title="Homework Note"><BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /></span>}
                         {derivedLate !== null && isIn && (
-                            <span className="text-[10px] font-bold text-warning ml-1">Late {derivedLate}m</span>
+                            <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 ml-1">Late {derivedLate}m</span>
                         )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted mt-0.5">
                         <span>Yr {attendee.schoolYear} · </span>
                         <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white bg-gradient-to-br ${getAvatarGradient(attendee.parentFirstName)}`}>
                             {attendee.parentFirstName?.[0]}{attendee.parentLastName?.[0]}
@@ -262,19 +266,21 @@ function AttendeeCard({
             <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap">
                 {isAbsent ? (
                     <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
-                        <span className="text-xs font-bold text-error mr-2">Absent{absenceReason ? ` — ${absenceReason}` : ''}</span>
-                        <button onClick={() => { setIsAbsent(false); setAbsenceReason(''); }} className="px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-bold hover:bg-secondary active:scale-95 transition-all text-muted-foreground">Undo</button>
+                        <span className="text-xs font-semibold text-danger mr-2">Absent{absenceReason ? ` — ${absenceReason}` : ''}</span>
+                        <Button size="sm" variant="outline" onClick={() => { setIsAbsent(false); setAbsenceReason(''); }}>Undo</Button>
                     </div>
                 ) : (
                     <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-end">
                         <div className="flex items-center gap-2">
-                            <button
+                            <Button
+                                size="sm"
+                                variant={isIn ? 'secondary' : 'outline'}
                                 onClick={handleCheckIn}
                                 disabled={isPending || isIn}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${isIn ? 'bg-tertiary-container/20 border-tertiary/30 text-tertiary' : 'bg-card border-border hover:bg-tertiary/10 hover:border-tertiary/20 hover:text-tertiary'}`}
+                                className={isIn ? 'text-emerald-700 dark:text-emerald-400 border-emerald-500/30' : ''}
                             >
                                 {isIn ? 'In' : 'Check In'}
-                            </button>
+                            </Button>
                             {isIn && (
                                 <input
                                     type="time"
@@ -282,19 +288,21 @@ function AttendeeCard({
                                     onChange={e => setCheckIn(e.target.value)}
                                     onBlur={e => saveTimeBlur('in', e.target.value)}
                                     disabled={!isIn || isPending}
-                                    className="h-8 w-24 px-2 text-xs rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50"
+                                    className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                                 />
                             )}
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button
+                            <Button
+                                size="sm"
+                                variant={isOut ? 'secondary' : 'outline'}
                                 onClick={handleCheckOut}
                                 disabled={isPending || isOut || !isIn}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${isOut ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-card border-border hover:bg-primary/10 hover:border-primary/20 hover:text-primary'} disabled:opacity-50`}
+                                className={isOut ? 'text-accent border-accent/30' : ''}
                             >
                                 {isOut ? 'Out' : 'Check Out'}
-                            </button>
+                            </Button>
                             {isOut && (
                                 <input
                                     type="time"
@@ -302,25 +310,22 @@ function AttendeeCard({
                                     onChange={e => setCheckOut(e.target.value)}
                                     onBlur={e => saveTimeBlur('out', e.target.value)}
                                     disabled={!isOut || isPending}
-                                    className="h-8 w-24 px-2 text-xs rounded-lg border border-border bg-card text-foreground focus:outline-none focus:border-primary/50"
+                                    className="h-8 w-24 px-2 text-xs rounded-sm border border-border bg-surface text-text focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
                                 />
                             )}
                         </div>
 
                         {!isIn && (
                             <div className="relative">
-                                <button
-                                    onClick={() => setShowAbsenceSheet(v => !v)}
-                                    className="px-3 py-2 rounded-lg text-xs font-bold bg-card border border-border text-muted-foreground hover:text-error hover:border-error/30 transition-all"
-                                >
+                                <Button size="sm" variant="outline" onClick={() => setShowAbsenceSheet(v => !v)} className="hover:text-danger hover:border-danger/30">
                                     Mark Absent
-                                </button>
+                                </Button>
                                 {showAbsenceSheet && (
-                                    <div className="absolute top-full right-0 mt-1 w-48 bg-card border border-border rounded-xl shadow-xl z-10 p-2 grid grid-cols-2 gap-1">
+                                    <div className="absolute top-full right-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-[var(--shadow-popover)] z-10 p-2 grid grid-cols-2 gap-1">
                                         {ABSENCE_REASONS.map(r => (
-                                            <button key={r.key} onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 rounded-lg hover:bg-error-container/10 border border-transparent hover:border-error/20">
+                                            <button key={r.key} onClick={() => handleMarkAbsent(r.key)} className="flex flex-col items-center py-2 rounded-sm hover:bg-danger-soft border border-transparent hover:border-danger/20">
                                                 <span className="text-lg mb-1">{r.emoji}</span>
-                                                <span className="text-[10px] font-bold">{r.label}</span>
+                                                <span className="text-[10px] font-semibold text-text">{r.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -330,8 +335,8 @@ function AttendeeCard({
                     </div>
                 )}
                 <div className="w-5 shrink-0 flex justify-center">
-                    {isPending && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
-                    {saved && <span className="text-xs text-success font-bold">✓</span>}
+                    {isPending && <Loader2 className="w-4 h-4 text-text-muted animate-spin" />}
+                    {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✓</span>}
                 </div>
             </div>
         </div>
@@ -342,9 +347,9 @@ function AttendeeCard({
 function SlotProgressBar({ marked, total }: { marked: number; total: number }) {
     const pct = total > 0 ? Math.round((marked / total) * 100) : 0;
     return (
-        <div className="h-1.5 w-full bg-secondary/60 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-border-subtle rounded-full overflow-hidden">
             <div
-                className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-success' : 'bg-primary'}`}
+                className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-accent'}`}
                 style={{ width: `${pct}%` }}
             />
         </div>
@@ -419,7 +424,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
     const handleMarkAllOut = async (slot: CompiledSlot) => {
         const allAttendees = [...slot.regulars, ...slot.catchups];
         const time = nowHHmm();
-        
+
         const inButNotOut = allAttendees.filter(a => {
             const s = markedStatus[a.id];
             return s ? (s.checkedIn && !s.checkedOut && !s.absent) : (!!a.checkInTime && !a.checkOutTime);
@@ -448,12 +453,12 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                 attId = res.attendeeId!;
                             }
                         }
-                        
+
                         await updateAttendanceTimelog({
                             attendeeId: attId, checkInTime: a.checkInTime || time, checkOutTime: time,
                             dateStr, absenceReason: null, attendanceNote: null, sessionTime: slot.time
                         });
-                        
+
                         updateMarkedStatus(a.id, { checkedOut: true });
                     } catch { /* individual failure */ }
                 })
@@ -547,28 +552,28 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
         .filter(slot => slot.regulars.length > 0 || slot.catchups.length > 0);
 
     // ── shared form input style ───────────────────────────────────────────────
-    const formInput = 'w-full h-11 px-3 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors';
-    const formLabel = 'block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5';
+    const formInput = 'w-full h-9 px-3 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors';
+    const formLabel = 'block text-label text-text-muted mb-1.5';
 
     return (
-        <div className="space-y-5 animate-in fade-in duration-500">
+        <div className="space-y-5">
 
             {/* ── Sticky action bar ─────────────────────────────────────────── */}
-            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-card/95 backdrop-blur-xl border-b border-border flex flex-col sm:flex-row items-stretch gap-2.5">
+            <div className="sticky top-16 sm:top-20 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-page/90 backdrop-blur-sm border-b border-border-subtle flex flex-col sm:flex-row items-stretch gap-2.5">
                 {/* Search */}
                 <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder="Search students or parents…"
-                        className="w-full h-12 pl-10 pr-10 rounded-xl bg-secondary/40 border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
+                        className="w-full h-11 pl-10 pr-10 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                     />
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-page text-text-muted hover:text-text transition-all"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -577,44 +582,35 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
                 {/* Buttons */}
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowWalkIn(true)}
-                        className="flex-1 sm:flex-none h-12 px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm shadow-primary/20 active:scale-95 duration-100"
-                    >
-                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                    <Button size="lg" className="flex-1 sm:flex-none" onClick={() => setShowWalkIn(true)}>
+                        <Plus className="w-4 h-4" />
                         Walk-In
-                    </button>
-                    <Link
-                        href="/dashboard/attendance/ledger"
-                        className="flex-1 sm:flex-none h-12 px-5 rounded-xl bg-card border border-border text-foreground text-sm font-bold transition-all flex items-center justify-center gap-2 hover:bg-secondary/40 shadow-sm active:scale-95"
-                    >
-                        <BookMarked className="w-4 h-4" />
-                        Ledger
-                    </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="flex-1 sm:flex-none" asChild>
+                        <Link href="/dashboard/attendance/ledger">
+                            <BookMarked className="w-4 h-4" />
+                            Ledger
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
             {/* ── Empty state ───────────────────────────────────────────────── */}
             {filteredSlots.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-card rounded-3xl border-2 border-dashed border-border">
-                    <div className="w-16 h-16 rounded-2xl bg-secondary/60 flex items-center justify-center mb-4">
-                        <Users className="w-7 h-7 text-muted-foreground/60" />
-                    </div>
-                    <h3 className="text-foreground font-bold text-base mb-2">No students found</h3>
-                    <p className="text-muted-foreground text-sm max-w-xs px-4">
-                        {searchQuery
+                <EmptyState
+                    icon={<Users className="w-7 h-7" />}
+                    title="No students found"
+                    description={
+                        searchQuery
                             ? 'No scheduled students match your search.'
-                            : "No bookings compiled for today. Tap 'Walk-In' to add one."}
-                    </p>
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="mt-4 px-4 py-2.5 bg-secondary/60 border border-border rounded-xl text-sm font-bold text-foreground hover:bg-secondary transition-all active:scale-95 duration-100"
-                        >
-                            Clear search
-                        </button>
-                    )}
-                </div>
+                            : "No bookings compiled for today. Tap 'Walk-In' to add one."
+                    }
+                    action={
+                        searchQuery
+                            ? <Button variant="outline" onClick={() => setSearchQuery('')}>Clear search</Button>
+                            : undefined
+                    }
+                />
             ) : (
                 filteredSlots.map(slot => {
                     const allAttendees = [...slot.regulars, ...slot.catchups];
@@ -630,28 +626,25 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                     }).length;
 
                     return (
-                        <div
-                            key={slot.time}
-                            className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden"
-                        >
+                        <Card key={slot.time} className="overflow-hidden">
                             {/* Slot header */}
-                            <div className="px-6 pt-5 pb-3 border-b border-border bg-secondary/40">
-                                <div className="flex items-center justify-between mb-3">
+                            <div className="px-6 pt-5 pb-3 border-b border-border-subtle bg-page/60">
+                                <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
                                     <div className="flex items-center gap-4">
                                         <div className="text-center">
-                                            <p className="text-primary font-black text-xl leading-none">
+                                            <p className="text-accent font-bold text-xl leading-none">
                                                 {slot.timeLabel.split(' ')[0]}
                                             </p>
-                                            <p className="text-muted-foreground text-xs font-bold">
+                                            <p className="text-text-muted text-xs font-semibold">
                                                 {slot.timeLabel.split(' ')[1]}
                                             </p>
                                         </div>
-                                        <div className="w-px h-8 bg-secondary" />
+                                        <div className="w-px h-8 bg-border-subtle" />
                                         <div>
-                                            <p className="text-foreground font-bold text-sm">
+                                            <p className="text-text font-semibold text-sm">
                                                 Session — {slot.timeLabel}
                                             </p>
-                                            <p className="text-muted-foreground text-xs">
+                                            <p className="text-text-muted text-xs">
                                                 {totalCount} student{totalCount !== 1 ? 's' : ''} expected
                                             </p>
                                         </div>
@@ -661,7 +654,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             <button
                                                 onClick={() => handleMarkAllIn(slot)}
                                                 disabled={bulkPendingSlot === slot.time}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 duration-100 disabled:opacity-60 bg-success/10 text-success border-success/20 hover:bg-success/20 hover:border-success/30"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-success-soft text-emerald-700 dark:text-emerald-400 border-transparent hover:opacity-80"
                                             >
                                                 {bulkPendingSlot === slot.time
                                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -674,7 +667,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             <button
                                                 onClick={() => handleMarkAllOut(slot)}
                                                 disabled={bulkPendingSlot === `out-${slot.time}`}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 duration-100 disabled:opacity-60 bg-warning/10 text-warning border-warning/20 hover:bg-warning/20 hover:border-warning/30"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors disabled:opacity-60 bg-warning-soft text-amber-700 dark:text-amber-400 border-transparent hover:opacity-80"
                                             >
                                                 {bulkPendingSlot === `out-${slot.time}`
                                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -684,14 +677,14 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             </button>
                                         )}
                                         {allMarked ? (
-                                            <span className="flex items-center gap-1.5 text-success text-xs font-bold px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
+                                            <Badge variant="success">
                                                 <CheckCircle2 className="w-3.5 h-3.5" /> Complete
-                                            </span>
+                                            </Badge>
                                         ) : (
-                                            <span className="flex items-center gap-1.5 text-warning text-xs font-bold px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
+                                            <Badge variant="warning">
                                                 <AlertCircle className="w-3.5 h-3.5" />
                                                 {markedCount}/{totalCount} marked
-                                            </span>
+                                            </Badge>
                                         )}
                                     </div>
                                 </div>
@@ -700,24 +693,24 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                             </div>
 
                             {/* Two-column grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border-subtle">
                                 {/* Regular register */}
                                 <div className="p-5 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h4 className="text-[11px] font-black text-muted-foreground uppercase tracking-wider">
+                                        <h4 className="text-label text-text-muted">
                                             Regular Register
                                         </h4>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-secondary/60 text-muted-foreground border border-border">
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-sm bg-page text-text-muted border border-border-subtle">
                                             {slot.regulars.length} scheduled
                                         </span>
                                     </div>
 
                                     {slot.regulars.length === 0 ? (
-                                        <p className="text-center text-muted-foreground/60 text-xs py-8 italic border-2 border-dashed border-border rounded-2xl">
+                                        <p className="text-center text-text-muted text-xs py-8 italic border border-dashed border-border rounded-md">
                                             No regular students scheduled for this slot.
                                         </p>
                                     ) : (
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col gap-1.5">
                                             {slot.regulars.map(child => (
                                                 <AttendeeCard
                                                     key={child.id}
@@ -737,22 +730,22 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                 <div className="p-5 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1.5">
-                                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                            <h4 className="text-[11px] font-black text-amber-600 uppercase tracking-wider">
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                            <h4 className="text-label text-amber-700 dark:text-amber-400">
                                                 Catch-Ups & Walk-Ins
                                             </h4>
                                         </div>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-warning/10 text-warning border border-warning/20">
+                                        <Badge variant="warning">
                                             {slot.catchups.length} guest{slot.catchups.length !== 1 ? 's' : ''}
-                                        </span>
+                                        </Badge>
                                     </div>
 
                                     {slot.catchups.length === 0 ? (
-                                        <p className="text-center text-muted-foreground/60 text-xs py-8 italic border-2 border-dashed border-border rounded-2xl">
+                                        <p className="text-center text-text-muted text-xs py-8 italic border border-dashed border-border rounded-md">
                                             No catch-ups or walk-ins registered.
                                         </p>
                                     ) : (
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col gap-1.5">
                                             {slot.catchups.map(child => (
                                                 <AttendeeCard
                                                     key={child.id}
@@ -768,39 +761,36 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </Card>
                     );
                 })
             )}
 
             {/* ── Walk-In Modal ─────────────────────────────────────────────── */}
             {showWalkIn && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-                    <div className="bg-card rounded-t-3xl sm:rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+                    <div className="bg-surface border border-border rounded-t-lg sm:rounded-lg max-w-lg w-full overflow-hidden shadow-[var(--shadow-popover)]">
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
                             <div>
-                                <h3 className="text-lg font-bold text-foreground">Register Walk-In</h3>
-                                <p className="text-sm text-muted-foreground">Add a child for a one-off session</p>
+                                <h3 className="text-section-title text-text">Register Walk-In</h3>
+                                <p className="text-small-body text-text-secondary">Add a child for a one-off session</p>
                             </div>
-                            <button
-                                onClick={() => setShowWalkIn(false)}
-                                className="w-9 h-9 rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-center text-muted-foreground transition-all active:scale-90 duration-100"
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => setShowWalkIn(false)}>
                                 <X className="w-4 h-4" />
-                            </button>
+                            </Button>
                         </div>
 
                         {centreId !== 'all' && (
-                            <div className="flex border-b border-border bg-secondary/40">
+                            <div className="flex border-b border-border-subtle bg-page/60">
                                 {(['existing', 'new'] as const).map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setWalkInTab(tab)}
-                                        className={`flex-1 py-3.5 text-sm font-bold border-b-2 transition-all active:scale-[0.98] duration-100 ${
+                                        className={`flex-1 py-3.5 text-sm font-semibold border-b-2 transition-colors ${
                                             walkInTab === tab
-                                                ? 'border-primary text-primary bg-card'
-                                                : 'border-transparent text-muted-foreground hover:text-muted-foreground'
+                                                ? 'border-accent text-accent bg-surface'
+                                                : 'border-transparent text-text-muted hover:text-text'
                                         }`}
                                     >
                                         {tab === 'existing' ? 'Existing Student' : 'New Guest'}
@@ -811,8 +801,8 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
 
                         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                             {centreId === 'all' ? (
-                                <div className="p-4 rounded-2xl bg-warning/10 border border-warning/20 text-warning text-sm font-semibold">
-                                    ⚠ Please select a specific centre from the sidebar before registering a walk-in.
+                                <div className="p-4 rounded-md bg-warning-soft border border-transparent text-amber-700 dark:text-amber-400 text-sm font-medium">
+                                    Please select a specific centre from the sidebar before registering a walk-in.
                                 </div>
                             ) : (
                                 <>
@@ -821,7 +811,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                             <div>
                                                 <label className={formLabel}>Search Students</label>
                                                 <div className="relative">
-                                                    <Search className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
+                                                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-text-muted" />
                                                     <input
                                                         type="text"
                                                         value={studentSearchQuery}
@@ -843,7 +833,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                     return (
                                                         <div className="max-h-44 overflow-y-auto space-y-1.5">
                                                             {available.length === 0 ? (
-                                                                <p className="text-sm text-muted-foreground py-6 text-center border-2 border-dashed border-border rounded-2xl">
+                                                                <p className="text-sm text-text-muted py-6 text-center border border-dashed border-border rounded-md">
                                                                     No available students found.
                                                                 </p>
                                                             ) : available.map(student => (
@@ -851,19 +841,19 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                                     key={student.id}
                                                                     type="button"
                                                                     onClick={() => setSelectedChildId(student.id)}
-                                                                    className={`w-full text-left p-3.5 rounded-xl border text-sm flex justify-between items-center transition-all ${
+                                                                    className={`w-full text-left p-3 rounded-sm border text-sm flex justify-between items-center transition-colors ${
                                                                         selectedChildId === student.id
-                                                                            ? 'bg-primary/10 border-primary/50 ring-1 ring-primary/20'
-                                                                            : 'bg-card border-border hover:border-primary/30'
+                                                                            ? 'bg-accent-soft border-accent/50'
+                                                                            : 'bg-surface border-border hover:border-accent/30'
                                                                     }`}
                                                                 >
                                                                     <div>
-                                                                        <div>{student.firstName} {student.lastName} <span className="text-muted-foreground font-normal">(Yr {student.schoolYear})</span></div>
-                                                                        <div className="text-xs text-muted-foreground font-normal mt-0.5">
+                                                                        <div className="text-text">{student.firstName} {student.lastName} <span className="text-text-muted font-normal">(Yr {student.schoolYear})</span></div>
+                                                                        <div className="text-xs text-text-muted font-normal mt-0.5">
                                                                             {student.parentFirstName} {student.parentLastName}
                                                                         </div>
                                                                     </div>
-                                                                    {selectedChildId === student.id && <UserCheck className="w-5 h-5 text-primary" />}
+                                                                    {selectedChildId === student.id && <UserCheck className="w-5 h-5 text-accent" />}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -913,7 +903,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div className="pt-3 border-t border-border grid grid-cols-2 gap-3">
+                                            <div className="pt-3 border-t border-border-subtle grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label className={formLabel}>Parent First Name *</label>
                                                     <input type="text" required value={formParentFirst} onChange={e => setFormParentFirst(e.target.value)} placeholder="e.g. Mary" className={formInput} />
@@ -940,22 +930,15 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-secondary/40">
-                            <button
-                                onClick={() => setShowWalkIn(false)}
-                                className="h-11 px-5 rounded-xl bg-card border border-border text-foreground text-sm font-bold hover:bg-secondary/60 transition-all active:scale-95 duration-100"
-                            >
+                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle bg-page/60">
+                            <Button variant="outline" onClick={() => setShowWalkIn(false)}>
                                 Cancel
-                            </button>
+                            </Button>
                             {centreId !== 'all' && (
-                                <button
-                                    onClick={handleWalkInSubmit}
-                                    disabled={isSubmitting}
-                                    className="h-11 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-primary-foreground text-sm font-bold transition-all flex items-center gap-2 shadow-sm shadow-emerald-200 active:scale-95 duration-100"
-                                >
+                                <Button onClick={handleWalkInSubmit} disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                                     {walkInTab === 'existing' ? 'Add to Register' : 'Register & Check In'}
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>

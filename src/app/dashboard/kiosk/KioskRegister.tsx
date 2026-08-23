@@ -15,31 +15,34 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastProvider';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const playChime = (type: 'success' | 'error') => {
     try {
         const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as any).webkitAudioContext) : null;
         if (!AudioContextClass) return;
         const ctx = new AudioContextClass();
-        
+
         if (type === 'success') {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.connect(gain);
             gain.connect(ctx.destination);
-            
+
             osc.type = 'sine';
             const now = ctx.currentTime;
-            
+
             // High-fidelity double chime: G5 (783.99 Hz) then C6 (1046.50 Hz)
             osc.frequency.setValueAtTime(783.99, now);
             gain.gain.setValueAtTime(0.1, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-            
+
             osc.frequency.setValueAtTime(1046.50, now + 0.12);
             gain.gain.setValueAtTime(0.1, now + 0.12);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-            
+
             osc.start(now);
             osc.stop(now + 0.35);
         } else {
@@ -47,16 +50,16 @@ const playChime = (type: 'success' | 'error') => {
             const gain = ctx.createGain();
             osc.connect(gain);
             gain.connect(ctx.destination);
-            
+
             osc.type = 'triangle';
             const now = ctx.currentTime;
-            
+
             osc.frequency.setValueAtTime(180, now);
             osc.frequency.linearRampToValueAtTime(110, now + 0.25);
-            
+
             gain.gain.setValueAtTime(0.15, now);
             gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
-            
+
             osc.start(now);
             osc.stop(now + 0.25);
         }
@@ -165,7 +168,7 @@ function StudentCard({
                         centreId,
                     });
                 }
-                
+
                 if (res && (!curBookingId || curBookingId.startsWith('temp-'))) {
                     setCurBookingId(res.bookingId);
                     setCurAttendeeId(res.attendeeId || attendee.id);
@@ -249,82 +252,82 @@ function StudentCard({
     const initials = `${(attendee.firstName || '')[0] || ''}${(attendee.lastName || '')[0] || ''}`.toUpperCase() || '??';
 
     const statusStyle = {
-        present: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },
-        absent:  { ring: 'border-error/30 bg-error-container/5 ring-2 ring-error/10 glow-hover-error',         avatar: 'bg-error-container/20 text-error' },
-        late:    { ring: 'border-warning/30 bg-warning/5 ring-2 ring-warning/10 glow-hover-warning',     avatar: 'bg-warning/20 text-warning' },
-        excused: { ring: 'border-secondary/30 bg-secondary-container/5 ring-2 ring-secondary/10 glow-hover-secondary',   avatar: 'bg-secondary-container/20 text-secondary' },
-        check_out: { ring: 'border-tertiary/30 bg-tertiary-container/5 ring-2 ring-tertiary/10 glow-hover-tertiary', avatar: 'bg-tertiary/20 text-tertiary' },
+        present: { ring: 'border-emerald-500/30 bg-success-soft', avatar: 'bg-success-soft text-emerald-700 dark:text-emerald-400' },
+        absent:  { ring: 'border-danger/30 bg-danger-soft',        avatar: 'bg-danger-soft text-danger' },
+        late:    { ring: 'border-amber-500/30 bg-warning-soft',    avatar: 'bg-warning-soft text-amber-700 dark:text-amber-400' },
+        excused: { ring: 'border-blue-500/30 bg-info-soft',        avatar: 'bg-info-soft text-blue-700 dark:text-blue-400' },
+        check_out: { ring: 'border-emerald-500/30 bg-success-soft', avatar: 'bg-success-soft text-emerald-700 dark:text-emerald-400' },
     };
 
-    const style = status ? statusStyle[status] : { ring: 'bg-card border border-border shadow-sm hover:border-primary/30 glow-hover-primary', avatar: 'bg-secondary/60 text-muted-foreground' };
+    const style = status ? statusStyle[status] : { ring: 'bg-surface border-border', avatar: 'bg-page text-text-muted' };
     const pad = isLarge ? 'p-5' : 'p-4';
     const avatarSize = isLarge ? 'w-14 h-14 text-xl' : 'w-11 h-11 text-base';
     const btnSize = isLarge ? 'h-16 text-sm gap-2 px-4 min-w-[88px]' : 'h-11 text-xs gap-1.5 px-3 min-w-[72px]';
 
     return (
         <div className="space-y-2">
-            <div className={`rounded-2xl border transition-all duration-200 ${pad} ${style.ring} ${flash ? 'scale-[0.98]' : ''} flex flex-col gap-4`}>
+            <div className={`rounded-lg border transition-colors ${pad} ${style.ring} ${flash ? 'scale-[0.98]' : ''} flex flex-col gap-4`}>
                 {/* Top Section: Avatar and Info */}
                 <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className={`${avatarSize} rounded-xl flex items-center justify-center font-black flex-shrink-0 transition-colors ${style.avatar}`}>
+                    <div className={`${avatarSize} rounded-md flex items-center justify-center font-bold flex-shrink-0 transition-colors ${style.avatar}`}>
                         {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : initials}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`font-bold text-foreground truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
+                            <p className={`font-semibold text-text truncate ${isLarge ? 'text-lg' : 'text-base'}`}>
                                 {attendee.firstName} {attendee.lastName}
                             </p>
                             {lateMinutes && parseInt(lateMinutes) > 0 && (
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-warning/15 border border-warning/20 text-warning text-[10px] font-bold">
+                                <Badge variant="warning">
                                     <Sparkles className="w-2.5 h-2.5" /> Late
-                                </span>
+                                </Badge>
                             )}
                             {hasAlert && (
                                 <span title={attendee.notes!} className="flex-shrink-0">
-                                    <Stethoscope className="w-4 h-4 text-error" />
+                                    <Stethoscope className="w-4 h-4 text-danger" />
                                 </span>
                             )}
                             {(hasAlert || (lateMinutes && parseInt(lateMinutes) > 0)) && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-warning" title="Has notes/late minutes" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Has notes/late minutes" />
                             )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        <p className="text-xs text-text-muted mt-1 leading-relaxed">
                             Year {attendee.schoolYear} · {attendee.parentFirstName} {attendee.parentLastName}
                             {attendee.parentPhone && ` · ${attendee.parentPhone}`}
                             {lateMinutes && ` · Late: ${lateMinutes}m`}
                             {note && ` · "${note}"`}
                         </p>
                         {hasAlert && (
-                            <p className="text-xs text-error mt-1.5 font-medium">⚠ {attendee.notes}</p>
+                            <p className="text-xs text-danger mt-1.5 font-medium">⚠ {attendee.notes}</p>
                         )}
                     </div>
                 </div>
 
                 {/* Bottom Section: Action buttons */}
                 {!isPending && (
-                    <div className="flex items-center justify-end gap-2 border-t border-border/50 pt-3 w-full">
+                    <div className="flex items-center justify-end gap-2 border-t border-border-subtle pt-3 w-full">
                         <button
                             onClick={() => setShowDetails(!showDetails)}
                             title="Add Notes/Details"
-                            className={`${btnSize} rounded-xl font-bold flex items-center justify-center transition-all border ${showDetails
-                                ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_rgba(142,171,255,0.15)]'
-                                : 'bg-secondary/60 border-border text-muted-foreground hover:text-foreground hover:border-border'
+                            className={`${btnSize} rounded-md font-semibold flex items-center justify-center transition-colors border ${showDetails
+                                ? 'bg-accent-soft border-accent/40 text-accent'
+                                : 'bg-page border-border text-text-muted hover:text-text'
                             }`}
                         >
                             <Edit2 className="w-4 h-4" />
                         </button>
                         {([
-                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-tertiary text-slate-950 shadow-[0_0_15px_-3px_rgba(92,253,128,0.4)] border-tertiary/20', inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-tertiary hover:border-tertiary/20' },
-                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-warning text-background shadow-[0_0_15px_-3px_rgba(245,158,11,0.4)] border-warning/20',   inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-warning hover:border-warning/20'   },
-                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  active: 'bg-error text-background shadow-[0_0_15px_-3px_rgba(255,113,108,0.4)] border-error/20',     inactive: 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-error hover:border-error/20'     },
+                            { s: 'present' as const, icon: <CheckCircle2 className="w-4 h-4" />, label: 'In',   active: 'bg-emerald-500 text-white border-emerald-500', inactive: 'bg-page border-border text-text-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30' },
+                            { s: 'late'    as const, icon: <Clock className="w-4 h-4" />,        label: 'Late', active: 'bg-amber-500 text-white border-amber-500',      inactive: 'bg-page border-border text-text-muted hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-500/30' },
+                            { s: 'check_out' as const, icon: <XCircle className="w-4 h-4" />,    label: 'Out',  active: 'bg-danger text-white border-danger',            inactive: 'bg-page border-border text-text-muted hover:text-danger hover:border-danger/30' },
                         ]).map(({ s, icon, label, active, inactive }) => (
                             <button
                                 key={s}
                                 onClick={() => mark(s)}
-                                className={`${btnSize} border rounded-xl font-bold flex items-center justify-center transition-all active:scale-95 flex-1 ${status === s ? active : inactive}`}
+                                className={`${btnSize} border rounded-md font-semibold flex items-center justify-center transition-colors active:scale-95 flex-1 ${status === s ? active : inactive}`}
                             >
                                 {icon} <span className="ml-1">{label}</span>
                             </button>
@@ -335,69 +338,62 @@ function StudentCard({
 
             {/* Note & Late Minutes Drawer */}
             {showDetails && (
-                <div className="bg-secondary/60 border border-border rounded-2xl p-4 ml-6 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                <div className="bg-page border border-border rounded-md p-4 ml-6 space-y-3">
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Attendance Note</label>
+                            <label className="block text-label text-text-muted mb-1">Attendance Note</label>
                             <input
                                 type="text"
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 placeholder="Add custom notes..."
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-xs focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                             />
                         </div>
                         <div className="w-full sm:w-28">
-                            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Late Mins</label>
+                            <label className="block text-label text-text-muted mb-1">Late Mins</label>
                             <input
                                 type="number"
                                 value={lateMinutes}
                                 onChange={(e) => setLateMinutes(e.target.value)}
                                 placeholder="Minutes"
                                 min="0"
-                                className="w-full h-10 px-3 rounded-xl bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:border-primary/40 transition-colors"
+                                className="w-full h-10 px-3 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-xs focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                             />
                         </div>
                     </div>
                     <div className="flex items-center justify-end gap-2">
-                        <button
-                            onClick={() => setShowDetails(false)}
-                            className="px-3.5 py-1.5 rounded-xl bg-secondary/60 border border-border text-foreground/60 hover:text-foreground text-xs font-bold transition-all"
-                        >
+                        <Button size="sm" variant="outline" onClick={() => setShowDetails(false)}>
                             Cancel
-                        </button>
-                        <button
-                            onClick={saveDetails}
-                            disabled={isPending}
-                            className="px-3.5 py-1.5 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-1.5"
-                        >
+                        </Button>
+                        <Button size="sm" onClick={saveDetails} disabled={isPending}>
                             {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
                             Save Details
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
 
             {/* PIN Pad Modal */}
             {pinPadOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
-                    <div className="bg-card p-6 rounded-3xl border shadow-2xl max-w-[320px] w-full animate-in zoom-in-95 duration-200">
-                        <h3 className="text-xl font-bold mb-2 text-center text-foreground">Confirm Check Out</h3>
-                        <p className="text-center mb-6 text-sm text-muted-foreground">
-                            Enter PIN to check out <strong className="text-foreground">{attendee.firstName} {attendee.lastName}</strong>
+                <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 px-4">
+                    <div className="bg-surface border border-border p-6 rounded-lg shadow-[var(--shadow-popover)] max-w-[320px] w-full">
+                        <h3 className="text-xl font-bold mb-2 text-center text-text">Confirm Check Out</h3>
+                        <p className="text-center mb-6 text-sm text-text-secondary">
+                            Enter PIN to check out <strong className="text-text">{attendee.firstName} {attendee.lastName}</strong>
                         </p>
                         <div className="flex justify-center gap-4 mb-8">
                             {[0, 1, 2, 3].map(i => (
-                                <div key={i} className={`w-3.5 h-3.5 rounded-full transition-colors duration-200 ${pin.length > i ? 'bg-primary' : 'bg-secondary border border-border/50'}`} />
+                                <div key={i} className={`w-3.5 h-3.5 rounded-full transition-colors duration-200 ${pin.length > i ? 'bg-accent' : 'bg-page border border-border'}`} />
                             ))}
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                                <button key={num} onClick={() => handlePinDigit(num)} className="h-14 text-2xl font-bold bg-secondary/80 hover:bg-secondary rounded-2xl active:scale-95 transition-all text-foreground">{num}</button>
+                                <button key={num} onClick={() => handlePinDigit(num)} className="h-14 text-2xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">{num}</button>
                             ))}
-                            <button onClick={() => { setPinPadOpen(false); setPin(''); }} className="h-14 text-sm font-bold bg-error/10 text-error hover:bg-error/20 rounded-2xl active:scale-95 transition-all">Cancel</button>
-                            <button onClick={() => handlePinDigit(0)} className="h-14 text-2xl font-bold bg-secondary/80 hover:bg-secondary rounded-2xl active:scale-95 transition-all text-foreground">0</button>
-                            <button onClick={() => setPin(prev => prev.slice(0, -1))} className="h-14 text-sm font-bold bg-warning/10 text-warning hover:bg-warning/20 rounded-2xl active:scale-95 transition-all">Del</button>
+                            <button onClick={() => { setPinPadOpen(false); setPin(''); }} className="h-14 text-sm font-bold bg-danger-soft text-danger hover:opacity-80 rounded-md active:scale-95 transition-all">Cancel</button>
+                            <button onClick={() => handlePinDigit(0)} className="h-14 text-2xl font-bold bg-page hover:bg-border-subtle rounded-md active:scale-95 transition-all text-text">0</button>
+                            <button onClick={() => setPin(prev => prev.slice(0, -1))} className="h-14 text-sm font-bold bg-warning-soft text-amber-700 dark:text-amber-400 hover:opacity-80 rounded-md active:scale-95 transition-all">Del</button>
                         </div>
                     </div>
                 </div>
@@ -532,37 +528,34 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
         });
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] bg-secondary/20 -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-64px)] bg-page -mx-4 sm:-mx-6 lg:-mx-8 -my-6 overflow-hidden">
 
             {/* ── TOP BAR ─────────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-6 py-4 bg-card/80 backdrop-blur-md border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border-subtle flex-shrink-0">
                 <div>
-                    <h1 className="text-foreground font-black text-lg leading-tight tracking-tight">Daily Register</h1>
-                    <p className="text-muted-foreground text-xs mt-0.5 font-medium">{date} · {centreName}</p>
+                    <h1 className="text-text font-bold text-lg leading-tight tracking-tight">Daily Register</h1>
+                    <p className="text-text-muted text-xs mt-0.5 font-medium">{date} · {centreName}</p>
                 </div>
 
-                <div className="text-foreground font-black text-4xl tabular-nums tracking-tight">
+                <div className="text-text font-bold text-4xl tabular-nums tracking-tight">
                     {format(clock, 'HH:mm')}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button onClick={() => router.refresh()} aria-label="Refresh register" title="Refresh"
-                        className="p-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+                    <Button variant="outline" size="icon" onClick={() => router.refresh()} aria-label="Refresh register" title="Refresh">
                         <RefreshCw className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setLarge(v => !v)} aria-label="Toggle card density" title="Toggle size"
-                        className="p-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => setLarge(v => !v)} aria-label="Toggle card density" title="Toggle size">
                         {large ? <LayoutGrid className="w-4 h-4" /> : <LayoutList className="w-4 h-4" />}
-                    </button>
-                    <button onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                        className="p-2.5 rounded-xl bg-secondary/60 border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
                         {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                    </button>
+                    </Button>
                     {centres.length > 1 && (
                         <select
                             value={activeCentreId}
                             onChange={e => router.push(`/dashboard/kiosk?centre=${e.target.value}`)}
-                            className="bg-secondary/60 border border-border text-foreground text-xs font-bold px-3 py-2.5 rounded-xl outline-none focus:border-primary/50 transition-colors"
+                            className="h-9 bg-surface border border-border text-text text-xs font-semibold px-3 rounded-sm outline-none focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                         >
                             <option value="all">All Centres</option>
                             {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -572,27 +565,27 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
             </div>
 
             {/* ── STATS BAR ──────────────────────────────────────────────── */}
-            <div className="flex items-center gap-0 bg-secondary/50 border-b border-border flex-shrink-0">
+            <div className="flex items-center gap-0 bg-page border-b border-border-subtle flex-shrink-0">
                 {[
-                    { label: 'Total',    value: totalCount,    color: 'text-foreground' },
-                    { label: 'Present',  value: presentCount,  color: 'text-tertiary' },
-                    { label: 'Late',     value: lateCount,     color: 'text-warning' },
-                    { label: 'Absent',   value: absentCount,   color: 'text-error' },
-                    { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-warning' : 'text-muted-foreground/50' },
+                    { label: 'Total',    value: totalCount,    color: 'text-text' },
+                    { label: 'Present',  value: presentCount,  color: 'text-emerald-700 dark:text-emerald-400' },
+                    { label: 'Late',     value: lateCount,     color: 'text-amber-700 dark:text-amber-400' },
+                    { label: 'Absent',   value: absentCount,   color: 'text-danger' },
+                    { label: 'Unmarked', value: unmarkedCount, color: unmarkedCount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-text-muted' },
                 ].map((stat, i) => (
-                    <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-border' : ''}`}>
-                        <p className={`text-xl font-black ${stat.color}`}>{stat.value}</p>
-                        <p className="text-[10px] text-muted-foreground/50 font-bold uppercase tracking-widest">{stat.label}</p>
+                    <div key={stat.label} className={`flex-1 py-3 text-center ${i > 0 ? 'border-l border-border-subtle' : ''}`}>
+                        <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                        <p className="text-[10px] text-text-muted font-semibold uppercase tracking-widest">{stat.label}</p>
                     </div>
                 ))}
-                <div className="flex-1 py-3 px-4 border-l border-border">
+                <div className="flex-1 py-3 px-4 border-l border-border-subtle">
                     <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] text-muted-foreground/50 font-bold uppercase tracking-widest">Done</p>
-                        <p className="text-xs font-black text-foreground">{progressPct}%</p>
+                        <p className="text-[10px] text-text-muted font-semibold uppercase tracking-widest">Done</p>
+                        <p className="text-xs font-bold text-text">{progressPct}%</p>
                     </div>
-                    <div className="h-1.5 bg-secondary/60 rounded-full">
+                    <div className="h-1.5 bg-border-subtle rounded-full">
                         <div
-                            className="h-full bg-gradient-to-r from-tertiary to-primary rounded-full transition-all duration-500"
+                            className="h-full bg-accent rounded-full transition-all duration-500"
                             style={{ width: `${progressPct}%` }}
                         />
                     </div>
@@ -601,19 +594,19 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
             {/* ── SESSION SLOT TABS ──────────────────────────────────────── */}
             {slots.length > 0 && (
-                <div className="flex items-center gap-2 px-6 py-3 bg-secondary/30 border-b border-border overflow-x-auto flex-shrink-0">
+                <div className="flex items-center gap-2 px-6 py-3 bg-page border-b border-border-subtle overflow-x-auto flex-shrink-0">
                     {slots.map((slot, i) => {
                         const slotAll = [...slot.regulars, ...slot.catchups];
                         const slotPresent = slotAll.filter(a => a.attendanceStatus === 'present').length;
                         const slotDone = slotAll.length > 0 && slotAll.every(a => a.attendanceStatus !== null);
                         return (
                             <button key={slot.time} onClick={() => setSlotIdx(i)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 border transition-all ${
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold flex-shrink-0 border transition-colors ${
                                     i === slotIdx
-                                        ? 'bg-primary/20 text-primary border-primary/30 shadow-[0_0_15px_-3px_rgba(142,171,255,0.2)]'
-                                        : 'bg-secondary/60 border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary'
+                                        ? 'bg-accent-soft text-accent border-accent/30'
+                                        : 'bg-surface border-border text-text-muted hover:text-text'
                                 }`}>
-                                {slotDone && <CheckCircle2 className="w-3.5 h-3.5 text-tertiary" />}
+                                {slotDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
                                 {slot.timeLabel}
                                 <span className="text-[11px] opacity-60">{slotPresent}/{slotAll.length}</span>
                             </button>
@@ -624,21 +617,21 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
             {/* ── SEARCH BAR ────────────────────────────────────────────── */}
             {slots.length > 0 && (
-                <div className="px-6 py-2.5 bg-secondary/20 border-b border-border flex items-center gap-3 flex-shrink-0">
+                <div className="px-6 py-2.5 bg-page border-b border-border-subtle flex items-center gap-3 flex-shrink-0">
                     {/* Search input — full width, no max-w-md */}
                     <div className="relative flex-1">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search students by name or parent..."
-                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-card/80 backdrop-blur-md border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300"
+                            className="w-full h-10 pl-10 pr-10 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                         />
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground text-xs font-bold px-1.5 py-0.5 rounded bg-secondary"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text text-xs font-semibold px-1.5 py-0.5 rounded-sm bg-page"
                             >
                                 Clear
                             </button>
@@ -649,20 +642,20 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
                     <button
                         onClick={() => setShowUnmarkedOnly(v => !v)}
                         aria-pressed={showUnmarkedOnly}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
                             showUnmarkedOnly
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-card border-border text-muted-foreground hover:border-primary/40'
+                                ? 'bg-accent text-white border-accent'
+                                : 'bg-surface border-border text-text-muted hover:border-accent/40'
                         }`}
                     >
                         Unmarked only
                         {showUnmarkedOnly && unmarkedCount > 0 && (
-                            <span className="ml-1.5 text-primary-foreground/70">{unmarkedCount}</span>
+                            <span className="ml-1.5 text-white/70">{unmarkedCount}</span>
                         )}
                     </button>
 
                     {searchQuery && (
-                        <p className="text-xs text-muted-foreground font-medium flex-shrink-0">
+                        <p className="text-xs text-text-muted font-medium flex-shrink-0">
                             Found {displayAttendees.length} student{displayAttendees.length === 1 ? '' : 's'}
                         </p>
                     )}
@@ -672,23 +665,20 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
             {/* ── STUDENT LIST ─────────────────────────────────────────── */}
             <div className="flex-1 overflow-y-auto">
                 {slots.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center px-8">
-                        <div className="w-20 h-20 rounded-3xl bg-secondary/60 flex items-center justify-center mb-5">
-                            <Users className="w-12 h-12 text-muted-foreground/50" />
-                        </div>
-                        <h2 className="text-xl font-bold text-foreground mb-2">No sessions today</h2>
-                        <p className="text-muted-foreground text-sm max-w-xs mb-5">
-                            No children are scheduled for today. Check the correct centre is selected above.
-                        </p>
-                        <Link
-                            href="/dashboard/attendance"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-all"
-                        >
-                            Go to Roll Call &rarr;
-                        </Link>
+                    <div className="flex items-center justify-center h-full px-8">
+                        <EmptyState
+                            icon={<Users className="w-8 h-8" />}
+                            title="No sessions today"
+                            description="No children are scheduled for today. Check the correct centre is selected above."
+                            action={
+                                <Button asChild>
+                                    <Link href="/dashboard/attendance">Go to Roll Call &rarr;</Link>
+                                </Button>
+                            }
+                        />
                     </div>
                 ) : displayAttendees.length === 0 ? (
-                    <div className="flex items-center justify-center h-32 text-muted-foreground/50 text-sm">
+                    <div className="flex items-center justify-center h-32 text-text-muted text-sm">
                         {searchQuery ? 'No matching students found' : 'No students in this slot'}
                     </div>
                 ) : (
@@ -710,16 +700,14 @@ export default function KioskRegister({ slots, date, dateStr, centreName, centre
 
             {/* ── BOTTOM NAV ───────────────────────────────────────────── */}
             {slots.length > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card/80 backdrop-blur-md flex-shrink-0">
-                    <button onClick={() => setSlotIdx(i => Math.max(0, i - 1))} disabled={slotIdx === 0}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/60 border border-border/50 text-foreground font-bold text-sm disabled:opacity-30 hover:bg-secondary transition-all">
+                <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-surface flex-shrink-0">
+                    <Button variant="outline" onClick={() => setSlotIdx(i => Math.max(0, i - 1))} disabled={slotIdx === 0}>
                         <ChevronLeft className="w-4 h-4" /> Previous
-                    </button>
-                    <p className="text-muted-foreground text-sm">Slot {slotIdx + 1} of {slots.length}</p>
-                    <button onClick={() => setSlotIdx(i => Math.min(slots.length - 1, i + 1))} disabled={slotIdx === slots.length - 1}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/60 border border-border/50 text-foreground font-bold text-sm disabled:opacity-30 hover:bg-secondary transition-all">
+                    </Button>
+                    <p className="text-text-muted text-sm">Slot {slotIdx + 1} of {slots.length}</p>
+                    <Button variant="outline" onClick={() => setSlotIdx(i => Math.min(slots.length - 1, i + 1))} disabled={slotIdx === slots.length - 1}>
                         Next <ChevronRight className="w-4 h-4" />
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>
