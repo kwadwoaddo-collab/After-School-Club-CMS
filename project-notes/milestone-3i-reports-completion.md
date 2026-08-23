@@ -94,7 +94,7 @@ See §7 and §9 (O.1–O.7) for the role/centre/soft-delete gaps, all fixed. Add
 
 **O.7 — `/api/reports/students` had no soft-delete filter.** Same fix and rationale as O.5.
 
-**O.8 — CSV/formula-injection risk across all four CSV-generation sites.** See §10 for full detail. Fix: `src/lib/csv-safety.ts`. Tests: `src/lib/csv-safety.test.ts` (5 unit tests on the helper itself) plus a dedicated regression test in `route.test.ts` ("neutralises a leading formula-trigger character in an exported cell (O.8)"); live-verified on real seeded phone-number data.
+**O.8 — CSV/formula-injection risk across all four CSV-generation sites.** See §10 for full detail. Fix: `src/lib/csv-safety.ts`. Tests: `src/lib/csv-safety.test.ts` (7 unit tests on the helper itself — one `it.each` case covering all four trigger characters `=`/`+`/`-`/`@` expands to 4 individual test results, plus 3 non-triggering-value cases) plus a dedicated regression test in `route.test.ts` ("neutralises a leading formula-trigger character in an exported cell (O.8)"); live-verified on real seeded phone-number data.
 
 **O.9 — Booking/registration status labels incomplete — found live in Stage C.**
 - **Problem**: `STATUS_LABELS` in `weekly-report.action.ts` omitted `rescheduled` and `not_interested`, falling back to the raw, lowercase enum string.
@@ -149,7 +149,7 @@ None to layout or visual styling — no confirmed visual/design defect was found
 | `src/app/dashboard/reports/ReportsClient.tsx` | O.8 fix (CSV-injection guard) |
 | `src/features/reports/weekly-report.action.ts` | O.9 fix (`STATUS_LABELS` completeness) |
 | `src/lib/csv-safety.ts` | **New** — shared `neutralizeCsvFormula` helper (O.8) |
-| `src/lib/csv-safety.test.ts` | **New** — 5 regression tests |
+| `src/lib/csv-safety.test.ts` | **New** — 7 regression tests |
 | `src/features/reports/export-security.test.ts` | **New** — 11 regression tests (O.1–O.5) |
 | `src/app/api/reports/students/route.test.ts` | **New** — 6 regression tests (O.6–O.8) |
 | `project-notes/milestone-3i-reports-audit.md` | **New** — Stage-A audit |
@@ -171,7 +171,7 @@ Zero console errors and zero page errors on both the ORG_OWNER and MANAGER Activ
 
 - **Typecheck**: 0 errors.
 - **Lint**: 0 errors / 0 warnings.
-- **Tests**: **407 / 407 passing** (baseline was 383/383; +24 new tests added across `csv-safety.test.ts` (5), `export-security.test.ts` (11), and `route.test.ts` (6, one overlapping with O.8 coverage) — no existing test was skipped, deleted, or weakened).
+- **Tests**: **407 / 407 passing** (baseline was 383/383; +24 new tests added across `csv-safety.test.ts` (7 — the 4-value `it.each` covering the `=`/`+`/`-`/`@` trigger characters counts as 4 individual tests, not 1), `export-security.test.ts` (11), and `route.test.ts` (6, one overlapping with O.8 coverage) — 7 + 11 + 6 = 24, reconciling exactly with the 383→407 delta. No existing test was skipped, deleted, or weakened).
 - **Production build**: PASS.
 
 ## 23. Frozen-module regression verification
@@ -208,4 +208,4 @@ No frozen module's UI was touched. Two frozen-module **data-access functions onl
 
 **PASS — recommend freezing Milestone 3I.**
 
-All four quality gates are clean, including 407/407 tests (up from 383, with 24 new regression tests and zero skipped/weakened). Nine confirmed defects were fixed with narrow, evidenced changes: eight security/authorization gaps (O.1–O.8 — two role-gate bypasses, three centre-scoping omissions, one soft-delete-filter omission, and one CSV-injection risk spanning four call sites) plus one display-label completeness fix (O.9) found live during Stage C rather than in the static audit. Every fix mirrors an already-established sibling pattern from a frozen module (Bookings, Students, or Reports' own sibling API routes) rather than inventing new policy. Key report figures were independently reconciled against the seeded database and matched exactly across every metric family present in Reports (bookings, sessions/attendance, registrations). No frozen module's UI was touched; the two frozen-module data-access functions edited were regression-verified clean. No metric definition was invented, no new report/chart/export type was added, and the one metric-naming ambiguity found ("Sessions Run") was documented rather than acted on without evidence.
+All four quality gates are clean, including 407/407 tests (up from 383, with 24 new regression tests and zero skipped/weakened). Nine confirmed defects were fixed with narrow, evidenced changes: eight security/authorization gaps (O.1–O.8 — two role-gate bypasses, three centre-scoping omissions, two soft-delete-filter omissions, and one CSV-injection risk spanning four call sites) plus one display-label completeness fix (O.9) found live during Stage C rather than in the static audit. Every fix mirrors an already-established sibling pattern from a frozen module (Bookings, Students, or Reports' own sibling API routes) rather than inventing new policy. Key report figures were independently reconciled against the seeded database and matched exactly across every metric family present in Reports (bookings, sessions/attendance, registrations). No frozen module's UI was touched; the two frozen-module data-access functions edited were regression-verified clean. No metric definition was invented, no new report/chart/export type was added, and the one metric-naming ambiguity found ("Sessions Run") was documented rather than acted on without evidence.

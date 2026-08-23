@@ -155,7 +155,7 @@ O.1, O.2, O.3, O.4, O.5, O.6, O.7, O.8, O.9 (all detailed in §L above and C.3; 
 ## P. Ambiguities
 
 - C.1 ("Sessions Run" label) — documented, not changed; no established precedent to compare against, and the current computation is a defensible reading of the label.
-- C.3 (two enum values missing from `STATUS_LABELS`) — documented as minor debt, not a confirmed defect.
+- C.3 (two enum values missing from `STATUS_LABELS`) — originally classified here as minor debt, not a confirmed defect, during the static read. **Superseded**: Stage C live verification surfaced this directly (a "rescheduled" status badge rendering as raw lowercase text next to properly-cased badges), reclassifying it as confirmed defect O.9 and fixing it — see C.3 and O.9 for the full account. This line is retained rather than deleted so the audit trail shows the original static-read classification.
 
 No metric definition or authorization decision was found to be materially ambiguous in a way that blocks Stage B — both open items above are narrow enough to document rather than requiring a stop.
 
