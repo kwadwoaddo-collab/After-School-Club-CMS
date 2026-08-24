@@ -79,8 +79,8 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
       label: 'Overdue Invoices',
       value: revenue.overdueCount.toString(),
       icon: AlertCircle,
-      color: revenue.overdueCount > 0 ? 'text-destructive' : 'text-muted-foreground',
-      iconBg: revenue.overdueCount > 0 ? 'bg-destructive/10' : 'bg-secondary/40',
+      color: revenue.overdueCount > 0 ? 'text-danger' : 'text-text-muted',
+      iconBg: revenue.overdueCount > 0 ? 'bg-danger-soft' : 'bg-secondary/40',
       description: 'Past due date',
     },
   ];
