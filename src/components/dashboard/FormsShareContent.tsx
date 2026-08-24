@@ -145,8 +145,8 @@ export default function FormsShareContent({ organisation, centres }: Props) {
             {/* ── Page Header ─────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">Share Portals</h1>
-                    <p className="text-muted-foreground mt-1">
+                    <h1 className="text-3xl font-black text-text tracking-tight">Share Portals</h1>
+                    <p className="text-text-muted mt-1">
                         Copy direct links or grab embeddable iFrame codes to put parent forms on any website.
                     </p>
                 </div>
@@ -158,8 +158,8 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     onClick={() => { setActiveTab('booking'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         activeTab === 'booking'
-                            ? 'bg-card text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-surface text-text shadow-sm'
+                            : 'text-text-muted hover:text-text'
                     }`}
                 >
                     <Calendar className="w-4 h-4" />
@@ -169,8 +169,8 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     onClick={() => { setActiveTab('registration'); setSelectedCentre(centres?.length === 1 ? centres[0].slug : ''); }}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         activeTab === 'registration'
-                            ? 'bg-card text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-surface text-text shadow-sm'
+                            : 'text-text-muted hover:text-text'
                     }`}
                 >
                     <ClipboardList className="w-4 h-4" />
@@ -188,10 +188,10 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
                         {/* Card title */}
                         <div className="flex items-center gap-2.5 pb-5 border-b border-border">
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <Share2 className="w-4 h-4 text-blue-600" />
+                            <div className="w-8 h-8 rounded-xl bg-accent-soft flex items-center justify-center">
+                                <Share2 className="w-4 h-4 text-accent" />
                             </div>
-                            <h2 className="text-base font-bold text-foreground">
+                            <h2 className="text-base font-bold text-text">
                                 {activeTab === 'booking' ? 'Booking Portal Setup' : 'Registration Form Setup'}
                             </h2>
                         </div>
@@ -199,46 +199,46 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         {/* Centre selector */}
                         {centres.length > 1 && (
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                                     Target Centre
                                 </label>
                                 <div className="relative">
                                     <select
                                         value={selectedCentre}
                                         onChange={(e) => setSelectedCentre(e.target.value)}
-                                        className="w-full h-11 pl-4 pr-10 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all appearance-none"
+                                        className="w-full h-11 pl-4 pr-10 rounded-xl bg-surface border border-border text-text text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 transition-all appearance-none"
                                     >
                                         <option value="">All Centres (Shows selector to parents)</option>
                                         {centres.map(c => (
                                             <option key={c.id} value={c.slug}>{c.name}</option>
                                         ))}
                                     </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
                                 </div>
                             </div>
                         )}
 
                         {/* Direct Link URL */}
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                                 Direct Link URL
                             </label>
                             <div className="flex items-center gap-2">
                                 <div className="flex-1 flex items-center gap-2 h-11 pl-3 pr-2 rounded-xl bg-secondary/40 border border-border">
-                                    <Link2 className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                    <Link2 className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
                                     <input
                                         type="text"
                                         value={shareLink}
                                         readOnly
-                                        className="flex-1 bg-transparent text-blue-600 font-mono text-xs focus:outline-none min-w-0"
+                                        className="flex-1 bg-transparent text-accent font-mono text-xs focus:outline-none min-w-0"
                                     />
                                 </div>
                                 <button
                                     onClick={handleCopyLink}
                                     className={`h-11 px-4 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 ${
                                         copiedLink
-                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                            : 'bg-card border-border text-foreground hover:bg-secondary/40 hover:border-border'
+                                            ? 'bg-success-soft border-success/30 text-success'
+                                            : 'bg-surface border-border text-text hover:bg-page hover:border-border'
                                     }`}
                                 >
                                     {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -248,7 +248,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                     href={shareLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="h-11 w-11 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-border transition-all flex items-center justify-center flex-shrink-0"
+                                    className="h-11 w-11 rounded-xl bg-surface border border-border text-text-muted hover:text-text hover:border-border transition-all flex items-center justify-center flex-shrink-0"
                                     title="Open portal in new tab"
                                 >
                                     <ExternalLink className="w-4 h-4" />
@@ -259,7 +259,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         {/* Embed Code */}
                         <div className="space-y-3 pt-5 border-t border-border">
                             <div className="flex items-center justify-between">
-                                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                                     Embed Code (iFrame)
                                 </label>
                                 {/* Size pills */}
@@ -270,8 +270,8 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                             onClick={() => setEmbedSize(size)}
                                             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${
                                                 embedSize === size
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                                    ? 'bg-accent text-surface shadow-sm'
+                                                    : 'bg-page text-text-muted hover:bg-page hover:text-text'
                                             }`}
                                         >
                                             {size}
@@ -282,12 +282,12 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
                             {embedSize === 'custom' && (
                                 <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border animate-in fade-in duration-200">
-                                    <span className="text-xs text-muted-foreground font-medium">Iframe Height (px):</span>
+                                    <span className="text-xs text-text-muted font-medium">Iframe Height (px):</span>
                                     <input
                                         type="number"
                                         value={customHeight}
                                         onChange={(e) => setCustomHeight(e.target.value)}
-                                        className="w-24 h-8 px-3 rounded-lg bg-card border border-border text-foreground text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                                        className="w-24 h-8 px-3 rounded-lg bg-surface border border-border text-text text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50"
                                         min="200"
                                         max="3000"
                                     />
@@ -299,14 +299,14 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                                     value={embedCode}
                                     readOnly
                                     rows={3}
-                                    className="flex-1 p-3 rounded-xl bg-secondary/40 border border-border text-muted-foreground font-mono text-[10px] focus:outline-none resize-none leading-relaxed"
+                                    className="flex-1 p-3 rounded-xl bg-page border border-border text-text-muted font-mono text-[10px] focus:outline-none resize-none leading-relaxed"
                                 />
                                 <button
                                     onClick={handleCopyEmbed}
                                     className={`h-11 px-4 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 ${
                                         copiedEmbed
-                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                            : 'bg-card border-border text-foreground hover:bg-secondary/40 hover:border-border'
+                                            ? 'bg-success-soft border-success/30 text-success'
+                                            : 'bg-surface border-border text-text hover:bg-page hover:border-border'
                                     }`}
                                 >
                                     {copiedEmbed ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -319,7 +319,7 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         <div>
                             <button
                                 onClick={() => setShowPreview(!showPreview)}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/40 hover:bg-secondary/60 border border-border text-foreground text-xs font-semibold transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-page hover:bg-page/80 border border-border text-text text-xs font-semibold transition-all"
                             >
                                 <Eye className="w-4 h-4" />
                                 {showPreview ? 'Hide Embed Preview' : 'Show Embed Preview'}
@@ -329,21 +329,21 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
                     {/* Embed Preview Box */}
                     {showPreview && (
-                        <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden animate-in slide-in-from-top-4 duration-300">
+                        <div className="bg-surface rounded-3xl border border-border shadow-sm overflow-hidden animate-in slide-in-from-top-4 duration-300">
                             <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-secondary/40">
-                                <div className="flex items-center gap-2 text-muted-foreground">
+                                <div className="flex items-center gap-2 text-text-muted">
                                     <Laptop className="w-4 h-4" />
                                     <Smartphone className="w-4 h-4" />
                                     <span className="text-xs font-semibold uppercase tracking-wider">Embed Preview</span>
                                 </div>
-                                <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-mono">{iframeHeight}px</span>
+                                <span className="text-[10px] bg-page text-text-muted px-2 py-0.5 rounded-md font-mono">{iframeHeight}px</span>
                             </div>
                             <div className="p-4 bg-secondary/40 flex justify-center">
                                 <iframe
                                     src={shareLink}
                                     width="100%"
                                     height={iframeHeight}
-                                    className="border-0 bg-card rounded-2xl w-full max-w-3xl shadow-sm"
+                                    className="border-0 bg-surface rounded-2xl w-full max-w-3xl shadow-sm"
                                     title="Live embed preview"
                                 />
                             </div>
@@ -356,13 +356,13 @@ export default function FormsShareContent({ organisation, centres }: Props) {
 
                     {/* How It Works Card */}
                     <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
-                        <h3 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-3">
+                        <h3 className="text-sm font-bold text-text tracking-tight border-b border-border pb-3">
                             How It Works
                         </h3>
                         <ol className="space-y-4">
                             {steps.map((step, i) => (
-                                <li key={i} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
-                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[11px]">
+                                <li key={i} className="flex gap-3 text-sm leading-relaxed text-text-muted">
+                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent text-surface flex items-center justify-center font-bold text-[11px]">
                                         {i + 1}
                                     </span>
                                     <span>{step}</span>
@@ -374,8 +374,8 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                     {/* Platform Embed Guides Card */}
                     <div className="glassmorphic-card rounded-3xl p-6 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 border-b border-border pb-3">
-                            <Code className="w-4 h-4 text-blue-600" />
-                            <h3 className="text-sm font-bold text-foreground tracking-tight">
+                            <Code className="w-4 h-4 text-accent" />
+                            <h3 className="text-sm font-bold text-text tracking-tight">
                                 Platform Embed Guides
                             </h3>
                         </div>
@@ -383,17 +383,17 @@ export default function FormsShareContent({ organisation, centres }: Props) {
                         <div className="space-y-2">
                             {platforms.map(p => (
                                 <details key={p.platform} className="group rounded-xl overflow-hidden border border-border hover:border-border transition-colors">
-                                    <summary className="px-4 py-3 cursor-pointer font-semibold text-sm text-foreground flex items-center justify-between outline-none hover:bg-secondary/40 select-none">
+                                    <summary className="px-4 py-3 cursor-pointer font-semibold text-sm text-text flex items-center justify-between outline-none hover:bg-page select-none">
                                         <span className="flex items-center gap-2">
                                             <span>{p.icon}</span>
                                             <span>{p.platform}</span>
                                         </span>
-                                        <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform duration-200" />
+                                        <ChevronDown className="w-4 h-4 text-text-muted group-open:rotate-180 transition-transform duration-200" />
                                     </summary>
-                                    <div className="px-4 pb-4 pt-2 bg-secondary/40 border-t border-border space-y-2">
+                                    <div className="px-4 pb-4 pt-2 bg-page border-t border-border space-y-2">
                                         {p.steps.map((s, idx) => (
-                                            <div key={idx} className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
-                                                <span className="flex-shrink-0 font-bold text-blue-600">{idx + 1}.</span>
+                                            <div key={idx} className="flex gap-2 text-xs leading-relaxed text-text-muted">
+                                                <span className="flex-shrink-0 font-bold text-accent">{idx + 1}.</span>
                                                 <span>{s}</span>
                                             </div>
                                         ))}

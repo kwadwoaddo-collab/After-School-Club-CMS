@@ -126,6 +126,14 @@ export async function GET(request: NextRequest) {
       )
       .limit(5);
 
+    // N-2 (Milestone 3N): Centre results are only included for roles that can access
+    // the /dashboard/centres page (ORG_OWNER and MANAGER). FRONT_DESK cannot access
+    // /dashboard/centres/[id] (page gate: ORG_OWNER + MANAGER only), so including
+    // centre results for FRONT_DESK produces dead navigation links. Solve at the API
+    // level following established role policy rather than expanding authorisation.
+    const CENTRES_SEARCH_ROLES = ['ORG_OWNER', 'MANAGER'] as const;
+    const canSearchCentres = CENTRES_SEARCH_ROLES.includes(userRole as typeof CENTRES_SEARCH_ROLES[number]);
+
     // Format results to a consistent shape for the frontend dropdown
     const formattedResults = [
       ...students.map(s => ({
@@ -155,13 +163,14 @@ export async function GET(request: NextRequest) {
           url: `/dashboard/bookings/${b.id}`
         };
       }),
-      ...centreResults.map(c => ({
+      // Only include centre results for roles that can access the Centres page
+      ...(canSearchCentres ? centreResults.map(c => ({
         id: c.id,
         type: 'centre',
         title: c.name,
         subtitle: 'Centre',
-        url: `/dashboard/centres/${c.id}` // Assuming centres route
-      }))
+        url: `/dashboard/centres/${c.id}`
+      })) : []),
     ];
 
     return NextResponse.json({ results: formattedResults });

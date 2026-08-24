@@ -19,6 +19,7 @@ import {
     ClipboardList,
     ClipboardCheck,
     CalendarDays,
+    Clock,
     ExternalLink,
     BarChart,
     X,
@@ -44,8 +45,10 @@ interface SidebarProps {
 }
 
 const ROLE_NAV: Record<string, string[]> = {
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications'],
+    // N-1 (Milestone 3N): Availability added to ORG_OWNER and MANAGER. The page gate
+    // permits ORG_OWNER and MANAGER; the sidebar had no entry — no UI path existed.
+    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
+    MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications', 'Availability'],
     // A-1 (Milestone 3M — orchestrator decision, Option A): Parents added to FRONT_DESK.
     // The /dashboard/parents page gate explicitly permits FRONT_DESK; this sidebar entry
     // was inconsistent. Follows the same policy as Milestone 3L A-2 (Registrations).
@@ -146,6 +149,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
         { name: 'Incidents', icon: AlertTriangle, href: '/dashboard/incidents' },
         { name: 'Kiosk', icon: Monitor, href: '/dashboard/kiosk' },
         { name: 'Registrations', icon: ClipboardList, href: '/dashboard/registrations' },
+        { name: 'Availability', icon: Clock, href: '/dashboard/availability' },
         { name: 'Reports', icon: BarChart, href: '/dashboard/reports' },
         { name: 'Finance', icon: Wallet, href: '/dashboard/finance' },
         { name: 'Settings', icon: Settings, href: '/dashboard/settings' },
@@ -319,7 +323,8 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
                     {/* Navigation */}
                     <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
-                    <nav className="space-y-0.5">
+                    {/* A11Y-1 (Milestone 3N): aria-label identifies this as the primary navigation landmark */}
+                    <nav className="space-y-0.5" aria-label="Main navigation">
                         {navItems.map((item) => {
                             const isActive = item.href === '/dashboard'
                                 ? pathname === item.href
@@ -329,6 +334,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                                     <Link
                                         href={item.href}
                                         prefetch={true}
+                                        aria-current={isActive ? 'page' : undefined}
                                         onClick={() => {
                                             if (window.innerWidth < 1024) {
                                                 setCollapsed(true);

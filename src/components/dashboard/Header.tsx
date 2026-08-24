@@ -298,14 +298,17 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 ) : (
                                     <div className="max-h-96 overflow-y-auto">
                                         {searchResults.map((result) => (
-                                            <div
+                                            // A11Y-2 (Milestone 3N): button element for keyboard
+                                            // accessibility — was a non-interactive div with onClick.
+                                            <button
                                                 key={`${result.type}-${result.id}`}
+                                                type="button"
                                                 onClick={() => {
                                                     router.push(result.url);
                                                     setShowSearchResults(false);
                                                     setSearchQuery('');
                                                 }}
-                                                className="p-3 border-b border-border hover:bg-page cursor-pointer transition-colors flex items-center justify-between group"
+                                                className="w-full text-left p-3 border-b border-border hover:bg-page cursor-pointer transition-colors flex items-center justify-between group"
                                             >
                                                 <div>
                                                     <p className="font-semibold text-sm text-text group-hover:text-accent transition-colors">
@@ -318,7 +321,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-text-muted">
                                                     {result.type}
                                                 </span>
-                                            </div>
+                                            </button>
                                         ))}
                                     </div>
                                 )}
@@ -399,10 +402,13 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     </div>
                                 ) : (
                                     notifications.map((notification) => (
-                                        <div
+                                        // A11Y-3 (Milestone 3N): button element for keyboard
+                                        // accessibility — was a non-interactive div with onClick.
+                                        <button
                                             key={notification.id}
+                                            type="button"
                                             onClick={() => handleNotificationClick(notification)}
-                                            className={`p-4 border-b border-border hover:bg-page cursor-pointer transition-colors ${!notification.read ? 'bg-accent-soft' : ''}`}
+                                            className={`w-full text-left p-4 border-b border-border hover:bg-page cursor-pointer transition-colors ${!notification.read ? 'bg-accent-soft' : ''}`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 {!notification.read && (
@@ -420,7 +426,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                                     </p>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </button>
                                     ))
                                 )}
                             </div>
