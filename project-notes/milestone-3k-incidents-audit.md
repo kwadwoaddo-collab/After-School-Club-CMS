@@ -266,3 +266,74 @@ Role policy for FRONT_DESK/TUTOR incident access must be decided by orchestrator
 ### Proposed Stage B (after A-1 resolution)
 
 Fix D1–D7, add regression tests for D3/D4/D5, modernise all surfaces onto frozen design system, verify responsive/dark/light presentation.
+
+---
+
+## Milestone 3K Completion Report
+
+**Frozen SHA:** 5d86233
+**Preceding SHA (Milestone 3J):** ba725cf
+
+### Quality Gates — Final Results
+
+| Gate | Result |
+|---|---|
+| TypeScript (`tsc --noEmit`) | PASS — 0 errors |
+| ESLint | PASS — 0 errors / 0 warnings |
+| Vitest | PASS — 432 / 432 tests |
+| Production build | PASS — 93 / 93 static pages |
+
+### Test Count Reconciliation
+
+| Metric | Count |
+|---|---|
+| Baseline (Milestone 3J frozen, ba725cf) | 422 |
+| Tests added — `src/app/api/incidents/security-3k.test.ts` (new file) | +10 |
+| Tests replaced — `src/lib/security-p6.test.ts` (1 denial test → 1 access-allowed test) | +1 / −1 (net 0) |
+| Net change | +10 |
+| Final total | **432** |
+
+The closure message in the implementer's chat response incorrectly stated "11 new 3K tests". The actual count is 10 new tests. The arithmetic is: 422 + 10 = 432 (correct). The production build, test runner output, and all gate results are unchanged.
+
+**Verification:**
+- `grep -c "^\s*it(" src/app/api/incidents/security-3k.test.ts` → 10
+- `git diff ba725cf 5d86233 -- src/lib/security-p6.test.ts | grep "^[+-].*it("` → 1 line removed, 1 line added (net 0)
+
+### Defects Fixed
+
+7 confirmed defects fixed (D1–D7). A-1 is a resolved product-policy ambiguity, not a defect.
+
+| ID | Description | Type | Fix |
+|---|---|---|---|
+| D1 | Dead "View PDF" button | Behavioural | Button removed; PDF export documented as out-of-scope debt |
+| D2 | `glassmorphic-card` not in frozen design system | Visual | Replaced with `bg-surface`/`border-border` card in empty state and `loading.tsx` |
+| D3 | `getCentreChildren` ignored centreId parameter | Behavioural | Added `eq(children.centreId, centreId)` to query filter |
+| D4 | Soft-deleted children not filtered | Security/Behavioural | Added `isNull(children.deletedAt)` to `getCentreChildren` and `getIncidents` join |
+| D5 | `createIncident` accepts cross-org centreId/childId | Security | Org-ownership verified via `db.query` before insert; throws on mismatch |
+| D6 | Page shell on pre-modernisation tokens | Visual | `text-text`, `text-text-muted` applied |
+| D7 | IncidentsClient + NewIncidentModal on pre-modernisation tokens | Visual | Full migration to frozen design system throughout both components |
+
+### Resolved Ambiguity
+
+| ID | Resolution |
+|---|---|
+| A-1 | Option C (orchestrator, 2026-08-24): ORG_OWNER + MANAGER + FRONT_DESK. TUTOR removed from Incidents sidebar entry. Safeguarding remains MANAGER+ only. |
+
+### Files Changed (production)
+
+| File | Change |
+|---|---|
+| `src/features/incidents/actions.ts` | D3 centreId fix, D4 deletedAt filter, D5 org-ownership verify |
+| `src/app/dashboard/incidents/page.tsx` | D6 tokens, FRONT_DESK added to page gate (A-1) |
+| `src/app/dashboard/incidents/IncidentsClient.tsx` | D1 dead button removed, D2/D7 design system |
+| `src/app/dashboard/incidents/NewIncidentModal.tsx` | D7 design system |
+| `src/app/dashboard/incidents/loading.tsx` | D2 glassmorphic-card replaced |
+| `src/components/dashboard/Sidebar.tsx` | A-1: TUTOR removed from Incidents ROLE_NAV (authorised frozen-module edit) |
+
+### Files Changed (tests / docs)
+
+| File | Change |
+|---|---|
+| `src/app/api/incidents/security-3k.test.ts` | New — 10 regression tests for D3/D4/D5/A-1 |
+| `src/lib/security-p6.test.ts` | 1 FRONT_DESK incidents denial test replaced by 1 access-allowed test (A-1) |
+| `project-notes/milestone-3k-incidents-audit.md` | This document |
