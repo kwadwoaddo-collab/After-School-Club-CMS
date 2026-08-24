@@ -32,6 +32,15 @@ export async function PATCH(request: NextRequest) {
         if (contactPhone !== undefined) updateData.contactPhone = contactPhone.trim() || null;
         if (address !== undefined) updateData.address = address.trim() || null;
 
+        // Milestone 3J: Defect 4 — validate email format server-side.
+        // The client uses type=email but this is not enforced at the API layer.
+        if (updateData.contactEmail !== null && updateData.contactEmail !== undefined) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(updateData.contactEmail)) {
+                return NextResponse.json({ error: 'Invalid email address format' }, { status: 400 });
+            }
+        }
+
         // Subdomain — for per-org routing (e.g. lewisham.sprintscaleit.co.uk)
         const { subdomain } = body;
         const RESERVED = new Set(['app', 'www', 'api', 'mail', 'admin', 'dashboard', 'dev', 'staging', 'preview']);

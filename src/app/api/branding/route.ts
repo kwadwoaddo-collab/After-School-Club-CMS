@@ -13,6 +13,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Milestone 3J: Defect 1 — missing role check. Only ORG_OWNER may update
+        // organisation-level branding (matches policy on all other org settings mutations).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((session.user as any).role !== 'ORG_OWNER') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const { primaryColor } = await request.json();
 
         if (!primaryColor) {

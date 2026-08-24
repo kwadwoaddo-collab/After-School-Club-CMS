@@ -128,9 +128,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
 
     const inp = "w-full px-3 py-2 bg-secondary/60 border border-border rounded-xl text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all";
 
-    const Field = ({ label, editing, value, display, onEdit }: {
-        label: string; editing: boolean; value: string; display?: string; onEdit: () => void;
-    }) => null; // Just a type helper placeholder — we inline below
+    // Milestone 3J: Removed dead `Field` no-op const (returned null, never called).
 
     return (
         <>

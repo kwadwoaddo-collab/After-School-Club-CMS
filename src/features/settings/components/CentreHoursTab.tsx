@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, Calendar, Plus, Edit2, ArrowLeft } from 'lucide-react';
+import { Clock, Calendar, Plus, Edit2, ArrowLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import CentreHoursForm from './CentreHoursForm';
 
+// Milestone 3J: Removed sessionSlots from this interface — CentreHoursForm
+// (Option B) no longer reads or writes sessionSlots via Settings. Session slot
+// management stays exclusively in Centres → Settings → Sessions. See
+// project-notes/milestone-3j-settings-audit.md §F for the shape-collision
+// rationale.
 interface Centre {
     id: string;
     name: string;
-    sessionSlots: string | null;
     operatingHours: string | null;
     address?: string | null;
 }
@@ -72,8 +76,8 @@ export default function CentreHoursTab({ centres }: Props) {
                     <ArrowLeft className="w-4 h-4" /> Back to Centres List
                 </button>
                 <div className="bg-secondary border border-border rounded-3xl p-6 shadow-xl">
-                    <h2 className="text-xl font-bold text-foreground mb-2">Edit Operating Hours</h2>
-                    <p className="text-xs text-muted-foreground mb-6">Configuring timings and slots for <strong className="text-foreground">{activeCentre.name}</strong></p>
+                    <h2 className="text-xl font-bold text-foreground mb-2">Edit Opening Hours</h2>
+                    <p className="text-xs text-muted-foreground mb-6">Configuring opening hours for <strong className="text-foreground">{activeCentre.name}</strong></p>
                     <CentreHoursForm centre={activeCentre} />
                 </div>
             </div>
@@ -83,8 +87,8 @@ export default function CentreHoursTab({ centres }: Props) {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-xl font-bold text-foreground tracking-tight">Centre Hours &amp; Sessions</h2>
-                <p className="text-sm text-muted-foreground mt-1">Configure operating hours and dynamic session slots per centre.</p>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">Centre Opening Hours</h2>
+                <p className="text-sm text-muted-foreground mt-1">Configure the operating hours for each of your centres.</p>
             </div>
 
             {centres.length === 0 ? (
@@ -104,11 +108,6 @@ export default function CentreHoursTab({ centres }: Props) {
                     {centres.map((centre) => {
                         const hoursMap = parseHours(centre.operatingHours);
                         const openDays = DAYS.filter(d => hoursMap[d].open);
-
-                        let slotCount = 0;
-                        if (centre.sessionSlots) {
-                            try { slotCount = JSON.parse(centre.sessionSlots).length; } catch { }
-                        }
 
                         return (
                             <div key={centre.id} className="bg-card border border-border rounded-[32px] p-6 hover:border-primary/20 hover:shadow-2xl transition-all duration-300 group">
@@ -136,35 +135,32 @@ export default function CentreHoursTab({ centres }: Props) {
                                     <div className="p-4 bg-secondary/60 rounded-2xl border border-border/50 space-y-3">
                                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Opening Hours</p>
                                         <div className="space-y-1.5">
-                                            {openDays.map(day => (
+                                            {openDays.length > 0 ? openDays.map(day => (
                                                 <div key={day} className="flex justify-between text-xs">
                                                     <span className="font-semibold text-foreground/70">{DAY_LABELS[day]}</span>
                                                     <span className="text-muted-foreground font-medium">
                                                         {fmt12(hoursMap[day].start)} – {fmt12(hoursMap[day].end)}
                                                     </span>
                                                 </div>
-                                            ))}
+                                            )) : (
+                                                <p className="text-xs text-muted-foreground/50 italic">No hours configured</p>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Session Slots Summary */}
-                                    <div className="p-4 bg-secondary/60 rounded-2xl border border-border/50 space-y-2">
+                                    {/* Session Slots — redirect to Centres Settings */}
+                                    <div className="p-4 bg-secondary/60 rounded-2xl border border-border/50 space-y-2 flex flex-col justify-between">
                                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Session Slots</p>
-                                        {slotCount > 0 ? (
-                                            <>
-                                                <p className="text-xl font-black text-foreground">{slotCount} Slots</p>
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    {(JSON.parse(centre.sessionSlots!) as string[]).slice(0, 3).map(s => (
-                                                        <span key={s} className="text-[10px] bg-secondary/60 text-primary px-2 py-0.5 rounded-md border border-primary/10 font-bold">{s}</span>
-                                                    ))}
-                                                    {slotCount > 3 && (
-                                                        <span className="text-[10px] bg-secondary/60 text-primary px-2 py-0.5 rounded-md border border-primary/10 font-bold">+{slotCount - 3} more</span>
-                                                    )}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <p className="text-xs text-muted-foreground/50 italic">No custom session slots configured</p>
-                                        )}
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                            Session time slots (name, price, capacity) are managed in Centre Settings.
+                                        </p>
+                                        <Link
+                                            href={`/dashboard/centres/${centre.id}/settings`}
+                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            Open Centre Settings
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

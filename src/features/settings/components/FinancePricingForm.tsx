@@ -223,7 +223,11 @@ export default function FinancePricingForm({ centres }: FinancePricingFormProps)
                 <div className="h-px bg-secondary my-2" />
 
                 <div className="space-y-6">
-                    <h3 className="text-lg font-bold text-foreground">Bank Details</h3>
+                    {/* Milestone 3J: Added "Sensitive" indicator matching Centres Settings billing treatment */}
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-foreground">Bank Details</h3>
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">Sensitive</span>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="text-sm font-bold text-foreground mb-2 block">Bank Name</label>

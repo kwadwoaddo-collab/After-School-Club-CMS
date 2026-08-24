@@ -7,10 +7,13 @@ import { triggerWondeSync } from '@/features/wonde/actions';
 type WondeSyncResult = Awaited<ReturnType<typeof triggerWondeSync>>;
 
 export default function WondeSettingsClient({ orgName, lastSync }: { orgName: string; lastSync: Date | null }) {
-    const [apiKey, setApiKey] = useState('wonde_test_key_12345');
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<WondeSyncResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // Milestone 3J Defect 5: The Wonde API key has no DB persistence mechanism
+    // (no column in the schema). Removed hardcoded test key. Token management
+    // UI is kept but marked non-functional until a persistence path is built.
+    // The sync action (triggerWondeSync) is unaffected and remains active.
 
     const handleSync = async () => {
         setIsSyncing(true);
@@ -43,15 +46,23 @@ export default function WondeSettingsClient({ orgName, lastSync }: { orgName: st
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">School ID / Access Token</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">School ID / Access Token</label>
+                                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">Coming Soon</span>
+                            </div>
                             <input
                                 type="password"
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                                className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                placeholder="API token management coming soon"
+                                disabled
+                                className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm outline-none font-mono opacity-50 cursor-not-allowed"
                             />
+                            <p className="text-xs text-muted-foreground mt-2">Token storage and rotation will be available in a future update.</p>
                         </div>
-                        <button className="px-5 py-2.5 bg-secondary text-foreground font-bold rounded-xl text-sm border border-border hover:bg-secondary/80 transition-colors">
+                        <button
+                            disabled
+                            title="Token management coming soon"
+                            className="px-5 py-2.5 bg-secondary text-foreground font-bold rounded-xl text-sm border border-border opacity-50 cursor-not-allowed"
+                        >
                             Update Token
                         </button>
                     </div>

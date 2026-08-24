@@ -3,8 +3,7 @@ import { logger } from '@/lib/logger';
 
 import { useState } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
-import { Upload, Palette, Save, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import Link from 'next/link';
+import { Upload, Palette, Save, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface BrandingFormProps {
@@ -77,26 +76,23 @@ export default function BrandingForm({ initialColor, logoUrl }: BrandingFormProp
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Page Header */}
-            <div className="flex items-center gap-4">
-                <Link
-                    href="/dashboard/settings"
-                    className="p-2 hover:bg-secondary rounded-2xl transition-all text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </Link>
-                <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                        Branding & Customisation
-                    </h1>
-                    <p className="text-muted-foreground font-medium mt-1">
+            {/* Tab Header — Milestone 3J Defect 6: removed ArrowLeft/Link back button.
+                BrandingForm is an embedded tab within /dashboard/settings, not a
+                standalone page. The back button navigated to the page the user was
+                already on, creating a confusing UX loop. */}
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-bold text-foreground tracking-tight">
+                        Branding &amp; Customisation
+                    </h2>
+                    <p className="text-muted-foreground text-sm font-medium mt-1">
                         Customise your organisation's logo and brand colours
                     </p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-primary rounded-2xl text-sm font-bold text-foreground hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saveSuccess ? (
                         <>
