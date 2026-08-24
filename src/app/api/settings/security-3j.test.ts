@@ -30,6 +30,7 @@ vi.mock('@/db', () => ({
   db: {
     query: {
       organisations: { findFirst: vi.fn() },
+      centres: { findFirst: vi.fn() },
     },
     select: vi.fn(() => ({
       from: vi.fn(() => ({
@@ -38,7 +39,9 @@ vi.mock('@/db', () => ({
     })),
     update: vi.fn(() => ({
       set: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue([]),
+        where: vi.fn(() => ({
+          returning: vi.fn().mockResolvedValue([]),
+        })),
       })),
     })),
   },
@@ -291,7 +294,11 @@ describe('PATCH /api/centres/[id] — Milestone 3J closure: operatingHours persi
 
     const setMock = vi.fn((data: any) => {
       capturedUpdateData = data;
-      return { where: vi.fn().mockResolvedValue([{ id: 'centre-1', ...data }]) };
+      return {
+        where: vi.fn(() => ({
+          returning: vi.fn().mockResolvedValue([{ id: 'centre-1', ...data }]),
+        })),
+      };
     });
     (db.update as any).mockReturnValueOnce({ set: setMock });
 
@@ -336,7 +343,11 @@ describe('PATCH /api/centres/[id] — Milestone 3J closure: operatingHours persi
     let capturedUpdateData: any = null;
     const setMock = vi.fn((data: any) => {
       capturedUpdateData = data;
-      return { where: vi.fn().mockResolvedValue([{ id: 'centre-1' }]) };
+      return {
+        where: vi.fn(() => ({
+          returning: vi.fn().mockResolvedValue([{ id: 'centre-1' }]),
+        })),
+      };
     });
     (db.update as any).mockReturnValueOnce({ set: setMock });
 

@@ -34,7 +34,10 @@ The registration form and booking portal (Shape A consumers) expect `centres.ses
 - `CentreHoursTab.tsx`: Removed `sessionSlots` from Centre interface; replaced slot count summary with a "Manage in Centre Settings" link
 - `OrganisationInfoForm.tsx`: Removed dead `Field` no-op const (returned null, never called)
 - UI modernisation: BrandingForm header layout, CentreHoursTab responsive summary, Wonde Coming Soon indicator, FinancePricingForm sensitive field indicators
-- Tests: `src/app/api/settings/security-3j.test.ts` — Defect 1 + Defect 4 regression coverage
+- Tests: `src/app/api/settings/security-3j.test.ts` — **15 tests total**
+  - 10 tests covering Defect 1 (POST /api/branding role enforcement) and Defect 4 (PATCH /api/settings/organisation email validation) — present at original 3J completion (cc84fcb)
+  - 5 tests added in closure verification pass (36bd9e4): PATCH /api/centres/[id] — 401 unauthenticated, 403 TUTOR role, 404 cross-org isolation (Defect 3 / org isolation), single-level serialisation (Defect 7 regression), and sessionSlots non-mutation confirmation
+  - Full repository test suite: **422 total** (419 passed, 0 failed after mock fix)
 
 ## Intentional Non-Changes
 
