@@ -156,7 +156,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
         }
 
-        // ── 2. Validate centreId belongs to the resolved org (if supplied) ──
+        // ── 2a. Milestone 3L D4: verify prefillParentId belongs to the resolved org ──────
+        // A JWT token is signed with AUTH_SECRET, but it could have been generated for a
+        // different organisation and replayed here. We re-check the parent record against
+        // org.id before trusting the token's parentId value.
+        if (prefillParentId) {
+            const prefillParentRecord = await db.query.parents.findFirst({
+                where: and(eq(parents.id, prefillParentId), eq(parents.organisationId, org.id)),
+                columns: { id: true },
+            });
+            if (!prefillParentRecord) {
+                logger.warn('[Registration API] prefillParentId does not belong to resolved org — discarding token parentId');
+                prefillParentId = null;
+            }
+        }
+
+        // ── 2b. Validate centreId belongs to the resolved org (if supplied) ──
         // This prevents cross-org data poisoning where a malicious caller
         // could POST orgSlug=org-a with centreId=<uuid-from-org-b>.
         let validatedCentreId: string | null = null;

@@ -15,6 +15,7 @@ export default function RegistrationStatusUpdater({
 }: { registrationId: string; currentStatus: Status }) {
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -33,20 +34,34 @@ export default function RegistrationStatusUpdater({
     const update = async (status: Status) => {
         if (status === currentStatus) { setOpen(false); return; }
         setSaving(true);
-        await fetch(`/api/register/${registrationId}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status }),
-        });
-        setOpen(false);
-        setSaving(false);
-        router.refresh();
+        setError(null);
+        try {
+            // D8: check response.ok before refreshing — previously a 403/500 would
+            // silently succeed from the UI's perspective (page would refresh with no change)
+            const res = await fetch(`/api/register/${registrationId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            setOpen(false);
+            setSaving(false);
+            if (res.ok) {
+                router.refresh();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setError(data.error ?? 'Failed to update status');
+            }
+        } catch {
+            setOpen(false);
+            setSaving(false);
+            setError('Network error — please try again');
+        }
     };
 
     return (
         <div className="relative" ref={wrapperRef}>
             <button
-                onClick={() => setOpen(o => !o)}
+                onClick={() => { setOpen(o => !o); setError(null); }}
                 disabled={saving}
                 aria-haspopup="listbox"
                 aria-expanded={open}
@@ -54,6 +69,11 @@ export default function RegistrationStatusUpdater({
             >
                 {saving ? 'Saving…' : 'Update Status ▾'}
             </button>
+            {error && (
+                <p className="absolute right-0 top-full mt-1 whitespace-nowrap text-xs font-semibold text-destructive bg-background border border-destructive/20 rounded-lg px-3 py-1.5 shadow-lg">
+                    {error}
+                </p>
+            )}
             {open && (
                 <div
                     role="listbox"

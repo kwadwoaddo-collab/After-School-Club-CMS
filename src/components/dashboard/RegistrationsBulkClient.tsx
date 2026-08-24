@@ -90,16 +90,23 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
         setConfirmingDelete(false);
         try {
             const ids = Array.from(selected);
-            await Promise.all(
+            // D7: use Promise.allSettled and check each response.ok to report accurate outcomes
+            const results = await Promise.allSettled(
                 ids.map(id =>
                     fetch(`/api/register/${id}/status`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status }),
-                    })
+                    }).then(r => r.ok)
                 )
             );
-            setBulkMessage(`✓ Updated ${ids.length} registration${ids.length !== 1 ? 's' : ''}`);
+            const succeeded = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
+            const failed = results.length - succeeded;
+            if (failed > 0) {
+                setBulkMessage(`Updated ${succeeded}, failed ${failed} — please try again`);
+            } else {
+                setBulkMessage(`\u2713 Updated ${succeeded} registration${succeeded !== 1 ? 's' : ''}`);
+            }
             setSelected(new Set());
             router.refresh();
         } catch {
@@ -255,6 +262,7 @@ export default function RegistrationsBulkClient({ rows, statusBadge, statusLabel
                                                 checked={isChecked}
                                                 onChange={() => toggleOne(r.id)}
                                                 className="w-4 h-4 rounded accent-primary cursor-pointer mt-1"
+                                                aria-label={`Select registration for ${r.registrationChildren[0]?.submittedFirstName ?? ''} ${r.registrationChildren[0]?.submittedLastName ?? ''}`.trim() || 'Select registration'}
                                             />
                                         </td>
                                     <td className="px-4 py-3 align-middle">

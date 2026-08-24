@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { registrations, registrationParents, registrationChildren, organisations, centres } from '@/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { z } from 'zod';
 
 const bodySchema = z.object({
@@ -43,17 +44,34 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
         }
 
-        // Fetch all matching registrations (must belong to this org)
-        const regs = await db.query.registrations.findMany({
-            where: and(
-                inArray(registrations.id, registrationIds),
-                eq(registrations.organisationId, session.user.organisationId)
-            ),
-            with: {
-                registrationParents: true,
-                registrationChildren: true,
-            },
-        });
+        // ── Milestone 3L D5: centre isolation for MANAGER ─────────────────────────────
+        // ORG_OWNER sees all org-scoped registrations.
+        // MANAGER is restricted to registrations in their assigned centres, matching the
+        // established centre-access policy in the list page and PATCH /api/register/[id]/status.
+        let regs;
+        if (userRole === 'ORG_OWNER') {
+            regs = await db.query.registrations.findMany({
+                where: and(
+                    inArray(registrations.id, registrationIds),
+                    eq(registrations.organisationId, session.user.organisationId)
+                ),
+                with: { registrationParents: true, registrationChildren: true },
+            });
+        } else {
+            // MANAGER: only centres they are assigned to
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (accessibleCentreIds.length === 0) {
+                return NextResponse.json({ error: 'No accessible centres' }, { status: 403 });
+            }
+            regs = await db.query.registrations.findMany({
+                where: and(
+                    inArray(registrations.id, registrationIds),
+                    eq(registrations.organisationId, session.user.organisationId),
+                    inArray(registrations.centreId, accessibleCentreIds),
+                ),
+                with: { registrationParents: true, registrationChildren: true },
+            });
+        }
 
         if (regs.length === 0) {
             return NextResponse.json({ error: 'No matching registrations found' }, { status: 404 });

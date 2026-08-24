@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
 import { createRegistrationNotification } from '@/app/portal/notifications/actions';
@@ -37,16 +37,41 @@ export async function deleteRegistrations(ids: string[]) {
 
 
 export async function assignRegistrationCentre(registrationId: string, centreId: string | null) {
+    // Milestone 3L D1: role check + org ownership verification of registrationId and centreId.
+    // Previously callable by any authenticated session with no role check and no org boundary.
     const session = await auth();
-    if (!session?.user) {
-        throw new Error('Unauthorized');
+    if (!session?.user) throw new Error('Unauthorized');
+
+    const userRole = (session.user as any).role as string;
+    if (!['ORG_OWNER', 'MANAGER'].includes(userRole)) {
+        throw new Error('Forbidden: only ORG_OWNER or MANAGER may assign centres');
+    }
+
+    const orgId = (session.user as any).organisationId as string | undefined;
+    if (!orgId) throw new Error('No organisation found');
+
+    // Verify the registration belongs to this org before mutating it
+    const existing = await db.query.registrations.findFirst({
+        where: and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)),
+        columns: { id: true },
+    });
+    if (!existing) throw new Error('Registration not found');
+
+    // If assigning a centre, verify it belongs to this org (prevents cross-org centreId injection)
+    if (centreId) {
+        const centre = await db.query.centres.findFirst({
+            where: and(eq(centres.id, centreId), eq(centres.organisationId, orgId)),
+            columns: { id: true },
+        });
+        if (!centre) throw new Error('Centre not found');
     }
 
     try {
         await db
             .update(registrations)
             .set({ centreId })
-            .where(eq(registrations.id, registrationId));
+            // Double-anchor WHERE with organisationId so the update is never cross-org
+            .where(and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)));
 
         revalidatePath('/dashboard/registrations');
         return { success: true };
@@ -94,8 +119,16 @@ export interface UpdateRegistrationPayload {
 }
 
 export async function updateRegistrationDetails(payload: UpdateRegistrationPayload) {
+    // Milestone 3L D2: add role check; also scope parent/child canonical record updates
+    // to the session org to prevent cross-org PII mutation via foreign parentId/childId.
     const session = await auth();
     if (!session?.user) throw new Error('Unauthorized');
+
+    const userRole = (session.user as any).role as string;
+    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden');
+    }
+
     const orgId = (session.user as any).organisationId as string | undefined;
     if (!orgId) throw new Error('No organisation found');
 
@@ -124,13 +157,17 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
 
     // 2. Update each parent snapshot + linked parent record
     for (const p of payload.parentsData) {
+        // Scope update to the verified registration to prevent cross-registration row tampering
         await db.update(registrationParents).set({
             submittedFirstName: p.firstName,
             submittedLastName: p.lastName,
             submittedRelationship: p.relationship || null,
             submittedPhone: p.phone || null,
             submittedEmail: p.email || null,
-        }).where(eq(registrationParents.id, p.id));
+        }).where(and(
+            eq(registrationParents.id, p.id),
+            eq(registrationParents.registrationId, reg.id), // D2: must belong to verified registration
+        ));
 
         // Also update linked canonical parent record
         if (p.parentId) {
@@ -144,19 +181,26 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
                 city: p.city || null,
                 postcode: p.postcode || null,
                 updatedAt: new Date(),
-            }).where(eq(parents.id, p.parentId));
+            }).where(and(
+                eq(parents.id, p.parentId),
+                eq(parents.organisationId, orgId), // D2: reject cross-org parentId injection
+            ));
         }
     }
 
     // 3. Update each child snapshot + linked child record
     for (const c of payload.childrenData) {
+        // Scope update to the verified registration to prevent cross-registration row tampering
         await db.update(registrationChildren).set({
             submittedFirstName: c.firstName,
             submittedLastName: c.lastName,
             submittedDateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth) : null,
             submittedSchoolYear: c.schoolYear || null,
             submittedSessions: c.sessions,
-        }).where(eq(registrationChildren.id, c.id));
+        }).where(and(
+            eq(registrationChildren.id, c.id),
+            eq(registrationChildren.registrationId, reg.id), // D2: must belong to verified registration
+        ));
 
         // Also update linked canonical children record
         if (c.childId) {
@@ -167,7 +211,10 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
                 schoolYear: c.schoolYear || 'Y1',
                 registeredSessions: c.sessions,
                 updatedAt: new Date(),
-            }).where(eq(children.id, c.childId));
+            }).where(and(
+                eq(children.id, c.childId),
+                eq(children.organisationId, orgId), // D2: reject cross-org childId injection
+            ));
         }
     }
 
@@ -233,12 +280,21 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
 
 // ─── Update a single registration status (approve / reject / revert) ──────────
 
+// NOTE (Milestone 3L AD-2): This server action is not currently called from any UI component
+// (StatusUpdater uses the API route PATCH /api/register/[id]/status). It is kept for reference
+// but a role check has been added as a security precaution given the action remains exported.
 export async function updateRegistrationStatus(
     registrationId: string,
     newStatus: 'signed_up' | 'not_interested' | 'awaiting_confirmation'
 ) {
     const session = await auth();
     if (!session?.user) throw new Error('Unauthorized');
+
+    // Milestone 3L D3: role gate (previously absent — any authenticated user could call this)
+    const userRole = (session.user as any).role as string;
+    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden');
+    }
 
     const orgId = (session.user as any).organisationId as string | undefined;
     if (!orgId) throw new Error('No organisation found');
@@ -297,13 +353,14 @@ export async function updateRegistrationStatus(
             }
 
             if (regParent?.parentId) {
+                // Milestone 3L D6: filter soft-deleted parent records
                 const [parent] = await db
                     .select({ firstName: parents.firstName, email: parents.email })
                     .from(parents)
-                    .where(eq(parents.id, regParent.parentId))
+                    .where(and(eq(parents.id, regParent.parentId), isNull(parents.deletedAt)))
                     .limit(1);
 
-                // Resolve child names
+                // Resolve child names — D6: filter soft-deleted child records
                 const childNames: string[] = [];
                 if (regChildren.length > 0) {
                     const childIds = regChildren.map(c => c.childId).filter(Boolean) as string[];
@@ -311,7 +368,7 @@ export async function updateRegistrationStatus(
                         const childRecords = await db
                             .select({ firstName: children.firstName, lastName: children.lastName })
                             .from(children)
-                            .where(inArray(children.id, childIds));
+                            .where(and(inArray(children.id, childIds), isNull(children.deletedAt)));
                         childRecords.forEach(c => childNames.push(`${c.firstName} ${c.lastName}`));
                     }
                 }

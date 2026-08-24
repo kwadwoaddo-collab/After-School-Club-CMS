@@ -202,21 +202,21 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
     const slots = centreSessionSlots || SESSION_SLOTS;
 
     const renderCardHeader = (title: string, sectionId: string) => (
-        <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/5">
+        <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
             <div className="flex items-center gap-3">
-                <h2 className="text-white font-bold">{title}</h2>
-                {success === sectionId && <span className="text-emerald-400 text-xs flex items-center gap-1 animate-in fade-in"><CheckCircle2 className="w-3.5 h-3.5" /> Saved</span>}
+                <h2 className="text-foreground font-bold">{title}</h2>
+                {success === sectionId && <span className="text-success text-xs flex items-center gap-1 animate-in fade-in"><CheckCircle2 className="w-3.5 h-3.5" /> Saved</span>}
             </div>
             {editingSection !== sectionId ? (
                 <button
                     onClick={() => { setEditingSection(sectionId); setError(null); setSuccess(null); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-card/5 hover:bg-card/10 text-white/70 hover:text-white rounded-md border border-white/10 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-md border border-border transition-all"
                 >
                     <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
             ) : (
                 <div className="flex items-center gap-2">
-                    <button onClick={() => handleCancel(sectionId)} disabled={isPending} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-white/60 hover:text-white transition-colors">
+                    <button onClick={() => handleCancel(sectionId)} disabled={isPending} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                         <X className="w-3.5 h-3.5" /> Cancel
                     </button>
                     <button onClick={() => handleSave(sectionId)} disabled={isPending} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded-md hover:bg-primary/90 transition-colors shadow-sm">
@@ -236,19 +236,19 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
             )}
 
             {/* Students & Sessions Card */}
-            <div className={`glassmorphic-card rounded-2xl p-6 transition-all duration-300 ${editingSection === 'children' ? 'ring-1 ring-primary/50 bg-card/5' : ''}`}>
+            <div className={`bg-card border border-border rounded-2xl p-6 transition-all duration-300 ${editingSection === 'children' ? 'ring-1 ring-primary/50' : ''}`}>
                 {renderCardHeader('Students & Sessions', 'children')}
                 <div className="space-y-6">
                     {childrenState.map((c, i) => (
-                        <div key={c.id} className="border border-white/5 rounded-xl p-4 bg-card/2">
-                            <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Child {i + 1}</p>
+                        <div key={c.id} className="border border-border/50 rounded-xl p-4 bg-secondary/20">
+                            <p className="text-muted-foreground text-xs uppercase tracking-wide mb-3">Child {i + 1}</p>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className={label}>First Name <span className="text-destructive ml-0.5">*</span></label>
                                     {editingSection === 'children' ? (
                                         <input className={input} value={c.firstName} onChange={e => updateChild(i, 'firstName', e.target.value)} />
                                     ) : (
-                                        <p className="text-sm text-white/90">{c.firstName}</p>
+                                        <p className="text-sm text-foreground">{c.firstName}</p>
                                     )}
                                 </div>
                                 <div>
@@ -256,7 +256,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     {editingSection === 'children' ? (
                                         <input className={input} value={c.lastName} onChange={e => updateChild(i, 'lastName', e.target.value)} />
                                     ) : (
-                                        <p className="text-sm text-white/90">{c.lastName}</p>
+                                        <p className="text-sm text-foreground">{c.lastName}</p>
                                     )}
                                 </div>
                                 <div>
@@ -264,7 +264,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     {editingSection === 'children' ? (
                                         <input type="date" className={input} value={c.dateOfBirth} onChange={e => updateChild(i, 'dateOfBirth', e.target.value)} />
                                     ) : (
-                                        <p className="text-sm text-white/90">{c.dateOfBirth}</p>
+                                        <p className="text-sm text-foreground">{c.dateOfBirth}</p>
                                     )}
                                 </div>
                                 <div>
@@ -275,7 +275,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                             {YEAR_GROUPS.map(y => <option key={y} value={y}>{y}</option>)}
                                         </select>
                                     ) : (
-                                        <p className="text-sm text-white/90">{c.schoolYear}</p>
+                                        <p className="text-sm text-foreground">{c.schoolYear}</p>
                                     )}
                                 </div>
                             </div>
@@ -284,7 +284,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                 {editingSection === 'children' ? (
                                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
                                         {slots.map(slot => (
-                                            <label key={slot} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${c.sessions.includes(slot) ? 'border-primary/50 bg-primary/10 text-white' : 'border-white/10 bg-card/3 text-white/50 hover:border-white/20'}`}>
+                                            <label key={slot} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${c.sessions.includes(slot) ? 'border-primary/50 bg-primary/10 text-foreground' : 'border-border bg-secondary/20 text-muted-foreground hover:border-border/60'}`}>
                                                 <input type="checkbox" checked={c.sessions.includes(slot)} onChange={() => toggleChildSession(i, slot)} className="w-3 h-3 accent-primary" />
                                                 {slot}
                                             </label>
@@ -293,8 +293,8 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                 ) : (
                                     <div className="flex flex-wrap gap-2 mt-1">
                                         {c.sessions.length > 0 ? c.sessions.map(s => (
-                                            <span key={s} className="px-2 py-1 bg-white/5 rounded text-xs text-white/80">{s}</span>
-                                        )) : <span className="text-sm text-white/50">No sessions selected</span>}
+                                            <span key={s} className="px-2 py-1 bg-secondary/50 rounded text-xs text-foreground">{s}</span>
+                                        )) : <span className="text-sm text-muted-foreground">No sessions selected</span>}
                                     </div>
                                 )}
                             </div>
@@ -305,17 +305,17 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
 
             {/* Parent Contact Card */}
             {parentsState.map((p, i) => (
-                <div key={p.id} className={`glassmorphic-card rounded-2xl p-6 transition-all duration-300 ${editingSection === `parent-${i}` ? 'ring-1 ring-primary/50 bg-card/5' : ''}`}>
+                <div key={p.id} className={`bg-card border border-border rounded-2xl p-6 transition-all duration-300 ${editingSection === `parent-${i}` ? 'ring-1 ring-primary/50' : ''}`}>
                     {renderCardHeader(`${p.isPrimary ? 'Primary ' : ''}Parent / Carer`, `parent-${i}`)}
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className={label}>First Name <span className="text-destructive ml-0.5">*</span></label>
-                                {editingSection === `parent-${i}` ? <input className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} /> : <p className="text-sm text-white/90">{p.firstName}</p>}
+                                {editingSection === `parent-${i}` ? <input className={input} value={p.firstName} onChange={e => updateParent(i, 'firstName', e.target.value)} /> : <p className="text-sm text-foreground">{p.firstName}</p>}
                             </div>
                             <div>
                                 <label className={label}>Last Name <span className="text-destructive ml-0.5">*</span></label>
-                                {editingSection === `parent-${i}` ? <input className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} /> : <p className="text-sm text-white/90">{p.lastName}</p>}
+                                {editingSection === `parent-${i}` ? <input className={input} value={p.lastName} onChange={e => updateParent(i, 'lastName', e.target.value)} /> : <p className="text-sm text-foreground">{p.lastName}</p>}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -326,20 +326,20 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                         <option value="">Select</option>
                                         {RELATIONSHIPS.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                                     </select>
-                                ) : <p className="text-sm text-white/90 capitalize">{p.relationship}</p>}
+                                ) : <p className="text-sm text-foreground capitalize">{p.relationship}</p>}
                             </div>
                             <div>
                                 <label className={label}>Phone <span className="text-destructive ml-0.5">*</span></label>
-                                {editingSection === `parent-${i}` ? <input className={input} value={p.phone} onChange={e => updateParent(i, 'phone', e.target.value)} /> : <p className="text-sm text-white/90">{p.phone}</p>}
+                                {editingSection === `parent-${i}` ? <input className={input} value={p.phone} onChange={e => updateParent(i, 'phone', e.target.value)} /> : <p className="text-sm text-foreground">{p.phone}</p>}
                             </div>
                         </div>
                         <div>
                             <label className={label}>Email <span className="text-destructive ml-0.5">*</span></label>
-                            {editingSection === `parent-${i}` ? <input type="email" className={input} value={p.email} onChange={e => updateParent(i, 'email', e.target.value)} /> : <p className="text-sm text-white/90">{p.email}</p>}
+                            {editingSection === `parent-${i}` ? <input type="email" className={input} value={p.email} onChange={e => updateParent(i, 'email', e.target.value)} /> : <p className="text-sm text-foreground">{p.email}</p>}
                         </div>
                         
-                        <div className="pt-2 border-t border-white/5">
-                            <p className="text-sm font-medium text-white/70 mb-3">Address</p>
+                        <div className="pt-2 border-t border-border">
+                            <p className="text-sm font-medium text-muted-foreground mb-3">Address</p>
                             {editingSection === `parent-${i}` ? (
                                 <div className="space-y-3">
                                     <input className={input} value={p.addressLine1} onChange={e => updateParent(i, 'addressLine1', e.target.value)} placeholder="Address Line 1" />
@@ -350,7 +350,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     </div>
                                 </div>
                             ) : (
-                                <p className="text-sm text-white/80 leading-relaxed">
+                                <p className="text-sm text-foreground leading-relaxed">
                                     {p.addressLine1}<br/>
                                     {p.addressLine2 && <>{p.addressLine2}<br/></>}
                                     {p.city}, {p.postcode}
@@ -362,7 +362,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
             ))}
 
             {/* Medical & Special Needs Card */}
-            <div className={`glassmorphic-card rounded-2xl p-6 transition-all duration-300 ${editingSection === 'medical' ? 'ring-1 ring-primary/50 bg-card/5' : ''}`}>
+            <div className={`bg-card border border-border rounded-2xl p-6 transition-all duration-300 ${editingSection === 'medical' ? 'ring-1 ring-primary/50' : ''}`}>
                 {renderCardHeader('Medical & Special Needs', 'medical')}
                 <div className="space-y-4">
                     <div>
@@ -376,7 +376,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-white/90 font-medium">{hasSpecialNeeds ? 'Yes' : 'No'}</p>
+                            <p className="text-sm text-foreground font-medium">{hasSpecialNeeds ? 'Yes' : 'No'}</p>
                         )}
                     </div>
                     {hasSpecialNeeds && (
@@ -385,7 +385,7 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                             {editingSection === 'medical' ? (
                                 <textarea className={`${input} min-h-[100px] resize-none`} value={specialNeedsDetails} onChange={e => setSpecialNeedsDetails(e.target.value)} placeholder="Describe conditions, allergies..." />
                             ) : (
-                                <p className="text-sm text-white/80 whitespace-pre-wrap bg-white/5 p-3 rounded-lg border border-white/5">{specialNeedsDetails}</p>
+                                <p className="text-sm text-foreground whitespace-pre-wrap bg-secondary/30 p-3 rounded-lg border border-border">{specialNeedsDetails}</p>
                             )}
                         </div>
                     )}
@@ -393,14 +393,14 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
             </div>
 
             {/* Funding & Emergency Contact Card */}
-            <div className={`glassmorphic-card rounded-2xl p-6 transition-all duration-300 ${editingSection === 'funding_ec' ? 'ring-1 ring-primary/50 bg-card/5' : ''}`}>
+            <div className={`bg-card border border-border rounded-2xl p-6 transition-all duration-300 ${editingSection === 'funding_ec' ? 'ring-1 ring-primary/50' : ''}`}>
                 {renderCardHeader('Funding & Emergency Contact', 'funding_ec')}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-white/70 mb-2">Funding Details</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Funding Details</h3>
                         <div>
                             <label className={label}>Requested Start Date <span className="text-destructive ml-0.5">*</span></label>
-                            {editingSection === 'funding_ec' ? <input type="date" className={input} value={startDate} onChange={e => setStartDate(e.target.value)} /> : <p className="text-sm text-white/90">{startDate}</p>}
+                            {editingSection === 'funding_ec' ? <input type="date" className={input} value={startDate} onChange={e => setStartDate(e.target.value)} /> : <p className="text-sm text-foreground">{startDate}</p>}
                         </div>
                         <div>
                             <label className={label}>Funding Method <span className="text-destructive ml-0.5">*</span></label>
@@ -409,28 +409,28 @@ export default function EditRegistrationForm({ reg, pars, kids, centreSessionSlo
                                     <option value="">Select funding</option>
                                     {FUNDING_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                                 </select>
-                            ) : <p className="text-sm text-white/90">{FUNDING_OPTIONS.find(f => f.value === fundingType)?.label || fundingType}</p>}
+                            ) : <p className="text-sm text-foreground">{FUNDING_OPTIONS.find(f => f.value === fundingType)?.label || fundingType}</p>}
                         </div>
                         {fundingType === 'other' && (
                             <div>
                                 <label className={label}>Other Funding Details</label>
-                                {editingSection === 'funding_ec' ? <input className={input} value={fundingOther} onChange={e => setFundingOther(e.target.value)} /> : <p className="text-sm text-white/90">{fundingOther}</p>}
+                                {editingSection === 'funding_ec' ? <input className={input} value={fundingOther} onChange={e => setFundingOther(e.target.value)} /> : <p className="text-sm text-foreground">{fundingOther}</p>}
                             </div>
                         )}
                     </div>
-                    <div className="space-y-4 md:border-l md:border-white/5 md:pl-8">
-                        <h3 className="text-sm font-medium text-white/70 mb-2">Emergency Contact</h3>
+                    <div className="space-y-4 md:border-l md:border-border md:pl-8">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Emergency Contact</h3>
                         <div>
                             <label className={label}>Full Name</label>
-                            {editingSection === 'funding_ec' ? <input className={input} value={ecName} onChange={e => setEcName(e.target.value)} /> : <p className="text-sm text-white/90">{ecName}</p>}
+                            {editingSection === 'funding_ec' ? <input className={input} value={ecName} onChange={e => setEcName(e.target.value)} /> : <p className="text-sm text-foreground">{ecName}</p>}
                         </div>
                         <div>
                             <label className={label}>Relationship</label>
-                            {editingSection === 'funding_ec' ? <input className={input} value={ecRel} onChange={e => setEcRel(e.target.value)} /> : <p className="text-sm text-white/90">{ecRel}</p>}
+                            {editingSection === 'funding_ec' ? <input className={input} value={ecRel} onChange={e => setEcRel(e.target.value)} /> : <p className="text-sm text-foreground">{ecRel}</p>}
                         </div>
                         <div>
                             <label className={label}>Phone</label>
-                            {editingSection === 'funding_ec' ? <input className={input} value={ecPhone} onChange={e => setEcPhone(e.target.value)} /> : <p className="text-sm text-white/90">{ecPhone}</p>}
+                            {editingSection === 'funding_ec' ? <input className={input} value={ecPhone} onChange={e => setEcPhone(e.target.value)} /> : <p className="text-sm text-foreground">{ecPhone}</p>}
                         </div>
                     </div>
                 </div>
