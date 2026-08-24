@@ -14,14 +14,21 @@ type NewIncidentModalProps = {
 
 const INCIDENT_TYPES = ['accident', 'incident', 'medication', 'safeguarding'] as const;
 
+const TYPE_LABELS: Record<typeof INCIDENT_TYPES[number], string> = {
+    accident:      'Accident',
+    incident:      'Incident',
+    medication:    'Medication',
+    safeguarding:  'Safeguarding',
+};
+
 export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIncidentModalProps) {
-    const [children, setChildren] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
+    const [centreChildren, setCentreChildren] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [childId, setChildId] = useState('');
-    const [type, setType] = useState<'accident' | 'incident' | 'medication' | 'safeguarding'>('accident');
+    const [type, setType] = useState<typeof INCIDENT_TYPES[number]>('accident');
     const [description, setDescription] = useState('');
     const [treatment, setTreatment] = useState('');
     const [witnesses, setWitnesses] = useState('');
@@ -29,21 +36,20 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
 
     useEffect(() => {
         setIsLoading(true);
-        getCentreChildren(centreId).then(data => {
-            setChildren(data);
-            setIsLoading(false);
-        }).catch(err => {
-            logger.error('Failed to load centre children', err);
-            setIsLoading(false);
-        });
+        getCentreChildren(centreId)
+            .then(data => { setCentreChildren(data); setIsLoading(false); })
+            .catch(err => {
+                logger.error('Failed to load centre children', err);
+                setIsLoading(false);
+            });
     }, [centreId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        if (!childId) return setError('Please select a child');
-        if (!description) return setError('Please provide a description');
-        if (sigPad.current?.isEmpty()) return setError('Staff signature is required');
+        if (!childId)                        return setError('Please select a child');
+        if (!description.trim())             return setError('Please provide a description');
+        if (sigPad.current?.isEmpty())       return setError('Staff signature is required');
 
         setIsSubmitting(true);
         try {
@@ -53,10 +59,10 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
                 childId,
                 type,
                 date: new Date(),
-                description,
-                treatment,
-                witnesses,
-                staffSignature: signature
+                description: description.trim(),
+                treatment: treatment.trim() || undefined,
+                witnesses: witnesses.trim() || undefined,
+                staffSignature: signature,
             });
             onSuccess();
         } catch (err) {
@@ -67,129 +73,186 @@ export default function NewIncidentModal({ centreId, onClose, onSuccess }: NewIn
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <div className="bg-card border border-border w-full max-w-lg rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/20">
-                    <h2 className="text-xl font-bold text-foreground">Log New Record</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full transition-colors">
-                        <X className="w-5 h-5 text-muted-foreground" />
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="incident-modal-title"
+        >
+            <div className="bg-surface border border-border w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-[var(--shadow-popover)] flex flex-col max-h-[92dvh] sm:max-h-[88dvh]">
+                {/* Header */}
+                <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
+                    <h2 id="incident-modal-title" className="text-base font-bold text-text">
+                        Log Incident Record
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="p-1.5 hover:bg-page rounded-md transition-colors text-text-muted hover:text-text"
+                    >
+                        <X className="w-4 h-4" aria-hidden="true" />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto">
+                {/* Body */}
+                <div className="p-5 overflow-y-auto flex-1">
                     {error && (
-                        <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-start gap-3">
-                            <AlertTriangle className="w-5 h-5 shrink-0" />
+                        <div className="mb-5 p-3.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium flex items-start gap-2.5">
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                             {error}
                         </div>
                     )}
 
                     <form id="incident-form" onSubmit={handleSubmit} className="space-y-5">
+                        {/* Child */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Child</label>
+                            <label htmlFor="incident-child" className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                Child *
+                            </label>
                             {isLoading ? (
-                                <div className="h-12 bg-secondary/50 rounded-xl animate-pulse" />
+                                <div className="h-10 bg-page border border-border rounded-lg animate-pulse" />
                             ) : (
-                                <select 
+                                <select
+                                    id="incident-child"
                                     value={childId}
                                     onChange={e => setChildId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                    className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/50 transition-all"
                                 >
-                                    <option value="">Select a child...</option>
-                                    {children.map(c => (
-                                        <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
+                                    <option value="">Select a child…</option>
+                                    {centreChildren.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.firstName} {c.lastName}
+                                        </option>
                                     ))}
                                 </select>
                             )}
+                            {!isLoading && centreChildren.length === 0 && (
+                                <p className="mt-1.5 text-xs text-text-muted">
+                                    No registered children found at this centre.
+                                </p>
+                            )}
                         </div>
 
+                        {/* Incident Type */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Record Type</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                {INCIDENT_TYPES.map(t => (
-                                    <button
-                                        key={t}
-                                        type="button"
-                                        onClick={() => setType(t)}
-                                        className={`px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wide border transition-all ${
-                                            type === t 
-                                            ? (t === 'safeguarding' ? 'bg-destructive text-white border-destructive' : 'bg-primary text-white border-primary')
-                                            : 'bg-card text-muted-foreground border-border hover:border-primary/30'
-                                        }`}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
+                            <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                Record Type *
+                            </span>
+                            <div className="grid grid-cols-2 gap-2">
+                                {INCIDENT_TYPES.map(t => {
+                                    const isSafeguarding = t === 'safeguarding';
+                                    const isSelected = type === t;
+                                    return (
+                                        <button
+                                            key={t}
+                                            type="button"
+                                            id={`incident-type-${t}`}
+                                            onClick={() => setType(t)}
+                                            className={`px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all ${
+                                                isSelected
+                                                    ? isSafeguarding
+                                                        ? 'bg-destructive text-white border-destructive shadow-sm'
+                                                        : 'bg-accent text-white border-accent shadow-sm'
+                                                    : 'bg-surface text-text-secondary border-border hover:border-accent/30 hover:text-text'
+                                            }`}
+                                        >
+                                            {TYPE_LABELS[t]}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
+                        {/* Description */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Description / Details</label>
-                            <textarea 
+                            <label htmlFor="incident-description" className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                Description / Details *
+                            </label>
+                            <textarea
+                                id="incident-description"
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 rows={4}
-                                className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
-                                placeholder="Describe what happened..."
+                                className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/50 transition-all resize-none"
+                                placeholder="Describe what happened, where, and when…"
                             />
                         </div>
 
+                        {/* Treatment (conditional on accident / medication) */}
                         {(type === 'accident' || type === 'medication') && (
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Treatment Given</label>
-                                <textarea 
+                                <label htmlFor="incident-treatment" className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                    Treatment Given
+                                </label>
+                                <textarea
+                                    id="incident-treatment"
                                     value={treatment}
                                     onChange={e => setTreatment(e.target.value)}
                                     rows={2}
-                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
-                                    placeholder="e.g. Cold compress applied"
+                                    className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/50 transition-all resize-none"
+                                    placeholder="e.g. Cold compress applied, parent notified"
                                 />
                             </div>
                         )}
 
+                        {/* Witnesses */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Witnesses (Staff or Students)</label>
-                            <input 
+                            <label htmlFor="incident-witnesses" className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                                Witnesses (staff or students)
+                            </label>
+                            <input
+                                id="incident-witnesses"
                                 type="text"
                                 value={witnesses}
                                 onChange={e => setWitnesses(e.target.value)}
-                                className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/50 transition-all"
                                 placeholder="Names of any witnesses"
                             />
                         </div>
 
+                        {/* Staff Signature */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Staff Signature</label>
-                                <button type="button" onClick={() => sigPad.current?.clear()} className="text-xs text-primary font-bold hover:underline">Clear</button>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
+                                    Staff Signature *
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => sigPad.current?.clear()}
+                                    className="text-xs text-accent font-semibold hover:underline"
+                                >
+                                    Clear
+                                </button>
                             </div>
-                            <div className="border border-border rounded-xl bg-card overflow-hidden">
-                                <SignatureCanvas 
+                            <div className="border border-border rounded-lg bg-white overflow-hidden">
+                                <SignatureCanvas
                                     ref={sigPad}
-                                    penColor="black"
-                                    canvasProps={{ className: 'w-full h-32' }}
+                                    penColor="#1a1a1a"
+                                    canvasProps={{ className: 'w-full h-28', 'aria-label': 'Staff signature pad' }}
                                 />
                             </div>
+                            <p className="mt-1 text-xs text-text-muted">Draw your signature above using mouse or touch.</p>
                         </div>
                     </form>
                 </div>
 
-                <div className="p-6 border-t border-border bg-secondary/10 flex justify-end gap-3">
-                    <button 
-                        type="button" 
+                {/* Footer */}
+                <div className="px-5 py-4 border-t border-border flex justify-end gap-3 flex-shrink-0">
+                    <button
+                        type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="px-6 py-3 rounded-xl font-bold text-muted-foreground hover:bg-secondary transition-colors"
+                        className="px-4 py-2.5 rounded-lg font-semibold text-sm text-text-secondary hover:bg-page transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
-                    <button 
+                    <button
                         form="incident-form"
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2"
+                        className="px-5 py-2.5 bg-accent text-white font-semibold text-sm rounded-lg hover:bg-accent/90 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
                     >
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
                         Submit Record
                     </button>
                 </div>

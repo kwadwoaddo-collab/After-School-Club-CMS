@@ -47,7 +47,9 @@ const ROLE_NAV: Record<string, string[]> = {
     ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings'],
     MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications'],
     FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance', 'Incidents', 'Kiosk'],
-    TUTOR: ['Dashboard', 'Attendance', 'Incidents', 'Kiosk'],
+    // Milestone 3K (A-1 Option C — orchestrator decision 2026-08-24): TUTOR does not
+    // have access to the Incidents module. Removed from this ROLE_NAV entry.
+    TUTOR: ['Dashboard', 'Attendance', 'Kiosk'],
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
