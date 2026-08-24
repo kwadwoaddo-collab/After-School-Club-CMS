@@ -28,11 +28,20 @@ export function AddMedicalNoteForm({ childId }: { childId: string }) {
 
     return (
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+            {/* A11Y-1: associate label with textarea so screen readers can announce the field */}
+            <label
+                htmlFor="medical-note-input"
+                className="sr-only"
+            >
+                Medical note
+            </label>
             <textarea
+                id="medical-note-input"
                 placeholder="E.g., Allergic to peanuts, needs inhaler for asthma..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 required
+                aria-label="Medical note"
                 className="w-full bg-secondary/40 border border-outline-variant/20 rounded-xl p-3 text-white placeholder:text-on-surface-variant focus:outline-none focus:border-primary/50 transition-colors"
                 rows={3}
             />

@@ -49,9 +49,9 @@ function PortalLoginForm() {
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
                     👋
                 </div>
-                <h1 className="text-2xl font-bold text-foreground mb-2">Parent Portal</h1>
-                <p className="text-muted-foreground mb-2">Access your bookings and children's progress.</p>
-                <p className="text-sm text-muted-foreground mb-8">No password needed — we'll email you a secure one-tap login link.</p>
+                <h1 className="text-2xl font-bold text-on-surface mb-2">Parent Portal</h1>
+                <p className="text-on-surface-variant mb-2">Access your bookings and children's progress.</p>
+                <p className="text-sm text-on-surface-variant mb-8">No password needed — we'll email you a secure one-tap login link.</p>
 
                 {errorParam === 'ExpiredOrInvalid' && (
                     <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-lg text-sm mb-6">
@@ -67,14 +67,17 @@ function PortalLoginForm() {
                 {!isSent ? (
                     <form onSubmit={handleSubmit} className="space-y-4 text-left">
                         <div>
-                            <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
+                            {/* A11Y-2: label is programmatically associated with input via htmlFor/id */}
+                            <label htmlFor="portal-login-email" className="block text-sm font-medium text-on-surface mb-1">Email Address</label>
                             <input
+                                id="portal-login-email"
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="parent@example.com"
-                                className="w-full px-4 py-3 border border-border rounded-lg outline-none transition-all"
+                                autoComplete="email"
+                                className="w-full px-4 py-3 border border-outline-variant/20 rounded-lg outline-none transition-all"
                             />
                         </div>
                         {error && (
@@ -104,16 +107,16 @@ function PortalLoginForm() {
                         </button>
 
                         {process.env.NODE_ENV !== 'production' && debugLink && (
-                            <div className="mt-6 p-4 bg-secondary/60 rounded text-left overflow-hidden">
-                                <p className="text-xs font-mono text-muted-foreground mb-1">DEV MODE LINK:</p>
+                            <div className="mt-6 p-4 bg-surface-dim/60 rounded text-left overflow-hidden">
+                                <p className="text-xs font-mono text-on-surface-variant mb-1">DEV MODE LINK:</p>
                                 <a href={debugLink} className="text-primary text-xs break-all hover:underline">{debugLink}</a>
                             </div>
                         )}
                     </div>
                 )}
             </div>
-            <div className="bg-secondary/40 px-8 py-4 border-t border-border text-center">
-                <p className="text-xs text-muted-foreground">
+            <div className="bg-surface-dim/40 px-8 py-4 border-t border-outline-variant/20 text-center">
+                <p className="text-xs text-on-surface-variant">
                     Not a parent? <Link href="/login" className="text-primary hover:underline">Staff Login</Link>
                 </p>
             </div>
@@ -123,13 +126,13 @@ function PortalLoginForm() {
 
 export default function PortalLoginPage() {
     return (
-        <div className="min-h-screen bg-secondary/40 flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-surface-dim/40 flex flex-col items-center justify-center p-4">
             <Suspense fallback={
                 <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 text-center">
                     <div className="animate-pulse flex flex-col items-center">
-                        <div className="rounded-full bg-secondary h-16 w-16 mb-6"></div>
-                        <div className="h-4 bg-secondary rounded w-3/4 mb-4"></div>
-                        <div className="h-4 bg-secondary rounded w-1/2"></div>
+                        <div className="rounded-full bg-surface-dim h-16 w-16 mb-6"></div>
+                        <div className="h-4 bg-surface-dim rounded w-3/4 mb-4"></div>
+                        <div className="h-4 bg-surface-dim rounded w-1/2"></div>
                     </div>
                 </div>
             }>

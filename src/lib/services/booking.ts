@@ -64,22 +64,55 @@ export class BookingService {
 
       const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawMagicLinkToken}`;
       
-      // If this is a reschedule, mark the old one as cancelled
+      // S-3 fix: If this is a reschedule, verify ownership before cancelling.
+      //
+      // The original code cancelled input.rescheduleId unconditionally —
+      // any caller who knew a booking UUID could cancel it via a public
+      // booking submission (unauthenticated cancellation via `rescheduleId`).
+      //
+      // Ownership check: the old booking MUST
+      //   (a) belong to the same parent that was just resolved for this booking
+      //   (b) belong to a centre within the same organisation as the new booking
+      //
+      // If either check fails the rescheduleId is silently ignored and the
+      // caller receives a fresh booking without destroying the existing one.
+      // This prevents denial-of-service attacks and protects bookings
+      // belonging to a different parent or a different organisation.
       if (input.rescheduleId) {
         try {
           const oldBooking = await tx.query.bookings.findFirst({
             where: eq(bookings.id, input.rescheduleId),
+            with: { centre: { columns: { organisationId: true } } },
           });
 
-          if (oldBooking?.googleCalendarEventId) {
-            await googleCalendarService.deleteCalendarEvent(oldBooking.googleCalendarEventId).catch(err => logger.error('[BOOKING] Failed to delete calendar event:', err));
+          // Verify same parent (resolved above) and same organisation.
+          const ownershipValid =
+            oldBooking &&
+            oldBooking.parentId === parent.id &&
+            oldBooking.centre?.organisationId === centre.organisationId;
+
+          if (!ownershipValid) {
+            logger.warn(
+              `[BOOKING] S-3: rescheduleId ${input.rescheduleId} failed ownership check ` +
+              `(expected parentId=${parent.id}, got parentId=${oldBooking?.parentId}; ` +
+              `expected orgId=${centre.organisationId}, got orgId=${oldBooking?.centre?.organisationId}) — ignoring reschedule`
+            );
+          } else {
+            if (oldBooking.googleCalendarEventId) {
+              await googleCalendarService
+                .deleteCalendarEvent(oldBooking.googleCalendarEventId)
+                .catch(err => logger.error('[BOOKING] Failed to delete calendar event:', err));
+            }
+
+            await tx.update(bookings)
+              .set({ status: 'cancelled', updatedAt: new Date() })
+              .where(and(
+                eq(bookings.id, input.rescheduleId),
+                eq(bookings.parentId, parent.id)   // redundant double-guard in WHERE
+              ));
+
+            logger.info(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling by parent ${parent.id}`);
           }
-
-          await tx.update(bookings)
-            .set({ status: 'cancelled', updatedAt: new Date() })
-            .where(eq(bookings.id, input.rescheduleId));
-
-          logger.info(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling`);
         } catch (error) {
           logger.error('[BOOKING] Failed to cancel old booking for reschedule:', error);
         }

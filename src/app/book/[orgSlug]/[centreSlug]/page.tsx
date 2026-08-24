@@ -4,6 +4,35 @@ import { centres, organisations, bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { type Metadata } from 'next';
 import { normalizeString } from '@/lib/search-params';
+import { MapPin } from 'lucide-react';
+
+// Shared error card component — V-2 fix: uses CMS tokens, not legacy shadcn
+function PublicErrorCard({ title, description, backHref, backLabel }: {
+  title: string;
+  description: string;
+  backHref?: string;
+  backLabel?: string;
+}) {
+  return (
+    <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+      <div className="bg-card border border-outline-variant/20 rounded-3xl shadow-xl p-8 text-center max-w-md">
+        <div className="w-14 h-14 rounded-2xl bg-error/10 border border-error/20 flex items-center justify-center mx-auto mb-4">
+          <MapPin className="w-7 h-7 text-error" />
+        </div>
+        <h1 className="text-2xl font-bold text-on-surface mb-2">{title}</h1>
+        <p className="text-on-surface-variant mb-6 text-sm leading-relaxed">{description}</p>
+        {backHref && backLabel && (
+          <a
+            href={backHref}
+            className="inline-block text-sm font-semibold px-6 py-2.5 rounded-xl border border-outline-variant/20 text-on-surface hover:bg-surface-dim transition-colors"
+          >
+            {backLabel}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export async function generateMetadata({
   params,
@@ -40,6 +69,7 @@ export default async function BookingPage({
 }) {
   const { orgSlug, centreSlug } = await params;
   const rawSearchParams = await searchParams;
+
   // Fetch organisation
   const [org] = await db
     .select()
@@ -49,12 +79,10 @@ export default async function BookingPage({
 
   if (!org) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
-        <div className="bg-card border border-border rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Organisation Not Found</h1>
-          <p className="text-muted-foreground mb-6">We couldn&apos;t find the organisation you&apos;re looking for.</p>
-        </div>
-      </div>
+      <PublicErrorCard
+        title="Organisation Not Found"
+        description="We couldn't find the organisation you're looking for."
+      />
     );
   }
 
@@ -68,47 +96,34 @@ export default async function BookingPage({
 
   if (!centre) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
-        <div className="bg-card border border-border rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Centre Not Found</h1>
-          <p className="text-muted-foreground mb-6">We couldn&apos;t find the centre you&apos;re looking for.</p>
-          <a href={`/book/${orgSlug}`} className="text-primary hover:underline font-medium">
-            View all centres
-          </a>
-        </div>
-      </div>
+      <PublicErrorCard
+        title="Centre Not Found"
+        description="We couldn't find the centre you're looking for."
+        backHref={`/book/${orgSlug}`}
+        backLabel="View all centres"
+      />
     );
   }
 
-  // Fetch rescheduling data if needed
+  // Rescheduling data placeholder (complex nested query deferred for connection-pool safety)
   const bookingToReschedule = null;
   const rId = normalizeString(rawSearchParams.reschedule);
   if (rId) {
-    // For now, skip the complex nested query - can be added back if needed
-    // This simplification helps avoid connection pool issues
-  }
-
-  if (!org || !centre) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
-        <div className="bg-card border border-border rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Centre Not Found</h1>
-          <p className="text-muted-foreground mb-6">We couldn&apos;t find the centre you&apos;re looking for.</p>
-          <a href={`/book/${orgSlug}`} className="text-primary hover:underline font-medium">
-            View all centres
-          </a>
-        </div>
-      </div>
-    );
+    // Intentionally deferred: rescheduling prefill via the staff-dashboard route
   }
 
   const brandColor = org.brandColor || '#4F46E5';
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-12 px-4" style={{ backgroundColor: `${brandColor}10` }}>
+    <div
+      className="min-h-screen py-12 px-4"
+      style={{ backgroundColor: `${brandColor}08` }}
+    >
       <div className="max-w-2xl mx-auto">
+        {/* V-2 fix: replaced legacy bg-card/text-foreground/border-border with CMS tokens.
+            The card uses a welcoming public presentation, not the internal dashboard layout. */}
         <div
-          className="bg-card text-foreground rounded-2xl shadow-lg border border-border overflow-hidden"
+          className="bg-card text-on-surface rounded-3xl shadow-xl border border-outline-variant/20 overflow-hidden"
           style={{ borderTopColor: brandColor, borderTopWidth: '4px' }}
         >
           <div className="px-8 pt-8 pb-4">
@@ -117,8 +132,8 @@ export default async function BookingPage({
                 <img src={org.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
               )}
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Book a Session</h1>
-                <p className="text-sm text-muted-foreground">{centre.name}</p>
+                <h1 className="text-2xl font-bold text-on-surface">Book a Session</h1>
+                <p className="text-sm text-on-surface-variant">{centre.name}</p>
               </div>
             </div>
           </div>

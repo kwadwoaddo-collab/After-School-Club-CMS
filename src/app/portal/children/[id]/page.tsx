@@ -15,7 +15,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     completed: { label: 'Attended', className: 'bg-success/10 text-success border-success/20' },
     cancelled: { label: 'Cancelled', className: 'bg-destructive/10 text-destructive border-destructive/20' },
     rescheduled: { label: 'Rescheduled', className: 'bg-warning/10 text-warning border-warning/20' },
-    pending: { label: 'Pending', className: 'bg-secondary text-muted-foreground border-border' },
+    pending: { label: 'Pending', className: 'bg-secondary text-on-surface-variant border-outline-variant/20' },
     signed_up: { label: 'Signed Up', className: 'bg-primary/10 text-primary border-primary/20' },
 };
 
@@ -70,7 +70,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg font-bold text-foreground">{child.firstName} {child.lastName}</h1>
+                        <h1 className="text-lg font-bold text-on-surface">{child.firstName} {child.lastName}</h1>
                         <p className="text-xs text-on-surface-variant">
                             {child.schoolYear} · DOB: {child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString('en-GB') : 'Not provided'} · {attendeeRows.length} session{attendeeRows.length !== 1 ? 's' : ''} total
                         </p>
@@ -86,7 +86,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 <section className="bg-card rounded-2xl border border-outline-variant/10 overflow-hidden">
                     <div className="flex items-center gap-2 px-6 py-5 border-b border-outline-variant/10">
                         <CalendarClock className="w-5 h-5 text-primary" />
-                        <h2 className="text-lg font-bold text-foreground">Upcoming Sessions</h2>
+                        <h2 className="text-lg font-bold text-on-surface">Upcoming Sessions</h2>
                         <span className="ml-auto text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
                             {upcomingBookings.length}
                         </span>
@@ -115,7 +115,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                <p className="font-bold text-foreground text-sm">
+                                                <p className="font-bold text-on-surface text-sm">
                                                     {date.toLocaleDateString('en-GB', { weekday: 'long' })} · {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                                 <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${cfg.className}`}>
@@ -142,9 +142,9 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 {pastBookings.length > 0 && (
                     <section className="bg-card rounded-2xl border border-outline-variant/10 overflow-hidden">
                         <div className="flex items-center gap-2 px-6 py-5 border-b border-outline-variant/10">
-                            <CalendarDays className="w-5 h-5 text-muted-foreground" />
-                            <h2 className="text-lg font-bold text-foreground">Past Sessions</h2>
-                            <span className="ml-auto text-xs font-bold text-muted-foreground bg-secondary border border-border px-2.5 py-1 rounded-lg">
+                            <CalendarDays className="w-5 h-5 text-on-surface-variant" />
+                            <h2 className="text-lg font-bold text-on-surface">Past Sessions</h2>
+                            <span className="ml-auto text-xs font-bold text-on-surface-variant bg-secondary border border-outline-variant/20 px-2.5 py-1 rounded-lg">
                                 {pastBookings.length}
                             </span>
                         </div>
@@ -156,17 +156,17 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                                 const absent = b.attendanceStatus === 'absent';
                                 return (
                                     <div key={b.bookingId} className="px-6 py-4 flex items-start gap-4 opacity-80">
-                                        <div className="flex-shrink-0 w-12 h-12 bg-secondary border border-border rounded-xl flex flex-col items-center justify-center">
-                                            <span className="text-[10px] font-black text-muted-foreground uppercase">
+                                        <div className="flex-shrink-0 w-12 h-12 bg-secondary border border-outline-variant/20 rounded-xl flex flex-col items-center justify-center">
+                                            <span className="text-[10px] font-black text-on-surface-variant uppercase">
                                                 {date.toLocaleDateString('en-GB', { month: 'short' })}
                                             </span>
-                                            <span className="text-lg font-black text-muted-foreground leading-none">
+                                            <span className="text-lg font-black text-on-surface-variant leading-none">
                                                 {date.getDate()}
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                <p className="font-bold text-foreground text-sm">
+                                                <p className="font-bold text-on-surface text-sm">
                                                     {date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </p>
                                                 <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${cfg.className}`}>
@@ -193,7 +193,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                 <section className="bg-card p-6 rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-2 mb-6 border-b border-outline-variant/10 pb-4">
                         <ShieldAlert className="w-5 h-5 text-destructive" />
-                        <h2 className="text-lg font-bold text-foreground">Medical & Dietary Needs</h2>
+                        <h2 className="text-lg font-bold text-on-surface">Medical & Dietary Needs</h2>
                     </div>
 
                     <div className="space-y-4">
@@ -212,7 +212,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                                             {new Date(note.createdAt).toLocaleDateString('en-GB')}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
+                                    <p className="text-sm text-on-surface whitespace-pre-wrap">{note.content}</p>
                                     <p className="text-xs text-on-surface-variant mt-2">Added by: {note.authorName}</p>
                                 </div>
                             ))
@@ -220,7 +220,7 @@ export default async function ChildDetailsPage(props: { params: Promise<{ id: st
                     </div>
 
                     <div className="mt-8 pt-6 border-t border-outline-variant/10">
-                        <h3 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-on-surface mb-1 flex items-center gap-2">
                             <FileText className="w-4 h-4 text-primary" />
                             Add New Medical Note
                         </h3>

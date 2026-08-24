@@ -68,11 +68,11 @@ const emptyParent = (): ParentEntry => ({
     addressLine1: '', addressLine2: '', city: '', postcode: '',
 });
 
-// ── Shared input styles ────────────────────────────────────────────
-const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50/40 focus:border-primary/50 text-base transition-colors';
-const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-card border border-destructive ring-2 ring-destructive/20 text-foreground placeholder:text-muted-foreground focus:outline-none text-base';
-const labelCls = 'block text-sm font-medium text-muted-foreground mb-1';
-const sectionTitle = 'text-foreground font-bold text-xl mb-5';
+// ── Shared input styles — V-3: updated to CMS design-system tokens ──
+const inputCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-surface-dim border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60 text-base transition-colors';
+const inputErrCls = 'w-full px-4 py-3 min-h-[44px] rounded-xl bg-surface-dim border border-error ring-2 ring-error/20 text-on-surface placeholder:text-on-surface-variant focus:outline-none text-base';
+const labelCls = 'block text-sm font-medium text-on-surface-variant mb-1';
+const sectionTitle = 'text-on-surface font-bold text-xl mb-5';
 
 // ── Step indicator ─────────────────────────────────────────────────
 function ProgressBar({ current, total }: { current: number; total: number }) {
@@ -80,10 +80,10 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
         <div className="mb-8">
             <div className="flex gap-1.5 mb-2">
                 {Array.from({ length: total }).map((_, i) => (
-                    <div key={i} className={`flex-1 h-1 rounded-full transition-all ${i < current ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`} />
+                    <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < current ? 'bg-primary' : 'bg-outline-variant/30'}`} />
                 ))}
             </div>
-            <p className="text-muted-foreground text-xs text-center">Step {current} of {total}</p>
+            <p className="text-on-surface-variant text-xs text-center">Step {current} of {total}</p>
         </div>
     );
 }
@@ -370,33 +370,33 @@ export default function RegisterPage() {
     };
 
 
-    // ── Loading screen ─────────────────────────────────────────────
+    // ── Loading screen — V-3: CMS tokens ─────────────────────────
     if (orgLoading) {
         return (
-            <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+            <div className="min-h-screen bg-surface flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <svg className="w-8 h-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    <p className="text-muted-foreground text-sm">Loading registration form...</p>
+                    <p className="text-on-surface-variant text-sm">Loading registration form...</p>
                 </div>
             </div>
         );
     }
 
-    // ── Not found screen ───────────────────────────────────────────
+    // ── Not found screen — V-3: CMS tokens ────────────────────────
     if (orgNotFound) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-background text-foreground">
+            <div className="min-h-screen flex items-center justify-center p-6 bg-surface">
                 <div className="max-w-md w-full text-center">
-                    <div className="w-20 h-20 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-10 h-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-20 h-20 bg-error/10 border border-error/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-10 h-10 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold text-foreground mb-3">Registration Link Not Found</h1>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
+                    <h1 className="text-2xl font-bold text-on-surface mb-3">Registration Link Not Found</h1>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">
                         This registration link is invalid or no longer active.<br />
                         Please contact the organisation directly for a valid link.
                     </p>
@@ -405,16 +405,16 @@ export default function RegisterPage() {
         );
     }
 
-    // ── Centre Selection Screen (if multiple centres) ──────────────────
+    // ── Centre Selection Screen (if multiple centres) ── V-3: CMS tokens ──
     if (!selectedCentreId && orgInfo?.centres && orgInfo.centres.length > 1) {
         return (
-            <div className="min-h-screen bg-background text-foreground">
-                <div className="bg-card border-b border-border px-6 py-4">
+            <div className="min-h-screen bg-surface">
+                <div className="bg-card border-b border-outline-variant/10 px-6 py-4">
                     <div className="max-w-2xl mx-auto flex items-center gap-3">
                         {orgInfo?.logoUrl && <img src={orgInfo.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                         <button onClick={resetToStart} className="text-left group cursor-pointer">
-                            <p className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">{orgInfo?.name}</p>
-                            <p className="text-muted-foreground text-xs">Student Registration Form</p>
+                            <p className="text-on-surface font-semibold text-sm group-hover:text-primary transition-colors">{orgInfo?.name}</p>
+                            <p className="text-on-surface-variant text-xs">Student Registration Form</p>
                         </button>
                     </div>
                 </div>
@@ -425,23 +425,23 @@ export default function RegisterPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                         </div>
-                        <h1 className="text-2xl font-bold text-foreground mb-2">Select a Centre</h1>
-                        <p className="text-muted-foreground text-sm">Choose the location where you would like to register your child.</p>
+                        <h1 className="text-2xl font-bold text-on-surface mb-2">Select a Centre</h1>
+                        <p className="text-on-surface-variant text-sm">Choose the location where you would like to register your child.</p>
                     </div>
                     <div className="space-y-3">
                         {orgInfo.centres.map(centre => (
                             <button
                                 key={centre.id}
                                 onClick={() => setSelectedCentreId(centre.id)}
-                                className="w-full text-left p-5 rounded-2xl bg-card border border-border hover:border-primary/20 hover:shadow-md transition-all group"
+                                className="w-full text-left p-5 rounded-2xl bg-card border border-outline-variant/20 hover:border-primary/30 hover:shadow-md transition-all group"
                             >
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <p className="text-foreground font-semibold mb-0.5">{centre.name}</p>
-                                        <p className="text-muted-foreground text-sm">{centre.address || 'After School provisions'}</p>
+                                        <p className="text-on-surface font-semibold mb-0.5">{centre.name}</p>
+                                        <p className="text-on-surface-variant text-sm">{centre.address || 'After School provisions'}</p>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
-                                        <svg className="w-4 h-4 text-muted-foreground group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div className="w-8 h-8 rounded-full bg-surface-dim flex items-center justify-center group-hover:bg-primary/10 transition-colors flex-shrink-0">
+                                        <svg className="w-4 h-4 text-on-surface-variant group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
@@ -450,7 +450,7 @@ export default function RegisterPage() {
                         ))}
                     </div>
                     <div className="mt-8 flex justify-start">
-                        <Link href="/" className="px-6 py-3 rounded-xl border border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors text-sm">
+                        <Link href="/" className="px-6 py-3 rounded-xl border border-outline-variant/20 text-on-surface-variant hover:text-on-surface transition-colors text-sm">
                             ← Back
                         </Link>
                     </div>

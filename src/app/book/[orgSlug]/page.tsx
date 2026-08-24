@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { type Metadata } from 'next';
+import React from 'react';
+import { MapPin, ArrowRight } from 'lucide-react';
 
 // Generate metadata for SEO and social sharing
 export async function generateMetadata({
@@ -13,7 +15,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
     const { orgSlug } = await params;
 
-    // Simple fetch for metadata to avoid over-fetching if possible, but for now reuse
     const org = await db.query.organisations.findFirst({
         where: eq(organisations.slug, orgSlug),
     });
@@ -56,51 +57,69 @@ export default async function OrgBookingPage({
     const brandColor = org.brandColor || '#4F46E5';
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
-            <div className="max-w-md w-full glass-card rounded-[24px] shadow-xl p-8 transform transition-all hover:scale-[1.01] duration-300">
-                {org.logoUrl ? (
-                     
-                    <img
-                        src={org.logoUrl}
-                        alt={org.name}
-                        className="h-20 mx-auto mb-6 object-contain"
-                    />
-                ) : (
-                    <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
-                        🏢
-                    </div>
-                )}
+        <div
+            className="min-h-screen flex flex-col items-center justify-center p-4"
+            style={{ backgroundColor: `${brandColor}08` }}
+        >
+            {/* V-1 fix: replaced glass-card and legacy shadcn tokens with a clean
+                public-facing card that does not look like the internal dashboard. */}
+            <div className="max-w-md w-full bg-card rounded-3xl shadow-2xl border border-border/50 overflow-hidden transform transition-all hover:scale-[1.01] duration-300">
+                {/* Brand header */}
+                <div
+                    className="px-8 pt-8 pb-6 text-center"
+                    style={{ borderBottom: `3px solid ${brandColor}` }}
+                >
+                    {org.logoUrl ? (
+                        <img
+                            src={org.logoUrl}
+                            alt={org.name}
+                            className="h-16 mx-auto mb-4 object-contain"
+                        />
+                    ) : (
+                        <div
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-black text-white shadow-lg"
+                            style={{ backgroundColor: brandColor }}
+                        >
+                            {org.name.charAt(0)}
+                        </div>
+                    )}
+                    <h1 className="text-2xl font-bold text-on-surface mb-1">Select a Centre</h1>
+                    <p className="text-on-surface-variant text-sm">
+                        Choose a location to book with <strong className="text-on-surface">{org.name}</strong>.
+                    </p>
+                </div>
 
-                <h1 className="text-2xl font-bold text-center text-foreground mb-2">Select a Centre</h1>
-                <p className="text-center text-muted-foreground mb-8">Choose a location to book your session with <strong className="text-foreground">{org.name}</strong>.</p>
-
-                <div className="space-y-4">
+                {/* Centre list */}
+                <div className="px-8 py-6 space-y-3">
                     {org.centres.length === 0 ? (
-                        <div className="text-center p-4 bg-amber-500/10 text-amber-500 rounded-lg border border-amber-500/20">
-                            No centres available yet.
+                        <div className="text-center p-4 bg-amber-500/10 text-amber-600 rounded-xl border border-amber-500/20 text-sm">
+                            No centres available yet. Please check back soon.
                         </div>
                     ) : (
                         org.centres.map((centre) => (
                             <Link
                                 key={centre.id}
                                 href={`/book/${orgSlug}/${centre.slug}`}
-                                className="block group relative rounded-2xl overflow-hidden"
+                                className="group flex items-center gap-4 p-4 rounded-2xl border border-outline-variant/20 bg-surface-dim hover:border-[var(--brand-color)] hover:shadow-md transition-all duration-200"
                                 style={{ '--brand-color': brandColor } as React.CSSProperties}
                             >
-                                <div className="absolute inset-0 bg-indigo-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ backgroundColor: `${brandColor}10` }} />
-                                <div className="relative p-4 border border-border rounded-2xl group-hover:border-[var(--brand-color)] transition-all flex justify-between items-center bg-secondary/30 group-hover:bg-secondary/60">
-                                    <span className="font-medium text-foreground group-hover:text-[var(--brand-color)] transition-colors">
-                                        {centre.name}
-                                    </span>
-                                    <span className="text-muted-foreground group-hover:text-[var(--brand-color)] transition-colors">→</span>
+                                <div
+                                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+                                    style={{ backgroundColor: `${brandColor}18` }}
+                                >
+                                    <MapPin className="w-5 h-5" style={{ color: brandColor }} />
                                 </div>
+                                <span className="flex-1 font-semibold text-on-surface group-hover:text-[var(--brand-color)] transition-colors">
+                                    {centre.name}
+                                </span>
+                                <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-[var(--brand-color)] group-hover:translate-x-1 transition-all duration-200" />
                             </Link>
                         ))
                     )}
                 </div>
 
-                <div className="mt-8 text-center">
-                    <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <div className="px-8 pb-6 text-center">
+                    <Link href="/" className="text-sm text-on-surface-variant hover:text-on-surface transition-colors">
                         ← Back to Home
                     </Link>
                 </div>

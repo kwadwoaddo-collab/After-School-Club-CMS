@@ -63,7 +63,7 @@ export default async function PortalDashboard() {
                             {parent.firstName[0]}
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold text-foreground">{parent.firstName}&apos;s Portal</h1>
+                            <h1 className="text-lg font-bold text-on-surface">{parent.firstName}&apos;s Portal</h1>
                             <p className="text-xs text-on-surface-variant">{parent.email}</p>
                         </div>
                     </div>
@@ -74,7 +74,7 @@ export default async function PortalDashboard() {
                         <NotificationBell notifications={notifications} unreadCount={unreadCount} />
                         <a
                             href="/api/portal/logout"
-                            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card"
+                            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors px-3 py-2 rounded-lg hover:bg-card"
                         >
                             <LogOut className="w-4 h-4" />
                             Sign Out
@@ -106,7 +106,7 @@ export default async function PortalDashboard() {
                             <CalendarPlus className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
-                            <h2 className="font-bold text-foreground text-lg">Book a Session</h2>
+                            <h2 className="font-bold text-on-surface text-lg">Book a Session</h2>
                             <p className="text-sm text-on-surface-variant">Reserve a new slot for your child — no payment needed now.</p>
                         </div>
                         <ArrowRight className="w-5 h-5 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
@@ -117,13 +117,13 @@ export default async function PortalDashboard() {
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <Users className="w-5 h-5 text-primary" />
-                        <h2 className="text-xl font-bold text-foreground">My Children</h2>
+                        <h2 className="text-xl font-bold text-on-surface">My Children</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {parent.children.map(child => (
                             <Link key={child.id} href={`/portal/children/${child.id}`} className="bg-card p-6 rounded-xl border border-outline-variant/10 flex items-center justify-between hover:border-primary/20 transition-all group cursor-pointer block">
                                 <div>
-                                    <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{child.firstName} {child.lastName}</h3>
+                                    <h3 className="font-bold text-on-surface group-hover:text-primary transition-colors">{child.firstName} {child.lastName}</h3>
                                     <p className="text-sm text-on-surface-variant">{child.schoolYear}</p>
                                 </div>
                                 <div className="w-10 h-10 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center font-bold border border-secondary/20">
@@ -139,7 +139,7 @@ export default async function PortalDashboard() {
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
                             <CalendarCheck className="w-5 h-5 text-secondary" />
-                            <h2 className="text-xl font-bold text-foreground">Upcoming Sessions</h2>
+                            <h2 className="text-xl font-bold text-on-surface">Upcoming Sessions</h2>
                         </div>
                         {/* Note: We'd need a way to know WHICH usage/centre to book for. 
                             For now, relying on them knowing the link or listing centres from previous bookings. */}
@@ -160,7 +160,7 @@ export default async function PortalDashboard() {
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-foreground">
+                                                <h3 className="font-bold text-on-surface">
                                                     {booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : 'Club Session'}
                                                 </h3>
                                                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-tertiary-container/10 text-tertiary border border-tertiary/20">
@@ -215,7 +215,7 @@ export default async function PortalDashboard() {
 
                 {/* Past Bookings */}
                 <section>
-                    <h2 className="text-xl font-bold text-foreground mb-4 opacity-60">Past Sessions</h2>
+                    <h2 className="text-xl font-bold text-on-surface mb-4 opacity-60">Past Sessions</h2>
                     <div className="space-y-3 opacity-60">
                         {pastBookings.slice(0, 3).map(booking => (
                             <div key={booking.id} className="bg-secondary/40 p-4 rounded-xl border border-outline-variant/5 flex justify-between items-center">

@@ -47,7 +47,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div className="flex-1">
-                        <h1 className="text-lg font-bold text-foreground">Billing & Invoices</h1>
+                        <h1 className="text-lg font-bold text-on-surface">Billing & Invoices</h1>
                         <p className="text-xs text-on-surface-variant">Manage your payments and vouchers</p>
                     </div>
                     <div className="flex items-center">
@@ -65,7 +65,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                         </div>
                         <div>
                             <p className="text-sm text-primary font-medium">Total Outstanding Balance</p>
-                            <h2 className="text-3xl font-bold text-foreground">£{totalOutstanding.toFixed(2)}</h2>
+                            <h2 className="text-3xl font-bold text-on-surface">£{totalOutstanding.toFixed(2)}</h2>
                         </div>
                     </div>
                     {totalOutstanding > 0 && (
@@ -93,7 +93,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                 <section id="outstanding-invoices">
                     <div className="flex items-center gap-2 mb-4">
                         <AlertCircle className="w-5 h-5 text-secondary" />
-                        <h2 className="text-lg font-bold text-foreground">Outstanding Invoices</h2>
+                        <h2 className="text-lg font-bold text-on-surface">Outstanding Invoices</h2>
                     </div>
 
                     {outstandingInvoices.length === 0 ? (
@@ -113,7 +113,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start mb-2">
                                                 <div>
-                                                    <h3 className="font-bold text-foreground">Invoice #{inv.invoiceNumber}</h3>
+                                                    <h3 className="font-bold text-on-surface">Invoice #{inv.invoiceNumber}</h3>
                                                     <p className="text-sm text-on-surface-variant">
                                                         {inv.centre?.name} {inv.child ? `• ${inv.child.firstName} ${inv.child.lastName}` : ''}
                                                     </p>
@@ -132,7 +132,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                             <div className="grid grid-cols-2 gap-4 mt-4 bg-secondary/40 p-4 rounded-lg">
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Total Amount</p>
-                                                    <p className="font-medium text-foreground">£{Number(inv.amount).toFixed(2)}</p>
+                                                    <p className="font-medium text-on-surface">£{Number(inv.amount).toFixed(2)}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Amount Due</p>
@@ -140,11 +140,11 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Issued Date</p>
-                                                    <p className="font-medium text-foreground">{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</p>
+                                                    <p className="font-medium text-on-surface">{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-on-surface-variant">Due Date</p>
-                                                    <p className={`font-medium ${isOverdue ? 'text-destructive font-bold' : 'text-foreground'}`}>{new Date(inv.dueDate).toLocaleDateString('en-GB')}</p>
+                                                    <p className={`font-medium ${isOverdue ? 'text-destructive font-bold' : 'text-on-surface'}`}>{new Date(inv.dueDate).toLocaleDateString('en-GB')}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -172,7 +172,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                     <section>
                         <div className="flex items-center gap-2 mb-4">
                             <Receipt className="w-5 h-5 text-on-surface-variant" />
-                            <h2 className="text-lg font-bold text-foreground opacity-80">Payment History</h2>
+                            <h2 className="text-lg font-bold text-on-surface opacity-80">Payment History</h2>
                         </div>
                         <div className="space-y-3 opacity-80">
                             {pastInvoices.map(inv => {
@@ -191,7 +191,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
                                         {inv.status === 'void' ? (
                                             <span className="line-through text-on-surface-variant">£{Number(inv.amount).toFixed(2)}</span>
                                         ) : (
-                                            <span className="font-bold text-foreground">£{Number(inv.amount).toFixed(2)}</span>
+                                            <span className="font-bold text-on-surface">£{Number(inv.amount).toFixed(2)}</span>
                                         )}
                                         <span className="text-xs px-2 py-1 bg-tertiary-container/10 text-tertiary border border-tertiary/20 rounded-full font-bold">
                                             {STATUS_LABELS[inv.status] || inv.status}
