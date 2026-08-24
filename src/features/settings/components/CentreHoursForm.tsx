@@ -81,11 +81,17 @@ export default function CentreHoursForm({ centre }: { centre: CentreHoursFormCen
             // Milestone 3J Defect 2 fix: was /api/settings/centres/${centre.id}/hours (404).
             // Corrected to /api/centres/${centre.id} which handles operatingHours correctly.
             // Only operatingHours is sent — see header comment for sessionSlots rationale.
+            //
+            // Milestone 3J closure: send raw hours object (not JSON.stringify'd string).
+            // The route at /api/centres/[id] line 76 applies JSON.stringify() server-side,
+            // so sending a pre-stringified value would produce double-serialisation and
+            // break every JSON.parse(operatingHours) consumer (BookingForm, RescheduleForm,
+            // CentreHoursTab). The route expects the object; it serialises to TEXT itself.
             const res = await fetch(`/api/centres/${centre.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    operatingHours: JSON.stringify(data.hours),
+                    operatingHours: data.hours,
                 })
             });
             if (!res.ok) throw new Error('Failed to save changes');

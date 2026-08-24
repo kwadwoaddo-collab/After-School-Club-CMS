@@ -7,15 +7,15 @@
 | Q1 sessionSlots | **Option B** — Operating Hours writes `operatingHours` only. `centres.sessionSlots` is owned exclusively by frozen Centres Settings (structured `SessionSlot[]`). No dual-use. No schema migration in 3J. |
 | Q2 Wonde credentials | **Option b** — Keep Wonde settings surface, mark credential editing as "Coming Soon". Remove hardcoded test key. No DB persistence, no env secrets exposed. |
 
-## Architectural Gap — centres.sessionSlots Display Labels
+## Architectural Gap — centres.sessionSlots Legacy Consumers
 
-**Documented for future milestones. No migration in 3J.**
+**Documented for future milestones. No migration in 3J. No replacement persistence model approved.**
 
 The registration form and booking portal (Shape A consumers) expect `centres.sessionSlots` to be a `string[]` of display labels. The frozen Centres Settings (Shape B producer) writes `SessionSlot[]` structured objects to that same column. There is no separate persistence path for display-label session slot strings at the centre level.
 
-**Current state after 3J:** Settings no longer writes to `centres.sessionSlots`. The column is exclusively managed by Centres Settings (Shape B). Portal/booking/registration consumers that expect Shape A strings will receive Shape B objects when `sessionSlots` has been set via Centres Settings. Each consumer already wraps this in a try/catch and falls back to an empty array or defaults — no crash, but no display-label slot names either.
+**Current state after 3J:** Settings no longer writes to `centres.sessionSlots`. The column is exclusively managed by Centres Settings (Shape B). Legacy consumers that expected Shape A strings will receive Shape B objects when `sessionSlots` has been set via Centres Settings — each wraps this in a try/catch and falls back to defaults.
 
-**Future milestone action required:** Add a `centres.displaySlots TEXT` column for the `string[]` display labels, migrate all Shape A consumers to read from it, and add a Settings UI to manage it. This is a clean schema separation with no data loss risk.
+**Future milestone action:** Legacy consumers of the former string-based sessionSlots representation remain to be audited/migrated to an authoritative source if required. No replacement persistence model has yet been approved.
 
 ## Defects Fixed in 3J
 
@@ -27,6 +27,7 @@ The registration form and booking portal (Shape A consumers) expect `centres.ses
 | 4 | `contactEmail` no server-side validation | `src/app/api/settings/organisation/route.ts` | Email regex added; returns 400 for invalid format |
 | 5 | Wonde token UI dead + hardcoded key | `src/app/dashboard/settings/wonde/WondeSettingsClient.tsx` | `apiKey` state removed; input disabled; "Coming Soon" badge; no-op button disabled |
 | 6 | BrandingForm back button loops to self | `src/features/settings/components/BrandingForm.tsx` | ArrowLeft + Link removed; h1 → h2 tab heading |
+| 7 | `CentreHoursForm` double-serialised operatingHours | `src/features/settings/components/CentreHoursForm.tsx` | Removed `JSON.stringify(data.hours)`; route handles serialisation; found during closure verification |
 
 ## Other Changes
 
