@@ -46,7 +46,10 @@ interface SidebarProps {
 const ROLE_NAV: Record<string, string[]> = {
     ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings'],
     MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications'],
-    FRONT_DESK: ['Dashboard', 'Students', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations'],
+    // A-1 (Milestone 3M — orchestrator decision, Option A): Parents added to FRONT_DESK.
+    // The /dashboard/parents page gate explicitly permits FRONT_DESK; this sidebar entry
+    // was inconsistent. Follows the same policy as Milestone 3L A-2 (Registrations).
+    FRONT_DESK: ['Dashboard', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations'],
     // Milestone 3K (A-1 Option C — orchestrator decision 2026-08-24): TUTOR does not
     // have access to the Incidents module. Removed from this ROLE_NAV entry.
     TUTOR: ['Dashboard', 'Attendance', 'Kiosk'],

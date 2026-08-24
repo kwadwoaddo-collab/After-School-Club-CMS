@@ -3,8 +3,13 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { ilike, or, eq, sql, and } from 'drizzle-orm';
+import { ilike, or, eq, sql, and, isNull } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
+
+// S-2 (Milestone 3M): Roles that may access the search API.
+// TUTOR is excluded because the Students and Parents pages are gated
+// to ORG_OWNER/MANAGER/FRONT_DESK — the search API must not bypass that gate.
+const SEARCH_ALLOWED_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +17,12 @@ export async function GET(request: NextRequest) {
     const session = await auth();
     if (!session?.user?.id || !session?.user?.organisationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // S-2: Role gate — TUTOR must not access search (bypasses Students/Parents page gates)
+    const userRole = (session.user as any).role as string;
+    if (!SEARCH_ALLOWED_ROLES.includes(userRole as typeof SEARCH_ALLOWED_ROLES[number])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const organisationId = (session.user as any).organisationId as string;
@@ -26,6 +37,7 @@ export async function GET(request: NextRequest) {
     const searchPattern = `%${query.trim()}%`;
 
     // 1. Search Students (Children) — scoped to the user's organisation
+    // S-1: isNull(children.deletedAt) excludes soft-deleted records
     const students = await db
       .select({
         id: children.id,
@@ -36,6 +48,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(children.organisationId, organisationId),
+          isNull(children.deletedAt),
           or(
             ilike(children.firstName, searchPattern),
             ilike(children.lastName, searchPattern),
@@ -46,6 +59,7 @@ export async function GET(request: NextRequest) {
       .limit(5);
 
     // 2. Search Parents — scoped to the user's organisation
+    // S-1: isNull(parents.deletedAt) excludes soft-deleted records
     const parentResults = await db
       .select({
         id: parents.id,
@@ -57,6 +71,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(parents.organisationId, organisationId),
+          isNull(parents.deletedAt),
           or(
             ilike(parents.firstName, searchPattern),
             ilike(parents.lastName, searchPattern),
@@ -83,6 +98,8 @@ export async function GET(request: NextRequest) {
       .limit(3);
 
     // 4. Search Bookings (by parent or child name)
+    // S-3: innerJoin centres and enforce centres.organisationId = organisationId
+    // to prevent cross-org booking results from appearing via name collision.
     const bookingResults = await db
       .select({
         id: bookings.id,
@@ -93,6 +110,7 @@ export async function GET(request: NextRequest) {
         childLastName: children.lastName,
       })
       .from(bookings)
+      .innerJoin(centres, and(eq(bookings.centreId, centres.id), eq(centres.organisationId, organisationId)))
       .leftJoin(parents, eq(bookings.parentId, parents.id))
       .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
       .leftJoin(children, eq(bookingAttendees.childId, children.id))

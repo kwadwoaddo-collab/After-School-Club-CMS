@@ -25,6 +25,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 
+    const userRole = (session.user as any).role as string;
+    const isOwner = userRole === 'ORG_OWNER';
+
     const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
     const hasCentres = accessibleCentreIds.length > 0;
     const activeCentreId = await resolveActiveCentreId(searchParams.centre, accessibleCentreIds);
@@ -105,10 +108,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 </Suspense>
             </DashboardHero>
 
-            {/* First-time welcome modal — only shown when nothing is done yet */}
-            {completedCount === 0 && <WelcomeModal orgName={org.name} ownerName={firstName} />}
+            {/* First-time welcome modal — only shown to ORG_OWNER when nothing is done yet.
+                Non-owner staff cannot complete these setup steps (Settings/Centres/Staff
+                are owner-only), so showing the modal to them would be confusing. */}
+            {isOwner && completedCount === 0 && <WelcomeModal orgName={org.name} ownerName={firstName} />}
 
-            {!onboardingAllDone && <OnboardingChecklist steps={onboardingSteps} completedCount={completedCount} />}
+            {/* U-4 (Milestone 3M): Onboarding checklist gated to ORG_OWNER only.
+                MANAGER/FRONT_DESK/TUTOR cannot complete onboarding steps. */}
+            {isOwner && !onboardingAllDone && <OnboardingChecklist steps={onboardingSteps} completedCount={completedCount} />}
 
             <Suspense fallback={<OverviewSkeleton />}>
                 <DashboardKpisWidget 
@@ -128,7 +135,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-3">
                     <Suspense fallback={<OverviewSkeleton />}>
-                        <DashboardSchedule org={org} />
+                        {/* D2 (Milestone 3M): pass accessibleCentreIds+hasCentres so the schedule
+                            respects the user's centre restriction, not org-wide access. */}
+                        <DashboardSchedule org={org} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} />
                     </Suspense>
                 </div>
                 <div className="lg:col-span-2">
@@ -139,9 +148,14 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             </div>
 
             <div className="mt-8 space-y-8">
-                <Suspense fallback={<OverviewSkeleton />}>
-                    <RevenueWidget organisationId={org.id} />
-                </Suspense>
+                {/* D3 (Milestone 3M): Finance data is gated to ORG_OWNER on the Finance page.
+                    Showing it on the dashboard to TUTOR/FRONT_DESK/MANAGER was inconsistent.
+                    RevenueWidget is now rendered only for ORG_OWNER. */}
+                {isOwner && (
+                    <Suspense fallback={<OverviewSkeleton />}>
+                        <RevenueWidget organisationId={org.id} />
+                    </Suspense>
+                )}
                 
                 <Suspense fallback={<ActivitySkeleton />}>
                     <ActivityTab searchParams={searchParams as any} org={org} activeCentreId={activeCentreId} accessibleCentreIds={accessibleCentreIds} hasCentres={hasCentres} isFunnelOnly={true} />

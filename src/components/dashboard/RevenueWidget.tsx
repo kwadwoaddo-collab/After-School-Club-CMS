@@ -86,26 +86,27 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
   ];
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden">
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
         <PoundSterling className="w-4 h-4 text-success" />
-        <span className="text-xs font-black uppercase tracking-[0.15em] text-muted-foreground">
+        <span className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
           Finance Overview
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle">
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-4 p-6">
             <div className={cn('p-3 rounded-xl flex-shrink-0', item.iconBg)}>
               <item.icon className={cn('w-5 h-5', item.color)} />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-0.5">
                 {item.label}
               </p>
               {item.label === 'Overdue Invoices' && revenue.overdueCount > 0 ? (
-                <Link href="/dashboard/finances?status=overdue" className={cn('text-2xl font-black tabular-nums hover:underline', item.color)}>
+                // D1 (Milestone 3M): corrected dead link /dashboard/finances → /dashboard/finance
+                <Link href="/dashboard/finance" className={cn('text-2xl font-black tabular-nums hover:underline', item.color)}>
                   {item.value}
                 </Link>
               ) : (
@@ -113,7 +114,7 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
                   {item.value}
                 </p>
               )}
-              <p className="text-[10px] text-muted-foreground/40 font-medium mt-0.5">
+              <p className="text-[10px] text-text-muted/60 font-medium mt-0.5">
                 {item.description}
               </p>
             </div>

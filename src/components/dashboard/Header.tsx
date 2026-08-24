@@ -28,6 +28,8 @@ const ROLE_LABELS: Record<string, string> = {
     ORG_OWNER: 'Owner',
     ADMIN: 'Admin',
     MANAGER: 'Manager',
+    // D9 (Milestone 3M): FRONT_DESK was missing, causing raw "FRONT_DESK" to appear in the UI.
+    FRONT_DESK: 'Front Desk',
     TUTOR: 'Club Leader',
     STAFF: 'Staff',
 };

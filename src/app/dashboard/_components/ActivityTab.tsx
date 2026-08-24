@@ -277,11 +277,11 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
             <div className={cn("grid gap-6", isFeedOnly ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3")}>
                 {!isFeedOnly && (
                 <div className={cn(
-                    "bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl relative overflow-hidden flex flex-col gap-6",
+                    "bg-surface border p-6 rounded-xl relative overflow-hidden flex flex-col gap-6",
                     isFunnelOnly ? "col-span-1 md:col-span-2 lg:col-span-3" : "transition-all duration-300 md:col-span-2 lg:col-span-1",
                     pipelineCounts.new > 0
-                        ? "border border-amber-500/30 hover:border-amber-500/50"
-                        : "border border-slate-200/60 dark:border-slate-800 hover:border-primary/30"
+                        ? "border-warning/30 hover:border-warning/50"
+                        : "border-border hover:border-accent/30"
                 )}>
                     <div className={cn(
                         "absolute -right-4 -top-4 w-32 h-32 rounded-full blur-3xl pointer-events-none transition-colors",
@@ -405,7 +405,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
 
                 {!isFunnelOnly && (
                 <>
-                <div className={cn("bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 relative overflow-hidden", "hover:border-violet-500/30 transition-all duration-300 flex flex-col gap-6")}>
+                <div className={cn("bg-surface border border-border p-6 rounded-xl relative overflow-hidden", "hover:border-accent/30 transition-all duration-300 flex flex-col gap-6")}>
                     <div className="absolute -right-4 -top-4 w-28 h-28 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
 
                     <div className="flex items-center justify-between relative z-10">
@@ -522,7 +522,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
                     </Link>
                 </div>
 
-                <div className={cn("bg-white dark:bg-slate-900 shadow-sm p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 relative overflow-hidden", "hover:border-primary/30 transition-all duration-300 flex flex-col gap-6")}>
+                <div className={cn("bg-surface border border-border p-6 rounded-xl relative overflow-hidden", "hover:border-accent/30 transition-all duration-300 flex flex-col gap-6")}>
                     <div className="absolute -right-4 -top-4 w-28 h-28 bg-primary/[0.04] rounded-full blur-3xl pointer-events-none" />
 
                     <div className="flex items-center justify-between relative z-10">

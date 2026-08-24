@@ -19,7 +19,10 @@ interface MobileNavProps {
 const ROLE_NAV: Record<string, string[]> = {
     ORG_OWNER: ['Dashboard', 'Students', 'Registrations', 'Settings'],
     MANAGER: ['Dashboard', 'Students', 'Registrations'],
-    FRONT_DESK: ['Dashboard', 'Students'],
+    // N-1 (Milestone 3M): Registrations added for FRONT_DESK mobile nav.
+    // Sidebar (3L A-2) and page gate both permit FRONT_DESK access to Registrations;
+    // the mobile nav was the sole remaining inconsistency.
+    FRONT_DESK: ['Dashboard', 'Students', 'Registrations'],
     TUTOR: ['Dashboard'],
 };
 
