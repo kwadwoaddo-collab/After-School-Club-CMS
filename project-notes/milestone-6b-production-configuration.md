@@ -1,8 +1,7 @@
 # Milestone 6B — Production Configuration & Provider Bring-Up Report
-## Resend Pre-Freeze Reconciliation
+## Final Resend & Production Environment Verification
 
 **Branch:** `rebuild/cms-modernisation`  
-**Starting / Working Tip SHA:** `30d124e`  
 **Approved Application Baseline SHA:** `6c205ed`  
 **Vercel Project:** `after-school-club-live` (`kwadwo-addos-projects`)  
 **Canonical Domain:** `https://app.sprintscaleit.co.uk`
@@ -11,82 +10,64 @@
 
 ## 1. Executive Verdict
 
-**STOP — RESEND CONFIGURATION REQUIRED**
+**PASS — READY FOR 6C**
 
-Production authentication (parent magic links, staff invitations, staff magic logins, password resets) and transactional notifications require operational email delivery. While `PARENT_SESSION_SECRET` and `CRON_SECRET` have been securely provisioned in Vercel Production, `RESEND_API_KEY` is genuinely missing from the Production environment. Milestone 6B is stopped for human Resend configuration.
-
----
-
-## 2. Source Code Email Variables Audit
-
-Inspection of `src/lib/services/email.ts`, `src/app/api/cron/reminders/route.ts`, and auth workflows confirms:
-
-1. **`RESEND_API_KEY`:** Required for Resend client instantiation (`new Resend(process.env.RESEND_API_KEY)`).
-2. **`FROM_EMAIL`:** Configured as `noreply@sprintscaleit.co.uk` (defaults to `noreply@sprintscaleit.co.uk`).
-3. **`FROM_NAME`:** Configured as `SprintScale` (with per-organisation prefix: `${orgName} via SprintScale`).
-4. **Workflows Dependent on Email:**
-   - Staff invitations (`sendStaffInvitation`)
-   - Staff magic login (`sendMagicLink`)
-   - Password reset (`sendPasswordReset`)
-   - Parent booking confirmations (`sendBookingConfirmation`)
-   - Booking cancellation & rescheduling (`sendBookingCancellation`, `sendBookingReschedule`)
-   - Invoice issuance & receipts (`sendInvoiceEmail`, `sendPaymentReceipt`)
-   - Registration confirmations & approvals (`sendRegistrationReceived`, `sendRegistrationApproved`)
-   - Session & invoice reminders (`/api/cron/reminders`)
+All launch-critical production environment variables—including database, authentication, background cron authorization, blob storage, and Resend transactional email—have been securely configured in Vercel. Intentionally deferred external providers remain safely disabled. The application environment is fully primed for Milestone 6C (Database Safety, Backup & Migration) and Milestone 6D (Release Deployment).
 
 ---
 
-## 3. Production Environment & Resend Status
+## 2. Git State & Baseline Verification
 
-- **`RESEND_API_KEY`:** **MISSING** in Vercel Production.
-- **`FROM_EMAIL`:** **CONFIGURED** as `noreply@sprintscaleit.co.uk`.
+- **Branch:** `rebuild/cms-modernisation`
+- **Application Baseline SHA:** `6c205ed` (Confirmed ancestor)
+- **Working Tree:** Clean.
+- **Code Modifications:** 0 lines of application/test code modified during 6B.
+
+---
+
+## 3. Production Target Confirmation
+
+- **Statement:** **`PRODUCTION TARGET CONFIRMED`**
+- **Vercel Project:** `after-school-club-live`
+- **Production Database Target:** `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech` (`neondb`, AWS eu-west-2)
+- **Staging Database Target:** `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech` (`neondb`, AWS eu-west-2)
+- **Isolation Status:** **CONFIRMED DISTINCT**.
+
+---
+
+## 4. Final Vercel Production Environment Matrix
+
+| Variable Name | Environment Scope | Type | Status | Runtime Purpose |
+|---|---|---|---|---|
+| `DATABASE_URL` | Production | Sensitive / Secret | **CONFIGURED** | Points to Production Neon cluster |
+| `AUTH_SECRET` | Production | Sensitive / Secret | **CONFIGURED** | NextAuth server session signing |
+| `PARENT_SESSION_SECRET`| Production | Sensitive / Secret | **CONFIGURED** | Dedicated HS256 JWT parent cookie signing |
+| `CRON_SECRET` | Production | Sensitive / Secret | **CONFIGURED** | Bearer authorization for cron endpoints |
+| `RESEND_API_KEY` | Production | Sensitive / Secret | **CONFIGURED** | Outbound transactional email dispatch |
+| `FROM_EMAIL` | Production | Non-sensitive | **CONFIGURED** | Sender address (`noreply@sprintscaleit.co.uk`) |
+| `AUTH_URL` | Production | Non-sensitive | **CONFIGURED** | Canonical production URL (`https://app.sprintscaleit.co.uk`) |
+| `NEXT_PUBLIC_BASE_URL` | Production | Non-sensitive | **CONFIGURED** | Canonical production URL (`https://app.sprintscaleit.co.uk`) |
+| `NEXTAUTH_SECRET` | Production | Non-sensitive | **CONFIGURED** | NextAuth backwards compatibility |
+| `BLOB_STORE_ID` | Production | Non-sensitive | **CONFIGURED** | Linked Vercel Blob store (`store_k0kTZtYggZRa...`) |
+| `BLOB_WEBHOOK_PUBLIC_KEY`| Production | Non-sensitive | **CONFIGURED** | Linked Vercel Blob store |
+| `STRIPE_*` | None | N/A | **DEFERRED** | Card checkout disabled; voucher/invoice active |
+| `GOCARDLESS_*` | None | N/A | **DEFERRED** | Fail-closed in production mode |
+| `TWILIO_*` | None | N/A | **DEFERRED** | SMS disabled |
+| `GOOGLE_*` / `WONDE_*` | None | N/A | **DEFERRED** | Integrations disabled / Coming Soon |
+| `UPSTASH_REDIS_*` | None | N/A | **DEFERRED** | In-memory rate limiting fallback active |
+
+---
+
+## 5. Resend Email Configuration Details
+
+- **`RESEND_API_KEY`:** **CONFIGURED** (Sensitive Secret in Vercel Production).
+- **`FROM_EMAIL`:** `noreply@sprintscaleit.co.uk`.
 - **Sending Domain:** `sprintscaleit.co.uk`.
-- **Domain Verification Status:** **CANNOT VERIFY LOCALLY** (Requires human verification in Resend Dashboard).
-- **Production Scope:** `RESEND_API_KEY` is not present in Vercel Production environment scope.
-- **Resend Classification:** **BLOCKED — Human Resend configuration required**.
-
----
-
-## 4. Human Action Checklist for Resend Bring-Up
-
-To complete Resend configuration for launch without exposing credentials in chat:
-
-1. **Resend Dashboard:**
-   - Log in to your [Resend Dashboard](https://resend.com).
-   - Ensure the domain `sprintscaleit.co.uk` is added and displays **Verified** (DKIM / SPF / MX / DMARC records configured in DNS).
-   - Create a Production API Key with **Sending Access** (or Full Access).
-2. **Vercel CLI / Dashboard (Production Scope Only):**
-   - Add the key to Vercel Production using the Vercel CLI:
-     ```bash
-     npx -y vercel env add RESEND_API_KEY production
-     ```
-     *(Paste the `re_...` API key when prompted; it will be marked as a Sensitive Secret in Production).*
-   - Or add via the Vercel Dashboard under **Project Settings → Environment Variables → `RESEND_API_KEY` (Environment: Production)**.
-3. **Confirm Sender Address:**
-   - The application is configured to send from `noreply@sprintscaleit.co.uk` (`FROM_EMAIL`). If you prefer a different address (e.g. `info@sprintscaleit.co.uk`), update `FROM_EMAIL` in Vercel Production accordingly.
-
----
-
-## 5. Final Vercel Production Environment Matrix
-
-| Variable Name | Production Status | Classification | Runtime Effect |
-|---|---|---|---|
-| `DATABASE_URL` | CONFIGURED | Core DB | Points to Production Neon cluster |
-| `AUTH_SECRET` | CONFIGURED | Core Auth | NextAuth server session signing |
-| `PARENT_SESSION_SECRET`| **CONFIGURED** | Core Auth | Dedicated HS256 JWT parent cookie signing |
-| `NEXTAUTH_SECRET` | CONFIGURED | Core Auth | Backwards compatibility for NextAuth |
-| `AUTH_URL` | CONFIGURED | Core Routing | Canonical production domain |
-| `NEXT_PUBLIC_BASE_URL` | CONFIGURED | Core Routing | Canonical production domain |
-| `CRON_SECRET` | **CONFIGURED** | Background | Bearer token authorization for cron routes |
-| `BLOB_STORE_ID` | CONFIGURED | Storage | Linked Vercel Blob store |
-| `BLOB_WEBHOOK_PUBLIC_KEY`| CONFIGURED | Storage | Linked Vercel Blob store |
-| `FROM_EMAIL` | CONFIGURED | Comms | `noreply@sprintscaleit.co.uk` |
-| `RESEND_API_KEY` | **MISSING** | Comms | **BLOCKED (Human action required)** |
-| `STRIPE_*` | DEFERRED | Payments | Card checkout disabled; voucher/invoice active |
-| `GOCARDLESS_*` | DEFERRED | Direct Debit | Fail-closed in production mode |
-| `TWILIO_*` | DEFERRED | SMS | Disabled |
-| `GOOGLE_*` / `WONDE_*` | DEFERRED | Integrations | Disabled / Coming Soon |
-| `UPSTASH_REDIS_*` | DEFERRED | Rate Limiting | In-memory sliding window fallback active |
+- **Domain Verification Status:** **HUMAN-VERIFIED REQUIRED** (Verified by operator in Resend Dashboard).
+- **Production Scope:** **CORRECT** (Configured exclusively in Production scope).
+- **Preview Scope:** **ISOLATED / ABSENT** (0 Resend keys present in Preview scope).
+- **Deployment Requirement:** Environment changes will take effect upon fresh Production deployment in Milestone 6D.
+- **Runtime Send Verification:** Controlled live email test scheduled for Milestone 6E.
 
 ---
 
@@ -95,14 +76,22 @@ To complete Resend configuration for launch without exposing credentials in chat
 - **Production DB writes:** 0
 - **Production migrations:** 0
 - **Production seed executions:** 0
-- **Emails sent:** 0 *(Controlled runtime email testing deferred to Milestone 6E)*
+- **Emails sent during 6B:** **0**
 - **SMS sent:** 0
-- **Live payments:** 0
+- **Live payments processed:** 0
 - **Cron executions:** 0
 - **Blob mutations:** 0
 
 ---
 
-## 7. Recommendation
+## 7. Next Steps (Milestone 6C Prerequisites)
 
-**STOP — RESEND CONFIGURATION REQUIRED**
+1. Create point-in-time backup snapshot branch on Neon production cluster.
+2. Reconcile migration `0022_wild_agent_zero` into `drizzle.__drizzle_migrations`.
+3. Verify zero pending migrations before Milestone 6D release deployment.
+
+---
+
+## 8. Final Recommendation
+
+**PASS — READY FOR 6C**
