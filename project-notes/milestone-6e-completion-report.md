@@ -1,10 +1,10 @@
-# Milestone 6E — Completion Report (Pre-Freeze Reconciled)
+# Milestone 6E — Completion Report (Final Arithmetic Reconciled)
 
 ## Executive Summary
 
 - **Executive Verdict**: **PASS WITH NON-BLOCKING OBSERVATIONS — READY FOR 6F**
-- **Starting SHA**: `e440773`
-- **Final SHA**: `e440773` (Reconciled documentation commit)
+- **Starting SHA**: `3ae2153`
+- **Final SHA**: `3ae2153` (Final documentation reconciliation commit)
 - **Branch**: `rebuild/cms-modernisation`
 - **Working-Tree State**: Clean
 - **Push Status**: **NOT PUSHED** (awaiting orchestrator authorization)

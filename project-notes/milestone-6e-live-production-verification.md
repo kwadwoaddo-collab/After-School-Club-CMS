@@ -1,8 +1,8 @@
-# Milestone 6E — Live Production Verification Report (Pre-Freeze Reconciled)
+# Milestone 6E — Live Production Verification Report (Final Arithmetic Reconciled)
 
 **Date**: 2026-08-25
 **Branch**: `rebuild/cms-modernisation`
-**Starting SHA**: `e440773`
+**Starting SHA**: `3ae2153`
 **Target Environment**: Production (`app.sprintscaleit.co.uk`)
 **Vercel Deployment ID**: `dpl_5sQpg8PtHwcV2wha4Z8UXWkRnyKq`
 **Database Host**: `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`
@@ -11,7 +11,7 @@
 
 ## 1. Stage 0 — Safety & Release Identity
 
-- **HEAD**: `e440773`
+- **HEAD**: `3ae2153`
 - **Branch**: `rebuild/cms-modernisation`
 - **Working Tree**: Clean
 - **Origin Sync**: Synchronized (`108d3d0` base + docs commits)
