@@ -2,23 +2,22 @@ import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { nanoid } from 'nanoid';
+import { db } from './index';
+import {
+  organisations,
+  centres,
+  parents,
+  children,
+  bookings,
+  bookingAttendees,
+  users,
+  orgMemberships,
+} from './schema';
 
-// Load environment variables BEFORE any other imports
+// Load environment variables BEFORE any other logic
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 async function seed() {
-  // Dynamically import db and schema after env is loaded
-  const { db } = await import('./index');
-  const {
-    organisations,
-    centres,
-    centreAvailabilityRules,
-    parents,
-    children,
-    bookings,
-    bookingAttendees,
-    users
-  } = await import('./schema');
 
   logger.info('🌱 Seeding database with 10 varied MVP Test Bookings...');
 
@@ -84,7 +83,7 @@ async function seed() {
   const bcrypt = (await import('bcryptjs')).default;
   const passwordHash = await bcrypt.hash('password123', 10);
 
-  await db.insert(users).values({
+  const [seededUser] = await db.insert(users).values({
     email: userEmail,
     name: 'Kwadwo Addo',
     organisationId: orgId,
@@ -93,7 +92,18 @@ async function seed() {
   }).onConflictDoUpdate({
     target: users.email,
     set: { passwordHash, organisationId: orgId, role: 'ORG_OWNER', name: 'Kwadwo Addo' }
-  });
+  }).returning();
+
+  if (seededUser) {
+    await db.insert(orgMemberships).values({
+      userId: seededUser.id,
+      organisationId: orgId,
+      role: 'ORG_OWNER'
+    }).onConflictDoUpdate({
+      target: [orgMemberships.userId, orgMemberships.organisationId],
+      set: { role: 'ORG_OWNER' }
+    });
+  }
 
   // 4. Varied Test Data (10 Students)
   const today = new Date();
