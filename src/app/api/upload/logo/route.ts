@@ -13,7 +13,8 @@ import { nanoid } from 'nanoid';
 import { auth } from '@/lib/auth';
 import { validateImageContent } from '@/lib/file-validation';
 
-const UPLOAD_DIR = 'public/uploads/logos';
+import { uploadToBlob } from '@/lib/services/blob';
+
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
@@ -57,17 +58,22 @@ export async function POST(request: NextRequest) {
 
     // Get file extension
     const ext = file.type.split('/')[1].replace('svg+xml', 'svg');
-    const filename = `logo-${nanoid(12)}.${ext}`;
-    const uploadPath = path.join(process.cwd(), UPLOAD_DIR);
+    const filename = `uploads/${session.user.organisationId}/logos/logo-${nanoid(12)}.${ext}`;
 
-    // Ensure directory exists
-    await mkdir(uploadPath, { recursive: true });
-
-    // Save the buffer (already read above for magic bytes check)
-    await writeFile(path.join(uploadPath, filename), buffer);
-
-    // Return public URL
-    const publicUrl = `/uploads/logos/${filename}`;
+    let publicUrl: string;
+    try {
+      publicUrl = await uploadToBlob(file, filename);
+    } catch {
+      // Local development fallback if BLOB_READ_WRITE_TOKEN is not configured
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Vercel Blob storage is not configured in production');
+      }
+      const localDir = path.join(process.cwd(), 'public/uploads/logos');
+      await mkdir(localDir, { recursive: true });
+      const localFilename = `logo-${nanoid(12)}.${ext}`;
+      await writeFile(path.join(localDir, localFilename), buffer);
+      publicUrl = `/uploads/logos/${localFilename}`;
+    }
 
     logger.info(`[Logo Upload] Saved ${filename}`);
 

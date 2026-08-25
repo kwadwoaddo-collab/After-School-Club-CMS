@@ -75,10 +75,13 @@ export class GoCardlessService {
 
   /**
    * Create a customer in GoCardless.
-   * If unconfigured, returns a stub ID.
+   * If unconfigured, returns a stub ID in development only.
    */
   async createCustomer(input: CreateCustomerInput): Promise<string> {
     if (!this.isConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('GoCardless is not configured in production');
+      }
       logger.info(`[GoCardlessService] Stub: Created customer for ${input.email}`);
       return `CU${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     }
@@ -110,9 +113,12 @@ export class GoCardlessService {
    */
   async createMandateCheckout(customerId: string, successUrl: string, cancelUrl: string): Promise<{ id: string, sessionUrl: string }> {
     if (!this.isConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('GoCardless is not configured in production');
+      }
       logger.info(`[GoCardlessService] Stub: Created mandate checkout for ${customerId}`);
       const stubId = `BR${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-      // For stub testing, we just simulate an immediate success redirect
+      // For stub testing in dev, we just simulate an immediate success redirect
       return { 
         id: stubId, 
         sessionUrl: `${successUrl}?billing_request=${stubId}` 
@@ -164,6 +170,9 @@ export class GoCardlessService {
    */
   async createPayment(input: CreatePaymentInput): Promise<{ id: string, status: string }> {
     if (!this.isConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('GoCardless is not configured in production');
+      }
       logger.info(`[GoCardlessService] Stub: Processed payment of £${(input.amountPence / 100).toFixed(2)} against mandate ${input.mandateId}`);
       return {
         id: `PM${Math.random().toString(36).substring(2, 10).toUpperCase()}`,

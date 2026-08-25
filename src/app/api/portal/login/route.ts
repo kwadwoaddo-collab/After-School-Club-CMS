@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
 import { EmailService } from '@/lib/services/email';
+import { getBaseUrl } from '@/lib/base-url';
 
 export async function POST(req: NextRequest) {
     try {
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest) {
             .set({ magicLinkToken: hashedToken, magicLinkExpiresAt: expiresAt })
             .where(eq(parents.id, parent.id));
 
-        const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawToken}`;
+        const baseUrl = getBaseUrl();
+        const magicLink = `${baseUrl}/portal/verify?token=${rawToken}`;
 
         const emailService = new EmailService();
         const emailResult = await emailService.sendMagicLink({

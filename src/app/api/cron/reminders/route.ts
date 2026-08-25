@@ -5,6 +5,7 @@ import { bookings, invoices, payments } from '@/db/schema';
 import { and, gte, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { emailService } from '@/lib/services/email';
+import { getBaseUrl } from '@/lib/base-url';
 import { Resend } from 'resend';
 import { InferSelectModel } from 'drizzle-orm';
 import { parents, centres, organisations, bookingAttendees, children } from '@/db/schema';
@@ -183,7 +184,7 @@ export async function POST(req: NextRequest) {
                 invoiceNumber: invoice.invoiceNumber,
                 amountDue,
                 dueDate: invoice.dueDate,
-                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+                portalUrl: `${getBaseUrl()}/portal/billing`,
             });
             invoiceSent++;
         }

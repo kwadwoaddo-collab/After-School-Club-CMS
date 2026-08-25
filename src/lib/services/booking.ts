@@ -10,7 +10,8 @@ import { googleCalendarService, buildBookingEventDetails } from './google-calend
 import { notificationService } from './notifications';
 import { notifyOwners } from '@/lib/db-notifications';
 import { stripeService } from './stripe';
-import { generateMagicLinkToken, hashToken } from '../magic-link';
+import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
+import { getBaseUrl } from '@/lib/base-url';
 
 interface BookingResult {
   bookingId: string;
@@ -61,8 +62,8 @@ export class BookingService {
       const rawMagicLinkToken = generateMagicLinkToken();
       const hashedMagicLinkToken = hashToken(rawMagicLinkToken);
       const magicLinkExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      const magicLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/portal/verify?token=${rawMagicLinkToken}`;
+      const baseUrl = getBaseUrl();
+      const magicLink = `${baseUrl}/portal/verify?token=${rawMagicLinkToken}`;
       
       // S-3 fix: If this is a reschedule, verify ownership before cancelling.
       //
