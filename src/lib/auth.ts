@@ -15,6 +15,7 @@ import { db } from '@/db';
 import { users, accounts, sessions, verificationTokens, orgMemberships, organisations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { hashToken } from '@/lib/magic-link';
 
 const nextAuthResult = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -126,7 +127,7 @@ const nextAuthResult = NextAuth({
         const [invite] = await db
           .select()
           .from(staffInvites)
-          .where(eq(staffInvites.token, credentials.token as string))
+          .where(eq(staffInvites.token, hashToken(credentials.token as string)))
           .limit(1);
 
         if (!invite || invite.usedAt || new Date() > invite.expiresAt) {

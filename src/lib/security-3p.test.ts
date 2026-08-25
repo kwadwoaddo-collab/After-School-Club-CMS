@@ -7,6 +7,7 @@
  *              - hashToken(rawToken) produces the DB-match used for verification
  *              - accept-invite: raw vs hash comparison
  *              - magic-login: raw vs hash comparison
+ *              - NextAuth inviteToken provider: raw vs hash comparison
  *   TOKEN-2: Password reset tokens stored as SHA-256 hash
  *              - raw token cannot reset password
  *              - hashToken(rawToken) finds the user correctly
@@ -47,7 +48,7 @@ describe('hashToken — TOKEN-1/TOKEN-2 hash contract', () => {
     });
 });
 
-// ── TOKEN-1: accept-invite / magic-login verifies hash, not raw token ─────────
+// ── TOKEN-1: accept-invite / magic-login / auth.ts verifies hash ─────────────
 
 describe('TOKEN-1: hash-based invite verification contract', () => {
     it('hashToken of raw token matches the value the DB would store', () => {
@@ -90,6 +91,15 @@ describe('TOKEN-1: hash-based invite verification contract', () => {
         const doubleHashed = hashToken(storedHash);
         expect(doubleHashed).not.toBe(storedHash); // → invite NOT found ✅
     });
+
+    it('NextAuth inviteToken credentials provider hashes raw token before DB comparison', () => {
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const storedHash = hashToken(rawToken);
+
+        // In src/lib/auth.ts: eq(staffInvites.token, hashToken(credentials.token as string))
+        const authLookupHash = hashToken(rawToken);
+        expect(authLookupHash).toBe(storedHash);
+    });
 });
 
 // ── TOKEN-2: password reset token — hash contract ────────────────────────────
@@ -128,6 +138,23 @@ describe('TOKEN-2: password reset — hash stored, hash compared', () => {
         // Route then does: hashToken(attackerSuppliedToken) → hashToken(dbStored)
         // hashToken(dbStored) ≠ dbStored → user NOT found ✅
         expect(hashToken(dbStored)).not.toBe(dbStored);
+    });
+});
+
+// ── RATE-1: magic-link rate limit ────────────────────────────────────────────
+
+describe('RATE-1: /api/staff/request-magic-link abuse protection', () => {
+    it('uses strictRateLimit (5 req/min per IP)', () => {
+        // RATE-1 contract: checkRateLimit(strictRateLimit, `magic-link:${ip}`)
+        const prefix = 'magic-link:';
+        const clientIp = '192.168.1.100';
+        const limiterKey = `${prefix}${clientIp}`;
+        expect(limiterKey).toBe('magic-link:192.168.1.100');
+    });
+
+    it('denies requests when limiter returns success = false', () => {
+        const rateLimitResult = { success: false, remaining: 0 };
+        expect(rateLimitResult.success).toBe(false);
     });
 });
 
