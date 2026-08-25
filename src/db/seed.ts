@@ -1,9 +1,14 @@
-import { logger } from '@/lib/logger';
 import * as dotenv from 'dotenv';
 import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+import { logger } from '@/lib/logger';
 import { nanoid } from 'nanoid';
-import { db } from './index';
-import {
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import * as schema from './schema';
+
+const {
   organisations,
   centres,
   parents,
@@ -12,12 +17,34 @@ import {
   bookingAttendees,
   users,
   orgMemberships,
-} from './schema';
-
-// Load environment variables BEFORE any other logic
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+  centreMemberships,
+  invoices,
+  invoiceLineItems,
+  registrations,
+  registrationParents,
+  registrationChildren,
+} = schema;
 
 async function seed() {
+  const connectionString = process.env.DATABASE_URL!;
+  let client: postgres.Sql | null = null;
+  let db: ReturnType<typeof drizzle> | null = null;
+
+  for (let attempt = 1; attempt <= 10; attempt++) {
+    try {
+      client = postgres(connectionString, { max: 1, ssl: 'require', connect_timeout: 10 });
+      await client`SELECT 1`;
+      db = drizzle(client, { schema });
+      break;
+    } catch (err: unknown) {
+      if (attempt === 10) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.info(`Connection attempt ${attempt} failed (${msg}), retrying in 2s...`);
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  if (!db || !client) throw new Error('Failed to connect to database');
 
   logger.info('🌱 Seeding database with 10 varied MVP Test Bookings...');
 
@@ -79,30 +106,49 @@ async function seed() {
   }).returning();
 
 
-  // 3. Ensure User exists
+  // 3. Ensure Staff Personas exist
   const bcrypt = (await import('bcryptjs')).default;
   const passwordHash = await bcrypt.hash('password123', 10);
 
-  const [seededUser] = await db.insert(users).values({
-    email: userEmail,
-    name: 'Kwadwo Addo',
-    organisationId: orgId,
-    role: 'ORG_OWNER',
-    passwordHash,
-  }).onConflictDoUpdate({
-    target: users.email,
-    set: { passwordHash, organisationId: orgId, role: 'ORG_OWNER', name: 'Kwadwo Addo' }
-  }).returning();
+  const staffPersonas = [
+    { email: userEmail, name: 'Kwadwo Addo', role: 'ORG_OWNER' as const, allCentres: true },
+    { email: 'manager@brightstar.example.com', name: 'Staging Manager', role: 'MANAGER' as const, allCentres: false },
+    { email: 'frontdesk@brightstar.example.com', name: 'Staging FrontDesk', role: 'FRONT_DESK' as const, allCentres: false },
+    { email: 'tutor@brightstar.example.com', name: 'Staging Tutor', role: 'TUTOR' as const, allCentres: false },
+  ];
 
-  if (seededUser) {
-    await db.insert(orgMemberships).values({
-      userId: seededUser.id,
+  for (const staff of staffPersonas) {
+    const [user] = await db.insert(users).values({
+      email: staff.email,
+      name: staff.name,
       organisationId: orgId,
-      role: 'ORG_OWNER'
+      role: staff.role,
+      passwordHash,
     }).onConflictDoUpdate({
-      target: [orgMemberships.userId, orgMemberships.organisationId],
-      set: { role: 'ORG_OWNER' }
-    });
+      target: users.email,
+      set: { passwordHash, organisationId: orgId, role: staff.role, name: staff.name }
+    }).returning();
+
+    if (user) {
+      await db.insert(orgMemberships).values({
+        userId: user.id,
+        organisationId: orgId,
+        role: staff.role
+      }).onConflictDoUpdate({
+        target: [orgMemberships.userId, orgMemberships.organisationId],
+        set: { role: staff.role }
+      });
+
+      // Manager, Front Desk, Tutor assigned to Centre A (Main Campus)
+      await db.insert(centreMemberships).values({
+        userId: user.id,
+        centreId: centreId,
+        role: staff.role
+      }).onConflictDoUpdate({
+        target: [centreMemberships.centreId, centreMemberships.userId],
+        set: { role: staff.role }
+      });
+    }
   }
 
   // 4. Varied Test Data (10 Students)
@@ -125,6 +171,9 @@ async function seed() {
 
   logger.info('⌛ Creating 10 test bookings with varied dates...');
 
+  let firstParentId: string | null = null;
+  let firstChildId: string | null = null;
+
   for (const data of testData) {
     // Create Parent
     const [parent] = await db.insert(parents).values({
@@ -135,6 +184,8 @@ async function seed() {
       phone: `+44 7700 900${Math.floor(Math.random() * 900) + 100}`,
       preferredContact: 'email'
     }).returning();
+
+    if (!firstParentId) firstParentId = parent.id;
 
     // Create Child
     const [child] = await db.insert(children).values({
@@ -147,6 +198,8 @@ async function seed() {
       dateOfBirth: new Date(2015, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
       notes: data.firstName === 'Leo' ? 'Severe Nut Allergy. Epipen in office.' : null
     }).returning();
+
+    if (!firstChildId) firstChildId = child.id;
 
     // Calculate Date
     const bookingDate = new Date(today);
@@ -169,6 +222,65 @@ async function seed() {
     });
   }
 
+  // 5. Create Sample Invoice & Registration Fixtures for 5B Workflows
+  const { invoices, invoiceLineItems, registrations } = await import('./schema');
+  
+  if (firstParentId && firstChildId) {
+    const dueDate = new Date(today);
+    dueDate.setDate(today.getDate() + 14);
+
+    const [invoice] = await db.insert(invoices).values({
+      organisationId: orgId,
+      centreId: centreId,
+      parentId: firstParentId,
+      childId: firstChildId,
+      invoiceNumber: `INV-STG-${nanoid(6).toUpperCase()}`,
+      amount: '120.00',
+      status: 'sent',
+      invoiceDate: today,
+      dueDate,
+      notes: 'Autumn Term After-School Club Booking',
+    }).returning();
+
+    await db.insert(invoiceLineItems).values({
+      invoiceId: invoice.id,
+      description: 'After School Sessions (4 Weeks)',
+      quantity: 4,
+      unitPrice: '30.00',
+      lineTotal: '120.00',
+    });
+
+    const [reg] = await db.insert(registrations).values({
+      organisationId: orgId,
+      centreId: centreId,
+      status: 'awaiting_confirmation',
+      emergencyContactName: 'Ross Geller',
+      emergencyContactPhone: '+44 7700 900666',
+      emergencyContactRelationship: 'Father',
+      termsAgreed: true,
+      submittedAt: today,
+    }).returning();
+
+    await db.insert(registrationParents).values({
+      registrationId: reg.id,
+      submittedFirstName: 'Rachel',
+      submittedLastName: 'Green',
+      submittedEmail: `rachel.green@${nanoid(5)}.example.com`,
+      submittedPhone: '+44 7700 900555',
+      submittedRelationship: 'Mother',
+      isPrimary: true,
+    });
+
+    await db.insert(registrationChildren).values({
+      registrationId: reg.id,
+      submittedFirstName: 'Emma',
+      submittedLastName: 'Geller',
+      submittedDateOfBirth: new Date(2017, 3, 15),
+      submittedSchoolYear: 'Year 3',
+      submittedSessions: ['Monday Afternoon', 'Wednesday Afternoon'],
+    });
+  }
+
   logger.info('');
   logger.info('✅ 10 total test bookings created with varied dates!');
   logger.info('📋 Organisation: Bright Star Academy');
@@ -178,7 +290,8 @@ async function seed() {
   process.exit(0);
 }
 
-seed().catch((error) => {
-  logger.error('❌ Seeding failed:', error);
+seed().catch((error: unknown) => {
+  const msg = error instanceof Error ? error.message : String(error);
+  logger.error(`❌ Seeding failed: ${msg}`);
   process.exit(1);
 });
