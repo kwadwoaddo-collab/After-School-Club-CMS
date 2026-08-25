@@ -6,10 +6,17 @@ import { eq, isNull, and } from 'drizzle-orm';
 import { cache } from 'react';
 import { SignJWT, jwtVerify } from 'jose';
 
-// Use PARENT_SESSION_SECRET or AUTH_SECRET for signing, with a fallback for local dev if missing
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.PARENT_SESSION_SECRET || process.env.AUTH_SECRET || 'default-dev-secret-do-not-use-in-prod'
-);
+// Resolve parent JWT secret — requires PARENT_SESSION_SECRET or AUTH_SECRET in production.
+function getParentJwtSecret(): Uint8Array {
+    const secret = process.env.PARENT_SESSION_SECRET || process.env.AUTH_SECRET;
+    if (!secret) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('[parent-auth] PARENT_SESSION_SECRET or AUTH_SECRET must be configured in production');
+        }
+        return new TextEncoder().encode('default-dev-secret-do-not-use-in-prod');
+    }
+    return new TextEncoder().encode(secret);
+}
 
 /**
  * Sign a new parent session JWT.
@@ -24,7 +31,7 @@ export async function signParentToken(parentId: string): Promise<string> {
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
         .setExpirationTime('30d')
-        .sign(JWT_SECRET);
+        .sign(getParentJwtSecret());
 }
 
 /**
@@ -40,7 +47,7 @@ export async function signParentToken(parentId: string): Promise<string> {
  */
 export async function verifyParentToken(token: string): Promise<string | null> {
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, getParentJwtSecret());
         return (payload.parentId as string) || null;
     } catch {
         // JWT verification failed (invalid signature, expired, malformed).

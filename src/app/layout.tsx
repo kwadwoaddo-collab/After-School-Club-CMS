@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
@@ -12,16 +12,16 @@ import SessionProvider from "@/components/providers/SessionProvider";
 // with no working equivalent under Turbopack). See the Milestone 2 Correction
 // Pass completion report ("Font Decision") for the full rationale.
 
-
-
-export const metadata: Metadata = {
-  title: "After School Club CMS",
-  description: "Management system for after school clubs and tuition centres",
-  // PWA / home-screen support
+export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)",  color: "#0e0e0f" },
   ],
+};
+
+export const metadata: Metadata = {
+  title: "After School Club CMS",
+  description: "Management system for after school clubs and tuition centres",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
