@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
@@ -36,20 +37,22 @@ export async function POST(request: NextRequest) {
 
         // Only process credential users who have a password set
         if (user && user.passwordHash) {
-            const token = crypto.randomBytes(32).toString('hex');
+            const rawToken = crypto.randomBytes(32).toString('hex');
+            // TOKEN-2 fix: store SHA-256 hash so DB exposure cannot reset passwords.
+            const tokenHash = hashToken(rawToken);
             const expiry = new Date();
             expiry.setHours(expiry.getHours() + 1); // 1 hour expiry
 
-            // Store token on user
+            // Store token hash on user
             await db.update(users).set({
-                passwordResetToken: token,
+                passwordResetToken: tokenHash,
                 passwordResetExpiry: expiry,
             }).where(eq(users.id, user.id));
 
-            // Build reset URL
+            // Build reset URL with raw token
             const protocol = request.headers.get('x-forwarded-proto') || 'http';
             const host = request.headers.get('host') || 'localhost:3000';
-            const resetUrl = `${protocol}://${host}/reset-password?token=${token}`;
+            const resetUrl = `${protocol}://${host}/reset-password?token=${rawToken}`;
 
             // Send email
             await emailService.sendPasswordReset({
@@ -87,9 +90,10 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
         }
 
-        // Find user by reset token
+        // Find user by reset token (hashed)
+        // TOKEN-2 fix: compare hash of received token against stored hash.
         const user = await db.query.users.findFirst({
-            where: eq(users.passwordResetToken, token),
+            where: eq(users.passwordResetToken, hashToken(token)),
         });
 
         if (!user || !user.passwordResetExpiry) {

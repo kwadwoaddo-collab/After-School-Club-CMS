@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { hashToken } from '@/lib/magic-link';
 
 /**
  * GET /api/staff/magic-login?token=xxx
@@ -15,10 +16,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Missing token' }, { status: 400 });
     }
 
+    // TOKEN-1 fix: tokens are stored as SHA-256 hashes.
     const [invite] = await db
         .select()
         .from(staffInvites)
-        .where(eq(staffInvites.token, token))
+        .where(eq(staffInvites.token, hashToken(token)))
         .limit(1);
 
     if (!invite || invite.usedAt || new Date() > invite.expiresAt) {

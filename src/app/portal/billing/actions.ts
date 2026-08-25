@@ -12,12 +12,15 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
 
-        // Verify invoice belongs to parent
+        // Verify invoice belongs to parent and get current state
         const invoice = await db.query.invoices.findFirst({
             where: and(
                 eq(invoices.id, invoiceId),
                 eq(invoices.parentId, parent.id)
-            )
+            ),
+            with: {
+                payments: true
+            }
         });
 
         if (!invoice) return { success: false, error: 'Invoice not found' };
@@ -25,8 +28,19 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
             return { success: false, error: 'Invoice cannot be paid in its current status' };
         }
 
+        // Calculate outstanding balance
+        const totalPaid = invoice.payments
+            .filter(p => p.status === 'verified' || p.status === 'pending')
+            .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        
+        const outstandingBalance = parseFloat(invoice.amount) - totalPaid;
+
         if (amount <= 0 || !reference.trim()) {
             return { success: false, error: 'Invalid payment amount or reference' };
+        }
+
+        if (amount > outstandingBalance) {
+            return { success: false, error: 'Payment amount exceeds outstanding balance' };
         }
 
         // Wrap in transaction

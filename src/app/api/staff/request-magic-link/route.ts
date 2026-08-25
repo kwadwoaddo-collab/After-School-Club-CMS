@@ -4,7 +4,9 @@ import { db } from '@/db';
 import { users, staffInvites, organisations } from '@/db/schema';
 import { eq, and, or, lt, isNotNull } from 'drizzle-orm';
 import crypto from 'crypto';
+import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
+import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 /**
  * POST /api/staff/request-magic-link
@@ -13,6 +15,16 @@ import { emailService } from '@/lib/services/email';
  */
 export async function POST(request: NextRequest) {
     try {
+        // RATE-1 fix: rate-limit magic-link requests to prevent email flooding
+        const ip = getClientIP(request);
+        const { success: allowed } = await checkRateLimit(strictRateLimit, `magic-link:${ip}`);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const { email } = await request.json();
 
         if (!email) {
@@ -43,8 +55,10 @@ export async function POST(request: NextRequest) {
             .where(eq(organisations.id, user.organisationId))
             .limit(1);
 
-        // Generate a new magic link token
-        const token = crypto.randomBytes(32).toString('hex');
+        // TOKEN-1 fix: generate raw token for email delivery; store only the SHA-256
+        // hash in the DB so a DB breach cannot be used to authenticate as staff.
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashToken(rawToken);
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minute expiry
 
@@ -59,19 +73,19 @@ export async function POST(request: NextRequest) {
             )
         );
 
-        // Store as a staff invite (reusing the table)
+        // Store as a staff invite (reusing the table) — stores hash, not raw token
         await db.insert(staffInvites).values({
             organisationId: user.organisationId,
             email,
             role: user.role,
-            token,
+            token: tokenHash,
             expiresAt,
         });
 
-        // Build the magic link
+        // Build the magic link — raw token in URL, hash in DB
         const protocol = request.headers.get('x-forwarded-proto') || 'http';
         const host = request.headers.get('host') || 'localhost:3000';
-        const magicLink = `${protocol}://${host}/accept-invite?token=${token}`;
+        const magicLink = `${protocol}://${host}/accept-invite?token=${rawToken}`;
 
         // Send the email — sender will show as "[Org Name] via SprintScale"
         const emailResult = await emailService.sendMagicLink({
@@ -86,7 +100,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
         }
 
-        logger.info(`[Magic Link] Sent to ${email}, token expires at ${expiresAt.toISOString()}`);
+        logger.info(`[Magic Link] Sent to ${email}, token expires at ${expiresAt.toISOString()} (hash stored)`);
         return NextResponse.json({ success: true });
     } catch (error) {
         logger.error('[Magic Link] Unexpected error:', error);

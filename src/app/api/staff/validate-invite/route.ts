@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { hashToken } from '@/lib/magic-link';
 
 export async function GET(request: NextRequest) {
     try {
@@ -13,8 +14,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Token is required' }, { status: 400 });
         }
 
+        // TOKEN-1 fix: tokens are stored as SHA-256 hashes.
         const invite = await db.query.staffInvites.findFirst({
-            where: eq(staffInvites.token, token),
+            where: eq(staffInvites.token, hashToken(token)),
         });
 
         if (!invite) {

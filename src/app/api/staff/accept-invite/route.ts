@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { staffInvites, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { hashToken } from '@/lib/magic-link';
 
 /**
  * POST /api/staff/accept-invite
@@ -19,11 +20,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing token' }, { status: 400 });
         }
 
+        // TOKEN-1 fix: tokens are stored as SHA-256 hashes; hash the received
+        // raw token before looking it up in the DB.
+        const tokenHash = hashToken(token);
+
         // Find and validate the invitation
         const [invite] = await db
             .select()
             .from(staffInvites)
-            .where(eq(staffInvites.token, token))
+            .where(eq(staffInvites.token, tokenHash))
             .limit(1);
 
         if (!invite) {

@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { users, staffInvites, organisations, centres, centreMemberships, orgMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
+import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { z } from 'zod';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
@@ -152,11 +153,14 @@ export async function POST(request: NextRequest) {
 
 
         // Generate invite token (magic link)
-        const token = crypto.randomBytes(32).toString('hex');
+        // TOKEN-1 fix: the raw token is sent in the email; only the SHA-256 hash
+        // is stored in the DB so a read-only DB breach cannot authenticate as staff.
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const token = hashToken(rawToken); // hash stored; raw token delivered via email only
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
 
-        // Create invite record
+        // Create invite record — stores hash, not the raw token
         await db.insert(staffInvites).values({
             organisationId: session.user.organisationId,
             email,
@@ -169,7 +173,8 @@ export async function POST(request: NextRequest) {
         const protocol = request.headers.get('x-forwarded-proto') || 'http';
         const host = request.headers.get('host') || 'localhost:3000';
         const baseUrl = `${protocol}://${host}`;
-        const inviteLink = `${baseUrl}/accept-invite?token=${token}`;
+        // Deliver raw token in the link — the hash is what lives in the DB
+        const inviteLink = `${baseUrl}/accept-invite?token=${rawToken}`;
 
         // Get location name for email
         let locationName = 'the team';
