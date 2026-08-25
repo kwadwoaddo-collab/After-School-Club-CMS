@@ -6,7 +6,8 @@
 **Stage A audit commit:** `635dbe3`  
 **Stage B implementation commit:** `52f850f`  
 **Stage C test commit:** `bdcf96e`  
-**Final SHA:** `bdcf96e`
+**Stage B NextAuth hardening & test commit:** `3aa7d09`  
+**Final SHA:** `3aa7d09`
 
 ---
 
@@ -16,7 +17,7 @@
 |------|--------|
 | TypeScript `tsc --noEmit` | ✅ PASS (0 errors) |
 | ESLint | ✅ PASS (0 errors, 0 warnings) |
-| Vitest | ✅ PASS — **523/523** |
+| Vitest | ✅ PASS — **526/526** |
 | Production build | ✅ PASS |
 
 ---
@@ -26,9 +27,9 @@
 | Source | Count |
 |--------|-------|
 | 3O frozen baseline | 505 |
-| `src/lib/security-3p.test.ts` — new file | +18 |
-| **Total new 3P tests** | **+18** |
-| **3P total** | **523** |
+| `src/lib/security-3p.test.ts` — new file | +21 |
+| **Total new 3P tests** | **+21** |
+| **3P total** | **526** |
 
 ---
 
@@ -50,7 +51,7 @@
 
 | ID | Sev | Description | Fix | Status |
 |----|-----|-------------|-----|--------|
-| TOKEN-1 | CRITICAL | Staff invite/magic-login tokens stored in plaintext — DB breach → session takeover | Hash tokens before DB storage; hash received token before lookup | ✅ Fixed |
+| TOKEN-1 | CRITICAL | Staff invite/magic-login tokens stored in plaintext — DB breach → session takeover | Hash tokens before DB storage; hash received token before lookup across all routes and NextAuth provider | ✅ Fixed |
 | TOKEN-2 | HIGH | Password reset token stored in plaintext — DB breach → password reset for any ORG_OWNER | Hash token before DB storage; hash received token for lookup | ✅ Fixed |
 | RATE-1 | MEDIUM | No rate limit on `/api/staff/request-magic-link` — email flooding possible | Applied `strictRateLimit` (5/min/IP) | ✅ Fixed |
 | FINANCE-1 | MEDIUM | `submitVoucherPayment` accepted caller-supplied `amount` without server-side cap | Server-side outstanding balance derived from DB; caller amount capped | ✅ Fixed |
@@ -77,9 +78,10 @@
 | `src/app/api/staff/accept-invite/route.ts` | Import `hashToken`; lookup with `hashToken(token)` | TOKEN-1 |
 | `src/app/api/staff/validate-invite/route.ts` | Import `hashToken`; lookup with `hashToken(token)` | TOKEN-1 |
 | `src/app/api/staff/magic-login/route.ts` | Import `hashToken`; lookup with `hashToken(token)` | TOKEN-1 |
+| `src/lib/auth.ts` | Import `hashToken`; NextAuth inviteToken provider lookup with `hashToken(credentials.token)` | TOKEN-1 |
 | `src/app/api/auth/reset-password/route.ts` | Import `hashToken`; store `hashToken(rawToken)` in DB; deliver `rawToken` in email; PATCH lookup with `hashToken(token)` | TOKEN-2 |
 | `src/app/portal/billing/actions.ts` | Fetch invoice with payments relation; compute outstanding balance (verified only); reject amount > outstanding | FINANCE-1 |
-| `src/lib/security-3p.test.ts` | New — 18 regression tests | All defects |
+| `src/lib/security-3p.test.ts` | New — 21 regression tests | All defects |
 
 **Frozen modules touched:** None — all changed files are authentication/session utilities that span milestone boundaries by design.
 
