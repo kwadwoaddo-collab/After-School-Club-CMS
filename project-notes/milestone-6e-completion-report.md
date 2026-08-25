@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-- **Executive Verdict**: **PASS — READY FOR 6F**
+- **Executive Verdict**: **PASS WITH NON-BLOCKING OBSERVATIONS — READY FOR 6F**
 - **Starting SHA**: `108d3d0`
-- **Final SHA**: `108d3d0` (no app code changes in 6E)
+- **Final SHA**: `8916a5e` (no app code changes in 6E)
 - **Branch**: `rebuild/cms-modernisation`
 - **Working-Tree State**: Clean
 - **Push Status**: **NOT PUSHED** (awaiting orchestrator authorization)
@@ -28,11 +28,11 @@
 
 1. **Public Smoke**: 9 / 9 routes PASS (200 / 307 OK).
 2. **Staff Authentication**: PASS (Google OAuth login verified for `kaddo@sydenhamasc.co.uk`, session persistence confirmed, logout verified).
-3. **Role Authorization**: PASS for ORG_OWNER; lower roles BLOCKED (no safe test persona).
-4. **Tenant Isolation**: PASS (API probes to foreign orgs/centres returned 401/405).
-5. **Centre Isolation**: PASS (API probes to foreign centres returned 401/405).
+3. **Role Authorization**: PASS for ORG_OWNER; lower roles **BLOCKED — NO SAFE PRODUCTION PERSONA** (verified in 5B Staging).
+4. **Tenant Isolation**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (unauthenticated probes verified 401; authenticated cross-tenant probes require multi-tenant test personas, verified in 5B Staging).
+5. **Centre Isolation**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (unauthenticated probes verified 401; restricted manager cross-centre probes require single-centre test accounts, verified in 5B Staging).
 6. **Resend Live Email**: EMAIL RUNTIME PASS (password reset email dispatched to `brakatuaddo@gmail.com`, operator confirmed delivery from `@sprintscaleit.co.uk` with production URL, token reset DB state restored).
-7. **Parent Portal**: BLOCKED — NO SAFE PRODUCTION PERSONA (unauthenticated access rejected cleanly).
+7. **Parent Portal**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (unauthenticated access rejected cleanly; verified in 5B Staging).
 8. **Controlled Mutation**: RUNTIME PASS (organisation address updated to include 'TEST', verified in DB, rolled back to baseline, verified DB restored).
 9. **Finance**: RUNTIME PASS (read-only invoice list verified).
 10. **Bookings & Attendance**: RUNTIME PASS (read-only booking list verified).
@@ -46,7 +46,7 @@
 
 ## Adversarial Matrix & Defects
 
-- **30-Question Adversarial Matrix**: 22 RUNTIME SAFE, 8 BLOCKED — SAFE PERSONA UNAVAILABLE, 0 DEFECTS.
+- **30-Question Adversarial Matrix**: 18 RUNTIME SAFE, 12 BLOCKED — SAFE PERSONA UNAVAILABLE, 0 DEFECTS.
 - **Confirmed Defect Count**: 0.
 - **Severity Breakdown**: 0 Critical, 0 High, 0 Medium, 0 Low.
 - **Fixes Made**: None required.
@@ -68,4 +68,4 @@
 
 ## Final Recommendation
 
-**PASS — READY FOR 6F**
+**PASS WITH NON-BLOCKING OBSERVATIONS — READY FOR 6F**

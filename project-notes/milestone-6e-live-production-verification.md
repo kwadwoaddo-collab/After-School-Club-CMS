@@ -104,19 +104,27 @@
 ## 6. Stage 5 — Role & Authorization Runtime Checks
 
 - **ORG_OWNER**: All dashboard modules accessible (Dashboard, Centres, Students, Parents, Bookings, Attendance, Incidents, Kiosk, Registrations, Finance, Reports, Team, Communications, Settings, Availability).
-- **Lower Roles (MANAGER, FRONT_DESK, TUTOR)**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (no dedicated non-owner test accounts with accessible credentials available).
+- **Lower Roles (MANAGER, FRONT_DESK, TUTOR)**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (no dedicated non-owner test accounts with accessible credentials available in production; fully verified previously in Milestone 5B Staging).
 
 ---
 
 ## 7. Stage 6 — Tenant & Centre Isolation
 
-- `PATCH /api/centres/[foreign-id]`: 401 Unauthorized
-- `PATCH /api/staff/[foreign-id]`: 401 Unauthorized
-- `DELETE /api/staff/remove`: 401 Unauthorized
-- `POST /api/user/switch-org`: 401 Unauthorized
-- `GET /api/notifications`: 401 Unauthorized
-- `GET /api/search`: 401 Unauthorized
-- **Verdict**: **RUNTIME PASS**
+### Review of HTTP Method Probes
+
+A 405 (Method Not Allowed) response indicates an unsupported HTTP verb and is classified as **Method Rejection**, not authorization evidence. Correct-method probes were executed to evaluate unauthenticated route protection:
+
+- `PATCH /api/centres/[id]` (unauthenticated): 401 Unauthorized (`{"error":"Unauthorized"}`) -> **Unauthenticated Route Protection: RUNTIME SAFE**
+- `PATCH /api/staff/[id]` (unauthenticated): 401 Unauthorized (`{"error":"Unauthorized"}`) -> **Unauthenticated Route Protection: RUNTIME SAFE**
+- `DELETE /api/staff/remove` (unauthenticated): 401 Unauthorized (`{"error":"Unauthorized"}`) -> **Unauthenticated Route Protection: RUNTIME SAFE**
+- `POST /api/user/switch-org` (unauthenticated): 401 Unauthorized (`{"error":"Unauthorized"}`) -> **Unauthenticated Route Protection: RUNTIME SAFE**
+- `GET /api/notifications` (unauthenticated): 401 Unauthorized (`{"error":"Unauthorized"}`) -> **Unauthenticated Route Protection: RUNTIME SAFE**
+- `GET /api/search` (unauthenticated): 401 Unauthorized (`{"error":"Unauthorized"}`) -> **Unauthenticated Route Protection: RUNTIME SAFE**
+
+### Authenticated Cross-Tenant / Cross-Centre Probes
+
+- **Authenticated Cross-Tenant Probes (Org A -> Org B)**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (Requires concurrent authenticated sessions across distinct production tenant accounts; verified previously in Milestone 5B Staging).
+- **Authenticated Cross-Centre Probes (Centre A -> Centre B)**: **BLOCKED — NO SAFE PRODUCTION PERSONA** (Requires restricted manager account scoped to single centre; verified previously in Milestone 5B Staging).
 
 ---
 
@@ -135,7 +143,7 @@
 
 - Portal login page loads: 200 OK
 - Forged `parent_session` cookie rejected: PASS
-- Interactive parent login: **BLOCKED — NO SAFE PRODUCTION PERSONA** (no operator parent account).
+- Interactive parent login & cross-parent isolation: **BLOCKED — NO SAFE PRODUCTION PERSONA** (no dedicated parent test account in production; verified previously in Milestone 5B Staging).
 
 ---
 
@@ -259,29 +267,29 @@
 | 1 | Public → dashboard? | **RUNTIME SAFE** | 307 Redirect to `/login` |
 | 2 | Public → protected GET API using correct method? | **RUNTIME SAFE** | 401 `{"error":"Unauthorized"}` |
 | 3 | Public → protected mutation API using correct method? | **RUNTIME SAFE** | 401 `{"error":"Unauthorized"}` |
-| 4 | Fake staff session accepted? | **RUNTIME SAFE** | Rejected |
-| 5 | Fake parent JWT accepted? | **RUNTIME SAFE** | Rejected / redirects to login |
-| 6 | Expired token accepted? | **RUNTIME SAFE** | Rejected |
-| 7 | Replayed consumed token accepted? | **RUNTIME SAFE** | Single-use hash invalidated |
-| 8 | TUTOR → owner settings? | **BLOCKED — NO SAFE PERSONA** | No lower-role account |
-| 9 | TUTOR → finance? | **BLOCKED — NO SAFE PERSONA** | No lower-role account |
-| 10 | FRONT_DESK → owner settings? | **BLOCKED — NO SAFE PERSONA** | No lower-role account |
-| 11 | FRONT_DESK → restricted safeguarding mutation? | **BLOCKED — NO SAFE PERSONA** | No lower-role account |
-| 12 | MANAGER Centre A → Centre B? | **BLOCKED — NO SAFE PERSONA** | No lower-role account |
-| 13 | Org A → Org B parent? | **RUNTIME SAFE** | 401 Unauthorized |
-| 14 | Org A → Org B child? | **RUNTIME SAFE** | 401 Unauthorized |
-| 15 | Org A → Org B booking? | **RUNTIME SAFE** | 401 Unauthorized |
-| 16 | Org A → Org B invoice? | **RUNTIME SAFE** | 401 Unauthorized |
-| 17 | Parent A → Parent B child? | **BLOCKED — NO SAFE PERSONA** | No parent test account |
-| 18 | Parent A → Parent B booking? | **BLOCKED — NO SAFE PERSONA** | No parent test account |
-| 19 | Parent A → Parent B invoice? | **BLOCKED — NO SAFE PERSONA** | No parent test account |
+| 4 | Fake staff session accepted? | **RUNTIME SAFE** | Rejected by auth middleware |
+| 5 | Fake parent JWT accepted? | **RUNTIME SAFE** | Rejected / renders login page |
+| 6 | Expired token accepted? | **RUNTIME SAFE** | 404 / Rejected |
+| 7 | Replayed consumed token accepted? | **RUNTIME SAFE** | Hash validation & single-use |
+| 8 | TUTOR → owner settings? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 9 | TUTOR → finance? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 10 | FRONT_DESK → owner settings? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 11 | FRONT_DESK → restricted safeguarding mutation? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 12 | MANAGER Centre A → Centre B? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 13 | Org A → Org B parent? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 14 | Org A → Org B child? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 15 | Org A → Org B booking? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 16 | Org A → Org B invoice? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 17 | Parent A → Parent B child? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 18 | Parent A → Parent B booking? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 19 | Parent A → Parent B invoice? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
 | 20 | Foreign registration prefill? | **RUNTIME SAFE** | Verified clean in registration smoke |
-| 21 | Foreign booking reschedule? | **RUNTIME SAFE** | Protected by auth & org checks |
-| 22 | Forged organisation switch? | **RUNTIME SAFE** | 401 Unauthorized |
-| 23 | Direct hidden-route access? | **RUNTIME SAFE** | Auth middleware intercepts |
-| 24 | Search role leakage? | **RUNTIME SAFE** | 401 Unauthorized |
-| 25 | Cron without secret? | **RUNTIME SAFE** | 401 Unauthorized |
-| 26 | Upload without authorization? | **RUNTIME SAFE** | 401 Unauthorized for logo endpoint |
+| 21 | Foreign booking reschedule? | **BLOCKED — SAFE PERSONA UNAVAILABLE** | Proven in 5B Staging |
+| 22 | Forged organisation switch? | **RUNTIME SAFE** | 401 `{"error":"Unauthorized"}` |
+| 23 | Direct hidden-route access? | **RUNTIME SAFE** | Auth middleware intercepts (307) |
+| 24 | Search role leakage? | **RUNTIME SAFE** | 401 `{"error":"Unauthorized"}` |
+| 25 | Cron without secret? | **RUNTIME SAFE** | 401 `{"error":"Unauthorized"}` |
+| 26 | Upload without authorization? | **RUNTIME SAFE** | 401 `{"error":"Unauthorized"}` for logo endpoint |
 | 27 | Invalid upload content? | **RUNTIME SAFE** | Non-image content rejected |
 | 28 | Deferred payment provider fake-success? | **RUNTIME SAFE** | No fake-success state |
 | 29 | Error response leaks stack/secrets? | **RUNTIME SAFE** | Clean JSON error messages |
@@ -300,7 +308,7 @@
 
 ## 22. Summary & Recommendation
 
-- **Verdict**: **PASS — READY FOR 6F**
+- **Verdict**: **PASS WITH NON-BLOCKING OBSERVATIONS — READY FOR 6F**
 - **Defects Found**: 0
 - **Data Integrity**: Clean (0 net data deltas)
 - **Rollback Readiness**: Deployment `dpl_7GgRdHsVtzSKQtmDpqcXEztU2dci` ready; Neon recovery branch `pre-6c-dev-20260825-2140` intact.
