@@ -82,7 +82,11 @@ function redact(obj: unknown): unknown {
         lowerKey.includes('password') ||
         lowerKey.includes('secret') ||
         lowerKey.includes('key') ||
-        lowerKey.includes('phone')
+        lowerKey.includes('phone') ||
+        lowerKey.includes('url') ||
+        lowerKey.includes('authorization') ||
+        lowerKey.includes('cookie') ||
+        lowerKey.includes('host')
       ) {
         result[key] = '[REDACTED]';
       } else {
