@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NextRequest } from 'next/server';
-import { proxy, middleware } from './proxy';
+import { proxy } from './proxy';
 
 // Regression coverage for the hostname/subdomain detection in proxy.ts (formerly middleware.ts).
 //
@@ -31,15 +31,15 @@ function rewrittenPathname(response: Response) {
     return rewriteUrl ? new URL(rewriteUrl).pathname : null;
 }
 
-describe('middleware hostname/subdomain detection', () => {
+describe('proxy hostname/subdomain detection', () => {
     it('does not rewrite the main application host (app.sprintscaleit.co.uk)', () => {
-        const response = middleware(makeRequest('app.sprintscaleit.co.uk'));
+        const response = proxy(makeRequest('app.sprintscaleit.co.uk'));
         expect(isPassthrough(response)).toBe(true);
         expect(rewrittenPathname(response)).toBeNull();
     });
 
     it('rewrites a legitimate centre subdomain to /centre-portal/<centre>', () => {
-        const response = middleware(makeRequest('dagenham.sprintscaleit.co.uk'));
+        const response = proxy(makeRequest('dagenham.sprintscaleit.co.uk'));
         expect(rewrittenPathname(response)).toBe('/centre-portal/dagenham');
         // x-subdomain is forwarded on the downstream request, not the response
         // itself — Next.js surfaces that as x-middleware-request-<header>.
@@ -47,12 +47,12 @@ describe('middleware hostname/subdomain detection', () => {
     });
 
     it('rewrites a legitimate centre subdomain /book path to /centre-portal/<centre>/book', () => {
-        const response = middleware(makeRequest('dagenham.sprintscaleit.co.uk', '/book'));
+        const response = proxy(makeRequest('dagenham.sprintscaleit.co.uk', '/book'));
         expect(rewrittenPathname(response)).toBe('/centre-portal/dagenham/book');
     });
 
     it('does NOT rewrite a Vercel preview/deployment hostname (regression for the 404 bug)', () => {
-        const response = middleware(
+        const response = proxy(
             makeRequest('after-school-club-live-lyi1gz7b7-kwadwo-addos-projects.vercel.app')
         );
         expect(isPassthrough(response)).toBe(true);
@@ -62,7 +62,7 @@ describe('middleware hostname/subdomain detection', () => {
     it('does not rewrite an arbitrary future Vercel-generated deployment hostname', () => {
         // A different project name / hash / team than any hardcoded example —
         // proves the fix is a general *.vercel.app rule, not a one-off allowlist.
-        const response = middleware(
+        const response = proxy(
             makeRequest('some-other-app-9x7k2p-a-different-team.vercel.app')
         );
         expect(isPassthrough(response)).toBe(true);
@@ -70,7 +70,7 @@ describe('middleware hostname/subdomain detection', () => {
     });
 
     it('does not rewrite localhost/dev requests', () => {
-        const response = middleware(makeRequest('localhost:3000'));
+        const response = proxy(makeRequest('localhost:3000'));
         expect(isPassthrough(response)).toBe(true);
         expect(rewrittenPathname(response)).toBeNull();
     });
@@ -80,9 +80,6 @@ describe('middleware hostname/subdomain detection', () => {
         expect(isPassthrough(response)).toBe(true);
         expect(rewrittenPathname(response)).toBeNull();
     });
-
-    it('proves proxy and middleware exports are function-identical', () => {
-        expect(proxy).toBe(middleware);
-    });
 });
+
 

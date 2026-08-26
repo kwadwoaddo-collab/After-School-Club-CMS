@@ -102,6 +102,5 @@ export const config = {
     ],
 };
 
-export { proxy as middleware };
 
 
