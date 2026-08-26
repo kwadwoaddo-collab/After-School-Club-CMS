@@ -152,9 +152,24 @@
 
 ---
 
-## 6. Final Recommendation
+## 6. Recovery Branch Reconciliation & Identity
+
+- **Branch Name**: `pre-6c-dev-20260825-2140`
+- **Neon Branch ID**: `br-pre-6c-dev-20260825-2140`
+- **Creation Timestamp**: `2026-08-25 21:40:00 GMT`
+- **Parent Branch**: `dev` (child of `production` root)
+- **Recovery Endpoint Host**: `ep-noisy-salad-abnby98d.eu-west-2.aws.neon.tech`
+- **Pre-Cleanup Census Verification**: `organisations`: 15, `centres`: 20, `users`: 26, `parents`: 328, `children`: 357, `bookings`: 220, `booking_attendees`: 239, `registrations`: 62, `invoices`: 7, `payments`: 3, `student_notes`: 112, `notifications`: 114, `staff_invites`: 18, `audit_events`: 8
+- **Pre-Cleanup Sydenham Fingerprint**: `Centres`: 2, `Staff Users`: 8, `Org Memberships`: 10, `Parents`: 160, `Children`: 187, `Bookings`: 74, `Registrations`: 42, `Invoices`: 3, `Payments`: 2, `Student Notes`: 111, `Notifications`: 96, `Staff Invites`: 13, `Audit Events`: 8
+- **Current Production Census**: `organisations`: 1, `parents`: 160, `children`: 187, `bookings`: 74, `invoices`: 3, `payments`: 2
+- **Recovery Readiness Verdict**: **PASS — PRE-7D RECOVERY POINT VERIFIED & INTACT**
+
+---
+
+## 7. Final Recommendation
 
 **RECOMMENDATION**:
 Freeze Milestone 7D as complete and proceed directly to **Milestone 7E (Post-Launch Hardening Acceptance & Phase-7 Freeze)**.
 
 ---
+
