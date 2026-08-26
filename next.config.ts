@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
   async headers() {
     const allowedFrameAncestors = process.env.ALLOWED_FRAME_ANCESTORS
       ? process.env.ALLOWED_FRAME_ANCESTORS.split(',').map(domain => domain.trim()).join(' ')

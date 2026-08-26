@@ -44,7 +44,7 @@ export class GoogleCalendarService {
 
     try {
       // Check if credentials file exists
-      if (!existsSync(SERVICE_ACCOUNT_PATH)) {
+      if (!existsSync(/*turbopackIgnore: true*/ SERVICE_ACCOUNT_PATH)) {
         logger.warn(
           `[GoogleCalendarService] Service account file not found at ${SERVICE_ACCOUNT_PATH}. ` +
           `Calendar integration disabled.`
@@ -53,7 +53,7 @@ export class GoogleCalendarService {
       }
 
       // Load service account credentials
-      const credentialsJson = readFileSync(SERVICE_ACCOUNT_PATH, 'utf-8');
+      const credentialsJson = readFileSync(/*turbopackIgnore: true*/ SERVICE_ACCOUNT_PATH, 'utf-8');
       const credentials = JSON.parse(credentialsJson);
 
       // Create JWT auth client
