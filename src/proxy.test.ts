@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from './middleware';
+import { proxy, middleware } from './proxy';
 
-// Regression coverage for the hostname/subdomain detection in middleware.ts.
+// Regression coverage for the hostname/subdomain detection in proxy.ts (formerly middleware.ts).
 //
 // Root cause under test: the middleware used to decide "is this a centre
 // subdomain?" purely from host.split('.').length >= 3 plus a reserved-word
@@ -76,8 +76,13 @@ describe('middleware hostname/subdomain detection', () => {
     });
 
     it('still passes dashboard routes through unchanged on a centre subdomain', () => {
-        const response = middleware(makeRequest('dagenham.sprintscaleit.co.uk', '/dashboard'));
+        const response = proxy(makeRequest('dagenham.sprintscaleit.co.uk', '/dashboard'));
         expect(isPassthrough(response)).toBe(true);
         expect(rewrittenPathname(response)).toBeNull();
     });
+
+    it('proves proxy and middleware exports are function-identical', () => {
+        expect(proxy).toBe(middleware);
+    });
 });
+

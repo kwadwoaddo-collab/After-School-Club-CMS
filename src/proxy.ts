@@ -26,7 +26,7 @@ const PASSTHROUGH_PREFIXES = [
     '/favicon',
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const host = hostname.split(':')[0].toLowerCase(); // strip port for local dev, normalise case
     const parts = host.split('.');
@@ -101,4 +101,7 @@ export const config = {
         '/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)',
     ],
 };
+
+export { proxy as middleware };
+
 
