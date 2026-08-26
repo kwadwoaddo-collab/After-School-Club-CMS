@@ -15,28 +15,61 @@
 ## 1. Executive Summary & Verdict
 
 **FINAL MILESTONE 7F VERDICT**:
-> **PASS — COMMUNICATIONS & INTEGRATION ARCHITECTURE VERIFIED — READY FOR 7G**
+> **PASS WITH ACCURATE PROVIDER CLASSIFICATIONS — READY FOR 7G**
 
-**Integration Status Summary**:
+**Reconciled Provider Enablement Classifications**:
 1. **Resend Transactional Email**: `LIVE — REQUIRED — READY` (Configured in production scope with `RESEND_API_KEY`, sender `noreply@sprintscaleit.co.uk`).
-2. **Twilio SMS**: `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` (Code complete, fail-closed when credentials absent, no accidental sends).
-3. **Wonde MIS**: `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` (Code complete, tenant-isolated by `organisationId` and `centreId`, stubbed client).
-4. **Google Calendar**: `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` (Code complete, fail-closed when service account missing, `checkCalendarAvailability` returns `isAvailable: true` without blocking bookings).
+2. **Twilio SMS**: `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` (Real Twilio SDK client `messages.create()` implemented, fails closed cleanly when credentials absent).
+3. **Wonde MIS**: `B. PARTIALLY IMPLEMENTED — REMEDIATION REQUIRED BEFORE ACTIVATION` (Database sync logic `syncStudents()` exists and is tenant-isolated by `organisationId`/`centreId`, but the API fetch layer `fetchStudentsFromWonde()` is currently a stub returning `[]`).
+4. **Google Calendar**: `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` (Google Calendar API JWT client implemented, service account file missing -> Fail-Open for booking availability `checkCalendarAvailability()` returns `{ busy: [], isAvailable: true }` so local bookings are never blocked, and Fail-Safe for event creation/updates returning `null`/`false` without uncaught exceptions).
 
 ---
 
-## 2. Integration Architecture & Provider Matrix
+## 2. Integration Architecture & Reconciled Provider Matrix
 
-| Provider | Current Status | Code Readiness | Security & Tenant Isolation | Credentials Present? | Safe When Disabled? | Recommended Classification |
+| Provider | Current Status | Code Readiness | Security & Tenant Isolation | Credentials Present? | Failure Policy Wording | Recommended Classification |
 |---|---|---|---|---|---|---|
-| **Resend** | **LIVE** | Fully Implemented | Enforced (Server-side sender `noreply@sprintscaleit.co.uk`, DB recipient selection) | **YES** (`RESEND_API_KEY`) | N/A (Live) | `LIVE — REQUIRED — READY` |
-| **Twilio SMS** | **DEFERRED** | Fully Implemented | Enforced (`initialize()` checks credentials, returns failure cleanly) | **NO** | **YES** (Fails closed cleanly, no crash) | `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` |
-| **Wonde MIS** | **DEFERRED** | Fully Implemented | Enforced (Queries scoped to `organisationId` and `centreId`) | **NO** | **YES** (Stubbed fetch, no unauthorized sync) | `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` |
-| **Google Calendar** | **DEFERRED** | Fully Implemented | Enforced (Checks file existence, falls back to `isAvailable: true`) | **NO** | **YES** (Fails closed cleanly, booking flow unaffected) | `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` |
+| **Resend** | **LIVE** | Fully Implemented | Enforced (Server-side sender `noreply@sprintscaleit.co.uk`, DB recipient selection) | **YES** (`RESEND_API_KEY`) | Operational | `LIVE — REQUIRED — READY` |
+| **Twilio SMS** | **DEFERRED** | Fully Implemented (Real Twilio SDK client) | Enforced (`initialize()` checks credentials, returns failure cleanly) | **NO** | Fail-Closed (`{ success: false }`) | `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` |
+| **Wonde MIS** | **DEFERRED** | **Partially Implemented** (Client fetch is stubbed `return []`) | Enforced (Queries scoped to `organisationId` and `centreId`) | **NO** | Stubbed (`return []`) | `B. PARTIALLY IMPLEMENTED — REMEDIATION REQUIRED BEFORE ACTIVATION` |
+| **Google Calendar** | **DEFERRED** | Fully Implemented | Enforced (Checks service account file existence) | **NO** | **Fail-Open for Availability** (`isAvailable: true`), **Fail-Safe for Writes** (`null`/`false`) | `A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED` |
 
 ---
 
-## 3. Environment Variable & Secret Isolation Matrix
+## 3. Detailed Provider Reconciliation Evidence
+
+### 1. Wonde Reconciliation Evidence
+- `src/lib/services/wonde.ts` contains `syncStudents()` which matches parents and children using `drizzle-orm` queries strictly scoped to `parents.organisationId` and `children.organisationId`.
+- However, `fetchStudentsFromWonde()` is explicitly stubbed:
+  ```ts
+  async fetchStudentsFromWonde(): Promise<WondeStudent[]> {
+    logger.info('Fetching students from Wonde (Stubbed)');
+    return [];
+  }
+  ```
+- Because real Wonde HTTP client requests, OAuth token retrieval, response pagination, and error handling are NOT implemented, Wonde is classified as:
+  **`B. PARTIALLY IMPLEMENTED — REMEDIATION REQUIRED BEFORE ACTIVATION`**.
+
+### 2. Google Calendar Fail Policy Re-conciliation
+- When service account JSON (`./credentials/google-service-account.json`) is missing, `initialize()` returns `false`.
+- `checkCalendarAvailability()` handles this by returning:
+  ```ts
+  if (!isReady || !this.calendar) {
+    return { busy: [], isAvailable: true };
+  }
+  ```
+- **Terminology Re-conciliation**:
+  - Availability Queries: **`FAIL OPEN FOR BOOKING AVAILABILITY`** — Unavailability of Google Calendar does NOT block CMS assessment bookings; local bookings proceed.
+  - Event Creation/Updates: **`FAIL SAFE`** — Methods return `null` / `false` cleanly without throwing uncaught exceptions or corrupting local database state.
+
+### 3. Twilio Re-conciliation
+- `src/lib/services/sms.ts` imports the real `twilio` npm SDK and calls `this.client.messages.create()`.
+- When credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`) are missing, `initialize()` returns `false` and methods fail gracefully with `{ success: false, error: 'SMS service not configured' }`.
+- Classification reconfirmed: **`A. READY TO ACTIVATE — HUMAN CONFIGURATION REQUIRED`** (Real provider client implemented, fails closed cleanly when unconfigured).
+
+---
+
+## 4. Environment Variable & Secret Isolation Matrix
 
 | Variable Name | Provider | Production Scope | Sensitive Type | Purpose | Status |
 |---|---|---|---|---|---|
@@ -46,11 +79,11 @@
 | `TWILIO_AUTH_TOKEN` | Twilio | None | Sensitive | Twilio auth token | **ABSENT** (Fails closed) |
 | `TWILIO_PHONE_NUMBER` | Twilio | None | Non-sensitive | Twilio SMS sender number | **ABSENT** (Fails closed) |
 | `WONDE_API_TOKEN` | Wonde | None | Sensitive | Wonde school API token | **ABSENT** (Fails closed) |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH` | Google Calendar | None | Non-sensitive | Path to service account key JSON | **ABSENT** (Fails closed) |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH` | Google Calendar | None | Non-sensitive | Path to service account key JSON | **ABSENT** (Fails open for availability) |
 
 ---
 
-## 4. Production Contamination Audit
+## 5. Production Contamination Audit
 
 - Production DB mutations: **0**
 - Staging DB mutations: **0**
@@ -68,10 +101,10 @@
 
 ---
 
-## 5. Quality Gates & Test Expansion
+## 6. Quality Gates & Test Expansion
 
 - Added `src/lib/services/sms.test.ts` (+3 test cases for Twilio fail-closed behavior).
-- Added `src/lib/services/google-calendar.test.ts` (+5 test cases for Google Calendar fail-closed behavior and event building).
+- Added `src/lib/services/google-calendar.test.ts` (+5 test cases for Google Calendar fail-open/fail-safe behavior and event building).
 
 | Quality Gate | Command | Baseline (7E) | Final Result (7F) | Status |
 |---|---|---|---|---|
@@ -88,7 +121,7 @@
 
 ---
 
-## 6. 30-Question Adversarial Matrix
+## 7. 30-Question Adversarial Matrix
 
 | # | Question | Answer | Classification |
 |---|---|---|---|
@@ -119,7 +152,7 @@
 | 25 | Are inbound callbacks/webhooks authenticated where implemented? | YES. Signature checks used. | **SAFE** |
 | 26 | Are retries/duplicate callbacks idempotent where applicable? | YES. Reference checks used. | **SAFE** |
 | 27 | Are integration secrets properly isolated by environment? | YES. Vercel env scopes enforced. | **SAFE** |
-| 28 | Do deferred provider failures leave unrelated CMS workflows healthy? | YES. All fail closed safely. | **SAFE** |
+| 28 | Do deferred provider failures leave unrelated CMS workflows healthy? | YES. All fail closed or open safely. | **SAFE** |
 | 29 | Did 7F create any unauthorized side effect or contamination? | NO. 0 external side effects. | **SAFE** |
 | 30 | Is the CMS safe to freeze 7F and proceed to 7G? | YES. Ready for 7G. | **SAFE** |
 
@@ -127,9 +160,9 @@
 
 ---
 
-## 7. Final Recommendation
+## 8. Final Recommendation
 
 **RECOMMENDATION**:
-Freeze Milestone 7F as complete. Resend live email integration is verified operational and secure. Deferred integrations (Twilio SMS, Wonde MIS, Google Calendar) are verified code-complete, tenant-isolated, and safely fail-closed without credentials. Proceed directly to **Milestone 7G (Recovery Asset Review & Cleanup)**.
+Freeze Milestone 7F as complete with reconciled provider classifications. Resend live email integration is verified operational and secure. Twilio SMS is ready for activation upon credential provisioning. Wonde MIS is classified as partially implemented (sync DB logic intact, API client fetch stubbed). Google Calendar is verified fail-open for booking availability and fail-safe for writes. Proceed directly to **Milestone 7G (Recovery Asset Review & Cleanup)**.
 
 ---
