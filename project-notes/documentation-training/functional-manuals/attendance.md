@@ -1,14 +1,14 @@
 # SprintScale CMS — Functional Manual: Attendance & Roll Call
-## Daily Registers, Tablet Kiosk Mode, Custodial Timestamps & Session Ledger
+## Daily Registers, Tablet Kiosk Mode, Time Tracking & Session Ledger
 
 ---
 
 ## 1. What Attendance Is For
 
-The **Attendance Module** (`/dashboard/attendance`) is the statutory real-time register and custodial time-tracking engine for your club organisation.
+The **Attendance Module** (`/dashboard/attendance`) is the daily register and attendance tracking tool for your club organisation.
 
 It enables staff to:
-- Conduct live session roll calls with exact arrival and departure timestamps.
+- Conduct live session roll calls with recorded arrival and departure timestamps.
 - Operate a streamlined, touchscreen **Tablet Kiosk** (`/dashboard/kiosk`) at club entrances.
 - Automatically derive and track **Late Minutes** when children arrive after scheduled start times.
 - Record structured absence reasons (`Illness`, `Holiday`, `Family`, `Other`).
@@ -20,13 +20,13 @@ It enables staff to:
 
 ## 2. Attendance vs. Booking: Key Distinction
 
-| Concept | Definition & Scope | Legal & Accounting Meaning |
+| Concept | Definition & Scope | Operational Meaning |
 |---|---|---|
 | **Booking** | A scheduled appointment or reservation for a future session date. | Represents **intent to attend**. Created in advance via parent portal, public link, or back office. |
-| **Attendance** | The real-time record of physical arrival, presence, and departure. | Represents **custodial fact**. Legally mandated by Ofsted for child safety and emergency evacuation headcounts. |
+| **Attendance** | The real-time record of physical arrival, presence, and departure. | Represents **actual presence**. Tracks whether the child was physically on site, when they arrived, and when they were collected. |
 
-> [!SAFEGUARDING]
-> A child may have a confirmed booking but be marked **Absent**. Conversely, a child without a prior booking who arrives at the door is logged via an immediate **Walk-In Booking** and checked in.
+> [!NOTE]
+> A child may have a confirmed booking but be marked **Absent**. Conversely, a child without a prior booking who arrives at the door can be admitted via an immediate **Walk-In Booking** and checked in.
 
 ---
 
@@ -44,9 +44,9 @@ It enables staff to:
 
 ---
 
-## 4. Attendance States & Timestamp Integrity
+## 4. Attendance States & Timestamp Tracking
 
-SprintScale records exact ISO timestamps for every custodial transition:
+SprintScale records exact ISO timestamps for attendance state transitions:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -56,16 +56,17 @@ SprintScale records exact ISO timestamps for every custodial transition:
 │  • `present`: Checked in at or before scheduled start time  │
 │  • `late`: Checked in after start time (late minutes logged)│
 │  • `absent`: Marked not attending with structured reason    │
-│  • `checked_out`: Child collected by verified adult         │
+│  • `checked_out`: Child marked as collected and departed    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Statutory Custodial Metadata Logged on Every Check-In/Out:
-- `checkInAt`: Precise date and time when the child entered the club.
-- `checkOutAt`: Precise date and time when the child departed.
-- `lateMinutes`: Calculated automatically as `checkInTime - sessionStartTime`.
-- `attendanceMarkedBy`: UUID of the authenticated staff member who took the action.
-- `attendanceMarkedAt`: Exact server timestamp when the record was submitted.
+### Audit Fields Logged on Every Check-In/Out:
+These fields support accurate operational records and an auditable record of who marked attendance:
+- `checkInAt`: Precise date and time when the child was marked checked in.
+- `checkOutAt`: Precise date and time when the child was marked checked out.
+- `lateMinutes`: Calculated automatically as the difference between check-in time and configured session start time.
+- `attendanceMarkedBy`: User ID of the authenticated staff member who performed the action.
+- `attendanceMarkedAt`: Server timestamp when the record was written.
 
 ---
 
@@ -81,7 +82,7 @@ SprintScale records exact ISO timestamps for every custodial transition:
 4. Review the roster of expected children.
 5. As each child enters the room:
    - Click **Check In**.
-   - If the current time is after session start, the card updates to **Late** and displays the exact minutes late (e.g. *15m late*).
+   - If the current time is after the session start time, the card updates to **Late** and displays the calculated late minutes (e.g. *15m late*).
    - If on time, status marks green **Present**.
 6. At pickup time:
    - Verify the collecting adult against the student's **Authorised Collectors** list.
@@ -94,13 +95,13 @@ SprintScale records exact ISO timestamps for every custodial transition:
 
 **Steps:**
 1. Open a tablet browser at the club entrance and navigate to: `Sidebar → Kiosk` (`/dashboard/kiosk`).
-2. The interface expands to a high-contrast, touch-optimized fullscreen card grid.
+2. The interface expands to a touch-optimized card grid.
 3. **To Check In:** Tap the green **Check In** button on the child's card. The button transitions to a green checkmark with the check-in time.
 4. **To Check Out:** Tap **Check Out** when the parent collects the child.
 5. **PIN Security:** If PIN protection is enabled, staff enter their 4-digit staff PIN to unlock administrative overrides.
 
 > [!NOTE]
-> The Kiosk interface is fully responsive and verified to render cleanly on mobile viewports (375px) as well as dedicated 10-inch and 12-inch reception tablets.
+> The Kiosk interface is responsive and automatically adjusts its layout across mobile (375px+) and tablet viewports.
 
 ---
 
@@ -111,11 +112,11 @@ SprintScale records exact ISO timestamps for every custodial transition:
 1. On the attendance register (`/dashboard/attendance`), locate the absent child.
 2. Click **Absent**.
 3. In the popup modal, select the **Absence Reason**:
-   - `Illness` (Medical / sick day)
-   - `Holiday` (Family vacation / term-time leave)
-   - `Family` (Family emergency or scheduled appointment)
-   - `Other` (Enter freeform note)
-4. (Optional) Enter an **Attendance Note** (e.g. "Parent called at 14:00 — mild fever").
+   - `Illness`
+   - `Holiday`
+   - `Family`
+   - `Other`
+4. (Optional) Enter an **Attendance Note** (e.g. "Parent called to report mild illness").
 5. Click **Confirm Absence**.
 6. The record is updated, and the absence is logged in the **Session Credit Ledger**.
 
@@ -139,10 +140,10 @@ SprintScale records exact ISO timestamps for every custodial transition:
 
 **Steps:**
 1. On the child's attendance card in `/dashboard/attendance`, locate the flag icons.
-2. Click the **Homework** icon to toggle active (indicates homework was brought, completed, or requires follow-up).
-3. Click the **Behaviour** icon to toggle active (indicates noteworthy positive praise or a minor classroom reminder).
-4. Optionally enter a brief **Flag Note** (e.g. "Completed reading log chapter 3").
-5. The flags update immediately across the classroom session for all staff on duty.
+2. Click the **Homework** icon to toggle active.
+3. Click the **Behaviour** icon to toggle positive recognition.
+4. Optionally enter a brief **Flag Note** (e.g. "Completed worksheet 3").
+5. The flags update immediately on the card for all staff on duty.
 
 ---
 
@@ -155,7 +156,7 @@ $$\text{Net Balance} = \text{Extra Sessions Attended} + \text{Forgiven Sessions}
 
 - **Positive Balance:** Family attended more sessions than scheduled (or received credits).
 - **Negative Balance (Red):** Family has unexcused absence arrears.
-- **Zero Balance:** Perfect attendance reconciliation.
+- **Zero Balance:** Reconciled session balance.
 
 ### Procedure: Applying a Forgiveness Credit
 **Who Can Do This:** **Organisation Owner** (`ORG_OWNER`) or **Centre Manager** (`MANAGER`)
@@ -165,7 +166,7 @@ $$\text{Net Balance} = \text{Extra Sessions Attended} + \text{Forgiven Sessions}
 3. Locate the student in arrears (indicated with a negative balance).
 4. Click **Forgive Sessions**.
 5. Enter the **Sessions Amount** (e.g. `1` or `2`).
-6. Enter a mandatory **Audit Note** (e.g. "Excused absence — hospital appointment note verified").
+6. Enter an **Audit Note** (e.g. "Absence approved per club policy").
 7. Click **Grant Forgiveness Credit**.
 8. The ledger balance updates immediately, and the credit is recorded in `sessionCredits` with the manager's name and timestamp.
 
@@ -174,8 +175,8 @@ $$\text{Net Balance} = \text{Extra Sessions Attended} + \text{Forgiven Sessions}
 ## 7. Zero-Centre Staff Handling & Error Prevention
 
 If a staff member logs in without being assigned to any active centre:
-- The attendance register displays a friendly notice: *"No accessible centres assigned to your account. Please contact your Organisation Owner."*
-- The system safely prevents crashes and gracefully blocks attendance modifications until an Owner assigns centre memberships in `Sidebar → Team`.
+- The attendance register displays a clear notice: *"No accessible centres assigned to your account. Please contact your Organisation Owner."*
+- The system prevents crashes and blocks attendance modifications until an Owner assigns centre memberships in `Sidebar → Team`.
 
 ---
 
@@ -184,6 +185,6 @@ If a staff member logs in without being assigned to any active centre:
 | Issue | Cause | Solution |
 |---|---|---|
 | **Child is missing from today's roll call** | Child has not been booked for today's session, or is assigned to a different centre. | Check `Sidebar → Bookings` to create a booking or log a **+ Walk-In**, then check in. |
-| **Check-in button displays "Late" unexpectedly** | Check-in time was after the scheduled slot start time (e.g. 15:45 start, checked in at 15:52 = 7m late). | This is expected system behavior. Late minutes are derived automatically for custodial accuracy. |
-| **Front Desk cannot see Forgive Sessions button** | Forgiveness is restricted to Managers and Owners. | Escalate the absence forgiveness request to the Centre Manager or Owner. |
+| **Check-in button displays "Late" unexpectedly** | Check-in time was after the scheduled slot start time (e.g. 15:45 start, checked in at 15:52 = 7m late). | Late minutes are calculated automatically from the slot start time. |
+| **Front Desk cannot see Forgive Sessions button** | Forgiveness is restricted in code to Managers and Owners. | Escalate the absence forgiveness request to the Centre Manager or Owner. |
 | **Kiosk cards overlapping on phone/tablet** | Browser zoom is set above 100%. | Reset browser zoom to 100%. Responsive CSS automatically stacks cards on 375px+ screens. |

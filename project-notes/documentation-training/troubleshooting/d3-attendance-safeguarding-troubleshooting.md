@@ -2,7 +2,7 @@
 ## Milestone D3: Attendance, Roll Call, Kiosk, Session Ledger, Incidents & Safeguarding
 
 **Target Audience:** Tutors, Front Desk Staff, Centre Managers, Organisation Owners  
-**Scope:** Practical resolution steps for operational errors during live club sessions, registers, first aid, and safeguarding workflows.
+**Scope:** Practical resolution steps for operational errors during live club sessions, registers, first aid, and incident logging workflows.
 
 ---
 
@@ -22,13 +22,13 @@
 12. [Attendance timestamp correction needed](#12-attendance-timestamp-correction-needed)
 13. [Session forgiveness does not change student ledger balance](#13-session-forgiveness-ledger-discrepancy)
 14. [Medical or severe allergy badge missing on attendance card](#14-medicalallergy-badge-missing-on-card)
-15. [Confidential disclosure entered in ordinary notes by mistake](#15-confidential-disclosure-entered-in-notes)
-16. [User cannot see or access the Safeguarding incident category](#16-user-cannot-access-safeguarding-category)
+15. [Sensitive concern entered in ordinary notes by mistake](#15-sensitive-concern-entered-in-notes)
+16. [User cannot access the Safeguarding incident category](#16-user-cannot-access-safeguarding-category)
 17. [Standard incident vs Safeguarding classification confusion](#17-incident-vs-safeguarding-confusion)
 18. [First aid record entered under wrong child or category](#18-incident-entered-under-wrong-category)
 19. [Sensitive information typed into general progress scorecards](#19-sensitive-information-in-scorecards)
 20. [Tablet Kiosk interface clipped or misaligned on mobile](#20-tablet-kiosk-layout-clipped)
-21. [Parent asks for a copy of a confidential safeguarding file](#21-parent-requests-safeguarding-file)
+21. [Parent asks to see restricted safeguarding records](#21-parent-requests-safeguarding-file)
 22. [Incident record cannot be edited due to permission lock](#22-incident-cannot-be-edited-due-to-permissions)
 
 ---
@@ -78,7 +78,7 @@
 ### 6. Child Cannot Be Checked Out
 - **What You May See:** "Check Out" button is grayed out.
 - **Most Likely Causes:** Child was never checked in (status is still "Expected" or "Absent").
-- **How to Resolve:** Tap **Check In** first to establish arrival custody, then tap **Check Out**.
+- **How to Resolve:** Tap **Check In** first to establish arrival status, then tap **Check Out**.
 
 ---
 
@@ -109,44 +109,44 @@
 ---
 
 ### 14. Medical or Severe Allergy Badge Missing on Card
-- **What You May See:** A child known to have a peanut allergy has no red badge on the register.
+- **What You May See:** A child known to have an allergy has no red badge on the register.
 - **Most Likely Causes:** The allergy was entered as plain text in general notes rather than in the structured **Allergies** field on the student profile.
-- **How to Resolve:** Open `Sidebar → Students → [Child]`, click **Edit Profile**, add `Peanuts` into the dedicated **Allergies** field, and save. The red badge will instantly appear on roll call.
+- **How to Resolve:** Open `Sidebar → Students → [Child]`, click **Edit Profile**, add the allergy into the dedicated **Allergies** field, and save. The red badge will appear on roll call.
 
 ---
 
-### 15. Confidential Disclosure Entered in Ordinary Notes by Mistake
-- **What You May See:** A tutor entered a child abuse disclosure into the general student notes timeline.
-- **IMMEDIATE COMPLIANCE ACTION:**
-  1. **Immediately notify the Centre Manager / Designated Safeguarding Lead in person.**
-  2. The DSL will copy the factual details and author the formal confidential report in `Sidebar → Incidents` under the `Safeguarding` type.
-  3. Archive or delete the general note from the student profile to restore confidentiality.
+### 15. Sensitive Concern Entered in Ordinary Notes by Mistake
+- **What You May See:** A staff member entered a sensitive child welfare concern into the general student notes timeline.
+- **RESOLUTION ACTION:**
+  1. **Immediately notify an appointed Manager or DSL in person.**
+  2. The authorised Manager will record the entry in `Sidebar → Incidents` under the restricted `Safeguarding` type.
+  3. Archive or delete the general note from the student profile to maintain confidentiality.
 
 ---
 
 ### 16. User Cannot Access the Safeguarding Category
 - **What You May See:** `Safeguarding` is missing from the incident type dropdown in `/dashboard/incidents`.
-- **Explanation:** This is by design. Only **Managers and Owners** have access to confidential child protection files. Front Desk staff and Tutors are intentionally restricted.
-- **How to Resolve:** Escalate the report verbally in private to your Centre Manager (DSL).
+- **Explanation:** This is by design. In SprintScale CMS, only **Managers and Owners** have software access to the Safeguarding incident category. Front Desk staff and Tutors are intentionally restricted.
+- **How to Resolve:** Report the concern directly to an appointed Manager.
 
 ---
 
 ### 20. Tablet Kiosk Interface Clipped or Misaligned on Mobile
 - **What You May See:** Kiosk buttons appear off-screen on a mobile device.
-- **How to Resolve:** Verify device viewport. SprintScale Kiosk is engineered with a responsive CSS grid that automatically collapses into a single-column layout on 375px+ screens. Ensure browser zoom is set to 100%.
+- **How to Resolve:** Verify device viewport. SprintScale Kiosk is engineered with a responsive CSS grid that automatically stacks cards on 375px+ screens. Ensure browser zoom is set to 100%.
 
 ---
 
-### 21. Parent Requests a Copy of a Safeguarding File
-- **What You May See:** A parent asks staff to see an incident report regarding a safeguarding referral.
-- **LEGAL DIRECTIVE:**
-  - **NEVER release safeguarding records to parents.**
-  - Safeguarding files are legally privileged child protection documents shared exclusively with statutory authorities (Police, Social Care, LADO).
-  - Refer the parent directly to the Organisation Owner.
+### 21. Parent Requests to View Restricted Safeguarding Records
+- **What You May See:** A parent asks staff to see an incident report regarding a restricted safeguarding log.
+- **GUIDANCE:**
+  - Follow your organisation's safeguarding and data protection policies.
+  - Restricted safeguarding records in the CMS are internal welfare files and are not exposed in the Parent Portal.
+  - Escalate any formal access requests to the Organisation Owner.
 
 ---
 
 ### 22. Incident Record Cannot Be Edited Due to Permission Lock
 - **What You May See:** Incident record is read-only.
-- **Explanation:** To protect the legal audit trail required by Ofsted, incident logs cannot be silently rewritten after submission.
-- **How to Resolve:** If additional facts emerge, log a supplementary incident report referencing the original record ID.
+- **Explanation:** To protect auditability, incident logs cannot be silently rewritten after submission.
+- **How to Resolve:** If additional facts emerge, log a supplementary incident record referencing the original entry.

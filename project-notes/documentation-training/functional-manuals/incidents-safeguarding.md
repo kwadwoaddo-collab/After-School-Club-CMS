@@ -1,57 +1,67 @@
 # SprintScale CMS — Functional Manual: Incidents & Safeguarding
-## First Aid, Accident Logging, Medication Tracking & Confidential DSL Records
+## First Aid, Accident Logging, Medication Tracking & Restricted Safeguarding Records
 
 ---
 
 ## 1. What This Area Is For
 
-The **Incidents & Safeguarding Module** (`/dashboard/incidents`) is the authoritative safety, first aid, and child protection tracking system for your club organisation.
+The **Incidents & Safeguarding Module** (`/dashboard/incidents`) provides an internal record-keeping system for health, safety, and sensitive child concerns within your club organisation.
 
-It manages two fundamentally different operational streams:
-1. **Standard Operational Incidents:** Minor playground accidents, first-aid administrations, medication tracking, and minor behavioral events.
-2. **Confidential Safeguarding Records:** Formal child protection concerns, neglect observations, physical injury marks, disclosures, and external agency referrals.
+It supports two distinct operational record types:
+1. **Standard Operational Incidents:** Playground accidents, first-aid treatments, medication administration logs, and general behavioral events.
+2. **Restricted Safeguarding Records:** Child protection notes, observable injury descriptions, disclosures, and sensitive welfare logs.
+
+> [!IMPORTANT]
+> **CMS Access vs. Formal Safeguarding Designation:**
+> **CMS permission does not itself appoint somebody as a Designated Safeguarding Lead (DSL).**
+> In SprintScale CMS, access to restricted safeguarding records is granted technically to users with the **Manager** (`MANAGER`) or **Owner** (`ORG_OWNER`) role. However, formal appointments of DSLs, deputy DSLs, statutory child protection duties, and decisions regarding external referrals are governed strictly by your organisation's internal safeguarding policies and local statutory frameworks.
 
 ---
 
-## 2. Fundamental Distinctions
+## 2. Fundamental Distinctions in Record Keeping
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                 1. ORDINARY STUDENT NOTE                    │
 │  • Academic progress, homework flags, positive behaviour    │
 │  • Visible to: All on-duty Tutors, Front Desk & Managers    │
+│  • Context: Daily classroom support & tutor handovers       │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
 │                2. STANDARD INCIDENT (FIRST AID)             │
-│  • Scraped knees, minor bumps, cold compress, prescribed med│
+│  • Minor scrapes, bumps, ice packs, prescribed medication   │
 │  • Visible to: Front Desk, Centre Managers & Owners         │
-│  • Authorised by: Front Desk, Managers & Owners             │
+│  • Context: Internal health & safety logging                │
 └──────────────────────────────┬──────────────────────────────┘
-                               │  STRICT LEGAL ISOLATION GATE
+                               │  SOFTWARE-ENFORCED ACCESS GATE
 ┌──────────────────────────────▼──────────────────────────────┐
-│               3. CONFIDENTIAL SAFEGUARDING FILE             │
-│  • Suspected abuse, neglect, physical injury marks, disclosures│
-│  • Visible ONLY to: Designated Safeguarding Leads (DSL)     │
-│  • Authorised ONLY by: Centre Managers & Organisation Owners│
-│  • Completely invisible to: Tutors & Front-Desk Staff       │
+│             3. RESTRICTED SAFEGUARDING RECORD               │
+│  • Disclosures, sensitive welfare concerns, injury marks    │
+│  • Visible ONLY to: Managers & Organisation Owners          │
+│  • Blocked from: Tutors & Front-Desk Staff                  │
+│  • Context: Confidential internal safeguarding record       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Role-Based Access & DSL Security Boundaries
+## 3. Role-Based Software Access & Permission Boundaries
 
-| Incident Type | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) |
-|---|---|---|---|---|---|
-| **Accident (First Aid)** | ✅ Read & Create | ✅ Read & Create | ✅ Read & Create | ❌ No Access (Report) | ❌ In-Person / Email |
-| **Incident (Behaviour/Event)**| ✅ Read & Create | ✅ Read & Create | ✅ Read & Create | ❌ No Access (Report) | ❌ Discretionary |
-| **Medication Log** | ✅ Read & Create | ✅ Read & Create | ✅ Read & Create | ❌ No Access (Report) | ❌ Prior Written Consent |
-| **Safeguarding Record** | ✅ **Full DSL Access**| ✅ **Full DSL Access**| ❌ **ACCESS BLOCKED** | ❌ **ACCESS BLOCKED** | ❌ **STRICTLY CONFIDENTIAL** |
+SprintScale CMS enforces software-level access controls at both the route and server-action layers:
 
-> [!SAFEGUARDING]
-> **LEGAL ACCESS GATEWAY:**
-> Server-side security enforces `requirePermission('MANAGER')` on all safeguarding records. Even if a Front Desk staff member or Tutor attempts to query safeguarding endpoints, the system automatically filters out safeguarding files from the response.
+| Record / Incident Type | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) | Evidence Source |
+|---|---|---|---|---|---|---|
+| **Accident (First Aid)** | ✅ Read & Create | ✅ Read & Create | ✅ Read & Create | ❌ No Direct Access | ❌ Handover / Direct | `incidents/actions.ts` |
+| **Incident (Behaviour/Event)**| ✅ Read & Create | ✅ Read & Create | ✅ Read & Create | ❌ No Direct Access | ❌ Handover / Direct | `incidents/actions.ts` |
+| **Medication Administration**| ✅ Read & Create | ✅ Read & Create | ✅ Read & Create | ❌ No Direct Access | ❌ Handover / Direct | `incidents/actions.ts` |
+| **Restricted Safeguarding** | ✅ Full Access | ✅ Full Access | ❌ Filtered Out | ❌ No Direct Access | ❌ Strictly Blocked | `requirePermission('MANAGER')` |
+
+### Key Software Boundaries:
+1. **Server-Side Filtering:** When fetching incidents (`getIncidents`), the system executes a permission check (`requirePermission('MANAGER')`). If the user does not hold `MANAGER` or `ORG_OWNER` permissions, any incident with `type = 'safeguarding'` is automatically stripped from the response.
+2. **Creation Gate:** When creating an incident (`createIncident`), submitting `type = 'safeguarding'` enforces `requirePermission('MANAGER')`. Front Desk staff cannot submit safeguarding records through the API.
+3. **Organisation & Centre Scoping:** All incident queries and mutations require that the target `centreId` and `childId` belong to the user's authenticated `organisationId`. Front Desk and Manager users are scoped to their assigned centres.
+4. **Soft-Deleted Exclusion:** Incidents for soft-deleted children are automatically excluded from the active list (`isNull(children.deletedAt)`).
 
 ---
 
@@ -63,16 +73,19 @@ It manages two fundamentally different operational streams:
 **Steps:**
 1. Navigate to: `Sidebar → Incidents → [+ Log Incident]` (`/dashboard/incidents`).
 2. Select **Incident Type:** `Accident`.
-3. Select the **Centre** and the **Child Name** from the searchable dropdown.
+3. Select the **Centre** and choose the **Child Name** from the dropdown.
 4. Set the **Date & Time** of the incident.
-5. **Description:** Enter an objective, factual summary of the event (e.g. "Child tripped over football cone on playground and scraped right knee").
-6. **Treatment Provided:** Enter first aid administered (e.g. "Cleaned scrape with sterile saline wipe, applied sterile dry plaster, cold compress for 5 minutes").
-7. **Witnesses:** Enter names of staff or adults present (e.g. "Tutor Sarah J., Coach Mike").
-8. **Staff Signature:** Sign your digital signature on the signature canvas.
+5. **Description:** Enter a clear, objective summary of the event (e.g. "Child slipped on playground grass and scraped left knee").
+6. **Treatment Provided:** Enter the first aid administered (e.g. "Cleaned scrape with sterile saline wipe; applied sterile adhesive dressing; cold compress applied for 5 minutes").
+7. **Witnesses:** Enter names of staff or adult witnesses present.
+8. **Staff Signature:** Provide a digital signature on the signature canvas.
 9. Click **Save Incident Record**.
 
 **Expected Result:**
-The incident is timestamped and saved into the centre's permanent health and safety log.
+The record is saved and timestamped in the centre's incident table.
+
+> [!NOTE]
+> SprintScale CMS does not automatically send incident notification emails to parents upon submission. Informing parents of first-aid events should follow your centre's operational pickup/handover procedures.
 
 ---
 
@@ -82,61 +95,58 @@ The incident is timestamped and saved into the centre's permanent health and saf
 **Steps:**
 1. Navigate to: `Sidebar → Incidents → [+ Log Incident]`.
 2. Select **Incident Type:** `Medication`.
-3. Select the Child Name.
-4. **Description:** Record the prescribed medication name and dosage (e.g. "Administered 2 puffs of Salbutamol inhaler as per asthma care plan").
-5. **Treatment / Outcome:** Record observations following administration (e.g. "Breathing returned to normal within 3 minutes; child returned to calm play").
-6. Enter witness names and provide your staff digital signature.
+3. Select the Child Name and enter the Date and Time.
+4. **Description:** Record the medication name, batch/prescribed details, and dosage administered (e.g. "Administered 2 puffs of Salbutamol inhaler as per pupil health plan").
+5. **Treatment / Outcome:** Record observations following administration (e.g. "Breathing settled; child rested quietly for 10 minutes before returning to play").
+6. Enter witness details and sign on the canvas.
 7. Click **Save Incident Record**.
 
 ---
 
-### Procedure 3: Logging a Confidential Safeguarding Concern (DSL Only)
-> [!SAFEGUARDING]
-> Only qualified Designated Safeguarding Leads (Centre Managers and Organisation Owners) are authorized to create or view safeguarding records in SprintScale CMS.
-
+### Procedure 3: Recording a Restricted Safeguarding Concern
 **Who Can Do This:** **Organisation Owner** (`ORG_OWNER`) or **Centre Manager** (`MANAGER`)
 
 **Steps:**
 1. Navigate to: `Sidebar → Incidents → [+ Log Incident]`.
 2. Select **Incident Type:** `Safeguarding`.
-3. Select the Child Name.
-4. **Factual Description:** Record verbatim quotes, direct observations, body mark locations, emotional presentation, and dates/times reported.
-   - *Guideline:* Use objective, non-judgmental language. State what the child said in quotation marks. Do not state personal opinions or speculate on intent.
-5. **Action Taken / Referrals:** Note whether local authority children's services (MASH/LADO) or emergency services were contacted.
-6. Provide your staff digital signature.
+3. Select the Child Name and set the Date and Time of the concern/disclosure.
+4. **Factual Description:** Record objective, factual observations, verbatim quotes where a disclosure occurred, observable marks, and physical presentation.
+   - *Best Practice:* Record verbatim statements in quotation marks. Avoid speculative interpretations or emotional commentary.
+5. **Action Taken / Notes:** Record internal actions taken (e.g. "Informed appointed DSL; logged in internal records").
+6. Sign on the digital signature canvas.
 7. Click **Save Incident Record**.
 
 **What Happens in the System:**
-The record is encrypted and saved into the isolated safeguarding audit store. It is permanently invisible to front-desk staff and tutors.
+The record is saved with `type = 'safeguarding'` and is visible only to Manager and Owner accounts. It is completely hidden from Front Desk and Tutor users.
 
 ---
 
 ## 5. Current Limitation: `bodyMapCoordinates`
 
 > [!NOTE]
-> **Current System Status:**
-> The database schema includes a `bodyMapCoordinates` column intended for recording injury coordinates on an anatomical diagram. 
-> In the current production release, **injury locations are documented as factual text within the Description and Treatment fields**. An interactive visual body map canvas is deferred for a future release. Staff must enter specific anatomical locations in text (e.g. *"2cm circular bruise on left upper arm, posterior aspect"*).
+> **Technical Limitation:**
+> The database schema includes an optional `bodyMapCoordinates` column. In the current release, there is **no interactive visual body map canvas** in the user interface.
+> Specific injury locations should be described in clear, factual text within the **Description** and **Treatment** fields (e.g. *"Small 1cm graze on anterior surface of right knee"*).
 
 ---
 
-## 6. Tutor & Front Desk Escalation Protocol
+## 6. Staff Escalation Workflow
 
-If a classroom tutor or front-desk staff member observes a child protection issue or receives a disclosure:
+When classroom tutors or front-desk staff receive a child welfare disclosure or observe an injury concern:
 
-1. **Listen & Reassure:** Listen calmly to the child without asking leading questions or promising to keep secrets.
-2. **Ensure Physical Safety:** Provide immediate first aid if physical injury is present.
-3. **DO NOT Type in Ordinary Notes:** Never enter the disclosure into general student notes or public communication logs.
-4. **Report In Person Immediately:** Escalate the report verbally in private to the on-duty **Centre Manager (Designated Safeguarding Lead)**.
-5. The Centre Manager will log the formal report in `/dashboard/incidents` under the `Safeguarding` category.
+1. **Immediate Safety:** Ensure the child is in a safe, supportive environment. Provide immediate first aid if physical treatment is required.
+2. **Do Not Record in General Student Notes:** Never type sensitive safeguarding disclosures into ordinary student progress notes or public communication logs.
+3. **Escalate to Appointed Staff:** Report the observation directly and in person to your centre's designated safeguarding lead or operational manager.
+4. **CMS Recording:** An authorised Manager or Owner can then record the restricted safeguarding entry in `/dashboard/incidents`.
+5. **External Referrals:** Follow your organisation's safeguarding policy and local escalation procedures regarding any statutory or external reporting.
 
 ---
 
 ## 7. Incidents & Safeguarding Troubleshooting
 
-| Issue | Root Cause | Solution |
+| Issue | Cause | Solution |
 |---|---|---|
-| **Safeguarding option is missing from incident dropdown** | User is logged in as Front Desk or Tutor. | Only Managers and Owners have access to the Safeguarding incident category. Escalate to your Centre Manager / DSL. |
-| **Parent asks for a copy of a confidential safeguarding file** | Safeguarding files are legally privileged child protection records. | **Do NOT release safeguarding records to parents.** Refer the request immediately to the Organisation Owner and your local authority safeguarding advisor. |
-| **Accidental safeguarding note saved as general accident** | Staff member selected `Accident` instead of `Safeguarding`. | Centre Manager must open the incident, review the content, reclassify or delete the accident record, and author the official report under `Safeguarding`. |
-| **Incident list is empty for active centre** | Centre selector is set to a different venue, or incidents belong to soft-deleted children. | Verify the active centre in the top bar. Note that soft-deleted children's incidents are automatically archived. |
+| **Safeguarding option does not appear in incident dropdown** | User is logged in with `FRONT_DESK` or `TUTOR` role. | In SprintScale CMS, safeguarding records can only be created by users with `MANAGER` or `ORG_OWNER` roles. Report the concern directly to an appointed Manager. |
+| **Accidental safeguarding note saved as general accident** | Staff member selected `Accident` instead of `Safeguarding`. | A Manager must review the entry, create the correct restricted `Safeguarding` record, and resolve or remove the misplaced accident record. |
+| **Parent asks to view a restricted safeguarding record** | Safeguarding records are restricted internal welfare files. | Follow your organisation's data protection and safeguarding policy. Do not disclose confidential child protection logs through standard operational channels. |
+| **Incident list appears empty** | Active centre filter is set to a different venue, or the record belongs to an archived/soft-deleted child. | Verify the centre switcher in the top navigation bar. Note that soft-deleted children's records are automatically excluded from the active view. |

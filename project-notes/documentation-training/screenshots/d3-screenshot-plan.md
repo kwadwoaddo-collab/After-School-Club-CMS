@@ -28,7 +28,7 @@
 | **D3-S16** | `student-records-notes.md` §4| Student Notes Tab | Tutors / Managers | Chronological internal notes timeline, staff author tags, category badges. |
 | **D3-S17** | `student-records-notes.md` §5| Medical Alerts on Card | Tutors / All Staff | High-contrast Red Allergy Badge (Peanuts/EpiPen) on roll call card. |
 | **D3-S18** | `incidents-safeguarding.md` §4| `/dashboard/incidents` | Front Desk / Manager | Standard Incident Modal: Accident type, treatment notes, signature canvas. |
-| **D3-S19** | `incidents-safeguarding.md` §4| Safeguarding Modal (DSL) | Manager / Owner (DSL) | Confidential Safeguarding Form, objective observations, referral notes. |
+| **D3-S19** | `incidents-safeguarding.md` §4| Safeguarding Modal (Manager/Owner)| Manager / Owner | Restricted Safeguarding Form, generic observation text, action notes. |
 | **D3-S20** | `incidents-safeguarding.md` §3| Incidents History Table | Manager / Owner | Filtered table showing Accident, Medication, and Safeguarding badges. |
 
 ---
@@ -79,4 +79,16 @@
 - **Annotations:**
   - Box ① around the **Incident Type Dropdown** showing `Accident`.
   - Box ② around the **Treatment Provided** text area.
+  - Box ③ around the **Staff Digital Signature** canvas.
+
+---
+
+### D3-S19: Restricted Safeguarding Form (Manager / Owner View)
+- **Filename:** `manager-incidents-19-safeguarding-form.png`
+- **Route:** `https://app.sprintscaleit.co.uk/dashboard/incidents`
+- **Role:** Manager / Owner
+- **Required Synthetic Data:** Child "Demo Child", Type: `Safeguarding`, Description: "Observation recorded per organisation safeguarding policy.", Action: "Informed appointed DSL".
+- **Annotations:**
+  - Box ① around the **Incident Type Dropdown** showing `Safeguarding`.
+  - Box ② around the **Description & Action Taken** text areas.
   - Box ③ around the **Staff Digital Signature** canvas.

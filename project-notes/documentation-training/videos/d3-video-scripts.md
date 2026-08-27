@@ -24,7 +24,7 @@
 | **D3-V11** | Granting Forgiveness in Session Ledger | Managers / Owners | **ESSENTIAL** | 60 Seconds |
 | **D3-V12** | Adding Ordinary Student Notes & Flags | Tutors / Managers | STANDARD | 45 Seconds |
 | **D3-V13** | Logging a First Aid Accident Report | Front Desk / Managers / Owners | **ESSENTIAL** | 60 Seconds |
-| **D3-V14** | Recording a Confidential Safeguarding Concern (DSL)| Managers / Owners (DSLs) | **ESSENTIAL** | 75 Seconds |
+| **D3-V14** | Recording a Restricted Safeguarding Record (Manager/Owner)| Managers / Owners | **ESSENTIAL** | 75 Seconds |
 | **D3-V15** | Identifying Medical & Allergy Badges on Roll Call | Tutors / All Staff | STANDARD | 45 Seconds |
 
 ---
@@ -37,7 +37,7 @@
 - **Starting Screen:** `/dashboard/attendance`
 - **Synthetic Data:** Centre "Oakridge Primary Club", Students "Jamie Example", "Taylor Example", "Riley Example"
 - **Timeline & Click Sequence:**
-  - `00:00 - 00:10`: Title Card. "Learn how to conduct statutory daily roll call in under one minute."
+  - `00:00 - 00:10`: Title Card. "Learn how to conduct daily roll call in under one minute."
   - `00:10 - 00:25`: Open `/dashboard/attendance`. Verify centre selection. Point cursor to headcount summary bar.
   - `00:25 - 00:45`: Tap `Check In` on Jamie Example (on-time). Tap `Check In` on Taylor Example (late — highlight *7m late* badge).
   - `00:45 - 01:00`: Show live present/late headcount counter update at the top of the register.
@@ -64,7 +64,7 @@
 - **Timeline & Click Sequence:**
   - `00:00 - 00:10`: Open `Sidebar → Attendance → Session Ledger`.
   - `00:10 - 00:25`: Locate Morgan Example with `-2` balance in red. Click `Forgive Sessions`.
-  - `00:25 - 00:45`: Enter Sessions Amount: `2`. Enter Audit Note: `Hospital appointment note verified`.
+  - `00:25 - 00:45`: Enter Sessions Amount: `2`. Enter Audit Note: `Approved absence per club policy`.
   - `00:45 - 01:00`: Click `Grant Forgiveness Credit`. Show net balance update immediately to `0` without altering invoices.
 
 ---
@@ -82,13 +82,14 @@
 
 ---
 
-### D3-V14: Recording a Confidential Safeguarding Concern (DSL)
-- **Audience:** Managers, Owners (Designated Safeguarding Leads)
+### D3-V14: Recording a Restricted Safeguarding Record (Manager/Owner)
+- **Audience:** Managers, Owners
 - **Importance:** **ESSENTIAL** | **Duration:** 75s
 - **Starting Screen:** `/dashboard/incidents`
-- **Synthetic Data:** Fictitious demo student "Demo Child", Objective observation notes
+- **Synthetic Data:** Fictitious demo student "Demo Child", Minimal generic note: "Observation recorded per organisation safeguarding policy."
+- **Production Note:** Do NOT use realistic or graphic safeguarding narratives. Use purely generic placeholder phrases.
 - **Timeline & Click Sequence:**
-  - `00:00 - 00:15`: Title Card. "Confidential Child Safeguarding Workflow (DSL Restricted)."
+  - `00:00 - 00:15`: Title Card. "Restricted Safeguarding Record Creation (Manager/Owner Access)."
   - `00:15 - 00:35`: Open `/dashboard/incidents`. Click `+ Log Incident`. Select Type `Safeguarding`.
-  - `00:35 - 00:55`: Select Demo Child. Enter objective, factual disclosure notes with exact timestamps.
-  - `00:55 - 01:15`: Sign digital signature and click `Save Incident Record`. Emphasize that the record is cryptographically isolated from ordinary staff.
+  - `00:35 - 00:55`: Select Demo Child. Enter generic factual text: "Observation recorded per organisation safeguarding policy."
+  - `00:55 - 01:15`: Sign digital signature and click `Save Incident Record`. Highlight that this record type is accessible only to Manager and Owner accounts.
