@@ -39,7 +39,7 @@ SprintScale enforces strict server-side authorization across all modules:
 | **Restricted Safeguarding Records (DSL)** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **Parent Broadcasts (`/communications`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **GDPR Organisation Export (`/settings`)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
-| **Recovery Bin & Restore (`/parents/bin`)** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ Blocked |
+| **Recovery Bin, Restore & Hard Purge** | ✅ Full Access | ✅ Full Access | ✅ Full Access | ❌ Blocked |
 
 ---
 
@@ -87,9 +87,6 @@ The system updates `centreMemberships`. The next time the staff member logs in o
 3. Select the new role from the dropdown (`MANAGER`, `FRONT_DESK`, `TUTOR`, or `ORG_OWNER`).
 4. Click **Update Role**.
 
-> [!NOTE]
-> An Owner cannot change their own role in the UI, ensuring that an organisation always retains at least one active Owner.
-
 ---
 
 ### Procedure 4: Removing / Deactivating a Staff Member
@@ -104,7 +101,7 @@ The system updates `centreMemberships`. The next time the staff member logs in o
 - The system verifies the target user is not an active `ORG_OWNER` (Owners must be demoted first).
 - All `centreMemberships` for that user are deleted.
 - The user's `organisationId` in the `users` table is set to `null` (detaching them from the organisation).
-- On the user's next session check or page load, they are immediately locked out of the dashboard.
+- On the user's next session check or authenticated request, `requireAuth` detects `session.user.organisationId == null` and blocks dashboard access immediately.
 
 ---
 

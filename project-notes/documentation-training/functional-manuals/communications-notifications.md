@@ -10,7 +10,7 @@ The **Communications Module** (`/dashboard/communications`) allows club operator
 Key Capabilities:
 - **Targeted Broadcasts:** Comms can be sent organisation-wide or scoped to a specific venue.
 - **Server-Side Consent Enforcement:** The system automatically filters recipient lists to parents who have provided active communications consent.
-- **Background Email Queue:** Asynchronous email dispatch powered by Resend with HTML body sanitization.
+- **Background Email Dispatch:** In-process asynchronous email dispatch powered by Resend with HTML body sanitization.
 - **Broadcast History & Metrics:** Central log tracking sent messages, recipient counts, and delivery success/failure tallies.
 - **In-App Header Notification Bell:** Real-time dashboard alerts for new bookings, cancellations, and administrative events.
 
@@ -42,21 +42,30 @@ SprintScale enforces communications preferences directly at the server level:
 │  2. When a broadcast is sent, `sendBroadcast` queries:      │
 │     `COALESCE(bool_or(bookings.communications_consent), false)`│
 │                                                             │
-│  3. Any parent whose aggregated consent is `false` is       │
-│     automatically stripped from the recipient queue.        │
+│  3. The `bool_or` function aggregates all historical        │
+│     bookings for that parent. If any booking is `true`,     │
+│     the parent is treated as consented.                     │
 │                                                             │
 │  4. Broadcast emails are dispatched ONLY to parents with     │
 │     verified `true` consent.                                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-> [!NOTE]
+> [!IMPORTANT]
 > **Operational vs. Broadcast Messages:**
 > Essential transactional messages (e.g. invoice notifications, booking confirmations, emergency incident reports, and passwordless magic links) are operational notices and do not require promotional communications consent.
 
 ---
 
-## 4. Step-by-Step Procedures
+## 4. Broadcast Execution & Delivery Model
+
+- **Execution Model:** In-process asynchronous task (`sendEmailsTask()`). The server action creates the `broadcasts` record immediately and dispatches emails via Resend in the background. It is not a persistent durable queue (e.g. Redis/BullMQ); if the server process terminates abruptly, unsent iterations are logged as failures.
+- **Duplicate-Send Guard:** No automatic duplicate-send lock exists; clicking "Send" twice will initiate two separate broadcasts.
+- **Retry Mechanism:** No automated retries; failed sends increment `failureCount` in the history table.
+
+---
+
+## 5. Step-by-Step Procedures
 
 ### Procedure 1: Sending an Email Broadcast to Parents
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`), Centre Manager (`MANAGER`)
@@ -71,7 +80,7 @@ SprintScale enforces communications preferences directly at the server level:
 7. Click **Send Broadcast**.
 
 **What Happens in the System:**
-- The system re-derives consent server-side, verifying that every recipient is in this organisation and has `communicationsConsent === true`.
+- The system re-derives consent server-side, verifying that every recipient has `communicationsConsent === true`.
 - A row is created in the `broadcasts` table with `recipientCount`.
 - An asynchronous task dispatches emails via Resend.
 - The broadcast appears in the **Broadcast History** table with live success and failure counters.
@@ -87,10 +96,3 @@ SprintScale enforces communications preferences directly at the server level:
 3. Click the bell to open the notifications dropdown.
 4. Review recent alerts (e.g. "New Booking Created", "Booking Cancelled", "Payment Recorded").
 5. Click **Mark all as read** to clear the unread counter.
-
----
-
-## 5. External Delivery Providers & Fallbacks
-
-- **Resend (Email):** Live in production. Handles all broadcast emails and transactional notices. If an individual email address fails (e.g. invalid domain), Resend logs the rejection and increments the broadcast's `failureCount`.
-- **Twilio (SMS):** Currently deferred/unconfigured in production. If SMS broadcasts are triggered while unconfigured, the system fails closed gracefully without crashing.

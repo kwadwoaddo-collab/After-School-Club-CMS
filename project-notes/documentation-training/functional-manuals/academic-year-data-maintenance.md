@@ -8,16 +8,16 @@
 This manual outlines the annual academic progression of pupil records and the data retention lifecycle within SprintScale CMS:
 
 - **Academic Year Progression:** How pupil school years advance from Reception through Year 13 to Graduated status.
-- **Automated September 1st Rollover:** The background cron service that automatically rolls pupil year groups forward annually.
-- **Soft Deletion & Recovery Bin:** Moving deleted family accounts to the 30-day Recovery Bin (`/dashboard/parents/bin`).
+- **Automated September 1st Rollover Cron:** The serverless background cron service (`/api/cron/school-year-roll`) that advances pupil year groups annually.
+- **Soft Deletion & Recovery Bin:** Moving archived family accounts to the Recovery Bin (`/dashboard/parents/bin`).
 - **Record Restoration:** Restoring soft-deleted parents and children back to active rosters.
-- **Permanent Purge:** Hard-deleting records after the 30-day grace period.
+- **30-Day Purge Eligibility & Permanent Deletion:** Hard-deleting records lazily or on-demand.
 
 ---
 
 ## 2. Pupil School Year Structure & Progression Rules
 
-In SprintScale, pupil school years are stored on the `children.schoolYear` field.
+In SprintScale, pupil school years are stored as strings on the `children.schoolYear` field.
 
 The progression cycle follows the standard UK national education framework:
 
@@ -38,12 +38,14 @@ The progression cycle follows the standard UK national education framework:
 
 ## 3. The September 1st Rollover Cron (`/api/cron/school-year-roll`)
 
-SprintScale manages annual grade advancement automatically via a dedicated serverless cron endpoint:
+SprintScale executes annual grade advancement via an automated serverless cron endpoint:
 
-1. **Execution Schedule:** Triggers annually on **September 1st**.
+1. **Execution Schedule:** Scheduled annually on **September 1st at 00:00 UTC**.
 2. **Security:** Guarded by an `Authorization: Bearer <CRON_SECRET>` header.
-3. **Database Transaction:** Evaluates all pupil records across all organisations and increments their `schoolYear` according to the progression matrix above.
-4. **Historical Record Integrity:** Updating a child's current school year does **not** rewrite historical attendance registers, session logs, or past financial invoices from previous school years.
+3. **Database Transaction:** Evaluates all pupil records globally across all organisations and increments their `schoolYear` according to the progression matrix above.
+4. **Non-Idempotent Cron Execution:** Running the rollover endpoint multiple times in the same year would advance pupils multiple grades. It is secured against accidental multiple runs by restricting execution to the secret-authenticated cron runner.
+5. **No Manual Dashboard Rollover Button:** There is no self-service "Rollover Now" button in the dashboard; individual year adjustments are made directly on the pupil's profile.
+6. **Historical Record Integrity:** Updating a child's current school year does **not** alter past attendance registers, session logs, or historical invoices.
 
 ---
 
@@ -60,28 +62,41 @@ SprintScale protects against accidental data loss through a two-stage deletion l
 │  2. `softDeleteParent` sets `deletedAt = NOW()` on the      │
 │     parent and all linked children.                         │
 │                                                             │
-│  3. Family disappears from active rosters and moves to the  │
+│  3. Family is hidden from active rosters and moves to the   │
 │     **Recovery Bin** (`/dashboard/parents/bin`).            │
 │                                                             │
-│  4. Staff have **30 days** to restore the record with one   │
-│     click via `restoreParent`.                              │
+│  4. Authorised staff can restore the record via             │
+│     `restoreParent` (`deletedAt` reset to `null`).          │
 │                                                             │
-│  5. After 30 days, `purgeStaleBinItems` permanently deletes │
-│     the record (`deletedAt < NOW() - 30 days`).             │
+│  5. Records become eligible for purge after 30 days.        │
+│     `purgeStaleBinItems` lazily purges expired items on     │
+│     Recovery Bin page loads (`deletedAt < NOW() - 30 days`).│
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Step-by-Step Procedures
+## 5. Who Can Access the Recovery Bin & Permanently Purge
+
+| Role | Move to Bin (`softDeleteParent`) | Restore Family (`restoreParent`) | Permanent Purge (`hardDeleteParent`) |
+|---|---|---|---|
+| **Organisation Owner (`ORG_OWNER`)** | ✅ Allowed | ✅ Allowed | ✅ Allowed |
+| **Centre Manager (`MANAGER`)** | ✅ Allowed | ✅ Allowed | ✅ Allowed |
+| **Front Desk (`FRONT_DESK`)** | ✅ Allowed | ✅ Allowed | ✅ Allowed |
+| **Tutor (`TUTOR`)** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
+| **Parent (`PARENT`)** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
+
+---
+
+## 6. Step-by-Step Procedures
 
 ### Procedure 1: Moving a Family to the Recovery Bin
-**Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
+**Who Can Do This:** Organisation Owner, Centre Manager, Front Desk
 
 **Steps:**
 1. Open the parent's profile at `Sidebar → Parents → [Select Family]`.
 2. Scroll to the bottom of the profile card and click **Delete Family** (`DeleteParentButton.tsx`).
-3. In the confirmation dialog, review the warning: *"This will move [Parent Name] and their children to the Recovery Bin. You have 30 days to restore them."*
+3. In the confirmation dialog, review the warning: *"This will move [Parent Name] and their children to the Recovery Bin. You have 30 days to restore them before they are permanently deleted."*
 4. Click **Confirm Delete**.
 
 **Expected Result:**
@@ -90,7 +105,7 @@ The parent and children are timestamped with `deletedAt`. They are immediately h
 ---
 
 ### Procedure 2: Restoring a Family from the Recovery Bin
-**Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
+**Who Can Do This:** Organisation Owner, Centre Manager, Front Desk
 
 **Steps:**
 1. Navigate to: `Sidebar → Parents → Recovery Bin` (`/dashboard/parents/bin`).
@@ -106,21 +121,10 @@ The system resets `deletedAt = null` for the parent and all children deleted at 
 ### Procedure 3: Permanently Purging a Family Record
 > [!CAUTION]
 > **Permanent Deletion Warning:**
-> Permanently purging a record deletes the parent and cascades to children, medical records, and registration histories. **This action cannot be undone.**
+> Permanently purging a record deletes the parent and cascades to children, medical records, and registration histories. **This action is irreversible.**
 
 **Steps:**
 1. Open the Recovery Bin at `/dashboard/parents/bin`.
 2. Locate the record and click **Permanently Delete** (red trash can).
 3. Confirm the irreversible purge.
-4. The record is permanently removed from the PostgreSQL database.
-
----
-
-## 6. Distinguishing User Administration from Developer Maintenance
-
-| Activity | Performed By | Interface | Purpose |
-|---|---|---|---|
-| **Soft Delete & Restore** | Owners, Managers, Front Desk | Recovery Bin UI | Everyday operational archiving and accidental deletion recovery. |
-| **Manual Year Update** | Owners, Managers, Front Desk | Student Profile Form | Correcting a child's school year group if misclassified. |
-| **Annual Year Rollover** | Automated Server Cron | `/api/cron/school-year-roll` | Bulk annual grade advancement across the organisation. |
-| **Emergency Database Seed / Reset** | Software Engineers / Operators | Terminal CLI Scripts (`reset-db.ts`, `seed.ts`) | Development, staging provisioning, and disaster recovery. **Never run in live production.** |
+4. The record is permanently deleted from PostgreSQL via `hardDeleteParent`.

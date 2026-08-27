@@ -53,30 +53,27 @@ Key Capabilities:
 4. The system triggers `exportOrganisationData`, aggregating all parents, students, emergency contacts, registrations, and bookings into a structured JSON file.
 5. The browser prompts to save the export file (e.g. `organisation-gdpr-export-YYYY-MM-DD.json`).
 
-> [!NOTE]
-> GDPR exports are strictly restricted to the `ORG_OWNER` role and require active session re-authentication.
-
 ---
 
 ## 4. Integration Settings & Service Classifications
 
-SprintScale CMS connects with external providers for communications, error monitoring, and payments. Below is the operational classification of all integrated services:
+SprintScale CMS connects with external providers for communications, error monitoring, and payments. Below is the authoritative evidence-backed classification of all integrated services:
 
 | Integration / Service | Operational Status | Function in SprintScale | Administrator Guidance |
 |---|---|---|---|
 | **Resend** | **LIVE / REQUIRED** | Dispatches all transactional emails, magic login links, staff invitations, and parent broadcasts. | Configured via environment variables (`RESEND_API_KEY`, `EMAIL_FROM`). |
-| **Twilio** | **READY TO ACTIVATE** | SMS broadcast and emergency notification capability. | Currently unconfigured/deferred in production; fallback to email. |
-| **Wonde (School MIS)** | **DEFERRED / NOT REQUIRED** | School MIS roster synchronisation. | **Not required for standalone CMS operations.** The business operates SprintScale as a standalone platform. If Wonde settings appear in the UI, treat as optional legacy stub. |
+| **Twilio** | **READY TO ACTIVATE / DEFERRED** | SMS broadcast and emergency notification capability. | Currently unconfigured/deferred in production; fallback to email. |
+| **Wonde (School MIS)** | **NOT REQUIRED / PARTIALLY IMPLEMENTED** | School MIS roster synchronisation. | **Not required for standalone business use.** The business operates SprintScale as a standalone CMS platform without school MIS sync. |
 | **Google Calendar** | **DEFERRED** | Optional two-way calendar sync for room bookings. | Unconfigured/deferred in production. |
 | **Stripe** | **CODE COMPLETE / DEFERRED** | Online parent credit/debit card checkout. | Architecture code-complete; production card payments deferred by business decision. |
 | **GoCardless** | **CODE COMPLETE / DEFERRED** | Direct Debit mandate collection. | Architecture code-complete; production Direct Debit deferred by business decision. |
-| **Sentry** | **LIVE / ACTIVE** | Application runtime error tracking and monitoring. | Configured on client and server to track performance and error events. |
-| **UptimeRobot** | **LIVE / EXTERNAL** | Synthetic uptime and health endpoint monitoring. | External monitor pinging `/api/health`. |
+| **Sentry** | **CONFIGURED & SDK DELIVERY VERIFIED** | Application runtime error tracking and monitoring. | Configured on client and server. (Controlled event verified via local Node process using Production DSN). |
+| **UptimeRobot** | **LIVE & EXTERNALLY VERIFIED** | Synthetic uptime and health endpoint monitoring. | External monitor pinging `/api/health`. |
 
 ---
 
 ## 5. Architectural Boundaries & System Limits
 
-- **No Self-Service Organisation Deletion:** To prevent catastrophic data loss, SprintScale does not offer a self-service "Delete Organisation" button in the UI. Organisation decommissioning requires developer/database operator intervention.
-- **No Self-Service Ownership Transfer:** Organisation ownership cannot be transferred automatically from the UI. An Owner can promote another staff member to `ORG_OWNER`, but demoting or removing the original Owner requires administrative database assistance.
-- **Multi-Tenant Isolation:** All database tables enforce `organisationId` checks on every query and mutation, preventing cross-tenant data leakage.
+- **No Self-Service Organisation Deletion:** To prevent catastrophic data loss, SprintScale does not offer a self-service "Delete Organisation" button in the UI.
+- **No Self-Service Ownership Transfer:** Organisation ownership cannot be transferred automatically from the UI.
+- **Multi-Tenant Isolation:** All database queries enforce `organisationId` checks, preventing cross-tenant data leakage.
