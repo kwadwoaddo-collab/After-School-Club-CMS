@@ -62,9 +62,9 @@
 |---|---|---|---|---|---|---|---|
 | 1 | Structured application logging | `src/lib/logger.ts` — structured JSON in prod, colour in dev, auto Sentry forwarding | YES | Via Sentry if active | Vercel Function Logs + Sentry | **A. LIVE AND VERIFIED** | None |
 | 2 | Vercel Function Logs | All Vercel serverless function stdout captured | YES | No push alert | Vercel Dashboard (manual) | **B. IMPLEMENTED BUT NOT EXTERNALLY VERIFIED** | No push alert; manual inspection only |
-| 3 | Sentry SDK configuration | `@sentry/nextjs`, `instrumentation.ts`, `sentry.client.config.ts`, `withSentryConfig` in `next.config.ts` | `NEXT_PUBLIC_SENTRY_DSN` set in Vercel Production | YES | Sentry dashboard | **A. LIVE AND RUNTIME VERIFIED** | DSN activated 2026-08-27; test event confirmed |
-| 4 | Global server exception capture | `onRequestError = Sentry.captureRequestError` in `instrumentation.ts` | DSN active | YES | Sentry | **A. LIVE AND RUNTIME VERIFIED** | Same as #3 |
-| 5 | Client exception capture | `sentry.client.config.ts` included in browser bundle | DSN active | YES | Sentry | **A. LIVE AND RUNTIME VERIFIED** | Same as #3 |
+| 3 | Sentry SDK configuration | `@sentry/nextjs`, `instrumentation.ts`, `sentry.client.config.ts`, `withSentryConfig` in `next.config.ts` | `NEXT_PUBLIC_SENTRY_DSN` set in Vercel Production | YES | Sentry dashboard | **A. CONFIGURED AND SDK DELIVERY VERIFIED** | DSN activated 2026-08-27; local SDK test event delivered to Sentry ingest; Vercel runtime path not independently exercised |
+| 4 | Global server exception capture | `onRequestError = Sentry.captureRequestError` in `instrumentation.ts` | DSN active | YES (on next real exception) | Sentry | **A. CONFIGURED AND SDK DELIVERY VERIFIED** | Same as #3 — wired correctly; awaits first real production exception to confirm Vercel path |
+| 5 | Client exception capture | `sentry.client.config.ts` included in browser bundle | DSN active | YES (on next real browser error) | Sentry | **A. CONFIGURED AND SDK DELIVERY VERIFIED** | Same as #3 |
 | 6 | Health endpoint (was static) | `src/app/api/health/route.ts` — **NOW performs DB probe** | YES | Via uptime monitor (if active) | Uptime monitor (human gate) | **A. LIVE AND VERIFIED** (after 7H hardening) | External monitor still requires human setup |
 | 7 | DB connectivity failure detection | `/api/health` now returns `503` on DB failure | YES | Via uptime monitor (if active) | Uptime monitor | **A. LIVE AND VERIFIED** (after 7H) | External monitor human gate |
 | 8 | Redis failure visibility | `logger.error('[RateLimit] Redis error, failing open:', error)` in `rate-limit.ts` | YES (Upstash configured) | Via Sentry (now active) | Vercel Logs + Sentry | **A. LIVE AND VERIFIED** | Sentry now active; push alert on logger.error |
@@ -156,22 +156,28 @@ The central `redact()` function in `src/lib/logger.ts` catches all of the follow
 
 ### Runtime Verification Status
 
-**CLASSIFICATION: A. LIVE AND RUNTIME VERIFIED**
+**CLASSIFICATION: A. SENTRY — CONFIGURED AND SDK DELIVERY VERIFIED**
 
 **Activation date**: 2026-08-27T00:20:00Z (operator added `NEXT_PUBLIC_SENTRY_DSN` to Vercel Production)
-**Runtime verification date**: 2026-08-27T08:09:31Z
+**Test event date**: 2026-08-27T08:09:31Z
 
 **Controlled test event evidence**:
 - Event name: `7J-sentry-activation-verification-2026-08-27T08:09:31.259Z`
 - Event ID: `5538452e581948c49f424fb430da15b7`
+- Test event origin: **local Node.js process** (`npx tsx scripts/sentry-test-event.ts`) — NOT within the deployed Vercel runtime
 - SDK init: 43 integrations installed and confirmed
 - DSN host: `o4511979881562112.ingest.de.sentry.io` (DE data residency)
-- Flush result: `SUCCESS — event delivered to Sentry`
+- Flush result: `SUCCESS — event delivered to Sentry ingest endpoint`
 - Tags: `milestone=7J`, `type=activation-verification`
-- Production census: ZERO DELTA before and after (no business data mutated)
+
+**What this proves**: DSN is valid; `@sentry/nextjs` SDK correctly initialises and delivers events to the Sentry ingest endpoint.
+
+**What this does NOT prove**: That the deployed Vercel Next.js `instrumentation.ts` successfully called `Sentry.init()` within the production runtime, or that `onRequestError` has been exercised on a real production request.
+
+Classification B (LIVE PRODUCTION RUNTIME VERIFIED) would require a real exception captured via the deployed Vercel runtime `instrumentation.ts` path and confirmed in Sentry. This was not performed.
 
 > [!NOTE]
-> **HUMAN ACTION GATE: CLOSED** — Operator completed DSN configuration. Runtime verification performed 2026-08-27 via `scripts/sentry-test-event.ts`. All 43 SDK integrations confirmed active including PostgresJs, Http, RequestData, OnUncaughtException, OnUnhandledRejection.
+> **HUMAN ACTION GATE: CLOSED** — Operator completed DSN configuration 2026-08-27. SDK delivery verified via local test event. Runtime path will be confirmed naturally via the first unhandled production exception.
 
 ---
 
