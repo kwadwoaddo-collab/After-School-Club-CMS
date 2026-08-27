@@ -32,7 +32,7 @@
 
 ### 1. Duplicate Invoice Run Attempted
 - **What You May See:** System displays error: *"Invoice already generated for period YYYY-MM-DD"*.
-- **Root Cause:** SprintScale enforces an idempotency check in the `billingRuns` table to prevent double-billing families for the same billing cycle.
+- **Root Cause:** SprintScale enforces an application pre-check in `billingRuns` to prevent double-billing families for the same billing cycle.
 - **How to Resolve:**
   1. Open `/dashboard/finance` and check the family's invoice history.
   2. The invoice for this period already exists. You do not need to generate it again.
@@ -54,7 +54,7 @@
 
 ### 3. Wrong Agreed Fee Amount Applied
 - **What You May See:** A family was invoiced £200 instead of £250.
-- **Root Cause:** The billing config was updated after the invoice was already generated. Historical invoices remain immutable.
+- **Root Cause:** The billing config was updated after the invoice was generated. Changing an agreed fee applies to future billing runs only.
 - **How to Resolve:**
   1. If the issued invoice is in `draft` status and no payments exist, an Owner can click **Delete Invoice** and re-generate.
   2. Alternatively, record an adjustment or issue a supplementary ad-hoc invoice for the difference.
@@ -120,6 +120,7 @@
 
 ### 17. Incorrect Payment Entry Correction
 - **What You May See:** Staff recorded £150 cash when the parent only paid £15.
-- **How to Resolve:**
-  1. Contact your Organisation Owner.
-  2. The Owner can manage invoice adjustments or void the incorrect transaction, preserving a clear audit trail.
+- **Root Cause:** Payment records in the database cannot be directly edited or deleted in the UI.
+- **How to Resolve (Owner Action):**
+  1. An Organisation Owner opens the invoice details page and clicks **Void Invoice** to cancel the inaccurate record.
+  2. Create a new invoice and record the correct payment amount (£15).

@@ -30,7 +30,7 @@ SprintScale CMS supports multi-channel payment logging and reconciliation across
 
 Payments recorded in the system hold one of three statuses:
 
-- **`verified`:** Confirmed settled payment. Deducted immediately from the invoice's outstanding balance.
+- **`verified`:** Confirmed settled payment. Deducted immediately from the invoice's outstanding balance. Cash, bank transfer, and staff-recorded payments default to this status.
 - **`pending`:** Unverified parent voucher submission. Awaiting staff review on the Reconciliation screen.
 - **`failed`:** Rejected voucher claim. Parent is notified via email to resubmit.
 
@@ -65,8 +65,8 @@ Payments recorded in the system hold one of three statuses:
 **Steps:**
 1. Parent logs into the Parent Portal at `/portal/billing`.
 2. Locates the outstanding invoice and clicks **Pay by childcare voucher**.
-3. Enters the **Amount (£):** (cannot exceed the remaining balance).
-4. Enters their **Voucher / TFC Reference:** (e.g. HMRC TFC Child Reference `SMITH-12345-TFC`).
+3. Enters the **Amount (£):** (application strictly enforces `amount <= outstandingBalance`).
+4. Enters their **Voucher / TFC Reference:** (e.g. HMRC TFC Child Reference `SMITH-12345-TFC` or Edenred reference).
 5. Clicks **Submit Voucher Payment**.
 
 **Expected Result:**
@@ -108,11 +108,18 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 1. On the invoice details page (`/dashboard/finance/invoices/[id]`), scroll to the **Payment History** section.
 2. In the top action bar, click **Receipt Preview** or navigate to `/dashboard/finance/receipt?invoiceId=[id]`.
 3. Click **Download Receipt PDF**.
-4. The generated PDF displays the official payment acknowledgement, organisation details, receipt timestamp, amount paid, and remaining balance.
+4. The generated PDF displays the CMS-generated payment record receipt, organisation details, receipt timestamp, amount paid, and remaining balance.
 
 ---
 
-## 4. Online Card Payments via Stripe (Classification & Status)
+## 4. Overpayment and Payment Immutability Rules
+
+- **No Surplus Credit Roll-Over:** SprintScale does not have a monetary credit balance ledger. If staff record a payment larger than the invoice amount, the £50 excess is stored on that invoice's payment row; it does not carry over to future invoices. Staff should only record the amount attributable to the invoice.
+- **Payment Row Immutability:** Existing payment records cannot be edited or deleted in the UI. If a payment was logged incorrectly, an Owner must void the invoice and issue a corrected invoice record.
+
+---
+
+## 5. Online Card Payments via Stripe (Classification & Status)
 
 - **Architecture Status:** **CODE COMPLETE & READY**
 - **Production Activation Status:** **DEFERRED BY BUSINESS DECISION**
@@ -125,7 +132,7 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 
 ---
 
-## 5. Direct Debit via GoCardless (Classification & Status)
+## 6. Direct Debit via GoCardless (Classification & Status)
 
 - **Architecture Status:** **CODE COMPLETE & READY**
 - **Production Activation Status:** **DEFERRED BY BUSINESS DECISION**
@@ -135,11 +142,11 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 
 ---
 
-## 6. Payments Troubleshooting
+## 7. Payments Troubleshooting
 
 | Issue | Cause | Solution |
 |---|---|---|
 | **Parent voucher submission displays "Payment amount exceeds outstanding balance"** | Parent entered an amount higher than the remaining unpaid invoice balance. | Parent must enter an amount less than or equal to the remaining balance due. |
 | **Recorded cash payment did not change invoice to Paid** | Payment was a partial amount (e.g. £50 paid on £100 invoice). | Invoice status correctly updates to `partially_paid`. Record the remaining balance when received. |
 | **Parent cannot see Stripe card payment button** | Stripe is currently in deferred status in production. | This is expected system behavior until business activation. Parents pay via Bank Transfer, TFC, or Voucher. |
-| **Voucher verified in error** | Staff clicked Verify before checking bank account. | Record an adjustment or contact your Organisation Owner to manage invoice corrections. |
+| **Voucher verified in error** | Staff clicked Verify before checking bank account. | Contact your Organisation Owner to void the invoice and re-issue if necessary. |

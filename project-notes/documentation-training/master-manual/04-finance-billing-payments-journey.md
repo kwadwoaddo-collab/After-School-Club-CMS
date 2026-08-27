@@ -5,7 +5,7 @@
 
 ## 1. Overview of the Complete Financial Journey
 
-This master journey maps the entire commercial and billing lifecycle of a family within SprintScale CMS — from initial fee configuration through monthly invoice generation, parent notification, multi-channel payment collection, voucher reconciliation, and receipt delivery.
+This master journey maps the commercial and billing lifecycle of a family within SprintScale CMS — from initial fee configuration through monthly invoice generation, parent notification, multi-channel payment collection, voucher reconciliation, and receipt delivery.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -16,7 +16,7 @@ This master journey maps the entire commercial and billing lifecycle of a family
 ┌──────────────────────────────▼──────────────────────────────┐
 │            STAGE 2: MONTHLY INVOICE GENERATION              │
 │  Automated cron / manual run generates draft invoices       │
-│  Idempotency lock in `billingRuns` prevents duplicates      │
+│  Application pre-check in `billingRuns` prevents duplicates │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -55,11 +55,11 @@ When a new family registers or enrolls:
 
 ---
 
-## 3. Stage 2: Invoice Generation & Idempotency Protection
+## 3. Stage 2: Invoice Generation & Duplicate Prevention
 
 As the billing anchor date approaches:
 1. **Automated Daily Run:** The daily billing cron job evaluates active configs. When the current date reaches `anchorDate - leadDays`, the invoice is generated automatically.
-2. **Idempotency Guard:** The system writes to the `billingRuns` table. If the job is re-run on the same day, it detects the existing run and cleanly skips without duplicate billing.
+2. **Duplicate Run Protection:** The system records an entry in the `billingRuns` table. An application pre-check prevents generating duplicate invoices for the same period.
 3. **Line-Item Generation:** The invoice is generated in `draft` status, stamped with an invoice number (`INV-XXXXXX`), and populates `coveredChildrenJson` with all linked siblings.
 
 ---
@@ -88,7 +88,7 @@ Parents settle their invoices through one of four primary pathways:
 
 When verified payments equal or exceed the total invoice amount:
 1. Invoice status transitions automatically from `draft`/`partially_paid` to **`paid`**.
-2. An official payment receipt email is dispatched to the parent.
+2. A payment receipt email is dispatched to the parent.
 3. The invoice details page updates the remaining balance to **£0.00**.
-4. Both staff and parents can download PDF copies of the invoice and receipt at any time.
+4. Both staff and parents can download PDF copies of the invoice and downloadable payment record receipt at any time.
 5. Revenue is aggregated into the Owner's financial dashboard overview metrics.

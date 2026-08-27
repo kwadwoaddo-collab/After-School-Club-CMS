@@ -5,13 +5,13 @@
 
 ## 1. What the Finance Module Does
 
-The **Finance Module** manages the end-to-end commercial and billing lifecycle of your club organisation:
+The **Finance Module** manages the internal commercial and billing lifecycle of your club organisation:
 
 - **Family-Level Agreed Fees:** Setting fixed recurring monthly tuition agreements for enrolled families.
-- **Automated & Manual Invoice Runs:** Generating monthly tuition invoices using deterministic billing periods and idempotency controls.
+- **Automated & Manual Invoice Runs:** Generating monthly tuition invoices using deterministic billing periods and application-level duplicate checks.
 - **Multi-Channel Payment Recording:** Logging cash, bank transfers, Tax-Free Childcare (TFC), childcare vouchers, and online card payments.
-- **Voucher & TFC Reconciliation:** Verifying or rejecting pending parent voucher submissions on a dedicated reconciliation screen.
-- **Financial Auditability & Receipts:** Tracking exact payment timestamps, audit logs, on-demand PDF invoices, and payment receipts.
+- **Voucher & TFC Reconciliation Queue:** Reviewing and verifying or rejecting pending parent voucher submissions on a dedicated reconciliation screen.
+- **Financial Auditability & Receipts:** Logging payment timestamps, audit events, downloadable invoice PDFs, and CMS-generated payment record receipts.
 
 ---
 
@@ -29,14 +29,14 @@ SprintScale CMS is engineered around five fundamental financial rules:
 │  2. FIXED AGREED TUITION: Monthly invoice amounts reflect   │
 │     the agreed tuition, not a raw count of attended hours.  │
 │                                                             │
-│  3. STRICT RECORD IMMUTABILITY: Issued invoices are never   │
-│     silently rewritten; payments are appended to a ledger.  │
+│  3. NON-RETROACTIVE INVOICES: Updating an agreed fee applies│
+│     to future runs; it does not rewrite issued invoices.    │
 │                                                             │
 │  4. SESSION CREDITS ≠ CASH: Session ledger absence credits  │
 │     track attendance allowances, not monetary bank refunds. │
 │                                                             │
-│  5. MANUAL EXTERNAL RECONCILIATION: Recording a bank or TFC │
-│     payment documents a receipt; it does not call HMRC/banks│
+│  5. MANUAL RECONCILIATION: Recording a bank or TFC payment  │
+│     is an internal log entry; it does not query HMRC/banks. │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -48,27 +48,27 @@ SprintScale CMS is engineered around five fundamental financial rules:
 |---|---|---|---|
 | **`billingConfigs`** | Stores the agreed monthly fee and schedule for a family. | `agreedMonthlyPence` (Integer Pence), `billingAnchorDate` (String 'YYYY-MM-DD'), `invoiceLeadDays` (Integer), `status` (`active`, `paused`, `cancelled`). | Belongs to `parentId` at `centreId` within `organisationId`. |
 | **`billingConfigChildren`** | Junction table mapping covered siblings to a billing config. | `configId`, `childId`. | Maps 1 billing config to multiple children. |
-| **`invoices`** | The immutable issued billing document. | `amount` (String decimal, e.g. `'250.00'`), `status` (`draft`, `sent`, `partially_paid`, `paid`, `void`), `invoiceNumber` (`INV-XXXXXX`), `invoiceDate`, `dueDate`, `billingPeriodStart`, `billingPeriodEnd`, `coveredChildrenJson`. | Belongs to `parentId`, optionally `childId`, at `centreId` within `organisationId`. |
+| **`invoices`** | The issued billing document. | `amount` (String decimal, e.g. `'250.00'`), `status` (`draft`, `sent`, `partially_paid`, `paid`, `void`), `invoiceNumber` (`INV-XXXXXX`), `invoiceDate`, `dueDate`, `billingPeriodStart`, `billingPeriodEnd`, `coveredChildrenJson`. | Belongs to `parentId`, optionally `childId`, at `centreId` within `organisationId`. |
 | **`payments`** | Individual financial transactions applied against an invoice. | `amount` (String decimal), `method` (`cash`, `bank_transfer`, `stripe`, `voucher`, `other`), `status` (`verified`, `pending`, `failed`), `transactionReference`, `recordedAt`. | Linked directly to `invoiceId`. |
-| **`billingRuns`** | Idempotency record tracking completed monthly invoice runs. | `billingConfigId`, `periodStart`, `periodEnd`, `invoiceId`, `amountPence`, `runBy`, `success`. | Guarantees duplicate invoices are never generated for the same period. |
+| **`billingRuns`** | Audit log tracking completed monthly invoice runs. | `billingConfigId`, `periodStart`, `periodEnd`, `invoiceId`, `amountPence`, `runBy`, `success`. | Supports application pre-checks to prevent duplicate runs for the same period. |
 | **`sessionCredits`** | Administrative attendance forgiveness balance. | `childId`, `sessionsAmount` (Integer), `notes`, `createdBy`. | Tracks attendance allowances; strictly separate from financial invoices. |
 
 ---
 
 ## 4. Role & Permission Matrix for Finance
 
-SprintScale enforces strict server-side permission gates for all financial actions:
+SprintScale enforces granular server-side permission gates for all financial actions:
 
 | Financial Capability / Action | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) | Evidence Source |
 |---|---|---|---|---|---|---|
 | **Global Finance Dashboard (`/dashboard/finance`)** | ✅ Full Access | ❌ Blocked (Redirect) | ❌ Blocked (Redirect) | ❌ Blocked | ❌ No Access | `src/app/dashboard/finance/page.tsx` |
-| **View Centre Invoices** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `src/features/finance/actions.ts` |
-| **Create / Update Agreed Fee Config** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `src/features/billing/actions.ts` |
+| **View Invoices / Details** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `getInvoiceDetails` |
+| **Create / Update Agreed Fee Config** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `assertCentreAccess` |
 | **Generate Monthly Invoices (Run)** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `generateInvoiceFromConfig` |
-| **Record Offline Payment (Cash/Bank/TFC)**| ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `recordPayment` |
+| **Record Offline Payment (Cash/Bank)** | ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `recordPayment` |
 | **Reconcile Voucher Submissions** | ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `verifyPayment` / `failPayment` |
 | **Void an Issued Invoice** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `voidInvoice` |
-| **Delete an Invoice (No Payments)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `deleteInvoice` |
+| **Delete an Invoice (Zero Payments)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `deleteInvoice` |
 | **Resend Invoice Notification Email** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `resendInvoiceEmail` |
 | **Parent Portal Billing (`/portal/billing`)** | ❌ Admin View | ❌ Admin View | ❌ Admin View | ❌ No Access | ✅ **Own Invoices Only** | `src/app/portal/billing/page.tsx` |
 
@@ -76,8 +76,8 @@ SprintScale enforces strict server-side permission gates for all financial actio
 
 ## 5. Monetary Arithmetic & Precision
 
-- **Configuration Storage:** Agreed fees in `billingConfigs` are stored in **integer pence** (e.g. `25000` = £250.00) to eliminate floating-point rounding errors during calculation.
-- **Invoice & Payment Storage:** Stored as PostgreSQL numeric/string decimals (e.g. `'250.00'`) for precise accounting display.
+- **Configuration Storage:** Agreed fees in `billingConfigs` are stored in **integer pence** (e.g. `25000` = £250.00) to eliminate floating-point decimal accumulation errors during recurring schedule calculations.
+- **Invoice & Payment Storage:** Stored as decimal strings in PostgreSQL (e.g. `'250.00'`).
 - **Outstanding Balance Formula:**
   $$\text{Outstanding Balance} = \text{Invoice Amount} - \sum(\text{Verified Payments})$$
 - **Invoice Status Transitions:**
@@ -87,12 +87,20 @@ SprintScale enforces strict server-side permission gates for all financial actio
 
 ---
 
-## 6. What SprintScale Finance Is NOT
+## 6. Overpayment & Correction Rules
 
-To maintain regulatory and operational clarity:
+- **No Monetary Family Credit Balance:** SprintScale does NOT have a customer credit ledger or surplus balance account. If staff record a payment larger than the invoice amount (e.g. recording £300 on a £250 invoice), the invoice status marks `paid`, but the £50 excess is stored solely as a payment row on that invoice; it does not automatically carry over to other invoices. Staff should record only the amount attributable to the invoice.
+- **Parent Portal Overpayment Guard:** When parents submit voucher claims in the portal, the application strictly blocks amounts greater than the remaining balance (`amount > outstandingBalance`).
+- **Payment Immutability:** Existing payment rows cannot be edited or deleted in the UI. If a payment was recorded in error, an Owner must void the invoice and re-issue the correct billing record.
+
+---
+
+## 7. What SprintScale Finance Is NOT
+
+To maintain operational clarity:
 
 > [!IMPORTANT]
 > **Operational & Accounting Boundaries:**
-> - **Not General Ledger Bookkeeping:** SprintScale is a childcare club tuition invoicing and payment logging tool. It does not replace double-entry accounting software (e.g. Xero, QuickBooks).
-> - **Not an Automatic Bank Feed:** The CMS does not connect directly to banking open-APIs. Recording a bank transfer or TFC receipt reflects an administrative entry made by staff.
+> - **Not General Ledger Bookkeeping:** SprintScale is a childcare club tuition invoicing and payment logging tool. It does not replace external double-entry accounting software (e.g. Xero, QuickBooks).
+> - **Not an Automatic Bank Feed:** The CMS does not connect to banking open-APIs. Recording a bank transfer or TFC receipt reflects an administrative entry made by staff.
 > - **No Automatic Tax/VAT Reporting:** SprintScale issues standard club tuition invoices. VAT or corporate tax returns must be managed through your external accountant or bookkeeping software.

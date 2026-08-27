@@ -7,7 +7,7 @@
 
 SprintScale CMS operates a **Family-Level Agreed Monthly Fee Model**. 
 
-Instead of invoicing parents for individual hours or ad-hoc daily sessions, clubs configure a single, agreed monthly tuition amount for the family. This model provides predictable recurring revenue for club operators and consistent monthly billing for parents.
+Instead of invoicing parents for individual hours or ad-hoc daily sessions, clubs configure a fixed recurring monthly tuition amount for the family. This model provides predictable recurring revenue for club operators and consistent monthly billing for parents.
 
 ### Core Concepts:
 - **Parent-Centric Billing:** The billing agreement is attached to the primary parent account (`parentId`) at a specific centre (`centreId`).
@@ -38,7 +38,7 @@ Instead of invoicing parents for individual hours or ad-hoc daily sessions, club
 ```
 
 > [!NOTE]
-> Attendance activity and family billing are related operational tracks, but **daily attendance does not automatically alter the fixed monthly agreed fee**. If a child misses a session, the absence is recorded in the **Session Credit Ledger** where administrative forgiveness or make-up sessions can be granted without invalidating issued financial invoices.
+> Attendance activity and family billing are related operational tracks, but **daily attendance does not automatically alter the fixed monthly agreed fee**. If a child misses a session, the absence is recorded in the **Session Credit Ledger** where administrative forgiveness or catch-up sessions can be granted without altering issued financial invoices.
 
 ---
 
@@ -105,8 +105,8 @@ The child is added to `billingConfigChildren`. Future monthly invoice runs will 
 4. Click **Update Configuration**.
 
 > [!IMPORTANT]
-> **Historical Invoices Remain Immutable:**
-> Updating the agreed fee changes **future** invoice runs only. Historical invoices generated in past months remain completely unchanged.
+> **Changing an Agreed Fee Does Not Retroactively Alter Existing Invoices:**
+> Updating the agreed fee changes **future** invoice runs only. Historical invoices generated in past months remain unchanged.
 
 ---
 
@@ -138,4 +138,4 @@ If a registered family does not have an active billing configuration:
 | **Family skipped during monthly billing run** | Billing config is set to `paused` or agreed amount is set to £0.00. | Check the Family Billing card on the student profile; ensure status is `active` and amount is greater than £0. |
 | **New sibling not listed on monthly invoice** | Sibling was registered after the billing config was created and not linked. | Open the billing config, check the sibling in the Covered Children list, and click save. |
 | **Front Desk cannot edit billing config for a venue** | Staff member is not assigned to the venue where the family attends. | Ensure the staff member has centre assignment in `Sidebar → Team`. |
-| **Agreed fee change did not update last week's invoice** | System preserves historical invoice immutability. | This is by design. If last week's invoice requires correction, an Owner can void or update the specific invoice. |
+| **Agreed fee change did not update last week's invoice** | Changing an agreed fee applies only to future runs. | This is by design. If last week's invoice requires correction, an Owner can void or update the specific invoice. |

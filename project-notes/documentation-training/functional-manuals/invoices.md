@@ -1,5 +1,5 @@
 # SprintScale CMS — Functional Manual: Invoices
-## Invoice Lifecycle, Monthly Runs, Idempotency, PDF Generation & Voiding Controls
+## Invoice Lifecycle, Monthly Runs, Duplicate Checks, PDF Generation & Voiding Controls
 
 ---
 
@@ -10,8 +10,8 @@ The **Invoices Module** (`/dashboard/finance` and `/dashboard/finance/invoices/[
 It enables staff to:
 - Review all issued tuition and ad-hoc invoices in a central data grid.
 - Execute automated or on-demand monthly invoice runs for active families.
-- Generate professional on-demand PDF invoices with club branding and bank details.
-- Safely update invoice issue dates and administrative notes.
+- Generate on-demand PDF invoices with club branding and bank details.
+- Update invoice issue dates and administrative notes.
 - Dispatch invoice notification emails to parents with direct links to the Parent Portal.
 - Void obsolete or cancelled invoices with permanent audit tracking.
 
@@ -32,7 +32,7 @@ It enables staff to:
 │                 2. ON-DEMAND CONFIG RUN                     │
 │  • Triggered in CMS: `generateInvoiceFromConfig`            │
 │  • Staff select billing period start and generate invoice   │
-│  • Enforces same idempotency lock as automated cron         │
+│  • Enforces same application pre-check as automated cron    │
 └─────────────────────────────────────────────────────────────┘
                                ▲
 ┌──────────────────────────────┴──────────────────────────────┐
@@ -45,13 +45,13 @@ It enables staff to:
 
 ---
 
-## 3. Duplicate Prevention & Idempotency Controls
+## 3. Duplicate Prevention & Billing Run Logging
 
-To eliminate the risk of double-billing families:
+To protect against duplicate billing:
 
 1. **The `billingRuns` Audit Table:** Whenever a monthly invoice is generated from a billing configuration, SprintScale records an entry in the `billingRuns` table with `(billingConfigId, periodStart, periodEnd, invoiceId, amountPence, success)`.
-2. **Pre-Generation Check:** Before creating an invoice, both the cron job and the manual action query `billingRuns` for matching `billingConfigId` and `periodStart`.
-3. **Automatic Rejection:** If a successful run already exists for that period, the system rejects the duplicate generation and logs `skipped_already_exists`.
+2. **Application Pre-Check:** Before creating an invoice, both the cron job and the manual action perform an application pre-check querying `billingRuns` for a matching `billingConfigId` and `periodStart`.
+3. **Rejection of Duplicate Runs:** If a successful run already exists for that period, the system halts generation and returns `skipped_already_exists`. *(Note: Protection is enforced via application pre-checks rather than a compound database constraint; staff should avoid running concurrent manual invoice batches simultaneously).*
 
 ---
 
@@ -119,13 +119,13 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 ### Procedure 4: Voiding an Invoice
 > [!IMPORTANT]
 > **Owner-Restricted Capability:**
-> Only users with the **Organisation Owner** (`ORG_OWNER`) role can void invoices. Voiding is permanent and cannot be undone.
+> Only users with the **Organisation Owner** (`ORG_OWNER`) role can void invoices. Voiding cancels the invoice liability in the Parent Portal. Voiding cannot be reversed in the UI.
 
 **Steps:**
 1. Open the invoice at `/dashboard/finance/invoices/[id]`.
 2. In the top action bar, click **Void Invoice**.
 3. In the confirmation dialog, review the warning and click **Confirm Void**.
-4. Status transitions to `void`. The outstanding balance drops to £0.00 in the parent portal, and the invoice is marked with a strikethrough.
+4. Status transitions to `void`. The outstanding balance drops to £0.00 in the parent portal, and the invoice is displayed with a strikethrough.
 
 ---
 
@@ -136,7 +136,7 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 1. Open the invoice at `/dashboard/finance/invoices/[id]`.
 2. Click **Delete Invoice**.
 3. **Safety Protection:** If any payments have been recorded against the invoice, the system **blocks deletion** with the error: *"Please delete associated payments before deleting the invoice."*
-4. If no payments exist, confirm deletion. The record is removed from the ledger.
+4. If no payments exist, confirm deletion. The record is removed from the database.
 
 ---
 
@@ -155,7 +155,7 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 
 | Issue | Cause | Solution |
 |---|---|---|
-| **Invoice run gives "Invoice already generated for period"** | Idempotency lock in `billingRuns` prevented duplicate invoice creation. | Check the invoice history. The invoice for this billing period already exists in the system. |
+| **Invoice run gives "Invoice already generated for period"** | Application pre-check in `billingRuns` prevented duplicate invoice creation. | Check the invoice history. The invoice for this billing period already exists in the system. |
 | **Manager cannot find Void or Delete buttons** | Voiding and deleting are restricted by design to the Organisation Owner. | Request the Organisation Owner to review and void the invoice. |
 | **Parent cannot see newly created invoice** | Invoice was created under a different parent account or different organisation. | Verify parent account email matching on the invoice details screen. |
 | **Invoice shows wrong bank account details on PDF** | Centre billing details have not been configured. | Owner must configure bank details at `Sidebar → Centres → [Centre] → Billing`. |

@@ -13,15 +13,20 @@
 
 ## 1. Executive Verdict
 
-**PASS — FINANCE, BILLING & PAYMENT DOCUMENTATION COMPLETE — READY FOR D5**
+**PASS WITH FINANCE BOUNDARIES RECONCILED — READY FOR D5**
 
-Milestone D4 has successfully established the authoritative, source-grounded functional user manuals, master commercial journey, operational rationales, D6-ready video scripts, screenshot specifications, and troubleshooting handbooks covering the complete financial lifecycle of SprintScale CMS.
+Milestone D4 has established the authoritative, source-grounded functional user manuals, master commercial journey, operational rationales, D6-ready video scripts, screenshot specifications, and troubleshooting handbooks covering the complete financial lifecycle of SprintScale CMS.
 
-- **8 New Documentation Deliverables Created:** 4 functional deep-dive manuals (`finance-overview.md`, `agreed-fee-billing.md`, `invoices.md`, `payments-reconciliation.md`), Master Manual Part 4 (Finance, Billing & Payments Journey), Operational Rationale Library (15 financial integrity controls), 14 micro-video scripts (8 essential), 18 screenshot specifications, and 17 troubleshooting scenarios.
+### Finance Boundaries Reconciled:
+1. **Overpayment Exact Behaviour:** Verified that `recordPayment` permits entering amounts exceeding outstanding balance, inserting the payment row and setting invoice status to `paid`. However, **no monetary customer credit account exists** in the database; excess funds are stored only on that invoice payment row and do not carry over to other invoices. The Parent Portal strictly blocks voucher submissions where `amount > outstandingBalance`.
+2. **Payment Correction / Reversal Classification:** Confirmed that `voidInvoice` is Owner-only; payment editing, payment deletion, and direct payment reversals are **not implemented** in the UI. Correction route requires an Owner to void the invoice and re-issue a corrected billing document.
+3. **Invoice Duplicate Protection:** Verified that duplicate runs are prevented via an **application pre-check** in `billingRuns` (`findFirst` by `billingConfigId` and `periodStart`), rather than a compound database uniqueness constraint.
+4. **Outstanding Balance Arithmetic:** Verified exact formula: $\text{Outstanding Balance} = \text{Invoice Amount} - \sum(\text{Verified Payments})$. Cash, bank transfers, and verified vouchers deduct immediately; pending voucher claims remain in pending status awaiting staff verification.
+5. **Receipt Terminology Reconciled:** Replaced overreaching legal terms with accurate product descriptions: "CMS-generated receipt", "downloadable payment record PDF".
+
 - **Zero Application Code Changes:** `src/`, `drizzle/`, `migrations/`, `package.json`, and deployment configs remain 100% untouched.
 - **Zero Production/Staging Side Effects:** 0 DB mutations, 0 emails, 0 SMS, 0 Stripe/GoCardless calls, 0 schema changes, 0 deployments.
 - **Strict Data Protection & Financial Security:** Zero real parent, child, payment reference, or invoice PII exposed; standardized synthetic demo accounts used exclusively.
-- **Source-Truth Reconciled:** Every documented click sequence, agreed fee model, invoice idempotency lock (`billingRuns`), balance formula (`Amount - Verified Payments`), and reconciliation queue is verified against active source code.
 - **50/50 Adversarial Matrix:** 50 SAFE, 0 DEBT, 0 DEFECT, 0 BLOCKED.
 
 ---
@@ -32,10 +37,10 @@ Milestone D4 has successfully established the authoritative, source-grounded fun
 |---|---|---|---|
 | **Functional Manual: Finance Overview** | [`functional-manuals/finance-overview.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/finance-overview.md) | Financial architecture, data models, monetary storage (integer pence vs decimal), role matrix, and accounting boundaries. | **COMPLETE** |
 | **Functional Manual: Agreed-Fee Billing** | [`functional-manuals/agreed-fee-billing.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/agreed-fee-billing.md) | Family tuition model, multi-child sibling coverage, billing anchor dates, lead days, and lifecycle management (active/paused/cancelled). | **COMPLETE** |
-| **Functional Manual: Invoices** | [`functional-manuals/invoices.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/invoices.md) | Monthly cron runs, on-demand config runs, ad-hoc invoices, idempotency guards (`billingRuns`), PDF generation, and owner-only voiding. | **COMPLETE** |
+| **Functional Manual: Invoices** | [`functional-manuals/invoices.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/invoices.md) | Monthly cron runs, on-demand config runs, ad-hoc invoices, duplicate pre-checks (`billingRuns`), PDF generation, and owner-only voiding. | **COMPLETE** |
 | **Functional Manual: Payments & Reconciliation** | [`functional-manuals/payments-reconciliation.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/payments-reconciliation.md) | Cash, bank transfers, Tax-Free Childcare (TFC), vouchers, reconciliation queue, receipts, Stripe and GoCardless classifications. | **COMPLETE** |
 | **Master Manual (Part 4)** | [`master-manual/04-finance-billing-payments-journey.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/04-finance-billing-payments-journey.md) | End-to-end commercial journey narrative: Fee Setup → Invoice Generation → Parent Review → Multi-Channel Payment → Settlement & Receipts. | **COMPLETE** |
-| **Operational Rationale Library** | [`rationale/finance-billing-reconciliation-integrity.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/rationale/finance-billing-reconciliation-integrity.md) | 15 detailed operational rationales covering fixed family tuition, separation from attendance, invoice immutability, and idempotency. | **COMPLETE** |
+| **Operational Rationale Library** | [`rationale/finance-billing-reconciliation-integrity.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/rationale/finance-billing-reconciliation-integrity.md) | 15 detailed operational rationales covering fixed family tuition, separation from attendance, invoice non-retroactivity, and pre-checks. | **COMPLETE** |
 | **Micro-Video Scripts** | [`videos/d4-video-scripts.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/videos/d4-video-scripts.md) | 14 D6-ready screencast scripts with second-by-second timelines, narrations, synthetic demo data, and UI highlight callouts. | **COMPLETE** |
 | **Screenshot Plan** | [`screenshots/d4-screenshot-plan.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/screenshots/d4-screenshot-plan.md) | 18 annotated screenshot specifications with route mappings, synthetic data fixtures, crop guidance, and badge numbering. | **COMPLETE** |
 | **Troubleshooting Handbook** | [`troubleshooting/d4-finance-troubleshooting.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/troubleshooting/d4-finance-troubleshooting.md) | 17 detailed operational troubleshooting scenarios with symptoms, root causes, resolution steps, and anti-patterns. | **COMPLETE** |
@@ -48,10 +53,10 @@ Milestone D4 has successfully established the authoritative, source-grounded fun
 | Financial Capability / Action | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) | Evidence Source |
 |---|---|---|---|---|---|---|
 | **Global Finance Dashboard (`/dashboard/finance`)** | FULL (All Centres) | BLOCKED (Redirect) | BLOCKED (Redirect) | BLOCKED | NOT AVAILABLE | `src/app/dashboard/finance/page.tsx` |
-| **View Centre Invoices** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `src/features/finance/actions.ts` |
-| **Create / Update Agreed Fee Config** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `src/features/billing/actions.ts` |
+| **View Invoices / Details** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `getInvoiceDetails` |
+| **Create / Update Agreed Fee Config** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `assertCentreAccess` |
 | **Generate Invoices from Config** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `generateInvoiceFromConfig` |
-| **Record Offline Payment (Cash/Bank/TFC)**| FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `recordPayment` |
+| **Record Offline Payment (Cash/Bank)** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `recordPayment` |
 | **Reconcile / Verify Voucher Submissions** | FULL | CENTRE-SCOPED | CENTRE-SCOPED | NOT AVAILABLE | NOT AVAILABLE | `verifyPayment` / `failPayment` |
 | **Void an Issued Invoice** | FULL (Owner Only) | NOT AVAILABLE | NOT AVAILABLE | NOT AVAILABLE | NOT AVAILABLE | `voidInvoice` |
 | **Delete an Invoice (Zero Payments)** | FULL (Owner Only) | NOT AVAILABLE | NOT AVAILABLE | NOT AVAILABLE | NOT AVAILABLE | `deleteInvoice` |
@@ -91,7 +96,7 @@ As mandated by the specification:
 | 4 | Was agreed-fee model verified in source? | **SAFE** | Verified `billingConfigs` schema and actions. |
 | 5 | Was family vs child billing distinction verified? | **SAFE** | Parent-centric config with sibling junction table verified. |
 | 6 | Was invoice generation workflow verified? | **SAFE** | Verified cron, on-demand, and ad-hoc creation flows. |
-| 7 | Was invoice idempotency verified? | **SAFE** | `billingRuns` table uniqueness checks verified in code. |
+| 7 | Was invoice duplicate protection verified? | **SAFE** | `billingRuns` application pre-check verified in code. |
 | 8 | Was invoice lifecycle verified? | **SAFE** | `draft`, `sent`, `partially_paid`, `paid`, `void` verified. |
 | 9 | Was outstanding balance formula verified? | **SAFE** | `Amount - Verified Payments` verified in actions and UI. |
 | 10 | Was cash payment workflow verified? | **SAFE** | `recordPayment` with `method: 'cash'` verified. |
@@ -100,9 +105,9 @@ As mandated by the specification:
 | 13 | Was childcare voucher workflow verified? | **SAFE** | `submitVoucherPayment` in portal + verification verified. |
 | 14 | Was external payment verification boundary clarified?| **SAFE** | Documentation explicitly clarifies CMS does not call banks/HMRC. |
 | 15 | Was partial payment behaviour verified? | **SAFE** | Recalculation to `partially_paid` verified in `recordPayment`. |
-| 16 | Was overpayment behaviour verified? | **SAFE** | Portal blocks overpayment; back-office allows full logging. |
-| 17 | Was payment correction/reversal verified? | **SAFE** | Voiding and adjustment flows documented accurately. |
-| 18 | Was financial record immutability verified? | **SAFE** | Historical invoices remain unchanged upon fee updates. |
+| 16 | Was overpayment behaviour verified? | **SAFE** | Documented excess stored on invoice row; no family credit ledger. |
+| 17 | Was payment correction/reversal verified? | **SAFE** | Classified voiding as Owner-only; direct payment editing not implemented. |
+| 18 | Was financial record non-retroactivity verified? | **SAFE** | Changing agreed fees applies to future runs only. |
 | 19 | Was session credit vs money boundary verified? | **SAFE** | Session credits documented as session counts, not cash refunds. |
 | 20 | Was Parent Portal finance verified? | **SAFE** | Verified `/portal/billing` queries scoped to `parent.id`. |
 | 21 | Was Stripe classification verified? | **SAFE** | Classified as Code Complete & Deferred in production. |
@@ -145,17 +150,6 @@ As mandated by the specification:
 
 ---
 
-## 6. Recommended D5 Scope
+## 6. Final Recommendation
 
-With finance, agreed-fee billing, monthly invoice runs, and payment reconciliation fully documented, Milestone **D5** should execute:
-
-1. **Functional Manual: Multi-Centre Administration & Settings** (Centre configuration, operating hours, capacity limits, and branding).
-2. **Functional Manual: Staff Directory & Access Permissions** (Role assignment, centre scoping, PIN management, and team onboarding).
-3. **Functional Manual: Parent Communications & Broadcasts** (Email announcements, audience filtering, delivery status, and notifications).
-4. **Functional Manual: Academic Year Roll & Data Maintenance** (Year group rollover, archive handling, and audit history logs).
-
----
-
-## 7. Final Recommendation
-
-**PASS — FINANCE, BILLING & PAYMENT DOCUMENTATION COMPLETE — READY FOR D5**
+**PASS WITH FINANCE BOUNDARIES RECONCILED — READY FOR D5**
