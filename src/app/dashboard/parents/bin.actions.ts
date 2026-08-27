@@ -115,9 +115,10 @@ export async function restoreParent(parentId: string) {
 /**
  * Permanently deletes a parent from the database.
  * Cascades to children, notes, and registrations.
+ * Restricted strictly to Organisation Owners (ORG_OWNER) for least-privilege data safety.
  */
 export async function hardDeleteParent(parentId: string) {
-    const authResult = await requireApiAuth({ roles: [...PARENTS_MUTATION_ROLES] });
+    const authResult = await requireApiAuth({ roles: ['ORG_OWNER'] });
     if (!authResult) {
         throw new Error('Unauthorized');
     }

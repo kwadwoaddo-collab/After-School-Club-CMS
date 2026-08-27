@@ -77,23 +77,29 @@ export async function sendBroadcast(data: {
     return { success: true, count: 0, sent: 0, failed: 0 };
   }
 
-  // Re-derive consent server-side (same aggregation getParentsForCentre uses)
-  // rather than trusting the client's own filtering, and scope to this
-  // organisation — a raw `parents` row has no communicationsConsent column
-  // of its own; it only exists as a derived, per-booking-aggregated value.
+  // Re-derive CURRENT consent server-side rather than trusting the client's own filtering.
+  // Instead of bool_or (which caused any historical true booking to permanently override later withdrawals),
+  // we select the latest booking's communicationsConsent ordered by createdAt DESC, id DESC.
   const consentRows = await db.select({
     id: parents.id,
     firstName: parents.firstName,
     email: parents.email,
-    communicationsConsent: sql<boolean>`COALESCE(bool_or(${bookings.communicationsConsent}), false)`.mapWith(Boolean).as('communicationsConsent'),
+    communicationsConsent: sql<boolean>`COALESCE(
+      (
+        SELECT ${bookings.communicationsConsent}
+        FROM ${bookings}
+        WHERE ${bookings.parentId} = ${parents.id}
+        ORDER BY ${bookings.createdAt} DESC, ${bookings.id} DESC
+        LIMIT 1
+      ),
+      false
+    )`.mapWith(Boolean).as('communicationsConsent'),
   })
     .from(parents)
-    .leftJoin(bookings, eq(parents.id, bookings.parentId))
     .where(and(
       inArray(parents.id, data.audienceParentIds),
       eq(parents.organisationId, organisationId),
-    ))
-    .groupBy(parents.id);
+    ));
 
   const targetParents = consentRows.filter((p) => p.communicationsConsent);
 
@@ -230,7 +236,16 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
     firstName: parents.firstName,
     lastName: parents.lastName,
     email: parents.email,
-    communicationsConsent: sql<boolean>`COALESCE(bool_or(${bookings.communicationsConsent}), false)`.mapWith(Boolean).as('communicationsConsent'),
+    communicationsConsent: sql<boolean>`COALESCE(
+      (
+        SELECT ${bookings.communicationsConsent}
+        FROM ${bookings}
+        WHERE ${bookings.parentId} = ${parents.id}
+        ORDER BY ${bookings.createdAt} DESC, ${bookings.id} DESC
+        LIMIT 1
+      ),
+      false
+    )`.mapWith(Boolean).as('communicationsConsent'),
   })
   .from(parents)
   .leftJoin(bookings, eq(parents.id, bookings.parentId));

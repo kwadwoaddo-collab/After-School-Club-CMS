@@ -17,6 +17,9 @@ export default async function BinPage() {
     const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] });
     const orgId = (session.user as any).organisationId;
 
+    const userRole = (session.user as any).role;
+    const isOwner = userRole === 'ORG_OWNER';
+
     // Fire-and-forget purge of items older than 30 days
     await purgeStaleBinItems();
 
@@ -118,7 +121,7 @@ export default async function BinPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <BinActions parentId={row.id} parentName={`${row.first_name} ${row.last_name}`} />
+                                            <BinActions parentId={row.id} parentName={`${row.first_name} ${row.last_name}`} canHardDelete={isOwner} />
                                         </TableCell>
                                     </TableRow>
                                 );

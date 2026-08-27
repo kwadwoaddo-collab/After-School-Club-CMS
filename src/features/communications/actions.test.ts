@@ -47,6 +47,7 @@ function makeSelectChain(result: unknown[]) {
     where: vi.fn(() => chain),
     groupBy: vi.fn().mockResolvedValue(result),
     orderBy: vi.fn().mockResolvedValue(result),
+    then: (resolve: any) => resolve(result),
   };
   return chain;
 }
@@ -212,6 +213,58 @@ describe('Communications Actions', () => {
       expect(result.count).toBe(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'consented@test.com' }));
+    });
+
+    it('excludes parent when latest consent is false (withdrawn consent overriding historical true)', async () => {
+      (auth as any).mockResolvedValue(ownerSession());
+      // Re-derived query resolves latest booking consent; parent with withdrawn consent returns false
+      const chain = makeSelectChain([
+        { id: 'p1', firstName: 'Alice', email: 'alice@test.com', communicationsConsent: false },
+      ]);
+      (db.select as any).mockReturnValue(chain);
+
+      const result = await sendBroadcast({
+        audienceParentIds: ['p1'],
+        subject: 'Test',
+        message: 'Hello',
+      });
+
+      expect(result.count).toBe(0);
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('includes parent when latest consent is true (re-opt-in overriding historical false)', async () => {
+      (auth as any).mockResolvedValue(ownerSession());
+      const chain = makeSelectChain([
+        { id: 'p1', firstName: 'Alice', email: 'alice@test.com', communicationsConsent: true },
+      ]);
+      (db.select as any).mockReturnValue(chain);
+
+      const result = await sendBroadcast({
+        audienceParentIds: ['p1'],
+        subject: 'Test',
+        message: 'Hello',
+      });
+
+      expect(result.count).toBe(1);
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('excludes parent with missing/no consent records (defaults to false)', async () => {
+      (auth as any).mockResolvedValue(ownerSession());
+      const chain = makeSelectChain([
+        { id: 'p1', firstName: 'Alice', email: 'alice@test.com', communicationsConsent: false },
+      ]);
+      (db.select as any).mockReturnValue(chain);
+
+      const result = await sendBroadcast({
+        audienceParentIds: ['p1'],
+        subject: 'Test',
+        message: 'Hello',
+      });
+
+      expect(result.count).toBe(0);
+      expect(sendEmail).not.toHaveBeenCalled();
     });
 
     it('HTML-escapes the interpolated firstName and message body (C7)', async () => {

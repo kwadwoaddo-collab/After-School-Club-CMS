@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/Button';
 interface Props {
     parentId: string;
     parentName: string;
+    canHardDelete?: boolean;
 }
 
-export default function BinActions({ parentId, parentName }: Props) {
+export default function BinActions({ parentId, parentName, canHardDelete = false }: Props) {
     const [showRestore, setShowRestore] = useState(false);
     const [showDelete, setShowDelete] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -47,13 +48,15 @@ export default function BinActions({ parentId, parentName }: Props) {
             >
                 <RefreshCcw className="w-3.5 h-3.5" /> Restore
             </button>
-            <button
-                onClick={() => setShowDelete(true)}
-                className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
-                title="Delete forever"
-            >
-                <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            {canHardDelete && (
+                <button
+                    onClick={() => setShowDelete(true)}
+                    className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
+                    title="Delete forever"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
+            )}
 
             {/* Restore confirmation */}
             {showRestore && (
