@@ -179,7 +179,7 @@ export async function seedTrainingData() {
       addressLine1: '10 Elm Road',
       city: 'London',
       postcode: 'SE1 2AA',
-      magicLinkToken: 'magic-token-sarah-jenkins-oakridge',
+      magicLinkToken: nanoid(32),
     }).returning();
 
     const [parentPatel] = await db.insert(schema.parents).values({
@@ -193,7 +193,7 @@ export async function seedTrainingData() {
       addressLine1: '25 Maple Street',
       city: 'London',
       postcode: 'SE1 3BB',
-      magicLinkToken: 'magic-token-david-patel-oakridge',
+      magicLinkToken: nanoid(32),
     }).returning();
 
     const [parentTaylor] = await db.insert(schema.parents).values({

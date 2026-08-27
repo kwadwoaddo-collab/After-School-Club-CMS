@@ -1,5 +1,5 @@
 # SprintScale CMS — Training Environment Safety & Isolation Protocol
-## Zero-Production Mutation Guarantee, Environment Boundary Rules & Executable Safety Guards
+## Zero-Production Mutation Guarantee, Strict Host Allowlist & Executable Safety Guards
 
 ---
 
@@ -8,17 +8,21 @@
 **NO REAL CUSTOMER, PUPIL, STAFF, OR FINANCIAL DATA MAY BE EXPOSED IN ANY TRAINING ASSET.**
 **PRODUCTION DATABASE, SERVERS, AND EXTERNAL INTEGRATIONS MUST NEVER BE TARGETED OR MUTATED DURING D6 VISUAL CAPTURE.**
 
-Visual asset production in Milestone D6 must operate exclusively against the guarded local/staging training environment.
-
 ---
 
-## 2. Environment Identity & Host Isolation Matrix
+## 2. Training Environment Classification & Host Allowlist
 
-| Environment Parameter | Production Environment | Isolated Training Environment | Proven Boundary & Status |
+The visual training capture environment consists of:
+- **Local Application Server:** Running locally (`http://localhost:3000`).
+- **Target Database:** The existing isolated **Staging Neon Branch** (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`).
+
+> **Note on Environment Topology:** The training environment uses the existing isolated staging Neon database branch, strictly isolated under the `oakridge-learning` synthetic organisation namespace. It is NOT a third independent Neon database instance. Production mutations must remain exactly ZERO (0), while staging mutations for synthetic training data are expected and recorded explicitly.
+
+| Environment Parameter | Production Environment | Isolated Staging/Training Environment | Allowlist Status |
 |---|---|---|---|
-| **Base App URL** | `https://app.sprintscaleit.co.uk` | `http://localhost:3000` (Local Dev) | **Targeting production domain during capture is strictly forbidden.** |
-| **Database Host** | `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech` | `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech` | **PROVEN DISTINCT HOSTS** (`TRAINING_HOST != PROD_HOST`). |
-| **Database Path** | `/neondb` (Production Primary) | `/neondb` (Staging / Training Branch) | Completely isolated database branch. |
+| **Base App URL** | `https://app.sprintscaleit.co.uk` | `http://localhost:3000` (Local Dev) | **Production URL strictly prohibited for capture.** |
+| **Database Host** | `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech` | `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech` | **STRICT ALLOWLIST APPROVED** |
+| **Database Path** | `/neondb` (Production Primary) | `/neondb` (Staging / Training Branch) | Completely isolated branch. |
 | **Data Scope** | Sydenham Production Roster | `Oakridge Learning Club Ltd` (100% Synthetic) | Zero real student, parent, or staff records exist in Oakridge org. |
 | **Transactional Email** | Live Resend API | Mocked Email Sink / Unconfigured | Zero emails dispatched to real parent inboxes. |
 | **SMS Gateway** | Twilio (Deferred) | Disabled / Stub Mode | Zero SMS dispatches. |
@@ -27,16 +31,19 @@ Visual asset production in Milestone D6 must operate exclusively against the gua
 
 ---
 
-## 3. Executable Hard Safety Guard (`src/lib/training-guard.ts`)
+## 3. Strict Allowlist-Based Safety Guard (`src/lib/training-guard.ts`)
 
 Any seed, reset, or fixture tooling must pass through `assertSafeTrainingEnvironment()` before executing any query:
 
 ```typescript
 import { assertSafeTrainingEnvironment } from '@/lib/training-guard';
 
-// 1. Fails closed if DATABASE_URL is missing
-// 2. Fails closed if host matches ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech
-// 3. Fails closed if ALLOW_TRAINING_SEED !== 'true'
+// Rules (Fail Closed):
+// 1. Missing or malformed DATABASE_URL throws immediately.
+// 2. ALLOW_TRAINING_SEED !== 'true' throws immediately.
+// 3. TRAINING_ENVIRONMENT !== 'oakridge' throws immediately.
+// 4. Primary Allowlist: parsed DATABASE_URL hostname MUST equal 'ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech'.
+// 5. Defense-in-Depth: blocks 'ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech'.
 const { host, database } = assertSafeTrainingEnvironment();
 ```
 
@@ -46,8 +53,11 @@ const { host, database } = assertSafeTrainingEnvironment();
 
 | Command | Script Path | Action Performed | Safety Guardrail |
 |---|---|---|---|
-| `npm run training:seed` | `src/scripts/seed-training-data.ts` | Cleans previous Oakridge data and re-instantiates complete synthetic dataset. | `ALLOW_TRAINING_SEED=true` required; production host blocked. |
-| `npm run training:reset` | `src/scripts/reset-training-data.ts` | Clean reset and re-seed of synthetic fixtures. | `ALLOW_TRAINING_SEED=true` required; production host blocked. |
+| `npm run training:seed` | `src/scripts/seed-training-data.ts` | Cleans previous Oakridge data and re-instantiates complete synthetic dataset. | Strict host allowlist + `ALLOW_TRAINING_SEED=true` + `TRAINING_ENVIRONMENT=oakridge`. |
+| `npm run training:reset` | `src/scripts/reset-training-data.ts` | Clean reset and re-seed of synthetic fixtures. | Strict host allowlist + `ALLOW_TRAINING_SEED=true` + `TRAINING_ENVIRONMENT=oakridge`. |
+
+### Reset Isolation & Tenant Scoping
+All reset and cleanup operations in `seed-training-data.ts` are strictly parameterized and scoped by `organisation_id` (`Oakridge Learning Club Ltd`). Reset operations **NEVER** truncate shared staging tables or affect unrelated staging organisations.
 
 ---
 

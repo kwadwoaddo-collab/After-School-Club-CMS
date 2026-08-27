@@ -5,41 +5,44 @@
 **Baseline SHA:** `cb4ba78`
 **Branch:** `rebuild/cms-modernisation`
 **Date:** 2026-08-27
-**Status:** **PASS — GUARDED SYNTHETIC CAPTURE ENVIRONMENT LIVE — READY FOR D6B**
+**Status:** **PASS — D6A CAPTURE ENVIRONMENT SAFETY FROZEN — READY FOR D6B**
 
 ---
 
 ## 1. Executive Verdict
 
-**PASS — GUARDED SYNTHETIC CAPTURE ENVIRONMENT LIVE — READY FOR D6B**
+**PASS — D6A CAPTURE ENVIRONMENT SAFETY FROZEN — READY FOR D6B**
 
-Milestone D6A environment reconciliation has established and empirically proven the guarded, completely isolated synthetic capture environment for SprintScale CMS.
+Milestone D6A environment reconciliation has established and empirically proven the guarded, allowlist-based synthetic capture environment for SprintScale CMS.
 
-The executable production guard (`src/lib/training-guard.ts`) prevents accidental execution against the known production database host (`ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`) and enforces explicit `ALLOW_TRAINING_SEED=true` authorization. The full synthetic `Oakridge Learning Club` dataset has been instantiated and verified via read-only SQL queries on the isolated test/staging database branch (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`), with 0 mutations to production.
+The executable production guard ([`src/lib/training-guard.ts`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/src/lib/training-guard.ts)) implements a strict host allowlist (`APPROVED_TRAINING_DB_HOST = ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`), requires an explicit environment marker (`TRAINING_ENVIRONMENT=oakridge`), requires explicit execution acknowledgement (`ALLOW_TRAINING_SEED=true`), and retains defense-in-depth rejection of the known production database host (`ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`).
 
 ---
 
 ## 2. Environment Identity & Host Isolation Proof
 
-| Environment Parameter | Production Environment | Isolated Training Environment | Proven Isolation |
+| Environment Parameter | Production Environment | Isolated Staging/Training Environment | Proven Isolation |
 |---|---|---|---|
-| **Base App URL** | `https://app.sprintscaleit.co.uk` | `http://localhost:3000` (Local Dev) | **Production URL strictly prohibited.** |
-| **Database Host** | `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech` | `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech` | **PROVEN DISTINCT HOSTS** |
+| **Base App URL** | `https://app.sprintscaleit.co.uk` | `http://localhost:3000` (Local Dev) | **Production URL strictly prohibited for capture.** |
+| **Database Host** | `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech` | `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech` | **PROVEN DISTINCT HOSTS (ALLOWLIST VERIFIED)** |
 | **Database Path** | `/neondb` (Production Primary) | `/neondb` (Training/Staging Branch) | Isolated PostgreSQL branch |
 | **Data Scope** | Sydenham Production Roster | `Oakridge Learning Club Ltd` (100% Synthetic) | Zero real student, parent, or staff PII |
 | **Production Health** | `GET /api/health` | **HTTP 200 `{"ok":true}`** | Unaffected & 100% healthy |
-| **Production Mutations** | 0 INSERTs, 0 UPDATEs, 0 DELETEs | Real mutations isolated to training DB | **ZERO PRODUCTION MUTATIONS** |
+| **Production Mutations** | 0 INSERTs, 0 UPDATEs, 0 DELETEs | Real mutations isolated to staging DB | **ZERO PRODUCTION MUTATIONS** |
+
+> **Environment Classification Note:** The training capture environment consists of a LOCAL APPLICATION instance connected to the existing isolated STAGING Neon branch. It is NOT a third independent Neon training branch. Staging mutations are expected and isolated to `oakridge-learning`, while production mutations are guaranteed zero.
 
 ---
 
 ## 3. Executable Production Guard & Tooling Verification
 
 - **Guard Module:** [`src/lib/training-guard.ts`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/src/lib/training-guard.ts)
-  - Unit tests: [`src/lib/training-guard.test.ts`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/src/lib/training-guard.test.ts) (6 passing tests).
-  - Hard failure on production hostname: `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`.
-  - Hard failure on missing `ALLOW_TRAINING_SEED=true`.
+  - Unit tests: [`src/lib/training-guard.test.ts`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/src/lib/training-guard.test.ts) (8 passing allowlist tests).
+  - Primary Allowlist: Target host must strictly match `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`.
+  - Defense in depth: Immediate rejection of known production database host.
+  - Requirement of `ALLOW_TRAINING_SEED=true` and `TRAINING_ENVIRONMENT=oakridge`.
 - **Seed Script:** `npm run training:seed` (`src/scripts/seed-training-data.ts`) — Verified reproducible instantiation.
-- **Reset Script:** `npm run training:reset` (`src/scripts/reset-training-data.ts`) — Verified clean cascade reset.
+- **Reset Script:** `npm run training:reset` (`src/scripts/reset-training-data.ts`) — Verified clean cascade reset scoped strictly to the `oakridge-learning` organisation. Unrelated staging data remains completely protected.
 
 ---
 
@@ -47,12 +50,12 @@ The executable production guard (`src/lib/training-guard.ts`) prevents accidenta
 
 | Entity Category | Synthetic Target | Live DB Count | Verification Evidence |
 |---|---|---|---|
-| **Organisations** | `Oakridge Learning Club Ltd` (`slug: oakridge-learning`) | 1 | Org ID `a8fe0607-1ac7-428b-b815-33c09f712ee1` verified. |
+| **Organisations** | `Oakridge Learning Club Ltd` (`slug: oakridge-learning`) | 1 | Org ID verified. |
 | **Centres / Venues** | `Oakridge Central`, `Oakridge Riverside` | 2 | Primary & secondary venues created. |
-| **Staff Accounts** | Eleanor Vance, Marcus Sterling, Chloe Bennett, Liam Harper | 4 | All 4 RBAC roles represented with password `Password123!`. |
+| **Staff Accounts** | Eleanor Vance, Marcus Sterling, Chloe Bennett, Liam Harper | 4 | All 4 RBAC roles represented. |
 | **Parents** | Sarah Jenkins, David Patel, Rachel Taylor, James Walker | 4 | 3 active families + 1 staged in Recovery Bin (`deletedAt`). |
 | **Children / Pupils** | Oliver, Emma, Aria, Noah, Lucas | 5 | Peanut allergy, asthma, SEN, and reception badges verified. |
-| **Authorised Collectors** | Sarah Jenkins, Rose Jenkins (PIN: 4821) | 2 | Emergency contact & collector PIN fixtures verified. |
+| **Authorised Collectors** | Sarah Jenkins, Rose Jenkins (PIN: `4821`) | 2 | Emergency contact & collector PIN fixtures verified. |
 | **Bookings & Consent** | Jenkins (Consented), Patel (Withdrawn), Walker (Consented) | 3 | Latest booking consent values verified. |
 | **Billing Configs** | Agreed monthly fee for Jenkins (£280) and Patel (£140) | 2 | Sibling discount mapping verified. |
 | **Invoices** | `INV-2026-001` (Paid), `INV-2026-002` (Partially Paid), `INV-2026-003` (Sent) | 3 | Paid, partial, and sent status fixtures verified. |
@@ -66,13 +69,13 @@ The executable production guard (`src/lib/training-guard.ts`) prevents accidenta
 
 ## 5. Login & Role Capture Readiness
 
-| Role | Synthetic Account Email | Default Password | Centre Scoping | Capture Status |
+| Role | Synthetic Account Email | Default Authentication | Centre Scoping | Capture Status |
 |---|---|---|---|---|
-| **Organisation Owner** | `eleanor.vance@example.test` | `Password123!` | All Centres (`central`, `riverside`) | **READY FOR CAPTURE** |
-| **Centre Manager** | `marcus.sterling@example.test` | `Password123!` | `Oakridge Central` & `Oakridge Riverside` | **READY FOR CAPTURE** |
-| **Front Desk Staff** | `chloe.bennett@example.test` | `Password123!` | `Oakridge Central` | **READY FOR CAPTURE** |
-| **Tutor / Leader** | `liam.harper@example.test` | `Password123!` | `Oakridge Central` | **READY FOR CAPTURE** |
-| **Parent Portal** | `sarah.jenkins@example.test` | Magic Token `magic-token-sarah-jenkins-oakridge` | Family Jenkins | **READY FOR CAPTURE** |
+| **Organisation Owner** | `eleanor.vance@example.test` | Standard local test credential | All Centres (`central`, `riverside`) | **READY FOR CAPTURE** |
+| **Centre Manager** | `marcus.sterling@example.test` | Standard local test credential | `Oakridge Central` & `Oakridge Riverside` | **READY FOR CAPTURE** (*Marcus Sterling is the synthetic organisation's designated DSL for training. The MANAGER role itself does not appoint someone as DSL.*) |
+| **Front Desk Staff** | `chloe.bennett@example.test` | Standard local test credential | `Oakridge Central` | **READY FOR CAPTURE** |
+| **Tutor / Leader** | `liam.harper@example.test` | Standard local test credential | `Oakridge Central` | **READY FOR CAPTURE** |
+| **Parent Portal** | `sarah.jenkins@example.test` | Dynamic synthetic magic link | Family Jenkins | **READY FOR CAPTURE** |
 
 ---
 
@@ -82,8 +85,8 @@ The executable production guard (`src/lib/training-guard.ts`) prevents accidenta
 |---|---|---|---|
 | **TypeScript** | `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit` | Clean (0 errors) | **PASS** |
 | **ESLint** | `npm run lint` | Clean (0 errors, 0 warnings) | **PASS** |
-| **Vitest** | `npm test -- --run` | **616 passed across 66 test files (+6 tests, +1 file)** | **PASS (100%)** |
-| **Next.js Build** | `npx next build` | **93 routes compiled successfully** | **PASS** |
+| **Vitest** | `npm test -- --run` | **618 passed across 66 test files (+8 guard tests)** | **PASS (100%)** |
+| **Next.js Build** | `NODE_OPTIONS="--max-old-space-size=4096" npx next build` | **93 routes compiled successfully** | **PASS** |
 | **Production Health** | `GET https://app.sprintscaleit.co.uk/api/health` | **HTTP 200 `{"ok":true}`** | **PASS** |
 | **Production DB Mutations** | Zero mutations | **0 INSERTs, 0 UPDATEs, 0 DELETEs** | **SAFE** |
 
@@ -91,4 +94,4 @@ The executable production guard (`src/lib/training-guard.ts`) prevents accidenta
 
 ## 7. Final Recommendation
 
-**PASS — GUARDED SYNTHETIC CAPTURE ENVIRONMENT LIVE — READY FOR D6B**
+**PASS — D6A CAPTURE ENVIRONMENT SAFETY FROZEN — READY FOR D6B**

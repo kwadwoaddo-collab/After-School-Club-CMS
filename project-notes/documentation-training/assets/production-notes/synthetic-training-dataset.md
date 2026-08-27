@@ -10,7 +10,7 @@ The synthetic training dataset provides a fully populated, reproducible environm
 - **Organisation Slug:** `oakridge-learning`
 - **Seed Script:** `npm run training:seed` (`src/scripts/seed-training-data.ts`)
 - **Reset Script:** `npm run training:reset` (`src/scripts/reset-training-data.ts`)
-- **Safety Guard:** Verified via `src/lib/training-guard.ts` (`ALLOW_TRAINING_SEED=true`)
+- **Safety Guard:** Verified via `src/lib/training-guard.ts` (`ALLOW_TRAINING_SEED=true`, `TRAINING_ENVIRONMENT=oakridge`, strict host allowlist)
 
 ---
 
@@ -43,14 +43,14 @@ The synthetic training dataset provides a fully populated, reproducible environm
 
 ---
 
-## 3. Staff Personas & Login Credentials
+## 3. Staff Personas & Access Roles
 
-All synthetic staff accounts use the standardized training password: `Password123!`
+Synthetic staff accounts are provisioned in the local capture environment with standard test authentication credentials.
 
 | Persona Name | Email Address | CMS Role | Venue Access | Primary Capture Function |
 |---|---|---|---|---|
 | **Eleanor Vance** | `eleanor.vance@example.test` | `ORG_OWNER` | All Centres (`central`, `riverside`) | Club Principal; settings, staff invites, voiding, permanent purge. |
-| **Marcus Sterling** | `marcus.sterling@example.test` | `MANAGER` | `Oakridge Central` & `Oakridge Riverside` | Centre Lead & DSL; registrations, broadcasts, restricted safeguarding. |
+| **Marcus Sterling** | `marcus.sterling@example.test` | `MANAGER` | `Oakridge Central` & `Oakridge Riverside` | Centre Lead; registrations, broadcasts, restricted safeguarding records. (*Note: Marcus Sterling is the synthetic organisation's designated DSL for training. The MANAGER role itself does not appoint someone as DSL.*) |
 | **Chloe Bennett** | `chloe.bennett@example.test` | `FRONT_DESK` | `Oakridge Central` | Administrator; check-in/out, walk-ins, offline cash payment, bin restore. |
 | **Liam Harper** | `liam.harper@example.test` | `TUTOR` | `Oakridge Central` | Activity Leader; live roll call, kiosk mode, student notes, first aid accident. |
 
@@ -60,7 +60,7 @@ All synthetic staff accounts use the standardized training password: `Password12
 
 ### Family 1: Sarah Jenkins (Standard Multi-Child, Consented)
 - **Parent:** `Sarah Jenkins` (`sarah.jenkins@example.test`, Tel: `07700 900111`)
-- **Magic Link Token:** `magic-token-sarah-jenkins-oakridge`
+- **Portal Authentication:** Synthetic parent magic link provisioned dynamically for local capture.
 - **Address:** `10 Elm Road, London, SE1 2AA`
 - **Authorised Collectors:**
   1. `Sarah Jenkins` (Mother, phone `07700 900111`)
@@ -73,7 +73,7 @@ All synthetic staff accounts use the standardized training password: `Password12
 
 ### Family 2: David Patel (Single Child, Withdrawn Consent)
 - **Parent:** `David Patel` (`david.patel@example.test`, Tel: `07700 900222`)
-- **Magic Link Token:** `magic-token-david-patel-oakridge`
+- **Portal Authentication:** Synthetic parent magic link provisioned dynamically for local capture.
 - **Address:** `25 Maple Street, London, SE1 3BB`
 - **Child:** **Aria Patel:** DOB: `11/11/2015` (Year 5), Medical: `Mild Asthma (Inhaler with child)`, Dietary: `Halal`.
 - **Agreed Monthly Fee:** £140.00 / month.
