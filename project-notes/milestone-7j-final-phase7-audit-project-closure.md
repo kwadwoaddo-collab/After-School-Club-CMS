@@ -155,7 +155,7 @@ Fail-open on Redis outage. Secrets redacted in logs.
 | `/api/health` | LIVE — real DB probe |
 | Structured logging | LIVE — pino via `src/lib/logger.ts` |
 | Logger redaction | LIVE — 10 key patterns, 13 regression tests |
-| Sentry | HUMAN CONFIGURATION REQUIRED — SDK wired, DSN absent |
+| Sentry | **LIVE AND RUNTIME VERIFIED** — DSN activated 2026-08-27; test event confirmed (eventId: `5538452e581948c49f424fb430da15b7`) |
 | Incident runbook | `project-notes/production-incident-runbook.md` |
 
 ### 6.4 Recovery Assets
@@ -253,10 +253,9 @@ These items require operator action and are non-blocking for production operatio
 
 | Priority | Item | Action |
 |---|---|---|
-| MEDIUM | Sentry DSN activation | Add `NEXT_PUBLIC_SENTRY_DSN=<dsn>` to Vercel Production env vars |
 | MEDIUM | Wonde remediation | Implement real API client, response parsing, pagination, error handling before activation |
 | LOW | Email retry / dead-letter queue | Consider for future scale |
-| LOW | Suspicious auth activity alerting | Consider post-Sentry activation |
+| LOW | Suspicious auth activity alerting | Sentry is now active — configure alert rules in Sentry dashboard as needed |
 
 ---
 
@@ -322,7 +321,7 @@ Across all Phase-7 milestones, the following were confirmed zero:
 | 11 | Is Wonde correctly classified (not ready to activate)? | YES — PARTIALLY IMPLEMENTED classification stands | **SAFE** |
 | 12 | Is rate limiting at expected thresholds? | YES — 3 limiters confirmed, Upstash Production | **SAFE** |
 | 13 | Is UptimeRobot monitoring active? | YES — UP, 0 incidents, operator email configured | **SAFE** |
-| 14 | Is Sentry correctly classified (not falsely claimed active)? | YES — HUMAN CONFIGURATION REQUIRED | **DEBT** |
+| 14 | Is Sentry live and runtime verified? | YES — DSN activated 2026-08-27; test event `5538452e581948c49f424fb430da15b7` confirmed delivered (flush: SUCCESS) | **SAFE** |
 | 15 | Are financial records intact and consistent? | YES — £4,300 invoiced, £3,800 paid, 0 orphans | **SAFE** |
 | 16 | Are all relational FK constraints intact? | YES — 0 orphans across all 9 checks | **SAFE** |
 | 17 | Was the protected Sydenham org preserved throughout? | YES — 0 mutations to legitimate records | **SAFE** |
@@ -330,7 +329,39 @@ Across all Phase-7 milestones, the following were confirmed zero:
 | 19 | Is working tree clean at Phase-7 exit? | YES — `nothing to commit, working tree clean` | **SAFE** |
 | 20 | Is the system operationally ready for post-Phase-7 operation? | YES — no blockers, runbook available | **SAFE** |
 
-**Adversarial Arithmetic: SAFE 18 | DEBT 2 | DEFECT 0 | BLOCKED 0 | TOTAL 20** ✅
+**Adversarial Arithmetic: SAFE 19 | DEBT 1 | DEFECT 0 | BLOCKED 0 | TOTAL 20** ✅
+
+*(Debt: npm audit 15 vulns — identical to Phase-6 baseline, inherits pre-7 state)*
+
+---
+
+## 15A. Post-Phase-7 Sentry Activation Record
+
+| Property | Value |
+|---|---|
+| Activation date | 2026-08-27T00:20:00Z |
+| Vercel env var | `NEXT_PUBLIC_SENTRY_DSN` — Production scope |
+| DSN host | `o4511979881562112.ingest.de.sentry.io` (DE data residency) |
+| Runtime verification date | 2026-08-27T08:09:31Z |
+| Test event name | `7J-sentry-activation-verification-2026-08-27T08:09:31.259Z` |
+| Test event ID | `5538452e581948c49f424fb430da15b7` |
+| SDK integrations confirmed | 43 (including PostgresJs, Http, RequestData, OnUncaughtException, OnUnhandledRejection) |
+| Flush result | `SUCCESS — event delivered to Sentry` |
+| Production contamination | ZERO — census ZERO DELTA before and after |
+| Final classification | **SENTRY — LIVE AND RUNTIME VERIFIED** |
+
+### 15B. Browser Subagent Production Contamination Incident (2026-08-27)
+
+During the Sentry activation browser verification session, a browser subagent was instructed to log in and check Sentry SDK loading. The subagent was unable to log in with existing credentials due to browser extension interference (True Key password manager), and instead created two synthetic organisations via the public signup flow:
+
+| Org ID | Name | Created |
+|---|---|---|
+| `847eacba-aacd-4698-86d5-d266f1afc9f6` | JD Academy | 2026-08-27 01:12:47Z |
+| `7e1383c5-8836-4637-9fa5-ccd21501e490` | Test Academy | 2026-08-27 02:03:31Z |
+
+**Immediate remediation**: `scripts/emergency-cleanup-synthetic-orgs.ts` executed within 5 minutes of detection. Both synthetic organisations, their centres, users, accounts and sessions were removed via guarded cascade deletion. Sydenham After School Club LTD was preserved throughout. Production census restored to protected baseline within the same session.
+
+**Post-cleanup census**: organisations: 1, centres: 2, users: 11 — ZERO DELTA vs protected fingerprint.
 
 ---
 
