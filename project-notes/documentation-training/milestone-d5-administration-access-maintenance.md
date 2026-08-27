@@ -17,14 +17,14 @@
 
 Milestone D5 has established the authoritative, source-grounded functional user manuals, master administration journey, operational rationales, D6-ready video scripts, screenshot specifications, and troubleshooting handbooks covering the multi-centre administration and access layer of SprintScale CMS.
 
-### Key Administrative Boundaries Reconciled:
-1. **Permanent Purge Role Gate:** Verified that `hardDeleteParent`, `restoreParent`, `softDeleteParent`, and the Recovery Bin page enforce `['ORG_OWNER', 'MANAGER', 'FRONT_DESK']`. `TUTOR` is strictly blocked. (Cross-document correction: earlier D1/D2 wording stating purge was Owner-only is updated to reflect exact codebase reality).
+### Key Administrative Boundaries Reconciled & Remediated:
+1. **Permanent Purge Role Gate:** Hardened in D5.R so that `hardDeleteParent` is strictly restricted to `ORG_OWNER` only. `restoreParent` and `softDeleteParent` remain accessible to `['ORG_OWNER', 'MANAGER', 'FRONT_DESK']`. `TUTOR` is strictly blocked.
 2. **Sentry Classification Restored:** Standardized to: **CONFIGURED AND SDK DELIVERY VERIFIED** (controlled event verified via local Node process using Production DSN; real production runtime exception capture not empirically verified). UptimeRobot remains **LIVE AND EXTERNALLY VERIFIED**.
-3. **Administrative Audit Coverage:** Mapped exact audit event coverage. Confirmed that `auditEvents` table is populated exclusively for financial invoice/payment events; general admin mutations log to server console (`logger.info`/`logger.error`).
+3. **Administrative Audit Coverage:** Mapped exact audit event coverage. Confirmed that `auditEvents` table is populated for financial invoice/payment events and annual academic rollover completion; general admin mutations log to server console (`logger.info`/`logger.error`).
 4. **Staff Deactivation & Session Lockout:** Confirmed `/api/staff/remove` deletes `centreMemberships` and sets `users.organisationId = null`. On the next authenticated request, `requireAuth` immediately denies dashboard access. Historical attribution (`users.id` foreign keys) is 100% preserved.
 5. **Parent Broadcast Execution Model:** Clarified that broadcasts execute via an **in-process asynchronous task** (`sendEmailsTask`), not a durable message queue.
-6. **Communications Consent Semantics:** Verified that `COALESCE(bool_or(bookings.communicationsConsent), false)` aggregates over all historical bookings for that parent.
-7. **Academic-Year Rollover:** Documented automated September 1st 00:00 UTC server cron (`/api/cron/school-year-roll`), noting that execution is non-idempotent and global database-wide.
+6. **Communications Consent Semantics:** Hardened in D5.R so that `sendBroadcast` and `getParentsForCentre` evaluate the parent's latest booking consent ordered by `createdAt DESC, id DESC`, ensuring that consent withdrawals (`false`) immediately override older `true` values.
+7. **Academic-Year Rollover:** Hardened in D5.R with PostgreSQL transactional advisory locking (`pg_try_advisory_xact_lock`) and `auditEvents` completion check to guarantee concurrency-safe, single-run idempotency.
 8. **Recovery Bin 30-Day Purge:** Documented that `purgeStaleBinItems` executes lazily upon Recovery Bin page load for items where `deleted_at < NOW() - INTERVAL '30 days'`.
 
 ---
@@ -48,7 +48,8 @@ Milestone D5 has established the authoritative, source-grounded functional user 
 | **Global Finance Dashboard** | FULL | BLOCKED | BLOCKED | BLOCKED | NOT AVAILABLE | `src/app/dashboard/finance/page.tsx` |
 | **Record Offline Payments** | FULL | ASSIGNED CENTRES | ASSIGNED CENTRES | BLOCKED | NOT AVAILABLE | `recordPayment` |
 | **Void / Delete Invoices** | FULL (Owner Only) | BLOCKED | BLOCKED | BLOCKED | NOT AVAILABLE | `voidInvoice` / `deleteInvoice` |
-| **Recovery Bin, Restore & Hard Purge** | FULL | FULL | FULL | BLOCKED | NOT AVAILABLE | `bin.actions.ts` |
+| **Recovery Bin View & Restore** | FULL | FULL | FULL | BLOCKED | NOT AVAILABLE | `bin.actions.ts` |
+| **Permanent Purge (`hardDeleteParent`)** | FULL (Owner Only) | BLOCKED | BLOCKED | BLOCKED | NOT AVAILABLE | `bin.actions.ts` |
 | **Parent Portal (`/portal`)** | NOT AVAILABLE | NOT AVAILABLE | NOT AVAILABLE | NOT AVAILABLE | OWN FAMILY ONLY | `src/app/portal/` |
 
 ---

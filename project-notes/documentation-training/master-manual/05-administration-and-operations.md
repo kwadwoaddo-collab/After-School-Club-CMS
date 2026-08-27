@@ -127,13 +127,13 @@ SprintScale implements a four-tier Role-Based Access Control (RBAC) model:
 SprintScale allows Owners and Managers to communicate with parents at scale:
 
 - **Targeted Broadcasts:** Comms can be scoped to all centres or filtered to a single assigned venue.
-- **Server-Side Consent Filtering:** When initiating a broadcast, the system automatically checks `bookings.communicationsConsent`. Only parents who have opted in to communications receive broadcast emails.
-- **Transactional vs. Operational:** Essential transactional notices (e.g. invoice notifications, booking confirmations, emergency incident reports) are dispatched directly to the parent's registered email address.
+- **Server-Side Consent Filtering:** When initiating a broadcast, the system automatically evaluates the parent's latest booking preference. Only parents whose current stated preference is opted-in receive broadcast emails.
+- **Transactional vs. Operational:** Essential transactional notices (e.g. invoice notifications, booking confirmations, emergency incident reports) are dispatched directly to the parent's registered email address without promotional consent checks.
 
 ---
 
 ## 6. Academic-Year Rollover & Data Retention
 
-- **Automated September 1st Rollover:** SprintScale includes an automated cron service (`/api/cron/school-year-roll`) that advances pupil year groups by one grade annually on September 1st (e.g. Nursery $\to$ Reception $\to$ Year 1 $\to \dots \to$ Year 13 $\to$ Graduated).
-- **Soft-Deletion & Recovery Bin:** Deleting a family moves the parent and linked child records to the **Recovery Bin** (`/dashboard/parents/bin`) with a `deletedAt` timestamp. Staff have 30 days to restore the record before automatic background purging.
-- **Audit Event Trail:** High-risk actions (invoice creation, payment logging, invoice voiding) emit structured audit events in `auditEvents` with actor attribution, timestamp, and metadata.
+- **Automated September 1st Rollover:** SprintScale includes an automated cron service (`/api/cron/school-year-roll`) that advances pupil year groups by one grade annually on September 1st (e.g. Nursery $\to$ Reception $\to$ Year 1 $\to \dots \to$ Year 13 $\to$ Graduated). The endpoint uses PostgreSQL transactional advisory locking and completion audit checks to guarantee single-execution idempotency.
+- **Soft-Deletion & Recovery Bin:** Deleting a family moves the parent and linked child records to the **Recovery Bin** (`/dashboard/parents/bin`) with a `deletedAt` timestamp. Staff have 30 days to restore the record before background purging, and permanent on-demand erasure is restricted strictly to Organisation Owners.
+- **Audit Event Trail:** High-risk actions (invoice creation, payment logging, invoice voiding, and annual rollover completion) emit structured audit events in `auditEvents` with actor attribution, timestamp, and metadata.

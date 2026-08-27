@@ -71,6 +71,9 @@ project-notes/documentation-training/
 │   ├── d4-video-scripts.md                         # 14 Focused Micro-Video Screencast Scripts
 │   └── d5-video-scripts.md                         # 14 Focused Micro-Video Screencast Scripts
 │
+├── visual-manifest/                               # Visual Production Pipeline
+│   └── d6-visual-production-manifest.md            # Master Production Queue for Screenshots & Screencasts
+│
 └── troubleshooting/                                # Error Resolution Handbooks
     ├── d2-family-booking-troubleshooting.md        # 15 Family, Registration & Booking Scenarios
     ├── d3-attendance-safeguarding-troubleshooting.md # 22 Attendance, Kiosk & Safeguarding Scenarios
@@ -103,7 +106,7 @@ Find the guide tailored to your specific responsibilities:
 | **D2** | **Functional Manuals: People & Bookings** (Parents, Students, Registrations Queue, Booking Wizards, Journey, Rationale) | **COMPLETE** |
 | **D3** | **Functional Manuals: Classroom & Safeguarding** (Attendance Roll Call, Kiosk Mode, Session Ledger, Incidents & DSL Files) | **COMPLETE** |
 | **D4** | **Functional Manuals: Finance & Billing** (Agreed-Fee Family Billing, Monthly Invoice Runs, TFC & Bank Reconciliation, Receipts) | **COMPLETE** |
-| **D5** | **Functional Manuals: Administration & Operations** (Centres, Staff Permissions, Email Broadcasts, GDPR Exports, Academic Rollover, Recovery Bin) | **COMPLETE** |
-| **D6** | **Visual Assets Production** (Annotated Screenshot Figures, Micro-Video Screencast Recordings) | *Scheduled* |
+| **D5** | **Functional Manuals: Administration & Operations** (Centres, Staff Permissions, Email Broadcasts, GDPR Exports, Academic Rollover, Recovery Bin) | **COMPLETE (FROZEN)** |
+| **D6** | **Visual Assets Production** ([D6 Visual Production Manifest](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/d6-visual-production-manifest.md)) | *Ready for Execution* |
 | **D7** | **Troubleshooting Handbook, Statutory Rationales & In-App Help Centre** (Error handbook, FAQs, in-app articles) | *Scheduled* |
 | **D8** | **Comprehensive Documentation QA, Cross-Link Verification & Release Freeze** | *Scheduled* |
