@@ -8,10 +8,10 @@
 This manual outlines the annual academic progression of pupil records and the data retention lifecycle within SprintScale CMS:
 
 - **Academic Year Progression:** How pupil school years advance from Reception through Year 13 to Graduated status.
-- **Automated September 1st Rollover Cron:** The serverless background cron service (`/api/cron/school-year-roll`) that advances pupil year groups annually.
+- **Automated September 1st Rollover Cron:** The serverless background cron service (`/api/cron/school-year-roll`) that advances pupil year groups annually with durable idempotency and concurrency guards.
 - **Soft Deletion & Recovery Bin:** Moving archived family accounts to the Recovery Bin (`/dashboard/parents/bin`).
 - **Record Restoration:** Restoring soft-deleted parents and children back to active rosters.
-- **30-Day Purge Eligibility & Permanent Deletion:** Hard-deleting records lazily or on-demand.
+- **30-Day Purge Eligibility & Permanent Deletion:** Hard-deleting records lazily or permanently destroying records (Owner only).
 
 ---
 
@@ -31,6 +31,7 @@ The progression cycle follows the standard UK national education framework:
 │      ...      ──►      ...                                  │
 │  `Year 12`    ──►  `Year 13`                                │
 │  `Year 13`+   ──►  `Graduated`                              │
+│  `Graduated`  ──►  `Graduated` (stable terminal state)      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,9 +43,9 @@ SprintScale executes annual grade advancement via an automated serverless cron e
 
 1. **Execution Schedule:** Scheduled annually on **September 1st at 00:00 UTC**.
 2. **Security:** Guarded by an `Authorization: Bearer <CRON_SECRET>` header.
-3. **Database Transaction:** Evaluates all pupil records globally across all organisations and increments their `schoolYear` according to the progression matrix above.
-4. **Non-Idempotent Cron Execution:** Running the rollover endpoint multiple times in the same year would advance pupils multiple grades. It is secured against accidental multiple runs by restricting execution to the secret-authenticated cron runner.
-5. **No Manual Dashboard Rollover Button:** There is no self-service "Rollover Now" button in the dashboard; individual year adjustments are made directly on the pupil's profile.
+3. **Transactional Advisory Lock:** Uses a PostgreSQL transaction advisory lock (`pg_try_advisory_xact_lock`) to prevent concurrent duplicate invocations.
+4. **Durable Idempotency Guard:** Checks the `auditEvents` table for a completed `school_year_rollover_completed` record for the target rollover year. If a rollover for that year has already completed, subsequent runs safely exit as no-ops (`skipped: true`).
+5. **Database Progression:** Advances all pupil records globally across all organisations and increments their `schoolYear` according to the progression matrix above.
 6. **Historical Record Integrity:** Updating a child's current school year does **not** alter past attendance registers, session logs, or historical invoices.
 
 ---
@@ -71,6 +72,9 @@ SprintScale protects against accidental data loss through a two-stage deletion l
 │  5. Records become eligible for purge after 30 days.        │
 │     `purgeStaleBinItems` lazily purges expired items on     │
 │     Recovery Bin page loads (`deletedAt < NOW() - 30 days`).│
+│                                                             │
+│  6. Permanent on-demand purge (`hardDeleteParent`) is       │
+│     strictly restricted to Organisation Owners.             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -80,9 +84,9 @@ SprintScale protects against accidental data loss through a two-stage deletion l
 
 | Role | Move to Bin (`softDeleteParent`) | Restore Family (`restoreParent`) | Permanent Purge (`hardDeleteParent`) |
 |---|---|---|---|
-| **Organisation Owner (`ORG_OWNER`)** | ✅ Allowed | ✅ Allowed | ✅ Allowed |
-| **Centre Manager (`MANAGER`)** | ✅ Allowed | ✅ Allowed | ✅ Allowed |
-| **Front Desk (`FRONT_DESK`)** | ✅ Allowed | ✅ Allowed | ✅ Allowed |
+| **Organisation Owner (`ORG_OWNER`)** | ✅ Allowed | ✅ Allowed | ✅ **Allowed (Owner Only)** |
+| **Centre Manager (`MANAGER`)** | ✅ Allowed | ✅ Allowed | ❌ **Blocked** |
+| **Front Desk (`FRONT_DESK`)** | ✅ Allowed | ✅ Allowed | ❌ **Blocked** |
 | **Tutor (`TUTOR`)** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
 | **Parent (`PARENT`)** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
 
@@ -119,12 +123,14 @@ The system resets `deletedAt = null` for the parent and all children deleted at 
 ---
 
 ### Procedure 3: Permanently Purging a Family Record
+**Who Can Do This:** Organisation Owner (`ORG_OWNER`) Only
+
 > [!CAUTION]
 > **Permanent Deletion Warning:**
-> Permanently purging a record deletes the parent and cascades to children, medical records, and registration histories. **This action is irreversible.**
+> Permanently purging a record deletes the parent and cascades to children, medical records, and registration histories. **This action is irreversible.** For safety, this button is visible and executable strictly by Organisation Owners.
 
 **Steps:**
-1. Open the Recovery Bin at `/dashboard/parents/bin`.
-2. Locate the record and click **Permanently Delete** (red trash can).
-3. Confirm the irreversible purge.
+1. Log in as an Organisation Owner and open `/dashboard/parents/bin`.
+2. Locate the record and click **Delete forever** (red trash can).
+3. Confirm the irreversible purge in the dialog.
 4. The record is permanently deleted from PostgreSQL via `hardDeleteParent`.

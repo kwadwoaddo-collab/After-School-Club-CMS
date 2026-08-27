@@ -39,7 +39,8 @@ SprintScale enforces strict server-side authorization across all modules:
 | **Restricted Safeguarding Records (DSL)** | ✅ Full Access | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **Parent Broadcasts (`/communications`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **GDPR Organisation Export (`/settings`)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
-| **Recovery Bin, Restore & Hard Purge** | ✅ Full Access | ✅ Full Access | ✅ Full Access | ❌ Blocked |
+| **Recovery Bin View & Family Restore** | ✅ Full Access | ✅ Full Access | ✅ Full Access | ❌ Blocked |
+| **Permanent Purge (`hardDeleteParent`)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
 
 ---
 

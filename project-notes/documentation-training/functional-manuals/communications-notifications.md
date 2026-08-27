@@ -9,7 +9,7 @@ The **Communications Module** (`/dashboard/communications`) allows club operator
 
 Key Capabilities:
 - **Targeted Broadcasts:** Comms can be sent organisation-wide or scoped to a specific venue.
-- **Server-Side Consent Enforcement:** The system automatically filters recipient lists to parents who have provided active communications consent.
+- **Server-Side Consent Enforcement:** The system automatically filters recipient lists to parents whose current stated preference is consented.
 - **Background Email Dispatch:** In-process asynchronous email dispatch powered by Resend with HTML body sanitization.
 - **Broadcast History & Metrics:** Central log tracking sent messages, recipient counts, and delivery success/failure tallies.
 - **In-App Header Notification Bell:** Real-time dashboard alerts for new bookings, cancellations, and administrative events.
@@ -30,7 +30,7 @@ Key Capabilities:
 
 ## 3. Communications Consent: How the Software Filters Recipients
 
-SprintScale enforces communications preferences directly at the server level:
+SprintScale enforces communications preferences directly at the server level using the parent's **current** stated preference:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -39,15 +39,18 @@ SprintScale enforces communications preferences directly at the server level:
 │  1. Parent provides consent during registration/booking     │
 │     stored on `bookings.communicationsConsent`.             │
 │                                                             │
-│  2. When a broadcast is sent, `sendBroadcast` queries:      │
-│     `COALESCE(bool_or(bookings.communications_consent), false)`│
+│  2. When a broadcast is evaluated, the system queries the   │
+│     parent's **latest booking** ordered by creation date:   │
+│     `COALESCE((SELECT b.communications_consent FROM bookings│
+│       WHERE b.parent_id = parents.id ORDER BY b.created_at  │
+│       DESC, b.id DESC LIMIT 1), false)`                     │
 │                                                             │
-│  3. The `bool_or` function aggregates all historical        │
-│     bookings for that parent. If any booking is `true`,     │
-│     the parent is treated as consented.                     │
+│  3. If a parent previously consented but later submits a    │
+│     booking with consent = false, the latest preference     │
+│     (`false`) is authoritative (withdrawn consent).         │
 │                                                             │
 │  4. Broadcast emails are dispatched ONLY to parents with     │
-│     verified `true` consent.                                │
+│     verified current `true` consent.                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -80,7 +83,7 @@ SprintScale enforces communications preferences directly at the server level:
 7. Click **Send Broadcast**.
 
 **What Happens in the System:**
-- The system re-derives consent server-side, verifying that every recipient has `communicationsConsent === true`.
+- The system re-derives current consent server-side from the latest booking record.
 - A row is created in the `broadcasts` table with `recipientCount`.
 - An asynchronous task dispatches emails via Resend.
 - The broadcast appears in the **Broadcast History** table with live success and failure counters.
