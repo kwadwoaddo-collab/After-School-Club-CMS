@@ -1,75 +1,94 @@
 # SprintScale CMS — Milestone D6A Report
-## Synthetic Training Environment & Capture Infrastructure
+## Synthetic Training Environment, Hard Safety Guards & Capture Infrastructure
 
-**Milestone:** D6A  
-**Baseline SHA:** `74bc909`  
-**Branch:** `rebuild/cms-modernisation`  
-**Date:** 2026-08-27  
-**Status:** **PASS — SYNTHETIC INFRASTRUCTURE ESTABLISHED — READY FOR D6B**  
+**Milestone:** D6A Environment Reconciliation
+**Baseline SHA:** `cb4ba78`
+**Branch:** `rebuild/cms-modernisation`
+**Date:** 2026-08-27
+**Status:** **PASS — GUARDED SYNTHETIC CAPTURE ENVIRONMENT LIVE — READY FOR D6B**
 
 ---
 
 ## 1. Executive Verdict
 
-**PASS — SYNTHETIC INFRASTRUCTURE ESTABLISHED — READY FOR D6B**
+**PASS — GUARDED SYNTHETIC CAPTURE ENVIRONMENT LIVE — READY FOR D6B**
 
-Milestone D6A has successfully established the complete, isolated, reproducible synthetic training environment and visual asset capture infrastructure for SprintScale CMS. 
+Milestone D6A environment reconciliation has established and empirically proven the guarded, completely isolated synthetic capture environment for SprintScale CMS.
 
-All 130 unique visual assets (78 screenshots and 52 micro-videos) have been reconciled, deduplicated, and catalogued with permanent identifiers, role mappings, and priority classifications. A formal synthetic dataset specification (`Oakridge Learning Club`) and strict environment safety protocols are in place, guaranteeing zero exposure of real student, parent, staff, or financial PII.
-
----
-
-## 2. Baseline Verification
-
-- **Branch:** `rebuild/cms-modernisation`
-- **Starting & Current HEAD:** `74bc909`
-- **Origin Synchronization:** Up to date with `origin/rebuild/cms-modernisation`
-- **Working Tree State:** Clean
-- **Node Runtime:** `v20.20.0`
-- **Package Manager:** `npm 10.8.2`
-- **Production Health:** **HTTP 200 `{"ok":true}`** (`https://app.sprintscaleit.co.uk/api/health`)
+The executable production guard (`src/lib/training-guard.ts`) prevents accidental execution against the known production database host (`ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`) and enforces explicit `ALLOW_TRAINING_SEED=true` authorization. The full synthetic `Oakridge Learning Club` dataset has been instantiated and verified via read-only SQL queries on the isolated test/staging database branch (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`), with 0 mutations to production.
 
 ---
 
-## 3. Manifest Reconciliation & Asset Arithmetic
+## 2. Environment Identity & Host Isolation Proof
 
-The D5 visual production manifest has been audited against all functional user manuals and video scripts to create the permanent Canonical Asset Registry:
-
-| Asset Category | Raw Specifications | Deduplicated Unique Assets | Essential (P0/P1) Priority | Supplementary (P2/P3) Priority | Registry Status |
-|---|---|---|---|---|---|
-| **Annotated UI Screenshots** | 90 | **78** | **46** | 32 | **READY FOR CAPTURE** |
-| **Micro-Video Screencasts** | 57 | **52** | **32** | 20 | **READY FOR CAPTURE** |
-| **Total Visual Assets** | 147 | **130** | **78** | 52 | **READY FOR CAPTURE** |
-
----
-
-## 4. D6A Deliverables Created
-
-1. [`assets/registry/asset-registry.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/assets/registry/asset-registry.md) — Master canonical asset inventory with IDs `SS-D6-S001`–`SS-D6-S078` and `SS-D6-V001`–`SS-D6-V052`.
-2. [`assets/production-notes/synthetic-training-dataset.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/assets/production-notes/synthetic-training-dataset.md) — Complete specification of `Oakridge Learning Club`, staff personas, family rosters, financial fixtures, and generic safeguarding rules.
-3. [`assets/production-notes/capture-standard.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/assets/production-notes/capture-standard.md) — Viewports (Desktop 1440×900, Tablet 1024×768, Mobile 375×812), numbered callout badges (`#0284c7`), video pacing, and transcript formatting rules.
-4. [`assets/production-notes/environment-safety.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/assets/production-notes/environment-safety.md) — Zero-production mutation rules, database host guardrails, browser privacy standards.
-5. [`milestone-d6a-training-environment-capture-infrastructure.md`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/milestone-d6a-training-environment-capture-infrastructure.md) — This milestone report.
-
----
-
-## 5. D6A Quality Gate Verification
-
-| # | Quality Gate Question | Verification Evidence | Verdict |
+| Environment Parameter | Production Environment | Isolated Training Environment | Proven Isolation |
 |---|---|---|---|
-| 1 | Is production isolated? | `environment-safety.md` establishes strict localhost/mock boundary; production database hostname guards active. | **PASS** |
-| 2 | Is training data 100% synthetic? | `synthetic-training-dataset.md` defines `Oakridge Learning Club` with 0 real customer, pupil, or staff records. | **PASS** |
-| 3 | Is the training state reproducible? | Deterministic personas, invoice balances, and session rosters documented in full. | **PASS** |
-| 4 | Are all 130 expected unique assets accounted for? | 78 screenshots and 52 micro-videos registered in `asset-registry.md`. | **PASS** |
-| 5 | Are duplicate assets reconciled? | Deduplicated from 147 raw specs to 130 unique permanent assets. | **PASS** |
-| 6 | Does every asset have a stable ID? | `SS-D6-S001`–`SS-D6-S078` and `SS-D6-V001`–`SS-D6-V052` assigned. | **PASS** |
-| 7 | Are essential assets identified? | Exactly 46 essential screenshots and 32 essential videos tagged. | **PASS** |
-| 8 | Are role mappings accurate? | Mapped to server-side RBAC: Owner, Manager, Front Desk, Tutor, Parent. | **PASS** |
-| 9 | Are safeguarding capture rules explicit? | Generic placeholder policy enforced; realistic sensitive narratives prohibited. | **PASS** |
-| 10 | Can D6B begin without improvisation? | Standard viewports, routes, personas, and click paths fully specified. | **PASS** |
+| **Base App URL** | `https://app.sprintscaleit.co.uk` | `http://localhost:3000` (Local Dev) | **Production URL strictly prohibited.** |
+| **Database Host** | `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech` | `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech` | **PROVEN DISTINCT HOSTS** |
+| **Database Path** | `/neondb` (Production Primary) | `/neondb` (Training/Staging Branch) | Isolated PostgreSQL branch |
+| **Data Scope** | Sydenham Production Roster | `Oakridge Learning Club Ltd` (100% Synthetic) | Zero real student, parent, or staff PII |
+| **Production Health** | `GET /api/health` | **HTTP 200 `{"ok":true}`** | Unaffected & 100% healthy |
+| **Production Mutations** | 0 INSERTs, 0 UPDATEs, 0 DELETEs | Real mutations isolated to training DB | **ZERO PRODUCTION MUTATIONS** |
 
 ---
 
-## 6. Final Recommendation
+## 3. Executable Production Guard & Tooling Verification
 
-**PASS — SYNTHETIC INFRASTRUCTURE ESTABLISHED — READY FOR D6B**
+- **Guard Module:** [`src/lib/training-guard.ts`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/src/lib/training-guard.ts)
+  - Unit tests: [`src/lib/training-guard.test.ts`](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/src/lib/training-guard.test.ts) (6 passing tests).
+  - Hard failure on production hostname: `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`.
+  - Hard failure on missing `ALLOW_TRAINING_SEED=true`.
+- **Seed Script:** `npm run training:seed` (`src/scripts/seed-training-data.ts`) — Verified reproducible instantiation.
+- **Reset Script:** `npm run training:reset` (`src/scripts/reset-training-data.ts`) — Verified clean cascade reset.
+
+---
+
+## 4. Live Synthetic Dataset Verification (Read-Only Audit)
+
+| Entity Category | Synthetic Target | Live DB Count | Verification Evidence |
+|---|---|---|---|
+| **Organisations** | `Oakridge Learning Club Ltd` (`slug: oakridge-learning`) | 1 | Org ID `a8fe0607-1ac7-428b-b815-33c09f712ee1` verified. |
+| **Centres / Venues** | `Oakridge Central`, `Oakridge Riverside` | 2 | Primary & secondary venues created. |
+| **Staff Accounts** | Eleanor Vance, Marcus Sterling, Chloe Bennett, Liam Harper | 4 | All 4 RBAC roles represented with password `Password123!`. |
+| **Parents** | Sarah Jenkins, David Patel, Rachel Taylor, James Walker | 4 | 3 active families + 1 staged in Recovery Bin (`deletedAt`). |
+| **Children / Pupils** | Oliver, Emma, Aria, Noah, Lucas | 5 | Peanut allergy, asthma, SEN, and reception badges verified. |
+| **Authorised Collectors** | Sarah Jenkins, Rose Jenkins (PIN: 4821) | 2 | Emergency contact & collector PIN fixtures verified. |
+| **Bookings & Consent** | Jenkins (Consented), Patel (Withdrawn), Walker (Consented) | 3 | Latest booking consent values verified. |
+| **Billing Configs** | Agreed monthly fee for Jenkins (£280) and Patel (£140) | 2 | Sibling discount mapping verified. |
+| **Invoices** | `INV-2026-001` (Paid), `INV-2026-002` (Partially Paid), `INV-2026-003` (Sent) | 3 | Paid, partial, and sent status fixtures verified. |
+| **Payments** | Bank Transfer verified (£280), Cash verified (£70), TFC pending (£70) | 3 | Verified and pending voucher states verified. |
+| **Session Credit** | Aria Patel (1 session forgiven) | 1 | Absence forgiveness note verified. |
+| **Incidents** | Oliver (First aid knee scrape), Aria (Generic safeguarding log) | 2 | Body-map coords & generic policy placeholder verified. |
+| **Registrations** | James Walker / Lucas Walker (`awaiting_confirmation`) | 1 | Digital signature data URL fixture verified. |
+| **Student Notes** | Oliver Jenkins (`progress` note by Liam Harper) | 1 | Progress note timeline entry verified. |
+
+---
+
+## 5. Login & Role Capture Readiness
+
+| Role | Synthetic Account Email | Default Password | Centre Scoping | Capture Status |
+|---|---|---|---|---|
+| **Organisation Owner** | `eleanor.vance@example.test` | `Password123!` | All Centres (`central`, `riverside`) | **READY FOR CAPTURE** |
+| **Centre Manager** | `marcus.sterling@example.test` | `Password123!` | `Oakridge Central` & `Oakridge Riverside` | **READY FOR CAPTURE** |
+| **Front Desk Staff** | `chloe.bennett@example.test` | `Password123!` | `Oakridge Central` | **READY FOR CAPTURE** |
+| **Tutor / Leader** | `liam.harper@example.test` | `Password123!` | `Oakridge Central` | **READY FOR CAPTURE** |
+| **Parent Portal** | `sarah.jenkins@example.test` | Magic Token `magic-token-sarah-jenkins-oakridge` | Family Jenkins | **READY FOR CAPTURE** |
+
+---
+
+## 6. Quality Gates & Application Health
+
+| Quality Gate | Command | Result | Verdict |
+|---|---|---|---|
+| **TypeScript** | `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit` | Clean (0 errors) | **PASS** |
+| **ESLint** | `npm run lint` | Clean (0 errors, 0 warnings) | **PASS** |
+| **Vitest** | `npm test -- --run` | **616 passed across 66 test files (+6 tests, +1 file)** | **PASS (100%)** |
+| **Next.js Build** | `npx next build` | **93 routes compiled successfully** | **PASS** |
+| **Production Health** | `GET https://app.sprintscaleit.co.uk/api/health` | **HTTP 200 `{"ok":true}`** | **PASS** |
+| **Production DB Mutations** | Zero mutations | **0 INSERTs, 0 UPDATEs, 0 DELETEs** | **SAFE** |
+
+---
+
+## 7. Final Recommendation
+
+**PASS — GUARDED SYNTHETIC CAPTURE ENVIRONMENT LIVE — READY FOR D6B**

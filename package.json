@@ -19,7 +19,9 @@
     "test": "vitest run",
     "test:e2e": "npx playwright test",
     "test:all": "vitest run && npx playwright test",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "training:seed": "ALLOW_TRAINING_SEED=true tsx src/scripts/seed-training-data.ts",
+    "training:reset": "ALLOW_TRAINING_SEED=true tsx src/scripts/reset-training-data.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
