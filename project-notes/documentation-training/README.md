@@ -19,7 +19,8 @@ project-notes/documentation-training/
 │   ├── 01-system-foundations.md                    # Part 1: System Foundations, Architecture & Security
 │   ├── 02-family-to-booking-journey.md             # Part 2: End-to-End Family-to-Booking Journey
 │   ├── 03-attendance-to-safeguarding-journey.md    # Part 3: Daily Roll Call & Safeguarding Journey
-│   └── 04-finance-billing-payments-journey.md      # Part 4: Agreed-Fee Billing, Invoices & Payments Journey
+│   ├── 04-finance-billing-payments-journey.md      # Part 4: Agreed-Fee Billing, Invoices & Payments Journey
+│   └── 05-administration-and-operations.md         # Part 5: Multi-Centre Administration, Staff & Maintenance
 │
 ├── role-guides/                                    # Role-Specific User Manuals
 │   ├── owner-guide.md                              # Organisation Owner Manual
@@ -44,28 +45,37 @@ project-notes/documentation-training/
 │   ├── incidents-safeguarding.md                   # First Aid, Accidents & Restricted DSL Records
 │   ├── finance-overview.md                         # Financial Architecture, Data Models & Roles
 │   ├── agreed-fee-billing.md                       # Family Agreed Tuition, Siblings & Anchors
-│   ├── invoices.md                                 # Monthly Runs, Idempotency, PDF & Voiding
-│   └── payments-reconciliation.md                  # Offline Payments, Vouchers, TFC & Reconciliation
+│   ├── invoices.md                                 # Monthly Runs, Duplicate Pre-Checks, PDF & Voiding
+│   ├── payments-reconciliation.md                  # Offline Payments, Vouchers, TFC & Reconciliation
+│   ├── administration-settings.md                  # Organisation Settings, GDPR Exports & Providers
+│   ├── centres-multi-centre.md                     # Venue Setup, Bank Details & Multi-Site Scoping
+│   ├── staff-access-permissions.md                 # Team Directory, Invites, RBAC & Safe Offboarding
+│   ├── communications-notifications.md             # Parent Broadcasts, Consent Filter & In-App Alerts
+│   └── academic-year-data-maintenance.md           # Annual Rollover Cron, Recovery Bin & 30-Day Purge
 │
 ├── rationale/                                      # Statutory & Operational Policy Library
 │   ├── family-registration-booking-controls.md     # Legal Foundations for Family Controls
 │   ├── attendance-safeguarding-record-integrity.md # Foundations for Attendance & Safeguarding
-│   └── finance-billing-reconciliation-integrity.md # Foundations for Agreed Billing & Reconciliation
+│   ├── finance-billing-reconciliation-integrity.md # Foundations for Agreed Billing & Reconciliation
+│   └── administration-access-data-integrity.md     # Foundations for Multi-Centre Administration & RBAC
 │
 ├── screenshots/                                    # Visual Asset Specifications
 │   ├── d2-screenshot-plan.md                       # 16 Annotated Screenshot Figures (Family/Bookings)
 │   ├── d3-screenshot-plan.md                       # 20 Annotated Screenshot Figures (Attendance/Incidents)
-│   └── d4-screenshot-plan.md                       # 18 Annotated Screenshot Figures (Finance/Payments)
+│   ├── d4-screenshot-plan.md                       # 18 Annotated Screenshot Figures (Finance/Payments)
+│   └── d5-screenshot-plan.md                       # 18 Annotated Screenshot Figures (Admin/Staff/Comms)
 │
 ├── videos/                                         # Micro-Video Training Scripts
 │   ├── d2-video-scripts.md                         # 14 Focused Micro-Video Screencast Scripts
 │   ├── d3-video-scripts.md                         # 15 Focused Micro-Video Screencast Scripts
-│   └── d4-video-scripts.md                         # 14 Focused Micro-Video Screencast Scripts
+│   ├── d4-video-scripts.md                         # 14 Focused Micro-Video Screencast Scripts
+│   └── d5-video-scripts.md                         # 14 Focused Micro-Video Screencast Scripts
 │
 └── troubleshooting/                                # Error Resolution Handbooks
     ├── d2-family-booking-troubleshooting.md        # 15 Family, Registration & Booking Scenarios
     ├── d3-attendance-safeguarding-troubleshooting.md # 22 Attendance, Kiosk & Safeguarding Scenarios
-    └── d4-finance-troubleshooting.md               # 17 Finance, Billing & Payment Scenarios
+    ├── d4-finance-troubleshooting.md               # 17 Finance, Billing & Payment Scenarios
+    └── d5-administration-troubleshooting.md        # 20 Admin, Staff, Broadcast & Rollover Scenarios
 ```
 
 ---
@@ -76,9 +86,9 @@ Find the guide tailored to your specific responsibilities:
 
 | User Role | Role Guide | Quick-Start Guide | Primary Operational Focus |
 |---|---|---|---|
-| **Organisation Owner** | [Owner Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/owner-guide.md) | [Owner First 30 Mins](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/quick-start/owner-first-30-minutes.md) | Multi-centre stewardship, staff roles, agreed-fee billing, invoice runs, bank reconciliation, and organisation branding. |
-| **Centre Manager** | [Manager Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/manager-guide.md) | [Manager First 30 Mins](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/quick-start/manager-first-30-minutes.md) | On-site supervision, student intake, attendance oversight, session credit ledger, safeguarding files, and parent broadcasts. |
-| **Front Desk Staff** | [Front Desk Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/front-desk-guide.md) | — | Arrivals/departures, child lookup, walk-in bookings, registration review, and standard injury/first aid logging. |
+| **Organisation Owner** | [Owner Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/owner-guide.md) | [Owner First 30 Mins](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/quick-start/owner-first-30-minutes.md) | Multi-centre stewardship, staff roles, agreed-fee billing, invoice runs, bank reconciliation, GDPR exports, and organisation branding. |
+| **Centre Manager** | [Manager Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/manager-guide.md) | [Manager First 30 Mins](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/quick-start/manager-first-30-minutes.md) | On-site supervision, student intake, attendance oversight, session credit ledger, safeguarding files, venue settings, and parent broadcasts. |
+| **Front Desk Staff** | [Front Desk Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/front-desk-guide.md) | — | Arrivals/departures, child lookup, walk-in bookings, registration review, standard injury/first aid logging, and Recovery Bin management. |
 | **Tutor / Activity Leader** | [Tutor Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/tutor-guide.md) | [Tutor First Day](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/quick-start/tutor-first-day.md) | Live classroom roll call, kiosk mode, student flags (homework/behaviour), assessment scorecards, and safeguarding escalation. |
 | **Parent / Guardian** | [Parent Guide](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/role-guides/parent-guide.md) | [Parent Getting Started](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/quick-start/parent-getting-started.md) | Passwordless magic link sign in, child medical updates, session booking, and online card/TFC voucher payment. |
 
@@ -93,24 +103,7 @@ Find the guide tailored to your specific responsibilities:
 | **D2** | **Functional Manuals: People & Bookings** (Parents, Students, Registrations Queue, Booking Wizards, Journey, Rationale) | **COMPLETE** |
 | **D3** | **Functional Manuals: Classroom & Safeguarding** (Attendance Roll Call, Kiosk Mode, Session Ledger, Incidents & DSL Files) | **COMPLETE** |
 | **D4** | **Functional Manuals: Finance & Billing** (Agreed-Fee Family Billing, Monthly Invoice Runs, TFC & Bank Reconciliation, Receipts) | **COMPLETE** |
-| **D5** | **Functional Manuals: Administration & Comms** (Centres, Staff Permissions, Email Broadcasts, Wonde, Settings, Year Roll) | *Scheduled* |
+| **D5** | **Functional Manuals: Administration & Operations** (Centres, Staff Permissions, Email Broadcasts, GDPR Exports, Academic Rollover, Recovery Bin) | **COMPLETE** |
 | **D6** | **Visual Assets Production** (Annotated Screenshot Figures, Micro-Video Screencast Recordings) | *Scheduled* |
 | **D7** | **Troubleshooting Handbook, Statutory Rationales & In-App Help Centre** (Error handbook, FAQs, in-app articles) | *Scheduled* |
 | **D8** | **Comprehensive Documentation QA, Cross-Link Verification & Release Freeze** | *Scheduled* |
-
----
-
-## 📖 Key Foundations, Functional Manuals & Handbooks
-- [Documentation Style Guide & Standards](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/standards/documentation-style-guide.md)
-- [Master User Manual — Part 1: System Foundations](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/01-system-foundations.md)
-- [Master User Manual — Part 2: Family-to-Booking Journey](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/02-family-to-booking-journey.md)
-- [Master User Manual — Part 3: Attendance & Incident Journey](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/03-attendance-to-safeguarding-journey.md)
-- [Master User Manual — Part 4: Finance, Billing & Payments Journey](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/04-finance-billing-payments-journey.md)
-- [Functional Manual: Finance Overview](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/finance-overview.md)
-- [Functional Manual: Agreed-Fee Family Billing](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/agreed-fee-billing.md)
-- [Functional Manual: Invoices](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/invoices.md)
-- [Functional Manual: Payments & Reconciliation](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/payments-reconciliation.md)
-- [Operational Rationale: Finance & Reconciliation Integrity](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/rationale/finance-billing-reconciliation-integrity.md)
-- [Milestone D4 Video Scripts (14 Tasks)](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/videos/d4-video-scripts.md)
-- [Milestone D4 Screenshot Plan (18 Figures)](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/screenshots/d4-screenshot-plan.md)
-- [Milestone D4 Finance Troubleshooting (17 Scenarios)](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/troubleshooting/d4-finance-troubleshooting.md)
