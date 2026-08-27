@@ -16,7 +16,8 @@ project-notes/documentation-training/
 │   └── documentation-style-guide.md             # Canonical terms, callouts, screenshot & video rules
 │
 ├── master-manual/                               # Master User Manual
-│   └── 01-system-foundations.md                 # Part 1: System Foundations, Architecture & Security
+│   ├── 01-system-foundations.md                 # Part 1: System Foundations, Architecture & Security
+│   └── 02-family-to-booking-journey.md          # Part 2: End-to-End Family-to-Booking Journey
 │
 ├── role-guides/                                 # Role-Specific User Manuals
 │   ├── owner-guide.md                           # Organisation Owner Manual
@@ -31,11 +32,23 @@ project-notes/documentation-training/
 │   ├── tutor-first-day.md                       # Tutor Day-One Checklist
 │   └── parent-getting-started.md                # Parent 4-Step Guide
 │
-├── functional-manuals/                          # (Planned for D2–D5) Detailed Module Deep-Dives
-├── rationale/                                   # (Planned for D7) Statutory & Operational Policy Library
-├── screenshots/                                 # (Planned for D6) Annotated Screenshot Library (31 Figures)
-├── videos/                                      # (Planned for D6) Micro-Video Training Scripts (24 Tasks)
-└── troubleshooting/                             # (Planned for D7) Error Resolution Handbook & FAQs
+├── functional-manuals/                          # Detailed Module Deep-Dives
+│   ├── parents.md                               # Family Accounts, Contact Records & Privacy
+│   ├── children-students.md                     # Pupil 360°, Medical Profiles & Consents
+│   ├── registrations.md                         # Public Intake, Triage & Enrolment
+│   └── bookings.md                              # Session Scheduling, Wizards & Capacity
+│
+├── rationale/                                   # Statutory & Operational Policy Library
+│   └── family-registration-booking-controls.md  # Legal & Security Foundations for Family Controls
+│
+├── screenshots/                                 # Visual Asset Specifications
+│   └── d2-screenshot-plan.md                    # 16 Annotated Screenshot Figures (D2 Modules)
+│
+├── videos/                                      # Micro-Video Training Scripts
+│   └── d2-video-scripts.md                      # 14 Focused Micro-Video Screencast Scripts
+│
+└── troubleshooting/                             # Error Resolution Handbooks
+    └── d2-family-booking-troubleshooting.md     # 15 Family, Registration & Booking Scenarios
 ```
 
 ---
@@ -60,7 +73,7 @@ Find the guide tailored to your specific responsibilities:
 |---|---|---|
 | **D0** | **Production Documentation Audit & Master Function Inventory** (Baseline SHA, 5 roles, 38 pages, 42 workflows, 25 modules) | **COMPLETE** |
 | **D1** | **Documentation Foundation, Standards, 5 Role Guides & 4 Quick-Starts** (Style guide, Master manual part 1, core guides) | **COMPLETE** |
-| **D2** | **Functional Manuals: People & Bookings** (Parents, Students, Public Registrations Queue, Booking Wizards) | *Scheduled* |
+| **D2** | **Functional Manuals: People & Bookings** (Parents, Students, Registrations Queue, Booking Wizards, Journey, Rationale) | **COMPLETE** |
 | **D3** | **Functional Manuals: Classroom & Safeguarding** (Attendance Roll Call, Kiosk Mode, Session Ledger, Incidents & DSL Files) | *Scheduled* |
 | **D4** | **Functional Manuals: Finance & Billing** (Agreed-Fee Family Billing, Monthly Invoice Runs, TFC & Bank Reconciliation, Receipts) | *Scheduled* |
 | **D5** | **Functional Manuals: Administration & Comms** (Centres, Staff Permissions, Email Broadcasts, Wonde, Settings, Year Roll) | *Scheduled* |
@@ -70,8 +83,18 @@ Find the guide tailored to your specific responsibilities:
 
 ---
 
-## 📖 Key Foundations & Standards
+## 📖 Key Foundations, Functional Manuals & Handbooks
 - [Documentation Style Guide & Standards](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/standards/documentation-style-guide.md)
 - [Master User Manual — Part 1: System Foundations](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/01-system-foundations.md)
+- [Master User Manual — Part 2: Family-to-Booking Journey](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/master-manual/02-family-to-booking-journey.md)
+- [Functional Manual: Parents](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/parents.md)
+- [Functional Manual: Children & Students](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/children-students.md)
+- [Functional Manual: Registrations](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/registrations.md)
+- [Functional Manual: Bookings & Scheduling](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/functional-manuals/bookings.md)
+- [Operational Rationale: Family, Registration & Booking Controls](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/rationale/family-registration-booking-controls.md)
+- [Milestone D2 Video Scripts (14 Tasks)](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/videos/d2-video-scripts.md)
+- [Milestone D2 Screenshot Plan (16 Figures)](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/screenshots/d2-screenshot-plan.md)
+- [Milestone D2 Family & Booking Troubleshooting (15 Scenarios)](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/troubleshooting/d2-family-booking-troubleshooting.md)
 - [Milestone D0 Audit Baseline Report](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/d0-production-documentation-audit.md)
 - [Milestone D1 Foundation Completion Report](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/milestone-d1-documentation-foundation.md)
+- [Milestone D2 Completion Report](file:///Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS/project-notes/documentation-training/milestone-d2-functional-manuals-family-bookings.md)
