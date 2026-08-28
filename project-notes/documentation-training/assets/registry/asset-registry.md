@@ -18,16 +18,16 @@
 ### Essential Screenshots (46 Assets)
 | Asset ID | Title | Module | Role | Route | Priority | Essential? | Status |
 |---|---|---|---|---|---|---|---|
-| `SS-D6-S001` | Dashboard Home & Navigation Overview | Foundations | Owner/Manager | `/dashboard` | P0 | **YES** | **CAPTURED** |
-| `SS-D6-S002` | Parent Directory Roster | People | Manager/Owner | `/dashboard/parents` | P1 | **YES** | **CAPTURED** |
-| `SS-D6-S003` | Parent Profile & Emergency Contact Cards | People | All Staff | `/dashboard/parents/[id]` | P1 | **YES** | **CAPTURED** |
-| `SS-D6-S004` | Authorised Collector Management | People | Front Desk/Tutor | `/dashboard/parents/[id]` | P0 | **YES** | **CAPTURED** |
-| `SS-D6-S005` | Student Directory & Medical Badges | People | All Staff | `/dashboard/students` | P0 | **YES** | **CAPTURED** |
-| `SS-D6-S006` | Student Profile & Allergy/Dietary Summary | People | All Staff | `/dashboard/students/[id]` | P0 | **YES** | **CAPTURED** |
-| `SS-D6-S007` | Public Multi-Child Registration Form | Intake | Parent (Public) | `/register/[slug]` | P1 | **YES** | **CAPTURED** |
-| `SS-D6-S008` | Registration Terms & Digital Signature Pad | Intake | Parent (Public) | `/register/[slug]` | P0 | **YES** | **CAPTURED** |
-| `SS-D6-S009` | Registration Intake Triage Roster | Intake | Manager/Owner | `/dashboard/registrations` | P1 | **YES** | **CAPTURED** |
-| `SS-D6-S010` | Registration Child Matching & Approval | Intake | Manager/Owner | `/dashboard/registrations/[id]` | P1 | **YES** | **CAPTURED** |
+| `SS-D6-S001` | Dashboard Home & Navigation Overview | Foundations | Owner/Manager | `/dashboard` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S002` | Parent Directory Roster | People | Manager/Owner | `/dashboard/parents` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S003` | Parent Profile & Emergency Contact Cards | People | All Staff | `/dashboard/parents/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S004` | Authorised Collector Management | People | Front Desk/Tutor | `/register/[slug]` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S005` | Student Directory & Medical Badges | People | All Staff | `/dashboard/students` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S006` | Student Profile & Allergy/Dietary Summary | People | All Staff | `/dashboard/students/[id]` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S007` | Public Multi-Child Registration Form | Intake | Parent (Public) | `/register/[slug]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S008` | Registration Terms & Digital Signature Pad | Intake | Parent (Public) | `/register/[slug]` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S009` | Registration Intake Triage Roster | Intake | Manager/Owner | `/dashboard/registrations` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S010` | Registration Child Matching & Approval | Intake | Manager/Owner | `/dashboard/registrations/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S011` | Weekly Session Booking Matrix | Bookings | Manager/FrontDesk | `/dashboard/bookings` | P1 | **YES** | READY |
 | `SS-D6-S012` | Ad-Hoc Booking Creation Modal | Bookings | Front Desk/Manager | `/dashboard/bookings/new` | P1 | **YES** | READY |
 | `SS-D6-S013` | Recurring Term Booking Plan Creation | Bookings | Manager/Owner | `/dashboard/bookings/new` | P1 | **YES** | READY |

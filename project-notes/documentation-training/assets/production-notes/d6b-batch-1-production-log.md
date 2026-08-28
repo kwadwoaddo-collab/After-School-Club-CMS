@@ -13,16 +13,16 @@
 
 | Asset ID | Title | Role / Persona | Route | Viewport | Synthetic Fixture | Source File | Annotated File | Badges | Privacy / PII | Role Boundary | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **SS-D6-S001** | Dashboard Home & Navigation Overview | Owner / Manager (`Eleanor Vance`) | `/dashboard` | 1440 × 900 | Oakridge Learning Club Ltd | `source/SS-D6-S001-source.png` | `annotated/SS-D6-S001.png` | 3 | PASS (0 PII) | PASS (Owner KPIs) | **ACCEPTED** |
-| **SS-D6-S002** | Parent Directory Roster | Manager / Owner (`Marcus Sterling`) | `/dashboard/parents` | 1440 × 900 | 4 Oakridge Families | `source/SS-D6-S002-source.png` | `annotated/SS-D6-S002.png` | 3 | PASS (0 PII) | PASS (Manager Roster) | **ACCEPTED** |
-| **SS-D6-S003** | Parent Profile & Emergency Contact Cards | Front Desk / Manager (`Chloe Bennett`) | `/dashboard/parents/222118a6...` | 1440 × 900 | Sarah Jenkins Family | `source/SS-D6-S003-source.png` | `annotated/SS-D6-S003.png` | 3 | PASS (0 PII) | PASS (Staff View) | **ACCEPTED** |
-| **SS-D6-S004** | Authorised Collector Management | Front Desk / Tutor (`Chloe Bennett`) | `/dashboard/parents/222118a6...` | 1440 × 900 | Sarah Jenkins / Rose Jenkins | `source/SS-D6-S004-source.png` | `annotated/SS-D6-S004.png` | 3 | PASS (0 PII) | PASS (Collector Roster) | **ACCEPTED** |
-| **SS-D6-S005** | Student Directory & Medical Badges | Front Desk / Tutor (`Chloe Bennett`) | `/dashboard/students` | 1440 × 900 | Oakridge Central Pupils | `source/SS-D6-S005-source.png` | `annotated/SS-D6-S005.png` | 3 | PASS (0 PII) | PASS (Medical Tags) | **ACCEPTED** |
-| **SS-D6-S006** | Student Profile & Allergy/Dietary Summary | Front Desk / Manager (`Chloe Bennett`) | `/dashboard/students/f464f6cb...` | 1440 × 900 | Oliver Jenkins Profile | `source/SS-D6-S006-source.png` | `annotated/SS-D6-S006.png` | 3 | PASS (0 PII) | PASS (Allergy Alert) | **ACCEPTED** |
-| **SS-D6-S007** | Public Multi-Child Registration Form | Public Parent (No Auth) | `/register/oakridge-learning` | 1440 × 900 | Public Registration (Step 1) | `source/SS-D6-S007-source.png` | `annotated/SS-D6-S007.png` | 3 | PASS (0 PII) | PASS (Public Portal) | **ACCEPTED** |
-| **SS-D6-S008** | Registration Terms & Digital Signature Pad | Public Parent (No Auth) | `/register/oakridge-learning` | 1440 × 900 | Public Registration (Step 4) | `source/SS-D6-S008-source.png` | `annotated/SS-D6-S008.png` | 3 | PASS (0 PII) | PASS (Terms & Sig) | **ACCEPTED** |
-| **SS-D6-S009** | Registration Intake Triage Roster | Manager / Owner (`Marcus Sterling`) | `/dashboard/registrations` | 1440 × 900 | Walker Application | `source/SS-D6-S009-source.png` | `annotated/SS-D6-S009.png` | 3 | PASS (0 PII) | PASS (Manager Triage) | **ACCEPTED** |
-| **SS-D6-S010** | Registration Child Matching & Approval | Manager / Owner (`Marcus Sterling`) | `/dashboard/registrations/50cbfe65...` | 1440 × 900 | James & Lucas Walker App | `source/SS-D6-S010-source.png` | `annotated/SS-D6-S010.png` | 3 | PASS (0 PII) | PASS (Approval Action) | **ACCEPTED** |
+| **SS-D6-S001** | Dashboard Home & Navigation Overview | Owner / Manager (`Eleanor Vance`) | `/dashboard` | 1440 × 900 | Oakridge Learning Club Ltd | `source/SS-D6-S001-source.png` | `annotated/SS-D6-S001.png` | 3 | PASS (0 PII) | PASS (Owner KPIs) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S002** | Parent Directory Roster | Manager / Owner (`Marcus Sterling`) | `/dashboard/parents` | 1440 × 900 | 4 Oakridge Families | `source/SS-D6-S002-source.png` | `annotated/SS-D6-S002.png` | 3 | PASS (0 PII) | PASS (Manager Roster) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S003** | Parent Profile & Emergency Contact Cards | Front Desk / Manager (`Chloe Bennett`) | `/dashboard/parents/222118a6...` | 1440 × 900 | Sarah Jenkins Family | `source/SS-D6-S003-source.png` | `annotated/SS-D6-S003.png` | 3 | PASS (0 PII) | PASS (Staff View) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S004** | Authorised Collector Management | Front Desk / Tutor (`Chloe Bennett`) | `/register/oakridge-learning` | 1440 × 900 | Sarah Jenkins / Rose Jenkins | `source/SS-D6-S004-source.png` | `annotated/SS-D6-S004.png` | 3 | PASS (0 PII) | PASS (Collector Nomination) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S005** | Student Directory & Medical Badges | Front Desk / Tutor (`Chloe Bennett`) | `/dashboard/students` | 1440 × 900 | Oakridge Central Pupils | `source/SS-D6-S005-source.png` | `annotated/SS-D6-S005.png` | 3 | PASS (0 PII) | PASS (Medical Tags) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S006** | Student Profile & Allergy/Dietary Summary | Front Desk / Manager (`Chloe Bennett`) | `/dashboard/students/f464f6cb...` | 1440 × 900 | Oliver Jenkins Profile | `source/SS-D6-S006-source.png` | `annotated/SS-D6-S006.png` | 3 | PASS (0 PII) | PASS (Allergy Alert) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S007** | Public Multi-Child Registration Form | Public Parent (No Auth) | `/register/oakridge-learning` | 1440 × 900 | Public Registration (Step 1) | `source/SS-D6-S007-source.png` | `annotated/SS-D6-S007.png` | 3 | PASS (0 PII) | PASS (Public Portal) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S008** | Registration Terms & Digital Signature Pad | Public Parent (No Auth) | `/register/oakridge-learning` | 1440 × 900 | Public Registration (Step 4) | `source/SS-D6-S008-source.png` | `annotated/SS-D6-S008.png` | 3 | PASS (0 PII) | PASS (Terms & Sig) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S009** | Registration Intake Triage Roster | Manager / Owner (`Marcus Sterling`) | `/dashboard/registrations` | 1440 × 900 | Walker Application | `source/SS-D6-S009-source.png` | `annotated/SS-D6-S009.png` | 3 | PASS (0 PII) | PASS (Manager Triage) | **ACCEPTED (QA VERIFIED)** |
+| **SS-D6-S010** | Registration Child Matching & Approval | Manager / Owner (`Marcus Sterling`) | `/dashboard/registrations/50cbfe65...` | 1440 × 900 | James & Lucas Walker App | `source/SS-D6-S010-source.png` | `annotated/SS-D6-S010.png` | 3 | PASS (0 PII) | PASS (Approval Action) | **ACCEPTED (QA VERIFIED)** |
 
 ---
 
@@ -56,9 +56,9 @@
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S004-source.png`
 - **Annotated Training Asset:** `project-notes/documentation-training/assets/screenshots/annotated/SS-D6-S004.png`
 - **Callout Annotations:**
-  - **① Parent Dossier Header:** Parent identification with breadcrumb back to the parent directory.
-  - **② Contact & Emergency Information:** Validated parent contact phone and emergency details.
-  - **③ Ledger & Security Status:** Right-hand account panel displaying balance state and collection verification status.
+  - **① Primary Emergency Contact Section:** Alternative emergency contact input fields.
+  - **② Authorised Collectors Nomination Card:** Named pickup adult card (*Rose Jenkins*, *Grandmother*, *07700 900333*).
+  - **③ '+ Add Authorised Collector' Action Control:** Multi-collector addition button for multiple trusted adults.
 
 ### `SS-D6-S005`: Student Directory & Medical Badges
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S005-source.png`
@@ -72,41 +72,41 @@
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S006-source.png`
 - **Annotated Training Asset:** `project-notes/documentation-training/assets/screenshots/annotated/SS-D6-S006.png`
 - **Callout Annotations:**
-  - **① Pupil Profile Header:** Pupil full name (*Oliver Jenkins*), school year (*Year 3*), date of birth, and active centre.
-  - **② Medical & Allergy Alert Card:** Severe allergy protocol banner (*Severe peanut allergy; EpiPen in front desk cabinet*).
-  - **③ Parent & Emergency Links:** Linked primary parent card (*Sarah Jenkins*) with telephone quick-dial and address info.
+  - **① Pupil Header & Safety Badges:** Oliver Jenkins header displaying Year 3 badge and prominent red `Safety flags` badge.
+  - **② High-Contrast Medical & Safety Alert Card:** Red alert panel detailing severe peanut allergy, EpiPen location, and nut-free requirement.
+  - **③ Primary Parent Contact Card:** Sarah Jenkins emergency contact and family account link.
 
 ### `SS-D6-S007`: Public Multi-Child Registration Form
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S007-source.png`
 - **Annotated Training Asset:** `project-notes/documentation-training/assets/screenshots/annotated/SS-D6-S007.png`
 - **Callout Annotations:**
-  - **① Public Registration Header:** Club branding (*Oakridge Learning Club Ltd*) and multi-step progress bar (*Step 1 of 4*).
-  - **② Parent/Carer Details Card:** Primary parent name, contact email, telephone, and residential address inputs.
-  - **③ Emergency Contact Section:** Secondary emergency contact nomination form (*Name*, *Relationship*, *Telephone*).
+  - **① Organisation Brand Header:** Club branding with Step 1 of 4 intake progress bar.
+  - **② Parent / Carer Identification Form:** First name, last name, relationship, phone, email, and home address fields.
+  - **③ Primary Emergency Contact Fields:** Alternative contact details for collection emergencies.
 
 ### `SS-D6-S008`: Registration Terms & Digital Signature Pad
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S008-source.png`
 - **Annotated Training Asset:** `project-notes/documentation-training/assets/screenshots/annotated/SS-D6-S008.png`
 - **Callout Annotations:**
-  - **① Application Review Dossier:** Summary card consolidating submitted pupil names, session preferences, funding type, and emergency contacts.
-  - **② Terms of Service & Consent Checkbox:** Statutory terms acceptance checkbox confirming data accuracy and club rules.
-  - **③ Legal Digital Signature Input:** Required digital signature field capturing the parent's full legal name.
+  - **① Application Review Summary:** Consolidated review card listing parent details, registered child, and chosen booking slots.
+  - **② Terms of Service & Consents:** Legal terms acceptance, emergency medical consent, and photography consent checkboxes.
+  - **③ Digital Signature Pad:** HTML5 signature drawing canvas / typing pad with timestamp recording.
 
 ### `SS-D6-S009`: Registration Intake Triage Roster
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S009-source.png`
 - **Annotated Training Asset:** `project-notes/documentation-training/assets/screenshots/annotated/SS-D6-S009.png`
 - **Callout Annotations:**
-  - **① Registration Status Filters:** Filter tabs displaying application counts (*All*, *Awaiting Confirmation*, *Signed Up*, *Not Interested*).
-  - **② Application Intake Table Row:** Pending registration row for *James Walker* (pupil *Lucas Walker*) received via the public portal.
-  - **③ Review Application Action:** Direct action button to open the full application dossier and begin child matching.
+  - **① Intake Queue Filter Tabs:** Quick-filter pills (*All*, *Awaiting Confirmation*, *Signed Up*, *Not Interested*).
+  - **② Pending Application Row:** Submitted record for James Walker & Lucas Walker with timestamp and requested slots.
+  - **③ Triage & Review Action Button:** Direct action button to open the full intake application dossier.
 
 ### `SS-D6-S010`: Registration Child Matching & Approval
 - **Preservation Source:** `project-notes/documentation-training/assets/screenshots/source/SS-D6-S010-source.png`
 - **Annotated Training Asset:** `project-notes/documentation-training/assets/screenshots/annotated/SS-D6-S010.png`
 - **Callout Annotations:**
-  - **① Application Dossier Details:** Applicant family details, submitted emergency contacts, funding declaration, and medical info.
-  - **② Digital Signature Audit Record:** Captured signature timestamp and audit verification badge.
-  - **③ Matching & Approval Card:** Centre assignment dropdown, existing parent/child matching controls, and "Confirm & Sign Up" action button.
+  - **① Status & Action Header Bar:** Status pill (*Awaiting Confirmation*), `Update Status` approval dropdown, and PDF download button.
+  - **② Submitted Student & Sessions Card:** Child dossier showing *Lucas Walker*, Year 3, sessions, and edit controls.
+  - **③ Verified Parent Identification Card:** Primary parent record showing *James Walker*, contact phone, and billing address.
 
 ---
 
