@@ -31,6 +31,7 @@ export async function seedTrainingData() {
     if (existingOrg) {
       const orgId = existingOrg.id;
       logger.info(`[TRAINING SEED] Removing existing Oakridge synthetic organisation (${orgId}) for clean re-instantiation...`);
+      await client`DELETE FROM broadcasts WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM notifications WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM staff_invites WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM incidents WHERE organisation_id = ${orgId}`;
@@ -658,6 +659,31 @@ export async function seedTrainingData() {
       token: hashToken('d6c-invite-token-synthetic-2026'),
       expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
     });
+
+    // 18. Create Historical Broadcasts
+    logger.info('[TRAINING SEED] Creating Historical Broadcast Records...');
+    await db.insert(schema.broadcasts).values([
+      {
+        organisationId: org.id,
+        centreId: centreCentral.id,
+        subject: 'Autumn Term 2026 Welcome & Schedule Announcement',
+        message: 'Welcome back to Oakridge Central! Please ensure all emergency contacts and allergy records are up to date in the parent portal.',
+        recipientCount: 4,
+        successCount: 4,
+        failureCount: 0,
+        createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        organisationId: org.id,
+        centreId: centreCentral.id,
+        subject: 'Reminder: Healthy Snack Policy & Nut-Free Zone',
+        message: 'A gentle reminder that Oakridge Central is a strictly nut-free environment. Please do not pack peanut or tree nut items.',
+        recipientCount: 4,
+        successCount: 4,
+        failureCount: 0,
+        createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      },
+    ]);
 
     logger.info('✅ [TRAINING SEED COMPLETED SUCCESSFULLY] All synthetic Oakridge fixtures instantiated.');
 

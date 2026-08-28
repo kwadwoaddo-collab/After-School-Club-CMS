@@ -77,16 +77,16 @@
 | `SS-D6-S054` | Organisation Profile & Contact Details | Admin | Owner Only | `/dashboard/settings` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S055` | GDPR Subject Access JSON Export Button | Admin | Owner Only | `/dashboard/settings` | P3 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S056` | Venue Operating Times Configuration | Admin | Owner/Manager | `/dashboard/centres/[id]/settings` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S057` | New Centre Venue Creation Modal | Admin | Owner/Manager | `/dashboard/centres/add` | P2 | No | READY |
-| `SS-D6-S058` | Staff Self-Demotion Blocked Guard | Admin | Owner Only | `/dashboard/staff/[userId]` | P2 | No | READY |
-| `SS-D6-S059` | Broadcast History & Delivery Counters | Admin | Owner/Manager | `/dashboard/communications` | P2 | No | READY |
-| `SS-D6-S060` | Recovery Bin Family Record Restore Modal | Admin | Staff | `/dashboard/parents/bin` | P1 | No | READY |
-| `SS-D6-S061` | Soft-Delete Confirmation Dialog | People | Staff | `/dashboard/parents/[id]` | P1 | No | READY |
-| `SS-D6-S062` | Owner Invoice Voiding Confirmation Modal | Finance | Owner Only | `/dashboard/finance/invoices/[id]` | P2 | No | READY |
-| `SS-D6-S063` | Invoice Date & Notes Edit Dialog | Finance | Staff | `/dashboard/finance/invoices/[id]` | P2 | No | READY |
-| `SS-D6-S064` | Childcare Voucher Rejection / Failed Modal | Finance | Staff | `/dashboard/finance/reconciliation` | P2 | No | READY |
-| `SS-D6-S065` | Multi-Child Family Sibling Linkage View | People | Staff | `/dashboard/parents/[id]` | P2 | No | READY |
-| `SS-D6-S066` | Student Academic Scorecard & Progress | People | Tutor/Staff | `/dashboard/students/[id]` | P2 | No | READY |
+| `SS-D6-S057` | New Centre Venue Creation Modal | Admin | Owner/Manager | `/dashboard/centres/add` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S058` | Staff Self-Demotion Blocked Guard | Admin | Owner Only | `/dashboard/staff/[userId]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S059` | Broadcast History & Delivery Counters | Admin | Owner/Manager | `/dashboard/communications` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S060` | Recovery Bin Family Record Restore Modal | Admin | Staff | `/dashboard/parents/bin` | P1 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S061` | Soft-Delete Confirmation Dialog | People | Staff | `/dashboard/parents/[id]` | P1 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S062` | Owner Invoice Voiding Confirmation Modal | Finance | Owner Only | `/dashboard/finance/invoices/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S063` | Invoice Date & Notes Edit Dialog | Finance | Staff | `/dashboard/finance/invoices/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S064` | Childcare Voucher Rejection / Failed Modal | Finance | Staff | `/dashboard/finance/reconciliation` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S065` | Multi-Child Family Sibling Linkage View | People | Staff | `/dashboard/parents/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S066` | Student Academic Scorecard & Progress | People | Tutor/Staff | `/dashboard/students/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S067` | Attendance Timelog Timestamp Adjustment | Classroom | Manager | `/dashboard/attendance` | P2 | No | READY |
 | `SS-D6-S068` | Bulk Check-In Attendance Action | Classroom | Tutor/Staff | `/dashboard/attendance` | P2 | No | READY |
 | `SS-D6-S069` | Session Capacity Warning Indicator | Bookings | Staff | `/dashboard/bookings` | P2 | No | READY |
