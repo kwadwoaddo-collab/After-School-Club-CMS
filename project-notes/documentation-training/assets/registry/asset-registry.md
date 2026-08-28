@@ -57,12 +57,12 @@
 | `SS-D6-S038` | Centre General Settings & Capacity | Admin | Owner/Manager | `/dashboard/centres/[id]/settings` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S039` | Centre Bank Details Card (Owner-Only) | Admin | Owner Only | `/dashboard/centres/[id]/settings` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S040` | Staff Directory & Role Badges | Admin | Owner/Manager | `/dashboard/staff` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S041` | Staff Invitation Modal & Role Selection | Admin | Owner Only | `/dashboard/staff/invite` | P0 | **YES** | READY |
-| `SS-D6-S042` | Staff Centre Membership Assignment | Admin | Owner Only | `/dashboard/staff/[userId]` | P0 | **YES** | READY |
-| `SS-D6-S043` | Staff Deactivation Warning Modal | Admin | Owner Only | `/dashboard/staff/[userId]` | P0 | **YES** | READY |
-| `SS-D6-S044` | Parent Email Broadcast Composer | Admin | Owner/Manager | `/dashboard/communications` | P1 | **YES** | READY |
-| `SS-D6-S045` | Recovery Bin Soft-Deleted Families List | Admin | Owner/Manager/FrontDesk | `/dashboard/parents/bin` | P0 | **YES** | READY |
-| `SS-D6-S046` | Permanent GDPR Purge Owner-Only Warning | Admin | Owner Only | `/dashboard/parents/bin` | P0 | **YES** | READY |
+| `SS-D6-S041` | Staff Invitation Modal & Role Selection | Admin | Owner Only | `/dashboard/staff/invite` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S042` | Staff Centre Membership Assignment | Admin | Owner Only | `/dashboard/staff/[userId]` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S043` | Staff Deactivation Warning Modal | Admin | Owner Only | `/dashboard/staff/[userId]` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S044` | Parent Email Broadcast Composer | Admin | Owner/Manager | `/dashboard/communications` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S045` | Recovery Bin Soft-Deleted Families List | Admin | Owner/Manager/FrontDesk | `/dashboard/parents/bin` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S046` | Permanent GDPR Purge Owner-Only Warning | Admin | Owner Only | `/dashboard/parents/bin` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 
 ### Supplementary / Advanced Screenshots (32 Assets)
 | Asset ID | Title | Module | Role | Route | Priority | Essential? | Status |
