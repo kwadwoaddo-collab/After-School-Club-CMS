@@ -41,7 +41,7 @@
 | `SS-D6-S022` | Student General Note Logging Form | Classroom | Tutor/Staff | `/dashboard/students/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S023` | First Aid Accident Logging & Body Map | Safeguarding | All Staff | `/dashboard/incidents` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S024` | Restricted Safeguarding Incident Entry | Safeguarding | Owner/Manager (DSL) | `/dashboard/incidents` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S025` | Safeguarding Access Denied Screen (403) | Safeguarding | Front Desk/Tutor | `/dashboard/incidents` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S025` | Tutor Safeguarding Access Restriction | Safeguarding | Tutor | `/dashboard/incidents` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S026` | Finance Executive Overview Dashboard | Finance | Owner Only | `/dashboard/finance` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S027` | Family Agreed Monthly Fee Billing Config | Finance | Owner/Manager | `/dashboard/students/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S028` | Sibling Coverage Junction Mapping | Finance | Owner/Manager | `/dashboard/students/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |

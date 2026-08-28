@@ -588,7 +588,7 @@ async function main() {
       'SS-D6-S022': 'Student General Note Logging Form',
       'SS-D6-S023': 'First Aid Accident Logging & Body Map',
       'SS-D6-S024': 'Restricted Safeguarding Incident Entry',
-      'SS-D6-S025': 'Safeguarding Access Denied Screen (403)',
+      'SS-D6-S025': 'Tutor Safeguarding Access Restriction',
       'SS-D6-S026': 'Finance Executive Overview Dashboard',
       'SS-D6-S027': 'Family Agreed Monthly Fee Billing Config',
       'SS-D6-S028': 'Sibling Coverage Junction Mapping',
