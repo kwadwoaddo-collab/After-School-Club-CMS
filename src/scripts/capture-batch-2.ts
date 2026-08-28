@@ -291,23 +291,24 @@ export async function captureBatch2() {
     // SS-D6-S015: Live Check-In Arrival Timestamp (Tutor)
     // -------------------------------------------------------------
     console.log('[CAPTURE] Capturing SS-D6-S015: Live Check-In Arrival Timestamp...');
-    await pTutor.goto(`${BASE_URL}/dashboard/attendance?centre=${centralCentreId}`, { waitUntil: 'domcontentloaded' });
-    await pTutor.waitForSelector('text=Jenkins, div.p-3.rounded-md', { timeout: 15000 }).catch(() => {});
-    await pTutor.waitForTimeout(600);
+    const pTutor15 = await tutorCtx.newPage();
+    await pTutor15.goto(`${BASE_URL}/dashboard/attendance?centre=${centralCentreId}`, { waitUntil: 'domcontentloaded' });
+    await pTutor15.waitForSelector('text=Jenkins', { timeout: 15000 });
+    await pTutor15.waitForTimeout(600);
 
-    const checkInInput = pTutor.locator('input[type="time"]').first();
-    if (await checkInInput.isVisible().catch(() => false)) {
-      await checkInInput.fill('15:30');
-      await pTutor.waitForTimeout(300);
+    const timeInputs15 = pTutor15.locator('div.group.flex.flex-col:has-text("Oliver Jenkins") input[type="time"]');
+    if (await timeInputs15.isVisible().catch(() => false)) {
+      await timeInputs15.fill('15:30');
+      await pTutor15.waitForTimeout(300);
     }
 
     const s015Source = path.join(OUT_SOURCE, 'SS-D6-S015-source.png');
     const s015Annotated = path.join(OUT_ANNOTATED, 'SS-D6-S015.png');
-    await pTutor.screenshot({ path: s015Source });
+    await pTutor15.screenshot({ path: s015Source });
 
-    const cardBox15 = await safeBox(pTutor, 'div.group.flex.flex-col:first-child, div:has(> input[type="time"])', { x: 590, y: 690, width: 810, height: 110 });
-    const checkInPill15 = await safeBox(pTutor, 'input[type="time"]:first-child, input[value="15:30"]', { x: 1205, y: 730, width: 100, height: 36 });
-    const inButton15 = await safeBox(pTutor, 'button:has-text("In"), button:has-text("Present")', { x: 1150, y: 730, width: 45, height: 36 });
+    const cardBox15 = await safeBox(pTutor15, 'div.group.flex.flex-col:has-text("Oliver Jenkins")', { x: 590, y: 585, width: 810, height: 110 });
+    const checkInPill15 = await safeBox(pTutor15, 'div.group.flex.flex-col:has-text("Oliver Jenkins") input[type="time"]', { x: 1205, y: 625, width: 100, height: 36 });
+    const inButton15 = await safeBox(pTutor15, 'div.group.flex.flex-col:has-text("Oliver Jenkins") button:has-text("In")', { x: 1150, y: 625, width: 48, height: 36 });
 
     await annotateImage(s015Source, s015Annotated, [
       { x: cardBox15.x, y: cardBox15.y, width: cardBox15.width, height: cardBox15.height, badge: 1 },
@@ -315,29 +316,30 @@ export async function captureBatch2() {
       { x: inButton15.x, y: inButton15.y, width: inButton15.width, height: inButton15.height, badge: 3 },
     ]);
     results['SS-D6-S015'] = { title: 'Live Check-In Arrival Timestamp', role: 'Tutor/FrontDesk', route: '/dashboard/attendance', annotations: 3, pass: true };
+    await pTutor15.close();
 
     // -------------------------------------------------------------
     // SS-D6-S016: Live Check-Out Departure Timestamp (Tutor)
     // -------------------------------------------------------------
     console.log('[CAPTURE] Capturing SS-D6-S016: Live Check-Out Departure Timestamp...');
-    await pTutor.goto(`${BASE_URL}/dashboard/attendance?centre=${centralCentreId}`, { waitUntil: 'domcontentloaded' });
-    await pTutor.waitForSelector('text=Jenkins, div.p-3.rounded-md', { timeout: 15000 }).catch(() => {});
-    await pTutor.waitForTimeout(600);
+    const pTutor16 = await tutorCtx.newPage();
+    await pTutor16.goto(`${BASE_URL}/dashboard/attendance?centre=${centralCentreId}`, { waitUntil: 'domcontentloaded' });
+    await pTutor16.waitForSelector('text=Jenkins', { timeout: 15000 });
+    await pTutor16.waitForTimeout(600);
 
-    const timeInputs = pTutor.locator('input[type="time"]');
-    if (await timeInputs.count() >= 2) {
-      await timeInputs.nth(0).fill('15:30');
-      await timeInputs.nth(1).fill('17:30');
-      await pTutor.waitForTimeout(300);
+    const timeInputs16 = pTutor16.locator('div.group.flex.flex-col:has-text("Emma Jenkins") input[type="time"]');
+    if (await timeInputs16.isVisible().catch(() => false)) {
+      await timeInputs16.fill('17:30');
+      await pTutor16.waitForTimeout(300);
     }
 
     const s016Source = path.join(OUT_SOURCE, 'SS-D6-S016-source.png');
     const s016Annotated = path.join(OUT_ANNOTATED, 'SS-D6-S016.png');
-    await pTutor.screenshot({ path: s016Source });
+    await pTutor16.screenshot({ path: s016Source });
 
-    const cardBox16 = await safeBox(pTutor, 'div.group.flex.flex-col:first-child, div:has(> input[type="time"])', { x: 590, y: 690, width: 810, height: 110 });
-    const checkOutPill16 = await safeBox(pTutor, 'input[type="time"]:nth-of-type(2), input[value="17:30"]', { x: 1315, y: 730, width: 100, height: 36 });
-    const outButton16 = await safeBox(pTutor, 'button:has-text("Check Out"), button:has-text("Out")', { x: 1080, y: 730, width: 90, height: 36 });
+    const cardBox16 = await safeBox(pTutor16, 'div.group.flex.flex-col:has-text("Emma Jenkins")', { x: 590, y: 705, width: 810, height: 110 });
+    const checkOutPill16 = await safeBox(pTutor16, 'div.group.flex.flex-col:has-text("Emma Jenkins") input[type="time"]', { x: 1205, y: 745, width: 100, height: 36 });
+    const outButton16 = await safeBox(pTutor16, 'div.group.flex.flex-col:has-text("Emma Jenkins") button:has-text("Check Out"), div.group.flex.flex-col:has-text("Emma Jenkins") button:has-text("Out")', { x: 1210, y: 745, width: 90, height: 36 });
 
     await annotateImage(s016Source, s016Annotated, [
       { x: cardBox16.x, y: cardBox16.y, width: cardBox16.width, height: cardBox16.height, badge: 1 },
@@ -345,35 +347,32 @@ export async function captureBatch2() {
       { x: outButton16.x, y: outButton16.y, width: outButton16.width, height: outButton16.height, badge: 3 },
     ]);
     results['SS-D6-S016'] = { title: 'Live Check-Out Departure Timestamp', role: 'Tutor/FrontDesk', route: '/dashboard/attendance', annotations: 3, pass: true };
+    await pTutor16.close();
 
     // -------------------------------------------------------------
     // SS-D6-S017: Absence Status Override Modal (Front Desk)
     // -------------------------------------------------------------
     console.log('[CAPTURE] Capturing SS-D6-S017: Absence Status Override Modal...');
-    await pStaff.goto(`${BASE_URL}/dashboard/attendance?centre=${centralCentreId}`, { waitUntil: 'domcontentloaded' });
-    await pStaff.waitForSelector('text=Jenkins, div.p-3.rounded-md', { timeout: 15000 }).catch(() => {});
-    await pStaff.waitForTimeout(600);
+    const pStaff17 = await staffCtx.newPage();
+    await pStaff17.goto(`${BASE_URL}/dashboard/attendance?centre=${centralCentreId}`, { waitUntil: 'domcontentloaded' });
+    await pStaff17.waitForSelector('text=Jenkins', { timeout: 15000 });
+    await pStaff17.waitForTimeout(600);
 
-    // If an Undo button is visible on Aria Patel, click it first so Mark Absent button shows
-    const undoBtn = pStaff.locator('button:has-text("Undo")').first();
-    if (await undoBtn.isVisible().catch(() => false)) {
-      await undoBtn.click();
-      await pStaff.waitForTimeout(500);
-    }
-
-    const markAbsentBtn = pStaff.locator('button:has-text("Mark Absent")').first();
+    const markAbsentBtn = pStaff17.locator('div.group.flex.flex-col:has-text("Noah Taylor") button:has-text("Mark Absent")').first();
     if (await markAbsentBtn.isVisible().catch(() => false)) {
+      console.log('[CAPTURE] S017: Clicking Mark Absent on Noah Taylor to open reason popover...');
       await markAbsentBtn.click();
-      await pStaff.waitForTimeout(500);
+      await pStaff17.waitForSelector('div.shadow-\\[var\\(--shadow-popover\\)\\]', { state: 'visible', timeout: 5000 }).catch(() => {});
+      await pStaff17.waitForTimeout(500);
     }
 
     const s017Source = path.join(OUT_SOURCE, 'SS-D6-S017-source.png');
     const s017Annotated = path.join(OUT_ANNOTATED, 'SS-D6-S017.png');
-    await pStaff.screenshot({ path: s017Source });
+    await pStaff17.screenshot({ path: s017Source });
 
-    const cardBox17 = await safeBox(pStaff, 'div.group.flex.flex-col:has(button:has-text("Mark Absent")), div.group.flex.flex-col:last-child', { x: 590, y: 915, width: 810, height: 90 });
-    const popover17 = await safeBox(pStaff, 'div.shadow-\\[var\\(--shadow-popover\\)\\]', { x: 1200, y: 770, width: 195, height: 140 });
-    const reasonBtn17 = await safeBox(pStaff, 'button:has-text("Illness"), button:has-text("Holiday")', { x: 1205, y: 775, width: 90, height: 65 });
+    const cardBox17 = await safeBox(pStaff17, 'div.group.flex.flex-col:has-text("Noah Taylor")', { x: 590, y: 465, width: 810, height: 110 });
+    const popover17 = await safeBox(pStaff17, 'div.shadow-\\[var\\(--shadow-popover\\)\\]', { x: 1158, y: 530, width: 198, height: 156 });
+    const reasonBtn17 = await safeBox(pStaff17, 'div.shadow-\\[var\\(--shadow-popover\\)\\] button:has-text("Illness")', { x: 1162, y: 535, width: 94, height: 72 });
 
     await annotateImage(s017Source, s017Annotated, [
       { x: cardBox17.x, y: cardBox17.y, width: cardBox17.width, height: cardBox17.height, badge: 1 },
@@ -381,6 +380,7 @@ export async function captureBatch2() {
       { x: reasonBtn17.x, y: reasonBtn17.y, width: reasonBtn17.width, height: reasonBtn17.height, badge: 3 },
     ]);
     results['SS-D6-S017'] = { title: 'Absence Status Override Modal', role: 'Front Desk/Manager', route: '/dashboard/attendance', annotations: 3, pass: true };
+    await pStaff17.close();
 
     // -------------------------------------------------------------
     // SS-D6-S018: Tablet Kiosk Mode Landing Screen (Front Desk)

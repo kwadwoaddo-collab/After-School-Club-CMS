@@ -308,6 +308,27 @@ export async function seedTrainingData() {
     const now = new Date();
     const sessionStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 30, 0);
 
+    const [bookingTaylor] = await db.insert(schema.bookings).values({
+      centreId: centreCentral.id,
+      parentId: parentTaylor.id,
+      status: 'confirmed',
+      modality: 'in_person',
+      startAt: sessionStart,
+      duration: 150,
+      confirmationCode: `CONF-${nanoid(8).toUpperCase()}`,
+      magicLinkToken: `mlt-${nanoid(16)}`,
+      communicationsConsent: true,
+    }).returning();
+
+    await db.insert(schema.bookingAttendees).values([
+      {
+        bookingId: bookingTaylor.id,
+        childId: childNoah.id,
+        attendanceStatus: null,
+        sessionType: 'scheduled',
+      },
+    ]);
+
     const [bookingJenkins] = await db.insert(schema.bookings).values({
       centreId: centreCentral.id,
       parentId: parentJenkins.id,
