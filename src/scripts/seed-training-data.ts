@@ -10,6 +10,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { hashToken } from '@/lib/magic-link';
 import * as schema from '../db/schema';
 
 export async function seedTrainingData() {
@@ -30,6 +31,8 @@ export async function seedTrainingData() {
     if (existingOrg) {
       const orgId = existingOrg.id;
       logger.info(`[TRAINING SEED] Removing existing Oakridge synthetic organisation (${orgId}) for clean re-instantiation...`);
+      await client`DELETE FROM notifications WHERE organisation_id = ${orgId}`;
+      await client`DELETE FROM staff_invites WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM incidents WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM student_notes WHERE child_id IN (SELECT id FROM children WHERE organisation_id = ${orgId})`;
       await client`DELETE FROM session_credits WHERE child_id IN (SELECT id FROM children WHERE organisation_id = ${orgId})`;
@@ -611,6 +614,49 @@ export async function seedTrainingData() {
       category: 'Progress',
       noteType: 'progress',
       content: 'Oliver showed great enthusiasm in science group project today.',
+    });
+
+    // 16. Create In-App Notifications for Staff
+    logger.info('[TRAINING SEED] Creating Header Notifications...');
+    await db.insert(schema.notifications).values([
+      {
+        organisationId: org.id,
+        userId: staffUsers['eleanor.vance@example.test'].id,
+        type: 'booking_created',
+        title: 'New Session Booking',
+        message: 'Sarah Jenkins booked Oliver Jenkins for Afternoon Club.',
+        bookingId: bookingJenkins.id,
+        isRead: false,
+        createdAt: new Date(now.getTime() - 15 * 60 * 1000),
+      },
+      {
+        organisationId: org.id,
+        userId: staffUsers['eleanor.vance@example.test'].id,
+        type: 'system',
+        title: 'Childcare Voucher Submitted',
+        message: 'David Patel submitted Tax-Free Childcare voucher £70.00 (Ref: TFC-PATEL-889).',
+        isRead: false,
+        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      },
+      {
+        organisationId: org.id,
+        userId: staffUsers['eleanor.vance@example.test'].id,
+        type: 'system',
+        title: 'Student Progress Note',
+        message: 'Liam Harper added a new progress note for Oliver Jenkins.',
+        isRead: true,
+        createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+      },
+    ]);
+
+    // 17. Create Staff Cryptographic Invite Fixture
+    logger.info('[TRAINING SEED] Creating Staff Cryptographic Invitation...');
+    await db.insert(schema.staffInvites).values({
+      organisationId: org.id,
+      email: 'sophie.reed@example.test',
+      role: 'TUTOR',
+      token: hashToken('d6c-invite-token-synthetic-2026'),
+      expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
     });
 
     logger.info('✅ [TRAINING SEED COMPLETED SUCCESSFULLY] All synthetic Oakridge fixtures instantiated.');
