@@ -28,16 +28,16 @@
 | `SS-D6-S008` | Registration Terms & Digital Signature Pad | Intake | Parent (Public) | `/register/[slug]` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S009` | Registration Intake Triage Roster | Intake | Manager/Owner | `/dashboard/registrations` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S010` | Registration Child Matching & Approval | Intake | Manager/Owner | `/dashboard/registrations/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S011` | Weekly Session Booking Matrix | Bookings | Manager/FrontDesk | `/dashboard/bookings` | P1 | **YES** | READY |
-| `SS-D6-S012` | Ad-Hoc Booking Creation Modal | Bookings | Front Desk/Manager | `/dashboard/bookings/new` | P1 | **YES** | READY |
-| `SS-D6-S013` | Recurring Term Booking Plan Creation | Bookings | Manager/Owner | `/dashboard/bookings/new` | P1 | **YES** | READY |
-| `SS-D6-S014` | Daily Attendance Register (Afternoon Club) | Classroom | All Staff | `/dashboard/attendance` | P0 | **YES** | READY |
-| `SS-D6-S015` | Live Check-In Arrival Timestamp | Classroom | Tutor/FrontDesk | `/dashboard/attendance` | P0 | **YES** | READY |
-| `SS-D6-S016` | Live Check-Out Departure Timestamp | Classroom | Tutor/FrontDesk | `/dashboard/attendance` | P0 | **YES** | READY |
-| `SS-D6-S017` | Absence Status Override Modal | Classroom | Front Desk/Manager | `/dashboard/attendance` | P1 | **YES** | READY |
-| `SS-D6-S018` | Tablet Kiosk Mode Landing Screen | Classroom | Front Desk/Tutor | `/dashboard/kiosk` | P0 | **YES** | READY |
-| `SS-D6-S019` | Kiosk Unplanned Walk-In Registration | Classroom | Front Desk | `/dashboard/kiosk` | P0 | **YES** | READY |
-| `SS-D6-S020` | Session Credit Ledger Overview | Classroom | Manager/Owner | `/dashboard/attendance/ledger` | P1 | **YES** | READY |
+| `SS-D6-S011` | Weekly Session Booking Matrix | Bookings | Manager/FrontDesk | `/dashboard/bookings` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S012` | Ad-Hoc Booking Creation Modal | Bookings | Front Desk/Manager | `/dashboard/bookings/new` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S013` | Recurring Term Booking Plan Creation | Bookings | Manager/Owner | `/dashboard/students/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S014` | Daily Attendance Register (Afternoon Club) | Classroom | All Staff | `/dashboard/attendance` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S015` | Live Check-In Arrival Timestamp | Classroom | Tutor/FrontDesk | `/dashboard/attendance` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S016` | Live Check-Out Departure Timestamp | Classroom | Tutor/FrontDesk | `/dashboard/attendance` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S017` | Absence Status Override Modal | Classroom | Front Desk/Manager | `/dashboard/attendance` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S018` | Tablet Kiosk Mode Landing Screen | Classroom | Front Desk/Tutor | `/dashboard/kiosk` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S019` | Kiosk Unplanned Walk-In Registration | Classroom | Front Desk | `/dashboard/attendance` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S020` | Session Credit Ledger Overview | Classroom | Manager/Owner | `/dashboard/attendance/ledger` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S021` | Admin Session Forgiveness Dialog | Classroom | Manager/Owner | `/dashboard/attendance/ledger` | P1 | **YES** | READY |
 | `SS-D6-S022` | Student General Note Logging Form | Classroom | Tutor/Staff | `/dashboard/students/[id]` | P1 | **YES** | READY |
 | `SS-D6-S023` | First Aid Accident Logging & Body Map | Safeguarding | All Staff | `/dashboard/incidents` | P0 | **YES** | READY |
