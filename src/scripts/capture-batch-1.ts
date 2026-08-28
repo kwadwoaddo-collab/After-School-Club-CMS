@@ -295,9 +295,9 @@ export async function captureBatch1() {
     const s006Annotated = path.join(OUT_ANNOTATED, 'SS-D6-S006.png');
     await pStaff.screenshot({ path: s006Source });
 
-    const pupilHeader6 = await safeBox(pStaff, 'div:has(> h1:has-text("Oliver Jenkins")), main div.p-5:has(h1)', { x: 280, y: 90, width: 1120, height: 110 });
-    const allergyCard6 = await safeBox(pStaff, 'div.bg-danger-soft, div:has(> div > p:has-text("Medical & safety notes"))', { x: 280, y: 530, width: 540, height: 120 });
-    const parentCard6 = await safeBox(pStaff, 'div:has(> p:has-text("Parent / guardian"))', { x: 280, y: 250, width: 540, height: 260 });
+    const pupilHeader6 = await safeBox(pStaff, 'div.p-5:has(h1:has-text("Oliver Jenkins")), div:has(> div > h1:has-text("Oliver Jenkins"))', { x: 393, y: 141, width: 894, height: 123 });
+    const allergyCard6 = await safeBox(pStaff, 'div.rounded-md:has(p:has-text("Medical & safety notes")), div.p-4.bg-danger-soft', { x: 412, y: 750, width: 416, height: 123 });
+    const parentCard6 = await safeBox(pStaff, 'div:has(> p:has-text("Parent / guardian"))', { x: 412, y: 368, width: 416, height: 267 });
 
     await annotateImage(s006Source, s006Annotated, [
       { x: pupilHeader6.x, y: pupilHeader6.y, width: pupilHeader6.width, height: pupilHeader6.height, badge: 1 },
