@@ -47,16 +47,16 @@
 | `SS-D6-S028` | Sibling Coverage Junction Mapping | Finance | Owner/Manager | `/dashboard/students/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S029` | Monthly Invoice Batch Generation Run | Finance | Owner/Manager | `/dashboard/finance` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S030` | Invoices Directory & Status Badges | Finance | Staff | `/dashboard/finance/invoices` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S031` | Detailed Invoice View & Payment History | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | READY |
-| `SS-D6-S032` | Offline Cash Payment Recording Dialog | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | READY |
-| `SS-D6-S033` | Offline Bank Transfer Payment Recording | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | READY |
-| `SS-D6-S034` | Childcare Voucher & TFC Verification Triage | Finance | Manager/Staff | `/dashboard/finance/reconciliation` | P1 | **YES** | READY |
-| `SS-D6-S035` | Partial Payment Invoice State Display | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | READY |
-| `SS-D6-S036` | Payment Confirmation PDF Receipt | Finance | Staff/Parent | `/dashboard/finance/receipt` | P1 | **YES** | READY |
-| `SS-D6-S037` | Multi-Centre Venue Directory | Admin | Owner/Manager | `/dashboard/centres` | P1 | **YES** | READY |
-| `SS-D6-S038` | Centre General Settings & Capacity | Admin | Owner/Manager | `/dashboard/centres/[id]/settings` | P1 | **YES** | READY |
-| `SS-D6-S039` | Centre Bank Details Card (Owner-Only) | Admin | Owner Only | `/dashboard/centres/[id]/settings` | P0 | **YES** | READY |
-| `SS-D6-S040` | Staff Directory & Role Badges | Admin | Owner/Manager | `/dashboard/staff` | P0 | **YES** | READY |
+| `SS-D6-S031` | Detailed Invoice View & Payment History | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S032` | Offline Cash Payment Recording Dialog | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S033` | Offline Bank Transfer Payment Recording | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S034` | Childcare Voucher & TFC Verification Triage | Finance | Manager/Staff | `/dashboard/finance/reconciliation` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S035` | Partial Payment Invoice State Display | Finance | Staff | `/dashboard/finance/invoices/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S036` | Payment Confirmation PDF Receipt | Finance | Staff/Parent | `/dashboard/finance/receipt` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S037` | Multi-Centre Venue Directory | Admin | Owner/Manager | `/dashboard/centres` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S038` | Centre General Settings & Capacity | Admin | Owner/Manager | `/dashboard/centres/[id]/settings` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S039` | Centre Bank Details Card (Owner-Only) | Admin | Owner Only | `/dashboard/centres/[id]/settings` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S040` | Staff Directory & Role Badges | Admin | Owner/Manager | `/dashboard/staff` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S041` | Staff Invitation Modal & Role Selection | Admin | Owner Only | `/dashboard/staff/invite` | P0 | **YES** | READY |
 | `SS-D6-S042` | Staff Centre Membership Assignment | Admin | Owner Only | `/dashboard/staff/[userId]` | P0 | **YES** | READY |
 | `SS-D6-S043` | Staff Deactivation Warning Modal | Admin | Owner Only | `/dashboard/staff/[userId]` | P0 | **YES** | READY |
