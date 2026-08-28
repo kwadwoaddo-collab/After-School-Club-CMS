@@ -92,7 +92,7 @@ async function loginUser(page: Page, email: string) {
         if (btn) btn.click();
       });
 
-      await page.waitForURL('**/dashboard**', { timeout: 15000 });
+      await page.waitForURL('**/dashboard**', { timeout: 30000 });
       console.log(`[LOGIN] Logged in as ${email}!`);
       await page.waitForTimeout(1000);
       return;
@@ -390,24 +390,24 @@ async function main() {
   await page.screenshot({ path: s36Source });
 
   const s36_form = await page.evaluate(() => {
-    const el = Array.from(document.querySelectorAll('div.border')).find(d => d.textContent?.includes('Receipt Details') && d.textContent?.includes('RECEIPT NO'));
-    if (!el) return { x: 210, y: 235, width: 300, height: 760 };
+    const el = document.querySelector('div.lg\\:col-span-5 > div.bg-card') || document.querySelector('div.no-print > div.bg-card');
+    if (!el) return { x: 305, y: 209, width: 427, height: 720 };
     const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, width: r.width, height: r.height };
+    return { x: r.x - 3, y: r.y - 3, width: r.width + 6, height: r.height + 6 };
   });
 
   const s36_slip = await page.evaluate(() => {
-    const el = Array.from(document.querySelectorAll('div.bg-white, div.shadow-2xl')).find(d => d.textContent?.includes('OFFICIAL RECEIPT') && d.textContent?.includes('ELEANOR VANCE'));
-    if (!el) return { x: 540, y: 295, width: 400, height: 560 };
+    const el = document.querySelector('#receipt-print-area');
+    if (!el) return { x: 782, y: 261, width: 576, height: 710 };
     const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, width: r.width, height: r.height };
+    return { x: r.x - 3, y: r.y - 3, width: r.width + 6, height: r.height + 6 };
   });
 
   const s36_print = await page.evaluate(() => {
-    const el = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Print') || b.textContent?.includes('Save PDF'));
-    if (!el) return { x: 830, y: 235, width: 115, height: 45 };
+    const el = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Print / Save PDF'));
+    if (!el) return { x: 1184, y: 203, width: 188, height: 48 };
     const r = el.getBoundingClientRect();
-    return { x: r.x - 4, y: r.y - 4, width: r.width + 8, height: r.height + 8 };
+    return { x: r.x - 14, y: r.y - 6, width: r.width + 28, height: r.height + 12 };
   });
 
   annotationsMap['SS-D6-S036'] = [
@@ -557,24 +557,25 @@ async function main() {
 
   const s40_header = await page.evaluate(() => {
     const el = document.querySelector('div.grid.grid-cols-2.md\\:grid-cols-4') || document.querySelector('div.grid.grid-cols-2');
-    if (!el) return { x: 188, y: 98, width: 792, height: 88 };
+    if (!el) return { x: 272, y: 88, width: 1136, height: 77 };
     const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, width: r.width, height: r.height };
+    return { x: r.x - 3, y: r.y - 3, width: r.width + 6, height: r.height + 6 };
   });
 
   const s40_staffCard = await page.evaluate(() => {
     const el = Array.from(document.querySelectorAll('tbody tr')).find(tr => tr.textContent?.includes('Eleanor Vance'));
-    if (!el) return { x: 188, y: 618, width: 790, height: 75 };
+    if (!el) return { x: 273, y: 546, width: 1134, height: 67 };
     const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, width: r.width, height: r.height };
+    return { x: r.x - 3, y: r.y - 3, width: r.width + 6, height: r.height + 6 };
   });
 
   const s40_roleBadge = await page.evaluate(() => {
     const row = Array.from(document.querySelectorAll('tbody tr')).find(tr => tr.textContent?.includes('Eleanor Vance'));
-    const badge = row?.querySelectorAll('td')[1];
-    if (!badge) return { x: 480, y: 625, width: 130, height: 60 };
+    const td = row?.querySelectorAll('td')[1];
+    const badge = td?.querySelector('div') || td;
+    if (!badge) return { x: 673, y: 558, width: 90, height: 42 };
     const r = badge.getBoundingClientRect();
-    return { x: r.x, y: r.y, width: r.width, height: r.height };
+    return { x: r.x - 18, y: r.y - 8, width: r.width + 36, height: r.height + 16 };
   });
 
   annotationsMap['SS-D6-S040'] = [

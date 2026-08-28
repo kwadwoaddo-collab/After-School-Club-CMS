@@ -37,6 +37,9 @@
   - `SS-D6-S034`: Populated triage amount `£70.00` and reference `TFC-PATEL-889` on the pending invoice reconciliation panel.
   - `SS-D6-S036`: Dynamically bound student selector to `Oliver Jenkins (Yr 3 · Sarah Jenkins)` for real-time PDF receipt generation.
   - `SS-D6-S038` & `SS-D6-S039`: Switched tabs cleanly via `CentreSettingsClient` to demonstrate session capacity limits and owner-restricted banking configurations.
+- **D6B.R4 Visual Annotation Reconciliation**:
+  - `SS-D6-S036`: Reconciled ① to tightly enclose the `Receipt Details` form card (`div.lg:col-span-5 > div.bg-card`), ② to tightly enclose the live rendered receipt slip (`#receipt-print-area`), and ③ to tightly wrap the `Print / Save PDF` action button with clear non-obscuring badge padding.
+  - `SS-D6-S040`: Reconciled ③ to tightly target Eleanor Vance's exact Owner role badge pill (`td > div.inline-flex`) with non-obscuring badge padding, establishing clear visual linkage `Eleanor Vance → Owner`.
 
 ---
 
