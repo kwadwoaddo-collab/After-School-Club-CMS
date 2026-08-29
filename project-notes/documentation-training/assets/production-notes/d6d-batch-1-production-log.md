@@ -1,7 +1,7 @@
 # SprintScale CMS — Milestone D6D Batch 1 Video Production Log
 **Produced Assets:** `SS-D6-V001` → `SS-D6-V010` (10 Essential Micro-Videos)
 **Date:** 2026-08-29
-**Reconciliation Version:** D6D.R1A Final Semantic & Review Frame Reconciliation
+**Reconciliation Version:** D6D.R1C Targeted Video Content Remediation (`SS-D6-V008`, `SS-D6-V009`, `SS-D6-V010`)
 **Environment:** Isolated Synthetic Training (`Oakridge Learning Club Ltd`)
 **Resolution:** 1440 × 900 px (16:10 Desktop Viewport)
 **Frame Rate:** 25 fps
@@ -21,9 +21,9 @@
 | `SS-D6-V005` | Booking a Session via Parent Portal | Portal | Sarah Jenkins (Parent) | `/portal/book` | 8.72s | 298 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Resolved via R1 Rerecord) |
 | `SS-D6-V006` | Marking Morning and Afternoon Class Register | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 6.60s | 589 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | None |
 | `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | Classroom | Eleanor Vance (Owner) | `/dashboard/kiosk` | 5.32s | 362 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | None (Verified) |
-| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 7.72s | 539 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class E (Reconciled to Actual Route) |
-| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 9.60s | 486 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Resolved via R1 Rerecord) |
-| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Ledger | Eleanor Vance (Owner) | `/dashboard/attendance/ledger` | 7.28s | 462 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Resolved via R1 Rerecord) |
+| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 15.00s | 1,186 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class E (Remediated via R1C Rerecord) |
+| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 12.72s | 937 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Remediated via R1C Rerecord) |
+| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Ledger | Eleanor Vance (Owner) | `/dashboard/attendance/ledger` | 12.72s | 1,132 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Remediated via R1C Rerecord) |
 
 ---
 
@@ -39,14 +39,14 @@ To prevent empty/clamped frame extraction when a timestamp exceeds video duratio
 | `SS-D6-V004` | Setting up a Recurring Term Booking Plan | 6.52s | `01.50s` | `03.50s` | `05.50s` |
 | `SS-D6-V005` | Booking a Session via Parent Portal | 8.72s | `01.50s` | `04.50s` | `07.80s` |
 | `SS-D6-V006` | Marking Morning and Afternoon Class Register | 6.60s | `01.50s` | `03.50s` | `05.80s` |
-| `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | 5.32s | `01.00s` | `02.80s` | `04.50s` |
-| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | 7.72s | `01.50s` | `04.00s` | `06.80s` |
-| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | 9.60s | `01.50s` | `05.00s` | `08.50s` |
-| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | 7.28s | `01.50s` | `04.00s` | `06.50s` |
+| `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | 5.32s | `02.50s` | `03.50s` | `04.50s` |
+| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | 15.00s | `03.00s` | `06.50s` | `11.00s` |
+| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | 12.72s | `03.00s` | `06.50s` | `09.50s` |
+| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | 12.72s | `03.00s` | `06.50s` | `11.00s` |
 
 ---
 
-## 3. Detailed Technical Profiles & D6D.R1A Reconciliations
+## 3. Detailed Technical Profiles & D6D.R1C Reconciliations
 
 ### `SS-D6-V001`
 - **Canonical Title:** Registering a Multi-Child Family via Public Portal
@@ -123,47 +123,45 @@ To prevent empty/clamped frame extraction when a timestamp exceeds video duratio
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`) / Front Desk
 - **Start Route:** `/dashboard/kiosk`
 - **Teaching Objective:** Demonstrates the tablet kiosk interface used for reception desk attendance sign-in and parent collection pick-up.
-- **Verification Note:** Visually demonstrates kiosk register student card interaction and arrival/departure flow.
+- **Verification Note:** Visually demonstrates kiosk register student card interaction and arrival/departure flow with fully settled starting interface at `02.50s`.
 - **End State:** Tablet kiosk view displaying active session status.
 - **Duration / Size:** 5.32s | 361,939 bytes
 - **QA Verdict:** CERTIFIED.
 
-### `SS-D6-V008` (D6D.R1A Reconciled)
-- **Previous Canonical Title:** Fast Walk-In Registration on Tablet Kiosk
-- **Final Reconciled Title:** Fast Walk-In Registration from Daily Attendance
+### `SS-D6-V008` (D6D.R1C Remediated)
+- **Canonical Title:** Fast Walk-In Registration from Daily Attendance
 - **Module:** Classroom
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`) / Front Desk
 - **Start Route:** `/dashboard/attendance`
 - **Teaching Objective:** Demonstrates how front desk staff handle unplanned walk-in students during live sessions directly from the daily attendance register action bar.
-- **Specification Discrepancy & Resolution:** Verified that walk-in registration exists exclusively in `/dashboard/attendance` (via the sticky header `+ Walk-In` action) and does not exist in `/dashboard/kiosk`. Title and teaching objective reconciled to exact product truth.
-- **End State:** Active register displaying walk-in modal and updated session roster.
-- **Duration / Size:** 7.72s | 538,984 bytes
+- **Remediation Action:** Scoped modal input locators, filled synthetic guest child (`Toby Wright`) and parent (`Rachel Wright`), submitted via `Register & Check In`, and waited for modal close and green success toast.
+- **Key Action:** Opening `+ Walk-In` modal, switching to `New Guest` tab, completing child and parent details with dynamic unique email.
+- **End State:** Modal cleanly closed, toast `Toby registered successfully` active, and student added to Catch-Ups & Walk-Ins register.
+- **Duration / Size:** 15.00s | 1,186,394 bytes
 - **QA Verdict:** CERTIFIED.
 
-### `SS-D6-V009` (D6D.R1 Reconciled)
+### `SS-D6-V009` (D6D.R1C Remediated)
 - **Canonical Title:** Overriding Attendance Status (Late / Excused)
 - **Module:** Classroom
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`) / Front Desk
 - **Start Route:** `/dashboard/attendance`
-- **Discrepancy History:** In initial Batch 1, only the automatic late arrival calculation was shown.
-- **Reconciliation Action:** Rerecorded demonstrating both late arrival calculation (`Late 45m`) and excused absence override (`🤒 Illness`).
 - **Teaching Objective:** Demonstrates adjusting pupil arrival time to trigger dynamic late status and using the absence reason sheet to record an excused illness absence.
-- **Key Action:** Editing arrival time on Oliver Jenkins to `16:45` and opening absence reason sheet on Noah Taylor to select `🤒 Illness`.
-- **End State:** Register displaying both the `Late 45m` badge on Oliver Jenkins and the `🤒 Illness` absence status on Noah Taylor.
-- **Duration / Size:** 9.60s | 485,971 bytes
+- **Remediation Action:** Eliminated initial skeleton frames by settling page before capture (`03.00s`), changed arrival time on Oliver Jenkins to `16:45` (triggering `Late 75m` badge), clicked `Mark Absent` on guest attendee to open absence sheet, and selected `🤒 Illness`.
+- **Key Action:** Editing arrival time on Oliver Jenkins to `16:45` and opening absence reason sheet on guest attendee to select `🤒 Illness`.
+- **End State:** Register visibly displaying both the `Late 75m` badge on Oliver Jenkins and the `Absent — illness` status badge with red border on the guest card.
+- **Duration / Size:** 12.72s | 936,618 bytes
 - **QA Verdict:** CERTIFIED.
 
-### `SS-D6-V010` (D6D.R1 Reconciled)
+### `SS-D6-V010` (D6D.R1C Remediated)
 - **Canonical Title:** Forgiving an Absence on Session Credit Ledger
 - **Module:** Ledger
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`) / Manager
 - **Start Route:** `/dashboard/attendance/ledger`
-- **Discrepancy History:** In initial Batch 1, the video filtered into an empty In Arrears tab without executing forgiveness.
-- **Reconciliation Action:** Rerecorded on the active ledger view, opening the Forgive Sessions modal, entering justification reason, and submitting the forgiveness action.
 - **Teaching Objective:** Demonstrates expanding student balance ledger, opening the Forgive Sessions dialog, specifying session amount and audit reason, and confirming forgiveness.
-- **Key Action:** Expanding student row, launching Forgive Sessions modal, and filling audit reason `Absence waived with medical certificate`.
-- **End State:** Session ledger displaying updated forgiven session count and confirmation toast.
-- **Duration / Size:** 7.28s | 462,116 bytes
+- **Remediation Action:** Eliminated initial skeleton frames, clicked student row container to expand card, launched `Forgive Sessions` modal, filled required reason note `"Approved absence adjustment"`, and submitted via `Confirm Forgiveness`.
+- **Key Action:** Expanding student row, launching Forgive Sessions modal, and filling audit reason `Approved absence adjustment`.
+- **End State:** Modal closed, ledger updated with `+1 session forgiven on 2026-08-29 by Eleanor Vance "Approved absence adjustment"`, `Forgiven +3`, `+3 ahead` badge, and green confirmation toast `Sessions forgiven: 1 session(s) written off for Oliver.`.
+- **Duration / Size:** 12.72s | 1,131,994 bytes
 - **QA Verdict:** CERTIFIED.
 
 ---

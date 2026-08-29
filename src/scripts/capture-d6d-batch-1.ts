@@ -43,10 +43,10 @@ const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: 
   'SS-D6-V004': { start: '01.50', action: '03.50', end: '05.50' }, // dur: 6.52s
   'SS-D6-V005': { start: '01.50', action: '04.50', end: '07.80' }, // dur: 8.72s
   'SS-D6-V006': { start: '01.50', action: '03.50', end: '05.80' }, // dur: 6.60s
-  'SS-D6-V007': { start: '01.00', action: '02.80', end: '04.50' }, // dur: 5.32s
-  'SS-D6-V008': { start: '01.50', action: '04.00', end: '06.80' }, // dur: 7.72s
-  'SS-D6-V009': { start: '01.50', action: '05.00', end: '08.50' }, // dur: 9.60s
-  'SS-D6-V010': { start: '01.50', action: '04.00', end: '06.50' }, // dur: 7.28s
+  'SS-D6-V007': { start: '02.50', action: '03.50', end: '04.50' }, // dur: 5.32s
+  'SS-D6-V008': { start: '03.00', action: '06.50', end: '11.00' }, // dur: ~12s
+  'SS-D6-V009': { start: '03.00', action: '06.50', end: '09.50' }, // dur: ~11s
+  'SS-D6-V010': { start: '03.00', action: '06.50', end: '11.00' }, // dur: ~12s
 };
 
 async function ensureDirs() {
@@ -666,109 +666,117 @@ async function main() {
     }, { centreId: centreCentral.id });
   }
 
-  // =========================================================================
-  // SS-D6-V008: Fast Walk-In Registration on Tablet Kiosk
-  // =========================================================================
-  if (shouldRun('SS-D6-V008')) {
-    await recordSingleVideo('SS-D6-V008', async (page) => {
-      await page.goto(`${BASE_URL}/dashboard/attendance?date=${seedDateStr}&centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('text=Jenkins', { timeout: 30000 });
-      await page.waitForTimeout(2000);
+// SS-D6-V008: Fast Walk-In Registration from Daily Attendance
+// =========================================================================
+if (shouldRun('SS-D6-V008')) {
+  await recordSingleVideo('SS-D6-V008', async (page) => {
+    await page.goto(`${BASE_URL}/dashboard/attendance?date=${seedDateStr}&centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Jenkins', { timeout: 30000 });
+    await page.waitForTimeout(2000); // 0.0s - 3.0s: Settled Starting State
 
-      const walkInBtn = page.locator('button:has-text("Walk-In"), a:has-text("Walk-In")').first();
-      if (await walkInBtn.count() > 0) {
-        await walkInBtn.click();
-        await page.waitForTimeout(2000);
+    // 1. Click Walk-In to open modal
+    const walkInBtn = page.locator('button:has-text("Walk-In")').first();
+    await walkInBtn.click();
+    await page.waitForSelector('text=Register Walk-In', { timeout: 10000 });
+    await page.waitForTimeout(500);
+
+    // 2. Switch to New Guest tab
+    await page.click('button:has-text("New Guest")');
+    await page.waitForTimeout(500);
+
+    // 3. Fill synthetic guest child and parent details with modal scoping
+    const modal = page.locator('div.bg-surface:has-text("Register Walk-In")');
+    await modal.locator('input[placeholder*="e.g. John"]').fill('Toby');
+    await modal.locator('input[placeholder*="e.g. Doe"]').first().fill('Wright');
+    await modal.locator('input[type="date"]').fill('2018-06-15');
+    await modal.locator('input[placeholder*="e.g. Mary"]').fill('Rachel');
+    await modal.locator('input[placeholder*="e.g. Doe"]').last().fill('Wright');
+    await modal.locator('input[placeholder*="mary@example.com"]').fill(`rachel.wright.${Date.now()}@example.test`);
+    await page.waitForTimeout(1500); // 6.5s: Action Frame (Filled Modal)
+
+    // 4. Submit walk-in registration
+    await page.click('button:has-text("Register & Check In")');
+    await page.waitForSelector('text=Toby registered successfully', { timeout: 15000 });
+    await page.waitForTimeout(3000); // 10.5s: End Frame (Modal Closed & Toast Active)
+
+    return 12;
+  }, { centreId: centreCentral.id });
+}
+
+// =========================================================================
+// SS-D6-V009: Overriding Attendance Status (Late / Excused)
+// =========================================================================
+if (shouldRun('SS-D6-V009')) {
+  await recordSingleVideo('SS-D6-V009', async (page) => {
+    await page.goto(`${BASE_URL}/dashboard/attendance?date=${seedDateStr}&centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Jenkins', { timeout: 30000 });
+    await page.waitForTimeout(2000); // 0.0s - 3.0s: Settled Starting State
+
+    // 1. Set Late arrival on Oliver Jenkins
+    const timeInput = page.locator('div.group:has-text("Oliver Jenkins") input[type="time"]').first();
+    if (await timeInput.count() > 0) {
+      await timeInput.fill('16:45');
+      await page.waitForTimeout(1500);
+    }
+
+    // 2. Mark Excused Absence (Illness) on guest attendee
+    const guestCard = page.locator('div.group:has-text("Mark Absent")').first();
+    if (await guestCard.count() > 0) {
+      const absentBtn = guestCard.locator('button:has-text("Mark Absent")').first();
+      await absentBtn.click();
+      await page.waitForTimeout(1000);
+      const illnessOption = page.locator('button:has-text("Illness")').first();
+      if (await illnessOption.count() > 0) {
+        await illnessOption.click();
+        await page.waitForTimeout(1500); // 6.5s: Action Frame
       }
+    }
 
-      await page.waitForTimeout(2000);
-      return 10;
-    }, { centreId: centreCentral.id });
-  }
+    await page.waitForTimeout(3000); // 9.5s: End Frame (Late badge + Absent — illness badge active)
+    return 11;
+  }, { centreId: centreCentral.id });
+}
 
-  // =========================================================================
-  // SS-D6-V009: Overriding Attendance Status (Late / Excused)
-  // =========================================================================
-  if (shouldRun('SS-D6-V009')) {
-    await recordSingleVideo('SS-D6-V009', async (page) => {
-      await page.goto(`${BASE_URL}/dashboard/attendance?date=${seedDateStr}&centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('text=Jenkins', { timeout: 30000 });
-      await page.waitForTimeout(2000);
+// =========================================================================
+// SS-D6-V010: Forgiving an Absence on Session Credit Ledger
+// =========================================================================
+if (shouldRun('SS-D6-V010')) {
+  await recordSingleVideo('SS-D6-V010', async (page) => {
+    await page.goto(`${BASE_URL}/dashboard/attendance/ledger`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Oliver Jenkins', { timeout: 30000 });
+    await page.waitForTimeout(2000); // 0.0s - 3.0s: Settled Starting State
 
-      // 1. Set Late arrival on Oliver Jenkins
-      const timeInput = page.locator('div.group.flex.flex-col:has-text("Oliver Jenkins") input[type="time"]').first();
-      if (await timeInput.count() > 0) {
-        await timeInput.fill('16:45');
-        await page.waitForTimeout(1500);
-      }
+    // 1. Expand Oliver Jenkins row by clicking the row container
+    const rowContainer = page.locator('div.flex.items-center:has-text("Oliver Jenkins")').first();
+    await rowContainer.click({ position: { x: 300, y: 20 } });
+    await page.waitForTimeout(1000);
 
-      // 2. Mark Excused Absence (Illness) on Noah Taylor
-      const noahCard = page.locator('div.group.flex.flex-col:has-text("Noah Taylor")').first();
-      if (await noahCard.count() > 0) {
-        const absentBtn = noahCard.locator('button:has-text("Absent"), button[title*="Absent"]').first();
-        if (await absentBtn.count() > 0) {
-          await absentBtn.click();
-          await page.waitForTimeout(800);
-          const illnessOption = page.locator('button:has-text("Illness")').first();
-          if (await illnessOption.count() > 0) {
-            await illnessOption.click();
-            await page.waitForTimeout(1500);
-          }
-        }
-      }
+    // 2. Click Forgive Sessions button
+    const forgiveBtn = page.locator('button:has-text("Forgive Sessions")').first();
+    await forgiveBtn.click();
+    await page.waitForSelector('text=Forgive Sessions', { timeout: 10000 });
+    await page.waitForTimeout(500);
 
-      await page.waitForTimeout(2000);
-      return 12;
-    }, { centreId: centreCentral.id });
-  }
+    // 3. Fill audit reason
+    const reasonTextarea = page.locator('textarea').first();
+    await reasonTextarea.fill('Approved absence adjustment');
+    await page.waitForTimeout(1500); // 6.5s: Action Frame
 
-  // =========================================================================
-  // SS-D6-V010: Forgiving an Absence on Session Credit Ledger
-  // =========================================================================
-  if (shouldRun('SS-D6-V010')) {
-    await recordSingleVideo('SS-D6-V010', async (page) => {
-      await page.goto(`${BASE_URL}/dashboard/attendance/ledger`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('input[placeholder*="Search"]', { timeout: 30000 });
-      await page.waitForTimeout(2000);
+    // 4. Click Confirm Forgiveness
+    const confirmBtn = page.locator('button:has-text("Confirm Forgiveness")').first();
+    await confirmBtn.click();
+    await page.waitForSelector('text=Sessions forgiven', { timeout: 10000 });
+    await page.waitForTimeout(3000); // 10.5s: End Frame
 
-      // Expand student row on default All view
-      const studentRow = page.locator('div:has-text("Oliver Jenkins"), div:has-text("Noah Taylor")').first();
-      if (await studentRow.count() > 0) {
-        await studentRow.click();
-        await page.waitForTimeout(1200);
-      }
+    return 12;
+  }, { centreId: centreCentral.id });
+}
 
-      // Click Forgive Sessions button
-      const forgiveBtn = page.locator('button:has-text("Forgive Sessions")').first();
-      if (await forgiveBtn.count() > 0 && await forgiveBtn.isVisible()) {
-        await forgiveBtn.click();
-        await page.waitForTimeout(1500);
-
-        // Fill forgiveness reason in modal
-        const reasonInput = page.locator('textarea[placeholder*="illness" i], textarea').first();
-        if (await reasonInput.count() > 0) {
-          await reasonInput.fill('Absence waived with medical certificate');
-          await page.waitForTimeout(1200);
-        }
-
-        // Click confirm
-        const confirmBtn = page.locator('button:has-text("Confirm Forgiveness"), button:has-text("Forgive")').last();
-        if (await confirmBtn.count() > 0) {
-          await confirmBtn.click();
-          await page.waitForTimeout(2000);
-        }
-      }
-
-      await page.waitForTimeout(2000);
-      return 12;
-    }, { centreId: centreCentral.id });
-  }
-
-  // Generate Review Contact Sheet
-  await generateVideoContactSheet();
+// Generate Review Contact Sheet
+await generateVideoContactSheet();
 }
 
 main().catch((err) => {
-  console.error('[FATAL VIDEO ERROR]', err);
-  process.exit(1);
+console.error('[FATAL VIDEO ERROR]', err);
+process.exit(1);
 });
