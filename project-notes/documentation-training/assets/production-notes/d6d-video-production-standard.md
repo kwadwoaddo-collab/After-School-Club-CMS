@@ -31,9 +31,10 @@ This document defines the canonical technical encoding, layout, visual pacing, p
 
 ## 5. Review Frames & Storyboard Generation
 - Every produced video must have exactly 3 representative review frames extracted:
-  1. **Phase 1: Starting State** (`SS-D6-VXXX-start.png`) — pristine starting layout.
-  2. **Phase 2: Core Action / Interaction** (`SS-D6-VXXX-action.png`) — active modal, input, or dropdown.
-  3. **Phase 3: Completed Outcome** (`SS-D6-VXXX-end.png`) — final updated badge, toast, or submitted screen.
+  1. **Phase 1: Starting State** (`SS-D6-VXXX-start.png`) — pristine starting layout after settling.
+  2. **Phase 2: Core Action / Interaction** (`SS-D6-VXXX-action.png`) — active modal, input, or dropdown representing the decisive workflow step.
+  3. **Phase 3: Completed Outcome** (`SS-D6-VXXX-end.png`) — final updated badge, toast, or submitted screen state prior to video completion.
+- **Extraction Methodology:** Timestamps must be determined semantically per video asset based on the actual duration and interaction timing. Fixed global timestamps that exceed the video length are strictly prohibited.
 - Review frames are stored in `project-notes/documentation-training/assets/review/d6d-batch-X-frames/` and composited into a multi-row visual review storyboard (`d6d-batch-X-video-contact-sheet.png`).
 
 ---

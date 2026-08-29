@@ -31,9 +31,22 @@ const TITLES: Record<string, string> = {
   'SS-D6-V005': 'Booking a Session via Parent Portal',
   'SS-D6-V006': 'Marking Morning and Afternoon Class Register',
   'SS-D6-V007': 'Operating the Tablet Kiosk Sign-In & Pick-Up',
-  'SS-D6-V008': 'Fast Walk-In Registration on Tablet Kiosk',
+  'SS-D6-V008': 'Fast Walk-In Registration from Daily Attendance',
   'SS-D6-V009': 'Overriding Attendance Status (Late / Excused)',
   'SS-D6-V010': 'Forgiving an Absence on Session Credit Ledger',
+};
+
+const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: string }> = {
+  'SS-D6-V001': { start: '01.50', action: '04.00', end: '06.20' }, // dur: 7.04s
+  'SS-D6-V002': { start: '01.50', action: '05.00', end: '09.50' }, // dur: 11.32s
+  'SS-D6-V003': { start: '02.50', action: '05.00', end: '07.20' }, // dur: 8.00s
+  'SS-D6-V004': { start: '01.50', action: '03.50', end: '05.50' }, // dur: 6.52s
+  'SS-D6-V005': { start: '01.50', action: '04.50', end: '07.80' }, // dur: 8.72s
+  'SS-D6-V006': { start: '01.50', action: '03.50', end: '05.80' }, // dur: 6.60s
+  'SS-D6-V007': { start: '01.00', action: '02.80', end: '04.50' }, // dur: 5.32s
+  'SS-D6-V008': { start: '01.50', action: '04.00', end: '06.80' }, // dur: 7.72s
+  'SS-D6-V009': { start: '01.50', action: '05.00', end: '08.50' }, // dur: 9.60s
+  'SS-D6-V010': { start: '01.50', action: '04.00', end: '06.50' }, // dur: 7.28s
 };
 
 async function ensureDirs() {
@@ -78,23 +91,21 @@ async function createParentSessionToken(parentId: string): Promise<string> {
 
 function extractFrames(videoPath: string, assetId: string, durationSec: number) {
   console.log(`[FRAMES] Extracting representative frames for ${assetId}...`);
-  // Explicit representative timestamps:
-  // Phase 1 (Start State): 2.5s (pristine fully rendered form)
-  // Phase 2 (Key Action): 6.0s (modal / active interaction)
-  // Phase 3 (End State): 10.5s (confirmed outcome / toast)
-  const tStart = '02.50';
-  const tAction = '06.00';
-  const tEnd = (Math.max(8.0, durationSec - 1.5)).toFixed(2);
+  const ts = SEMANTIC_TIMESTAMPS[assetId] || {
+    start: '01.50',
+    action: (durationSec * 0.55).toFixed(2),
+    end: (Math.max(1.0, durationSec - 1.2)).toFixed(2)
+  };
 
   const startPng = path.join(OUT_FRAMES, `${assetId}-start.png`);
   const actionPng = path.join(OUT_FRAMES, `${assetId}-action.png`);
   const endPng = path.join(OUT_FRAMES, `${assetId}-end.png`);
 
   try {
-    execSync(`${FFMPEG_BIN} -y -ss ${tStart} -i "${videoPath}" -vframes 1 "${startPng}"`, { stdio: 'pipe' });
-    execSync(`${FFMPEG_BIN} -y -ss ${tAction} -i "${videoPath}" -vframes 1 "${actionPng}"`, { stdio: 'pipe' });
-    execSync(`${FFMPEG_BIN} -y -ss ${tEnd} -i "${videoPath}" -vframes 1 "${endPng}"`, { stdio: 'pipe' });
-    console.log(`[FRAMES] Successfully extracted 3 frames for ${assetId} at [${tStart}s, ${tAction}s, ${tEnd}s]`);
+    execSync(`${FFMPEG_BIN} -y -ss ${ts.start} -i "${videoPath}" -vframes 1 "${startPng}"`, { stdio: 'pipe' });
+    execSync(`${FFMPEG_BIN} -y -ss ${ts.action} -i "${videoPath}" -vframes 1 "${actionPng}"`, { stdio: 'pipe' });
+    execSync(`${FFMPEG_BIN} -y -ss ${ts.end} -i "${videoPath}" -vframes 1 "${endPng}"`, { stdio: 'pipe' });
+    console.log(`[FRAMES] Successfully extracted 3 frames for ${assetId} at [${ts.start}s, ${ts.action}s, ${ts.end}s]`);
   } catch (err) {
     console.warn(`[WARN] Frame extraction failed for ${assetId}:`, err);
   }

@@ -114,7 +114,7 @@
 | `SS-D6-V005` | Booking a Session via Parent Portal | Parent | `/portal/book` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V006` | Marking Morning and Afternoon Class Register | Tutor | `/dashboard/attendance` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | Front Desk | `/dashboard/kiosk` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
-| `SS-D6-V008` | Fast Walk-In Registration on Tablet Kiosk | Front Desk | `/dashboard/kiosk` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | Front Desk | `/dashboard/attendance` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Front Desk | `/dashboard/attendance` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Manager | `/dashboard/attendance/ledger` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V011` | Logging a First Aid Accident on Body Map | Tutor | `/dashboard/incidents` | 60s | P0 | **YES** | READY |

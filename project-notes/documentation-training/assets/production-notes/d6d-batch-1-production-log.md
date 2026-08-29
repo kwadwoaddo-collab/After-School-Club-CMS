@@ -1,12 +1,12 @@
 # SprintScale CMS — Milestone D6D Batch 1 Video Production Log
 **Produced Assets:** `SS-D6-V001` → `SS-D6-V010` (10 Essential Micro-Videos)
 **Date:** 2026-08-29
-**Reconciliation Version:** D6D.R1 Semantic Visual Reconciliation
+**Reconciliation Version:** D6D.R1A Final Semantic & Review Frame Reconciliation
 **Environment:** Isolated Synthetic Training (`Oakridge Learning Club Ltd`)
-**Resolution:** 1440 × 900 px (16:10 Desktop Viewport)  
-**Frame Rate:** 25 fps  
-**Audio:** Silent Instructional Video (0 Audio Streams)  
-**Security Guardrails:** `assertSafeTrainingEnvironment()` Verified | Production Mutations = 0 | Real PII = 0  
+**Resolution:** 1440 × 900 px (16:10 Desktop Viewport)
+**Frame Rate:** 25 fps
+**Audio:** Silent Instructional Video (0 Audio Streams)
+**Security Guardrails:** `assertSafeTrainingEnvironment()` Verified | Production Mutations = 0 | Real PII = 0
 
 ---
 
@@ -21,13 +21,32 @@
 | `SS-D6-V005` | Booking a Session via Parent Portal | Portal | Sarah Jenkins (Parent) | `/portal/book` | 8.72s | 298 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Resolved via R1 Rerecord) |
 | `SS-D6-V006` | Marking Morning and Afternoon Class Register | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 6.60s | 589 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | None |
 | `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | Classroom | Eleanor Vance (Owner) | `/dashboard/kiosk` | 5.32s | 362 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | None (Verified) |
-| `SS-D6-V008` | Fast Walk-In Registration on Tablet Kiosk | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 7.72s | 539 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class E (Spec / Route Location Note) |
+| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 7.72s | 539 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class E (Reconciled to Actual Route) |
 | `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Classroom | Eleanor Vance (Owner) | `/dashboard/attendance` | 9.60s | 486 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Resolved via R1 Rerecord) |
 | `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Ledger | Eleanor Vance (Owner) | `/dashboard/attendance/ledger` | 7.28s | 462 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) | Class A (Resolved via R1 Rerecord) |
 
 ---
 
-## 2. Detailed Technical Profiles & D6D.R1 Reconciliations
+## 2. Representative Frame Semantic Timestamps Table
+
+To prevent empty/clamped frame extraction when a timestamp exceeds video duration, all representative frames are extracted via per-asset semantic timestamps tailored to the specific video duration and workflow milestones:
+
+| Video ID | Title | Total Duration | Phase 1 (Start) | Phase 2 (Key Action) | Phase 3 (End State) |
+|---|---|---|---|---|---|
+| `SS-D6-V001` | Registering a Multi-Child Family via Public Portal | 7.04s | `01.50s` | `04.00s` | `06.20s` |
+| `SS-D6-V002` | Reviewing & Approving a Public Registration | 11.32s | `01.50s` | `05.00s` | `09.50s` |
+| `SS-D6-V003` | Creating an Ad-Hoc Single Session Booking | 8.00s | `02.50s` | `05.00s` | `07.20s` |
+| `SS-D6-V004` | Setting up a Recurring Term Booking Plan | 6.52s | `01.50s` | `03.50s` | `05.50s` |
+| `SS-D6-V005` | Booking a Session via Parent Portal | 8.72s | `01.50s` | `04.50s` | `07.80s` |
+| `SS-D6-V006` | Marking Morning and Afternoon Class Register | 6.60s | `01.50s` | `03.50s` | `05.80s` |
+| `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | 5.32s | `01.00s` | `02.80s` | `04.50s` |
+| `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | 7.72s | `01.50s` | `04.00s` | `06.80s` |
+| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | 9.60s | `01.50s` | `05.00s` | `08.50s` |
+| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | 7.28s | `01.50s` | `04.00s` | `06.50s` |
+
+---
+
+## 3. Detailed Technical Profiles & D6D.R1A Reconciliations
 
 ### `SS-D6-V001`
 - **Canonical Title:** Registering a Multi-Child Family via Public Portal
@@ -57,7 +76,7 @@
 - **Discrepancy History:** In initial Batch 1, the video incorrectly demonstrated rescheduling an existing booking.
 - **Reconciliation Action:** Rerecorded using the real ad-hoc single booking creation wizard.
 - **Teaching Objective:** Demonstrates opening the New Session Booking form, entering parent contact details, child name (`Oliver Jenkins`), choosing session date (`2026-09-02`) and subject (`Maths`), and creating the booking.
-- **Key Action:** Selecting single session date and subject tag `Maths` on the New Session Booking form.
+- **Key Action:** Filling ad-hoc parent/child details and choosing single session slot with `Maths` subject tag.
 - **End State:** "Booking Confirmed!" summary card displaying reference code `BKG-7712`, student name, and session slot.
 - **Duration / Size:** 8.00s | 500,861 bytes
 - **QA Verdict:** CERTIFIED.
@@ -109,13 +128,14 @@
 - **Duration / Size:** 5.32s | 361,939 bytes
 - **QA Verdict:** CERTIFIED.
 
-### `SS-D6-V008` (Verified)
-- **Canonical Title:** Fast Walk-In Registration on Tablet Kiosk
+### `SS-D6-V008` (D6D.R1A Reconciled)
+- **Previous Canonical Title:** Fast Walk-In Registration on Tablet Kiosk
+- **Final Reconciled Title:** Fast Walk-In Registration from Daily Attendance
 - **Module:** Classroom
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`) / Front Desk
 - **Start Route:** `/dashboard/attendance`
-- **Teaching Objective:** Demonstrates how front desk staff handle unplanned walk-in students during live sessions directly from the attendance register.
-- **Specification Finding (Class E):** In the canonical specification title, "Tablet Kiosk" is referenced, but the actual product feature lives in the Daily Attendance Register (`/dashboard/attendance`) via the `+ Walk-In` modal.
+- **Teaching Objective:** Demonstrates how front desk staff handle unplanned walk-in students during live sessions directly from the daily attendance register action bar.
+- **Specification Discrepancy & Resolution:** Verified that walk-in registration exists exclusively in `/dashboard/attendance` (via the sticky header `+ Walk-In` action) and does not exist in `/dashboard/kiosk`. Title and teaching objective reconciled to exact product truth.
 - **End State:** Active register displaying walk-in modal and updated session roster.
 - **Duration / Size:** 7.72s | 538,984 bytes
 - **QA Verdict:** CERTIFIED.
@@ -148,7 +168,7 @@
 
 ---
 
-## 3. Review Artifacts & Derivative Files
+## 4. Review Artifacts & Derivative Files
 
 - **Master Video Directory:** `project-notes/documentation-training/assets/videos/` (`SS-D6-V001.mp4` → `SS-D6-V010.mp4`)
 - **Review Storyboard Contact Sheet:** `project-notes/documentation-training/assets/review/d6d-batch-1-video-contact-sheet.png` (912 × 2270 px)
