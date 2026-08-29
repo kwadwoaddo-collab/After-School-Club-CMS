@@ -107,16 +107,16 @@
 ### Essential Micro-Videos (32 Assets)
 | Video ID | Title | Role | Route | Duration | Priority | Essential? | Status |
 |---|---|---|---|---|---|---|---|
-| `SS-D6-V001` | Registering a Multi-Child Family via Public Portal | Parent | `/register/[slug]` | 60s | P1 | **YES** | READY |
-| `SS-D6-V002` | Reviewing & Approving a Public Registration | Manager | `/dashboard/registrations` | 60s | P1 | **YES** | READY |
-| `SS-D6-V003` | Creating an Ad-Hoc Single Session Booking | Front Desk | `/dashboard/bookings/new` | 45s | P1 | **YES** | READY |
-| `SS-D6-V004` | Setting up a Recurring Term Booking Plan | Manager | `/dashboard/bookings/new` | 60s | P1 | **YES** | READY |
-| `SS-D6-V005` | Booking a Session via Parent Portal | Parent | `/portal/book` | 45s | P1 | **YES** | READY |
-| `SS-D6-V006` | Marking Morning and Afternoon Class Register | Tutor | `/dashboard/attendance` | 45s | P0 | **YES** | READY |
-| `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | Front Desk | `/dashboard/kiosk` | 45s | P0 | **YES** | READY |
-| `SS-D6-V008` | Fast Walk-In Registration on Tablet Kiosk | Front Desk | `/dashboard/kiosk` | 45s | P0 | **YES** | READY |
-| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Front Desk | `/dashboard/attendance` | 45s | P1 | **YES** | READY |
-| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Manager | `/dashboard/attendance/ledger` | 45s | P1 | **YES** | READY |
+| `SS-D6-V001` | Registering a Multi-Child Family via Public Portal | Parent | `/register/[slug]` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V002` | Reviewing & Approving a Public Registration | Manager | `/dashboard/registrations` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V003` | Creating an Ad-Hoc Single Session Booking | Front Desk | `/dashboard/bookings/new` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V004` | Setting up a Recurring Term Booking Plan | Manager | `/dashboard/bookings/new` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V005` | Booking a Session via Parent Portal | Parent | `/portal/book` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V006` | Marking Morning and Afternoon Class Register | Tutor | `/dashboard/attendance` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V007` | Operating the Tablet Kiosk Sign-In & Pick-Up | Front Desk | `/dashboard/kiosk` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V008` | Fast Walk-In Registration on Tablet Kiosk | Front Desk | `/dashboard/kiosk` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Front Desk | `/dashboard/attendance` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Manager | `/dashboard/attendance/ledger` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V011` | Logging a First Aid Accident on Body Map | Tutor | `/dashboard/incidents` | 60s | P0 | **YES** | READY |
 | `SS-D6-V012` | Creating a Confidential Safeguarding Record | Owner/DSL | `/dashboard/incidents` | 60s | P0 | **YES** | READY |
 | `SS-D6-V013` | Setting up Agreed Monthly Family Tuition Fee | Owner/Manager | `/dashboard/centres/[id]/billing` | 60s | P1 | **YES** | READY |
