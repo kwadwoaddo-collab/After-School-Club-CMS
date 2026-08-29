@@ -89,14 +89,14 @@
 | `SS-D6-S066` | Student Academic Scorecard & Progress | People | Tutor/Staff | `/dashboard/students/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S067` | Attendance Timelog Timestamp Adjustment | Classroom | Manager | `/dashboard/attendance` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S068` | Bulk Check-In Attendance Action | Classroom | Tutor/Staff | `/dashboard/attendance` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S069` | Session Capacity Warning Indicator | Bookings | Staff | `/dashboard/bookings` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S069` | Session Bookings & Status Distribution | Bookings | Staff | `/dashboard/bookings` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S070` | Booking Rescheduling Dialog | Bookings | Staff | `/dashboard/bookings/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S071` | Booking Cancellation Confirmation | Bookings | Staff | `/dashboard/bookings/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S072` | Public Registration Confirmation Screen | Intake | Parent (Public) | `/register/[slug]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S073` | Registration Rejection / Decline Modal | Intake | Manager | `/dashboard/registrations/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S073` | Registration Decline Status Selection | Intake | Manager | `/dashboard/registrations/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S074` | Zero-Centre Staff Empty State | Admin | Unassigned Staff | `/dashboard` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S075` | Rate Limiting 429 Throttle Screen | Security | All Roles | `/portal/login` | P3 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S076` | Finance CSV Export Dialogue | Finance | Owner/Manager | `/dashboard/finance` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S076` | Finance CSV Export Action | Finance | Owner/Manager | `/dashboard/finance` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S077` | Attendance Register CSV Export Dialogue | Classroom | Owner/Manager | `/dashboard/attendance` | P2 | No | READY |
 | `SS-D6-S078` | External Integration Statuses Card | Admin | Owner Only | `/dashboard/settings` | P2 | No | READY |
 

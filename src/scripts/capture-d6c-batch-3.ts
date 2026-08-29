@@ -574,14 +574,14 @@ async function main() {
   const titles: Record<string, string> = {
     'SS-D6-S067': 'Attendance Timelog Timestamp Adjustment',
     'SS-D6-S068': 'Bulk Check-In Attendance Action',
-    'SS-D6-S069': 'Session Capacity Warning Indicator',
+    'SS-D6-S069': 'Session Bookings & Status Distribution',
     'SS-D6-S070': 'Booking Rescheduling Dialog',
     'SS-D6-S071': 'Booking Cancellation Confirmation',
     'SS-D6-S072': 'Public Registration Confirmation Screen',
-    'SS-D6-S073': 'Registration Rejection / Decline Modal',
+    'SS-D6-S073': 'Registration Decline Status Selection',
     'SS-D6-S074': 'Zero-Centre Staff Empty State',
     'SS-D6-S075': 'Rate Limiting 429 Throttle Screen',
-    'SS-D6-S076': 'Finance CSV Export Dialogue',
+    'SS-D6-S076': 'Finance CSV Export Action',
   };
 
   const cols = 2;
