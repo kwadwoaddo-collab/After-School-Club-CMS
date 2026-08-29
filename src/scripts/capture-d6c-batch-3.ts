@@ -15,6 +15,24 @@ const OUT_SOURCE = path.resolve('project-notes/documentation-training/assets/scr
 const OUT_ANNOTATED = path.resolve('project-notes/documentation-training/assets/screenshots/annotated');
 const OUT_REVIEW = path.resolve('project-notes/documentation-training/assets/review');
 
+const ALL_ASSET_IDS = [
+  'SS-D6-S067', 'SS-D6-S068', 'SS-D6-S069', 'SS-D6-S070', 'SS-D6-S071',
+  'SS-D6-S072', 'SS-D6-S073', 'SS-D6-S074', 'SS-D6-S075', 'SS-D6-S076'
+];
+
+const TITLES: Record<string, string> = {
+  'SS-D6-S067': 'Attendance Timelog Timestamp Adjustment',
+  'SS-D6-S068': 'Bulk Check-In Attendance Action',
+  'SS-D6-S069': 'Session Bookings & Status Distribution',
+  'SS-D6-S070': 'Booking Rescheduling Dialog',
+  'SS-D6-S071': 'Booking Cancellation Confirmation',
+  'SS-D6-S072': 'Public Registration Confirmation Screen',
+  'SS-D6-S073': 'Registration Decline Status Selection',
+  'SS-D6-S074': 'Zero-Centre Staff Empty State',
+  'SS-D6-S075': 'Rate Limiting 429 Throttle Screen',
+  'SS-D6-S076': 'Finance CSV Export Action',
+};
+
 interface Annotation {
   x: number;
   y: number;
@@ -77,6 +95,78 @@ async function annotateImage(
     .toFile(targetPath);
 }
 
+async function generateContactSheet() {
+  console.log('[REVIEW] Generating D6C Batch 3 Contact Sheet from existing annotated PNGs...');
+  const cols = 2;
+  const rows = Math.ceil(ALL_ASSET_IDS.length / cols);
+  const thumbW = 400;
+  const thumbH = 250;
+  const padding = 20;
+  const headerH = 100;
+
+  const totalW = cols * thumbW + (cols + 1) * padding;
+  const totalH = headerH + rows * thumbH + (rows + 1) * padding;
+
+  const composites: { input: Buffer; left: number; top: number }[] = [];
+
+  for (let i = 0; i < ALL_ASSET_IDS.length; i++) {
+    const id = ALL_ASSET_IDS[i];
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    const x = padding + c * (thumbW + padding);
+    const y = headerH + padding + r * (thumbH + padding);
+
+    const filePath = path.join(OUT_ANNOTATED, `${id}.png`);
+    if (fs.existsSync(filePath)) {
+      const thumbBuf = await sharp(filePath)
+        .resize(thumbW - 16, thumbH - 32, { fit: 'inside' })
+        .toBuffer();
+
+      const meta = await sharp(thumbBuf).metadata();
+      const actualW = meta.width || (thumbW - 16);
+
+      composites.push({
+        input: thumbBuf,
+        left: x + Math.floor((thumbW - actualW) / 2),
+        top: y + 22,
+      });
+    } else {
+      console.warn(`[WARN] Annotated file missing for contact sheet: ${filePath}`);
+    }
+  }
+
+  let bannerSvg = `
+    <svg width="${totalW}" height="${totalH}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${totalW}" height="${totalH}" fill="#0F172A" />
+      <text x="30" y="45" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" fill="#F8FAFC">SprintScale CMS — Milestone D6C Batch 3 Visual Review</text>
+      <text x="30" y="68" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#94A3B8">Remaining Screenshots SS-D6-S067 → SS-D6-S076 | Oakridge Learning Trust | Verified Synthetic Data</text>
+  `;
+
+  for (let i = 0; i < ALL_ASSET_IDS.length; i++) {
+    const id = ALL_ASSET_IDS[i];
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    const x = padding + c * (thumbW + padding);
+    const y = headerH + padding + r * (thumbH + padding);
+    const title = (TITLES[id] || '').replace(/&/g, '&amp;');
+
+    bannerSvg += `
+      <rect x="${x}" y="${y}" width="${thumbW}" height="${thumbH}" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
+      <text x="${x + 12}" y="${y + 16}" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="bold" fill="#38BDF8">${id}: ${title}</text>
+    `;
+  }
+
+  bannerSvg += '</svg>';
+
+  const contactSheetPath = path.join(OUT_REVIEW, 'd6c-batch-3-contact-sheet.png');
+  await sharp(Buffer.from(bannerSvg))
+    .composite(composites)
+    .png()
+    .toFile(contactSheetPath);
+
+  console.log(`[SUCCESS] D6C Batch 3 Contact sheet generated at: ${contactSheetPath}`);
+}
+
 async function loginUser(page: Page, email: string) {
   console.log(`[LOGIN] Logging in as ${email}...`);
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -123,9 +213,28 @@ async function safeBox(page: Page, selector: string, fallback: { x: number; y: n
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  const contactSheetOnly = args.includes('--contact-sheet-only');
+
+  // Check if specific assets were requested via --assets=S069,S073,S076 or similar
+  const assetsArg = args.find((a) => a.startsWith('--assets='));
+  const targetAssets: string[] | null = assetsArg
+    ? assetsArg
+        .replace('--assets=', '')
+        .split(',')
+        .map((s) => s.trim())
+        .map((s) => (s.startsWith('SS-D6-') ? s : `SS-D6-${s.toUpperCase()}`))
+    : null;
+
+  await ensureDirs();
+
+  if (contactSheetOnly) {
+    await generateContactSheet();
+    return;
+  }
+
   // 1. Safety Guard Verification
   assertSafeTrainingEnvironment();
-  await ensureDirs();
 
   const connectionString = process.env.DATABASE_URL!;
   const sql = postgres(connectionString, { ssl: 'require', max: 1 });
@@ -140,24 +249,27 @@ async function main() {
   const users = await sql`SELECT id, first_name, last_name, email, role FROM users WHERE organisation_id = ${org.id}`;
   const eleanorUser = users.find((u) => u.email === 'eleanor.vance@example.test') || users[0];
 
-  // Ensure unassigned synthetic tutor exists for S074
-  const passwordHash = await bcrypt.hash('Password123!', 10);
-  let unassignedUser = users.find((u) => u.email === 'noah.clarke@example.test');
-  if (!unassignedUser) {
-    const [created] = await sql`
-      INSERT INTO users (organisation_id, email, name, first_name, last_name, role, password_hash, email_verified)
-      VALUES (${org.id}, 'noah.clarke@example.test', 'Noah Clarke', 'Noah', 'Clarke', 'TUTOR', ${passwordHash}, NOW())
-      ON CONFLICT (email) DO UPDATE SET organisation_id = ${org.id}, role = 'TUTOR'
-      RETURNING id, first_name, last_name, email, role
-    `;
-    unassignedUser = created;
-    await sql`
-      INSERT INTO org_memberships (user_id, organisation_id, role)
-      VALUES (${unassignedUser.id}, ${org.id}, 'TUTOR')
-      ON CONFLICT DO NOTHING
-    `;
-    // Ensure no centre memberships exist for this user
-    await sql`DELETE FROM centre_memberships WHERE user_id = ${unassignedUser.id}`;
+  // Ensure unassigned synthetic tutor exists for S074 if targeting S074
+  const shouldRun = (id: string) => !targetAssets || targetAssets.includes(id);
+
+  if (shouldRun('SS-D6-S074')) {
+    const passwordHash = await bcrypt.hash('Password123!', 10);
+    let unassignedUser = users.find((u) => u.email === 'noah.clarke@example.test');
+    if (!unassignedUser) {
+      const [created] = await sql`
+        INSERT INTO users (organisation_id, email, name, first_name, last_name, role, password_hash, email_verified)
+        VALUES (${org.id}, 'noah.clarke@example.test', 'Noah Clarke', 'Noah', 'Clarke', 'TUTOR', ${passwordHash}, NOW())
+        ON CONFLICT (email) DO UPDATE SET organisation_id = ${org.id}, role = 'TUTOR'
+        RETURNING id, first_name, last_name, email, role
+      `;
+      unassignedUser = created;
+      await sql`
+        INSERT INTO org_memberships (user_id, organisation_id, role)
+        VALUES (${unassignedUser.id}, ${org.id}, 'TUTOR')
+        ON CONFLICT DO NOTHING
+      `;
+      await sql`DELETE FROM centre_memberships WHERE user_id = ${unassignedUser.id}`;
+    }
   }
 
   const registrations = await sql`SELECT id, status FROM registrations WHERE organisation_id = ${org.id} ORDER BY created_at DESC`;
@@ -170,9 +282,7 @@ async function main() {
   console.log(`[DATA] Org: ${org.name} (${org.id})`);
   console.log(`[DATA] Centre Central: ${centreCentral.name} (${centreCentral.id})`);
   console.log(`[DATA] Eleanor User: ${eleanorUser.id}`);
-  console.log(`[DATA] Unassigned User: ${unassignedUser.id}`);
-  console.log(`[DATA] Registration: ${reg?.id}`);
-  console.log(`[DATA] Booking 1: ${booking1?.id} (Date: ${seedDateStr})`);
+  console.log(`[DATA] Target Assets Filter: ${targetAssets ? targetAssets.join(', ') : 'ALL'}`);
 
   await sql.end();
 
@@ -193,20 +303,27 @@ async function main() {
   ]);
 
   const page = await staffCtx.newPage();
-  await loginUser(page, 'eleanor.vance@example.test');
+  let loggedInAsEleanor = false;
+
+  const ensureEleanorLogin = async () => {
+    if (!loggedInAsEleanor) {
+      await loginUser(page, 'eleanor.vance@example.test');
+      loggedInAsEleanor = true;
+    }
+  };
 
   const annotationsMap: Record<string, Annotation[]> = {};
 
   // =========================================================================
   // SS-D6-S067: Attendance Timelog Timestamp Adjustment
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S067: Attendance Timelog Timestamp Adjustment...');
-  {
+  if (shouldRun('SS-D6-S067')) {
+    console.log('[CAPTURE] SS-D6-S067: Attendance Timelog Timestamp Adjustment...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/attendance?date=${seedDateStr}&centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('text=Jenkins', { timeout: 30000 });
     await page.waitForTimeout(800);
 
-    // If no check-in time input is visible yet, click "Check In" on Oliver Jenkins row
     const timeInput = page.locator('div.group.flex.flex-col:has-text("Oliver Jenkins") input[type="time"]').first();
     if (await timeInput.count() === 0 || !(await timeInput.isVisible())) {
       const checkInBtn = page.locator('div.group.flex.flex-col:has-text("Oliver Jenkins") button:has-text("Check In")').first();
@@ -238,8 +355,9 @@ async function main() {
   // =========================================================================
   // SS-D6-S068: Bulk Check-In Attendance Action
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S068: Bulk Check-In Attendance Action...');
-  {
+  if (shouldRun('SS-D6-S068')) {
+    console.log('[CAPTURE] SS-D6-S068: Bulk Check-In Attendance Action...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/attendance?date=${seedDateStr}&centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('text=Jenkins', { timeout: 30000 });
     await page.waitForTimeout(600);
@@ -262,10 +380,11 @@ async function main() {
   }
 
   // =========================================================================
-  // SS-D6-S069: Session Capacity Warning Indicator
+  // SS-D6-S069: Session Bookings & Status Distribution
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S069: Session Capacity Warning Indicator...');
-  {
+  if (shouldRun('SS-D6-S069')) {
+    console.log('[CAPTURE] SS-D6-S069: Session Bookings & Status Distribution...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/bookings?centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('table tbody tr', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(600);
@@ -290,8 +409,9 @@ async function main() {
   // =========================================================================
   // SS-D6-S070: Booking Rescheduling Dialog
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S070: Booking Rescheduling Dialog...');
-  {
+  if (shouldRun('SS-D6-S070')) {
+    console.log('[CAPTURE] SS-D6-S070: Booking Rescheduling Dialog...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/bookings/${booking1.id}/reschedule`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('h1:has-text("Reschedule Booking")', { state: 'visible', timeout: 30000 });
     await page.waitForSelector('input[type="date"]', { state: 'visible', timeout: 30000 });
@@ -319,13 +439,13 @@ async function main() {
   // =========================================================================
   // SS-D6-S071: Booking Cancellation Confirmation
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S071: Booking Cancellation Confirmation...');
-  {
+  if (shouldRun('SS-D6-S071')) {
+    console.log('[CAPTURE] SS-D6-S071: Booking Cancellation Confirmation...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/bookings?centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('table tbody tr', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(400);
 
-    // Open dropdown menu on first row using aria-label
     const actionBtn = page.locator('button[aria-label="Booking actions"]').first();
     await actionBtn.click();
     await page.waitForSelector('button:has-text("Cancel Booking")', { state: 'visible', timeout: 10000 });
@@ -350,7 +470,6 @@ async function main() {
     await annotateImage(s71Source, s71Annotated, annotationsMap['SS-D6-S071']);
     console.log('[SUCCESS] SS-D6-S071 captured and annotated.');
 
-    // Dismiss modal cleanly
     await page.click('button:has-text("Keep Booking")');
     await page.waitForTimeout(300);
   }
@@ -358,8 +477,8 @@ async function main() {
   // =========================================================================
   // SS-D6-S072: Public Registration Confirmation Screen
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S072: Public Registration Confirmation Screen...');
-  {
+  if (shouldRun('SS-D6-S072')) {
+    console.log('[CAPTURE] SS-D6-S072: Public Registration Confirmation Screen...');
     const pubCtx = await browser.newContext({
       viewport: { width: 1440, height: 900 },
     });
@@ -368,7 +487,6 @@ async function main() {
     await pubPage.waitForSelector('h1', { state: 'visible', timeout: 30000 });
     await pubPage.waitForTimeout(600);
 
-    // Trigger submitted state in component directly for clean presentation
     await pubPage.evaluate(() => {
       const mainEl = document.querySelector('main') || document.body;
       const html = `
@@ -417,15 +535,15 @@ async function main() {
   }
 
   // =========================================================================
-  // SS-D6-S073: Registration Rejection / Decline Modal
+  // SS-D6-S073: Registration Decline Status Selection
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S073: Registration Rejection / Decline Modal...');
-  {
+  if (shouldRun('SS-D6-S073')) {
+    console.log('[CAPTURE] SS-D6-S073: Registration Decline Status Selection...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/registrations/${reg.id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('button:has-text("Update Status")', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(400);
 
-    // Open status dropdown
     await page.click('button:has-text("Update Status")');
     await page.waitForSelector('button:has-text("Not Interested")', { state: 'visible', timeout: 10000 });
     await page.waitForTimeout(600);
@@ -446,7 +564,6 @@ async function main() {
     await annotateImage(s73Source, s73Annotated, annotationsMap['SS-D6-S073']);
     console.log('[SUCCESS] SS-D6-S073 captured and annotated.');
 
-    // Close dropdown
     await page.click('h1.text-2xl.font-black');
     await page.waitForTimeout(300);
   }
@@ -454,8 +571,8 @@ async function main() {
   // =========================================================================
   // SS-D6-S074: Zero-Centre Staff Empty State
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S074: Zero-Centre Staff Empty State...');
-  {
+  if (shouldRun('SS-D6-S074')) {
+    console.log('[CAPTURE] SS-D6-S074: Zero-Centre Staff Empty State...');
     const unassignedCtx = await browser.newContext({
       viewport: { width: 1440, height: 900 },
     });
@@ -487,8 +604,8 @@ async function main() {
   // =========================================================================
   // SS-D6-S075: Rate Limiting 429 Throttle Screen
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S075: Rate Limiting 429 Throttle Screen...');
-  {
+  if (shouldRun('SS-D6-S075')) {
+    console.log('[CAPTURE] SS-D6-S075: Rate Limiting 429 Throttle Screen...');
     const throttleCtx = await browser.newContext({
       viewport: { width: 1440, height: 900 },
     });
@@ -496,7 +613,6 @@ async function main() {
     await throttlePage.goto(`${BASE_URL}/portal/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await throttlePage.waitForSelector('#portal-login-email', { state: 'visible', timeout: 30000 });
 
-    // Inject 429 error banner state
     await throttlePage.fill('#portal-login-email', 'sarah.jenkins@example.test');
     await throttlePage.evaluate(() => {
       const form = document.querySelector('form');
@@ -535,10 +651,11 @@ async function main() {
   }
 
   // =========================================================================
-  // SS-D6-S076: Finance CSV Export Dialogue
+  // SS-D6-S076: Finance CSV Export Action
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S076: Finance CSV Export Dialogue...');
-  {
+  if (shouldRun('SS-D6-S076')) {
+    console.log('[CAPTURE] SS-D6-S076: Finance CSV Export Action...');
+    await ensureEleanorLogin();
     await page.goto(`${BASE_URL}/dashboard/finance`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('a:has-text("Export CSV")', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(800);
@@ -561,97 +678,10 @@ async function main() {
   }
 
   await staffCtx.close();
-
-  // =========================================================================
-  // Generate Batch 3 Review Contact Sheet
-  // =========================================================================
-  console.log('[REVIEW] Generating D6C Batch 3 Contact Sheet...');
-  const assetIds = [
-    'SS-D6-S067', 'SS-D6-S068', 'SS-D6-S069', 'SS-D6-S070', 'SS-D6-S071',
-    'SS-D6-S072', 'SS-D6-S073', 'SS-D6-S074', 'SS-D6-S075', 'SS-D6-S076'
-  ];
-
-  const titles: Record<string, string> = {
-    'SS-D6-S067': 'Attendance Timelog Timestamp Adjustment',
-    'SS-D6-S068': 'Bulk Check-In Attendance Action',
-    'SS-D6-S069': 'Session Bookings & Status Distribution',
-    'SS-D6-S070': 'Booking Rescheduling Dialog',
-    'SS-D6-S071': 'Booking Cancellation Confirmation',
-    'SS-D6-S072': 'Public Registration Confirmation Screen',
-    'SS-D6-S073': 'Registration Decline Status Selection',
-    'SS-D6-S074': 'Zero-Centre Staff Empty State',
-    'SS-D6-S075': 'Rate Limiting 429 Throttle Screen',
-    'SS-D6-S076': 'Finance CSV Export Action',
-  };
-
-  const cols = 2;
-  const rows = Math.ceil(assetIds.length / cols);
-  const thumbW = 400;
-  const thumbH = 250;
-  const padding = 20;
-  const headerH = 100;
-
-  const totalW = cols * thumbW + (cols + 1) * padding;
-  const totalH = headerH + rows * thumbH + (rows + 1) * padding;
-
-  const composites: { input: Buffer; left: number; top: number }[] = [];
-
-  for (let i = 0; i < assetIds.length; i++) {
-    const id = assetIds[i];
-    const r = Math.floor(i / cols);
-    const c = i % cols;
-    const x = padding + c * (thumbW + padding);
-    const y = headerH + padding + r * (thumbH + padding);
-
-    const filePath = path.join(OUT_ANNOTATED, `${id}.png`);
-    if (fs.existsSync(filePath)) {
-      const thumbBuf = await sharp(filePath)
-        .resize(thumbW - 16, thumbH - 32, { fit: 'inside' })
-        .toBuffer();
-
-      const meta = await sharp(thumbBuf).metadata();
-      const actualW = meta.width || (thumbW - 16);
-
-      composites.push({
-        input: thumbBuf,
-        left: x + Math.floor((thumbW - actualW) / 2),
-        top: y + 22,
-      });
-    }
-  }
-
-  let bannerSvg = `
-    <svg width="${totalW}" height="${totalH}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${totalW}" height="${totalH}" fill="#0F172A" />
-      <text x="30" y="45" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" fill="#F8FAFC">SprintScale CMS — Milestone D6C Batch 3 Visual Review</text>
-      <text x="30" y="68" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#94A3B8">Remaining Screenshots SS-D6-S067 → SS-D6-S076 | Oakridge Learning Trust | Verified Synthetic Data</text>
-  `;
-
-  for (let i = 0; i < assetIds.length; i++) {
-    const id = assetIds[i];
-    const r = Math.floor(i / cols);
-    const c = i % cols;
-    const x = padding + c * (thumbW + padding);
-    const y = headerH + padding + r * (thumbH + padding);
-    const title = (titles[id] || '').replace(/&/g, '&amp;');
-
-    bannerSvg += `
-      <rect x="${x}" y="${y}" width="${thumbW}" height="${thumbH}" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
-      <text x="${x + 12}" y="${y + 16}" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="bold" fill="#38BDF8">${id}: ${title}</text>
-    `;
-  }
-
-  bannerSvg += '</svg>';
-
-  const contactSheetPath = path.join(OUT_REVIEW, 'd6c-batch-3-contact-sheet.png');
-  await sharp(Buffer.from(bannerSvg))
-    .composite(composites)
-    .png()
-    .toFile(contactSheetPath);
-
-  console.log(`[SUCCESS] D6C Batch 3 Contact sheet generated at: ${contactSheetPath}`);
-
   await browser.close();
+
+  // Generate contact sheet from all existing annotated files on disk
+  await generateContactSheet();
 }
 
 main().catch((err) => {
