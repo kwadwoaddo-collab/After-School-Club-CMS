@@ -348,18 +348,22 @@ async function main() {
   }
 
   // =========================================================================
-  // SS-D6-S063: Invoice Date & Notes Edit Dialog
+  // SS-D6-S063: Invoice Date & Notes Editing (Inline Editing View)
   // =========================================================================
-  console.log('[CAPTURE] SS-D6-S063: Invoice Date & Notes Edit Dialog...');
+  console.log('[CAPTURE] SS-D6-S063: Invoice Date & Notes Editing...');
   {
     await page.goto(`${BASE_URL}/dashboard/finance/invoices/${inv3.id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('button:has-text("Preview")', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(800);
 
-    // Hover over group/date and click edit button
+    // Hover over group/date and click edit button to open inline date editor
     await page.hover('.group\\/date');
     await page.click('button[title="Edit Issue Date"]');
     await page.waitForSelector('input[type="date"]', { state: 'visible', timeout: 10000 });
+
+    // Click Edit Note button to open inline notes editor
+    await page.click('button:has-text("Edit Note")');
+    await page.waitForSelector('textarea', { state: 'visible', timeout: 10000 });
     await page.waitForTimeout(600);
 
     const s63Source = path.join(OUT_SOURCE, 'SS-D6-S063-source.png');
@@ -367,12 +371,12 @@ async function main() {
     await page.screenshot({ path: s63Source, fullPage: false });
 
     const boxDateInput = await getElementBox(page, 'div:has(> input[type="date"])', 6);
-    const boxSaveBtn = await getElementBox(page, 'button:has(svg.lucide-check)', 4);
+    const boxNotesEditor = await getElementBox(page, 'div.bg-secondary\\/60:has(textarea)', 6);
     const boxAmountHeader = await getElementBox(page, 'div.text-right:has-text("Total Amount")', 6);
 
     annotationsMap['SS-D6-S063'] = [
       { ...boxDateInput, badge: 1 },
-      { ...boxSaveBtn, badge: 2 },
+      { ...boxNotesEditor, badge: 2 },
       { ...boxAmountHeader, badge: 3 },
     ];
     await annotateImage(s63Source, s63Annotated, annotationsMap['SS-D6-S063']);
@@ -380,7 +384,7 @@ async function main() {
   }
 
   // =========================================================================
-  // SS-D6-S064: Childcare Voucher Rejection / Failed Modal / Reconciliation Form
+  // SS-D6-S064: Childcare Voucher Reconciliation Form
   // =========================================================================
   console.log('[CAPTURE] SS-D6-S064: Childcare Voucher Reconciliation Form...');
   {
@@ -482,8 +486,8 @@ async function main() {
     'SS-D6-S060': 'Recovery Bin Family Record Restore Modal',
     'SS-D6-S061': 'Soft-Delete Confirmation Dialog',
     'SS-D6-S062': 'Owner Invoice Voiding Confirmation Modal',
-    'SS-D6-S063': 'Invoice Date & Notes Edit Dialog',
-    'SS-D6-S064': 'Childcare Voucher Rejection / Failed Modal',
+    'SS-D6-S063': 'Invoice Date & Notes Editing',
+    'SS-D6-S064': 'Childcare Voucher Reconciliation Form',
     'SS-D6-S065': 'Multi-Child Family Sibling Linkage View',
     'SS-D6-S066': 'Student Academic Scorecard & Progress',
   };

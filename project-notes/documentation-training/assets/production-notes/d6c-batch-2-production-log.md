@@ -1,7 +1,7 @@
 # Milestone D6C Batch 2 Visual Production Log: Supplementary Screenshots (SS-D6-S057 → SS-D6-S066)
 
 **Milestone**: D6C — Production Batch 2 (10 Canonical Assets)  
-**Production Date**: 2026-08-28  
+**Production Date**: 2026-08-28 (Reconciled: 2026-08-29)
 **Agent**: Visual Production Agent (SprintScale CMS)  
 **Target Environment**: Neon Training Database (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`)  
 **Safety Protocol**: `assertSafeTrainingEnvironment()` (`ALLOW_TRAINING_SEED=true`, `TRAINING_ENVIRONMENT=oakridge`)  
@@ -35,12 +35,12 @@ Milestone D6C Batch 2 delivers exactly 10 production screenshots covering venue 
 | `SS-D6-S060` | Recovery Bin Family Record Restore Modal | `/dashboard/parents/bin` | Eleanor Vance (Owner) | 82,114 B | 98,412 B | 1440 × 900 | **PASS — VERIFIED** |
 | `SS-D6-S061` | Soft-Delete Confirmation Dialog | `/dashboard/parents/[id]` | Eleanor Vance (Owner) | 123,010 B | 135,119 B | 1440 × 900 | **PASS — VERIFIED** |
 | `SS-D6-S062` | Owner Invoice Voiding Confirmation Modal | `/dashboard/finance/invoices/[id]` | Eleanor Vance (Owner) | 94,112 B | 110,480 B | 1440 × 900 | **PASS — VERIFIED** |
-| `SS-D6-S063` | Invoice Date & Notes Edit Dialog | `/dashboard/finance/invoices/[id]` | Eleanor Vance (Owner) | 151,204 B | 157,330 B | 1440 × 900 | **PASS — VERIFIED** |
-| `SS-D6-S064` | Childcare Voucher Rejection / Failed Modal | `/dashboard/finance/reconciliation` | Eleanor Vance (Owner) | 121,410 B | 130,225 B | 1440 × 900 | **PASS — VERIFIED** |
+| `SS-D6-S063` | Invoice Date & Notes Editing | `/dashboard/finance/invoices/[id]` | Eleanor Vance (Owner) | 151,885 B | 161,402 B | 1440 × 900 | **PASS — VERIFIED** |
+| `SS-D6-S064` | Childcare Voucher Reconciliation Form | `/dashboard/finance/reconciliation` | Eleanor Vance (Owner) | 121,410 B | 130,225 B | 1440 × 900 | **PASS — VERIFIED** |
 | `SS-D6-S065` | Multi-Child Family Sibling Linkage View | `/dashboard/parents/[id]` | Eleanor Vance (Owner) | 118,340 B | 130,412 B | 1440 × 900 | **PASS — VERIFIED** |
 | `SS-D6-S066` | Student Academic Scorecard & Progress | `/dashboard/students/[id]` | Eleanor Vance (Owner) | 137,290 B | 145,188 B | 1440 × 900 | **PASS — VERIFIED** |
 
-*Review Contact Sheet*: `project-notes/documentation-training/assets/review/d6c-batch-2-contact-sheet.png` (860 × 1470, 355,102 B) — **PASS — VERIFIED**
+*Review Contact Sheet*: `project-notes/documentation-training/assets/review/d6c-batch-2-contact-sheet.png` (860 × 1470, 357,112 B) — **PASS — VERIFIED**
 
 ---
 
@@ -106,17 +106,17 @@ Milestone D6C Batch 2 delivers exactly 10 production screenshots covering venue 
   - **[3]** `button.bg-amber-500:has-text("Void Invoice")`: Amber "Void Invoice" execution button.
 - **Pedagogical Objective**: Educates club owners on the financial compliance rules of voiding invoices while maintaining immutable audit histories.
 
-### `SS-D6-S063`: Invoice Date & Notes Edit Dialog
+### `SS-D6-S063`: Invoice Date & Notes Editing
 - **Route**: `http://localhost:3000/dashboard/finance/invoices/[inv3Id]`
 - **Authenticated Persona**: Eleanor Vance (`eleanor.vance@example.test`, Role: `ORG_OWNER`)
-- **Fixture State**: Active inline date editor for `INV-2026-003` issue date with date input and save button displayed.
+- **Fixture State**: Both the inline date editor and inline notes editor are actively triggered and visible simultaneously on the invoice view.
 - **Bounding Box Callouts**:
-  - **[1]** `div:has(> input[type="date"])`: Inline date picker input field.
-  - **[2]** `button:has(svg.lucide-check)`: Inline checkmark save button.
-  - **[3]** `div.text-right:has-text("Total Amount")`: Invoice total amount header summary (£140.00).
-- **Pedagogical Objective**: Illustrates inline invoice metadata corrections for adjusting issue dates and billing notes without regenerating documents.
+  - **[1]** `div:has(> input[type="date"])`: Inline date picker input field with checkmark save button.
+  - **[2]** `div.bg-secondary\/60:has(textarea)`: Inline invoice notes textarea editor with Cancel and Save action buttons.
+  - **[3]** `div.text-right:has-text("Total Amount")`: Invoice total amount header summary card (£140.00).
+- **Pedagogical Objective**: Teaches club administrators how to perform inline adjustments to invoice issue dates and custom recipient notes directly on the document overview.
 
-### `SS-D6-S064`: Childcare Voucher Rejection / Failed Modal / Reconciliation Form
+### `SS-D6-S064`: Childcare Voucher Reconciliation Form
 - **Route**: `http://localhost:3000/dashboard/finance/reconciliation`
 - **Authenticated Persona**: Eleanor Vance (`eleanor.vance@example.test`, Role: `ORG_OWNER`)
 - **Fixture State**: Payment reconciliation split-view with pending invoice `INV-2026-003` (£140.00, James Walker) selected and payment method options (Tax-Free Childcare, Childcare Voucher, Bank Transfer) ready for entry.
@@ -148,7 +148,16 @@ Milestone D6C Batch 2 delivers exactly 10 production screenshots covering venue 
 
 ---
 
-## 4. 30-Question Adversarial QA Checklist
+## 4. D6C.R2 Semantic Visual Reconciliation Audit & Rationale
+
+| Asset ID | Old Registry / Manifest Title | Reconciled Canonical Title | Reason for Reconciliation | Actual Observed UI Behaviour | Discrepancy Classification |
+|---|---|---|---|---|---|
+| `SS-D6-S063` | Invoice Date & Notes Edit Dialog | **Invoice Date & Notes Editing** | No separate modal/dialog exists in application; invoice date and notes editing occur inline on the invoice page. The updated capture triggers both the inline date picker and notes textarea controls. | Date is edited inline via date input + checkmark; notes are edited inline via textarea + Save button. | **C — DOCUMENTATION MISMATCH** / **E — REGISTRY/SPECIFICATION MISMATCH** |
+| `SS-D6-S064` | Childcare Voucher Rejection / Failed Modal | **Childcare Voucher Reconciliation Form** | The reconciliation page is a split-view payment matching form for Tax-Free Childcare, voucher, and bank transfer remittances; no failure modal exists on this route. Reconciled title matches actual product form semantics. | Split-view triage interface with pending invoice list on left and payment reconciliation form on right. | **E — REGISTRY/SPECIFICATION MISMATCH** |
+
+---
+
+## 5. 30-Question Adversarial QA Checklist
 
 | # | Question / Verification Item | Result | Evidence / Notes |
 |---|---|---|---|
@@ -172,13 +181,13 @@ Milestone D6C Batch 2 delivers exactly 10 production screenshots covering venue 
 | 18 | Does S060 show the recovery bin restore modal? | **YES** | Restore family modal dialog framed and highlighted. |
 | 19 | Does S061 show the parent soft-delete dialog? | **YES** | Delete family dialog with 30-day retention warning framed. |
 | 20 | Does S062 show the owner invoice void modal? | **YES** | Void Invoice confirmation modal and amber CTA highlighted. |
-| 21 | Does S063 show the inline date editing state? | **YES** | Date input, checkmark save CTA, and total amount highlighted. |
-| 22 | Does S064 show the payment reconciliation screen? | **YES** | Invoice selection, voucher methods, and reconcile CTA highlighted. |
+| 21 | Does S063 visibly show both inline date and notes editing controls? | **YES** | Inline date picker input and notes textarea both active and highlighted. |
+| 22 | Does S064 show the payment reconciliation screen with truthful title? | **YES** | Invoice selection, voucher methods, and reconcile CTA highlighted with reconciled title. |
 | 23 | Does S065 show multi-child sibling relationships? | **YES** | Sarah Jenkins with Oliver and Emma sibling links highlighted. |
 | 24 | Does S066 show student progress timeline and note? | **YES** | Progress header, category filters, and Liam Harper note highlighted. |
 | 25 | Is there any real student or staff PII present? | **NO** | Verified zero real human PII across all 10 assets. |
 | 26 | Are there any broken UI elements or missing stylesheets? | **NO** | Full Tailwind dark mode CSS styles loaded and rendered cleanly. |
-| 27 | Did `asset-registry.md` receive updated status for S057–S066? | **YES** | Updated to `**CAPTURED — VISUAL QA VERIFIED**`. |
+| 27 | Did `asset-registry.md` receive updated status for S057–S066? | **YES** | Updated to `**CAPTURED — VISUAL QA VERIFIED**` with reconciled titles. |
 | 28 | Were any video production tasks started prematurely? | **NO** | Video production remains strictly untouched. |
 | 29 | Are TypeScript types and lint checks passing? | **YES** | Validated via `npx tsc --noEmit` and `npm run lint`. |
-| 30 | Is the local repository ready for commit? | **YES** | Ready for `git commit -m "docs(training-d6c): produce remaining screenshot batch 2"`. |
+| 30 | Is the local repository ready for commit? | **YES** | Ready for `git commit -m "fix(training-d6c): reconcile batch 2 finance visuals"`. |

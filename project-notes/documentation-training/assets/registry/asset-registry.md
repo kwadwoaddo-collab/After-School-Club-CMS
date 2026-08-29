@@ -83,8 +83,8 @@
 | `SS-D6-S060` | Recovery Bin Family Record Restore Modal | Admin | Staff | `/dashboard/parents/bin` | P1 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S061` | Soft-Delete Confirmation Dialog | People | Staff | `/dashboard/parents/[id]` | P1 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S062` | Owner Invoice Voiding Confirmation Modal | Finance | Owner Only | `/dashboard/finance/invoices/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S063` | Invoice Date & Notes Edit Dialog | Finance | Staff | `/dashboard/finance/invoices/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S064` | Childcare Voucher Rejection / Failed Modal | Finance | Staff | `/dashboard/finance/reconciliation` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S063` | Invoice Date & Notes Editing | Finance | Staff | `/dashboard/finance/invoices/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S064` | Childcare Voucher Reconciliation Form | Finance | Staff | `/dashboard/finance/reconciliation` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S065` | Multi-Child Family Sibling Linkage View | People | Staff | `/dashboard/parents/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S066` | Student Academic Scorecard & Progress | People | Tutor/Staff | `/dashboard/students/[id]` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S067` | Attendance Timelog Timestamp Adjustment | Classroom | Manager | `/dashboard/attendance` | P2 | No | READY |
