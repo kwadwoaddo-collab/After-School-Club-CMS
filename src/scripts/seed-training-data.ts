@@ -32,6 +32,7 @@ export async function seedTrainingData() {
       const orgId = existingOrg.id;
       logger.info(`[TRAINING SEED] Removing existing Oakridge synthetic organisation (${orgId}) for clean re-instantiation...`);
       await client`DELETE FROM broadcasts WHERE organisation_id = ${orgId}`;
+      await client`DELETE FROM audit_events WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM notifications WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM staff_invites WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM incidents WHERE organisation_id = ${orgId}`;
@@ -240,6 +241,8 @@ export async function seedTrainingData() {
       allergies: ['Peanuts (Severe)'],
       medicalConditions: 'Severe Peanut Allergy (EpiPen in Main Office)',
       dietaryRequirements: 'Nut-free',
+      isRegistered: true,
+      registeredAt: new Date(),
     }).returning();
 
     const [childEmma] = await db.insert(schema.children).values({
@@ -251,6 +254,8 @@ export async function seedTrainingData() {
       dateOfBirth: new Date('2020-09-02'),
       schoolYear: 'Reception',
       dietaryRequirements: 'Vegetarian',
+      isRegistered: true,
+      registeredAt: new Date(),
     }).returning();
 
     const [childAria] = await db.insert(schema.children).values({
@@ -259,10 +264,11 @@ export async function seedTrainingData() {
       centreId: centreCentral.id,
       firstName: 'Aria',
       lastName: 'Patel',
-      dateOfBirth: new Date('2015-11-11'),
-      schoolYear: '5',
-      medicalConditions: 'Mild Asthma (Inhaler with child)',
+      dateOfBirth: new Date('2018-11-20'),
+      schoolYear: '2',
       dietaryRequirements: 'Halal',
+      isRegistered: true,
+      registeredAt: new Date(),
     }).returning();
 
     const [childNoah] = await db.insert(schema.children).values({
@@ -271,9 +277,9 @@ export async function seedTrainingData() {
       centreId: centreCentral.id,
       firstName: 'Noah',
       lastName: 'Taylor',
-      dateOfBirth: new Date('2018-03-19'),
-      schoolYear: '2',
-      deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // Staged in Recovery Bin
+      dateOfBirth: new Date('2019-03-15'),
+      schoolYear: '1',
+      deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // In recovery bin
     }).returning();
 
     const [childLucas] = await db.insert(schema.children).values({
@@ -282,8 +288,10 @@ export async function seedTrainingData() {
       centreId: centreCentral.id,
       firstName: 'Lucas',
       lastName: 'Walker',
-      dateOfBirth: new Date('2020-01-22'),
-      schoolYear: '1',
+      dateOfBirth: new Date('2017-08-10'),
+      schoolYear: '3',
+      isRegistered: true,
+      registeredAt: new Date(),
       senDetails: 'Speech & Language support indicator',
     }).returning();
 
@@ -450,6 +458,7 @@ export async function seedTrainingData() {
       organisationId: org.id,
       centreId: centreCentral.id,
       parentId: parentJenkins.id,
+      childId: childOliver.id,
       invoiceNumber: 'INV-2026-001',
       amount: '280.00',
       invoiceDate: new Date('2026-09-01'),
@@ -479,6 +488,7 @@ export async function seedTrainingData() {
       organisationId: org.id,
       centreId: centreCentral.id,
       parentId: parentPatel.id,
+      childId: childAria.id,
       invoiceNumber: 'INV-2026-002',
       amount: '140.00',
       invoiceDate: new Date('2026-09-01'),
@@ -512,11 +522,12 @@ export async function seedTrainingData() {
       },
     ]);
 
-    // Invoice 3: Sent (Outstanding)
+    // Invoice 3: Sent (Outstanding - for Cash Payment demo)
     const [inv3] = await db.insert(schema.invoices).values({
       organisationId: org.id,
       centreId: centreCentral.id,
       parentId: parentWalker.id,
+      childId: childLucas.id,
       invoiceNumber: 'INV-2026-003',
       amount: '140.00',
       invoiceDate: new Date('2026-09-01'),
@@ -531,6 +542,50 @@ export async function seedTrainingData() {
       quantity: 1,
       unitPrice: '140.00',
       lineTotal: '140.00',
+    });
+
+    // Invoice 4: Sent (Outstanding - for Bank Transfer demo)
+    const [inv4] = await db.insert(schema.invoices).values({
+      organisationId: org.id,
+      centreId: centreCentral.id,
+      parentId: parentJenkins.id,
+      childId: childOliver.id,
+      invoiceNumber: 'INV-2026-004',
+      amount: '120.00',
+      invoiceDate: new Date('2026-09-01'),
+      dueDate: new Date('2026-09-08'),
+      status: 'sent',
+      notes: 'Extended Hours Supplementary Fee (Oliver)',
+    }).returning();
+
+    await db.insert(schema.invoiceLineItems).values({
+      invoiceId: inv4.id,
+      description: 'Extended Hours Supplementary Fee — September 2026',
+      quantity: 1,
+      unitPrice: '120.00',
+      lineTotal: '120.00',
+    });
+
+    // Invoice 5: Sent (Outstanding - for Void demo)
+    const [inv5] = await db.insert(schema.invoices).values({
+      organisationId: org.id,
+      centreId: centreCentral.id,
+      parentId: parentPatel.id,
+      childId: childAria.id,
+      invoiceNumber: 'INV-2026-005',
+      amount: '120.00',
+      invoiceDate: new Date('2026-09-01'),
+      dueDate: new Date('2026-09-08'),
+      status: 'sent',
+      notes: 'Incorrectly billed ad-hoc session package',
+    }).returning();
+
+    await db.insert(schema.invoiceLineItems).values({
+      invoiceId: inv5.id,
+      description: 'Ad-hoc session package adjustment',
+      quantity: 1,
+      unitPrice: '120.00',
+      lineTotal: '120.00',
     });
 
     // 12. Create Session Credit for Aria Patel (Absence Forgiveness)

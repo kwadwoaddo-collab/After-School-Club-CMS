@@ -117,16 +117,16 @@
 | `SS-D6-V008` | Fast Walk-In Registration from Daily Attendance | Front Desk | `/dashboard/attendance` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V009` | Overriding Attendance Status (Late / Excused) | Front Desk | `/dashboard/attendance` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V010` | Forgiving an Absence on Session Credit Ledger | Manager | `/dashboard/attendance/ledger` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
-| `SS-D6-V011` | Logging a First Aid Accident on Body Map | Tutor | `/dashboard/incidents` | 60s | P0 | **YES** | READY |
-| `SS-D6-V012` | Creating a Confidential Safeguarding Record | Owner/DSL | `/dashboard/incidents` | 60s | P0 | **YES** | READY |
-| `SS-D6-V013` | Setting up Agreed Monthly Family Tuition Fee | Owner/Manager | `/dashboard/centres/[id]/billing` | 60s | P1 | **YES** | READY |
-| `SS-D6-V014` | Executing Monthly Invoicing Batch Run | Owner/Manager | `/dashboard/centres/[id]/billing` | 60s | P1 | **YES** | READY |
-| `SS-D6-V015` | Recording an Offline Cash Payment | Front Desk | `/dashboard/finance/invoices/[id]` | 45s | P1 | **YES** | READY |
-| `SS-D6-V016` | Recording an Offline Bank Transfer Payment | Staff | `/dashboard/finance/invoices/[id]` | 45s | P1 | **YES** | READY |
-| `SS-D6-V017` | Reconciling Childcare Vouchers & TFC | Manager | `/dashboard/finance/reconciliation` | 60s | P1 | **YES** | READY |
-| `SS-D6-V018` | Voiding and Reissuing an Incorrect Invoice | Owner | `/dashboard/finance/invoices/[id]` | 60s | P2 | **YES** | READY |
-| `SS-D6-V019` | Parent Portal Billing & Receipt PDF Download | Parent | `/portal/billing` | 45s | P1 | **YES** | READY |
-| `SS-D6-V020` | Creating & Setting Up a New Centre Venue | Owner/Manager | `/dashboard/centres/add` | 60s | P1 | **YES** | READY |
+| `SS-D6-V011` | Logging a First Aid Accident on Body Map | Tutor | `/dashboard/incidents` | 60s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V012` | Creating a Confidential Safeguarding Record | Owner/DSL | `/dashboard/incidents` | 60s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V013` | Setting up Agreed Monthly Family Tuition Fee | Owner/Manager | `/dashboard/centres/[id]/billing` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V014` | Executing Monthly Invoicing Batch Run | Owner/Manager | `/dashboard/centres/[id]/billing` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V015` | Recording an Offline Cash Payment | Front Desk | `/dashboard/finance/invoices/[id]` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V016` | Recording an Offline Bank Transfer Payment | Staff | `/dashboard/finance/invoices/[id]` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V017` | Reconciling Childcare Vouchers & TFC | Manager | `/dashboard/finance/reconciliation` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V018` | Voiding and Reissuing an Incorrect Invoice | Owner | `/dashboard/finance/invoices/[id]` | 60s | P2 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V019` | Parent Portal Billing & Receipt PDF Download | Parent | `/portal/billing` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V020` | Creating & Setting Up a New Centre Venue | Owner/Manager | `/dashboard/centres/add` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V021` | Managing Centre Bank Account Details | Owner | `/dashboard/centres/[id]/settings` | 45s | P0 | **YES** | READY |
 | `SS-D6-V022` | Inviting a New Staff Member via Email | Owner | `/dashboard/staff/invite` | 45s | P0 | **YES** | READY |
 | `SS-D6-V023` | Accepting a Staff Email Invitation | New Staff | `/accept-invite` | 45s | P0 | **YES** | READY |
