@@ -7,9 +7,9 @@
 
 | Asset Type | Total Unique Assets | Essential Priority (P0/P1) | Standard / Advanced (P2/P3) | Registry Status |
 |---|---|---|---|---|
-| **Annotated UI Screenshots** | **78** | **46 Essential** | 32 Standard | **READY FOR CAPTURE** |
+| **Annotated UI Screenshots** | **78** | **46 Essential** | 32 Standard | **CAPTURED — 100% COMPLETE (78/78)** |
 | **Micro-Video Screencasts** | **52** | **32 Essential** | 20 Standard | **READY FOR CAPTURE** |
-| **Total Unique Visual Assets** | **130** | **78 Essential** | 52 Standard | **READY FOR CAPTURE** |
+| **Total Unique Visual Assets** | **130** | **78 Essential** | 52 Standard | **78/130 COMPLETE (D6C FINISHED)** |
 
 ---
 
@@ -97,8 +97,8 @@
 | `SS-D6-S074` | Zero-Centre Staff Empty State | Admin | Unassigned Staff | `/dashboard` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S075` | Rate Limiting 429 Throttle Screen | Security | All Roles | `/portal/login` | P3 | No | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S076` | Finance CSV Export Action | Finance | Owner/Manager | `/dashboard/finance` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
-| `SS-D6-S077` | Attendance Register CSV Export Dialogue | Classroom | Owner/Manager | `/dashboard/attendance` | P2 | No | READY |
-| `SS-D6-S078` | External Integration Statuses Card | Admin | Owner Only | `/dashboard/settings` | P2 | No | READY |
+| `SS-D6-S077` | Attendance Daily Register & Roll Call Overview | Classroom | Owner/Manager | `/dashboard/attendance` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S078` | External Integration Statuses Card | Admin | Owner Only | `/dashboard/settings/wonde` | P2 | No | **CAPTURED — VISUAL QA VERIFIED** |
 
 ---
 
