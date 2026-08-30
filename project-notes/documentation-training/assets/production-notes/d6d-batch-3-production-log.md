@@ -33,7 +33,7 @@ All representative review frames are extracted at semantic timestamps tailored t
 
 | Video ID | Title | Total Duration | Phase 1 (Start) | Phase 2 (Key Action) | Phase 3 (End State) |
 |---|---|---|---|---|---|
-| `SS-D6-V021` | Managing Centre Bank Account Details | 11.44s | `02.50s` | `07.00s` | `11.50s` |
+| `SS-D6-V021` | Managing Centre Bank Account Details | 11.44s | `02.50s` | `07.00s` | `10.00s` |
 | `SS-D6-V022` | Inviting a New Staff Member via Email | 12.72s | `02.50s` | `07.00s` | `12.00s` |
 | `SS-D6-V023` | Accepting a Staff Email Invitation | 19.64s | `02.50s` | `06.50s` | `11.50s` |
 | `SS-D6-V024` | Scoping Staff Access Across Specific Centres | 14.72s | `02.50s` | `07.00s` | `11.50s` |

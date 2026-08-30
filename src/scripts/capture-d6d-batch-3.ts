@@ -38,7 +38,7 @@ const TITLES: Record<string, string> = {
 };
 
 const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: string }> = {
-  'SS-D6-V021': { start: '02.50', action: '07.00', end: '11.50' }, // dur: ~13s
+  'SS-D6-V021': { start: '02.50', action: '07.00', end: '10.00' }, // dur: 11.44s
   'SS-D6-V022': { start: '02.50', action: '07.00', end: '12.00' }, // dur: ~14s
   'SS-D6-V023': { start: '02.50', action: '06.50', end: '11.50' }, // dur: ~13s
   'SS-D6-V024': { start: '02.50', action: '07.00', end: '11.50' }, // dur: ~13s
