@@ -123,6 +123,7 @@ export async function seedTrainingData() {
       { firstName: 'Marcus', lastName: 'Sterling', email: 'marcus.sterling@example.test', role: 'MANAGER' as const },
       { firstName: 'Chloe', lastName: 'Bennett', email: 'chloe.bennett@example.test', role: 'FRONT_DESK' as const },
       { firstName: 'Liam', lastName: 'Harper', email: 'liam.harper@example.test', role: 'TUTOR' as const },
+      { firstName: 'Alex', lastName: 'Morgan', email: 'alex.morgan@example.test', role: 'TUTOR' as const },
     ];
 
     const staffUsers: Record<string, typeof schema.users.$inferSelect> = {};
@@ -216,6 +217,20 @@ export async function seedTrainingData() {
       deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago in Recovery Bin
     }).returning();
 
+    const [parentScott] = await db.insert(schema.parents).values({
+      organisationId: org.id,
+      firstName: 'Hannah',
+      lastName: 'Scott',
+      email: 'hannah.scott@example.test',
+      phone: '07700 900555',
+      preferredContact: 'email',
+      relationship: 'mother',
+      addressLine1: '14 Birch Grove',
+      city: 'London',
+      postcode: 'SE1 6FF',
+      deletedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), // 12 days ago in Recovery Bin
+    }).returning();
+
     const [parentWalker] = await db.insert(schema.parents).values({
       organisationId: org.id,
       firstName: 'James',
@@ -283,6 +298,17 @@ export async function seedTrainingData() {
       deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // In recovery bin
     }).returning();
 
+    const [childLeo] = await db.insert(schema.children).values({
+      parentId: parentScott.id,
+      organisationId: org.id,
+      centreId: centreCentral.id,
+      firstName: 'Leo',
+      lastName: 'Scott',
+      dateOfBirth: new Date('2018-06-11'),
+      schoolYear: '2',
+      deletedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), // In recovery bin
+    }).returning();
+
     const [childLucas] = await db.insert(schema.children).values({
       parentId: parentWalker.id,
       organisationId: org.id,
@@ -322,7 +348,7 @@ export async function seedTrainingData() {
     const sessionStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 30, 0);
 
     const [bookingTaylor] = await db.insert(schema.bookings).values({
-      centreId: centreCentral.id,
+      centreId: centreRiverside.id,
       parentId: parentTaylor.id,
       status: 'confirmed',
       modality: 'in_person',
@@ -708,6 +734,37 @@ export async function seedTrainingData() {
 
     // 17. Create Staff Cryptographic Invite Fixture
     logger.info('[TRAINING SEED] Creating Staff Cryptographic Invitation...');
+    const [sophieUser] = await db.insert(schema.users).values({
+      email: 'sophie.reed@example.test',
+      firstName: 'Sophie',
+      lastName: 'Reed',
+      name: 'Sophie Reed',
+      role: 'TUTOR',
+      organisationId: org.id,
+      emailVerified: null,
+    }).onConflictDoUpdate({
+      target: schema.users.email,
+      set: {
+        firstName: 'Sophie',
+        lastName: 'Reed',
+        name: 'Sophie Reed',
+        role: 'TUTOR',
+        organisationId: org.id,
+      }
+    }).returning();
+
+    await db.insert(schema.orgMemberships).values({
+      userId: sophieUser.id,
+      organisationId: org.id,
+      role: 'TUTOR',
+    }).onConflictDoNothing();
+
+    await db.insert(schema.centreMemberships).values({
+      userId: sophieUser.id,
+      centreId: centreCentral.id,
+      role: 'TUTOR',
+    }).onConflictDoNothing();
+
     await db.insert(schema.staffInvites).values({
       organisationId: org.id,
       email: 'sophie.reed@example.test',

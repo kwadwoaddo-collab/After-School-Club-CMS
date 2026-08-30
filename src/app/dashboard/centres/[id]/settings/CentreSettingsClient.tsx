@@ -51,7 +51,8 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
         }
     }
 
-    const { register, control, handleSubmit, formState: { isDirty } } = useForm<CentreFormValues>({
+    const { register, control, handleSubmit, reset, formState: { isDirty } } = useForm<CentreFormValues>({
+        mode: 'onChange',
         defaultValues: {
             name: centre.name || '',
             address: centre.address || '',
@@ -77,6 +78,7 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
         setIsSaving(true);
         try {
             await updateCentreAction(centre.id, data);
+            reset(data);
             router.refresh();
         } catch (error) {
             logger.error('Failed to update centre', error);
@@ -130,210 +132,204 @@ export default function CentreSettingsClient({ centre }: { centre: any }) {
                 <div className="p-5 sm:p-6">
 
                     {/* GENERAL TAB */}
-                    {activeTab === 'general' && (
-                        <div className="space-y-5 max-w-2xl">
-                            <h2 className="text-card-heading text-text">Identity &amp; compliance</h2>
-                            <div>
-                                <label className="block text-label text-text-muted mb-1.5">Centre name</label>
-                                <input
-                                    {...register('name', { required: true })}
-                                    className={inputCls}
-                                    placeholder="e.g. Sydenham Primary School"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-label text-text-muted mb-1.5">Full address</label>
-                                <textarea
-                                    {...register('address')}
-                                    rows={3}
-                                    className={`${inputCls} h-auto py-2`}
-                                    placeholder="Enter physical location…"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-label text-text-muted mb-1.5">Ofsted registration ID</label>
-                                <input
-                                    {...register('ofstedId')}
-                                    className={`${inputCls} font-mono`}
-                                    placeholder="e.g. EY123456"
-                                />
-                            </div>
+                    <div className={activeTab === 'general' ? 'space-y-5 max-w-2xl' : 'hidden'}>
+                        <h2 className="text-card-heading text-text">Identity &amp; compliance</h2>
+                        <div>
+                            <label className="block text-label text-text-muted mb-1.5">Centre name</label>
+                            <input
+                                {...register('name', { required: true })}
+                                className={inputCls}
+                                placeholder="e.g. Sydenham Primary School"
+                            />
                         </div>
-                    )}
+                        <div>
+                            <label className="block text-label text-text-muted mb-1.5">Full address</label>
+                            <textarea
+                                {...register('address')}
+                                rows={3}
+                                className={`${inputCls} h-auto py-2`}
+                                placeholder="Enter physical location…"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-label text-text-muted mb-1.5">Ofsted registration ID</label>
+                            <input
+                                {...register('ofstedId')}
+                                className={`${inputCls} font-mono`}
+                                placeholder="e.g. EY123456"
+                            />
+                        </div>
+                    </div>
 
                     {/* SESSIONS TAB */}
-                    {activeTab === 'sessions' && (
-                        <div className="space-y-5">
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                                <div>
-                                    <h2 className="text-card-heading text-text">Session builder</h2>
-                                    <p className="text-small-body text-text-secondary mt-1">Configure bookable session time blocks, pricing, and capacity.</p>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => append({ name: 'New Session', startTime: '12:00', endTime: '13:00', price: 10, capacity: 30, daysActive: WEEKDAYS })}
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> Add session
-                                </Button>
+                    <div className={activeTab === 'sessions' ? 'space-y-5' : 'hidden'}>
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                            <div>
+                                <h2 className="text-card-heading text-text">Session builder</h2>
+                                <p className="text-small-body text-text-secondary mt-1">Configure bookable session time blocks, pricing, and capacity.</p>
                             </div>
-
-                            <div className="space-y-3">
-                                {fields.map((field, index) => (
-                                    <div key={field.id} className="p-4 rounded-md border border-border-subtle bg-page">
-                                        {/* Times — own row; native time inputs need real width for
-                                            locale-formatted "HH:MM AM/PM" and were clipping when
-                                            squeezed into the grid below alongside every other field. */}
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-36">
-                                                <label className="block text-label text-text-muted mb-1">Start</label>
-                                                <input
-                                                    type="time"
-                                                    {...register(`sessionSlots.${index}.startTime` as const, { required: true })}
-                                                    className={`${inputCls} font-mono`}
-                                                />
-                                            </div>
-                                            <span className="text-text-muted mt-4">–</span>
-                                            <div className="w-36">
-                                                <label className="block text-label text-text-muted mb-1">End</label>
-                                                <input
-                                                    type="time"
-                                                    {...register(`sessionSlots.${index}.endTime` as const, { required: true })}
-                                                    className={`${inputCls} font-mono`}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                            {/* Details */}
-                                            <div className="md:col-span-6">
-                                                <label className="block text-label text-text-muted mb-1">Session name</label>
-                                                <input
-                                                    {...register(`sessionSlots.${index}.name` as const, { required: true })}
-                                                    className={inputCls}
-                                                    placeholder="e.g. Breakfast Club"
-                                                />
-                                            </div>
-
-                                            {/* Price & Capacity */}
-                                            <div className="md:col-span-2">
-                                                <label className="block text-label text-text-muted mb-1">Price (£)</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    {...register(`sessionSlots.${index}.price` as const, { required: true, valueAsNumber: true })}
-                                                    className={inputCls}
-                                                />
-                                            </div>
-                                            <div className="md:col-span-2">
-                                                <label className="block text-label text-text-muted mb-1">Capacity</label>
-                                                <input
-                                                    type="number"
-                                                    {...register(`sessionSlots.${index}.capacity` as const, { required: true, valueAsNumber: true })}
-                                                    className={inputCls}
-                                                />
-                                            </div>
-
-                                            {/* Delete */}
-                                            <div className="md:col-span-2 flex items-end justify-end pb-0.5">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => remove(index)}
-                                                    className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
-                                                    title="Delete session"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Days */}
-                                        <div className="mt-4 pt-4 border-t border-border-subtle">
-                                            <label className="block text-label text-text-muted mb-2">Active days</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {WEEKDAYS.map(day => (
-                                                    <label key={day} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border rounded-sm cursor-pointer hover:border-accent transition-colors">
-                                                        <input
-                                                            type="checkbox"
-                                                            value={day}
-                                                            {...register(`sessionSlots.${index}.daysActive` as const)}
-                                                            className="w-3.5 h-3.5 accent-accent"
-                                                        />
-                                                        <span className="text-xs font-medium text-text">{day}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {fields.length === 0 && (
-                                    <div className="text-center py-10 bg-page rounded-md border border-dashed border-border-subtle">
-                                        <p className="text-small-body text-text-secondary">No sessions configured.</p>
-                                    </div>
-                                )}
-                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => append({ name: 'New Session', startTime: '12:00', endTime: '13:00', price: 10, capacity: 30, daysActive: WEEKDAYS })}
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Add session
+                            </Button>
                         </div>
-                    )}
+
+                        <div className="space-y-3">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="p-4 rounded-md border border-border-subtle bg-page">
+                                    {/* Times — own row; native time inputs need real width for
+                                        locale-formatted "HH:MM AM/PM" and were clipping when
+                                        squeezed into the grid below alongside every other field. */}
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="w-36">
+                                            <label className="block text-label text-text-muted mb-1">Start</label>
+                                            <input
+                                                type="time"
+                                                {...register(`sessionSlots.${index}.startTime` as const, { required: true })}
+                                                className={`${inputCls} font-mono`}
+                                            />
+                                        </div>
+                                        <span className="text-text-muted mt-4">–</span>
+                                        <div className="w-36">
+                                            <label className="block text-label text-text-muted mb-1">End</label>
+                                            <input
+                                                type="time"
+                                                {...register(`sessionSlots.${index}.endTime` as const, { required: true })}
+                                                className={`${inputCls} font-mono`}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                        {/* Details */}
+                                        <div className="md:col-span-6">
+                                            <label className="block text-label text-text-muted mb-1">Session name</label>
+                                            <input
+                                                {...register(`sessionSlots.${index}.name` as const, { required: true })}
+                                                className={inputCls}
+                                                placeholder="e.g. Breakfast Club"
+                                            />
+                                        </div>
+
+                                        {/* Price & Capacity */}
+                                        <div className="md:col-span-2">
+                                            <label className="block text-label text-text-muted mb-1">Price (£)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                {...register(`sessionSlots.${index}.price` as const, { required: true, valueAsNumber: true })}
+                                                className={inputCls}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-label text-text-muted mb-1">Capacity</label>
+                                            <input
+                                                type="number"
+                                                {...register(`sessionSlots.${index}.capacity` as const, { required: true, valueAsNumber: true })}
+                                                className={inputCls}
+                                            />
+                                        </div>
+
+                                        {/* Delete */}
+                                        <div className="md:col-span-2 flex items-end justify-end pb-0.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => remove(index)}
+                                                className="p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft rounded-sm transition-colors"
+                                                title="Delete session"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Days */}
+                                    <div className="mt-4 pt-4 border-t border-border-subtle">
+                                        <label className="block text-label text-text-muted mb-2">Active days</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {WEEKDAYS.map(day => (
+                                                <label key={day} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border rounded-sm cursor-pointer hover:border-accent transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        value={day}
+                                                        {...register(`sessionSlots.${index}.daysActive` as const)}
+                                                        className="w-3.5 h-3.5 accent-accent"
+                                                    />
+                                                    <span className="text-xs font-medium text-text">{day}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {fields.length === 0 && (
+                                <div className="text-center py-10 bg-page rounded-md border border-dashed border-border-subtle">
+                                    <p className="text-small-body text-text-secondary">No sessions configured.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {/* BILLING TAB */}
-                    {activeTab === 'billing' && (
-                        <div className="space-y-5 max-w-2xl">
-                            <h2 className="text-card-heading text-text">Financial configuration</h2>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-label text-text-muted mb-1.5">Self-finance fee (£)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        {...register('feeSelfFinance', { valueAsNumber: true })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-label text-text-muted mb-1.5">Assisted finance fee (£)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        {...register('feeAssistedFinance', { valueAsNumber: true })}
-                                        className={inputCls}
-                                    />
-                                </div>
+                    <div className={activeTab === 'billing' ? 'space-y-5 max-w-2xl' : 'hidden'}>
+                        <h2 className="text-card-heading text-text">Financial configuration</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-label text-text-muted mb-1.5">Self-finance fee (£)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    {...register('feeSelfFinance', { valueAsNumber: true })}
+                                    className={inputCls}
+                                />
                             </div>
+                            <div>
+                                <label className="block text-label text-text-muted mb-1.5">Assisted finance fee (£)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    {...register('feeAssistedFinance', { valueAsNumber: true })}
+                                    className={inputCls}
+                                />
+                            </div>
+                        </div>
 
-                            <div className="pt-4 border-t border-border-subtle">
-                                <h3 className="text-small-body font-medium text-text mb-3">Bank details</h3>
-                                <div className="space-y-4">
+                        <div className="pt-4 border-t border-border-subtle">
+                            <h3 className="text-small-body font-medium text-text mb-3">Bank details</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-label text-text-muted mb-1.5">Bank name</label>
+                                    <input
+                                        {...register('bankName')}
+                                        className={inputCls}
+                                        placeholder="e.g. Barclays"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-label text-text-muted mb-1.5">Bank name</label>
+                                        <label className="block text-label text-text-muted mb-1.5">Sort code</label>
                                         <input
-                                            {...register('bankName')}
+                                            {...register('sortCode')}
                                             className={inputCls}
-                                            placeholder="e.g. Barclays"
+                                            placeholder="12-34-56"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-label text-text-muted mb-1.5">Sort code</label>
-                                            <input
-                                                {...register('sortCode')}
-                                                className={inputCls}
-                                                placeholder="12-34-56"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-label text-text-muted mb-1.5">Account number</label>
-                                            <input
-                                                {...register('accountNo')}
-                                                className={inputCls}
-                                                placeholder="12345678"
-                                            />
-                                        </div>
+                                    <div>
+                                        <label className="block text-label text-text-muted mb-1.5">Account number</label>
+                                        <input
+                                            {...register('accountNo')}
+                                            className={inputCls}
+                                            placeholder="12345678"
+                                        />
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             </Card>
 

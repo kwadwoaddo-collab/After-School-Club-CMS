@@ -127,16 +127,16 @@
 | `SS-D6-V018` | Voiding an Incorrect Invoice | Owner | `/dashboard/finance/invoices/[id]` | 60s | P2 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V019` | Parent Portal Billing & Invoices Overview | Parent | `/portal/billing` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V020` | Creating & Setting Up a New Centre Venue | Owner/Manager | `/dashboard/centres/add` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
-| `SS-D6-V021` | Managing Centre Bank Account Details | Owner | `/dashboard/centres/[id]/settings` | 45s | P0 | **YES** | READY |
-| `SS-D6-V022` | Inviting a New Staff Member via Email | Owner | `/dashboard/staff/invite` | 45s | P0 | **YES** | READY |
-| `SS-D6-V023` | Accepting a Staff Email Invitation | New Staff | `/accept-invite` | 45s | P0 | **YES** | READY |
-| `SS-D6-V024` | Scoping Staff Access Across Specific Centres | Owner | `/dashboard/staff/[userId]` | 45s | P0 | **YES** | READY |
-| `SS-D6-V025` | Updating Staff Role & Privileges | Owner | `/dashboard/staff/[userId]` | 45s | P0 | **YES** | READY |
-| `SS-D6-V026` | Safely Deactivating a Staff Member | Owner | `/dashboard/staff/[userId]` | 45s | P0 | **YES** | READY |
-| `SS-D6-V027` | Broadcasting an Email to Consented Parents | Manager | `/dashboard/communications` | 60s | P1 | **YES** | READY |
-| `SS-D6-V028` | Moving a Family to the 30-Day Recovery Bin | Front Desk | `/dashboard/parents/[id]` | 45s | P0 | **YES** | READY |
-| `SS-D6-V029` | Restoring an Archived Family from Bin | Front Desk | `/dashboard/parents/bin` | 45s | P0 | **YES** | READY |
-| `SS-D6-V030` | Irreversible Permanent GDPR Family Purge | Owner | `/dashboard/parents/bin` | 45s | P0 | **YES** | READY |
+| `SS-D6-V021` | Managing Centre Bank Account Details | Owner | `/dashboard/centres/[id]/settings` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V022` | Inviting a New Staff Member via Email | Owner | `/dashboard/staff/invite` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V023` | Accepting a Staff Email Invitation | New Staff | `/accept-invite` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V024` | Scoping Staff Access Across Specific Centres | Owner | `/dashboard/staff/[userId]` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V025` | Updating Staff Role & Privileges | Owner | `/dashboard/staff/[userId]` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V026` | Safely Deactivating a Staff Member | Owner | `/dashboard/staff/[userId]` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V027` | Broadcasting an Email to Consented Parents | Manager | `/dashboard/communications` | 60s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V028` | Moving a Family to the 30-Day Recovery Bin | Front Desk | `/dashboard/parents/[id]` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V029` | Restoring an Archived Family from Bin | Front Desk | `/dashboard/parents/bin` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V030` | Irreversible Permanent GDPR Family Purge | Owner | `/dashboard/parents/bin` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V031` | Parent Magic Link Sign-In & Portal Tour | Parent | `/portal/login` | 45s | P1 | **YES** | READY |
 | `SS-D6-V032` | Exporting Complete Organisation GDPR Data | Owner | `/dashboard/settings` | 45s | P2 | **YES** | READY |
 
