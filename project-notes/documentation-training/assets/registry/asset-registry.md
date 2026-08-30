@@ -138,7 +138,7 @@
 | `SS-D6-V029` | Restoring an Archived Family from Bin | Front Desk | `/dashboard/parents/bin` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V030` | Irreversible Permanent GDPR Family Purge | Owner | `/dashboard/parents/bin` | 45s | P0 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V031` | Parent Magic Link Sign-In & Portal Tour | Parent | `/portal/login` | 45s | P1 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
-| `SS-D6-V032` | Exporting Complete Organisation GDPR Data | Owner | `/dashboard/settings` | 45s | P2 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V032` | Exporting Organisation Data as JSON | Owner | `/dashboard/settings` | 45s | P2 | **YES** | `CAPTURED — VIDEO QA VERIFIED` |
 
 ### Supplementary / Advanced Micro-Videos (20 Assets)
 | Video ID | Title | Role | Route | Duration | Priority | Essential? | Status |

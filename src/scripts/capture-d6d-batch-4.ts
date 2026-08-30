@@ -26,7 +26,7 @@ const ALL_ASSET_IDS = [
 
 const TITLES: Record<string, string> = {
   'SS-D6-V031': 'Parent Magic Link Sign-In & Portal Tour',
-  'SS-D6-V032': 'Exporting Complete Organisation GDPR Data',
+  'SS-D6-V032': 'Exporting Organisation Data as JSON',
 };
 
 const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: string }> = {
