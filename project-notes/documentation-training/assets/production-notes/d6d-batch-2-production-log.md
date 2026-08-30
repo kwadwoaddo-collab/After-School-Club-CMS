@@ -15,14 +15,14 @@
 | Video ID | Title | Module | Persona / Role | Starting Route | Duration | File Size | Video QA | Technical QA |
 |---|---|---|---|---|---|---|---|---|
 | `SS-D6-V011` | Logging a First Aid Accident on Body Map | Incidents | Liam Harper (Tutor) | `/dashboard/incidents` | 12.44s | 936 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
-| `SS-D6-V012` | Creating a Confidential Safeguarding Record | Incidents | Marcus Sterling (Manager/DSL) | `/dashboard/incidents` | 13.28s | 947 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
+| `SS-D6-V012` | Creating a Confidential Safeguarding Record | Incidents | Marcus Sterling (Manager / DSL) | `/dashboard/incidents` | 13.28s | 947 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
 | `SS-D6-V013` | Setting up Agreed Monthly Family Tuition Fee | Students | Eleanor Vance (Owner) | `/dashboard/students/[id]?tab=billing` | 8.80s | 623 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
-| `SS-D6-V014` | Executing Monthly Invoicing Batch Run | Finance | Eleanor Vance (Owner) | `/dashboard/finance` | 9.84s | 709 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
+| `SS-D6-V014` | Executing Monthly Invoicing Batch Run | Finance | Eleanor Vance (Owner) | `/dashboard/finance` | 14.68s | 1,213 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
 | `SS-D6-V015` | Recording an Offline Cash Payment | Finance | Chloe Bennett (Front Desk) | `/dashboard/finance/invoices/[id]` | 14.40s | 1,251 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
 | `SS-D6-V016` | Recording an Offline Bank Transfer Payment | Finance | Eleanor Vance (Owner/Staff) | `/dashboard/finance/invoices/[id]` | 13.08s | 1,108 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
 | `SS-D6-V017` | Reconciling Childcare Vouchers & TFC | Finance | Marcus Sterling (Manager) | `/dashboard/finance/reconciliation` | 13.00s | 908 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
-| `SS-D6-V018` | Voiding and Reissuing an Incorrect Invoice | Finance | Eleanor Vance (Owner) | `/dashboard/finance/invoices/[id]` | 12.36s | 1,146 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
-| `SS-D6-V019` | Parent Portal Billing & Receipt PDF Download | Portal | Sarah Jenkins (Parent) | `/portal/billing` | 10.08s | 222 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
+| `SS-D6-V018` | Voiding an Incorrect Invoice | Finance | Eleanor Vance (Owner) | `/dashboard/finance/invoices/[id]` | 12.36s | 1,146 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
+| `SS-D6-V019` | Parent Portal Billing & Invoices Overview | Portal | Sarah Jenkins (Parent) | `/portal/billing` | 10.08s | 222 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
 | `SS-D6-V020` | Creating & Setting Up a New Centre Venue | Centres | Eleanor Vance (Owner) | `/dashboard/centres/add` | 10.64s | 632 KB | **CERTIFIED** | **PASS** (1440×900, 25fps) |
 
 ---
@@ -36,12 +36,12 @@ All representative review frames are extracted at semantic timestamps tailored t
 | `SS-D6-V011` | Logging a First Aid Accident on Body Map | 12.44s | `02.50s` | `07.00s` | `11.50s` |
 | `SS-D6-V012` | Creating a Confidential Safeguarding Record | 13.28s | `02.50s` | `07.00s` | `11.50s` |
 | `SS-D6-V013` | Setting up Agreed Monthly Family Tuition Fee | 8.80s | `02.50s` | `05.50s` | `08.50s` |
-| `SS-D6-V014` | Executing Monthly Invoicing Batch Run | 9.84s | `02.50s` | `05.50s` | `08.50s` |
+| `SS-D6-V014` | Executing Monthly Invoicing Batch Run | 14.68s | `02.50s` | `05.50s` | `13.50s` |
 | `SS-D6-V015` | Recording an Offline Cash Payment | 14.40s | `02.50s` | `06.50s` | `11.00s` |
 | `SS-D6-V016` | Recording an Offline Bank Transfer Payment | 13.08s | `02.50s` | `06.50s` | `11.00s` |
 | `SS-D6-V017` | Reconciling Childcare Vouchers & TFC | 13.00s | `02.50s` | `06.50s` | `11.50s` |
-| `SS-D6-V018` | Voiding and Reissuing an Incorrect Invoice | 12.36s | `02.50s` | `05.50s` | `09.50s` |
-| `SS-D6-V019` | Parent Portal Billing & Receipt PDF Download | 10.08s | `02.50s` | `05.50s` | `09.00s` |
+| `SS-D6-V018` | Voiding an Incorrect Invoice | 12.36s | `02.50s` | `05.50s` | `09.50s` |
+| `SS-D6-V019` | Parent Portal Billing & Invoices Overview | 10.08s | `02.50s` | `05.50s` | `09.00s` |
 | `SS-D6-V020` | Creating & Setting Up a New Centre Venue | 10.64s | `02.50s` | `06.00s` | `09.50s` |
 
 ---
@@ -64,9 +64,9 @@ All representative review frames are extracted at semantic timestamps tailored t
 - **Module:** Incidents
 - **Persona / Role:** Marcus Sterling (`MANAGER` / Designated Safeguarding Lead)
 - **Start Route:** `/dashboard/incidents?centre=[id]`
-- **Teaching Objective:** Demonstrates designated safeguarding leads creating confidential child protection records, categorising the disclosure under Safeguarding, logging observational notes, signing off as DSL, and storing the encrypted compliance record.
+- **Teaching Objective:** Demonstrates designated safeguarding leads creating confidential child protection records, categorising the disclosure under Safeguarding, logging observational notes, signing off as DSL, and storing the encrypted compliance record. Authenticated under Marcus Sterling (`MANAGER` application role, Designated Safeguarding Lead org role).
 - **Key Action:** Selecting Safeguarding record type for Emma Jenkins, entering confidential home circumstance observation note, providing DSL signature.
-- **End State:** Settled Incident & Accident table showing the newly created Safeguarding entry with confidential Safeguarding badge.
+- **End State:** Settled Incident & Accident table showing the newly created Safeguarding entry with confidential Safeguarding badge under Marcus Sterling session.
 - **Duration / Size:** 13.28s | 947,094 bytes
 - **QA Verdict:** CERTIFIED.
 
@@ -86,10 +86,10 @@ All representative review frames are extracted at semantic timestamps tailored t
 - **Module:** Finance
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`)
 - **Start Route:** `/dashboard/finance`
-- **Teaching Objective:** Demonstrates monthly billing cycle automation where management triggers the batch invoice generation wizard across all enrolled families, previewing calculated tuition totals (£420.00) before emitting invoices.
-- **Key Action:** Clicking `Generate Invoices` button, calculating billing cycle items across active parents.
-- **End State:** Generate Invoices batch modal showing calculated batch total and confirmation button.
-- **Duration / Size:** 9.84s | 708,973 bytes
+- **Teaching Objective:** Demonstrates monthly billing cycle automation where management triggers the batch invoice generation wizard across all enrolled families, previewing calculated tuition totals (£420.00 across 2 families), confirming the run, and reaching the completed state ("2 invoices generated. Invoices have been sent to families.") with newly generated invoices appearing in the ledger.
+- **Key Action:** Clicking `Generate All (2 ready)` button, reviewing batch preview modal, clicking `Generate 2 Invoices →` to execute batch creation.
+- **End State:** Visible successful completion modal displaying "2 invoices generated" with green checkmark confirmation card and updated background invoice ledger.
+- **Duration / Size:** 14.68s | 1,241,932 bytes
 - **QA Verdict:** CERTIFIED.
 
 ### `SS-D6-V015`
@@ -126,22 +126,22 @@ All representative review frames are extracted at semantic timestamps tailored t
 - **QA Verdict:** CERTIFIED.
 
 ### `SS-D6-V018`
-- **Canonical Title:** Voiding and Reissuing an Incorrect Invoice
+- **Canonical Title:** Voiding an Incorrect Invoice
 - **Module:** Finance
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`)
 - **Start Route:** `/dashboard/finance/invoices/[id]` (`INV-2026-005`, David Patel / Aria Patel, £120.00)
-- **Teaching Objective:** Demonstrates administrative audit workflow for voiding an erroneous invoice with an immutable audit trail and updating the ledger state to prevent improper collection.
+- **Teaching Objective:** Demonstrates administrative audit workflow for voiding an erroneous invoice with an immutable audit trail and updating the ledger state to prevent improper collection. Reconciled title accurately reflects the implemented single-action void workflow on invoice details.
 - **Key Action:** Clicking `Void` button on invoice header, opening confirmation modal, confirming invoice cancellation.
 - **End State:** Invoice status updated with grey `VOID` badge and payment recording actions disabled.
 - **Duration / Size:** 12.36s | 1,146,185 bytes
 - **QA Verdict:** CERTIFIED.
 
 ### `SS-D6-V019`
-- **Canonical Title:** Parent Portal Billing & Receipt PDF Download
+- **Canonical Title:** Parent Portal Billing & Invoices Overview
 - **Module:** Portal
 - **Persona / Role:** Sarah Jenkins (Parent — Authenticated via `parent_session` JWT)
 - **Start Route:** `/portal/billing`
-- **Teaching Objective:** Demonstrates the parent self-service portal financial dashboard, viewing current balance (£0.00), reviewing historical paid invoices, inspecting session fee breakdowns, and accessing payment mechanisms.
+- **Teaching Objective:** Demonstrates the parent self-service portal financial dashboard, viewing current balance (£0.00), reviewing historical paid invoices, inspecting session fee breakdowns, and accessing childcare voucher payment instructions. Reconciled title accurately reflects the implemented portal billing capabilities.
 - **Key Action:** Scrolling through invoice history (`INV-2026-004`, `INV-2026-001`) and childcare voucher instructions.
 - **End State:** Settled Parent Portal Billing view displaying paid invoice ledger and zero balance.
 - **Duration / Size:** 10.08s | 222,455 bytes

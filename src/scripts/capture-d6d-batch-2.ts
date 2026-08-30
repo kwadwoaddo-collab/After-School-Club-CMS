@@ -33,8 +33,8 @@ const TITLES: Record<string, string> = {
   'SS-D6-V015': 'Recording an Offline Cash Payment',
   'SS-D6-V016': 'Recording an Offline Bank Transfer Payment',
   'SS-D6-V017': 'Reconciling Childcare Vouchers & TFC',
-  'SS-D6-V018': 'Voiding and Reissuing an Incorrect Invoice',
-  'SS-D6-V019': 'Parent Portal Billing & Receipt PDF Download',
+  'SS-D6-V018': 'Voiding an Incorrect Invoice',
+  'SS-D6-V019': 'Parent Portal Billing & Invoices Overview',
   'SS-D6-V020': 'Creating & Setting Up a New Centre Venue',
 };
 
@@ -42,16 +42,17 @@ const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: 
   'SS-D6-V011': { start: '02.50', action: '07.00', end: '11.50' }, // dur: ~13s
   'SS-D6-V012': { start: '02.50', action: '07.00', end: '11.50' }, // dur: ~13s
   'SS-D6-V013': { start: '02.50', action: '05.50', end: '08.50' }, // dur: ~10s
-  'SS-D6-V014': { start: '02.50', action: '05.50', end: '08.50' }, // dur: ~10s
-  'SS-D6-V015': { start: '02.50', action: '06.50', end: '11.00' }, // dur: ~12s
-  'SS-D6-V016': { start: '02.50', action: '06.50', end: '11.00' }, // dur: ~12s
+  'SS-D6-V014': { start: '02.50', action: '05.50', end: '13.50' }, // dur: ~15s
+  'SS-D6-V015': { start: '02.50', action: '06.50', end: '11.00' }, // dur: ~14s
+  'SS-D6-V016': { start: '02.50', action: '06.50', end: '11.00' }, // dur: ~13s
   'SS-D6-V017': { start: '02.50', action: '06.50', end: '11.50' }, // dur: ~13s
-  'SS-D6-V018': { start: '02.50', action: '05.50', end: '09.50' }, // dur: ~11s
-  'SS-D6-V019': { start: '02.50', action: '05.50', end: '09.00' }, // dur: ~11s
+  'SS-D6-V018': { start: '02.50', action: '05.50', end: '09.50' }, // dur: ~12s
+  'SS-D6-V019': { start: '02.50', action: '05.50', end: '09.00' }, // dur: ~10s
   'SS-D6-V020': { start: '02.50', action: '06.00', end: '09.50' }, // dur: ~11s
 };
 
 const AUTH_OWNER = '/tmp/auth-owner.json';
+const AUTH_MANAGER = '/tmp/auth-manager.json';
 
 async function ensureDirs() {
   [OUT_VIDEOS, OUT_REVIEW, OUT_FRAMES].forEach((d) => {
@@ -61,9 +62,13 @@ async function ensureDirs() {
   });
 }
 
-async function prepareAuthSession() {
+async function prepareAuthSession(force = false) {
+  if (!force && fs.existsSync(AUTH_OWNER) && fs.statSync(AUTH_OWNER).size > 100) {
+    console.log('[AUTH] Reusing existing owner session from', AUTH_OWNER);
+    return;
+  }
   if (fs.existsSync(AUTH_OWNER)) {
-    fs.unlinkSync(AUTH_OWNER);
+    try { fs.unlinkSync(AUTH_OWNER); } catch {}
   }
   console.log('[AUTH] Authenticating fresh session as eleanor.vance@example.test...');
   const browser = await chromium.launch({
@@ -72,15 +77,43 @@ async function prepareAuthSession() {
   });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
-  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
   await page.waitForSelector('#admin-email', { state: 'visible', timeout: 30000 });
+  await page.waitForTimeout(1000); // Ensure hydration
   await page.fill('#admin-email', 'eleanor.vance@example.test');
   await page.fill('#admin-password', 'Password123!');
-  await page.click('form button[type="submit"]');
+  await page.click('button[type="submit"]');
   await page.waitForURL('**/dashboard**', { timeout: 30000 });
   await context.storageState({ path: AUTH_OWNER });
   await browser.close();
-  console.log('[AUTH] Saved fresh session to', AUTH_OWNER);
+  console.log('[AUTH] Saved fresh owner session to', AUTH_OWNER);
+}
+
+async function prepareManagerAuthSession(force = false) {
+  if (!force && fs.existsSync(AUTH_MANAGER) && fs.statSync(AUTH_MANAGER).size > 100) {
+    console.log('[AUTH] Reusing existing manager session from', AUTH_MANAGER);
+    return;
+  }
+  if (fs.existsSync(AUTH_MANAGER)) {
+    try { fs.unlinkSync(AUTH_MANAGER); } catch {}
+  }
+  console.log('[AUTH] Authenticating fresh session as marcus.sterling@example.test (Manager / DSL)...');
+  const browser = await chromium.launch({
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    headless: true,
+  });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('#admin-email', { state: 'visible', timeout: 30000 });
+  await page.waitForTimeout(1000); // Ensure hydration
+  await page.fill('#admin-email', 'marcus.sterling@example.test');
+  await page.fill('#admin-password', 'Password123!');
+  await page.click('button[type="submit"]');
+  await page.waitForURL('**/dashboard**', { timeout: 30000 });
+  await context.storageState({ path: AUTH_MANAGER });
+  await browser.close();
+  console.log('[AUTH] Saved fresh manager session to', AUTH_MANAGER);
 }
 
 async function createParentSessionToken(parentId: string): Promise<string> {
@@ -337,7 +370,8 @@ async function main() {
     where: and(eq(children.organisationId, org.id), eq(children.firstName, 'Oliver'), eq(children.lastName, 'Jenkins')),
   });
 
-  await prepareAuthSession();
+  await prepareAuthSession(true);
+  await prepareManagerAuthSession(true);
 
   // =========================================================================
   // SS-D6-V011: Logging a First Aid Accident on Body Map
@@ -448,7 +482,7 @@ async function main() {
       await page.waitForTimeout(3000); // 11.5s: End Frame (Table with Safeguarding badge)
 
       return 13;
-    }, { authFile: AUTH_OWNER, centreId: centreCentral.id });
+    }, { authFile: AUTH_MANAGER, centreId: centreCentral.id });
   }
 
   // =========================================================================
@@ -485,26 +519,29 @@ async function main() {
   // =========================================================================
   if (shouldRun('SS-D6-V014')) {
     await recordSingleVideo('SS-D6-V014', async (page) => {
-      await page.goto(`${BASE_URL}/dashboard/finance`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`${BASE_URL}/dashboard/finance?centre=${centreCentral.id}`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('text=Billing Cycles', { timeout: 30000 });
       await page.waitForTimeout(2500); // 0.0s - 3.0s: Settled Starting State
 
       // 1. Scroll to Billing Cycles
-      await page.evaluate(() => {
-        const el = Array.from(document.querySelectorAll('h2')).find(h => h.textContent?.includes('Billing Cycles'));
-        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
-      });
+      const billingHeading = page.locator('h2:has-text("Billing Cycles")');
+      await billingHeading.scrollIntoViewIfNeeded();
       await page.waitForTimeout(800);
 
-      // 2. Click Generate All / Generate Invoices
-      await page.evaluate(() => {
-        const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Generate All') || b.textContent?.includes('Generate Invoice'));
-        if (btn) (btn as HTMLElement).click();
-      });
-      await page.waitForTimeout(2000); // 5.5s: Action Frame (Batch Generation Preview Modal Open)
+      // 2. Click Generate All
+      const genBtn = page.locator('button:has-text("Generate All"), button:has-text("Generate")').first();
+      await genBtn.scrollIntoViewIfNeeded();
+      await genBtn.click();
+      await page.waitForSelector('text=Generate Invoices', { timeout: 10000 });
+      await page.waitForTimeout(1800); // 5.5s: Action Frame (Batch Generation Preview Modal Open)
 
-      await page.waitForTimeout(3000); // 8.5s: End Frame (Billing Calculation Summary Visible)
-      return 10;
+      // 3. Confirm and Execute Batch Generation
+      const confirmBtn = page.locator('div[role="dialog"] button, div.fixed button').filter({ hasText: 'Generate' }).last();
+      await confirmBtn.click();
+      await page.waitForSelector('text=invoices generated', { timeout: 30000 });
+      await page.waitForTimeout(4000); // 13.5s: End Frame (Batch Invoicing Execution Success State)
+
+      return 15;
     }, { authFile: AUTH_OWNER });
   }
 

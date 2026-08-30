@@ -19,6 +19,7 @@ export default function BulkInvoiceConfirmModal({
 }: BulkInvoiceConfirmModalProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [generatedCount, setGeneratedCount] = useState(cycles.length);
 
   if (!isOpen) return null;
 
@@ -27,6 +28,7 @@ export default function BulkInvoiceConfirmModal({
 
   const handleConfirm = async () => {
     setIsGenerating(true);
+    setGeneratedCount(cycles.length);
     try {
       await onConfirm();
       setIsDone(true);
@@ -56,7 +58,7 @@ export default function BulkInvoiceConfirmModal({
             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-success" />
             </div>
-            <p className="text-lg font-bold text-foreground">{cycles.length} invoice{cycles.length !== 1 ? 's' : ''} generated</p>
+            <p className="text-lg font-bold text-foreground">{generatedCount} invoice{generatedCount !== 1 ? 's' : ''} generated</p>
             <p className="text-sm text-muted-foreground">Invoices have been sent to families.</p>
             <button onClick={onClose} className="mt-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90">
               Done

@@ -41,6 +41,7 @@ export async function seedTrainingData() {
       await client`DELETE FROM payments WHERE invoice_id IN (SELECT id FROM invoices WHERE organisation_id = ${orgId})`;
       await client`DELETE FROM invoice_line_items WHERE invoice_id IN (SELECT id FROM invoices WHERE organisation_id = ${orgId})`;
       await client`DELETE FROM invoices WHERE organisation_id = ${orgId}`;
+      await client`DELETE FROM billing_runs WHERE billing_config_id IN (SELECT id FROM billing_configs WHERE organisation_id = ${orgId})`;
       await client`DELETE FROM billing_config_children WHERE config_id IN (SELECT id FROM billing_configs WHERE organisation_id = ${orgId})`;
       await client`DELETE FROM billing_configs WHERE organisation_id = ${orgId}`;
       await client`DELETE FROM booking_attendees WHERE booking_id IN (SELECT id FROM bookings WHERE parent_id IN (SELECT id FROM parents WHERE organisation_id = ${orgId}))`;
