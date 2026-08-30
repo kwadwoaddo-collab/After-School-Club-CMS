@@ -74,11 +74,12 @@ All representative review frames are extracted at semantic timestamps tailored t
 - **Canonical Title:** Setting up Agreed Monthly Family Tuition Fee
 - **Module:** Students / Billing
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`)
-- **Start Route:** `/dashboard/students/[id]?tab=billing`
-- **Teaching Objective:** Demonstrates configuring a fixed monthly agreed family fee for multi-child households, showing monthly fee calculation (£280.00/month), sibling group association (`Oliver` & `Emma Jenkins`), and billing plan active status.
-- **Key Action:** Navigating to Oliver Jenkins billing tab and reviewing active sibling-linked monthly tuition fee plan.
-- **End State:** Settled Billing configuration card displaying £280.00/month agreed plan active across the Jenkins family.
-- **Duration / Size:** 8.80s | 623,291 bytes
+- **Start Route:** `/dashboard/students/[id]`
+- **Teaching Objective:** Demonstrates setting up a fixed monthly agreed family fee for multi-child households, transitioning from the student overview to the billing tab, opening the configuration form, entering agreed monthly tuition (£280.00/month), mapping covered siblings (`Oliver` & `Emma Jenkins`), saving the configuration, and confirming the active plan.
+- **Key Action:** Navigating to Billing tab, clicking `Edit billing settings`, entering `280.00` in Agreed Monthly Fee input, verifying covered siblings, and clicking `Save Changes`.
+- **End State:** Settled Family Billing configuration card displaying active status, £280.00/month rate, shared sibling mapping (Oliver & Emma), and management controls.
+- **Duration / Size:** 14.00s | 1,047,700 bytes
+- **Representative Frames:** Start @ 02.50s (Overview tab), Action @ 07.50s (Active Setup Form with £280.00 input), End @ 12.50s (Settled £280/mo Plan Card).
 - **QA Verdict:** CERTIFIED.
 
 ### `SS-D6-V014`
@@ -86,10 +87,11 @@ All representative review frames are extracted at semantic timestamps tailored t
 - **Module:** Finance
 - **Persona / Role:** Eleanor Vance (`ORG_OWNER`)
 - **Start Route:** `/dashboard/finance`
-- **Teaching Objective:** Demonstrates monthly billing cycle automation where management triggers the batch invoice generation wizard across all enrolled families, previewing calculated tuition totals (£420.00 across 2 families), confirming the run, and reaching the completed state ("2 invoices generated. Invoices have been sent to families.") with newly generated invoices appearing in the ledger.
-- **Key Action:** Clicking `Generate All (2 ready)` button, reviewing batch preview modal, clicking `Generate 2 Invoices →` to execute batch creation.
-- **End State:** Visible successful completion modal displaying "2 invoices generated" with green checkmark confirmation card and updated background invoice ledger.
-- **Duration / Size:** 14.68s | 1,241,932 bytes
+- **Teaching Objective:** Demonstrates monthly billing cycle automation where management triggers the batch invoice generation wizard across all enrolled families, previewing calculated tuition totals (£420.00 across 2 families), executing batch creation, dismissing the confirmation dialog, and settling back on the updated finance ledger with new draft invoices visibly rendered.
+- **Key Action:** Scrolling to Billing Cycles, clicking `Generate All (2 ready)`, reviewing batch preview modal, clicking `Generate 2 Invoices →`, clicking `Done` to dismiss modal, and scrolling back to top of settled ledger.
+- **End State:** Settled Finance Ledger with modal completely dismissed, displaying updated metrics (£1,220.00 invoiced, £800.00 outstanding) and newly generated invoices (`INV-BOH7XX` £140.00, `INV-OBBAZX` £280.00) alongside existing records.
+- **Duration / Size:** 18.00s | 1,547,240 bytes
+- **Representative Frames:** Start @ 02.50s (Finance Ledger before run), Action @ 06.50s (Batch Generation Preview Modal), End @ 16.00s (Settled Finance Ledger post-generation).
 - **QA Verdict:** CERTIFIED.
 
 ### `SS-D6-V015`

@@ -40,7 +40,7 @@ export default function BulkInvoiceConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
       <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         
         {/* Header */}

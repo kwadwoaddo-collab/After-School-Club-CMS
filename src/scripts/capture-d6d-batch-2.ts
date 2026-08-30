@@ -41,8 +41,8 @@ const TITLES: Record<string, string> = {
 const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: string }> = {
   'SS-D6-V011': { start: '02.50', action: '07.00', end: '11.50' }, // dur: ~13s
   'SS-D6-V012': { start: '02.50', action: '07.00', end: '11.50' }, // dur: ~13s
-  'SS-D6-V013': { start: '02.50', action: '05.50', end: '08.50' }, // dur: ~10s
-  'SS-D6-V014': { start: '02.50', action: '05.50', end: '13.50' }, // dur: ~15s
+  'SS-D6-V013': { start: '02.50', action: '07.50', end: '12.50' }, // dur: ~14s
+  'SS-D6-V014': { start: '02.50', action: '06.50', end: '16.00' }, // dur: ~18s
   'SS-D6-V015': { start: '02.50', action: '06.50', end: '11.00' }, // dur: ~14s
   'SS-D6-V016': { start: '02.50', action: '06.50', end: '11.00' }, // dur: ~13s
   'SS-D6-V017': { start: '02.50', action: '06.50', end: '11.50' }, // dur: ~13s
@@ -341,7 +341,7 @@ async function main() {
   await ensureDirs();
 
   const targetArg = process.argv[2];
-  const shouldRun = (id: string) => !targetArg || targetArg === id || targetArg === 'all';
+  const shouldRun = (id: string) => !targetArg || targetArg === id || targetArg === 'all' || targetArg.split(',').includes(id);
 
   assertSafeTrainingEnvironment();
 
@@ -492,25 +492,33 @@ async function main() {
     await recordSingleVideo('SS-D6-V013', async (page) => {
       await page.goto(`${BASE_URL}/dashboard/students/${childOliver?.id}`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('text=Oliver Jenkins', { timeout: 30000 });
-      await page.waitForTimeout(2500); // 0.0s - 3.0s: Settled Starting State
+      await page.waitForTimeout(2500); // 0.0s - 3.0s: Settled Starting State (Overview Tab)
 
       // 1. Switch to Billing tab
-      await page.evaluate(() => {
-        const tabs = Array.from(document.querySelectorAll('button'));
-        const billTab = tabs.find(t => t.textContent?.includes('Billing'));
-        if (billTab) (billTab as HTMLElement).click();
-      });
-      await page.waitForSelector('text=Edit billing settings', { timeout: 10000 });
-      await page.waitForTimeout(1500); // 6.0s: Action Frame (Agreed Monthly Fee Card & Sibling Chips)
+      const billingTabBtn = page.locator('div.border-b button').filter({ hasText: 'Billing' }).first();
+      await billingTabBtn.click();
+      await page.waitForSelector('button:has-text("Edit billing settings"), button:has-text("Set Up Family Billing")', { timeout: 10000 });
+      await page.waitForTimeout(600);
 
-      // 2. Hover / Focus Edit action
-      const editBtn = page.locator('button:has-text("Edit billing settings")').first();
-      if (await editBtn.count() > 0) {
-        await editBtn.hover();
-      }
-      await page.waitForTimeout(3000); // 8.5s: End Frame (Settled Family Billing Configuration)
+      // 2. Open Edit / Setup Form
+      const editBtn = page.locator('button:has-text("Edit billing settings"), button:has-text("Set Up Family Billing")').first();
+      await editBtn.click();
+      await page.waitForSelector('text="Agreed Monthly Fee"', { timeout: 10000 });
+      await page.waitForTimeout(600);
 
-      return 10;
+      // 3. Interactively configure fee & interact with form
+      const feeInput = page.locator('input[type="number"]').first();
+      await feeInput.click();
+      await feeInput.fill('280.00');
+      await page.waitForTimeout(2200); // 07.50s: Action Frame (Active Fee Setup Form with Sibling Checkboxes)
+
+      // 4. Save Billing Plan
+      const saveBtn = page.locator('button:has-text("Save Changes"), button:has-text("Set Up Billing")').first();
+      await saveBtn.click();
+      await page.waitForSelector('button:has-text("Edit billing settings")', { timeout: 15000 });
+      await page.waitForTimeout(3000); // 12.50s: End Frame (Settled Family Billing Configuration Card)
+
+      return 14;
     }, { authFile: AUTH_OWNER });
   }
 
@@ -529,19 +537,29 @@ async function main() {
       await page.waitForTimeout(800);
 
       // 2. Click Generate All
-      const genBtn = page.locator('button:has-text("Generate All"), button:has-text("Generate")').first();
+      const genBtn = page.locator('button').filter({ hasText: /Generate All|Generate/ }).first();
       await genBtn.scrollIntoViewIfNeeded();
       await genBtn.click();
       await page.waitForSelector('text=Generate Invoices', { timeout: 10000 });
-      await page.waitForTimeout(1800); // 5.5s: Action Frame (Batch Generation Preview Modal Open)
+      await page.waitForTimeout(2000); // 06.50s: Action Frame (Batch Generation Preview Modal Open)
 
       // 3. Confirm and Execute Batch Generation
       const confirmBtn = page.locator('div[role="dialog"] button, div.fixed button').filter({ hasText: 'Generate' }).last();
       await confirmBtn.click();
       await page.waitForSelector('text=invoices generated', { timeout: 30000 });
-      await page.waitForTimeout(4000); // 13.5s: End Frame (Batch Invoicing Execution Success State)
+      await page.waitForTimeout(1000);
 
-      return 15;
+      // 4. Dismiss Success Modal & Return to Settled Ledger
+      const doneBtn = page.locator('div[role="dialog"] button, div.fixed button').filter({ hasText: 'Done' }).first();
+      await doneBtn.click({ force: true });
+      await page.waitForSelector('text=invoices generated', { state: 'hidden', timeout: 10000 });
+      await page.waitForTimeout(600);
+
+      // 5. Scroll back to top to show updated settled finance ledger
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      await page.waitForTimeout(3000); // 16.00s: End Frame (Settled Finance Ledger with new invoices)
+
+      return 18;
     }, { authFile: AUTH_OWNER });
   }
 
