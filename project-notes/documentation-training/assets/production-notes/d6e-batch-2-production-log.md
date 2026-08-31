@@ -32,15 +32,15 @@ All 10 videos were captured against the isolated synthetic `Oakridge Learning Cl
 | Video ID | Authoritative Registry Title | Persona / Role | Target Route | Core Product Workflow | Preflight Decision |
 |---|---|---|---|---|---|
 | `SS-D6-V043` | Exporting Finance & Invoicing CSV | Eleanor Vance (`ORG_OWNER`) | `/dashboard/finance` | Accesses Finance Ledger, hovers over Export CSV, triggers streaming CSV download (`/api/export/finance`). | **READY** |
-| `SS-D6-V044` | Editing Invoice Issue Date & Notes | Eleanor Vance (`ORG_OWNER`) | `/dashboard/finance/invoices/[id]` | Opens invoice details, edits Issue Date (`2026-09-02`), edits custom Notes, persists both via server actions. | **READY** |
-| `SS-D6-V045` | Handling Failed Childcare Voucher Payment | Chloe Bennett (`FRONT_DESK`) | `/dashboard/finance/reconciliation` | Selects pending invoice, inputs duplicate/invalid TFC reference, handles fail-closed reconciliation error toast. | **READY** |
+| `SS-D6-V044` | Editing Invoice Issue Date & Notes | Eleanor Vance (`ORG_OWNER`) | `/dashboard/finance/invoices/[id]` | Opens invoice details, edits Issue Date (`02/09/2026`), edits custom Notes, persists both via server actions. | **READY** |
+| `SS-D6-V045` | Handling Duplicate Childcare Voucher Reconciliation | Chloe Bennett (`FRONT_DESK`) | `/dashboard/finance/reconciliation` | Selects pending invoice, inputs duplicate TFC reference (`DUPLICATE-REF-ALREADY-USED`), demonstrates reconciliation validation error feedback. | **READY** |
 | `SS-D6-V046` | Configuring Venue Operating Times | Marcus Sterling (`MANAGER`) | `/dashboard/centres/[id]/settings` | Switches to Sessions tab, updates operating end time (`18:30`), persists venue configuration via sticky action bar. | **READY** |
 | `SS-D6-V047` | Reviewing In-App Header Notifications | Chloe Bennett (`FRONT_DESK`) | `/dashboard` | Clicks header notification bell, reviews unread alerts in popover, marks all as read to clear badge. | **READY** |
 | `SS-D6-V048` | Tracking Parent Email Broadcast Delivery | Marcus Sterling (`MANAGER`) | `/dashboard/communications` | Switches to History & Audit Log tab, inspects sent broadcasts, opens slide-out details drawer with delivery metrics. | **READY** |
 | `SS-D6-V049` | Declining an Incomplete Registration | Marcus Sterling (`MANAGER`) | `/dashboard/registrations/[id]` | Opens registration details, selects "Not Interested" from Update Status dropdown, persists declined state. | **READY** |
-| `SS-D6-V050` | Parent Updating Medical Info on Portal | Sarah Jenkins (`PARENT`) | `/portal/children/[id]` | Navigates to Oliver Jenkins portal profile, submits new allergy note via AddMedicalNoteForm, confirms live list update. | **READY** |
+| `SS-D6-V050` | Parent Adding a Medical Note on the Portal | Sarah Jenkins (`PARENT`) | `/portal/children/[id]` | Navigates to Oliver Jenkins portal profile, submits new allergy note via AddMedicalNoteForm, confirms live list update. | **READY** |
 | `SS-D6-V051` | Handling Zero-Centre Staff Assignment | Eleanor Vance (`ORG_OWNER`) | `/dashboard/staff/[userId]` | Clears all centre assignments for Liam Harper, verifies warning banner, saves zero-centre configuration. | **READY** |
-| `SS-D6-V052` | Understanding System Rate Limit Throttling | Public / Parent (`UNAUTH`) | `/portal/login` | Enters login email, triggers rate-limiting throttle threshold, receives HTTP 429 security feedback banner. | **READY** |
+| `SS-D6-V052` | Understanding the Parent Portal Rate-Limit Warning | Public / Parent (`UNAUTH`) | `/portal/login` | Enters login email, triggers client warning UI demonstrating standard rate-limiting feedback banner. | **READY** |
 
 ---
 
@@ -94,21 +94,47 @@ Extracted to `project-notes/documentation-training/assets/review/d6e-batch-2-fra
 ### Ledger B: Recorded Workflow Execution
 - `SS-D6-V043`: Export CSV query — Read-only streaming (0 mutations).
 - `SS-D6-V044`: Edit Issue Date & Notes — `invoices.invoiceDate` updated (`UPDATE = 1`), `invoices.notes` updated (`UPDATE = 1`). Total `UPDATE = 2`.
-- `SS-D6-V045`: Failed Voucher Reconciliation — Validation rejection (0 mutations).
-- `SS-D6-V046`: Configure Venue Times — `centres.sessionSlots` updated (`UPDATE = 1`).
+- `SS-D6-V045`: Handling Duplicate Childcare Voucher Reconciliation — Reconciling duplicate reference triggers validation error (0 mutations).
+- `SS-D6-V046`: Configure Venue Operating Times — `centres.sessionSlots` updated (`UPDATE = 1`).
 - `SS-D6-V047`: Review Notifications — `notifications.isRead` updated to `true` (`UPDATE = 1`).
-- `SS-D6-V048`: Broadcast Audit Log — Read-only drawer toggle (0 mutations).
+- `SS-D6-V048`: Broadcast Delivery Audit — Read-only drawer toggle (0 mutations).
 - `SS-D6-V049`: Decline Registration — `registrations.status` updated to `'not_interested'` (`UPDATE = 1`).
-- `SS-D6-V050`: Parent Medical Note — `studentNotes` record inserted (`INSERT = 1`).
+- `SS-D6-V050`: Parent Adding a Medical Note — `studentNotes` record inserted (`INSERT = 1`).
 - `SS-D6-V051`: Zero-Centre Staff Assignment — `centreMemberships` record deleted (`DELETE = 1`, `INSERT = 0`, `users` UPDATE = 0).
-- `SS-D6-V052`: Rate Limit Throttling — Client mock / 429 response handled (0 mutations).
+- `SS-D6-V052`: Understanding Rate-Limit Warning — UI warning demonstration (0 mutations).
 
 ### Ledger C: Post-Capture Cleanup
 - Training database state retained in consistent Oakridge Learning Club demo state.
 
 ---
 
-## 6. Zero Application Source Changes Verification
+## 6. Specific Asset Forensics
+
+### SS-D6-V045: Handling Duplicate Childcare Voucher Reconciliation
+- Payment created: NO
+- Payment failed: NO
+- Reconciliation attempted: YES
+- Reconciliation rejected: YES
+- Validation reason: Idempotency reference check / duplicate reference validation in `reconcilePayment`
+- DB mutations: 0
+
+### SS-D6-V050: Parent Adding a Medical Note on the Portal
+- Core medical profile updated: NO
+- Medical note inserted: YES
+- Entity / Table: `student_notes` (`category: 'Medical'`, `childId: child.id`)
+- DB mutations: `INSERT = 1`
+
+### SS-D6-V052: Understanding the Parent Portal Rate-Limit Warning
+- Real rate limiter executed: NO
+- Playwright interception: YES (`page.route('**/api/portal/login', ...)`)
+- Fabricated deterministic 429: YES
+- Purpose: Training demonstration of the application's standard warning UI (`"Too many login attempts. Please try again later."`)
+- External Upstash calls: 0
+- Does final title claim real throttling: NO (reconciled to "Understanding the Parent Portal Rate-Limit Warning")
+
+---
+
+## 7. Zero Application Source Changes Verification
 
 In accordance with visual production mandates:
 - **Application Source Modifications:** **0 files modified** (`src/app/`, `src/components/`, `src/features/`, `src/lib/` untouched).

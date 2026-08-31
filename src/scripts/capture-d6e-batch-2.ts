@@ -28,14 +28,14 @@ const ALL_ASSET_IDS = [
 const TITLES: Record<string, string> = {
   'SS-D6-V043': 'Exporting Finance & Invoicing CSV',
   'SS-D6-V044': 'Editing Invoice Issue Date & Notes',
-  'SS-D6-V045': 'Handling Failed Childcare Voucher Payment',
+  'SS-D6-V045': 'Handling Duplicate Childcare Voucher Reconciliation',
   'SS-D6-V046': 'Configuring Venue Operating Times',
   'SS-D6-V047': 'Reviewing In-App Header Notifications',
   'SS-D6-V048': 'Tracking Parent Email Broadcast Delivery',
   'SS-D6-V049': 'Declining an Incomplete Registration',
-  'SS-D6-V050': 'Parent Updating Medical Info on Portal',
+  'SS-D6-V050': 'Parent Adding a Medical Note on the Portal',
   'SS-D6-V051': 'Handling Zero-Centre Staff Assignment',
-  'SS-D6-V052': 'Understanding System Rate Limit Throttling',
+  'SS-D6-V052': 'Understanding the Parent Portal Rate-Limit Warning',
 };
 
 const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: string }> = {
@@ -864,7 +864,7 @@ async function runProduction() {
   await ensureDirs();
 
   const args = process.argv.slice(2);
-  const isContactSheetOnly = args.includes('contact-sheet');
+  const isContactSheetOnly = args.includes('contact-sheet') || args.includes('--contact-sheet-only');
   const assetFilterArg = args.find((a) => a.startsWith('--assets='));
   const targetAssetIds = assetFilterArg
     ? assetFilterArg.replace('--assets=', '').split(',')
