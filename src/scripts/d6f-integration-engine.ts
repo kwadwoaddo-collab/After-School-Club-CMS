@@ -122,12 +122,12 @@ This training index organizes all **78 certified screenshots** and **52 micro-vi
 ---
 
 ### Learning Path 2: Club Manager (\`MANAGER\`)
-*Focus: Day-to-Day Operations, Intake Approvals, Session Capacity, Communications & Safeguarding*
+*Focus: Day-to-Day Operations, Intake Approvals, Session Scheduling & Capacity, Communications & Safeguarding*
 
 1. [Watch: Reviewing & Approving a Public Registration](assets/videos/SS-D6-V002.mp4) — Inbound registration triage and sibling matching.
 2. [Watch: Declining an Incomplete Registration](assets/videos/SS-D6-V049.mp4) — Rejecting incomplete or out-of-catchment registration forms.
 3. [Watch: Creating a Session Booking for a Family](assets/videos/SS-D6-V040.mp4) — Booking club sessions across weekly timetable.
-4. [Watch: Setting up a Recurring Term Booking Plan](assets/videos/SS-D6-V004.mp4) — Setting up multi-week recurring attendance plans.
+4. [Watch: Setting up a Recurring Term Booking Plan](assets/videos/SS-D6-V004.mp4) — Scheduling multi-week term session booking patterns.
 5. [Watch: Configuring Venue Operating Times](assets/videos/SS-D6-V046.mp4) — Maintaining session slot operating hours and capacity thresholds.
 6. [Watch: Forgiving an Absence on Session Credit Ledger](assets/videos/SS-D6-V010.mp4) — Clearing session balance arrears with audit notes.
 7. [Watch: Adjusting Attendance Arrival Timelogs](assets/videos/SS-D6-V041.mp4) — Correcting recorded check-in times for attendance accuracy.

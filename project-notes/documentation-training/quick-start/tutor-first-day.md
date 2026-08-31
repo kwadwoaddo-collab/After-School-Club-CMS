@@ -83,3 +83,10 @@
 ✅ You know how to check in arrivals and record pickups.  
 ✅ You are aware of all medical and allergy alerts in your classroom.  
 ✅ You know exactly who your Centre Manager / Designated Safeguarding Lead is.
+
+---
+
+## Next Steps & Comprehensive Documentation
+- [Club Tutor Role Guide](../role-guides/tutor-guide.md) — Classroom delivery, roll call, progress notes, and student welfare manual.
+- [Attendance & Kiosk Register Manual](../functional-manuals/attendance.md) — Daily registers, late arrival tracking, and kiosk check-ins.
+- [First Aid & Incidents Manual](../functional-manuals/incidents-safeguarding.md) — Body map injury logging and safeguarding escalation rules.

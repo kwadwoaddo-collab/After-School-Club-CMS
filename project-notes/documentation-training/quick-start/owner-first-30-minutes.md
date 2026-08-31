@@ -90,3 +90,10 @@
 ✅ Your first club centre is established with Ofsted ID, bank account details, and opening hours.  
 ✅ Your Centre Manager is invited and provisioned with centre-specific access.  
 ✅ Your public registration and booking URLs are ready to accept parent enrolments.
+
+---
+
+## Next Steps & Comprehensive Documentation
+- [Organisation Owner Role Guide](../role-guides/owner-guide.md) — Complete operational, financial, and governance manual for owners.
+- [Multi-Centre Administration Manual](../functional-manuals/centres-multi-centre.md) — Venue setup, capacity controls, and banking configuration.
+- [Finance & Agreed-Fee Billing Manual](../functional-manuals/finance-overview.md) — Revenue reporting, batch invoicing runs, and reconciliation.

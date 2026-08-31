@@ -64,3 +64,9 @@
 
 ## Need Help?
 If you have any questions about your bookings, session fees, or registration details, please reach out directly to your club centre manager or call the centre desk.
+
+---
+
+## Comprehensive Documentation & Support
+- [Parent & Carer Role Guide](../role-guides/parent-guide.md) — Comprehensive guide to parent portal features, magic links, and billing.
+- [Family & Parent Account Manual](../functional-manuals/parents.md) — Profile management, emergency contacts, and privacy controls.

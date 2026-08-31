@@ -105,13 +105,31 @@ All 130 certified visual assets produced and reconciled during Milestone D6 are 
 
 ---
 
-## 6. D6G Handoff Items (Application Defects Identified for Post-D6 Resolution)
+## 6. D6G Governance & Remediation Audit Ledger
 
-The following genuine application source defects were identified during visual production and forensic audits, preserved without modification during D6F per the strict application source freeze, and flagged for milestone D6G:
+During prior visual production milestones, three application changes were documented. Per D6F governance, these are recorded with their verified forensic origins for independent audit and baseline freeze in Milestone D6G:
 
-1. **`BulkInvoiceConfirmModal.tsx`:** Currency symbol formatting issue in batch confirmation modal.
-2. **`AttendanceRollCall.tsx`:** Kiosk modal check-in state update discrepancy.
-3. **`Header.tsx`:** Notification popover dismissal state update handling.
+1. **`BulkInvoiceConfirmModal.tsx`**
+   - **Origin:** D6D Batch 2 visual production.
+   - **Reported Source Change:** Snapshot `generatedCount` before `router.refresh()` so the generated-invoice success count does not transiently reset before the success state is displayed.
+   - **D6G Purpose:** Independently determine whether this was legitimate product remediation or visual-manufacturing drift, and verify regression safety.
+
+2. **`AttendanceRollCall.tsx`**
+   - **Origin:** D6E Batch 1 V041.
+   - **Forensic Classification:** `D — PRODUCT DEFECT`.
+   - **Pre-Existing Defect:** Controlled attendance time input state effectively reverted/froze under the existing `useOptimistic` pattern, preventing truthful user editing.
+   - **Approved Repair (Implemented in D6E):** Stable local state handling for attendance time editing, with persistence through the existing `updateAttendanceTimelog` server action.
+   - **D6G Purpose:** Verify this remains legitimate pre-existing product-defect remediation and is regression-safe.
+
+3. **`Header.tsx`**
+   - **Origin:** D6E Batch 1 V042.
+   - **Forensic Classification:** `D — PRODUCT DEFECT`.
+   - **Pre-Existing Defect:** `header-right-actions` portal target was not available on attendance and relevant list routes, preventing the existing attendance Export CSV control from mounting.
+   - **Approved Repair (Implemented in D6E):** Expanded the eligible list-page routes so the existing `HeaderPortal` target is available.
+   - **D6G Purpose:** Verify this remains legitimate pre-existing product-defect remediation and is regression-safe.
+
+> [!IMPORTANT]
+> The source repairs for `AttendanceRollCall.tsx` and `Header.tsx` are already implemented and tested in the active codebase. Milestone D6G is an independent audit and freeze verification step, not an implementation permission to modify source code.
 
 ---
 

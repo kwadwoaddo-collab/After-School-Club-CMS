@@ -85,3 +85,10 @@
 ✅ Your centre scope is verified and locked to your physical location.  
 ✅ You know where to view critical medical flags and emergency numbers.  
 ✅ You are ready to supervise classroom roll calls and manage safeguarding files.
+
+---
+
+## Next Steps & Comprehensive Documentation
+- [Centre Manager Role Guide](../role-guides/manager-guide.md) — Day-to-day operations, attendance, and Designated Safeguarding Lead workflows.
+- [Registrations & Intake Manual](../functional-manuals/registrations.md) — Reviewing, approving, and triaging inbound student applications.
+- [Daily Attendance Register Manual](../functional-manuals/attendance.md) — Live roll calls, time-tracking, and absence credit reconciliation.
