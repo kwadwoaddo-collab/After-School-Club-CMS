@@ -143,16 +143,16 @@
 ### Supplementary / Advanced Micro-Videos (20 Assets)
 | Video ID | Title | Role | Route | Duration | Priority | Essential? | Status |
 |---|---|---|---|---|---|---|---|
-| `SS-D6-V033` | Adding a New Parent Manually | Staff | `/dashboard/parents` | 45s | P2 | No | READY |
-| `SS-D6-V034` | Adding a Sibling to an Existing Family | Staff | `/dashboard/parents/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V035` | Managing Authorised Pick-Up Collectors | Staff | `/dashboard/parents/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V036` | Updating Pupil Medical & Allergy Profiles | Staff | `/dashboard/students/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V037` | Logging Student Homework & Progress Notes | Tutor | `/dashboard/students/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V038` | Rescheduling an Existing Booking Slot | Staff | `/dashboard/bookings/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V039` | Cancelling a Booking Slot | Staff | `/dashboard/bookings/[id]` | 30s | P2 | No | READY |
-| `SS-D6-V040` | Managing Recurring Booking Plans | Manager | `/dashboard/bookings` | 60s | P2 | No | READY |
-| `SS-D6-V041` | Adjusting Attendance Arrival Timelogs | Manager | `/dashboard/attendance` | 45s | P2 | No | READY |
-| `SS-D6-V042` | Exporting Daily Roll Call Attendance CSV | Staff | `/dashboard/attendance` | 30s | P2 | No | READY |
+| `SS-D6-V033` | Adding a New Parent Manually | Staff | `/dashboard/parents` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V034` | Adding a Sibling to an Existing Family | Staff | `/dashboard/parents/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V035` | Managing Authorised Pick-Up Collectors | Staff | `/dashboard/parents/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V036` | Updating Pupil Medical & Allergy Profiles | Staff | `/dashboard/students/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V037` | Logging Student Homework & Progress Notes | Tutor | `/dashboard/students/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V038` | Rescheduling an Existing Booking Slot | Staff | `/dashboard/bookings/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V039` | Cancelling a Booking Slot | Staff | `/dashboard/bookings/[id]` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V040` | Managing Recurring Booking Plans | Manager | `/dashboard/bookings` | 60s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V041` | Adjusting Attendance Arrival Timelogs | Manager | `/dashboard/attendance` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V042` | Exporting Daily Roll Call Attendance CSV | Staff | `/dashboard/attendance` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V043` | Exporting Finance & Invoicing CSV | Owner/Manager | `/dashboard/finance` | 30s | P2 | No | READY |
 | `SS-D6-V044` | Editing Invoice Issue Date & Notes | Staff | `/dashboard/finance/invoices/[id]` | 30s | P2 | No | READY |
 | `SS-D6-V045` | Handling Failed Childcare Voucher Payment | Staff | `/dashboard/finance/reconciliation` | 45s | P2 | No | READY |
