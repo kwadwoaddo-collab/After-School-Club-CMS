@@ -47,6 +47,11 @@ It enables staff to:
 
 ## 3. Duplicate Prevention & Billing Run Logging
 
+![Figure — Monthly Invoice Batch Generation Run preview modal with total count and value](../assets/screenshots/annotated/SS-D6-S029.png)
+*Figure 11.1 — Monthly Invoicing Batch Run Preview*
+
+📹 **Video Walkthrough:** [Watch: Executing Monthly Invoicing Batch Run](../assets/videos/SS-D6-V014.mp4)
+
 To protect against duplicate billing:
 
 1. **The `billingRuns` Audit Table:** Whenever a monthly invoice is generated from a billing configuration, SprintScale records an entry in the `billingRuns` table with `(billingConfigId, periodStart, periodEnd, invoiceId, amountPence, success)`.
@@ -56,6 +61,12 @@ To protect against duplicate billing:
 ---
 
 ## 4. Invoice Status Lifecycle
+
+![Figure — Invoices Directory showing invoice numbers, dates, recipients, amounts, and statuses](../assets/screenshots/annotated/SS-D6-S030.png)
+*Figure 11.2 — Invoices Directory & Status Overview*
+
+![Figure — Partially Paid Invoice Display showing balance remaining and partial status badge](../assets/screenshots/annotated/SS-D6-S035.png)
+*Figure 11.3 — Partial Payment Invoice State*
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -93,6 +104,9 @@ The invoice is generated with a unique reference number (e.g. `INV-A1B2C3`), ini
 ---
 
 ### Procedure 2: Viewing and Downloading an Invoice PDF
+
+![Figure — Detailed Invoice View showing itemised tuition charges and recorded payment audit log](../assets/screenshots/annotated/SS-D6-S031.png)
+*Figure 11.4 — Detailed Invoice View & Payment Audit Log*
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk, Parent (via Portal)
 
 **Steps:**
@@ -104,6 +118,11 @@ The invoice is generated with a unique reference number (e.g. `INV-A1B2C3`), ini
 ---
 
 ### Procedure 3: Updating Invoice Date or Administrative Notes
+
+![Figure — Invoice Edit Controls for Issue Date and Custom Note fields](../assets/screenshots/annotated/SS-D6-S063.png)
+*Figure 11.5 — Invoice Date & Notes Editing Form*
+
+📹 **Video Walkthrough:** [Watch: Editing Invoice Issue Date & Notes](../assets/videos/SS-D6-V044.mp4)
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
 
 **Steps:**
@@ -117,6 +136,11 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 ---
 
 ### Procedure 4: Voiding an Invoice
+
+![Figure — Invoice Voiding Modal with mandatory reason entry (Owner only)](../assets/screenshots/annotated/SS-D6-S062.png)
+*Figure 11.6 — Owner Invoice Voiding Confirmation Modal*
+
+📹 **Video Walkthrough:** [Watch: Voiding an Incorrect Invoice](../assets/videos/SS-D6-V018.mp4)
 > [!IMPORTANT]
 > **Owner-Restricted Capability:**
 > Only users with the **Organisation Owner** (`ORG_OWNER`) role can void invoices. Voiding cancels the invoice liability in the Parent Portal. Voiding cannot be reversed in the UI.

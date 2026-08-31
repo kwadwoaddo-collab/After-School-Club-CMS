@@ -5,6 +5,9 @@
 
 ## 1. Overview of the Complete Financial Journey
 
+![Figure — Executive Finance Dashboard showing collected fees, pending balances, and overdue totals](../assets/screenshots/annotated/SS-D6-S026.png)
+*Figure MM-4.1 — Executive Finance Dashboard*
+
 This master journey maps the commercial and billing lifecycle of a family within SprintScale CMS — from initial fee configuration through monthly invoice generation, parent notification, multi-channel payment collection, voucher reconciliation, and receipt delivery.
 
 ```
@@ -47,6 +50,11 @@ This master journey maps the commercial and billing lifecycle of a family within
 
 ## 2. Stage 1: Family Agreed-Fee Setup
 
+![Figure — Agreed-Fee Billing Setup Card with monthly rate, anchor day, and lead days](../assets/screenshots/annotated/SS-D6-S027.png)
+*Figure MM-4.2 — Family Agreed-Fee Billing Config*
+
+📹 **Video Walkthrough:** [Watch: Setting up Agreed Monthly Family Tuition Fee](../assets/videos/SS-D6-V013.mp4)
+
 When a new family registers or enrolls:
 1. Staff navigate to the student profile or parent record.
 2. Under **Family Billing**, staff configure the **Agreed Monthly Fee** (e.g. £250.00) and link all enrolled siblings.
@@ -56,6 +64,11 @@ When a new family registers or enrolls:
 ---
 
 ## 3. Stage 2: Invoice Generation & Duplicate Prevention
+
+![Figure — Monthly Invoice Batch Generation Run preview modal with total count and value](../assets/screenshots/annotated/SS-D6-S029.png)
+*Figure MM-4.3 — Monthly Invoicing Batch Run Preview*
+
+📹 **Video Walkthrough:** [Watch: Executing Monthly Invoicing Batch Run](../assets/videos/SS-D6-V014.mp4)
 
 As the billing anchor date approaches:
 1. **Automated Daily Run:** The daily billing cron job evaluates active configs. When the current date reaches `anchorDate - leadDays`, the invoice is generated automatically.
@@ -74,6 +87,11 @@ Once generated:
 ---
 
 ## 5. Stage 4: Multi-Channel Payment & Reconciliation
+
+![Figure — Voucher Reconciliation Queue showing pending vouchers against matching invoices](../assets/screenshots/annotated/SS-D6-S034.png)
+*Figure MM-4.4 — Childcare Voucher & TFC Reconciliation Queue*
+
+📹 **Video Walkthrough:** [Watch: Reconciling Childcare Vouchers & TFC](../assets/videos/SS-D6-V017.mp4)
 
 Parents settle their invoices through one of four primary pathways:
 

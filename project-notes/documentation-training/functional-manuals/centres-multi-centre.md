@@ -32,6 +32,14 @@ Key Capabilities:
 ## 3. Step-by-Step Procedures
 
 ### Procedure 1: Creating a New Centre / Venue
+
+![Figure — Multi-Centre Directory displaying active venue locations, addresses, and capacity](../assets/screenshots/annotated/SS-D6-S037.png)
+*Figure 13.1 — Multi-Centre Directory*
+
+![Figure — New Centre Creation Modal with venue name, slug, and initial capacity](../assets/screenshots/annotated/SS-D6-S057.png)
+*Figure 13.2 — New Centre Venue Creation Modal*
+
+📹 **Video Walkthrough:** [Watch: Creating & Setting Up a New Centre Venue](../assets/videos/SS-D6-V020.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`), Centre Manager (`MANAGER`)
 
 **Steps:**
@@ -45,6 +53,14 @@ Key Capabilities:
 ---
 
 ### Procedure 2: Configuring Centre Settings & Session Slots
+
+![Figure — Centre General Settings Form with capacity limits and Ofsted registration field](../assets/screenshots/annotated/SS-D6-S038.png)
+*Figure 13.3 — Centre General Settings & Capacity*
+
+![Figure — Venue Operating Times Configuration Card with session slot start and end times](../assets/screenshots/annotated/SS-D6-S056.png)
+*Figure 13.4 — Venue Operating Times Configuration Card*
+
+📹 **Video Walkthrough:** [Watch: Configuring Venue Operating Times](../assets/videos/SS-D6-V046.mp4)
 **Who Can Do This:** Organisation Owner, Centre Manager (for assigned centres)
 
 **Steps:**
@@ -59,6 +75,11 @@ Key Capabilities:
 ---
 
 ### Procedure 3: Configuring Centre Bank & Billing Details
+
+![Figure — Centre Bank Details Card (restricted to Organisation Owner role)](../assets/screenshots/annotated/SS-D6-S039.png)
+*Figure 13.5 — Centre Bank Details Card (Owner-Only)*
+
+📹 **Video Walkthrough:** [Watch: Managing Centre Bank Account Details](../assets/videos/SS-D6-V021.mp4)
 > [!IMPORTANT]
 > **Owner-Only Financial Control:**
 > Even though Centre Managers can edit general venue settings, **only Organisation Owners can update bank details and tuition rates**.

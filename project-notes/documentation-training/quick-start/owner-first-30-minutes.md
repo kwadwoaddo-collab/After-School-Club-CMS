@@ -69,6 +69,14 @@
 ---
 
 ### Step 6: Review Dashboard KPIs (Minutes 25–30)
+
+![Figure — Dashboard Home & Navigation Overview showing key operational metrics and sidebar modules](../assets/screenshots/annotated/SS-D6-S001.png)
+*Figure QS-O.1 — Owner Dashboard Overview*
+
+![Figure — Executive Finance Dashboard showing collected fees, pending balances, and overdue totals](../assets/screenshots/annotated/SS-D6-S026.png)
+*Figure QS-O.2 — Executive Finance Overview*
+
+📹 **Video Walkthrough:** [Watch: Executing Monthly Invoicing Batch Run](../assets/videos/SS-D6-V014.mp4)
 1. Click `Sidebar → Dashboard`.
 2. Verify your active centre appears in the top dropdown.
 3. Review the **KPI Grid** (Total Enrolled Students, Today's Scheduled Attendees, Outstanding Invoices).

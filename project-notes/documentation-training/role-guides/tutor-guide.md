@@ -59,7 +59,8 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 - **Booking Scorecards:** View attendee list for your sessions and record assessment scores and feedback.
 
 ### What You CANNOT Access (Restricted for Data Protection):
-- [ ] **Incidents & Safeguarding:** Tutors do not have direct access to the Incidents module. All injuries and safeguarding concerns must be reported immediately to the Centre Manager.
+- [x] **First Aid Logging:** Tutors can log minor accidents, injuries, and body-map markers in the Incidents module.
+- [ ] **Restricted Safeguarding:** Tutors cannot view or create confidential child protection safeguarding records (Designated Safeguarding Lead only).
 - [ ] **Full Student & Parent Profiles:** Tutors see operational details on the roll-call card, but full historical profiles and contact databases are restricted to Front Desk/Managers.
 - [ ] **Registrations & Bookings Queue:** Managed by Front Desk and Managers.
 - [ ] **Finance & Invoicing:** Zero access to billing or payment records.
@@ -70,8 +71,16 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 ## 4. Step-by-Step Procedures for Tutors
 
 ### Procedure 1: Taking Daily Attendance on the Register
+
+![Figure — Daily Attendance Register with attendee roster, status badges, and timelogs](../assets/screenshots/annotated/SS-D6-S014.png)
+*Figure T.1 — Daily Attendance Register*
+
+![Figure — Live Check-In Arrival Timestamp](../assets/screenshots/annotated/SS-D6-S015.png)
+*Figure T.2 — Live Check-In Timestamp*
+
+📹 **Video Walkthrough:** [Watch: Marking Morning and Afternoon Class Register](../assets/videos/SS-D6-V006.mp4)
 > [!SAFEGUARDING]
-> Accurate custodial time-tracking is legally mandated by Ofsted. Always check in children immediately upon arrival.
+> Accurate custodial time-tracking supports safeguarding and regulatory record-keeping requirements. Always check in children immediately upon arrival.
 
 1. Navigate to: `Sidebar → Attendance`.
 2. Ensure your Centre is selected in the top bar.
@@ -85,6 +94,11 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 ---
 
 ### Procedure 2: Setting Homework & Behaviour Flags on Roll Call
+
+![Figure — Student Note Logging Form with category selection and timestamp](../assets/screenshots/annotated/SS-D6-S022.png)
+*Figure T.3 — Student Note Logging Form*
+
+📹 **Video Walkthrough:** [Watch: Logging Student Homework & Progress Notes](../assets/videos/SS-D6-V037.mp4)
 1. On the student's card in `/dashboard/attendance`, locate the flag icons.
 2. Click the **Homework** flag to toggle active (flags that homework was completed or requires attention).
 3. Click the **Behaviour** flag to toggle active (flags noteworthy positive or challenging behaviour).
@@ -92,6 +106,11 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 5. The flag remains visible on the card throughout the session for staff awareness.
 
 ---
+
+![Figure — First Aid Incident Modal with interactive body map injury marker placement](../assets/screenshots/annotated/SS-D6-S023.png)
+*Figure T.4 — First Aid Accident Logging & Body Map*
+
+📹 **Video Walkthrough:** [Watch: Logging a First Aid Accident on Body Map](../assets/videos/SS-D6-V011.mp4)
 
 ### Procedure 3: Recording Assessment Scorecard Feedback
 1. Navigate to: `Sidebar → Bookings → [Select Session Booking]`.

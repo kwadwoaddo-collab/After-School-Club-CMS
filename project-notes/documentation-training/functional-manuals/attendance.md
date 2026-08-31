@@ -73,6 +73,30 @@ These fields support accurate operational records and an auditable record of who
 ## 5. Step-by-Step Procedures
 
 ### Procedure 1: Conducting Daily Roll Call on the Register
+
+![Figure — Daily Attendance Register with attendee roster, status badges, and timelogs](../assets/screenshots/annotated/SS-D6-S014.png)
+*Figure 6.1 — Daily Attendance Register*
+
+![Figure — Attendance Daily Register & Roll Call Overview](../assets/screenshots/annotated/SS-D6-S077.png)
+*Figure 6.2 — Daily Register Header Statistics*
+
+📹 **Video Walkthrough:** [Watch: Marking Morning and Afternoon Class Register](../assets/videos/SS-D6-V006.mp4)
+
+![Figure — Live Check-In Arrival Timestamp](../assets/screenshots/annotated/SS-D6-S015.png)
+*Figure 6.3 — Live Arrival Timelog*
+
+![Figure — Bulk Check-In Button and selection checkboxes on daily register](../assets/screenshots/annotated/SS-D6-S068.png)
+*Figure 6.4 — Bulk Check-In Action*
+
+![Figure — Live Check-Out Departure Timestamp](../assets/screenshots/annotated/SS-D6-S016.png)
+*Figure 6.5 — Live Check-Out Timelog*
+
+![Figure — Timelog Adjustment Controls allowing manager time correction](../assets/screenshots/annotated/SS-D6-S067.png)
+*Figure 6.6 — Timelog Correction Controls*
+
+📹 **Video Walkthrough:** [Watch: Adjusting Attendance Arrival Timelogs](../assets/videos/SS-D6-V041.mp4)
+
+📹 **Video Walkthrough:** [Watch: Exporting Daily Roll Call Attendance CSV](../assets/videos/SS-D6-V042.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk, Tutor
 
 **Steps:**
@@ -91,6 +115,11 @@ These fields support accurate operational records and an auditable record of who
 ---
 
 ### Procedure 2: Operating Tablet Kiosk Mode (Fast Touch Check-In)
+
+![Figure — Tablet Kiosk Mode Landing Screen with large touch targets for check-in](../assets/screenshots/annotated/SS-D6-S018.png)
+*Figure 6.7 — Tablet Kiosk Mode Interface*
+
+📹 **Video Walkthrough:** [Watch: Operating the Tablet Kiosk Sign-In & Pick-Up](../assets/videos/SS-D6-V007.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk, Tutor
 
 **Steps:**
@@ -106,6 +135,11 @@ These fields support accurate operational records and an auditable record of who
 ---
 
 ### Procedure 3: Recording an Absence & Reason
+
+![Figure — Absence Status Override Modal with reason dropdown and notes](../assets/screenshots/annotated/SS-D6-S017.png)
+*Figure 6.8 — Absence Reason Override Modal*
+
+📹 **Video Walkthrough:** [Watch: Overriding Attendance Status (Late / Excused)](../assets/videos/SS-D6-V009.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk, Tutor
 
 **Steps:**
@@ -123,6 +157,11 @@ These fields support accurate operational records and an auditable record of who
 ---
 
 ### Procedure 4: Handling an Unscheduled Walk-In Arrival
+
+![Figure — Walk-In Pupil Fast Intake Dialog capturing emergency contact on arrival](../assets/screenshots/annotated/SS-D6-S019.png)
+*Figure 6.9 — Kiosk Fast Walk-In Intake Dialog*
+
+📹 **Video Walkthrough:** [Watch: Fast Walk-In Registration from Daily Attendance](../assets/videos/SS-D6-V008.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk
 
 **Steps:**
@@ -148,6 +187,14 @@ These fields support accurate operational records and an auditable record of who
 ---
 
 ## 6. The Session Credit Ledger & Absence Forgiveness
+
+![Figure — Session Credit Ledger Overview](../assets/screenshots/annotated/SS-D6-S020.png)
+*Figure 6.10 — Session Credit Ledger Overview*
+
+![Figure — Admin Session Forgiveness Dialog](../assets/screenshots/annotated/SS-D6-S021.png)
+*Figure 6.11 — Admin Session Forgiveness Modal*
+
+📹 **Video Walkthrough:** [Watch: Forgiving an Absence on Session Credit Ledger](../assets/videos/SS-D6-V010.mp4)
 
 The **Session Credit Ledger** (`/dashboard/attendance/ledger`) reconciles missed sessions and attendance arrears without editing issued invoices.
 

@@ -62,6 +62,11 @@ A family billing configuration moves through three administrative states:
 ## 4. Step-by-Step Procedures
 
 ### Procedure 1: Setting Up an Agreed Fee for a Family
+
+![Figure — Agreed-Fee Billing Setup Card with monthly rate, anchor day, and lead days](../assets/screenshots/annotated/SS-D6-S027.png)
+*Figure 10.1 — Agreed-Fee Family Billing Configuration*
+
+📹 **Video Walkthrough:** [Watch: Setting up Agreed Monthly Family Tuition Fee](../assets/videos/SS-D6-V013.mp4)
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
 
 **Steps:**
@@ -81,6 +86,9 @@ The billing config is created in `active` status. The family will be included in
 ---
 
 ### Procedure 2: Adding a Sibling to an Existing Billing Agreement
+
+![Figure — Sibling Coverage Junction checkboxes linking brothers and sisters to a single fee](../assets/screenshots/annotated/SS-D6-S028.png)
+*Figure 10.2 — Sibling Coverage Junction Mapping*
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
 
 **Steps:**

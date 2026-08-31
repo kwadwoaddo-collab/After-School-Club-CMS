@@ -49,6 +49,11 @@ This guide maps the complete operational and data lifecycle of a family within S
 
 ## 2. Stage 1: Public Intake & Data Capture
 
+![Figure — Public Multi-Child Registration Form with sibling tabs and emergency contact entry](../assets/screenshots/annotated/SS-D6-S007.png)
+*Figure MM-2.1 — Multi-Child Registration Intake Form*
+
+📹 **Video Walkthrough:** [Watch: Registering a Multi-Child Family via Public Portal](../assets/videos/SS-D6-V001.mp4)
+
 The journey begins when a prospective parent opens your club's public registration URL (`https://app.sprintscaleit.co.uk/register/[your-org]`).
 
 ### Data Captured at Intake:
@@ -74,6 +79,11 @@ Once submitted, the application enters the **Registrations Queue** (`/dashboard/
 
 ## 4. Stage 3: Approval & Record Activation
 
+![Figure — Registration Approval Interface showing sibling matching and confirm action](../assets/screenshots/annotated/SS-D6-S010.png)
+*Figure MM-2.2 — Registration Approval & Sibling Matching*
+
+📹 **Video Walkthrough:** [Watch: Reviewing & Approving a Public Registration](../assets/videos/SS-D6-V002.mp4)
+
 When staff click **Confirm & Sign Up**:
 1. The registration status transitions to `signed_up`.
 2. The child record is provisioned in the active **Student Directory** (`/dashboard/students`) and locked to the assigned centre.
@@ -82,6 +92,11 @@ When staff click **Confirm & Sign Up**:
 ---
 
 ## 5. Stage 4: Scheduling & Booking Sessions
+
+![Figure — Weekly Booking Matrix displaying capacity utilization across session slots](../assets/screenshots/annotated/SS-D6-S011.png)
+*Figure MM-2.3 — Weekly Booking Matrix & Capacity*
+
+📹 **Video Walkthrough:** [Watch: Creating a Session Booking for a Family](../assets/videos/SS-D6-V040.mp4)
 
 With active profiles in place, session scheduling can occur through any of three pathways:
 - **Parent Portal Booking (`/portal/book`):** The parent logs in, selects their child, chooses session dates, and receives instant confirmation.

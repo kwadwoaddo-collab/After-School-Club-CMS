@@ -71,6 +71,16 @@ SprintScale enforces communications preferences directly at the server level usi
 ## 5. Step-by-Step Procedures
 
 ### Procedure 1: Sending an Email Broadcast to Parents
+
+![Figure — Email Broadcast Composer with centre targeting and consented recipient counter](../assets/screenshots/annotated/SS-D6-S044.png)
+*Figure 15.1 — Parent Email Broadcast Composer*
+
+📹 **Video Walkthrough:** [Watch: Broadcasting an Email to Consented Parents](../assets/videos/SS-D6-V027.mp4)
+
+![Figure — Broadcast Delivery History showing sent timestamp, subject, and dispatch accounting numbers](../assets/screenshots/annotated/SS-D6-S059.png)
+*Figure 15.2 — Broadcast Delivery Counters & History*
+
+📹 **Video Walkthrough:** [Watch: Tracking Parent Email Broadcast Delivery](../assets/videos/SS-D6-V048.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`), Centre Manager (`MANAGER`)
 
 **Steps:**
@@ -91,6 +101,11 @@ SprintScale enforces communications preferences directly at the server level usi
 ---
 
 ### Procedure 2: Reviewing In-App Header Notifications
+
+![Figure — Header Notification Dropdown displaying unread intake and booking alerts](../assets/screenshots/annotated/SS-D6-S053.png)
+*Figure 15.3 — In-App Header Notifications Dropdown*
+
+📹 **Video Walkthrough:** [Watch: Reviewing In-App Header Notifications](../assets/videos/SS-D6-V047.mp4)
 **Who Can Do This:** Organisation Owners, Centre Managers
 
 **Steps:**

@@ -19,6 +19,14 @@
 ---
 
 ### Step 1: Request Your Secure Sign-In Link
+
+![Figure — Passwordless Magic Link Login prompt on Parent Portal](../assets/screenshots/annotated/SS-D6-S050.png)
+*Figure QS-P.1 — Passwordless Sign-In Link Request*
+
+![Figure — Parent Portal Dashboard showing children profiles, next booked sessions, and billing summary](../assets/screenshots/annotated/SS-D6-S047.png)
+*Figure QS-P.2 — Parent Portal Home View*
+
+📹 **Video Walkthrough:** [Watch: Parent Magic Link Sign-In & Portal Tour](../assets/videos/SS-D6-V031.mp4)
 1. On your smartphone or computer, open your web browser and go to:  
    👉 **`https://app.sprintscaleit.co.uk/portal/login`**
 2. Type in the **Email Address** you provided when registering your child.
@@ -46,6 +54,8 @@
 ---
 
 ### Step 4: Book Sessions or Pay Invoices
+
+📹 **Video Walkthrough:** [Watch: Booking a Session via Parent Portal](../assets/videos/SS-D6-V005.mp4)
 - **To Book a Session:** Tap **Book Sessions** at the top of your screen, choose your dates, and tap **Confirm**.
 - **To Pay a Bill:** Tap **Billing**, locate any unpaid invoice, and tap **Pay with Card / Apple Pay** to settle securely online.
 - **To Pay via Tax-Free Childcare:** Make the payment in your Government Childcare Account, then enter your reference code under the invoice in your portal.

@@ -5,6 +5,14 @@
 
 ## 1. What SprintScale CMS Is
 
+![Figure — Dashboard Home & Navigation Overview showing key operational metrics and sidebar modules](../assets/screenshots/annotated/SS-D6-S001.png)
+*Figure MM-1.1 — Global Dashboard Interface*
+
+![Figure — Header Notification Dropdown displaying unread intake and booking alerts](../assets/screenshots/annotated/SS-D6-S053.png)
+*Figure MM-1.2 — In-App Header Alerts Dropdown*
+
+📹 **Video Walkthrough:** [Watch: Reviewing In-App Header Notifications](../assets/videos/SS-D6-V047.mp4)
+
 **SprintScale CMS** is an integrated management platform purpose-built for after-school clubs, holiday activity camps, breakfast clubs, and multi-centre childcare organisations.
 
 It unifies:

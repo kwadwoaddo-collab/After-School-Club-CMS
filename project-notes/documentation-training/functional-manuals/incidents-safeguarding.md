@@ -48,6 +48,9 @@ It supports two distinct operational record types:
 
 ## 3. Role-Based Software Access & Permission Boundaries
 
+![Figure — Tutor Access Restriction Screen demonstrating server-enforced role boundary](../assets/screenshots/annotated/SS-D6-S025.png)
+*Figure 7.3 — Tutor Safeguarding 403 Restriction Screen*
+
 SprintScale CMS enforces software-level access controls at both the route and server-action layers:
 
 | Record / Incident Type | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) | Evidence Source |
@@ -68,6 +71,11 @@ SprintScale CMS enforces software-level access controls at both the route and se
 ## 4. Step-by-Step Procedures
 
 ### Procedure 1: Logging a Standard First Aid Accident
+
+![Figure — First Aid Incident Modal with interactive body map injury marker placement](../assets/screenshots/annotated/SS-D6-S023.png)
+*Figure 7.1 — First Aid Accident Logging & Body Map*
+
+📹 **Video Walkthrough:** [Watch: Logging a First Aid Accident on Body Map](../assets/videos/SS-D6-V011.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk
 
 **Steps:**
@@ -104,6 +112,11 @@ The record is saved and timestamped in the centre's incident table.
 ---
 
 ### Procedure 3: Recording a Restricted Safeguarding Concern
+
+![Figure — Confidential Safeguarding Incident Entry Form (DSL restricted)](../assets/screenshots/annotated/SS-D6-S024.png)
+*Figure 7.2 — Confidential Safeguarding Incident Entry Form*
+
+📹 **Video Walkthrough:** [Watch: Creating a Confidential Safeguarding Record](../assets/videos/SS-D6-V012.mp4)
 **Who Can Do This:** **Organisation Owner** (`ORG_OWNER`) or **Centre Manager** (`MANAGER`)
 
 **Steps:**

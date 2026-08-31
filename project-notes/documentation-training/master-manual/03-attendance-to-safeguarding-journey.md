@@ -54,6 +54,11 @@ Before children arrive:
 
 ## 3. Stage 2: Physical Arrival & Check-In
 
+![Figure — Daily Attendance Register with attendee roster, status badges, and timelogs](../assets/screenshots/annotated/SS-D6-S014.png)
+*Figure MM-3.1 — Daily Attendance Register*
+
+📹 **Video Walkthrough:** [Watch: Marking Morning and Afternoon Class Register](../assets/videos/SS-D6-V006.mp4)
+
 When the child enters the club premises:
 1. Staff locate the child's card on the register or tap the card on the touchscreen Kiosk.
 2. Tap **Check In**.
@@ -78,11 +83,21 @@ During the session:
 SprintScale separates health and safety events into two distinct recording pathways:
 
 ### Pathway A: Standard First Aid & Minor Accidents
+
+![Figure — First Aid Incident Modal with interactive body map injury marker placement](../assets/screenshots/annotated/SS-D6-S023.png)
+*Figure MM-3.2 — First Aid Accident Logging & Body Map*
+
+📹 **Video Walkthrough:** [Watch: Logging a First Aid Accident on Body Map](../assets/videos/SS-D6-V011.mp4)
 - **Examples:** Playground tumble, skinned knee, ice pack application, scheduled asthma inhaler administration.
 - **Workflow:** Staff administer first aid immediately, then open `Sidebar → Incidents → + Log Incident` and record the treatment, witnesses, and staff signature under `Accident` or `Medication`.
 - **Visibility:** Visible in CMS to Front Desk, Managers, and Owners.
 
 ### Pathway B: Restricted Child Safeguarding Concerns
+
+![Figure — Confidential Safeguarding Incident Entry Form (DSL restricted)](../assets/screenshots/annotated/SS-D6-S024.png)
+*Figure MM-3.3 — Confidential Safeguarding Incident Form*
+
+📹 **Video Walkthrough:** [Watch: Creating a Confidential Safeguarding Record](../assets/videos/SS-D6-V012.mp4)
 - **Examples:** Physical injury marks, signs of abuse/neglect, explicit verbal disclosures.
 - **Workflow:** Staff follow their organisation's safeguarding policy; **record zero notes in general student files**; report verbally in private to their centre's appointed safeguarding lead or manager.
 - **CMS Recording:** An authorised Manager or Owner logs the formal report in `Sidebar → Incidents` under the `Safeguarding` type.

@@ -46,6 +46,11 @@
 ---
 
 ### Step 4: Triage Inbound Registrations Queue (Minutes 15–20)
+
+![Figure — Registration Triage Roster showing awaiting confirmation queue](../assets/screenshots/annotated/SS-D6-S009.png)
+*Figure QS-M.1 — Inbound Registration Intake Triage*
+
+📹 **Video Walkthrough:** [Watch: Reviewing & Approving a Public Registration](../assets/videos/SS-D6-V002.mp4)
 1. Navigate to: `Sidebar → Registrations`.
 2. Review any submitted applications with status **Awaiting Confirmation**.
 3. Open a submission to check the parent's contact info, emergency contacts, and digital signature.
@@ -54,6 +59,11 @@
 ---
 
 ### Step 5: Verify Attendance Register & Today's Schedule (Minutes 20–25)
+
+![Figure — Daily Attendance Register with attendee roster, status badges, and timelogs](../assets/screenshots/annotated/SS-D6-S014.png)
+*Figure QS-M.2 — Daily Attendance Register*
+
+📹 **Video Walkthrough:** [Watch: Marking Morning and Afternoon Class Register](../assets/videos/SS-D6-V006.mp4)
 1. Navigate to: `Sidebar → Attendance`.
 2. Verify today's expected session headcount and student roster.
 3. Practice locating the **Check In**, **Late**, and **Absent** buttons.

@@ -61,6 +61,11 @@ It unifies four distinct information categories:
 ## 4. Step-by-Step Procedures
 
 ### Procedure 1: Logging an Internal Classroom Note
+
+![Figure — Student Note Logging Form with category selection and timestamp](../assets/screenshots/annotated/SS-D6-S022.png)
+*Figure 8.1 — Student Classroom Note Entry Form*
+
+📹 **Video Walkthrough:** [Watch: Logging Student Homework & Progress Notes](../assets/videos/SS-D6-V037.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk, Tutor
 
 **Steps:**
@@ -87,6 +92,9 @@ It unifies four distinct information categories:
 ---
 
 ### Procedure 3: Creating and Sending an Assessment Scorecard
+
+![Figure — Student Academic Progress Card with score tracking and milestone achievements](../assets/screenshots/annotated/SS-D6-S066.png)
+*Figure 8.2 — Student Academic Scorecard & Progress View*
 **Who Can Do This:** Owner, Manager, Front Desk, Tutor
 
 **Steps:**

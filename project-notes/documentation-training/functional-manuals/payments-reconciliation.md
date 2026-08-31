@@ -39,6 +39,16 @@ Payments recorded in the system hold one of three statuses:
 ## 3. Step-by-Step Procedures
 
 ### Procedure 1: Recording an Offline Payment (Cash / Bank Transfer)
+
+![Figure — Offline Cash Payment Dialog with amount and internal receipt note](../assets/screenshots/annotated/SS-D6-S032.png)
+*Figure 12.1 — Offline Cash Payment Recording Modal*
+
+📹 **Video Walkthrough:** [Watch: Recording an Offline Cash Payment](../assets/videos/SS-D6-V015.mp4)
+
+![Figure — Bank Transfer Recording Modal with transaction reference field](../assets/screenshots/annotated/SS-D6-S033.png)
+*Figure 12.2 — Offline Bank Transfer Recording Modal*
+
+📹 **Video Walkthrough:** [Watch: Recording an Offline Bank Transfer Payment](../assets/videos/SS-D6-V016.mp4)
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
 
 **Steps:**
@@ -75,6 +85,14 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 ---
 
 ### Procedure 3: Reconciling & Verifying a Voucher / TFC Payment
+
+![Figure — Voucher Reconciliation Queue showing pending vouchers against matching invoices](../assets/screenshots/annotated/SS-D6-S034.png)
+*Figure 12.3 — Childcare Voucher & TFC Reconciliation Queue*
+
+![Figure — Childcare Voucher Reconciliation Form with provider reference input](../assets/screenshots/annotated/SS-D6-S064.png)
+*Figure 12.4 — Childcare Voucher Reconciliation Form*
+
+📹 **Video Walkthrough:** [Watch: Reconciling Childcare Vouchers & TFC](../assets/videos/SS-D6-V017.mp4)
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
 
 **Steps:**
@@ -91,6 +109,8 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 ---
 
 ### Procedure 4: Rejecting / Failing an Invalid Voucher Claim
+
+📹 **Video Walkthrough:** [Watch: Handling Duplicate Childcare Voucher Reconciliation](../assets/videos/SS-D6-V045.mp4)
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk (for assigned centres)
 
 **Steps:**
@@ -102,6 +122,9 @@ The submission is recorded in `payments` with status `pending`. The invoice stat
 ---
 
 ### Procedure 5: Generating and Printing a Payment Receipt PDF
+
+![Figure — Official Payment Receipt PDF layout with organisation branding and payment details](../assets/screenshots/annotated/SS-D6-S036.png)
+*Figure 12.5 — Payment Confirmation PDF Receipt*
 **Who Can Do This:** Organisation Owner, Centre Manager, Front Desk, Parent
 
 **Steps:**

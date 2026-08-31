@@ -45,6 +45,11 @@ The administrative hierarchy flows downwards from the Organisation root to indiv
 
 ## 2. Organisation vs. Centre: Core Boundary
 
+![Figure — Multi-Centre Directory displaying active venue locations, addresses, and capacity](../assets/screenshots/annotated/SS-D6-S037.png)
+*Figure MM-5.1 — Multi-Centre Venue Directory*
+
+📹 **Video Walkthrough:** [Watch: Creating & Setting Up a New Centre Venue](../assets/videos/SS-D6-V020.mp4)
+
 SprintScale makes a strict distinction between an **Organisation** and a **Centre**:
 
 | Dimension | Organisation (`organisations`) | Centre (`centres`) |
@@ -58,6 +63,11 @@ SprintScale makes a strict distinction between an **Organisation** and a **Centr
 ---
 
 ## 3. The 4 Staff Roles & Server-Side Permission Boundaries
+
+![Figure — Staff Directory showing user names, email addresses, and role badges](../assets/screenshots/annotated/SS-D6-S040.png)
+*Figure MM-5.2 — Staff Directory Roster*
+
+📹 **Video Walkthrough:** [Watch: Scoping Staff Access Across Specific Centres](../assets/videos/SS-D6-V024.mp4)
 
 SprintScale implements a four-tier Role-Based Access Control (RBAC) model:
 
@@ -124,6 +134,11 @@ SprintScale implements a four-tier Role-Based Access Control (RBAC) model:
 
 ## 5. Communications, Consent & Broadcasts
 
+![Figure — Email Broadcast Composer with centre targeting and consented recipient counter](../assets/screenshots/annotated/SS-D6-S044.png)
+*Figure MM-5.3 — Parent Email Broadcast Composer*
+
+📹 **Video Walkthrough:** [Watch: Broadcasting an Email to Consented Parents](../assets/videos/SS-D6-V027.mp4)
+
 SprintScale allows Owners and Managers to communicate with parents at scale:
 
 - **Targeted Broadcasts:** Comms can be scoped to all centres or filtered to a single assigned venue.
@@ -133,6 +148,11 @@ SprintScale allows Owners and Managers to communicate with parents at scale:
 ---
 
 ## 6. Academic-Year Rollover & Data Retention
+
+![Figure — Recovery Bin Roster showing archived records and days remaining](../assets/screenshots/annotated/SS-D6-S045.png)
+*Figure MM-5.4 — Recovery Bin Soft-Deleted Records Roster*
+
+📹 **Video Walkthrough:** [Watch: Irreversible Permanent GDPR Family Purge](../assets/videos/SS-D6-V030.mp4)
 
 - **Automated September 1st Rollover:** SprintScale includes an automated cron service (`/api/cron/school-year-roll`) that advances pupil year groups by one grade annually on September 1st (e.g. Nursery $\to$ Reception $\to$ Year 1 $\to \dots \to$ Year 13 $\to$ Graduated). The endpoint uses PostgreSQL transactional advisory locking and completion audit checks to guarantee single-execution idempotency.
 - **Soft-Deletion & Recovery Bin:** Deleting a family moves the parent and linked child records to the **Recovery Bin** (`/dashboard/parents/bin`) with a `deletedAt` timestamp. Staff have 30 days to restore the record before background purging, and permanent on-demand erasure is restricted strictly to Organisation Owners.

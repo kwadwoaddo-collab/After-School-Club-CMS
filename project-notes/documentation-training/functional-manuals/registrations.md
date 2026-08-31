@@ -70,6 +70,17 @@ SprintScale enforces three canonical statuses in the registration lifecycle:
 
 ## 5. The Public Registration Journey (Parent-Facing)
 
+![Figure — Public Multi-Child Registration Form with sibling tabs and emergency contact entry](../assets/screenshots/annotated/SS-D6-S007.png)
+*Figure 4.1 — Public Multi-Child Registration Form*
+
+📹 **Video Walkthrough:** [Watch: Registering a Multi-Child Family via Public Portal](../assets/videos/SS-D6-V001.mp4)
+
+![Figure — Registration Terms & Digital Signature Pad with consent checkboxes](../assets/screenshots/annotated/SS-D6-S008.png)
+*Figure 4.2 — Terms & Signature Pad*
+
+![Figure — Registration Submission Confirmation page with reference number](../assets/screenshots/annotated/SS-D6-S072.png)
+*Figure 4.3 — Registration Submission Confirmation Screen*
+
 Families register online via your unique organisation URL:  
 👉 `https://app.sprintscaleit.co.uk/register/[organisation-slug]`
 
@@ -90,6 +101,9 @@ Families register online via your unique organisation URL:
 
 ## 6. Reviewing & Triaging Inbound Applications
 
+![Figure — Registration Triage Roster showing awaiting confirmation queue](../assets/screenshots/annotated/SS-D6-S009.png)
+*Figure 4.4 — Inbound Registration Intake Triage*
+
 **Who Can Do This:** Owner, Manager, Front Desk
 
 **Steps:**
@@ -105,6 +119,11 @@ Families register online via your unique organisation URL:
 ---
 
 ## 7. Approving a Registration (Step-by-Step)
+
+![Figure — Registration Approval Interface showing sibling matching and confirm action](../assets/screenshots/annotated/SS-D6-S010.png)
+*Figure 4.5 — Registration Approval & Sibling Matching Interface*
+
+📹 **Video Walkthrough:** [Watch: Reviewing & Approving a Public Registration](../assets/videos/SS-D6-V002.mp4)
 
 **Who Can Do This:** Owner, Manager, Front Desk
 
@@ -124,6 +143,11 @@ Families register online via your unique organisation URL:
 ---
 
 ## 8. Rejecting or Declining a Registration
+
+![Figure — Registration Status Dropdown selecting Declined status](../assets/screenshots/annotated/SS-D6-S073.png)
+*Figure 4.6 — Registration Decline Status Selection*
+
+📹 **Video Walkthrough:** [Watch: Declining an Incomplete Registration](../assets/videos/SS-D6-V049.mp4)
 
 **Who Can Do This:** Owner, Manager, Front Desk
 

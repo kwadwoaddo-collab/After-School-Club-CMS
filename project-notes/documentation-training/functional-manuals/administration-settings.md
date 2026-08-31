@@ -30,6 +30,9 @@ Key Capabilities:
 ## 3. Step-by-Step Procedures
 
 ### Procedure 1: Viewing Organisation Information
+
+![Figure — Organisation Profile Form with branding logo and contact email](../assets/screenshots/annotated/SS-D6-S054.png)
+*Figure 16.1 — Organisation Profile & Branding Form*
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`)
 
 **Steps:**
@@ -44,6 +47,11 @@ Key Capabilities:
 ---
 
 ### Procedure 2: Exporting Organisation Data for GDPR / SAR Requests
+
+![Figure — Organisation Data JSON Export Action in system settings](../assets/screenshots/annotated/SS-D6-S055.png)
+*Figure 16.2 — GDPR Organisation JSON Export Action*
+
+📹 **Video Walkthrough:** [Watch: Exporting Organisation Data as JSON](../assets/videos/SS-D6-V032.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`) Only
 
 **Steps:**
@@ -56,6 +64,9 @@ Key Capabilities:
 ---
 
 ## 4. Integration Settings & Service Classifications
+
+![Figure — External Integrations Card showing school sync status and last connection time](../assets/screenshots/annotated/SS-D6-S078.png)
+*Figure 16.3 — External Integration Statuses Card*
 
 SprintScale CMS connects with external providers for communications, error monitoring, and payments. Below is the authoritative evidence-backed classification of all integrated services:
 

@@ -21,6 +21,11 @@
 ---
 
 ### Step 1: Sign In to SprintScale CMS
+
+![Figure — Staff Invitation Acceptance Page with password and profile setup](../assets/screenshots/annotated/SS-D6-S052.png)
+*Figure QS-T.1 — Staff Invitation Acceptance Screen*
+
+📹 **Video Walkthrough:** [Watch: Accepting a Staff Email Invitation](../assets/videos/SS-D6-V023.mp4)
 1. On your tablet or phone browser, go to: `https://app.sprintscaleit.co.uk/login`.
 2. Enter your staff email address and password (or use Google Sign-In).
 3. If this is your first time, check your email for the invitation link sent by your Owner/Manager.
@@ -37,6 +42,11 @@
 ---
 
 ### Step 3: Open the Live Attendance Register
+
+![Figure — Daily Attendance Register with attendee roster, status badges, and timelogs](../assets/screenshots/annotated/SS-D6-S014.png)
+*Figure QS-T.2 — Daily Attendance Register*
+
+📹 **Video Walkthrough:** [Watch: Marking Morning and Afternoon Class Register](../assets/videos/SS-D6-V006.mp4)
 1. Tap `Sidebar → Attendance` (`/dashboard/attendance`).
 2. As each child walks into the club room:
    - Tap **Check In** next to their name.

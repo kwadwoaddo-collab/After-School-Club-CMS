@@ -5,6 +5,9 @@
 
 ## 1. What the Finance Module Does
 
+![Figure — Executive Finance Dashboard showing collected fees, pending balances, and overdue totals](../assets/screenshots/annotated/SS-D6-S026.png)
+*Figure 9.1 — Executive Finance Overview Dashboard*
+
 The **Finance Module** manages the internal commercial and billing lifecycle of your club organisation:
 
 - **Family-Level Agreed Fees:** Setting fixed recurring monthly tuition agreements for enrolled families.
@@ -87,7 +90,14 @@ SprintScale enforces granular server-side permission gates for all financial act
 
 ---
 
-## 6. Overpayment & Correction Rules
+## 6. Financial Reporting & CSV Ledger Export
+
+![Figure — Finance CSV Export Button on the main financial overview ledger](../assets/screenshots/annotated/SS-D6-S076.png)
+*Figure 9.2 — Finance CSV Export Action*
+
+📹 **Video Walkthrough:** [Watch: Exporting Finance & Invoicing CSV](../assets/videos/SS-D6-V043.mp4)
+
+## 7. Overpayment & Correction Rules
 
 - **No Monetary Family Credit Balance:** SprintScale does NOT have a customer credit ledger or surplus balance account. If staff record a payment larger than the invoice amount (e.g. recording £300 on a £250 invoice), the invoice status marks `paid`, but the £50 excess is stored solely as a payment row on that invoice; it does not automatically carry over to other invoices. Staff should record only the amount attributable to the invoice.
 - **Parent Portal Overpayment Guard:** When parents submit voucher claims in the portal, the application strictly blocks amounts greater than the remaining balance (`amount > outstandingBalance`).

@@ -5,13 +5,16 @@
 
 ## 1. Owner Role Overview
 
+![Figure — Dashboard Home & Navigation Overview showing key operational metrics and sidebar modules](../assets/screenshots/annotated/SS-D6-S001.png)
+*Figure O.1 — Owner Dashboard Overview*
+
 As an **Organisation Owner**, you hold top-level administrative, operational, and financial authority over your entire childcare organisation across all physical club centres.
 
 ### Key Responsibilities
 - **Multi-Centre Stewardship:** Creating and configuring club centres, opening hours, capacity, and venue bank accounts.
 - **Team Governance:** Inviting staff members, assigning centres, and managing role permissions (`Manager`, `Front Desk`, `Tutor`).
 - **Financial & Billing Control:** Setting family agreed monthly fees, generating monthly billing cycles, reconciling bank transfers and Tax-Free Childcare vouchers, and issuing payment receipts.
-- **Compliance & Safeguarding Oversight:** Reviewing safeguarding logs, maintaining statutory custodial records, and enforcing Ofsted compliance.
+- **Compliance & Safeguarding Oversight:** Reviewing safeguarding logs, maintaining custodial records, and supporting Ofsted record-keeping requirements.
 - **Organisation Brand & Settings:** Managing logo branding, terms & conditions, Wonde school integrations, and year-end school grade roll-forwards.
 
 ---
@@ -66,6 +69,11 @@ SprintScale CMS enforces strict role gates. The following actions are **strictly
 
 ## 4. Step-by-Step Procedures for Owners
 
+![Figure — Executive Finance Dashboard showing collected fees, pending balances, and overdue totals](../assets/screenshots/annotated/SS-D6-S026.png)
+*Figure O.2 — Executive Finance Overview*
+
+📹 **Video Walkthrough:** [Watch: Setting up Agreed Monthly Family Tuition Fee](../assets/videos/SS-D6-V013.mp4)
+
 ### Procedure 1: Setting Up an Agreed-Fee Family Billing Configuration
 > [!FINANCIAL CONTROL]
 > SprintScale uses a whole-family monthly fee covering all enrolled siblings at a centre, rather than confusing per-session bills.
@@ -82,6 +90,10 @@ SprintScale CMS enforces strict role gates. The following actions are **strictly
 ---
 
 ### Procedure 2: Running the Monthly Automated Billing Run
+
+📹 **Video Walkthrough:** [Watch: Executing Monthly Invoicing Batch Run](../assets/videos/SS-D6-V014.mp4)
+
+📹 **Video Walkthrough:** [Watch: Voiding an Incorrect Invoice](../assets/videos/SS-D6-V018.mp4)
 1. Navigate to: `Sidebar → Finance → Billing Cycles Tab`.
 2. Review the list of active family configurations due for billing.
 3. Click **Bulk Generate Cycle Invoices** (or click **Generate Invoice** on an individual family card).

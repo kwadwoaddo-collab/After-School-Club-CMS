@@ -55,6 +55,14 @@ A complete parent profile in SprintScale CMS contains the following data structu
 ## 4. Viewing, Searching & Filtering Parents
 
 ### Procedure: Finding and Opening a Parent Record
+
+![Figure — Parent Profile & Emergency Contact Cards](../assets/screenshots/annotated/SS-D6-S003.png)
+*Figure 2.2 — Parent Profile & Emergency Contact Cards with contact hierarchy*
+
+![Figure — Multi-Child Family Sibling Linkage View](../assets/screenshots/annotated/SS-D6-S065.png)
+*Figure 2.3 — Multi-Child Family Sibling Linkage View on parent profile*
+
+📹 **Video Walkthrough:** [Watch: Adding a Sibling to an Existing Family](../assets/videos/SS-D6-V034.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk
 
 **Before You Start:**
@@ -63,6 +71,11 @@ A complete parent profile in SprintScale CMS contains the following data structu
 **Steps:**
 1. Navigate to: `Sidebar → Parents` (`/dashboard/parents`).
 2. The directory displays the parent list with columns: **Name**, **Email**, **Phone**, **Linked Children**, and **Actions**.
+
+![Figure — Parent Directory Roster](../assets/screenshots/annotated/SS-D6-S002.png)
+*Figure 2.1 — Parent Directory Roster showing parent contact status and linked children*
+
+📹 **Video Walkthrough:** [Watch: Adding a New Parent Manually](../assets/videos/SS-D6-V033.mp4)
 3. To search: Type the parent's first name, last name, or email address into the **Search Parents** input field. The table filters in real time.
 4. Click on the parent's row or click **View Profile** to open their dedicated profile page (`/dashboard/parents/[id]`).
 
@@ -94,7 +107,16 @@ The parent record is created immediately and assigned to your organisation. You 
 
 ---
 
-## 6. Editing Parent Details & Communications Consent
+## 6. Authorised Pick-Up Collector Protocols
+
+Authorised collectors are trusted adults explicitly designated by custodial parents to collect pupils at dismissal.
+
+![Figure — Authorised Collector Details](../assets/screenshots/annotated/SS-D6-S004.png)
+*Figure 2.4 — Authorised Collector Details captured during registration review*
+
+📹 **Video Walkthrough:** [Watch: Entering Authorised Pick-Up Collector Details During Registration](../assets/videos/SS-D6-V035.mp4)
+
+## 7. Editing Parent Details & Communications Consent
 
 **Who Can Do This:** Owner, Manager, Front Desk
 

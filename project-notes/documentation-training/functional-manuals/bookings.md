@@ -5,6 +5,12 @@
 
 ## 1. What the Booking System Is For
 
+![Figure — Weekly Booking Matrix displaying capacity utilization across session slots](../assets/screenshots/annotated/SS-D6-S011.png)
+*Figure 5.1 — Weekly Booking Matrix & Venue Capacity Overview*
+
+![Figure — Bookings Roster showing session times, pupil names, and status distribution](../assets/screenshots/annotated/SS-D6-S069.png)
+*Figure 5.2 — Session Bookings & Status Distribution Roster*
+
 The **Bookings Module** (`/dashboard/bookings`) manages the scheduling, capacity, and attendance eligibility of club sessions and assessment appointments across all centres.
 
 It provides four distinct booking surfaces:
@@ -47,6 +53,18 @@ It provides four distinct booking surfaces:
 ## 4. Step-by-Step Procedures
 
 ### Procedure 1: Creating a Staff Booking
+
+![Figure — Ad-Hoc Booking Modal with student, date, and session slot picker](../assets/screenshots/annotated/SS-D6-S012.png)
+*Figure 5.3 — Ad-Hoc Single Session Booking Modal*
+
+📹 **Video Walkthrough:** [Watch: Creating an Ad-Hoc Single Session Booking](../assets/videos/SS-D6-V003.mp4)
+
+📹 **Video Walkthrough:** [Watch: Creating a Session Booking for a Family](../assets/videos/SS-D6-V040.mp4)
+
+![Figure — Recurring Term Booking Plan Setup with day-of-week selection](../assets/screenshots/annotated/SS-D6-S013.png)
+*Figure 5.4 — Recurring Term Booking Plan Setup*
+
+📹 **Video Walkthrough:** [Watch: Setting up a Recurring Term Booking Plan](../assets/videos/SS-D6-V004.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk
 
 **Steps:**
@@ -76,6 +94,16 @@ The booking is confirmed instantly. A unique `confirmationCode` (e.g. `ABC1234XY
 ---
 
 ### Procedure 3: Rescheduling an Existing Booking
+
+![Figure — Booking Reschedule Dialog with new date and session slot picker](../assets/screenshots/annotated/SS-D6-S070.png)
+*Figure 5.5 — Booking Reschedule Dialog*
+
+📹 **Video Walkthrough:** [Watch: Rescheduling an Existing Booking Slot](../assets/videos/SS-D6-V038.mp4)
+
+![Figure — Booking Cancellation Confirmation with cancellation reason logging](../assets/screenshots/annotated/SS-D6-S071.png)
+*Figure 5.6 — Booking Cancellation Dialog*
+
+📹 **Video Walkthrough:** [Watch: Cancelling a Booking Slot](../assets/videos/SS-D6-V039.mp4)
 **Who Can Do This:** Owner, Manager, Front Desk (or Parent via Portal)
 
 **Steps:**

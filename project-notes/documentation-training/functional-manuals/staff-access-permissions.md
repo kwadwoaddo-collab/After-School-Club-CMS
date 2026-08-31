@@ -5,6 +5,9 @@
 
 ## 1. What Staff Management Is
 
+![Figure — Staff Directory showing user names, email addresses, and role badges](../assets/screenshots/annotated/SS-D6-S040.png)
+*Figure 14.1 — Staff Directory Roster*
+
 The **Staff Module** (`/dashboard/staff` and `/dashboard/staff/invite`) allows Organisation Owners to build their team, assign operational roles, control venue access, and safely remove staff credentials.
 
 Key Capabilities:
@@ -47,6 +50,16 @@ SprintScale enforces strict server-side authorization across all modules:
 ## 3. Step-by-Step Procedures
 
 ### Procedure 1: Inviting a New Staff Member
+
+![Figure — Staff Invitation Modal with role selector (Manager, Front Desk, Tutor)](../assets/screenshots/annotated/SS-D6-S041.png)
+*Figure 14.2 — Staff Invitation Modal*
+
+📹 **Video Walkthrough:** [Watch: Inviting a New Staff Member via Email](../assets/videos/SS-D6-V022.mp4)
+
+![Figure — Staff Invitation Acceptance Page with password and profile setup](../assets/screenshots/annotated/SS-D6-S052.png)
+*Figure 14.3 — Staff Invite Acceptance Screen*
+
+📹 **Video Walkthrough:** [Watch: Accepting a Staff Email Invitation](../assets/videos/SS-D6-V023.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`) Only
 
 **Steps:**
@@ -66,6 +79,16 @@ SprintScale enforces strict server-side authorization across all modules:
 ---
 
 ### Procedure 2: Assigning Centres to an Existing Staff Member
+
+![Figure — Staff Centre Membership checkboxes assigning user access to specific venues](../assets/screenshots/annotated/SS-D6-S042.png)
+*Figure 14.4 — Staff Centre Membership Selection Form*
+
+📹 **Video Walkthrough:** [Watch: Scoping Staff Access Across Specific Centres](../assets/videos/SS-D6-V024.mp4)
+
+![Figure — Zero-Centre Assigned Staff notice informing user to contact Organisation Owner](../assets/screenshots/annotated/SS-D6-S074.png)
+*Figure 14.5 — Zero-Centre Assigned Staff Empty State*
+
+📹 **Video Walkthrough:** [Watch: Handling Zero-Centre Staff Assignment](../assets/videos/SS-D6-V051.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`) Only
 
 **Steps:**
@@ -80,6 +103,11 @@ The system updates `centreMemberships`. The next time the staff member logs in o
 ---
 
 ### Procedure 3: Changing a Staff Member's Role
+
+![Figure — Self-Demotion Guard Dialog preventing owner from removing own administrative privileges](../assets/screenshots/annotated/SS-D6-S058.png)
+*Figure 14.6 — Self-Demotion Guard Modal*
+
+📹 **Video Walkthrough:** [Watch: Updating Staff Role & Privileges](../assets/videos/SS-D6-V025.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`) Only
 
 **Steps:**
@@ -91,6 +119,11 @@ The system updates `centreMemberships`. The next time the staff member logs in o
 ---
 
 ### Procedure 4: Removing / Deactivating a Staff Member
+
+![Figure — Staff Deactivation Warning Dialog explaining session revocation and record preservation](../assets/screenshots/annotated/SS-D6-S043.png)
+*Figure 14.7 — Staff Deactivation Modal*
+
+📹 **Video Walkthrough:** [Watch: Safely Deactivating a Staff Member](../assets/videos/SS-D6-V026.mp4)
 **Who Can Do This:** Organisation Owner (`ORG_OWNER`) Only
 
 **Steps:**

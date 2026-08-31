@@ -71,6 +71,11 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 ## 4. Step-by-Step Procedures for Managers
 
 ### Procedure 1: Reviewing and Approving a Public Registration
+
+![Figure — Registration Triage Roster showing awaiting confirmation queue](../assets/screenshots/annotated/SS-D6-S009.png)
+*Figure M.1 — Registration Intake Triage Roster*
+
+📹 **Video Walkthrough:** [Watch: Reviewing & Approving a Public Registration](../assets/videos/SS-D6-V002.mp4)
 1. Navigate to: `Sidebar → Registrations`.
 2. Click on a registration card with status **Awaiting Confirmation**.
 3. Review parent details, emergency contacts, child medical disclosures, and digital signature.
@@ -81,6 +86,11 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 ---
 
 ### Procedure 2: Logging a Confidential Safeguarding Incident
+
+![Figure — Confidential Safeguarding Incident Entry Form (DSL restricted)](../assets/screenshots/annotated/SS-D6-S024.png)
+*Figure M.2 — Restricted Safeguarding Entry Form*
+
+📹 **Video Walkthrough:** [Watch: Creating a Confidential Safeguarding Record](../assets/videos/SS-D6-V012.mp4)
 > [!SAFEGUARDING]
 > Safeguarding files are strictly confidential and visible only to Managers and Owners acting as Designated Safeguarding Leads.
 
@@ -95,6 +105,11 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 ---
 
 ### Procedure 3: Forgiving an Absence in the Session Credit Ledger
+
+![Figure — Session Credit Ledger showing Even, Ahead, and Owed attendance status pills](../assets/screenshots/annotated/SS-D6-S020.png)
+*Figure M.3 — Session Credit Ledger*
+
+📹 **Video Walkthrough:** [Watch: Forgiving an Absence on Session Credit Ledger](../assets/videos/SS-D6-V010.mp4)
 > [!NOTE]
 > The Session Credit Ledger balances missed sessions without editing issued invoices, preserving accounting integrity.
 

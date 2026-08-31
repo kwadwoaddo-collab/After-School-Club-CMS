@@ -69,6 +69,11 @@ As a **Front Desk Staff Member**, you manage the front-of-house intake, parent r
 ## 4. Step-by-Step Procedures for Front Desk
 
 ### Procedure 1: Rapid Student Check-in via Kiosk Mode
+
+![Figure — Tablet Kiosk Mode Landing Screen with large touch targets for check-in](../assets/screenshots/annotated/SS-D6-S018.png)
+*Figure FD.1 — Tablet Kiosk Mode Screen*
+
+📹 **Video Walkthrough:** [Watch: Operating the Tablet Kiosk Sign-In & Pick-Up](../assets/videos/SS-D6-V007.mp4)
 1. Open: `Sidebar → Kiosk` on the front-desk tablet.
 2. When a child arrives, locate their name card in the list.
 3. Tap **Check In**.
@@ -77,6 +82,9 @@ As a **Front Desk Staff Member**, you manage the front-of-house intake, parent r
 ---
 
 ### Procedure 2: Verifying an Unknown Collecting Adult
+
+![Figure — Parent Profile & Emergency Contact Cards with contact hierarchy](../assets/screenshots/annotated/SS-D6-S003.png)
+*Figure FD.2 — Parent Profile & Emergency Contacts Lookup*
 > [!SAFEGUARDING]
 > Never release a child to an unverified adult. Always verify their identity against the student profile.
 
@@ -90,6 +98,13 @@ As a **Front Desk Staff Member**, you manage the front-of-house intake, parent r
 ---
 
 ### Procedure 3: Registering a Walk-in Child
+
+![Figure — Ad-Hoc Booking Modal with student, date, and session slot picker](../assets/screenshots/annotated/SS-D6-S012.png)
+*Figure FD.3 — Ad-Hoc Booking Modal*
+
+📹 **Video Walkthrough:** [Watch: Fast Walk-In Registration from Daily Attendance](../assets/videos/SS-D6-V008.mp4)
+
+📹 **Video Walkthrough:** [Watch: Creating an Ad-Hoc Single Session Booking](../assets/videos/SS-D6-V003.mp4)
 1. Navigate to: `Sidebar → Bookings → [+ New Booking]`.
 2. Select the Parent (or click **+ Add New Parent** if not in system).
 3. Select the Child and Session Slot.

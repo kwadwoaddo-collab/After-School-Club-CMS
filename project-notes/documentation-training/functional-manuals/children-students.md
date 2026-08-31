@@ -43,6 +43,11 @@ In SprintScale CMS, these terms are used contextually for the same underlying en
 
 ## 4. Student Profile 360° Anatomy
 
+![Figure — Student Profile Card displaying medical conditions, allergies, and GP contact info](../assets/screenshots/annotated/SS-D6-S006.png)
+*Figure 3.1 — Student Profile Card*
+
+📹 **Video Walkthrough:** [Watch: Updating Pupil Medical & Allergy Profiles](../assets/videos/SS-D6-V036.mp4)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   STUDENT PROFILE ANATOMY                   │
@@ -110,6 +115,9 @@ The student profile is created, linked to the parent, and instantly available fo
 ---
 
 ## 7. Managing Medical Alerts & Severe Allergies
+
+![Figure — Student Directory showing high-visibility allergy and dietary warning badges](../assets/screenshots/annotated/SS-D6-S005.png)
+*Figure 3.2 — Student Directory Allergy Badges*
 
 > [!SAFEGUARDING]
 > Medical alerts are life-safety items. Whenever a medical condition is entered or modified, it immediately reflects across all live roll-call registers and kiosk interfaces with high-contrast alert badges.

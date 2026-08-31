@@ -37,6 +37,7 @@
 | `SS-D6-S017` | Absence Status Override Modal | Classroom | Front Desk/Manager | `/dashboard/attendance` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S018` | Tablet Kiosk Mode Landing Screen | Classroom | Front Desk/Tutor | `/dashboard/kiosk` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S019` | Kiosk Unplanned Walk-In Registration | Classroom | Front Desk | `/dashboard/attendance` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
+| `SS-D6-S020` | Session Credit Ledger Overview | Classroom | Manager/Owner | `/dashboard/attendance/ledger` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S021` | Admin Session Forgiveness Dialog | Classroom | Manager/Owner | `/dashboard/attendance/ledger` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S022` | Student General Note Logging Form | Classroom | Tutor/Staff | `/dashboard/students/[id]` | P1 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
 | `SS-D6-S023` | First Aid Accident Logging & Body Map | Safeguarding | All Staff | `/dashboard/incidents` | P0 | **YES** | **CAPTURED — VISUAL QA VERIFIED** |
