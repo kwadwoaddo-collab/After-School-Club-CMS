@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Milestone D6E Batch 2 represents the final video-production batch of the SprintScale CMS documentation and training programme. Building upon the certified and frozen screenshots (`SS-D6-S001` → `SS-D6-S078`) and videos (`SS-D6-V001` → `SS-D6-V042`), this batch successfully records, encodes, and visually validates the remaining 10 training videos (`SS-D6-V043` to `SS-D6-V052`).
+Milestone D6E Batch 2 represents the final video-production batch of the SprintScale CMS documentation and training programme. Building upon the certified and frozen screenshots (`SS-D6-S001` → `SS-D6-S078`) and videos (`SS-D6-V001` → `SS-D6-V042`), this batch records, encodes, and visually validates the remaining 10 training videos (`SS-D6-V043` to `SS-D6-V052`).
 
 All 10 videos were captured against the isolated synthetic `Oakridge Learning Club` environment running on `http://localhost:3000` connected to the designated training database. Strict fail-closed guard checks (`assertSafeTrainingEnvironment`) verified host isolation prior to any execution.
 
@@ -32,9 +32,9 @@ All 10 videos were captured against the isolated synthetic `Oakridge Learning Cl
 | Video ID | Authoritative Registry Title | Persona / Role | Target Route | Core Product Workflow | Preflight Decision |
 |---|---|---|---|---|---|
 | `SS-D6-V043` | Exporting Finance & Invoicing CSV | Eleanor Vance (`ORG_OWNER`) | `/dashboard/finance` | Accesses Finance Ledger, hovers over Export CSV, triggers streaming CSV download (`/api/export/finance`). | **READY** |
-| `SS-D6-V044` | Editing Invoice Issue Date & Notes | Eleanor Vance (`ORG_OWNER`) | `/dashboard/finance/invoices/[id]` | Opens invoice details, clicks Edit Note, inputs tuition/provision note, persists note via server action. | **READY** |
+| `SS-D6-V044` | Editing Invoice Issue Date & Notes | Eleanor Vance (`ORG_OWNER`) | `/dashboard/finance/invoices/[id]` | Opens invoice details, edits Issue Date (`2026-09-02`), edits custom Notes, persists both via server actions. | **READY** |
 | `SS-D6-V045` | Handling Failed Childcare Voucher Payment | Chloe Bennett (`FRONT_DESK`) | `/dashboard/finance/reconciliation` | Selects pending invoice, inputs duplicate/invalid TFC reference, handles fail-closed reconciliation error toast. | **READY** |
-| `SS-D6-V046` | Configuring Venue Operating Times | Marcus Sterling (`MANAGER`) | `/dashboard/centres/[id]/settings` | Switches to Sessions tab, updates session times/pricing, persists venue configuration via sticky action bar. | **READY** |
+| `SS-D6-V046` | Configuring Venue Operating Times | Marcus Sterling (`MANAGER`) | `/dashboard/centres/[id]/settings` | Switches to Sessions tab, updates operating end time (`18:30`), persists venue configuration via sticky action bar. | **READY** |
 | `SS-D6-V047` | Reviewing In-App Header Notifications | Chloe Bennett (`FRONT_DESK`) | `/dashboard` | Clicks header notification bell, reviews unread alerts in popover, marks all as read to clear badge. | **READY** |
 | `SS-D6-V048` | Tracking Parent Email Broadcast Delivery | Marcus Sterling (`MANAGER`) | `/dashboard/communications` | Switches to History & Audit Log tab, inspects sent broadcasts, opens slide-out details drawer with delivery metrics. | **READY** |
 | `SS-D6-V049` | Declining an Incomplete Registration | Marcus Sterling (`MANAGER`) | `/dashboard/registrations/[id]` | Opens registration details, selects "Not Interested" from Update Status dropdown, persists declined state. | **READY** |
@@ -51,9 +51,9 @@ All 10 videos were captured against the isolated synthetic `Oakridge Learning Cl
 All recordings produced at 1440×900 resolution, 25 fps, silent AAC/none stream:
 
 1. `SS-D6-V043.mp4` — **1,153,660 bytes** (18.48s) — `project-notes/documentation-training/assets/videos/SS-D6-V043.mp4`
-2. `SS-D6-V044.mp4` — **1,041,080 bytes** (14.12s) — `project-notes/documentation-training/assets/videos/SS-D6-V044.mp4`
+2. `SS-D6-V044.mp4` — **1,189,776 bytes** (14.12s) — `project-notes/documentation-training/assets/videos/SS-D6-V044.mp4`
 3. `SS-D6-V045.mp4` — **1,126,981 bytes** (14.28s) — `project-notes/documentation-training/assets/videos/SS-D6-V045.mp4`
-4. `SS-D6-V046.mp4` — **625,488 bytes** (12.08s) — `project-notes/documentation-training/assets/videos/SS-D6-V046.mp4`
+4. `SS-D6-V046.mp4` — **610,729 bytes** (12.08s) — `project-notes/documentation-training/assets/videos/SS-D6-V046.mp4`
 5. `SS-D6-V047.mp4` — **828,771 bytes** (15.44s) — `project-notes/documentation-training/assets/videos/SS-D6-V047.mp4`
 6. `SS-D6-V048.mp4` — **893,440 bytes** (15.16s) — `project-notes/documentation-training/assets/videos/SS-D6-V048.mp4`
 7. `SS-D6-V049.mp4` — **625,543 bytes** (11.48s) — `project-notes/documentation-training/assets/videos/SS-D6-V049.mp4`
@@ -93,15 +93,15 @@ Extracted to `project-notes/documentation-training/assets/review/d6e-batch-2-fra
 
 ### Ledger B: Recorded Workflow Execution
 - `SS-D6-V043`: Export CSV query — Read-only streaming (0 mutations).
-- `SS-D6-V044`: Edit Notes — `invoices.notes` set to custom text (UPDATE = 1).
+- `SS-D6-V044`: Edit Issue Date & Notes — `invoices.invoiceDate` updated (`UPDATE = 1`), `invoices.notes` updated (`UPDATE = 1`). Total `UPDATE = 2`.
 - `SS-D6-V045`: Failed Voucher Reconciliation — Validation rejection (0 mutations).
-- `SS-D6-V046`: Configure Venue Times — `centres.sessionSlots` updated (UPDATE = 1).
-- `SS-D6-V047`: Review Notifications — `notifications.isRead` updated to `true` (UPDATE = 1).
+- `SS-D6-V046`: Configure Venue Times — `centres.sessionSlots` updated (`UPDATE = 1`).
+- `SS-D6-V047`: Review Notifications — `notifications.isRead` updated to `true` (`UPDATE = 1`).
 - `SS-D6-V048`: Broadcast Audit Log — Read-only drawer toggle (0 mutations).
-- `SS-D6-V049`: Decline Registration — `registrations.status` updated to `'not_interested'` (UPDATE = 1).
-- `SS-D6-V050`: Parent Medical Note — `progressNotes` / `childNotes` record created (INSERT = 1).
-- `SS-D6-V051`: Zero-Centre Staff Assignment — `userCentres` assignments cleared (DELETE / UPDATE = 1).
-- `SS-D6-V052`: Rate Limit Throttling — Client mock/server throttle evaluation (0 mutations).
+- `SS-D6-V049`: Decline Registration — `registrations.status` updated to `'not_interested'` (`UPDATE = 1`).
+- `SS-D6-V050`: Parent Medical Note — `studentNotes` record inserted (`INSERT = 1`).
+- `SS-D6-V051`: Zero-Centre Staff Assignment — `centreMemberships` record deleted (`DELETE = 1`, `INSERT = 0`, `users` UPDATE = 0).
+- `SS-D6-V052`: Rate Limit Throttling — Client mock / 429 response handled (0 mutations).
 
 ### Ledger C: Post-Capture Cleanup
 - Training database state retained in consistent Oakridge Learning Club demo state.

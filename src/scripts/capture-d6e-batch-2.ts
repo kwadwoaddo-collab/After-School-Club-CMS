@@ -333,11 +333,26 @@ async function captureV044() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/dashboard/finance/invoices/${invoice.id}`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE_URL}/dashboard/finance/invoices/${invoice.id}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Payment Reconciliation Ledger', { state: 'visible', timeout: 30000 });
-    await page.waitForTimeout(3500); // 0.0s - 3.5s: Settled Starting State
+    await page.waitForTimeout(3000); // 0.0s - 3.0s: Settled Starting State
 
-    // Click Edit Note
+    // 1. Edit Issue Date
+    const editDateBtn = page.locator('button[title="Edit Issue Date"]').first();
+    if (await editDateBtn.count() > 0) {
+      await editDateBtn.click({ force: true });
+      await page.waitForTimeout(1000);
+
+      const dateInput = page.locator('input[type="date"]').first();
+      await dateInput.fill('2026-09-02');
+      await page.waitForTimeout(500);
+
+      const saveDateBtn = page.locator('button:has(svg.lucide-check)').first();
+      await saveDateBtn.click();
+      await page.waitForTimeout(1500);
+    }
+
+    // 2. Click Edit Note
     const editNoteBtn = page.locator('button:has-text("Edit Note")').first();
     await editNoteBtn.waitFor({ state: 'visible', timeout: 10000 });
     await editNoteBtn.click();
@@ -387,7 +402,7 @@ async function captureV045() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/dashboard/finance/reconciliation`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE_URL}/dashboard/finance/reconciliation`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('h2:has-text("Pending Invoices")', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(3500); // 0.0s - 3.5s: Settled Starting State
 
@@ -454,7 +469,7 @@ async function captureV046() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/dashboard/centres/${centre.id}/settings`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE_URL}/dashboard/centres/${centre.id}/settings`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('h1:has-text("Oakridge")', { state: 'visible', timeout: 30000 });
     await page.waitForTimeout(3000); // 0.0s - 3.0s: Settled Starting State
 
@@ -463,17 +478,18 @@ async function captureV046() {
     await sessionsTab.click();
     await page.waitForTimeout(1500);
 
-    // Edit After School session price or capacity to trigger isDirty
-    const priceInput = page.locator('input[name="sessionSlots.1.price"]').first();
-    if (await priceInput.count() > 0) {
-      await priceInput.fill('15');
+    // Edit After School session operating end time (e.g. 18:00 -> 18:30)
+    const endTimeInputs = page.locator('input[type="time"]');
+    const inputCount = await endTimeInputs.count();
+    if (inputCount >= 4) {
+      // Index 3 is the second slot's end time (After School)
+      const afterSchoolEnd = endTimeInputs.nth(3);
+      await afterSchoolEnd.fill('18:30');
       await page.waitForTimeout(1000);
-    } else {
-      const firstInput = page.locator('input[name*="price"]').first();
-      if (await firstInput.count() > 0) {
-        await firstInput.fill('15');
-        await page.waitForTimeout(1000);
-      }
+    } else if (inputCount >= 2) {
+      const firstEnd = endTimeInputs.nth(1);
+      await firstEnd.fill('18:30');
+      await page.waitForTimeout(1000);
     }
 
     const saveBtn = page.locator('button[type="submit"]:has-text("Save changes")').first();
