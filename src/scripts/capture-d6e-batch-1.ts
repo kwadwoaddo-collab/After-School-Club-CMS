@@ -27,7 +27,7 @@ const ALL_ASSET_IDS = [
 const TITLES: Record<string, string> = {
   'SS-D6-V033': 'Adding a New Parent Manually',
   'SS-D6-V034': 'Adding a Sibling to an Existing Family',
-  'SS-D6-V035': 'Adding an Authorised Pick-Up Collector During Registration',
+  'SS-D6-V035': 'Entering Authorised Pick-Up Collector Details During Registration',
   'SS-D6-V036': 'Updating Pupil Medical & Allergy Profiles',
   'SS-D6-V037': 'Logging Student Homework & Progress Notes',
   'SS-D6-V038': 'Rescheduling an Existing Booking Slot',
@@ -43,9 +43,9 @@ const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: 
   'SS-D6-V035': { start: '02.50', action: '06.50', end: '11.00' },
   'SS-D6-V036': { start: '02.50', action: '06.00', end: '10.50' },
   'SS-D6-V037': { start: '03.00', action: '07.00', end: '11.50' },
-  'SS-D6-V038': { start: '02.50', action: '07.50', end: '14.00' },
+  'SS-D6-V038': { start: '04.00', action: '11.00', end: '19.50' },
   'SS-D6-V039': { start: '02.50', action: '05.50', end: '11.00' },
-  'SS-D6-V040': { start: '03.00', action: '07.00', end: '11.50' },
+  'SS-D6-V040': { start: '02.50', action: '12.50', end: '17.00' },
   'SS-D6-V041': { start: '03.00', action: '07.00', end: '11.50' },
   'SS-D6-V042': { start: '03.00', action: '06.50', end: '11.00' },
 };
@@ -317,7 +317,7 @@ async function captureV034(recordingsDir: string) {
 }
 
 async function captureV035(recordingsDir: string) {
-  console.log('\n--- [CAPTURE] SS-D6-V035: Adding an Authorised Pick-Up Collector During Registration ---');
+  console.log('\n--- [CAPTURE] SS-D6-V035: Entering Authorised Pick-Up Collector Details During Registration ---');
   const browser = await chromium.launch({
     executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     headless: true,
@@ -617,16 +617,52 @@ async function captureV040(recordingsDir: string) {
   });
   const page = await context.newPage();
 
-  // 1. START state: Bookings Directory
-  await page.goto(`${BASE_URL}/dashboard/bookings`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('table', { timeout: 10000 }).catch(() => {});
-  await page.waitForTimeout(3500);
-
-  // 2. ACTION: Navigate to /dashboard/bookings/new and view booking options
+  // 1. START state: Settled on Step 1 of New Session Booking wizard
   await page.goto(`${BASE_URL}/dashboard/bookings/new?centreId=${centre.id}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3500);
+  await page.waitForSelector('h1', { timeout: 10000 });
+  await page.waitForTimeout(3000);
 
-  // 3. END state: Overview of bookings roster on /dashboard/bookings
+  // 2. ACTION: Fill Step 1 -> Step 2 -> Step 3 -> Step 4 and confirm booking
+  // Step 1: Parent Details
+  await page.fill('input[name="parent.firstName"]', 'David');
+  await page.fill('input[name="parent.lastName"]', 'Miller');
+  await page.fill('input[name="parent.email"]', 'david.miller@example.test');
+  await page.fill('input[name="parent.phone"]', '07700900555');
+  await page.waitForTimeout(500);
+  await page.click('button:has-text("Continue")');
+  await page.waitForTimeout(800);
+
+  // Step 2: Child Details
+  await page.fill('input[name="children.0.firstName"]', 'Sophie');
+  await page.fill('input[name="children.0.lastName"]', 'Miller');
+  await page.selectOption('select[name="children.0.schoolYear"]', 'Y4');
+  const subjectBtn = page.locator('button:has-text("Maths")').first();
+  if (await subjectBtn.count() > 0) await subjectBtn.click();
+  await page.waitForTimeout(500);
+  await page.click('button:has-text("Continue")');
+  await page.waitForTimeout(800);
+
+  // Step 3: Appointment Schedule
+  await page.fill('input[type="date"]', '2026-09-09');
+  await page.dispatchEvent('input[type="date"]', 'change');
+  await page.waitForTimeout(400);
+  await page.fill('input[type="time"]', '16:00');
+  await page.dispatchEvent('input[type="time"]', 'change');
+  await page.waitForTimeout(500);
+  await page.click('button:has-text("Continue")');
+  await page.waitForTimeout(800);
+
+  // Step 4: Consent & Confirm Submission
+  await page.click('input[name="consent.communications"]');
+  await page.waitForTimeout(1000);
+
+  const confirmBtn = page.locator('button[type="submit"]:has-text("Confirm Booking")').first();
+  if (await confirmBtn.count() > 0) {
+    await confirmBtn.click();
+  }
+  await page.waitForTimeout(3000);
+
+  // 3. END state: Navigate to /dashboard/bookings showing newly created booking
   await page.goto(`${BASE_URL}/dashboard/bookings`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('table', { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(4000);
