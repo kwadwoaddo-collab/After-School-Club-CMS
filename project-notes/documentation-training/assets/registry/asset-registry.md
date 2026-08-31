@@ -153,16 +153,16 @@
 | `SS-D6-V040` | Creating a Session Booking for a Family | Manager | `/dashboard/bookings` | 60s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V041` | Adjusting Attendance Arrival Timelogs | Manager | `/dashboard/attendance` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
 | `SS-D6-V042` | Exporting Daily Roll Call Attendance CSV | Staff | `/dashboard/attendance` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
-| `SS-D6-V043` | Exporting Finance & Invoicing CSV | Owner/Manager | `/dashboard/finance` | 30s | P2 | No | READY |
-| `SS-D6-V044` | Editing Invoice Issue Date & Notes | Staff | `/dashboard/finance/invoices/[id]` | 30s | P2 | No | READY |
-| `SS-D6-V045` | Handling Failed Childcare Voucher Payment | Staff | `/dashboard/finance/reconciliation` | 45s | P2 | No | READY |
-| `SS-D6-V046` | Configuring Venue Operating Times | Manager | `/dashboard/centres/[id]/settings` | 45s | P2 | No | READY |
-| `SS-D6-V047` | Reviewing In-App Header Notifications | Staff | `/dashboard` | 30s | P2 | No | READY |
-| `SS-D6-V048` | Tracking Parent Email Broadcast Delivery | Manager | `/dashboard/communications` | 30s | P2 | No | READY |
-| `SS-D6-V049` | Declining an Incomplete Registration | Manager | `/dashboard/registrations/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V050` | Parent Updating Medical Info on Portal | Parent | `/portal/children/[id]` | 45s | P2 | No | READY |
-| `SS-D6-V051` | Handling Zero-Centre Staff Assignment | Owner | `/dashboard/staff/[userId]` | 45s | P3 | No | READY |
-| `SS-D6-V052` | Understanding System Rate Limit Throttling | All Roles | `/portal/login` | 30s | P3 | No | READY |
+| `SS-D6-V043` | Exporting Finance & Invoicing CSV | Owner/Manager | `/dashboard/finance` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V044` | Editing Invoice Issue Date & Notes | Staff | `/dashboard/finance/invoices/[id]` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V045` | Handling Failed Childcare Voucher Payment | Staff | `/dashboard/finance/reconciliation` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V046` | Configuring Venue Operating Times | Manager | `/dashboard/centres/[id]/settings` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V047` | Reviewing In-App Header Notifications | Staff | `/dashboard` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V048` | Tracking Parent Email Broadcast Delivery | Manager | `/dashboard/communications` | 30s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V049` | Declining an Incomplete Registration | Manager | `/dashboard/registrations/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V050` | Parent Updating Medical Info on Portal | Parent | `/portal/children/[id]` | 45s | P2 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V051` | Handling Zero-Centre Staff Assignment | Owner | `/dashboard/staff/[userId]` | 45s | P3 | No | `CAPTURED — VIDEO QA VERIFIED` |
+| `SS-D6-V052` | Understanding System Rate Limit Throttling | All Roles | `/portal/login` | 30s | P3 | No | `CAPTURED — VIDEO QA VERIFIED` |
 
 ---
 
