@@ -27,12 +27,12 @@ const ALL_ASSET_IDS = [
 const TITLES: Record<string, string> = {
   'SS-D6-V033': 'Adding a New Parent Manually',
   'SS-D6-V034': 'Adding a Sibling to an Existing Family',
-  'SS-D6-V035': 'Managing Authorised Pick-Up Collectors',
+  'SS-D6-V035': 'Adding an Authorised Pick-Up Collector During Registration',
   'SS-D6-V036': 'Updating Pupil Medical & Allergy Profiles',
   'SS-D6-V037': 'Logging Student Homework & Progress Notes',
   'SS-D6-V038': 'Rescheduling an Existing Booking Slot',
   'SS-D6-V039': 'Cancelling a Booking Slot',
-  'SS-D6-V040': 'Managing Recurring Booking Plans',
+  'SS-D6-V040': 'Creating a Session Booking for a Family',
   'SS-D6-V041': 'Adjusting Attendance Arrival Timelogs',
   'SS-D6-V042': 'Exporting Daily Roll Call Attendance CSV',
 };
@@ -43,7 +43,7 @@ const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: 
   'SS-D6-V035': { start: '02.50', action: '06.50', end: '11.00' },
   'SS-D6-V036': { start: '02.50', action: '06.00', end: '10.50' },
   'SS-D6-V037': { start: '03.00', action: '07.00', end: '11.50' },
-  'SS-D6-V038': { start: '02.50', action: '06.00', end: '11.00' },
+  'SS-D6-V038': { start: '02.50', action: '07.50', end: '14.00' },
   'SS-D6-V039': { start: '02.50', action: '05.50', end: '11.00' },
   'SS-D6-V040': { start: '03.00', action: '07.00', end: '11.50' },
   'SS-D6-V041': { start: '03.00', action: '07.00', end: '11.50' },
@@ -317,7 +317,7 @@ async function captureV034(recordingsDir: string) {
 }
 
 async function captureV035(recordingsDir: string) {
-  console.log('\n--- [CAPTURE] SS-D6-V035: Managing Authorised Pick-Up Collectors ---');
+  console.log('\n--- [CAPTURE] SS-D6-V035: Adding an Authorised Pick-Up Collector During Registration ---');
   const browser = await chromium.launch({
     executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     headless: true,
@@ -522,39 +522,33 @@ async function captureV038(recordingsDir: string) {
   });
   const page = await context.newPage();
 
-  // 1. START state: Booking Detail page
+  // 1. START state: Booking Detail page showing original confirmed booking
   await page.goto(`${BASE_URL}/dashboard/bookings/${booking!.id}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('h1', { timeout: 10000 });
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(3500);
 
-  // 2. ACTION: Open reschedule page and fill date/time
+  // 2. ACTION: Open reschedule page, configure new date/time and confirm reschedule
   await page.goto(`${BASE_URL}/dashboard/bookings/${booking!.id}/reschedule`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type="date"]', { timeout: 10000 });
   await page.waitForTimeout(1000);
 
-  // Future weekday date
-  const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() + 4);
-  if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
-  if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() + 2);
-  const dateStr = targetDate.toISOString().split('T')[0];
-
-  await page.fill('input[type="date"]', dateStr);
+  // Select Tuesday Sep 8, 2026 at 16:30
+  await page.fill('input[type="date"]', '2026-09-08');
   await page.waitForTimeout(800);
-  await page.fill('input[type="time"]', '16:00');
-  await page.waitForTimeout(800);
+  await page.fill('input[type="time"]', '16:30');
+  await page.waitForTimeout(2000);
 
   const confirmRescheduleBtn = page.locator('button[type="submit"]:has-text("Reschedule Booking")').first();
   if (await confirmRescheduleBtn.isEnabled()) {
     await confirmRescheduleBtn.click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
   }
-  await page.waitForTimeout(1500);
 
-  // 3. END state: Settle on updated Booking Detail
+  // 3. END state: Settle on updated Booking Detail showing the new persisted date/time
+  await page.waitForURL(`**/dashboard/bookings/${booking!.id}`, { timeout: 10000 }).catch(() => {});
   await page.goto(`${BASE_URL}/dashboard/bookings/${booking!.id}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('h1', { timeout: 10000 });
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(4000);
 
   await page.close();
   await context.close();
@@ -607,7 +601,7 @@ async function captureV039(recordingsDir: string) {
 }
 
 async function captureV040(recordingsDir: string) {
-  console.log('\n--- [CAPTURE] SS-D6-V040: Managing Recurring Booking Plans ---');
+  console.log('\n--- [CAPTURE] SS-D6-V040: Creating a Session Booking for a Family ---');
   const org = await db.query.organisations.findFirst({ where: eq(organisations.slug, 'oakridge-learning') });
   const orgCentres = await db.query.centres.findMany({ where: eq(centres.organisationId, org!.id) });
   const centre = orgCentres[0];
