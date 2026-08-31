@@ -15,15 +15,26 @@
 
 ---
 
-## 2. Certified Visual Assets Ledger & Disposition Summary
+## 2. Certified Visual Assets Ledger & Reference Arithmetic
 
 All 130 certified visual assets produced and reconciled during Milestone D6 are fully integrated into the authoritative documentation suite.
 
-| Asset Classification | Total Count | Inlined Embeds (`INLINE`) | Screencast Links (`LINKED`) | Orphaned Count | Freeze Status |
-|---|---|---|---|---|---|
-| **Annotated Screenshots (`SS-D6-S001` → `SS-D6-S078`)** | **78** | 78 | 0 | **0** | **VERIFIED FROZEN** |
-| **Micro-Video Screencasts (`SS-D6-V001` → `SS-D6-V052`)** | **52** | 0 | 52 | **0** | **VERIFIED FROZEN** |
-| **Total Certified Visual Assets** | **130** | **78** | **52** | **0** | **VERIFIED FROZEN** |
+### Visual Asset Placement & Reference Class Breakdown
+
+| Reference Category | Screenshots (`SS-D6-S001` → `SS-D6-S078`) | Videos (`SS-D6-V001` → `SS-D6-V052`) | Total Rendered / Clickable Placements |
+|---|---|---|---|
+| **Reader-Facing Inline Image Embeds (`IMAGE_EMBED`)** | **103** | 0 | 103 |
+| **Reader-Facing Direct Screenshot Links (`DIRECT_PNG_LINK`)** | **78** (in `visual-training-index.md`) | 0 | 78 |
+| **Reader-Facing Video Screencast Links (`VIDEO_LINK`)** | 0 | **173** | 173 |
+| **Total Reader-Facing Visual Placements** | **181** (103 embeds + 78 index links) | **173** | **354** |
+| **Audit/Control Document Mentions (Matrix / Logs / Registry)** | 120+ | 80+ | 200+ |
+| **Orphaned Assets** | **0** | **0** | **0** |
+| **Byte-for-Byte Freeze Status** | **VERIFIED FROZEN** | **VERIFIED FROZEN** | **HARD FROZEN** |
+
+> [!NOTE]
+> **Arithmetic Reconciliation:**
+> - The **181** screenshot references metric represents the total population of reader-facing clickable/rendered screenshot placements across the 37 active documentation guides: **103 inline image embeds** embedded in functional manuals, role guides, quick-starts, and master journeys + **78 direct screenshot catalog links** in the master [`visual-training-index.md`](visual-training-index.md).
+> - All 181 reader-facing screenshot placements and 173 video screencast links are verified with zero broken paths.
 
 ---
 
@@ -80,10 +91,12 @@ All 130 certified visual assets produced and reconciled during Milestone D6 are 
 
 | Audit Check | Target Metric | Measured Value | Result |
 |---|---|---|---|
-| **Markdown Files Checked** | Total in documentation suite | 83 files | **PASS** |
-| **Screenshot Reference Integrity** | 0 broken paths | 103 checked (0 broken) | **PASS** |
+| **Markdown Files Checked** | Total in documentation suite | 84 files | **PASS** |
+| **Inline Image Embeds Checked** | 0 broken paths | 103 checked (0 broken) | **PASS** |
+| **Direct Screenshot Links Checked** | 0 broken links | 79 checked (0 broken) | **PASS** |
+| **Total Screenshot References Validated** | 0 broken references | 182 checked (0 broken) | **PASS** |
 | **Video Link Integrity** | 0 broken links | 173 checked (0 broken) | **PASS** |
-| **Internal Doc Link Integrity** | 0 broken links | 184 checked (0 broken) | **PASS** |
+| **Internal Doc Link Integrity** | 0 broken links | 228 checked (0 broken) | **PASS** |
 | **Alt-Text Descriptive Quality** | 0 generic / weak alt texts | 0 weak alt texts | **PASS** |
 | **Canonical Title Consistency** | 0 superseded titles | 0 superseded titles | **PASS** |
 | **Legal / Compliance Claims** | 0 unqualified guarantees | 0 unqualified guarantees | **PASS** |

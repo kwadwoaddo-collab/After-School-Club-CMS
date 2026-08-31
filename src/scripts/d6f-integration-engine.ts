@@ -220,8 +220,10 @@ export function auditDocumentation() {
   }
 
   const mdFiles = walk(DOCS_DIR);
-  let checkedScreenshots = 0;
-  let brokenScreenshots = 0;
+  let checkedInlineEmbeds = 0;
+  let brokenInlineEmbeds = 0;
+  let checkedDirectScreenshotLinks = 0;
+  let brokenDirectScreenshotLinks = 0;
   let checkedVideos = 0;
   let brokenVideos = 0;
   let checkedDocLinks = 0;
@@ -232,33 +234,56 @@ export function auditDocumentation() {
     const content = fs.readFileSync(filePath, 'utf-8');
     const dir = path.dirname(filePath);
 
-    // Check images: ![alt](url)
+    // 1. Check inline image embeds: ![alt](url)
     const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     let match: RegExpExecArray | null;
     while ((match = imgRegex.exec(content)) !== null) {
       const alt = match[1];
       const imgPath = match[2];
-      checkedScreenshots++;
+      checkedInlineEmbeds++;
 
       if (!alt || alt.toLowerCase() === 'image' || alt.toLowerCase() === 'screenshot' || alt.toLowerCase() === 'screen') {
         console.warn(`[WEAK ALT] ${filePath}: "${alt}" in "${match[0]}"`);
         weakAltTexts++;
       }
 
-      // Skip external links
       if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) continue;
 
       const resolved = path.resolve(dir, imgPath);
       if (!fs.existsSync(resolved)) {
-        console.error(`[BROKEN IMAGE] ${filePath} -> ${imgPath} (Resolved: ${resolved})`);
-        brokenScreenshots++;
+        console.error(`[BROKEN INLINE IMAGE] ${filePath} -> ${imgPath} (Resolved: ${resolved})`);
+        brokenInlineEmbeds++;
       }
     }
 
-    // Check videos: [text](url.mp4)
+    // 2. Check direct screenshot links: [text](url.png) (excluding image embeds)
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const directPngRegex = /(?<!\!)\[([^\]]+)\]\(([^)]+\.(?:png|jpg|jpeg|webp|svg))\)/g;
+      let dMatch: RegExpExecArray | null;
+      while ((dMatch = directPngRegex.exec(line)) !== null) {
+        const linkPath = dMatch[2];
+        checkedDirectScreenshotLinks++;
+
+        if (linkPath.startsWith('http://') || linkPath.startsWith('https://')) continue;
+
+        let resolved: string;
+        if (linkPath.startsWith('file://')) {
+          resolved = linkPath.replace(/^file:\/\//, '');
+        } else {
+          resolved = path.resolve(dir, linkPath);
+        }
+
+        if (!fs.existsSync(resolved)) {
+          console.error(`[BROKEN DIRECT PNG LINK] ${filePath} -> ${linkPath} (Resolved: ${resolved})`);
+          brokenDirectScreenshotLinks++;
+        }
+      }
+    }
+
+    // 3. Check videos: [text](url.mp4)
     const vidRegex = /\[([^\]]+)\]\(([^)]+\.(?:mp4|webm))\)/g;
     while ((match = vidRegex.exec(content)) !== null) {
-      const text = match[1];
       const vidPath = match[2];
       checkedVideos++;
 
@@ -271,11 +296,11 @@ export function auditDocumentation() {
       }
     }
 
-    // Check doc links: [text](path.md)
+    // 4. Check doc links: [text](path.md)
     const docLinkRegex = /\[([^\]]+)\]\((?!http|mailto|#)([^)#]+)(?:#([^)]*))?\)/g;
     while ((match = docLinkRegex.exec(content)) !== null) {
       const linkPath = match[2];
-      if (linkPath.endsWith('.png') || linkPath.endsWith('.mp4') || linkPath.endsWith('.webm')) continue;
+      if (linkPath.endsWith('.png') || linkPath.endsWith('.jpg') || linkPath.endsWith('.jpeg') || linkPath.endsWith('.mp4') || linkPath.endsWith('.webm')) continue;
       checkedDocLinks++;
 
       let resolved: string;
@@ -292,9 +317,14 @@ export function auditDocumentation() {
     }
   }
 
+  const totalScreenshotRefs = checkedInlineEmbeds + checkedDirectScreenshotLinks;
+  const totalBrokenScreenshots = brokenInlineEmbeds + brokenDirectScreenshotLinks;
+
   console.log(`[AUDIT SUMMARY]
 - Markdown Files Checked: ${mdFiles.length}
-- Screenshot References Checked: ${checkedScreenshots} (Broken: ${brokenScreenshots})
+- Inline Image Embeds Checked: ${checkedInlineEmbeds} (Broken: ${brokenInlineEmbeds})
+- Direct Screenshot Links Checked: ${checkedDirectScreenshotLinks} (Broken: ${brokenDirectScreenshotLinks})
+- Total Screenshot References Validated: ${totalScreenshotRefs} (Broken: ${totalBrokenScreenshots})
 - Video References Checked: ${checkedVideos} (Broken: ${brokenVideos})
 - Documentation Links Checked: ${checkedDocLinks} (Broken: ${brokenDocLinks})
 - Weak Alt Texts Found: ${weakAltTexts}
@@ -302,8 +332,12 @@ export function auditDocumentation() {
 
   return {
     mdFilesCount: mdFiles.length,
-    checkedScreenshots,
-    brokenScreenshots,
+    checkedInlineEmbeds,
+    brokenInlineEmbeds,
+    checkedDirectScreenshotLinks,
+    brokenDirectScreenshotLinks,
+    totalScreenshotRefs,
+    totalBrokenScreenshots,
     checkedVideos,
     brokenVideos,
     checkedDocLinks,
