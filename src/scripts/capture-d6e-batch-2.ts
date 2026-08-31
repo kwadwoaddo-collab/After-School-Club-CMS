@@ -40,10 +40,10 @@ const TITLES: Record<string, string> = {
 
 const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: string }> = {
   'SS-D6-V043': { start: '03.00', action: '06.00', end: '15.00' },
-  'SS-D6-V044': { start: '03.00', action: '07.00', end: '12.00' },
+  'SS-D6-V044': { start: '03.50', action: '07.00', end: '12.00' },
   'SS-D6-V045': { start: '03.00', action: '08.50', end: '13.00' },
   'SS-D6-V046': { start: '02.50', action: '06.50', end: '10.50' },
-  'SS-D6-V047': { start: '02.50', action: '06.00', end: '13.00' },
+  'SS-D6-V047': { start: '06.00', action: '11.00', end: '14.00' },
   'SS-D6-V048': { start: '02.50', action: '06.00', end: '13.00' },
   'SS-D6-V049': { start: '02.50', action: '05.50', end: '10.00' },
   'SS-D6-V050': { start: '02.50', action: '06.50', end: '10.50' },

@@ -65,10 +65,10 @@ All recordings produced at 1440×900 resolution, 25 fps, silent AAC/none stream:
 
 Extracted to `project-notes/documentation-training/assets/review/d6e-batch-2-frames/`:
 - `SS-D6-V043-start.png`, `SS-D6-V043-action.png`, `SS-D6-V043-end.png` (03.00s, 06.00s, 15.00s)
-- `SS-D6-V044-start.png`, `SS-D6-V044-action.png`, `SS-D6-V044-end.png` (03.00s, 07.00s, 12.00s)
+- `SS-D6-V044-start.png`, `SS-D6-V044-action.png`, `SS-D6-V044-end.png` (03.50s, 07.00s, 12.00s)
 - `SS-D6-V045-start.png`, `SS-D6-V045-action.png`, `SS-D6-V045-end.png` (03.00s, 08.50s, 13.00s)
 - `SS-D6-V046-start.png`, `SS-D6-V046-action.png`, `SS-D6-V046-end.png` (02.50s, 06.50s, 10.50s)
-- `SS-D6-V047-start.png`, `SS-D6-V047-action.png`, `SS-D6-V047-end.png` (02.50s, 06.00s, 13.00s)
+- `SS-D6-V047-start.png`, `SS-D6-V047-action.png`, `SS-D6-V047-end.png` (06.00s, 11.00s, 14.00s)
 - `SS-D6-V048-start.png`, `SS-D6-V048-action.png`, `SS-D6-V048-end.png` (02.50s, 06.00s, 13.00s)
 - `SS-D6-V049-start.png`, `SS-D6-V049-action.png`, `SS-D6-V049-end.png` (02.50s, 05.50s, 10.00s)
 - `SS-D6-V050-start.png`, `SS-D6-V050-action.png`, `SS-D6-V050-end.png` (02.50s, 06.50s, 10.50s)
