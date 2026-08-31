@@ -106,7 +106,11 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
     // Check if the current page is a dashboard list view to merge page elements to global header
     const isListPage = pathname.startsWith('/dashboard/registrations') ||
                        pathname.startsWith('/dashboard/bookings') ||
-                       pathname.startsWith('/dashboard/students');
+                       pathname.startsWith('/dashboard/students') ||
+                       pathname.startsWith('/dashboard/attendance') ||
+                       pathname.startsWith('/dashboard/parents') ||
+                       pathname.startsWith('/dashboard/centres') ||
+                       pathname.startsWith('/dashboard/staff');
 
     // Fetch real notifications from API
     const [notifications, setNotifications] = useState<Notification[]>([]);

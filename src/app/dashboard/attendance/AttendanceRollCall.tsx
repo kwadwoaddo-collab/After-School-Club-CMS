@@ -106,9 +106,9 @@ function AttendeeCard({
     const [curBookingId, setCurBookingId] = useState<string | null>(attendee.bookingId);
     const [curAttendeeId, setCurAttendeeId] = useState<string | null>(attendee.id);
 
-    const [checkIn,  setCheckIn]  = useOptimistic<string, string>(attendee.checkInTime  ?? '', (state, update) => update);
-    const [checkOut, setCheckOut] = useOptimistic<string, string>(attendee.checkOutTime ?? '', (state, update) => update);
-    const [isAbsent, setIsAbsent] = useOptimistic<boolean, boolean>(attendee.attendanceStatus === 'absent', (state, update) => update);
+    const [checkIn,  setCheckIn]  = useState<string>(attendee.checkInTime  ?? '');
+    const [checkOut, setCheckOut] = useState<string>(attendee.checkOutTime ?? '');
+    const [isAbsent, setIsAbsent] = useState<boolean>(attendee.attendanceStatus === 'absent');
     const [absenceReason, setAbsenceReason] = useState<string>('');
     const [note, setNote] = useState<string>(attendee.attendanceNote ?? '');
     const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);

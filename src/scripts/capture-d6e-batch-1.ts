@@ -41,13 +41,13 @@ const SEMANTIC_TIMESTAMPS: Record<string, { start: string; action: string; end: 
   'SS-D6-V033': { start: '02.50', action: '06.50', end: '11.00' },
   'SS-D6-V034': { start: '02.50', action: '06.50', end: '10.00' },
   'SS-D6-V035': { start: '02.50', action: '06.50', end: '11.00' },
-  'SS-D6-V036': { start: '02.50', action: '06.00', end: '10.50' },
-  'SS-D6-V037': { start: '03.00', action: '07.00', end: '11.50' },
+  'SS-D6-V036': { start: '03.00', action: '07.00', end: '10.50' },
+  'SS-D6-V037': { start: '07.00', action: '10.00', end: '20.00' },
   'SS-D6-V038': { start: '04.00', action: '11.00', end: '19.50' },
   'SS-D6-V039': { start: '02.50', action: '05.50', end: '11.00' },
   'SS-D6-V040': { start: '02.50', action: '12.50', end: '17.00' },
-  'SS-D6-V041': { start: '03.00', action: '07.00', end: '11.50' },
-  'SS-D6-V042': { start: '03.00', action: '06.50', end: '11.00' },
+  'SS-D6-V041': { start: '03.50', action: '06.00', end: '10.00' },
+  'SS-D6-V042': { start: '03.50', action: '05.50', end: '09.50' },
 };
 
 const AUTH_OWNER = '/tmp/auth-owner.json';
@@ -407,13 +407,13 @@ async function captureV036(recordingsDir: string) {
 
   // 1. START state: Settled Student Profile
   await page.goto(`${BASE_URL}/dashboard/students/${child!.id}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('h1, h2', { timeout: 10000 });
-  await page.waitForTimeout(2500);
+  await page.waitForSelector('h1', { timeout: 10000 });
+  await page.waitForTimeout(3000);
 
-  // 2. ACTION: Edit medical / allergy notes
-  const editBtn = page.locator('button:has-text("Edit")').first();
-  if (await editBtn.count() > 0) {
-    await editBtn.click();
+  // 2. ACTION: Edit medical / allergy notes in Student Details panel
+  const editDetailsBtn = page.locator('div:has-text("Student details") >> button:has-text("Edit")').first();
+  if (await editDetailsBtn.count() > 0) {
+    await editDetailsBtn.click();
     await page.waitForTimeout(1000);
     const notesInput = page.locator('textarea[placeholder*="Allergies"]').first();
     if (await notesInput.count() > 0) {
@@ -453,9 +453,9 @@ async function captureV037(recordingsDir: string) {
   });
   const page = await context.newPage();
 
-  // 1. START state: Student profile as Front Desk
+  // 1. START state: Settled Student profile as Front Desk
   await page.goto(`${BASE_URL}/dashboard/students/${child!.id}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('h1, h2', { timeout: 10000 });
+  await page.waitForSelector('h1', { timeout: 10000 });
   await page.waitForTimeout(3500);
 
   // 2. ACTION: Add Progress Note
@@ -465,36 +465,40 @@ async function captureV037(recordingsDir: string) {
     await page.waitForTimeout(800);
   }
 
-  const progressChip = page.locator('button:has-text("Progress")').first();
+  const formContainer = page.locator('div.border-t');
+  const progressChip = formContainer.locator('button:has-text("Progress")').first();
   if (await progressChip.count() > 0) {
     await progressChip.click();
     await page.waitForTimeout(500);
   }
 
-  const subjectSelect = page.locator('select').first();
+  const subjectSelect = formContainer.locator('select').first();
   if (await subjectSelect.count() > 0) {
     await subjectSelect.selectOption('Homework Help');
     await page.waitForTimeout(500);
   }
 
-  const ratingChip = page.locator('button:has-text("Good")').first();
+  const ratingChip = formContainer.locator('button:has-text("Good")').first();
   if (await ratingChip.count() > 0) {
     await ratingChip.click();
     await page.waitForTimeout(500);
   }
 
-  const noteContent = page.locator('textarea').first();
+  const noteContent = formContainer.locator('textarea').first();
   if (await noteContent.count() > 0) {
     await noteContent.fill('Completed Year 3 fractions worksheet with high accuracy. Solid grasp of equivalent denominators.');
   }
+  await page.waitForTimeout(800);
 
-  const postBtn = page.locator('button:has-text("Save Note")').first();
+  const postBtn = formContainer.locator('button:has-text("Save Note")').first();
   if (await postBtn.count() > 0) {
     await postBtn.click();
   }
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(2500);
 
   // 3. END state: Progress Timeline showing the newly posted note
+  await page.goto(`${BASE_URL}/dashboard/students/${child!.id}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('h1', { timeout: 10000 });
   await page.waitForTimeout(4000);
 
   await page.close();
@@ -674,6 +678,16 @@ async function captureV040(recordingsDir: string) {
 
 async function captureV041(recordingsDir: string) {
   console.log('\n--- [CAPTURE] SS-D6-V041: Adjusting Attendance Arrival Timelogs ---');
+  const org = await db.query.organisations.findFirst({ where: eq(organisations.slug, 'oakridge-learning') });
+  const child = await db.query.children.findFirst({
+    where: and(eq(children.firstName, 'Lucas'), eq(children.lastName, 'Walker'), eq(children.organisationId, org!.id)),
+  });
+  if (child) {
+    await db.update(bookingAttendees)
+      .set({ checkInAt: new Date('2026-09-08T17:42:00.000Z'), checkOutAt: null, attendanceStatus: 'present' })
+      .where(eq(bookingAttendees.childId, child.id));
+  }
+
   const browser = await chromium.launch({
     executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     headless: true,
@@ -685,24 +699,21 @@ async function captureV041(recordingsDir: string) {
   });
   const page = await context.newPage();
 
-  // 1. START state: Settled on /dashboard/attendance
-  await page.goto(`${BASE_URL}/dashboard/attendance`, { waitUntil: 'domcontentloaded' });
+  // 1. START state: Settled on /dashboard/attendance with Tuesday Sep 8 roster
+  await page.goto(`${BASE_URL}/dashboard/attendance?date=2026-09-08`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
 
-  // 2. ACTION: Adjust arrival timelog on attendee card
-  const checkInBtn = page.locator('button:has-text("Check In")').first();
-  if (await checkInBtn.count() > 0) {
-    await checkInBtn.click();
-    await page.waitForTimeout(1000);
-  }
-
+  // 2. ACTION: Adjust arrival timelog on attendee card from 16:42 to 16:30
   const timeInput = page.locator('input[type="time"]').first();
   if (await timeInput.count() > 0) {
-    await timeInput.fill('15:40');
+    await timeInput.focus();
     await page.waitForTimeout(500);
+    await timeInput.fill('16:30');
+    await timeInput.dispatchEvent('change');
+    await page.waitForTimeout(800);
     await timeInput.blur();
   }
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(2500);
 
   // 3. END state: Settled attendance register showing adjusted timelog
   await page.waitForTimeout(4000);
@@ -721,23 +732,29 @@ async function captureV042(recordingsDir: string) {
   const context = await browser.newContext({
     storageState: AUTH_FRONT_DESK,
     viewport: { width: 1440, height: 900 },
+    acceptDownloads: true,
     recordVideo: { dir: recordingsDir, size: { width: 1440, height: 900 } },
   });
   const page = await context.newPage();
 
-  // 1. START state: Settled on /dashboard/attendance
-  await page.goto(`${BASE_URL}/dashboard/attendance`, { waitUntil: 'domcontentloaded' });
+  // 1. START state: Settled on /dashboard/attendance on Tuesday Sep 8
+  await page.goto(`${BASE_URL}/dashboard/attendance?date=2026-09-08`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
 
-  // 2. ACTION: Hover / Click Export CSV button
+  // 2. ACTION: Decisive interaction with Export CSV button
   const exportBtn = page.locator('a:has-text("Export CSV")').first();
   if (await exportBtn.count() > 0) {
     await exportBtn.hover();
     await page.waitForTimeout(800);
-    await exportBtn.click();
-    await page.waitForTimeout(1000);
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      exportBtn.click(),
+    ]);
+    const downloadPath = `/tmp/${download.suggestedFilename()}`;
+    await download.saveAs(downloadPath);
+    console.log(`[DOWNLOAD] Saved export to ${downloadPath} (${fs.statSync(downloadPath).size} bytes)`);
   }
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(2000);
 
   // 3. END state: Settled attendance register with export action complete
   await page.waitForTimeout(4000);
@@ -777,6 +794,12 @@ async function runProduction() {
     : ALL_ASSET_IDS;
 
   if (isContactSheetOnly) {
+    for (const id of ALL_ASSET_IDS) {
+      const mp4Path = path.join(OUT_VIDEOS, `${id}.mp4`);
+      if (fs.existsSync(mp4Path)) {
+        extractRepresentativeFrames(id, mp4Path);
+      }
+    }
     await generateVideoContactSheet();
     return;
   }
@@ -821,6 +844,14 @@ async function runProduction() {
 
     const mp4Path = path.join(OUT_VIDEOS, `${assetId}.mp4`);
     extractRepresentativeFrames(assetId, mp4Path);
+  }
+
+  // Also re-extract V036 if V036 was not re-recorded
+  if (!targetAssetIds.includes('SS-D6-V036')) {
+    const v36Mp4 = path.join(OUT_VIDEOS, 'SS-D6-V036.mp4');
+    if (fs.existsSync(v36Mp4)) {
+      extractRepresentativeFrames('SS-D6-V036', v36Mp4);
+    }
   }
 
   await generateVideoContactSheet();
