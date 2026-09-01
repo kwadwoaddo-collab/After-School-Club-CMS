@@ -158,25 +158,62 @@ Total changed files across 211 commits: **885 files**.
 
 ---
 
-## 9. Supply Chain & Dependency Forensics
+## 9. Supply Chain & Critical Dependency Security Forensics
 
-`npm audit` reports **15 vulnerabilities (6 moderate, 7 high, 2 critical)**. All 9 High and Critical advisories were individually evaluated:
+`npm audit` reports **15 vulnerabilities (6 moderate, 7 high, 2 critical)**.
 
-| Package | Severity | Chain / Usage | Relevance to Deployed CMS | Release Recommendation |
-|---|---|---|---|---|
-| `@auth/core` | Critical | Transitive (`next-auth`) | Homoglyph email / malformed Bearer headers / OAuth cookies. CMS uses credentials & custom magic link. | **ACCEPTED NON-BLOCKING** |
-| `next-auth` | Critical | Direct | Existence-based auth check failure open. CMS uses explicit `requireApiAuth` / `requirePermission` fail-closed gates. | **ACCEPTED NON-BLOCKING** |
-| `next` | High | Direct | Server Action DoS / SVG optimization. Mitigated by private deployment & auth middleware. | **ACCEPTED NON-BLOCKING** |
-| `nodemailer` | High | Direct | SMTP injection. CMS uses Resend HTTP API in production. | **ACCEPTED NON-BLOCKING** |
-| `brace-expansion` | High | Transitive (Dev) | Build-time glob expansion. Dev/build only; not runtime executable. | **ACCEPTED NON-BLOCKING** |
-| `fast-uri` | High | Transitive | URI authority delimiter. Transitive dependency. | **ACCEPTED NON-BLOCKING** |
-| `js-yaml` | High | Transitive (Dev) | YAML merge keys. Build-time only. | **ACCEPTED NON-BLOCKING** |
-| `postcss` | High | Transitive (`next`) | Source map path traversal. Build-time only. | **ACCEPTED NON-BLOCKING** |
-| `sharp` | High | Transitive (`next`) | Transitive libvips parsing. Transitive dependency. | **ACCEPTED NON-BLOCKING** |
+### 9.1 Critical Advisory Forensic Assessment
 
-- **Must-Remediate Vulnerabilities:** **0**
+The 2 critical package entries in npm audit represent **2 distinct underlying critical advisories**:
+
+#### Advisory 1: `GHSA-7rqj-j65f-68wh` (CVE-2026-3841)
+- **Title:** Auth.js: Email normalizer validates the address before Unicode normalization, allowing a homoglyph @ bypass
+- **Affected Packages / Versions:** `@auth/core` (<0.41.3, installed `0.41.2`), `next-auth` (>=5.0.0-beta.1 <=5.0.0-beta.31, installed `5.0.0-beta.31`)
+- **Exploit Preconditions:** Attacker submits email containing Unicode homoglyph `@` characters (e.g. `\uFF20` fullwidth @) to the built-in Auth.js `EmailProvider` / `nodemailer` magic link provider, which validates pre-normalization and normalizes post-validation.
+- **CMS Reachability & Context:**
+  1. Staff authentication uses `CredentialsProvider` with bcrypt password hashing or hashed invite tokens (`staffInvites`).
+  2. Parent portal authentication does NOT use Auth.js / NextAuth; parents authenticate via custom `jose` HS256 JWTs (`src/lib/parent-auth.ts`).
+  3. PostgreSQL Drizzle queries execute exact binary string equality (`eq(users.email, credentials.email)`). PostgreSQL does not normalize Unicode homoglyphs to ASCII `@`, preventing account identity substitution.
+- **Mitigation Evidence:** Exact-string DB lookup; parent portal isolation; staff invite token hashing.
+- **Mitigation Intercepts Exploit Path:** **YES**
+- **Minimum Fixed Version:** `@auth/core@0.41.3` / `next-auth@5.0.0-beta.32` (Patch/Minor upgrade)
+- **Classification:** **`ACCEPTED — VULNERABLE PATH NOT REACHABLE`**
+
+#### Advisory 2: `GHSA-8fpg-xm3f-6cx3`
+- **Title:** Auth.js: Configuration errors can cause existence-based auth checks to fail open (auth object populated with an error)
+- **Affected Packages / Versions:** `next-auth` (>=5.0.0-beta.0 <=5.0.0-beta.31, installed `5.0.0-beta.31`)
+- **Exploit Preconditions:** An application relies on truthy existence checks on the return value of `auth()` (e.g. `if (await auth()) { ... }`). When an Auth.js configuration or provider error occurs, `auth()` returns `{ error: ... }` rather than `null`, causing naive checks to treat the request as authenticated.
+- **CMS Reachability & Context:**
+  1. CMS does NOT use bare `if (await auth())` checks anywhere in the codebase.
+  2. All protected server components, pages, and API endpoints route through `requireAuth()` or `requireApiAuth()` in `src/lib/require-auth.ts`, or `requirePermission()` in `src/lib/permissions.ts`.
+  3. `requireAuth()` explicitly checks `if (!session?.user?.id)` and redirects to `/login`.
+  4. `requireApiAuth()` explicitly checks `if (!session?.user?.id)` and returns `null` (401/403).
+  5. `requirePermission()` explicitly verifies `if (!session?.user)` followed by mandatory DB lookup `db.query.users.findFirst({ where: eq(users.id, session.user.id) })`.
+  6. An error object lacking `user.id` is rejected at the boundary and fails closed.
+- **Mitigation Evidence:** Deep property inspection (`session?.user?.id`) and secondary DB user resolution across all server gates.
+- **Mitigation Intercepts Exploit Path:** **YES**
+- **Minimum Fixed Version:** `next-auth@5.0.0-beta.32` (Patch/Minor upgrade)
+- **Classification:** **`ACCEPTED — EFFECTIVE MITIGATION VERIFIED`**
+
+### 9.2 High-Severity Sanity Check
+
+All 7 High advisories were independently reviewed:
+- **Runtime-Reachable with Verified Mitigations:** **2**
+  - `next` (App Router DoS / SSRF: mitigated by private hosting, CDN reverse proxy, and auth middleware).
+  - `nodemailer` (SMTP injection: mitigated by production Resend HTTP API usage).
+- **Build / Dev-Only:** **3**
+  - `brace-expansion` (Dev-only glob toolchain).
+  - `js-yaml` (Build-time YAML parsing).
+  - `postcss` (Build-time CSS compilation).
+- **Transitive with No Exercised Path:** **2**
+  - `fast-uri` (Transitive URI delimiter handling).
+  - `sharp` (Transitive image optimization).
+- **Reconsideration Required:** **0**
+
+### 9.3 Dependency Release Verdict
+- **Must-Remediate Findings:** **0**
 - **Security-Decision Required:** **0**
-- **Dependency Release Verdict:** **ACCEPTED NON-BLOCKING** (Carried forward for Next 16.3+ framework upgrade cycle).
+- **Overall Verdict:** **ACCEPTED NON-BLOCKING** (All 15 findings are accepted for the scheduled Next 16.3+ maintenance release).
 
 ---
 
