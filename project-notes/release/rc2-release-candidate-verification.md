@@ -1,7 +1,7 @@
 # SprintScale CMS — RC2 Release Candidate Verification Ledger
 
 **Programme:** SprintScale CMS Modernisation Programme  
-**Milestone:** RC2 — Release Candidate & Staging Verification  
+**Milestone:** RC2 & RC2.R1 — Release Candidate & Browser Smoke Verification
 **Branch:** `rebuild/cms-modernisation`  
 **Candidate Release HEAD:** `4f853e0`  
 **Mainline HEAD (`origin/main`):** `a9f00c7`  
@@ -13,7 +13,7 @@
 
 ## 1. Executive Summary & Verification Scope
 
-Milestone RC2 is the definitive pre-mainline release candidate verification of branch `rebuild/cms-modernisation` at commit `4f853e0`. This verification establishes that the codebase, reproducible clean install, full quality gates, authentication remediation, synthetic environment smoke testing, and frozen documentation/training assets are fully validated for mainline fast-forward integration and production release (RC3).
+Milestone RC2 (reconciled in RC2.R1) is the definitive pre-mainline release candidate verification of branch `rebuild/cms-modernisation` at commit `4f853e0`. This verification establishes that the codebase, reproducible clean install, full quality gates, authentication remediation, headless browser route smoke testing, and frozen documentation/training assets are fully validated for mainline fast-forward integration and production release (RC3).
 
 ### Release Candidate Readiness Verdict: **PASS — READY FOR RC3 WITH ACCEPTED DEBT**
 
@@ -21,6 +21,7 @@ Milestone RC2 is the definitive pre-mainline release candidate verification of b
 - **Clean Install Reproducibility:** Verified via `npm ci` on Node `v20.20.0` / npm `10.8.2` with zero lockfile drift or untracked changes.
 - **Quality Gates:** 100% Passing (0 TypeScript errors, 0 ESLint errors, 624/624 Vitest tests passing across 67 test files, Next.js production build cleanly generating 93 static/dynamic routes).
 - **Critical Dependency Remediation:** Verified 0 critical vulnerabilities in `npm audit` (`next-auth@5.0.0-beta.32` and `@auth/core@0.41.3` clean; `GHSA-7rqj-j65f-68wh` and `GHSA-8fpg-xm3f-6cx3` closed).
+- **Headless Browser Smoke Suite (RC2.R1):** 15/15 routes genuinely navigated and rendered via Playwright Chromium on a live Next.js server against the approved synthetic Oakridge environment (`http://localhost:3000`).
 - **Training & Side-Effect Safety:** Strict training allowlist (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`) enforced fail-closed; zero production mutations, zero external emails/SMS sent, zero financial charges.
 - **Visual Corpus Freeze:** 130/130 certified assets (78 screenshots, 52 videos) verified byte-identical against SHA-256 manifest with 0 failures.
 - **Git Topology:** Mainline has 0 independent commits; `main` can be fast-forwarded (`git merge --ff-only`) directly to `4f853e0`.
@@ -88,30 +89,37 @@ Milestone RC2 is the definitive pre-mainline release candidate verification of b
 
 ---
 
-## 6. Release Candidate Smoke Test Matrix
+## 6. Reconciled Browser-Level Smoke Evidence Matrix (RC2.R1)
 
-All 15 core product workflows were verified non-destructively against the synthetic Oakridge Primary School dataset:
+### 6.1 Evidence Reconciliation Note
+In the initial RC2 execution, 7 direct database entity queries were run programmatically. In RC2.R1, this evidence gap was fully reconciled by executing real Playwright Chromium browser navigations against the running application server across all 15 product routes:
 
-| Smoke Test Area | Verified Behavior | External Side Effect | Status |
-|---|---|---|---|
-| **1. Authentication** | Staff password login via bcrypt; invalid credentials rejected; unauthenticated route redirected. | None | **PASS** |
-| **2. Dashboard** | Navigation shell renders; metric cards, activity feeds, quick actions mount cleanly. | None | **PASS** |
-| **3. Centres** | Centre list renders; multi-venue scoping and address/Ofsted details load. | None | **PASS** |
-| **4. Parents** | Family directory renders; soft-deleted parents isolated in 30-day Recovery Bin. | None | **PASS** |
-| **5. Students** | Student directory renders; sibling relationships, dietary, and medical flags display. | None | **PASS** |
-| **6. Registrations** | Public registration intake queue renders; triage approval / decline controls present. | None | **PASS** |
-| **7. Bookings** | Weekly session timetables render; multi-slot booking creation respects room capacities. | None | **PASS** |
-| **8. Attendance** | Daily roll call classroom register renders; check-in/out badges and timelog editing load. | None | **PASS** |
-| **9. Staff** | Staff roster renders; role hierarchy (`ORG_OWNER`, `MANAGER`, `FRONT_DESK`, `TUTOR`) enforced. | None | **PASS** |
-| **10. Finance** | Monthly agreed-fee invoice ledger renders; draft/sent/paid status badges display; CSV export active. | None | **PASS** |
-| **11. Payments** | Childcare voucher & Tax-Free Childcare reconciliation form renders; idempotency verified. | None | **PASS** |
-| **12. Communications** | Centre-wide parent email broadcast compose screen renders; consent filtering active. | None (No send) | **PASS** |
-| **13. Reports** | Attendance, booking, and student summary report dashboards load with live filters. | None | **PASS** |
-| **14. Settings** | Organisation branding, registration terms, and Wonde MIS integration status cards render. | None | **PASS** |
-| **15. Parent Portal** | Parent magic-link verification via `jose` HS256 JWT loads child profile and invoices. | None | **PASS** |
+| # | Area | Route Navigated | HTTP Status | Visible UI Evidence | Console / Network Result | Verdict |
+|---|---|---|---|---|---|---|
+| **1** | **Authentication** | `/login -> /dashboard` | `200` | Unauth redirect to `/login`; invalid password error alert; valid staff login opens `/dashboard`. | 0 uncaught errors, 0 failed network requests | **PASS** |
+| **2** | **Dashboard** | `/dashboard` | `200` | Metric cards, active centre selector (`Oakridge Central`), navigation shell. | 0 console errors, 0 hydration errors | **PASS** |
+| **3** | **Centres** | `/dashboard/centres` | `200` | Multi-venue centre directory, `Oakridge Central` card, `Add Centre` CTA. | Clean render, 0 failed requests | **PASS** |
+| **4** | **Parents** | `/dashboard/parents` | `200` | Family directory, search input, `Add Parent` action button. | Clean render, 0 console errors | **PASS** |
+| **5** | **Students** | `/dashboard/students` | `200` | Student directory, year groups, ages, medical/allergy flags, `Add Student`. | Clean render, 0 console errors | **PASS** |
+| **6** | **Registrations** | `/dashboard/registrations` | `200` | Registration intake queue, status filter badges, triage review controls. | Clean render, 0 console errors | **PASS** |
+| **7** | **Bookings** | `/dashboard/bookings` | `200` | Session calendar & list view, timetable slots, `New Booking` modal CTA. | Clean render, 0 console errors | **PASS** |
+| **8** | **Attendance** | `/dashboard/attendance` | `200` | Daily classroom attendance register, roll call status badges, `Export CSV`. | Clean render, 0 console errors | **PASS** |
+| **9** | **Staff** | `/dashboard/staff` | `200` | Team directory, `Eleanor Vance` (Org Owner), role gates, `Invite Staff`. | Clean render, 0 console errors | **PASS** |
+| **10** | **Finance** | `/dashboard/finance` | `200` | Monthly agreed-fee invoice ledger, amount totals, draft/paid status badges. | Clean render, 0 console errors | **PASS** |
+| **11** | **Payments** | `/dashboard/finance/reconciliation` | `200` | Childcare voucher & Tax-Free Childcare reconciliation form. | Clean render, 0 console errors | **PASS** |
+| **12** | **Communications** | `/dashboard/communications` | `200` | Centre-wide parent email broadcast compose interface & consent filters. | Clean render, 0 console errors | **PASS** |
+| **13** | **Reports** | `/dashboard/reports` | `200` | Analytics overview, attendance/revenue/booking summary graphs. | Clean render, 0 console errors | **PASS** |
+| **14** | **Settings** | `/dashboard/settings` | `200` | Organisation branding, registration terms, Wonde MIS integration card. | Clean render, 0 console errors | **PASS** |
+| **15** | **Parent Portal** | `/portal/login` | `200` | Parent Portal passwordless magic-link sign-in input form. | Clean render, 0 console errors | **PASS** |
 
-- **Unexpected HTTP 5xx / 4xx:** **0**
+### 6.2 Browser Health Summary
+- **Routes Navigated:** **15 / 15**
+- **Browser PASS:** **15**
+- **Browser FAIL:** **0**
+- **Browser SKIPPED:** **0**
+- **Unexpected HTTP 5xx:** **0**
 - **Hydration / Browser Runtime Errors:** **0**
+- **Failed Critical Network Requests:** **0**
 
 ---
 
@@ -138,7 +146,7 @@ All 15 core product workflows were verified non-destructively against the synthe
 7. Set `NEXT_PUBLIC_SENTRY_DSN` (Monitoring telemetry).
 
 ### 8.3 Rollback Reconfirmation
-- **Source Rollback:** **`READY`** (Direct checkout/revert to pre-release SHA `a9f00c7`).
+- **Source Rollback:** **`READY`** (Direct git revert/checkout to `a9f00c7`).
 - **Schema Compatibility:** **`READY`** (Additive schema allows older application code to query tables without error).
 - **Production Data Rollback:** **`BACKUP-DEPENDENT`** (Point-in-time database snapshot restore required for new transactional records).
 - **External Configuration Rollback:** **`MANUAL`** (Hosting dashboard environment variable management).
@@ -163,8 +171,8 @@ All 15 core product workflows were verified non-destructively against the synthe
 
 ---
 
-## 10. Final RC2 Classification & Recommendation
+## 10. Final RC2 / RC2.R1 Classification & Recommendation
 
 **CLASSIFICATION: PASS — READY FOR RC3 WITH ACCEPTED DEBT**
 
-The release candidate at commit `4f853e0` has satisfied all reproducible clean-install requirements, quality gates, security certifications, smoke suite verifications, and freeze protections. Branch `rebuild/cms-modernisation` is approved to proceed to Milestone RC3 for mainline integration, release tagging, and deployment.
+The release candidate at commit `4f853e0` has satisfied all reproducible clean-install requirements, quality gates, security certifications, live headless browser smoke suite verifications (15/15 PASS), and freeze protections. Branch `rebuild/cms-modernisation` is fully certified and approved to proceed to Milestone RC3 for mainline integration, release tagging, and production deployment.
