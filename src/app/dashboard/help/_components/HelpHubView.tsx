@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Compass,
   CalendarCheck,
@@ -144,8 +145,9 @@ export default function HelpHubView({
           {recommendedGuides.slice(0, 4).map(guide => {
             const Icon = CATEGORY_ICONS[guide.category] || FileText;
             return (
-              <div
+              <Link
                 key={guide.id}
+                href={`/dashboard/help/guides/${guide.slug}`}
                 className="group relative flex flex-col justify-between p-5 rounded-lg border border-border bg-surface hover:border-accent/40 hover:shadow-md transition-all duration-200"
               >
                 <div className="space-y-2.5">
@@ -170,11 +172,12 @@ export default function HelpHubView({
 
                 <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-text-muted">
                   <span className="truncate max-w-[140px]">{guide.audience}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-accent/80">
-                    Guide
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-accent/80 group-hover:text-accent transition-colors flex items-center gap-1">
+                    <span>Read Guide</span>
+                    <ArrowRight className="size-3 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
                   </span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -195,16 +198,17 @@ export default function HelpHubView({
           {commonTaskGuides.map(guide => {
             const Icon = CATEGORY_ICONS[guide.category] || FileText;
             return (
-              <div
+              <Link
                 key={`common-${guide.id}`}
-                className="flex items-start gap-4 p-4 rounded-lg border border-border bg-surface hover:border-border-strong hover:bg-surface-elevated transition-colors"
+                href={`/dashboard/help/guides/${guide.slug}`}
+                className="flex items-start gap-4 p-4 rounded-lg border border-border bg-surface hover:border-accent/40 hover:bg-surface-elevated transition-all group"
               >
-                <div className="p-2.5 rounded-lg bg-page text-text-secondary shrink-0 mt-0.5">
+                <div className="p-2.5 rounded-lg bg-page text-text-secondary shrink-0 mt-0.5 group-hover:text-accent transition-colors">
                   <Icon className="size-4 text-accent" aria-hidden="true" />
                 </div>
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-text truncate">
+                    <h3 className="text-sm font-semibold text-text group-hover:text-accent transition-colors truncate">
                       {guide.title}
                     </h3>
                     <span className="text-[11px] text-text-muted whitespace-nowrap">
@@ -215,7 +219,7 @@ export default function HelpHubView({
                     {guide.description}
                   </p>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -261,28 +265,29 @@ export default function HelpHubView({
                     </p>
                   </div>
 
-                  {/* Expandable Guide List (Option B: No Dead Links) */}
+                  {/* Expandable Guide List */}
                   {isExpanded && (
                     <div className="mt-4 pt-3 border-t border-border-subtle space-y-2 animate-in fade-in duration-150">
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
                         Included Guides
                       </p>
-                      <ul className="space-y-1.5 text-xs">
+                      <ul className="space-y-1 text-xs">
                         {cat.guides.map(g => (
-                          <li
-                            key={g.id}
-                            className="flex items-center justify-between gap-2 p-1.5 rounded-md hover:bg-page transition-colors"
-                          >
-                            <span className="text-text truncate">{g.title}</span>
-                            <span className="text-[11px] text-text-muted whitespace-nowrap">
-                              {g.readingTimeMinutes}m
-                            </span>
+                          <li key={g.id}>
+                            <Link
+                              href={`/dashboard/help/guides/${g.slug}`}
+                              className="flex items-center justify-between gap-2 p-1.5 rounded-md hover:bg-page transition-colors group"
+                            >
+                              <span className="text-text group-hover:text-accent font-medium truncate">
+                                {g.title}
+                              </span>
+                              <span className="text-[11px] text-text-muted whitespace-nowrap">
+                                {g.readingTimeMinutes}m
+                              </span>
+                            </Link>
                           </li>
                         ))}
                       </ul>
-                      <p className="text-[11px] italic text-text-muted pt-1">
-                        Interactive guide reader coming soon.
-                      </p>
                     </div>
                   )}
                 </div>
@@ -308,7 +313,7 @@ export default function HelpHubView({
         </div>
       </section>
 
-      {/* 6. Forthcoming Media Modules (Video & Manual Teasers) */}
+      {/* 6. Forthcoming Media Modules & Master Manual */}
       <section aria-label="Upcoming Training Features" className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
         {/* Video Library Teaser */}
         <div className="rounded-xl border border-dashed border-border bg-surface/50 p-6 flex flex-col justify-between space-y-4">
@@ -337,15 +342,15 @@ export default function HelpHubView({
           </div>
         </div>
 
-        {/* Master Manual Teaser */}
-        <div className="rounded-xl border border-dashed border-border bg-surface/50 p-6 flex flex-col justify-between space-y-4">
+        {/* Master Manual Card */}
+        <div className="rounded-xl border border-border bg-surface p-6 flex flex-col justify-between space-y-4 hover:border-accent/40 hover:shadow-xs transition-all">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="p-2.5 rounded-lg bg-page text-text-muted">
-                <BookOpen className="size-5 text-accent" aria-hidden="true" />
+              <span className="p-2.5 rounded-lg bg-accent-soft text-accent">
+                <BookOpen className="size-5" aria-hidden="true" />
               </span>
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent-soft/50 text-accent border border-accent/20">
-                Coming Soon
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-surface-elevated text-text-secondary border border-border">
+                5 Chapters
               </span>
             </div>
             <div>
@@ -358,9 +363,14 @@ export default function HelpHubView({
               </p>
             </div>
           </div>
-          <div className="text-xs text-text-muted flex items-center gap-1.5 pt-2 border-t border-border-subtle">
-            <FileText className="size-3.5" aria-hidden="true" />
-            <span>Interactive chapter reader coming soon</span>
+          <div className="pt-2 border-t border-border-subtle">
+            <Link
+              href="/dashboard/help/guides/master-system-foundations"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80 transition-colors group"
+            >
+              <span>Open User Manual</span>
+              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>

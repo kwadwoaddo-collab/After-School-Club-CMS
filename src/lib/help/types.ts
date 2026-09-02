@@ -11,6 +11,13 @@
 export const CMS_STAFF_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'] as const;
 export type HelpStaffRole = (typeof CMS_STAFF_ROLES)[number];
 
+export const STAFF_ROLE_LABELS: Record<HelpStaffRole, string> = {
+  ORG_OWNER: 'Organisation Owner',
+  MANAGER: 'Centre Manager',
+  FRONT_DESK: 'Front Desk',
+  TUTOR: 'Tutor / Club Leader',
+};
+
 /**
  * Training Content Audience / Persona.
  * PARENT is a training audience / portal persona only, NEVER an authenticated CMS staff RBAC role.

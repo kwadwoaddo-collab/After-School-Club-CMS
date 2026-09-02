@@ -101,6 +101,29 @@ export function getGuideBySlug(slug: string): { meta: HelpGuideMetadata; content
 }
 
 /**
+ * Deterministic previous / next navigation derived from category-local guide order.
+ * First guide in category has prev: null; last guide in category has next: null.
+ */
+export function getGuideNavigation(slug: string): {
+  prev: HelpGuideMetadata | null;
+  next: HelpGuideMetadata | null;
+} {
+  const guide = HELP_GUIDES.find(g => g.slug === slug);
+  if (!guide) {
+    return { prev: null, next: null };
+  }
+  const catGuides = getGuidesByCategory(guide.category);
+  const index = catGuides.findIndex(g => g.slug === slug);
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
+  return {
+    prev: index > 0 ? catGuides[index - 1] : null,
+    next: index < catGuides.length - 1 ? catGuides[index + 1] : null,
+  };
+}
+
+/**
  * Get all 52 certified micro-videos.
  */
 export function getAllVideos(): HelpVideoMetadata[] {
