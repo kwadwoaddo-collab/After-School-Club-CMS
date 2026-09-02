@@ -4,8 +4,9 @@ import { logger } from '@/lib/logger';
 
 
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Menu, LogOut, ChevronDown, Loader2, Sun, Cloud, Moon } from 'lucide-react';
+import { Search, Bell, Menu, LogOut, ChevronDown, Loader2, Sun, Cloud, Moon, CircleHelp } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { useSidebar } from './SidebarContext';
 
@@ -486,10 +487,21 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                 </span>
                             </div>
                             <div className="p-2">
+                                <Link
+                                    href="/dashboard/help"
+                                    onClick={() => setShowUserMenu(false)}
+                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-sm text-text-secondary hover:text-text hover:bg-page transition-colors text-sm font-medium mb-1"
+                                    role="menuitem"
+                                >
+                                    <CircleHelp className="w-4 h-4 text-text-muted" />
+                                    Help & Training
+                                </Link>
+                                <div className="h-px bg-border-subtle my-1" />
                                 <button
                                     suppressHydrationWarning
                                     onClick={() => signOut({ callbackUrl: '/login' })}
                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-danger hover:bg-danger-soft transition-colors text-sm font-medium group"
+                                    role="menuitem"
                                 >
                                     <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                     Sign Out
