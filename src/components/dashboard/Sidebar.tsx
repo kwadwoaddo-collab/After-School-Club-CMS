@@ -48,15 +48,15 @@ interface SidebarProps {
 const ROLE_NAV: Record<string, string[]> = {
     // N-1 (Milestone 3N): Availability added to ORG_OWNER and MANAGER. The page gate
     // permits ORG_OWNER and MANAGER; the sidebar had no entry — no UI path existed.
-    ORG_OWNER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
-    MANAGER: ['Dashboard', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications', 'Availability'],
+    ORG_OWNER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
+    MANAGER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications', 'Availability'],
     // A-1 (Milestone 3M — orchestrator decision, Option A): Parents added to FRONT_DESK.
     // The /dashboard/parents page gate explicitly permits FRONT_DESK; this sidebar entry
     // was inconsistent. Follows the same policy as Milestone 3L A-2 (Registrations).
-    FRONT_DESK: ['Dashboard', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations'],
+    FRONT_DESK: ['Dashboard', 'Help & Training', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations'],
     // Milestone 3K (A-1 Option C — orchestrator decision 2026-08-24): TUTOR does not
     // have access to the Incidents module. Removed from this ROLE_NAV entry.
-    TUTOR: ['Dashboard', 'Attendance', 'Kiosk'],
+    TUTOR: ['Dashboard', 'Help & Training', 'Attendance', 'Kiosk'],
 };
 
 const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
@@ -136,6 +136,7 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
 
     const navItems = [
         { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard' },
+        { name: 'Help & Training', icon: CircleHelp, href: '/dashboard/help' },
         { name: 'Centres', icon: School, href: '/dashboard/centres' },
         { name: 'Team', icon: UserCircle2, href: '/dashboard/staff' },
         { name: 'Communications', icon: MessageSquare, href: '/dashboard/communications' },
@@ -392,37 +393,6 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
                     {/* Utility Area & User Profile Footer */}
                     <div className="mt-auto pt-4 flex-shrink-0 flex flex-col">
                         <div className="h-px bg-border-subtle mb-4" />
-
-                        {/* Help & Training Utility */}
-                        <div className="relative group/tooltip mb-2">
-                            <Link
-                                href="/dashboard/help"
-                                onClick={() => {
-                                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-                                        setCollapsed(true);
-                                    }
-                                }}
-                                className={`
-                                    flex items-center gap-2.5 px-3 py-2 rounded-md
-                                    text-sm font-medium text-text-secondary hover:text-text hover:bg-page
-                                    transition-colors
-                                    ${pathname.startsWith('/dashboard/help') ? 'text-accent bg-accent-soft' : ''}
-                                    ${collapsed ? 'w-10 h-10 justify-center px-0 mx-auto' : 'w-full'}
-                                `}
-                            >
-                                <CircleHelp className="size-4 shrink-0" aria-hidden="true" />
-                                {!collapsed && (
-                                    <span>
-                                        Help & Training
-                                    </span>
-                                )}
-                            </Link>
-                            {collapsed && (
-                                <div className="absolute left-full ml-4 top-1/2 translate-y-[calc(-50%+4px)] group-hover/tooltip:-translate-y-1/2 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-all duration-200 delay-200 z-[100] px-2.5 py-1.5 bg-text text-surface text-xs font-medium rounded-sm shadow-[var(--shadow-popover)] whitespace-nowrap hidden lg:block">
-                                    Help & Training
-                                </div>
-                            )}
-                        </div>
 
                         {/* Share Portals Utility */}
                         {(allowedActions.includes('booking-link') || allowedActions.includes('registration-link')) && (
