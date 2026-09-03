@@ -104,6 +104,7 @@ export interface HelpLearningPathMetadata {
   description: string;
   persona: HelpAudience;
   audienceLabel: string;
+  primaryStaffRole?: HelpStaffRole; // Canonical primary CMS staff role corresponding to this path
   recommendedStaffRoles: HelpStaffRole[]; // Role recommendation mapping
   isStaffReferenceOnly?: boolean; // True for parent-portal (staff reference only, NOT staff RBAC)
   order: number;

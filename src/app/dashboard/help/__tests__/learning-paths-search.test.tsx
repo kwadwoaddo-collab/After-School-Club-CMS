@@ -258,8 +258,8 @@ describe('PM-1F — Role Learning Paths & Help Search Automated Suite', () => {
     });
   });
 
-  // F. View Component Rendering
-  describe('F. View Component Rendering', () => {
+  // F. View Component Rendering & Role Recommendation Semantics (PM-1F.R1)
+  describe('F. View Component Rendering & Role Recommendation Semantics (PM-1F.R1)', () => {
     it('renders LearningPathsListView with all 5 paths and role recommendation', () => {
       const paths = getAllLearningPaths();
       const recommendedPath = getLearningPathForRole('MANAGER');
@@ -280,6 +280,157 @@ describe('PM-1F — Role Learning Paths & Help Search Automated Suite', () => {
       expect(html).toContain('Front Desk: Reception, Intake &amp; Daily Administration');
       expect(html).toContain('Tutor &amp; Club Leader: Session Delivery, Attendance &amp; Welfare');
       expect(html).toContain('Parent Portal: Staff Reference &amp; Family Assistance');
+    });
+
+    it('for ORG_OWNER, exactly ONE path displays YOUR ROLE (organisation-owner)', () => {
+      const paths = getAllLearningPaths();
+      const recommendedPath = getLearningPathForRole('ORG_OWNER');
+
+      const html = renderToStaticMarkup(
+        <LearningPathsListView
+          userRole="ORG_OWNER"
+          roleLabel="Organisation Owner"
+          paths={paths}
+          recommendedPath={recommendedPath}
+        />
+      );
+
+      // Exactly one "Your Role" badge should appear
+      const yourRoleMatches = html.match(/Your Role/g);
+      expect(yourRoleMatches).not.toBeNull();
+      expect(yourRoleMatches!.length).toBe(1);
+
+      // Staff Reference should appear for Parent Portal
+      expect(html).toContain('Staff Reference');
+    });
+
+    it('for MANAGER, exactly ONE path displays YOUR ROLE (centre-manager)', () => {
+      const paths = getAllLearningPaths();
+      const recommendedPath = getLearningPathForRole('MANAGER');
+
+      const html = renderToStaticMarkup(
+        <LearningPathsListView
+          userRole="MANAGER"
+          roleLabel="Centre Manager"
+          paths={paths}
+          recommendedPath={recommendedPath}
+        />
+      );
+
+      const yourRoleMatches = html.match(/Your Role/g);
+      expect(yourRoleMatches).not.toBeNull();
+      expect(yourRoleMatches!.length).toBe(1);
+    });
+
+    it('for FRONT_DESK, exactly ONE path displays YOUR ROLE (front-desk)', () => {
+      const paths = getAllLearningPaths();
+      const recommendedPath = getLearningPathForRole('FRONT_DESK');
+
+      const html = renderToStaticMarkup(
+        <LearningPathsListView
+          userRole="FRONT_DESK"
+          roleLabel="Front Desk"
+          paths={paths}
+          recommendedPath={recommendedPath}
+        />
+      );
+
+      const yourRoleMatches = html.match(/Your Role/g);
+      expect(yourRoleMatches).not.toBeNull();
+      expect(yourRoleMatches!.length).toBe(1);
+    });
+
+    it('for TUTOR, exactly ONE path displays YOUR ROLE (tutor-club-leader)', () => {
+      const paths = getAllLearningPaths();
+      const recommendedPath = getLearningPathForRole('TUTOR');
+
+      const html = renderToStaticMarkup(
+        <LearningPathsListView
+          userRole="TUTOR"
+          roleLabel="Tutor / Club Leader"
+          paths={paths}
+          recommendedPath={recommendedPath}
+        />
+      );
+
+      const yourRoleMatches = html.match(/Your Role/g);
+      expect(yourRoleMatches).not.toBeNull();
+      expect(yourRoleMatches!.length).toBe(1);
+    });
+
+    it('when ORG_OWNER views organisation-owner detail, shows Recommended for your role', () => {
+      const path = getLearningPathBySlug('organisation-owner')!;
+      const nav = getLearningPathNavigation('organisation-owner');
+
+      const html = renderToStaticMarkup(
+        <LearningPathDetailView
+          path={path}
+          userRole="ORG_OWNER"
+          roleLabel="Organisation Owner"
+          resolvedSections={[]}
+          prevPath={nav.prev}
+          nextPath={nav.next}
+        />
+      );
+
+      expect(html).toContain('Recommended for your role (Organisation Owner)');
+    });
+
+    it('when ORG_OWNER views centre-manager detail, shows actual audience and NOT Recommended for your role', () => {
+      const path = getLearningPathBySlug('centre-manager')!;
+      const nav = getLearningPathNavigation('centre-manager');
+
+      const html = renderToStaticMarkup(
+        <LearningPathDetailView
+          path={path}
+          userRole="ORG_OWNER"
+          roleLabel="Organisation Owner"
+          resolvedSections={[]}
+          prevPath={nav.prev}
+          nextPath={nav.next}
+        />
+      );
+
+      expect(html).not.toContain('Recommended for your role');
+      expect(html).toContain('Audience: Centre Managers &amp; Site Supervisors');
+    });
+
+    it('when ORG_OWNER views front-desk detail, shows actual audience and NOT Recommended for your role', () => {
+      const path = getLearningPathBySlug('front-desk')!;
+      const nav = getLearningPathNavigation('front-desk');
+
+      const html = renderToStaticMarkup(
+        <LearningPathDetailView
+          path={path}
+          userRole="ORG_OWNER"
+          roleLabel="Organisation Owner"
+          resolvedSections={[]}
+          prevPath={nav.prev}
+          nextPath={nav.next}
+        />
+      );
+
+      expect(html).not.toContain('Recommended for your role');
+      expect(html).toContain('Audience: Front Desk &amp; Reception Administrators');
+    });
+
+    it('when staff views parent-portal detail, shows Staff Reference for Parent Support', () => {
+      const path = getLearningPathBySlug('parent-portal')!;
+      const nav = getLearningPathNavigation('parent-portal');
+
+      const html = renderToStaticMarkup(
+        <LearningPathDetailView
+          path={path}
+          userRole="ORG_OWNER"
+          roleLabel="Organisation Owner"
+          resolvedSections={[]}
+          prevPath={nav.prev}
+          nextPath={nav.next}
+        />
+      );
+
+      expect(html).not.toContain('Recommended for your role');
+      expect(html).toContain('Staff Reference for Parent Support');
     });
 
     it('renders LearningPathDetailView with sections, guide and video cards', () => {

@@ -210,27 +210,21 @@ export function getLearningPathBySlug(slug: string): HelpLearningPathMetadata | 
 }
 
 /**
- * Resolve the recommended learning path for an authenticated staff role.
+ * Resolve the authoritative primary learning path for an authenticated staff role.
  * Mapping:
  * ORG_OWNER -> Organisation Owner
  * MANAGER -> Centre Manager
  * FRONT_DESK -> Front Desk
  * TUTOR -> Tutor / Club Leader
+ * Parent Portal is never returned as a primary staff role path.
  */
-export function getLearningPathForRole(role: string): HelpLearningPathMetadata | null {
+export function getPrimaryLearningPathForRole(role: string): HelpLearningPathMetadata | null {
   const normalized = role.toUpperCase() as HelpStaffRole;
-  switch (normalized) {
-    case 'ORG_OWNER':
-      return getLearningPathBySlug('organisation-owner');
-    case 'MANAGER':
-      return getLearningPathBySlug('centre-manager');
-    case 'FRONT_DESK':
-      return getLearningPathBySlug('front-desk');
-    case 'TUTOR':
-      return getLearningPathBySlug('tutor-club-leader');
-    default:
-      return null;
-  }
+  return HELP_LEARNING_PATHS.find(p => p.primaryStaffRole === normalized) || null;
+}
+
+export function getLearningPathForRole(role: string): HelpLearningPathMetadata | null {
+  return getPrimaryLearningPathForRole(role);
 }
 
 /**

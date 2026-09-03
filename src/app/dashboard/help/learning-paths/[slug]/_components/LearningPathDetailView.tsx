@@ -57,7 +57,7 @@ export default function LearningPathDetailView({
   prevPath,
   nextPath,
 }: LearningPathDetailViewProps) {
-  const isRecommended = path.recommendedStaffRoles.includes(userRole);
+  const isPrimaryForRole = path.primaryStaffRole === userRole;
 
   const totalGuides = resolvedSections.reduce(
     (acc, s) => acc + s.items.filter(it => it.type === 'guide').length,
@@ -105,7 +105,7 @@ export default function LearningPathDetailView({
                 <Info className="size-3" aria-hidden="true" />
                 <span>Staff Reference for Parent Support</span>
               </span>
-            ) : isRecommended ? (
+            ) : isPrimaryForRole ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <Sparkles className="size-3" aria-hidden="true" />
                 <span>Recommended for your role ({roleLabel})</span>

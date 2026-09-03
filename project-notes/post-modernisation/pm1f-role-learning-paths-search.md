@@ -132,3 +132,74 @@ All 12 visual review screenshots are saved in `/tmp/sprintscale-pm1f-visual-revi
   - `src/app/dashboard/help/__tests__/learning-paths-search.test.tsx`
   - `project-notes/post-modernisation/pm1f-role-learning-paths-search.md`
 - **Candidate Commit Subject:** `feat(help): add role learning paths and search`
+
+---
+
+## 9. PM-1F.R1 Reconciliation — Role Learning Path Recommendation Semantics
+
+### A. Visual Review Finding
+Independent visual review of PM-1F visual evidence identified a semantic presentation defect:
+When authenticated as an Organisation Owner (`ORG_OWNER`), the Learning Paths overview correctly identified Organisation Owner as the primary recommendation in the top banner, but in the "All Learning Paths" grid, multiple path cards were visually badged with `YOUR ROLE` (specifically Organisation Owner, Centre Manager, and Front Desk).
+Similarly, opening the Centre Manager or Front Desk path detail while authenticated as an Organisation Owner displayed `Recommended for your role (Organisation Owner)`.
+
+### B. Root Cause
+`LearningPathsListView.tsx` and `LearningPathDetailView.tsx` evaluated recommendation status via `path.recommendedStaffRoles.includes(userRole)`. Because `recommendedStaffRoles` defines cross-functional relevance (e.g. Centre Manager and Front Desk material is relevant operational context for an Organisation Owner), the UI conflated:
+1. The user's actual CMS role / canonical primary persona;
+2. Learning paths the user may access (all paths are accessible);
+3. Learning paths potentially useful to that role (cross-functional relevance);
+4. The user's primary recommended learning path.
+
+### C. Semantic Invariant & Distinction
+Preserved the core architectural invariant:
+`CMS ROLE != PATH AUDIENCE != PATH ACCESS != PRIMARY RECOMMENDATION`
+- **Path Access:** All authenticated staff continue to have unrestricted access to explore all approved learning paths without RBAC gatekeeping.
+- **Your Role Badge:** Reserved strictly for the single learning path corresponding to the user's canonical CMS persona.
+- **Audience Label:** When viewing a path that is not the user's primary role, the UI displays the true path audience (e.g. `Audience: Centre Managers & Site Supervisors`) instead of mislabelling it as recommended for the viewer's role.
+- **Parent Portal Classification:** Kept strictly as `Staff Reference for Parent Support` (`isStaffReferenceOnly: true`). Parent Portal is never a CMS staff role.
+
+### D. Authoritative Primary Role Mapping
+Introduced `primaryStaffRole` on `HelpLearningPathMetadata` and `getPrimaryLearningPathForRole(role)` in `get-help-content.ts`:
+- `ORG_OWNER` -> `organisation-owner`
+- `MANAGER` -> `centre-manager`
+- `FRONT_DESK` -> `front-desk`
+- `TUTOR` -> `tutor-club-leader`
+- Parent Portal -> `primaryStaffRole: undefined` (Never primary for a CMS staff role)
+
+### E. UI Corrections
+1. **`LearningPathsListView.tsx`**:
+   - Switched from `isRecommended` (`recommendedStaffRoles.includes`) to `isPrimaryForRole` (`path.primaryStaffRole === userRole`).
+   - Only the user's canonical path receives the `Your Role` badge and highlighted border accent.
+   - For an `ORG_OWNER`, Centre Manager, Front Desk, and Tutor show no role badge, eliminating badge clutter.
+   - Parent Portal displays `Staff Reference`.
+2. **`LearningPathDetailView.tsx`**:
+   - When an `ORG_OWNER` views `organisation-owner`: displays `Recommended for your role (Organisation Owner)`.
+   - When that same `ORG_OWNER` views `centre-manager`: displays `Audience: Centre Managers & Site Supervisors` (no misleading recommendation header).
+   - When that same `ORG_OWNER` views `front-desk`: displays `Audience: Front Desk & Reception Administrators`.
+   - When that same `ORG_OWNER` views `tutor-club-leader`: displays `Audience: Tutors, Coaches & Activity Leaders`.
+   - When staff views `parent-portal`: displays `Staff Reference for Parent Support`.
+
+### F. Automated Verification & Test Coverage
+Extended `src/app/dashboard/help/__tests__/learning-paths-search.test.tsx`:
+- Proved `getPrimaryLearningPathForRole` returns exact 1:1 primary path mapping for each of the 4 CMS staff roles.
+- Proved for `ORG_OWNER`, exactly ONE path displays `Your Role` in `LearningPathsListView`.
+- Proved for `MANAGER`, `FRONT_DESK`, `TUTOR`, exactly ONE path displays `Your Role`.
+- Proved detail view renders `Recommended for your role` only on primary path, and renders `Audience: <label>` on all other paths.
+- Proved Parent Portal detail displays `Staff Reference for Parent Support`.
+- Vitest suite: **72 test files, 727 tests passing (100% pass)**.
+- TypeScript: `npm run typecheck` passed (0 errors).
+- ESLint: `npm run lint` passed (0 errors, 0 warnings).
+- Next.js Build: `npm run build` passed (153/153 pages generated).
+- D6 Checksums: 130/130 matched, 0 failures.
+
+### G. Visual Recapture Matrix (R1-E1 through R1-E6)
+Targeted visual evidence saved to `/tmp/sprintscale-pm1f-r1-visual-review/` and mirrored to `~/Downloads/`:
+- **R1-E1**: [`R1-E1-desktop-overview-org-owner.png`](file:///tmp/sprintscale-pm1f-r1-visual-review/R1-E1-desktop-overview-org-owner.png) — Desktop 1440px Light: Learning paths overview for `ORG_OWNER`. Only Organisation Owner has `Your Role`. Centre Manager and Front Desk are not badged with `Your Role`.
+- **R1-E2**: [`R1-E2-desktop-centre-manager-path.png`](file:///tmp/sprintscale-pm1f-r1-visual-review/R1-E2-desktop-centre-manager-path.png) — Desktop 1440px Light: `ORG_OWNER` viewing Centre Manager path. Shows `Audience: Centre Managers & Site Supervisors`, no false recommendation banner.
+- **R1-E3**: [`R1-E3-desktop-front-desk-path.png`](file:///tmp/sprintscale-pm1f-r1-visual-review/R1-E3-desktop-front-desk-path.png) — Desktop 1440px Light: `ORG_OWNER` viewing Front Desk path. Shows `Audience: Front Desk & Reception Administrators`, no false recommendation banner.
+- **R1-E4**: [`R1-E4-desktop-organisation-owner-path.png`](file:///tmp/sprintscale-pm1f-r1-visual-review/R1-E4-desktop-organisation-owner-path.png) — Desktop 1440px Light: `ORG_OWNER` viewing Organisation Owner path. Shows `Recommended for your role (Organisation Owner)`.
+- **R1-E5**: [`R1-E5-mobile-overview.png`](file:///tmp/sprintscale-pm1f-r1-visual-review/R1-E5-mobile-overview.png) — Mobile 390px Light: Corrected badges on mobile overview.
+- **R1-E6**: [`R1-E6-desktop-overview-dark.png`](file:///tmp/sprintscale-pm1f-r1-visual-review/R1-E6-desktop-overview-dark.png) — Desktop 1440px Dark: Corrected badges and theme integrity in dark mode.
+
+### H. Regression & D6 Integrity
+- Verified zero regressions across Help Hub, search, video library, guides, kiosks, and attendance.
+- D6 assets: 78 screenshots + 52 videos = 130/130 checksums match. 0 historical modifications.

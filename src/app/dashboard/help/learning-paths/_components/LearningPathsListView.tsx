@@ -176,13 +176,13 @@ export default function LearningPathsListView({
               (acc, s) => acc + s.items.filter(it => it.type === 'video').length,
               0
             );
-            const isRecommended = path.recommendedStaffRoles.includes(userRole);
+            const isPrimaryForRole = path.primaryStaffRole === userRole;
 
             return (
               <div
                 key={path.id}
                 className={`flex flex-col justify-between rounded-xl border bg-surface p-6 transition-all duration-200 hover:shadow-md ${
-                  isRecommended
+                  isPrimaryForRole
                     ? 'border-accent/50 ring-1 ring-accent/30'
                     : 'border-border hover:border-accent/40'
                 }`}
@@ -198,7 +198,7 @@ export default function LearningPathsListView({
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                           Staff Reference
                         </span>
-                      ) : isRecommended ? (
+                      ) : isPrimaryForRole ? (
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent-soft text-accent border border-accent/20">
                           Your Role
                         </span>
