@@ -105,7 +105,7 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
           <div>
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold mb-2">
               <Video className="size-3.5" aria-hidden="true" />
-              <span>{videos.length} Certified Screencasts</span>
+              <span>{videos.length} Training Videos</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text">
               Training Videos

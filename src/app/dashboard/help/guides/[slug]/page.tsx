@@ -128,7 +128,7 @@ export default async function GuidePage({ params }: GuidePageProps) {
         </div>
 
         {/* Main Article Content */}
-        <main className="lg:col-span-8 xl:col-span-9 space-y-6">
+        <article className="lg:col-span-8 xl:col-span-9 space-y-6">
           <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8 lg:p-10 shadow-xs">
             <MarkdownArticle content={content} guideTitle={guide.title} />
           </div>
@@ -187,7 +187,7 @@ export default async function GuidePage({ params }: GuidePageProps) {
               <span>Return to Help &amp; Training Home</span>
             </Link>
           </div>
-        </main>
+        </article>
 
         {/* Desktop Sticky Table of Contents */}
         {toc.length > 0 && (

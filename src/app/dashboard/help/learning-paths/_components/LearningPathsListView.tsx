@@ -67,7 +67,7 @@ export default function LearningPathsListView({
               Role Learning Paths
             </h1>
             <p className="text-sm text-text-secondary mt-1.5 max-w-3xl leading-relaxed">
-              Curated reading and video watching sequences tailored to your operational responsibilities. Every path combines foundational written guides with click-by-click certified screencasts.
+              Curated reading and video watching sequences tailored to your operational responsibilities. Every path combines foundational written guides with click-by-click video walkthroughs.
             </p>
           </div>
         </div>

@@ -278,7 +278,7 @@ export default function HelpHubView({
             Browse by Category
           </h2>
           <p className="text-text-secondary text-xs sm:text-sm mt-0.5">
-            Explore all 34 certified training guides organised across core operational domains.
+            Explore all 34 training guides organised across core operational domains.
           </p>
         </div>
 

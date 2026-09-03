@@ -21,6 +21,7 @@ export default function HelpSearchBar({
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const searchResults = useMemo(() => {
     if (!query.trim()) {
@@ -72,6 +73,7 @@ export default function HelpSearchBar({
           aria-hidden="true"
         />
         <input
+          ref={inputRef}
           type="search"
           value={query}
           onChange={e => {
@@ -79,10 +81,19 @@ export default function HelpSearchBar({
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
+          onKeyDown={e => {
+            if (e.key === 'Escape') {
+              setIsOpen(false);
+            }
+          }}
           placeholder={placeholder}
           autoFocus={autoFocus}
           className="w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-surface text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent shadow-xs transition-all"
           aria-label="Search training guides, videos and learning paths"
+          role="combobox"
+          aria-expanded={isOpen && hasQuery}
+          aria-haspopup="listbox"
+          aria-controls="help-search-dropdown"
         />
 
         {query && (
@@ -91,6 +102,7 @@ export default function HelpSearchBar({
             onClick={() => {
               setQuery('');
               setIsOpen(false);
+              inputRef.current?.focus();
             }}
             className="absolute right-3 p-1 rounded-md text-text-muted hover:text-text hover:bg-page transition-colors"
             aria-label="Clear search query"
@@ -102,7 +114,11 @@ export default function HelpSearchBar({
 
       {/* Results Dropdown Overlay */}
       {isOpen && hasQuery && (
-        <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-xl border border-border bg-surface shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-[540px] flex flex-col">
+        <div
+          id="help-search-dropdown"
+          role="listbox"
+          className="absolute top-full left-0 right-0 mt-2 z-50 rounded-xl border border-border bg-surface shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 max-h-[540px] flex flex-col"
+        >
           {/* Filter Bar & Count */}
           <div className="p-3 border-b border-border-subtle bg-surface-elevated flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 overflow-x-auto text-xs">

@@ -83,7 +83,7 @@ export default function VideoPlayerView({
           </span>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface text-text-secondary border border-border">
             <ShieldCheck className="size-3 text-emerald-500" aria-hidden="true" />
-            <span>Certified Training Asset</span>
+            <span>Verified Training Asset</span>
           </span>
         </div>
 

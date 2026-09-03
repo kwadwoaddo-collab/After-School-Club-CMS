@@ -11,7 +11,7 @@ import LearningPathsListView from './_components/LearningPathsListView';
 export const metadata: Metadata = {
   title: 'Role Learning Paths | Help & Training | SprintScale CMS',
   description:
-    'Curated role-based onboarding and operational training paths combining written guides and certified screencasts.',
+    'Curated role-based onboarding and operational training paths combining written guides and video walkthroughs.',
 };
 
 export default async function LearningPathsPage() {
