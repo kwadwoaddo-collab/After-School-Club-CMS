@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Video,
@@ -60,6 +60,18 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
     });
   }, [videos, selectedCategory, searchQuery]);
 
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll active category pill into view on mobile if needed
+  useEffect(() => {
+    if (tablistRef.current && selectedCategory !== 'all') {
+      const activeBtn = tablistRef.current.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    }
+  }, [selectedCategory]);
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* 1. Breadcrumbs */}
@@ -113,44 +125,47 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
         </div>
 
         {/* Category Filter Pills */}
-        <div
-          role="tablist"
-          aria-label="Filter videos by category"
-          className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={selectedCategory === 'all'}
-            onClick={() => setSelectedCategory('all')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-              selectedCategory === 'all'
-                ? 'bg-accent text-white shadow-xs'
-                : 'bg-surface border border-border text-text-secondary hover:text-text hover:border-accent/40'
-            }`}
+        <div className="relative w-full min-w-0">
+          <div
+            ref={tablistRef}
+            role="tablist"
+            aria-label="Filter videos by category"
+            className="flex items-center gap-2 overflow-x-auto sm:overflow-x-visible sm:flex-wrap pb-2 sm:pb-0 scroll-smooth scrollbar-thin"
           >
-            All Videos ({videos.length})
-          </button>
-          {availableCategories.map(cat => {
-            const count = videos.filter(v => v.category === cat).length;
-            const isSelected = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                role="tab"
-                aria-selected={isSelected}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                  isSelected
-                    ? 'bg-accent text-white shadow-xs'
-                    : 'bg-surface border border-border text-text-secondary hover:text-text hover:border-accent/40'
-                }`}
-              >
-                {CATEGORY_NAMES[cat] || cat} ({count})
-              </button>
-            );
-          })}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedCategory === 'all'}
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                selectedCategory === 'all'
+                  ? 'bg-accent text-white shadow-xs'
+                  : 'bg-surface border border-border text-text-secondary hover:text-text hover:border-accent/40'
+              }`}
+            >
+              All Videos ({videos.length})
+            </button>
+            {availableCategories.map(cat => {
+              const count = videos.filter(v => v.category === cat).length;
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    isSelected
+                      ? 'bg-accent text-white shadow-xs'
+                      : 'bg-surface border border-border text-text-secondary hover:text-text hover:border-accent/40'
+                  }`}
+                >
+                  {CATEGORY_NAMES[cat] || cat} ({count})
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

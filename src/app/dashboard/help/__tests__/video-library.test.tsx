@@ -275,4 +275,47 @@ describe('PM-1E — Training Video Library & Playback Automated Suite', () => {
       expect(content).toContain('Browse Video Library');
     });
   });
+
+  // -------------------------------------------------------------
+  // PM-1E.R1: Category Navigation Visual Reconciliation
+  // -------------------------------------------------------------
+  describe('PM-1E.R1: Category Navigation Visual Reconciliation', () => {
+    it('renders all category pills including Troubleshooting with exact counts', () => {
+      const html = renderToStaticMarkup(
+        <VideoLibraryView videos={HELP_VIDEOS} userRole="MANAGER" />
+      );
+
+      // Verify All Videos + 6 categories
+      expect(html).toContain('All Videos (52)');
+      expect(html).toContain('Core Operations (19)');
+      expect(html).toContain('Administration (15)');
+      expect(html).toContain('Finance &amp; Payments (10)');
+      expect(html).toContain('Getting Started (5)');
+      expect(html).toContain('Safeguarding (2)');
+      expect(html).toContain('Troubleshooting (1)');
+    });
+
+    it('renders category controls with flex-wrap on desktop and scrollable rail on mobile', () => {
+      const html = renderToStaticMarkup(
+        <VideoLibraryView videos={HELP_VIDEOS} userRole="MANAGER" />
+      );
+
+      // Verify tablist container has responsive hybrid classes
+      expect(html).toContain('role="tablist"');
+      expect(html).toContain('overflow-x-auto');
+      expect(html).toContain('sm:overflow-x-visible');
+      expect(html).toContain('sm:flex-wrap');
+
+      // Verify pills have flex-shrink-0 to prevent label compression
+      expect(html).toContain('flex-shrink-0');
+      expect(html).toContain('whitespace-nowrap');
+    });
+
+    it('Troubleshooting video count matches manifest exactly without taxonomy mutation', () => {
+      const troubleshootingVideos = getVideosByCategory('troubleshooting');
+      expect(troubleshootingVideos.length).toBe(1);
+      expect(troubleshootingVideos[0].id).toBe('SS-D6-V052');
+      expect(troubleshootingVideos[0].title).toBe('Understanding the Parent Portal Rate-Limit Warning');
+    });
+  });
 });

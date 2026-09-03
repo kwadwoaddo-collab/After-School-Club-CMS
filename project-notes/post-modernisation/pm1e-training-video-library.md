@@ -183,3 +183,55 @@ Screenshots stored in review folder `/tmp/sprintscale-pm1e-visual-review/`:
 - Video playback uses native HTML5 browser controls (`controls`, `preload="metadata"`).
 - In-guide video references now link directly to dedicated `/dashboard/help/videos/[slug]` routes.
 - Ready for Milestone **PM-1F** (Global Help Centre Search & Search Indexing).
+
+---
+
+## 11. Post-Modernisation Reconciliation PM-1E.R1
+
+**Ticket:** PM-1E.R1 — Training Video Library Category Navigation Visual Reconciliation
+**Date:** 2026-09-03
+**Status:** **PASS — PM-1E.R1 COMPLETE — READY FOR INDEPENDENT VISUAL REVIEW**
+
+### 1. Orchestrator Finding
+During independent review of PM-1E visual review screenshots E1–E12, the orchestrator noted:
+- At 1280px desktop, the rightmost category pill ("Troubleshooting (1)") was visually clipped against the content container edge.
+- At 390px mobile, category pills extended offscreen with `scrollbar-none`, appearing accidentally clipped rather than intentionally navigable.
+
+### 2. Root Cause Analysis
+- In `src/app/dashboard/help/videos/_components/VideoLibraryView.tsx`, the tablist container used `flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none` unconditionally across all screen sizes.
+- On desktop, the total width of the 8 category buttons (~880–920px) exceeded available container width in narrower desktop views (e.g. 1280px with 256px sidebar leaves ~900px), causing the rightmost item to truncate because `flex-wrap` was omitted.
+- On mobile, `scrollbar-none` concealed the scroll affordance without active scroll management.
+
+### 3. Reconciliation Strategy (Option C — Responsive Hybrid)
+- **Desktop & Tablet (`sm:` and above)**: Applied `sm:overflow-x-visible sm:flex-wrap`. Categories wrap naturally onto subsequent rows as needed. Every category is immediately visible, clickable, and discoverable with zero horizontal scroll container.
+- **Mobile (`< sm` / 390px / 375px)**: Maintained an intentional horizontal scrolling rail (`overflow-x-auto scroll-smooth pb-2 scrollbar-thin`) with `flex-shrink-0` on all pills to guarantee label integrity. Added `tablistRef` with automatic smooth scroll-into-view for active categories.
+- **Strict Boundary**: Zero page-level horizontal overflow across all tested viewports (`document.documentElement.scrollWidth <= document.documentElement.clientWidth`).
+
+### 4. Browser QA & Viewport Measurements
+- **1440px**: `scrollWidth <= clientWidth` (PASS: all 8 pills fit on 1 row cleanly)
+- **1280px**: `scrollWidth <= clientWidth` (PASS: pills wrap cleanly onto 2 lines, Troubleshooting fully visible)
+- **1024px**: `scrollWidth <= clientWidth` (PASS: pills wrap cleanly onto 2 lines, no overflow)
+- **768px**: `scrollWidth <= clientWidth` (PASS: pills wrap cleanly onto 2 lines, no overflow)
+- **390px**: `scrollWidth <= clientWidth` (PASS: page overflow = 0; internal rail scrolls smoothly; Troubleshooting reachable)
+- **375px**: `scrollWidth <= clientWidth` (PASS: page overflow = 0; Troubleshooting reachable & fully visible in Dark Mode)
+
+### 5. Category Filtering Integrity
+- **All Videos**: 52
+- **Getting Started**: 5
+- **Core Operations**: 19
+- **Safeguarding**: 2
+- **Finance & Payments**: 10
+- **Administration**: 15
+- **Troubleshooting**: 1
+- **Filtering & Search**: Verified intact across single and combined queries.
+
+### 6. Visual Review Artifacts (PM-1E.R1)
+Stored in `/tmp/sprintscale-pm1e-r1-visual-review/`:
+- **R1-E1**: [`R1-E1.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E1.png) — Desktop 1440px Light Mode (all categories accessible in single row)
+- **R1-E2**: [`R1-E2.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E2.png) — Desktop 1280px Dark Mode (clean wrap onto 2 lines, no clipping)
+- **R1-E3**: [`R1-E3.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E3.png) — Tablet 768px Light Mode (clean wrap onto 2 lines, no page overflow)
+- **R1-E4**: [`R1-E4.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E4.png) — Mobile 390px Light Mode initial state (smooth rail)
+- **R1-E5**: [`R1-E5.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E5.png) — Mobile 390px scrolled to final category (Troubleshooting completely visible)
+- **R1-E6**: [`R1-E6.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E6.png) — Mobile 390px Troubleshooting selected (1 video card rendered)
+- **R1-E7**: [`R1-E7.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E7.png) — Mobile 375px Dark Mode final category reachable & active
+- **R1-E8**: [`R1-E8.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E8.png) — Desktop 1440px Finance & Payments selected (10 video cards rendered)
