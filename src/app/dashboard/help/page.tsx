@@ -4,9 +4,12 @@ import { auth } from '@/lib/auth';
 import {
   getAllCategories,
   getAllGuides,
+  getAllLearningPaths,
   getGuidesByCategory,
   getGuidesByRole,
+  getLearningPathForRole,
 } from '@/lib/help/get-help-content';
+
 import { CMS_STAFF_ROLES, HelpStaffRole } from '@/lib/help/types';
 import HelpHubView from './_components/HelpHubView';
 
@@ -65,6 +68,8 @@ export default async function HelpPage() {
   }));
 
   const recommendedGuides = getGuidesByRole(userRole);
+  const recommendedPath = getLearningPathForRole(userRole);
+  const allLearningPaths = getAllLearningPaths();
 
   const commonTaskGuides = COMMON_TASK_SLUGS.map(slug =>
     allGuides.find(g => g.slug === slug)
@@ -78,6 +83,8 @@ export default async function HelpPage() {
       recommendedGuides={recommendedGuides}
       commonTaskGuides={commonTaskGuides}
       totalGuideCount={allGuides.length}
+      recommendedPath={recommendedPath}
+      totalPathCount={allLearningPaths.length}
     />
   );
 }

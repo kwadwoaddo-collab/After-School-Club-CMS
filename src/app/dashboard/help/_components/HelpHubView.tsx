@@ -24,8 +24,11 @@ import {
   HelpCategory,
   HelpCategoryDefinition,
   HelpGuideMetadata,
+  HelpLearningPathMetadata,
   HelpStaffRole,
 } from '@/lib/help/types';
+
+import HelpSearchBar from './HelpSearchBar';
 
 interface HelpHubViewProps {
   userRole: HelpStaffRole;
@@ -34,6 +37,8 @@ interface HelpHubViewProps {
   recommendedGuides: HelpGuideMetadata[];
   commonTaskGuides: HelpGuideMetadata[];
   totalGuideCount: number;
+  recommendedPath?: HelpLearningPathMetadata | null;
+  totalPathCount?: number;
 }
 
 const CATEGORY_ICONS: Record<HelpCategory, React.ElementType> = {
@@ -53,6 +58,8 @@ export default function HelpHubView({
   recommendedGuides,
   commonTaskGuides,
   totalGuideCount,
+  recommendedPath,
+  totalPathCount = 5,
 }: HelpHubViewProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -63,7 +70,7 @@ export default function HelpHubView({
   return (
     <div className="space-y-8 pb-12 max-w-7xl mx-auto">
       {/* 1. Page Header */}
-      <header className="space-y-2">
+      <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text">
@@ -73,7 +80,7 @@ export default function HelpHubView({
               Guides, walkthroughs and training resources to help you get the most from SprintScale.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20">
               <Sparkles className="size-3.5" aria-hidden="true" />
               {totalGuideCount} Training Guides
@@ -82,11 +89,21 @@ export default function HelpHubView({
               <Video className="size-3.5" aria-hidden="true" />
               52 Training Videos
             </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <Compass className="size-3.5" aria-hidden="true" />
+              {totalPathCount} Learning Paths
+            </span>
           </div>
+        </div>
+
+        {/* Unified Help Search */}
+        <div className="max-w-2xl pt-1">
+          <HelpSearchBar />
         </div>
       </header>
 
       {/* 2. Welcome Banner */}
+
       <section
         aria-label="Welcome and Training Overview"
         className="rounded-xl border border-border bg-gradient-to-br from-surface via-surface to-page p-6 sm:p-8 shadow-sm"
@@ -140,6 +157,35 @@ export default function HelpHubView({
             </p>
           </div>
         </div>
+
+        {/* Recommended Learning Path Banner */}
+        {recommendedPath && (
+          <div className="rounded-xl border border-accent/40 bg-accent-soft/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent text-white">
+                  Recommended Learning Path
+                </span>
+                <span className="text-xs text-text-muted">
+                  {roleLabel} Sequence
+                </span>
+              </div>
+              <h3 className="font-bold text-sm sm:text-base text-text">
+                {recommendedPath.title}
+              </h3>
+              <p className="text-xs text-text-secondary line-clamp-1 max-w-2xl">
+                {recommendedPath.description}
+              </p>
+            </div>
+            <Link
+              href={`/dashboard/help/learning-paths/${recommendedPath.slug}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white font-semibold text-xs hover:bg-accent/90 shrink-0 transition-colors"
+            >
+              <span>Explore Role Path</span>
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {recommendedGuides.slice(0, 4).map(guide => {
@@ -313,8 +359,39 @@ export default function HelpHubView({
         </div>
       </section>
 
-      {/* 6. Media Modules & Master Manual */}
-      <section aria-label="Core Training Modules" className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+      {/* 6. Media Modules, Learning Paths & Master Manual */}
+      <section aria-label="Core Training Modules" className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+        {/* Learning Paths Card */}
+        <div className="rounded-xl border border-border bg-surface p-6 flex flex-col justify-between space-y-4 hover:border-accent/40 hover:shadow-xs transition-all">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="p-2.5 rounded-lg bg-accent-soft text-accent">
+                <Compass className="size-5" aria-hidden="true" />
+              </span>
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-surface-elevated text-text-secondary border border-border">
+                {totalPathCount} Paths
+              </span>
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-text">
+                Role Learning Paths
+              </h3>
+              <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
+                Curated reading and video sequences tailored to Organisation Owners, Centre Managers, Front Desk, and Tutors.
+              </p>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-border-subtle">
+            <Link
+              href="/dashboard/help/learning-paths"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80 transition-colors group"
+            >
+              <span>Explore Learning Paths</span>
+              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+
         {/* Video Library Card */}
         <div className="rounded-xl border border-border bg-surface p-6 flex flex-col justify-between space-y-4 hover:border-accent/40 hover:shadow-xs transition-all">
           <div className="space-y-3">

@@ -82,7 +82,37 @@ export interface HelpVideoMetadata {
   order: number;
 }
 
+export interface LearningPathSectionItem {
+  type: 'guide' | 'video';
+  slug: string; // Resolves to HelpGuideMetadata.slug or HelpVideoMetadata.slug
+  title?: string; // Optional canonical title override (defaults to resolved title)
+  description?: string; // Optional objective override (defaults to resolved description)
+  note?: string; // Operational context or role-specific tip
+}
+
+export interface LearningPathSection {
+  id: string;
+  title: string;
+  description?: string;
+  items: LearningPathSectionItem[];
+}
+
+export interface HelpLearningPathMetadata {
+  id: string; // e.g. 'lp-organisation-owner'
+  slug: string; // e.g. 'organisation-owner'
+  title: string;
+  description: string;
+  persona: HelpAudience;
+  audienceLabel: string;
+  recommendedStaffRoles: HelpStaffRole[]; // Role recommendation mapping
+  isStaffReferenceOnly?: boolean; // True for parent-portal (staff reference only, NOT staff RBAC)
+  order: number;
+  sections: LearningPathSection[];
+}
+
 export interface HelpSearchResult {
   guides: HelpGuideMetadata[];
   videos: HelpVideoMetadata[];
+  learningPaths?: HelpLearningPathMetadata[];
+  totalCount?: number;
 }

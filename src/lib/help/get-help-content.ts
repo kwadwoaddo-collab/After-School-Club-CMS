@@ -7,16 +7,19 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '@/lib/logger';
 import { HELP_CATEGORIES, HELP_GUIDES, HELP_VIDEOS } from './help-manifest';
+import { HELP_LEARNING_PATHS } from './help-learning-paths-manifest';
 import {
   CMS_STAFF_ROLES,
   HelpAudience,
   HelpCategory,
   HelpCategoryDefinition,
   HelpGuideMetadata,
+  HelpLearningPathMetadata,
   HelpStaffRole,
   HelpSearchResult,
   HelpVideoMetadata,
 } from './types';
+
 
 const CONTENT_BASE_DIR = path.resolve(process.cwd(), 'src/content/help');
 
@@ -193,35 +196,59 @@ export function getVideoNavigation(slug: string): {
 }
 
 /**
- * Fast search across guides and videos.
+ * Get all role-based learning paths.
  */
-export function searchHelp(query: string): HelpSearchResult {
-  if (!query || query.trim().length === 0) {
-    return { guides: [], videos: [] };
+export function getAllLearningPaths(): HelpLearningPathMetadata[] {
+  return [...HELP_LEARNING_PATHS].sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Get a specific learning path by slug.
+ */
+export function getLearningPathBySlug(slug: string): HelpLearningPathMetadata | null {
+  return HELP_LEARNING_PATHS.find(p => p.slug === slug) || null;
+}
+
+/**
+ * Resolve the recommended learning path for an authenticated staff role.
+ * Mapping:
+ * ORG_OWNER -> Organisation Owner
+ * MANAGER -> Centre Manager
+ * FRONT_DESK -> Front Desk
+ * TUTOR -> Tutor / Club Leader
+ */
+export function getLearningPathForRole(role: string): HelpLearningPathMetadata | null {
+  const normalized = role.toUpperCase() as HelpStaffRole;
+  switch (normalized) {
+    case 'ORG_OWNER':
+      return getLearningPathBySlug('organisation-owner');
+    case 'MANAGER':
+      return getLearningPathBySlug('centre-manager');
+    case 'FRONT_DESK':
+      return getLearningPathBySlug('front-desk');
+    case 'TUTOR':
+      return getLearningPathBySlug('tutor-club-leader');
+    default:
+      return null;
   }
+}
 
-  const q = query.toLowerCase().trim();
-
-  const matchingGuides = HELP_GUIDES.filter(g => {
-    return (
-      (g.title && g.title.toLowerCase().includes(q)) ||
-      (g.description && g.description.toLowerCase().includes(q)) ||
-      (g.audience && g.audience.toLowerCase().includes(q)) ||
-      (g.keywords && g.keywords.some(k => k && k.toLowerCase().includes(q)))
-    );
-  });
-
-  const matchingVideos = HELP_VIDEOS.filter(v => {
-    return (
-      (v.title && v.title.toLowerCase().includes(q)) ||
-      (v.description && v.description.toLowerCase().includes(q)) ||
-      (v.audienceLabel && v.audienceLabel.toLowerCase().includes(q)) ||
-      (v.category && v.category.toLowerCase().includes(q))
-    );
-  });
-
+/**
+ * Deterministic previous / next navigation derived from learning path order.
+ */
+export function getLearningPathNavigation(slug: string): {
+  prev: HelpLearningPathMetadata | null;
+  next: HelpLearningPathMetadata | null;
+} {
+  const paths = getAllLearningPaths();
+  const index = paths.findIndex(p => p.slug === slug);
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
   return {
-    guides: matchingGuides,
-    videos: matchingVideos,
+    prev: index > 0 ? paths[index - 1] : null,
+    next: index < paths.length - 1 ? paths[index + 1] : null,
   };
 }
+
+export { searchHelp } from './search-help';
