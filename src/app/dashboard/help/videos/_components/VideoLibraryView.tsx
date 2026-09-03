@@ -62,12 +62,22 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
 
   const tablistRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active category pill into view on mobile if needed
+  // Auto-scroll active category pill into view on mobile without page-level movement
   useEffect(() => {
     if (tablistRef.current && selectedCategory !== 'all') {
-      const activeBtn = tablistRef.current.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+      const container = tablistRef.current;
+      const activeBtn = container.querySelector<HTMLButtonElement>('[aria-selected="true"]');
       if (activeBtn) {
-        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        const btnLeft = activeBtn.offsetLeft;
+        const btnRight = btnLeft + activeBtn.offsetWidth;
+        const scrollLeft = container.scrollLeft;
+        const containerWidth = container.clientWidth;
+
+        if (btnLeft < scrollLeft) {
+          container.scrollTo({ left: Math.max(0, btnLeft - 12), behavior: 'smooth' });
+        } else if (btnRight > scrollLeft + containerWidth) {
+          container.scrollTo({ left: btnRight - containerWidth + 12, behavior: 'smooth' });
+        }
       }
     }
   }, [selectedCategory]);
@@ -130,7 +140,7 @@ export default function VideoLibraryView({ videos, userRole }: VideoLibraryViewP
             ref={tablistRef}
             role="tablist"
             aria-label="Filter videos by category"
-            className="flex items-center gap-2 overflow-x-auto sm:overflow-x-visible sm:flex-wrap pb-2 sm:pb-0 scroll-smooth scrollbar-thin"
+            className="flex items-center gap-2 overflow-x-auto sm:overflow-x-visible sm:flex-wrap pb-1 sm:pb-0 scroll-smooth scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           >
             <button
               type="button"

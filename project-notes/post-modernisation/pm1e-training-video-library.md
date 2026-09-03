@@ -235,3 +235,54 @@ Stored in `/tmp/sprintscale-pm1e-r1-visual-review/`:
 - **R1-E6**: [`R1-E6.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E6.png) — Mobile 390px Troubleshooting selected (1 video card rendered)
 - **R1-E7**: [`R1-E7.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E7.png) — Mobile 375px Dark Mode final category reachable & active
 - **R1-E8**: [`R1-E8.png`](file:///tmp/sprintscale-pm1e-r1-visual-review/R1-E8.png) — Desktop 1440px Finance & Payments selected (10 video cards rendered)
+
+---
+
+## 12. Post-Modernisation Reconciliation PM-1E.R2
+
+**Ticket:** PM-1E.R2 — Mobile Video Category Rail Visual Polish & Final Reconciliation
+**Date:** 2026-09-03
+**Status:** **PASS — PM-1E.R2 COMPLETE — READY FOR INDEPENDENT VISUAL REVIEW**
+
+### 1. R1 Independent Review Finding
+Following PM-1E.R1 review, the orchestrator accepted the desktop/tablet wrapping, category counts, selection, and overall architecture, but identified one remaining mobile presentation defect:
+- On narrow mobile viewports (390px/375px), the category rail displayed a conspicuous native horizontal scrollbar.
+- In dark mode, the scrollbar track manifested as an objectionable light/white horizontal strip beneath the pills, appearing like unstyled browser/debug chrome.
+
+### 2. Root Cause Analysis
+- The category tablist previously lacked explicit cross-browser scrollbar suppression rules.
+- While `scrollbar-thin` was used in R1, no CSS utility was configured in `globals.css` to hide WebKit, Gecko, or Edge scrollbars, causing the browser engine to render the OS-native horizontal scrollbar.
+- In Dark Mode, the browser's native scrollbar track did not inherit the application's dark surface background, producing a contrasting light bar.
+
+### 3. Exact R2 Treatment
+1. **Global CSS Utilities (`src/app/globals.css`)**:
+   Added standard-compliant `.scrollbar-none` and `.scrollbar-hide` utilities:
+   - `-ms-overflow-style: none` (IE / Edge)
+   - `scrollbar-width: none` (Firefox)
+   - `::-webkit-scrollbar { display: none }` (Chrome, Safari, Edge, WebKit)
+2. **Direct Element Classes (`src/app/dashboard/help/videos/_components/VideoLibraryView.tsx`)**:
+   Applied `scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden` directly to the category tablist container.
+3. **Container-Scoped Auto-Scroll**:
+   Replaced generic `element.scrollIntoView()` with container-scoped `container.scrollTo({ left: ..., behavior: 'smooth' })`, ensuring programmatic scrolling is strictly isolated to the horizontal rail without causing page-level jumps or vertical displacement.
+
+### 4. Discoverability & Usability
+- Discoverability is preserved via natural edge peeking: at initial mobile load, the subsequent category pill is partially visible at the right viewport boundary, immediately conveying that the rail is horizontally scrollable.
+- Native touch swipe and trackpad scrolling remain completely functional.
+- Zero page-level horizontal overflow (`document.documentElement.scrollWidth <= document.documentElement.clientWidth` = TRUE across all viewports).
+
+### 5. Dark Mode Verification
+- In 375px Dark Mode, the rail renders seamlessly against the dark theme canvas.
+- No white/light track, no browser chrome, and no contrast regression.
+
+### 6. Visual Review Matrix (PM-1E.R2)
+Stored in `/tmp/sprintscale-pm1e-r2-visual-review/`:
+- **R2-E1**: [`R2-E1.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E1.png) — Desktop 1440px Light Mode (All Videos selected, all categories in single row)
+- **R2-E2**: [`R2-E2.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E2.png) — Desktop 1280px Dark Mode (clean wrapping onto 2 lines, no clipping)
+- **R2-E3**: [`R2-E3.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E3.png) — Tablet 768px Light Mode (clean wrapping onto 2 lines, zero page overflow)
+- **R2-E4**: [`R2-E4.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E4.png) — Mobile 390px Light Mode START STATE (All Videos active, rail at origin, NO native scrollbar)
+- **R2-E5**: [`R2-E5.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E5.png) — Mobile 390px Light Mode END STATE (rail scrolled to end, Troubleshooting visible, NO native scrollbar)
+- **R2-E6**: [`R2-E6.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E6.png) — Mobile 390px Light Mode SELECTED STATE (Troubleshooting active, 1 video card rendered, NO scrollbar)
+- **R2-E7**: [`R2-E7.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E7.png) — Mobile 375px Light Mode (clean rail, NO native scrollbar)
+- **R2-E8**: [`R2-E8.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E8.png) — Mobile 375px Dark Mode END STATE (Finance/Admin/Troubleshooting visible, NO white/light scrollbar strip)
+- **R2-E9**: [`R2-E9.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E9.png) — Mobile 375px Dark Mode SELECTED STATE (Troubleshooting active, 1 video card rendered, NO scrollbar strip)
+- **R2-E10**: [`R2-E10.png`](file:///tmp/sprintscale-pm1e-r2-visual-review/R2-E10.png) — Desktop 1440px Light Mode (Finance & Payments selected, 10 video cards rendered)

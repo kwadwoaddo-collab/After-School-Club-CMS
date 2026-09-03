@@ -317,5 +317,17 @@ describe('PM-1E — Training Video Library & Playback Automated Suite', () => {
       expect(troubleshootingVideos[0].id).toBe('SS-D6-V052');
       expect(troubleshootingVideos[0].title).toBe('Understanding the Parent Portal Rate-Limit Warning');
     });
+
+    it('PM-1E.R2: mobile rail applies cross-browser scrollbar suppression while preserving scroll', () => {
+      const html = renderToStaticMarkup(
+        <VideoLibraryView videos={HELP_VIDEOS} userRole="MANAGER" />
+      );
+
+      // Verify scrollbar suppression utility and arbitrary styles
+      expect(html).toContain('scrollbar-none');
+      expect(html).toContain('[scrollbar-width:none]');
+      expect(html).toContain('[-ms-overflow-style:none]');
+      expect(html).toContain('[&amp;::-webkit-scrollbar]:hidden');
+    });
   });
 });

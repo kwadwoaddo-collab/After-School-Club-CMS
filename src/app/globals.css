@@ -1000,3 +1000,17 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
     padding-bottom: 2rem;
   }
 }
+
+/* ─── Scrollbar Suppression Utilities ──────────────────────────────────────────
+   Hides native browser scrollbars while preserving touch and trackpad scrolling.
+   Used on horizontal pill rails and compact modal panels. */
+.scrollbar-none,
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-none::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
