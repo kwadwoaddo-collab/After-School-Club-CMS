@@ -131,6 +131,13 @@ export function getAllVideos(): HelpVideoMetadata[] {
 }
 
 /**
+ * Get a specific micro-video by slug (e.g., 'marking-morning-and-afternoon-class-register').
+ */
+export function getVideoBySlug(slug: string): HelpVideoMetadata | null {
+  return HELP_VIDEOS.find(v => v.slug === slug) || null;
+}
+
+/**
  * Get a specific micro-video by asset ID (e.g., 'SS-D6-V001').
  */
 export function getVideoById(videoId: string): HelpVideoMetadata | null {
@@ -138,14 +145,55 @@ export function getVideoById(videoId: string): HelpVideoMetadata | null {
 }
 
 /**
- * Get all videos mapped to a specific guide slug.
+ * Get all videos within a specific category.
  */
-export function getVideosByGuideSlug(slug: string): HelpVideoMetadata[] {
-  return HELP_VIDEOS.filter(v => v.targetGuideSlug === slug);
+export function getVideosByCategory(category: HelpCategory): HelpVideoMetadata[] {
+  return HELP_VIDEOS.filter(v => v.category === category).sort((a, b) => a.order - b.order);
 }
 
 /**
- * Fast client/server fuzzy search across guides and videos.
+ * Get recommended videos for an authenticated CMS staff role.
+ */
+export function getVideosByRole(role: string): HelpVideoMetadata[] {
+  const normalizedRole = role.toUpperCase() as HelpStaffRole;
+  if (!CMS_STAFF_ROLES.includes(normalizedRole)) {
+    return [];
+  }
+  return HELP_VIDEOS.filter(v => v.recommendedStaffRoles.includes(normalizedRole));
+}
+
+/**
+ * Get all videos mapped to a specific guide slug.
+ */
+export function getVideosByGuideSlug(slug: string): HelpVideoMetadata[] {
+  return HELP_VIDEOS.filter(v => v.relatedGuideSlugs.includes(slug) || v.targetGuideSlug === slug);
+}
+
+/**
+ * Deterministic previous / next navigation derived from category-local video order.
+ * First video in category has prev: null; last video in category has next: null.
+ */
+export function getVideoNavigation(slug: string): {
+  prev: HelpVideoMetadata | null;
+  next: HelpVideoMetadata | null;
+} {
+  const video = HELP_VIDEOS.find(v => v.slug === slug);
+  if (!video) {
+    return { prev: null, next: null };
+  }
+  const catVideos = getVideosByCategory(video.category);
+  const index = catVideos.findIndex(v => v.slug === slug);
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
+  return {
+    prev: index > 0 ? catVideos[index - 1] : null,
+    next: index < catVideos.length - 1 ? catVideos[index + 1] : null,
+  };
+}
+
+/**
+ * Fast search across guides and videos.
  */
 export function searchHelp(query: string): HelpSearchResult {
   if (!query || query.trim().length === 0) {
@@ -167,8 +215,8 @@ export function searchHelp(query: string): HelpSearchResult {
     return (
       (v.title && v.title.toLowerCase().includes(q)) ||
       (v.description && v.description.toLowerCase().includes(q)) ||
-      (v.module && v.module.toLowerCase().includes(q)) ||
-      (v.workflow && v.workflow.toLowerCase().includes(q))
+      (v.audienceLabel && v.audienceLabel.toLowerCase().includes(q)) ||
+      (v.category && v.category.toLowerCase().includes(q))
     );
   });
 

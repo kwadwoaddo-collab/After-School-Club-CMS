@@ -68,16 +68,18 @@ export interface HelpGuideMetadata {
 
 export interface HelpVideoMetadata {
   id: string; // e.g. 'SS-D6-V001'
-  title: string;
-  description: string;
+  slug: string; // e.g. 'registering-a-multi-child-family-via-public-portal'
+  title: string; // Canonical D6 human-readable title
+  description: string; // Accurate learning objective
   category: HelpCategory;
-  module: string;
   videoUrl: string; // Public asset URL, e.g. '/training/assets/videos/SS-D6-V001.mp4'
-  durationEstimate: string; // e.g. '0:45'
-  targetGuideSlug: string;
-  targetAudience: HelpAudience[]; // Content audience personas
+  durationSeconds: number; // e.g. 60, 45, 30
+  durationLabel: string; // e.g. '60s', '45s', '30s'
+  targetGuideSlug: string; // Primary related guide slug
   recommendedStaffRoles: HelpStaffRole[]; // Authenticated CMS staff roles
-  workflow: string;
+  audienceLabel: string;
+  relatedGuideSlugs: string[];
+  order: number;
 }
 
 export interface HelpSearchResult {

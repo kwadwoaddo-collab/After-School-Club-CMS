@@ -132,19 +132,19 @@ describe('PM-1D.R1: Guide Reader Visual, Terminology & Navigation Reconciliation
     });
   });
 
-  describe('Video Walkthrough Non-Actionable Treatment (Req 10-11)', () => {
-    it('10, 11. renders video references as non-actionable informational badges without raw MP4 download links or Watch CTAs', () => {
+  describe('Video Walkthrough In-App Navigation (PM-1E Reconciled)', () => {
+    it('10, 11. renders in-guide video references as in-app navigation links to /dashboard/help/videos/[slug] without raw MP4 URLs', () => {
       const loaded = getGuideBySlug('attendance-roll-call')!;
       const html = renderToStaticMarkup(<MarkdownArticle content={loaded.content} guideTitle={loaded.meta.title} />);
 
-      // Non-actionable badge rendered
-      expect(html).toContain('Available in Training Videos');
-      expect(html).toContain('Marking Morning and Afternoon Class Register');
+      // Active navigation link rendered pointing to in-app video page
+      expect(html).toContain('href="/dashboard/help/videos/marking-morning-and-afternoon-class-register"');
+      expect(html).toContain('Watch: Marking Morning and Afternoon Class Register');
 
-      // No raw MP4 link or active watch anchor
+      // No raw MP4 link or file download anchor
       expect(html).not.toContain('href="/training/assets/videos/');
-      expect(html).not.toContain('<a href="/training/assets/videos/SS-D6-V006.mp4"');
-      expect(html).not.toContain('Watch: Marking Morning');
+      expect(html).not.toContain('href="assets/videos/');
+      expect(html).not.toContain('.mp4"');
     });
   });
 

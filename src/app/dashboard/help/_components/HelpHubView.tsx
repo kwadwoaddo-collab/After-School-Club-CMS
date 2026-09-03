@@ -313,17 +313,17 @@ export default function HelpHubView({
         </div>
       </section>
 
-      {/* 6. Forthcoming Media Modules & Master Manual */}
-      <section aria-label="Upcoming Training Features" className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-        {/* Video Library Teaser */}
-        <div className="rounded-xl border border-dashed border-border bg-surface/50 p-6 flex flex-col justify-between space-y-4">
+      {/* 6. Media Modules & Master Manual */}
+      <section aria-label="Core Training Modules" className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+        {/* Video Library Card */}
+        <div className="rounded-xl border border-border bg-surface p-6 flex flex-col justify-between space-y-4 hover:border-accent/40 hover:shadow-xs transition-all">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="p-2.5 rounded-lg bg-page text-text-muted">
-                <Video className="size-5 text-accent" aria-hidden="true" />
+              <span className="p-2.5 rounded-lg bg-accent-soft text-accent">
+                <Video className="size-5" aria-hidden="true" />
               </span>
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent-soft/50 text-accent border border-accent/20">
-                Coming Soon
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-surface-elevated text-text-secondary border border-border">
+                52 Videos
               </span>
             </div>
             <div>
@@ -331,14 +331,19 @@ export default function HelpHubView({
                 Training Video Library
               </h3>
               <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
-                52 short walkthrough videos (30–90 seconds each) demonstrating real operational
+                52 short walkthrough videos (30–60 seconds each) demonstrating real operational
                 tasks including roll-call attendance, kiosk sign-in, booking adjustments, and payment reconciliation.
               </p>
             </div>
           </div>
-          <div className="text-xs text-text-muted flex items-center gap-1.5 pt-2 border-t border-border-subtle">
-            <Clock className="size-3.5" aria-hidden="true" />
-            <span>Integrated video player coming soon</span>
+          <div className="pt-2 border-t border-border-subtle">
+            <Link
+              href="/dashboard/help/videos"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80 transition-colors group"
+            >
+              <span>Browse Video Library</span>
+              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
+            </Link>
           </div>
         </div>
 

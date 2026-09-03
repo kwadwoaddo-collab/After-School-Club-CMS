@@ -190,7 +190,9 @@ describe('PM-1C: Help Centre Shell & Authorization', () => {
 
       expect(html).toContain('Training Video Library');
       expect(html).toContain('Full Continuous User Manual');
-      expect(html).toContain('Coming Soon');
+      expect(html).toContain('52 Videos');
+      expect(html).toContain('href="/dashboard/help/videos"');
+      expect(html).toContain('Browse Video Library');
 
       // Strict check: No internal PM milestone terminology visible to users
       expect(html).not.toContain('Milestone PM-1E');
@@ -200,7 +202,6 @@ describe('PM-1C: Help Centre Shell & Authorization', () => {
 
       // Ensure no dead anchor links are rendered
       expect(html).not.toContain('href="#"');
-      expect(html).not.toContain('href="/dashboard/help/videos"');
       expect(html).not.toContain('href="/dashboard/help/manual"');
     });
   });

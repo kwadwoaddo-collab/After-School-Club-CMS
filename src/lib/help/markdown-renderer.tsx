@@ -8,6 +8,7 @@ import {
   Video,
   ExternalLink,
 } from 'lucide-react';
+import { getVideoById } from './get-help-content';
 
 export interface TOCItem {
   id: string;
@@ -153,18 +154,38 @@ function renderInline(text: string): React.ReactNode[] {
       const isVideo = href.endsWith('.mp4') || href.includes('/videos/');
 
       if (isVideo) {
-        const cleanTitle = linkText.replace(/^Watch:\s*/i, '').trim();
-        nodes.push(
-          <span
-            key={`video-ref-${keyIndex++}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-page border border-border text-text-secondary my-1"
-            data-video-target={href}
-          >
-            <Video className="size-3.5 text-accent shrink-0" aria-hidden="true" />
-            <span className="font-semibold text-text">{cleanTitle}</span>
-            <span className="text-text-muted text-[11px]">— Available in Training Videos</span>
-          </span>
-        );
+        const videoId = href.split('/').pop()?.replace(/\.mp4$/, '');
+        const video = videoId ? getVideoById(videoId) : null;
+
+        if (video) {
+          const cleanTitle = linkText.replace(/^Watch:\s*/i, '').trim();
+          nodes.push(
+            <Link
+              key={`video-link-${keyIndex++}`}
+              href={`/dashboard/help/videos/${video.slug}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-page border border-border text-accent hover:border-accent hover:bg-page-hover transition-colors my-1 group"
+              data-video-slug={video.slug}
+              data-video-id={video.id}
+            >
+              <Video className="size-3.5 text-accent shrink-0 group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="font-semibold text-text group-hover:text-accent">Watch: {cleanTitle || video.title}</span>
+              <span className="text-text-muted text-[11px] group-hover:text-text-secondary">({video.durationLabel})</span>
+            </Link>
+          );
+        } else {
+          const cleanTitle = linkText.replace(/^Watch:\s*/i, '').trim();
+          nodes.push(
+            <span
+              key={`video-ref-${keyIndex++}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-page border border-border text-text-secondary my-1"
+              data-video-target={href}
+            >
+              <Video className="size-3.5 text-accent shrink-0" aria-hidden="true" />
+              <span className="font-semibold text-text">{cleanTitle}</span>
+              <span className="text-text-muted text-[11px]">— Available in Training Videos</span>
+            </span>
+          );
+        }
       } else if (isExternal) {
         nodes.push(
           <a
