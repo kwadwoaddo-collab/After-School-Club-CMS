@@ -38,7 +38,8 @@ export async function reconcilePayment(
   } catch {
     return { success: false, error: 'Unauthorized' };
   }
-  const organisationId = session.user.organisationId;
+  // requireTenantSession() redirects if organisationId is null, so this is always a string here.
+  const organisationId = session.user.organisationId!;
   const staffId = session.user.id;
 
   try {
