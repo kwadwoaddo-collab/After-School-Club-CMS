@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import LedgerClient from './LedgerClient';
 import { getSessionLedger } from '@/features/attendance/actions';
@@ -11,7 +11,7 @@ export default async function AttendanceLedgerPage({
 }: {
     searchParams: Promise<{ centre?: string; year?: string }>;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) redirect('/login');
 
     const params = await searchParams;

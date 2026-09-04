@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 import { db } from '@/db';
 import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
@@ -66,7 +66,7 @@ async function insertInvoiceAndLog(
 }
 
 export async function getParents(query: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     const matchingChildren = await db.select({ parentId: children.parentId }).from(children).where(
@@ -103,7 +103,7 @@ export async function getParents(query: string) {
 }
 
 export async function getChildrenByParent(parentId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     const results = await db.query.children.findMany({
@@ -150,7 +150,7 @@ export async function createInvoice(data: {
     notes?: string;
     centreId: string;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -245,7 +245,7 @@ export async function createLegacyFamilyAndInvoice(data: {
         centreId: string;
     };
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -324,7 +324,7 @@ export async function createAdHocInvoice(data: {
     notes?: string;
     centreId: string;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -389,7 +389,7 @@ export async function createAdHocInvoice(data: {
 }
 
 export async function getInvoiceDetails(invoiceId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -450,7 +450,7 @@ export async function recordPayment(data: {
     transactionReference?: string;
     recordedAt: Date;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -557,7 +557,7 @@ export async function recordPayment(data: {
 }
 
 export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -604,7 +604,7 @@ export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date)
 }
 
 export async function updateInvoiceNotes(invoiceId: string, notes: string | null) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
 
@@ -651,7 +651,7 @@ export async function updateInvoiceNotes(invoiceId: string, notes: string | null
 }
 
 export async function deleteInvoice(invoiceId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owner can delete invoices');
 
@@ -681,7 +681,7 @@ export async function deleteInvoice(invoiceId: string) {
 }
 
 export async function voidInvoice(invoiceId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     const orgId = session?.user?.organisationId;
     if (!orgId) throw new Error('Unauthorized');
     if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owner can void invoices');
@@ -724,7 +724,7 @@ export async function voidInvoice(invoiceId: string) {
 }
 
 export async function verifyPayment(paymentId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     return await db.transaction(async (tx) => {
@@ -797,7 +797,7 @@ export async function verifyPayment(paymentId: string) {
 }
 
 export async function failPayment(paymentId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     const payment = await db.query.payments.findFirst({
@@ -851,7 +851,7 @@ export async function failPayment(paymentId: string) {
  * Only allowed for invoices that are not already paid or voided.
  */
 export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) return { success: false, error: 'Unauthorized' };
     if ((session.user as any).role !== 'ORG_OWNER') return { success: false, error: 'Insufficient permissions' };
 

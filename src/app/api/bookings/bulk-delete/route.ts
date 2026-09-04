@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
@@ -14,7 +14,7 @@ const bulkDeleteSchema = z.object({
 
 export async function DELETE(request: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }

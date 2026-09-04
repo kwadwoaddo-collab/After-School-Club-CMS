@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import {
   getCategoryById,
   getGuideBySlug,
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: GuidePageProps): Promise<Meta
 }
 
 export default async function GuidePage({ params }: GuidePageProps) {
-  const session = await auth();
+  const session = await requireTenantSession();
 
   // 1. Enforce authenticated dashboard boundary
   if (!session?.user) {

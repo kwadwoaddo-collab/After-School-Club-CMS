@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { children } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -16,7 +16,7 @@ export interface RollResult {
 }
 
 export async function rollSchoolYearsAction(): Promise<RollResult> {
-  const session = await auth();
+  const session = await requireTenantSession();
   if (!session?.user?.organisationId) {
     throw new Error('Unauthorized');
   }

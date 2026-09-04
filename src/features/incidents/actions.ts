@@ -2,13 +2,13 @@
 
 import { db } from '@/db';
 import { incidents, children, centres } from '@/db/schema';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { eq, desc, and, isNull } from 'drizzle-orm';
 import { requirePermission } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 
 export async function getIncidents(centreId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) throw new Error('Unauthorized');
     if (!session.user.organisationId) throw new Error('No organisation context');
 
@@ -78,7 +78,7 @@ export async function createIncident(data: {
     bodyMapCoordinates?: { x: number; y: number }[];
     staffSignature?: string;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) throw new Error('Unauthorized');
     if (!session.user.organisationId) throw new Error('No organisation context');
 
@@ -136,7 +136,7 @@ export async function createIncident(data: {
 }
 
 export async function getCentreChildren(centreId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) throw new Error('Unauthorized');
     if (!session.user.organisationId) throw new Error('No organisation context');
 

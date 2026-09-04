@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -19,7 +19,7 @@ interface RouteContext {
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }

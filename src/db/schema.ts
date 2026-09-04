@@ -40,6 +40,9 @@ export const clubSessionTypeEnum = pgEnum('club_session_type', ['breakfast', 'af
 export const bookingPlanStatusEnum = pgEnum('booking_plan_status', ['active', 'paused', 'cancelled']);
 export const waitlistStatusEnum = pgEnum('waitlist_status', ['waiting', 'offered', 'accepted', 'expired', 'cancelled']);
 
+// PM-1.2: Organisation approval lifecycle
+export const organisationStatusEnum = pgEnum('organisation_status', ['PENDING', 'ACTIVE', 'SUSPENDED', 'REJECTED']);
+
 
 
 // ==================== ORGANISATIONS & CENTRES ====================
@@ -74,6 +77,16 @@ export const organisations = pgTable('organisations', {
 
   // Per-org subdomain for white-label routing (e.g. 'lewisham' → lewisham.sprintscaleit.co.uk)
   subdomain: varchar('subdomain', { length: 63 }).unique(),
+
+  // PM-1.2: Organisation approval lifecycle
+  // Schema default is PENDING. Migration 0024 backfills all pre-existing rows to ACTIVE
+  // before setting this default, so existing tenants are never disrupted.
+  approvalStatus: organisationStatusEnum('approval_status').default('PENDING').notNull(),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  // approvedBy stores the stable user UUID of the platform admin who approved/acted.
+  // Authoritative audit history is in auditEvents; this is a convenience column.
+  approvedBy: uuid('approved_by'),
+  rejectionReason: text('rejection_reason'),
 });
 
 export const centres = pgTable('centres', {

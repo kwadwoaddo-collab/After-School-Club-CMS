@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import WondeSettingsClient from './WondeSettingsClient';
 
 export default async function WondeSettingsPage() {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 

@@ -119,7 +119,8 @@ describe('updateCentreAction', () => {
     (auth as any).mockResolvedValueOnce(null);
     const { updateCentreAction } = await import('./[id]/settings/actions');
 
-    await expect(updateCentreAction('centre-1', { name: 'x' })).rejects.toThrow('Unauthorized');
+    // PM-1.2: requireTenantSession redirects unauthenticated callers
+    await expect(updateCentreAction('centre-1', { name: 'x' })).rejects.toThrow('REDIRECT:/login');
   });
 });
 

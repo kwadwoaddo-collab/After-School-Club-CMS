@@ -4,10 +4,10 @@ import { db } from '@/db';
 import { children } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 
 export async function updateStudentSchedule(studentId: string, sessions: string[]) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id || !session.user.organisationId) {
         throw new Error('Unauthorized');
     }

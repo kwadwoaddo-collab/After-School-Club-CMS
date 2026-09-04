@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { staffInvites } from '@/db/schema';
 import { and, eq, isNull, lt } from 'drizzle-orm';
@@ -9,7 +9,7 @@ import { and, eq, isNull, lt } from 'drizzle-orm';
 // DELETE /api/staff/invites/clear-expired - removes all expired+unused invites for the org
 export async function DELETE(request: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
 
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -71,6 +71,8 @@ export async function seedTrainingData() {
       subscriptionTier: 'professional',
       subscriptionStatus: 'active',
       registrationTerms: 'Standard Oakridge Club Terms & Safeguarding Agreement for Training Purposes.',
+      // PM-1.2: Internal training orgs are explicitly set ACTIVE — they must be operational for demo use
+      approvalStatus: 'ACTIVE',
     }).returning();
 
     // 4. Create Centres

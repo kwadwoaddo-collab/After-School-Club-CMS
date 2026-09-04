@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
 import { eq, and, gte, lte, inArray } from 'drizzle-orm';
@@ -17,7 +17,7 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
  */
 export async function GET(req: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return new NextResponse('Unauthorized', { status: 401 });
         }

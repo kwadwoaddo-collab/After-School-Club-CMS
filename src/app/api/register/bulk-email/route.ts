@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { registrations, registrationParents, registrationChildren, organisations, centres } from '@/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -15,7 +15,7 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
         }

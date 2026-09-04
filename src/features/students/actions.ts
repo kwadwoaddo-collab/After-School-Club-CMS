@@ -5,7 +5,7 @@
 import { db } from '@/db';
 import { children, parents } from '@/db/schema';
 import { eq, and, or, inArray, isNull, desc } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 /**
@@ -23,7 +23,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
  * O.3/O.4/O.5.
  */
 export async function getStudentExportData() {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     // Only Owner/Manager may export reports (Tutor and Front Desk cannot)

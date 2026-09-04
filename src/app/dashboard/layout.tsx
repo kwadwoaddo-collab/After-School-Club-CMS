@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -30,7 +30,7 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user) {
         return redirect('/login');

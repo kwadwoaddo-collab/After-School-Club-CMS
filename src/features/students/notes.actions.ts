@@ -5,11 +5,11 @@
 import { db } from '@/db';
 import { studentNotes } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 export async function getStudentNotes(childId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
@@ -32,7 +32,7 @@ export async function addStudentNote(
         rating?: 'excellent' | 'good' | 'satisfactory' | 'needs_improvement' | 'unsatisfactory';
     }
 ) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
@@ -66,7 +66,7 @@ export async function addStudentNote(
 
 
 export async function deleteStudentNote(noteId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
@@ -92,7 +92,7 @@ export async function deleteStudentNote(noteId: string) {
 }
 
 export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
@@ -132,7 +132,7 @@ export async function editStudentNote(
     }
 ) {
     // 1. Authenticate user
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }

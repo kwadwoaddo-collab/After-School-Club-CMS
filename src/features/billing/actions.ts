@@ -5,7 +5,7 @@
  * All mutations go through these functions (create, update, pause, etc.)
  */
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, invoices, children } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -34,7 +34,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
  * ORG_OWNER bypasses the check; everyone else must have the target centre in
  * their accessible-centres list.
  */
-async function assertCentreAccess(session: NonNullable<Awaited<ReturnType<typeof auth>>>, centreId: string): Promise<void> {
+async function assertCentreAccess(session: TypedSession, centreId: string): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session.user.role isn't in the base NextAuth type; same cast pattern used throughout src/features/finance/actions.ts
     const userRole = (session.user as any).role;
     if (userRole === 'ORG_OWNER') return;
@@ -44,8 +44,8 @@ async function assertCentreAccess(session: NonNullable<Awaited<ReturnType<typeof
     }
 }
 
-async function getOrgIdAndSession(): Promise<{ orgId: string; session: NonNullable<Awaited<ReturnType<typeof auth>>> }> {
-    const session = await auth();
+async function getOrgIdAndSession(): Promise<{ orgId: string; session: TypedSession }> {
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     return { orgId: session.user.organisationId, session };
 }
@@ -194,7 +194,7 @@ export async function removeChildFromConfig(configId: string, childId: string) {
 
 // ─── Status management ────────────────────────────────────────────────────────
 
-async function requireOwnedConfig(configId: string, orgId: string, session: NonNullable<Awaited<ReturnType<typeof auth>>>) {
+async function requireOwnedConfig(configId: string, orgId: string, session: TypedSession) {
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
         columns: { centreId: true },

@@ -47,6 +47,8 @@ export async function POST(req: Request) {
                 slug: orgSlug,
                 brandColor: data.brandColor,
                 logoUrl: data.logoUrl,
+                // PM-1.2: Explicitly set PENDING (defence-in-depth; DB default is also PENDING)
+                approvalStatus: 'PENDING',
             }).returning();
 
             // Create Centre

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { bookings, children } from '@/db/schema';
@@ -15,7 +15,7 @@ export default async function KioskPage(props: {
     searchParams: Promise<{ centre?: string }>;
 }) {
     const rawParams = await props.searchParams;
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) redirect('/login');
 
     const orgCentres = await getUserAccessibleCentres(session.user.id);

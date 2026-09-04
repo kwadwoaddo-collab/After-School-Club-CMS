@@ -65,13 +65,15 @@ describe('updateAttendanceTimelog', () => {
     it('throws error if user is not authenticated', async () => {
         (auth as any).mockResolvedValueOnce(null);
 
-        await expect(updateAttendanceTimelog(baseParams)).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
+        await expect(updateAttendanceTimelog(baseParams)).rejects.toThrow('REDIRECT:/login');
     });
 
     it('throws error if user has no organisation', async () => {
         (auth as any).mockResolvedValueOnce({ user: { id: 'user-1' } });
 
-        await expect(updateAttendanceTimelog(baseParams)).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects users with no org to onboarding
+        await expect(updateAttendanceTimelog(baseParams)).rejects.toThrow('REDIRECT:/onboarding');
     });
 
     // Milestone 3F — regression test: previously this action performed no
@@ -142,7 +144,8 @@ describe('getSessionLedger', () => {
     it('throws error if user is not authenticated', async () => {
         (auth as any).mockResolvedValueOnce(null);
 
-        await expect(getSessionLedger('centre-1')).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
+        await expect(getSessionLedger('centre-1')).rejects.toThrow('REDIRECT:/login');
     });
 
     // Milestone 3F — regression test: previously the centreId parameter was
@@ -177,7 +180,8 @@ describe('forgiveSessionsAction', () => {
     it('throws error if user is not authenticated', async () => {
         (auth as any).mockResolvedValueOnce(null);
 
-        await expect(forgiveSessionsAction(baseParams)).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
+        await expect(forgiveSessionsAction(baseParams)).rejects.toThrow('REDIRECT:/login');
     });
 
     it('throws error if role is not ORG_OWNER or MANAGER', async () => {
@@ -234,7 +238,8 @@ describe('updateChildFlags', () => {
     it('throws error if user is not authenticated', async () => {
         (auth as any).mockResolvedValueOnce(null);
 
-        await expect(updateChildFlags(baseParams)).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
+        await expect(updateChildFlags(baseParams)).rejects.toThrow('REDIRECT:/login');
     });
 
     // Milestone 3F — regression test: previously this action had no

@@ -105,6 +105,8 @@ export async function POST(req: NextRequest) {
                 address: address || null,
                 description: description || null,
                 logoUrl: logoUrl || null,
+                // PM-1.2: Explicitly set PENDING (defence-in-depth; DB default is also PENDING)
+                approvalStatus: 'PENDING',
             }).returning();
 
             // 2. Create User (Org Owner)

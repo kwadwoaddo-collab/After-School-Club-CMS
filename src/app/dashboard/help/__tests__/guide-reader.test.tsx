@@ -48,7 +48,7 @@ describe('PM-1D.R1: Guide Reader Visual, Terminology & Navigation Reconciliation
   describe('Duplicate Headings & Title Suppression (Req 1-3)', () => {
     it('1, 2. ensures exactly one primary title is rendered and redundant document preamble is suppressed', async () => {
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { role: 'MANAGER', organisationId: 'org-1', email: 'mgr@test.com' },
+        user: { id: 'user-1', role: 'MANAGER', organisationId: 'org-1', email: 'mgr@test.com' },
       } as any);
 
       const vnode = await GuidePage({ params: Promise.resolve({ slug: 'attendance-roll-call' }) });
@@ -85,7 +85,7 @@ describe('PM-1D.R1: Guide Reader Visual, Terminology & Navigation Reconciliation
   describe('Human-Readable Role Labels (Req 4-5)', () => {
     it('4, 5. displays human-readable role labels and avoids raw enum strings in the header', async () => {
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { role: 'MANAGER', organisationId: 'org-1', email: 'mgr@test.com' },
+        user: { id: 'user-1', role: 'MANAGER', organisationId: 'org-1', email: 'mgr@test.com' },
       } as any);
 
       const vnode = await GuidePage({ params: Promise.resolve({ slug: 'attendance-roll-call' }) });
@@ -110,7 +110,7 @@ describe('PM-1D.R1: Guide Reader Visual, Terminology & Navigation Reconciliation
 
     it('6. desktop sticky TOC is rendered with links', async () => {
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { role: 'MANAGER', organisationId: 'org-1', email: 'mgr@test.com' },
+        user: { id: 'user-1', role: 'MANAGER', organisationId: 'org-1', email: 'mgr@test.com' },
       } as any);
 
       const vnode = await GuidePage({ params: Promise.resolve({ slug: 'attendance-roll-call' }) });
@@ -252,7 +252,8 @@ describe('PM-1D.R1: Guide Reader Visual, Terminology & Navigation Reconciliation
         .rejects.toThrow('REDIRECT:/login');
 
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { role: 'MANAGER', email: 'mgr@test.com' },
+        // PM-1.2: user has id but no org → requireTenantSession redirects to /onboarding
+        user: { id: 'user-1', role: 'MANAGER', email: 'mgr@test.com' },
       } as any);
       await expect(GuidePage({ params: Promise.resolve({ slug: 'attendance-roll-call' }) }))
         .rejects.toThrow('REDIRECT:/onboarding');

@@ -1,13 +1,13 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
 
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

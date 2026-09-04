@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres } from '@/db/schema';
 import { eq, and, inArray, isNull } from 'drizzle-orm';
@@ -12,7 +12,7 @@ import { emailService } from '@/lib/services/email';
 import { createRegistrationNotification } from '@/app/portal/notifications/actions';
 
 export async function deleteRegistrations(ids: string[]) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
     if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owners can delete registrations');
 
@@ -39,7 +39,7 @@ export async function deleteRegistrations(ids: string[]) {
 export async function assignRegistrationCentre(registrationId: string, centreId: string | null) {
     // Milestone 3L D1: role check + org ownership verification of registrationId and centreId.
     // Previously callable by any authenticated session with no role check and no org boundary.
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
 
     const userRole = (session.user as any).role as string;
@@ -121,7 +121,7 @@ export interface UpdateRegistrationPayload {
 export async function updateRegistrationDetails(payload: UpdateRegistrationPayload) {
     // Milestone 3L D2: add role check; also scope parent/child canonical record updates
     // to the session org to prevent cross-org PII mutation via foreign parentId/childId.
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
 
     const userRole = (session.user as any).role as string;
@@ -224,7 +224,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
 }
 
 export async function generateRegistrationLink(parentId: string, centreId: string, childIds?: string[]) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
     const userId = session.user.id;
@@ -287,7 +287,7 @@ export async function updateRegistrationStatus(
     registrationId: string,
     newStatus: 'signed_up' | 'not_interested' | 'awaiting_confirmation'
 ) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
 
     // Milestone 3L D3: role gate (previously absent — any authenticated user could call this)

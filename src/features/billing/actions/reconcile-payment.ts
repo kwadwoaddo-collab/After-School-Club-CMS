@@ -5,7 +5,7 @@ import { invoices, payments, children, parents } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const ReconcileSchema = z.object({
@@ -29,8 +29,13 @@ const ReconcileSchema = z.object({
 export async function reconcilePayment(
   input: z.infer<typeof ReconcileSchema>
 ): Promise<{ success: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user?.organisationId) {
+  // PM-1.2: requireTenantSession throws a redirect for unauthenticated/no-org
+  // callers. Since this action returns a structured result (not throws), we
+  // catch the redirect and convert it to the expected error shape.
+  let session: Awaited<ReturnType<typeof requireTenantSession>>;
+  try {
+    session = await requireTenantSession();
+  } catch {
     return { success: false, error: 'Unauthorized' };
   }
   const organisationId = session.user.organisationId;

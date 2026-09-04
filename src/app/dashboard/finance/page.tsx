@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices, centres } from '@/db/schema';
@@ -29,7 +29,7 @@ export default async function FinancePage(props: {
     }>
 }) {
     const searchParams = await props.searchParams;
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');

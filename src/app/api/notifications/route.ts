@@ -1,13 +1,13 @@
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { notifications } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 export async function GET() {
     try {
-        const session = await auth();
+        const session = await getApiSession();
 
         if (!session?.user?.id) {
             return NextResponse.json(
@@ -52,7 +52,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
 
         if (!session?.user?.id) {
             return NextResponse.json(

@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { centreAvailabilityRules } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -18,7 +18,7 @@ export interface DayRule {
 }
 
 export async function updateAvailability(centreId: string, rules: DayRule[]) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }

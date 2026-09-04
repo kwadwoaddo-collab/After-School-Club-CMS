@@ -4,13 +4,13 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 
 const ALLOWED_ROLES = ['TUTOR', 'FRONT_DESK', 'MANAGER', 'ORG_OWNER'] as const;
 type StaffRole = typeof ALLOWED_ROLES[number];
 
 export async function updateStaffRole(targetUserId: string, newRole: StaffRole) {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user?.id || !session.user.organisationId) {
         throw new Error('Unauthorized');

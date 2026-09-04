@@ -118,14 +118,13 @@ describe('Communications Actions', () => {
     it('rejects when there is no session (C1)', async () => {
       (auth as any).mockResolvedValue(null);
 
-      const result = await sendBroadcast({
+      // PM-1.2: requireTenantSession now redirects (throws REDIRECT error) when unauthenticated.
+      // Unauthenticated callers are terminated before touching any data.
+      await expect(sendBroadcast({
         audienceParentIds: ['p1'],
         subject: 'Test',
         message: 'Hello',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toMatch(/unauthorized/i);
+      })).rejects.toThrow('REDIRECT:/login');
       expect(db.select).not.toHaveBeenCalled();
     });
 
@@ -370,8 +369,8 @@ describe('Communications Actions', () => {
   describe('getBroadcasts (C4/C5)', () => {
     it('returns nothing for an unauthenticated caller', async () => {
       (auth as any).mockResolvedValue(null);
-      const result = await getBroadcasts('centre-1');
-      expect(result).toEqual([]);
+      // PM-1.2: requireTenantSession now redirects (throws REDIRECT error) when unauthenticated.
+      await expect(getBroadcasts('centre-1')).rejects.toThrow('REDIRECT:/login');
     });
 
     it('scopes the query by organisationId, not centreId alone', async () => {

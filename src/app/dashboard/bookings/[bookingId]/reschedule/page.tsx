@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
@@ -12,7 +12,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { Card } from '@/components/ui/Card';
 
 export default async function ReschedulePage({ params }: { params: Promise<{ bookingId: string }> }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     const { bookingId } = await params;
 
     if (!session?.user) return redirect('/login');

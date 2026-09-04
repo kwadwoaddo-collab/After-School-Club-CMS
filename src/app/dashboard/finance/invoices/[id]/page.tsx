@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import { getInvoiceDetails } from '@/features/finance/actions';
 import InvoiceDetailsClient from '@/features/finance/components/InvoiceDetailsClient';
@@ -15,7 +15,7 @@ interface InvoicePageProps {
 
 export default async function InvoicePage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');

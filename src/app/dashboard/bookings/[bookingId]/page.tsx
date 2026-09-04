@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
@@ -43,7 +43,7 @@ interface BookingPageProps {
 
 export default async function BookingDetailPage({ params }: BookingPageProps) {
     const { bookingId } = await params;
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) redirect('/login');
 
     if (bookingId === 'new') return notFound();

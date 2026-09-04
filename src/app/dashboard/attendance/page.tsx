@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { bookings, children } from '@/db/schema';
@@ -20,7 +20,7 @@ export default async function AttendancePage(props: {
     searchParams: Promise<{ date?: string; centre?: string }>;
 }) {
     const rawParams = await props.searchParams;
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) redirect('/login');
     let targetDate = new Date();
     if (rawParams.date) {

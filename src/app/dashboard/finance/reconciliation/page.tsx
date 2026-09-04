@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { invoices, parents, children, payments, centres } from '@/db/schema';
 import { eq, and, sql, notInArray, desc, inArray } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { ReconciliationClient } from './reconciliation-client';
@@ -17,7 +17,7 @@ export default async function ReconciliationPage(props: {
   }>
 }) {
   const searchParams = await props.searchParams;
-  const session = await auth();
+  const session = await requireTenantSession();
 
   if (!session?.user) return redirect('/login');
   if (!session.user.organisationId) return redirect('/onboarding');

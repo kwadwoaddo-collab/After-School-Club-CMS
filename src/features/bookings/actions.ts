@@ -11,14 +11,14 @@ import { eq, and, gt, gte, lte, or, desc, inArray, type InferInsertModel } from 
 // column subset of bookingAttendees conditionally before a single .set() call.
 type AttendeeUpdateFields = Partial<InferInsertModel<typeof bookingAttendees>>;
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import type { AttendanceStatus } from '@/lib/attendance';
 import { emailService } from '@/lib/services/email';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
 import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user?.organisationId) {
         throw new Error('Unauthorized');
@@ -53,7 +53,7 @@ export async function updateBookingStatus(bookingId: string, status: 'completed'
 }
 
 export async function rescheduleBooking(bookingId: string, newStartAt: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user?.organisationId) {
         throw new Error('Unauthorized');
@@ -108,7 +108,7 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
 }
 
 export async function saveAssessmentFeedback(attendeeId: string, data: { notes?: string; score?: string; base64?: string; mime?: string }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     // Security check: verify attendee belongs to org
@@ -143,7 +143,7 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
 }
 
 export async function sendAssessmentFeedback(attendeeId: string) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     const attendee = await db.query.bookingAttendees.findFirst({
@@ -208,7 +208,7 @@ export async function markAttendeeAttendance(params: {
     sessionTime?: string;
     centreId?: string;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id || !session.user.organisationId) {
         throw new Error('Unauthorized');
     }
@@ -445,7 +445,7 @@ export async function markAttendeeAttendance(params: {
  * project-notes/milestone-3i-reports-audit.md, O.1/O.2.
  */
 export async function getExportData() {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     // Only Owner/Manager may export reports (Tutor and Front Desk cannot)
@@ -495,7 +495,7 @@ export async function registerWalkInChild(params: {
     parentPhone?: string;
     sessionTime: string; // e.g. "15:30"
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     const orgId = session?.user?.organisationId;
     if (!session?.user?.id || !orgId) {
         throw new Error('Unauthorized');
@@ -592,7 +592,7 @@ export async function registerExistingChildWalkIn(params: {
     childId: string;
     sessionTime: string; // e.g. "15:30"
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     const orgId = session?.user?.organisationId;
     if (!session?.user?.id || !orgId) {
         throw new Error('Unauthorized');

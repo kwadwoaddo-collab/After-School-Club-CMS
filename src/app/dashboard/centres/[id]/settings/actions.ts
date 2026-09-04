@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function updateCentreAction(centreId: string, data: any) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     // Milestone 3D: this server action is independently callable regardless

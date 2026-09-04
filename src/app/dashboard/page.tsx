@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, centres, registrations, bookings, children, staffInvites } from '@/db/schema';
@@ -21,7 +21,7 @@ import { parseISO, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, sub
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
 

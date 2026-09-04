@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
 import { eq, and, gte, lte, desc } from 'drizzle-orm';
@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(req: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return new NextResponse('Unauthorized', { status: 401 });
         }

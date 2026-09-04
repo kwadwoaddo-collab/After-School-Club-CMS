@@ -71,3 +71,87 @@ export async function requireTypedSession(): Promise<TypedSession> {
   }
   return session;
 }
+
+/**
+ * PM-1.2 — Require authenticated identity only.
+ *
+ * Use for surfaces that must establish user identity but must NOT enforce
+ * ACTIVE organisation status:
+ *   - /pending-approval (status experience page)
+ *   - /platform/* (platform admin — independent of tenant status)
+ *   - /onboarding (user has no org yet)
+ *
+ * Redirects unauthenticated users to /login.
+ * Does NOT check organisation approval_status.
+ */
+export async function requireAuthenticatedIdentity(): Promise<TypedSession> {
+  return requireTypedSession();
+}
+
+/**
+ * PM-1.2 — Require authenticated session AND an ACTIVE organisation.
+ *
+ * Use for ALL tenant-operational surfaces:
+ *   - /dashboard/* pages
+ *   - /features/* server actions
+ *   - /app/api/* tenant routes
+ *
+ * Authorization source of truth: the database (queried at call time via assertOrgActive).
+ * Never reads JWT/session fields for the org-status decision.
+ *
+ * Throws OrgNotActiveError → callers redirect to /pending-approval.
+ * For API routes: catch OrgNotActiveError and return 403.
+ */
+export async function requireTenantSession(): Promise<TypedSession> {
+  const session = await requireTypedSession();
+
+  if (!session.user.organisationId) {
+    // User has no org — redirect to onboarding
+    const { redirect } = await import('next/navigation');
+    redirect('/onboarding');
+    return undefined as never;
+  }
+
+  // Dynamic import avoids circular dependency: session.ts → org-approval-guard.ts → session.ts
+  const { assertOrgActive } = await import('@/lib/org-approval-guard');
+  await assertOrgActive(session.user.organisationId);
+
+  return session;
+}
+
+/**
+ * PM-1.2 — API-route variant of requireTenantSession.
+ *
+ * Returns null instead of throwing a redirect, so API route handlers can
+ * return proper 401/403 HTTP responses rather than triggering a redirect.
+ *
+ * Use this in any `src/app/api/**\/route.ts` file as a drop-in for the
+ * old `const session = await auth()` pattern:
+ *
+ * ```ts
+ * const session = await getApiSession();
+ * if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ * ```
+ *
+ * Returns null when:
+ *   - Not authenticated (no valid session)
+ *   - Authenticated but no organisationId (not yet onboarded)
+ *   - Organisation is not ACTIVE (PENDING/SUSPENDED/REJECTED)
+ *
+ * For the last case callers may wish to return 403 rather than 401 if they
+ * need to distinguish, but a plain 401 is fine for most API consumers.
+ */
+export async function getApiSession(): Promise<TypedSession | null> {
+  const session = await getTypedSession();
+  if (!session?.user?.id) return null;
+  if (!session.user.organisationId) return null;
+
+  try {
+    const { assertOrgActive } = await import('@/lib/org-approval-guard');
+    await assertOrgActive(session.user.organisationId);
+  } catch {
+    return null;
+  }
+
+  return session;
+}

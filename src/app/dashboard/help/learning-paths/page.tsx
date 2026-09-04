@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import {
   getAllLearningPaths,
   getLearningPathForRole,
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LearningPathsPage() {
-  const session = await auth();
+  const session = await requireTenantSession();
 
   // 1. Enforce authenticated dashboard boundary
   if (!session?.user) {

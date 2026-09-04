@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -46,7 +46,7 @@ const billingSchema = z.object({
 });
 
 export async function updateCentreBilling(payload: CentreBillingPayload) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
     if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owners can update billing settings');
 

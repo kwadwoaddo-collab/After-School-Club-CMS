@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { centres, centreAvailabilityRules } from '@/db/schema';
@@ -16,7 +16,7 @@ export default async function EditAvailabilityPage({ params }: { params: Promise
         notFound();
     }
  
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id) {
         redirect('/login');
     }

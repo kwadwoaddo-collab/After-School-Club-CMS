@@ -35,6 +35,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { userRoleEnum } from '@/db/schema';
+import { assertOrgActive, OrgNotActiveError } from '@/lib/org-approval-guard';
 
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
@@ -74,6 +75,9 @@ function resolveAllowedRoles(options: RequireAuthOptions): UserRole[] | null {
  * Require authentication (and optionally a role) for a server component.
  * Redirects if the check fails — never returns to the caller in that case.
  *
+ * PM-1.2: Also enforces ACTIVE organisation status.
+ * PENDING, SUSPENDED, and REJECTED orgs are redirected to /pending-approval.
+ *
  * @throws Redirect (Next.js's redirect() throws internally; never wrap this
  *         call in a try/catch that could swallow that throw)
  */
@@ -94,6 +98,17 @@ export async function requireAuth(options: RequireAuthOptions = {}): Promise<Aut
 
   if (!user.organisationId) {
     redirect(onboardingRedirect);
+  }
+
+  // PM-1.2: Enforce ACTIVE organisation status.
+  // Queries the DB directly — never trusts JWT/session for this decision.
+  try {
+    await assertOrgActive(user.organisationId);
+  } catch (err) {
+    if (err instanceof OrgNotActiveError) {
+      redirect('/pending-approval');
+    }
+    throw err;
   }
 
   const allowedRoles = resolveAllowedRoles(options);
@@ -122,6 +137,9 @@ export async function requireAuth(options: RequireAuthOptions = {}): Promise<Aut
  * helper doesn't distinguish the two in its return value so callers that
  * need to pick a specific status should check session/role themselves, but
  * for the common case a plain null → 401 is fine.
+ *
+ * PM-1.2: Also enforces ACTIVE organisation status.
+ * Returns null (→ 403) for PENDING, SUSPENDED, and REJECTED orgs.
  */
 export async function requireApiAuth(
   options: { roles?: UserRole[]; role?: UserRole } = {}
@@ -136,6 +154,16 @@ export async function requireApiAuth(
 
   if (!user.organisationId) {
     return null;
+  }
+
+  // PM-1.2: Enforce ACTIVE organisation status.
+  try {
+    await assertOrgActive(user.organisationId);
+  } catch (err) {
+    if (err instanceof OrgNotActiveError) {
+      return null; // Caller returns 403
+    }
+    throw err;
   }
 
   const allowedRoles = resolveAllowedRoles(options);

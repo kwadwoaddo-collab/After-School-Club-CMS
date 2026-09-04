@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -9,7 +9,7 @@ import { centres, children } from '@/db/schema';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 
 export default async function ReceiptPage() {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user) return redirect('/login');
     const orgId = (session.user as any).organisationId;

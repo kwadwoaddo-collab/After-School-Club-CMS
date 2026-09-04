@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { users, centreMemberships, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -13,7 +13,7 @@ const assignSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
 
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

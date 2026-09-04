@@ -4,6 +4,8 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
+    // PM-1.2: Register global test setup so next/navigation and org-approval-guard mocks apply
+    setupFiles: ['./vitest.setup.ts'],
     alias: {
       '@': path.resolve(__dirname, './src')
     },

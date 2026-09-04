@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { organisations, bookings, centres, bookingAttendees, parents, children } from '@/db/schema';
@@ -34,7 +34,7 @@ export default async function BookingsPage(props: {
     }>
 }) {
     const rawSearchParams = await props.searchParams;
-    const session = await auth();
+    const session = await requireTenantSession();
 
     const searchParams = {
         view:   Array.isArray(rawSearchParams.view)   ? rawSearchParams.view[0]   : rawSearchParams.view,

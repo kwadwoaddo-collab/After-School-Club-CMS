@@ -56,9 +56,11 @@ async function seed() {
     slug: 'bright-star-academy',
     contactEmail: userEmail,
     brandColor: '#136dec',
+    // PM-1.2: Internal demo orgs are explicitly ACTIVE — they must be operational
+    approvalStatus: 'ACTIVE',
   }).onConflictDoUpdate({
     target: organisations.slug,
-    set: { contactEmail: userEmail }
+    set: { contactEmail: userEmail, approvalStatus: 'ACTIVE' }
   }).returning();
 
   const orgId = demoOrg.id;

@@ -124,8 +124,9 @@ describe('assignRegistrationCentre — Milestone 3L D1', () => {
         const { assignRegistrationCentre } = await import(
             '@/app/dashboard/registrations/actions'
         );
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
         await expect(assignRegistrationCentre('reg-1', null)).rejects.toThrow(
-            'Unauthorized'
+            'REDIRECT:/login'
         );
     });
 
@@ -212,8 +213,9 @@ describe('updateRegistrationDetails — Milestone 3L D2', () => {
         const { updateRegistrationDetails } = await import(
             '@/app/dashboard/registrations/actions'
         );
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
         await expect(updateRegistrationDetails(minimalPayload as any)).rejects.toThrow(
-            'Unauthorized'
+            'REDIRECT:/login'
         );
     });
 
@@ -270,9 +272,10 @@ describe('updateRegistrationStatus server action — Milestone 3L D3', () => {
         const { updateRegistrationStatus } = await import(
             '@/app/dashboard/registrations/actions'
         );
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
         await expect(
             updateRegistrationStatus('reg-1', 'signed_up')
-        ).rejects.toThrow('Unauthorized');
+        ).rejects.toThrow('REDIRECT:/login');
     });
 });
 

@@ -75,7 +75,8 @@ describe('getExportData (bookings CSV export) — Milestone 3I O.1/O.2', () => {
     (auth as any).mockResolvedValueOnce(null);
     const { getExportData } = await import('./../bookings/actions');
 
-    await expect(getExportData()).rejects.toThrow('Unauthorized');
+    // PM-1.2: requireTenantSession redirects unauthenticated callers
+    await expect(getExportData()).rejects.toThrow('REDIRECT:/login');
   });
 
   it('rejects TUTOR', async () => {
@@ -153,7 +154,8 @@ describe('getStudentExportData (student CSV export) — Milestone 3I O.3/O.4/O.5
     (auth as any).mockResolvedValueOnce(null);
     const { getStudentExportData } = await import('./../students/actions');
 
-    await expect(getStudentExportData()).rejects.toThrow('Unauthorized');
+    // PM-1.2: requireTenantSession redirects unauthenticated callers
+    await expect(getStudentExportData()).rejects.toThrow('REDIRECT:/login');
   });
 
   it('rejects TUTOR', async () => {

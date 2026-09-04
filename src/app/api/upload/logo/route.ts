@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { nanoid } from 'nanoid';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { validateImageContent } from '@/lib/file-validation';
 
 import { uploadToBlob } from '@/lib/services/blob';
@@ -21,7 +21,7 @@ const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 export async function POST(request: NextRequest) {
   try {
     // Auth check — only ORG_OWNERs may upload logos
-    const session = await auth();
+    const session = await getApiSession();
     if (!session?.user?.organisationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

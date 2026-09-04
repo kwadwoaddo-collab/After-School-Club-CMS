@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { requirePermission } from '@/lib/permissions';
 import { WondeService, WondeStudent } from '@/lib/services/wonde';
 import { db } from '@/db';
@@ -10,7 +10,7 @@ import { resolveActiveCentreId } from '@/lib/centre-filter';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export async function triggerWondeSync() {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     
     // Was 'MANAGE_ORG' — not a valid role literal, so requirePermission silently

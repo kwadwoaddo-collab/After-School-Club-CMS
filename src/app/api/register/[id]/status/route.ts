@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { registrations, registrationParents, registrationChildren, organisations, centres } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -16,7 +16,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     // ── 1. Authentication ───────────────────────────────────────────────────
-    const session = await auth();
+    const session = await getApiSession();
     if (!session?.user?.organisationId) {
         return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }

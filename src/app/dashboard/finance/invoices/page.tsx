@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
 
 export default async function InvoicesListPage() {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');

@@ -3,13 +3,13 @@ import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { redirect } from 'next/navigation';
 
 export async function createCentre(prevState: any, formData: FormData) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) {
         return { message: 'Unauthorized' };
     }

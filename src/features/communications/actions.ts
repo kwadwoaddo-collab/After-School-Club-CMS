@@ -3,7 +3,7 @@
 import { db } from '@/db';
 import { parents, broadcasts, bookings, clubSessions } from '@/db/schema';
 import { eq, inArray, and, sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { requireTenantSession, TypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { sendEmail } from '@/lib/services/email';
 import { logger } from '@/lib/logger';
@@ -54,7 +54,7 @@ export async function sendBroadcast(data: {
   subject: string;
   message: string;
 }) {
-  const session = await auth();
+  const session = await requireTenantSession();
   if (!session?.user?.organisationId) {
     return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized' };
   }
@@ -176,7 +176,7 @@ export async function sendBroadcast(data: {
  * shared module since it's only used by the three functions in this file.
  */
 async function assertReadableCentre(
-  session: NonNullable<Awaited<ReturnType<typeof auth>>>,
+  session: TypedSession,
   centreId: string
 ): Promise<boolean> {
   if (centreId === 'all') return true;
@@ -188,7 +188,7 @@ async function assertReadableCentre(
 }
 
 export async function getBroadcasts(centreId: string) {
-  const session = await auth();
+  const session = await requireTenantSession();
   if (!session?.user?.organisationId) return [];
   if (!(await assertReadableCentre(session, centreId))) return [];
 
@@ -204,7 +204,7 @@ export async function getBroadcasts(centreId: string) {
 }
 
 export async function getClassesForCentre(centreId: string) {
-  const session = await auth();
+  const session = await requireTenantSession();
   if (!session?.user?.organisationId) return [];
   if (!(await assertReadableCentre(session, centreId))) return [];
 
@@ -227,7 +227,7 @@ export async function getClassesForCentre(centreId: string) {
 }
 
 export async function getParentsForCentre(centreId: string, classId?: string) {
-  const session = await auth();
+  const session = await requireTenantSession();
   if (!session?.user?.organisationId) return [];
   if (!(await assertReadableCentre(session, centreId))) return [];
 

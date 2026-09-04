@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { getAllVideos } from '@/lib/help/get-help-content';
 import { CMS_STAFF_ROLES, HelpStaffRole } from '@/lib/help/types';
 import VideoLibraryView from './_components/VideoLibraryView';
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function VideosPage() {
-  const session = await auth();
+  const session = await requireTenantSession();
 
   // 1. Enforce authenticated dashboard boundary
   if (!session?.user) {

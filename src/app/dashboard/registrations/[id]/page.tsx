@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect, notFound } from 'next/navigation';
 import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, organisations, centres } from '@/db/schema';
@@ -39,7 +39,7 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
         notFound();
     }
  
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user) redirect('/login');
     const orgId = (session.user as any).organisationId;
     if (!orgId) redirect('/onboarding');

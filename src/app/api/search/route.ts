@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
 import { ilike, or, eq, sql, and, isNull } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 
 // S-2 (Milestone 3M): Roles that may access the search API.
 // TUTOR is excluded because the Students and Parents pages are gated
@@ -14,7 +14,7 @@ const SEARCH_ALLOWED_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await auth();
+    const session = await getApiSession();
     if (!session?.user?.id || !session?.user?.organisationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { centres, centreAvailabilityRules } from '@/db/schema';
@@ -12,7 +12,7 @@ import { getUserAccessibleCentres } from '@/lib/permissions';
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default async function AvailabilityPage() {
-    const session = await auth();
+    const session = await requireTenantSession();
 
     if (!session?.user?.id) {
         redirect('/login');

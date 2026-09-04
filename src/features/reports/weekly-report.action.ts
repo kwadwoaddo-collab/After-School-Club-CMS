@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import {
     organisations, centres, registrations, registrationChildren,
@@ -103,7 +103,7 @@ export async function getWeeklyReport(
 ): Promise<WeeklyReportData> {
 
     // ── Auth ─────────────────────────────────────────────────────────────────
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
     // Allowlist roles — new roles must be explicitly granted

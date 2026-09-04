@@ -6,7 +6,7 @@ import { db } from '@/db';
 import { bookingAttendees, bookings, children, sessionCredits, users } from '@/db/schema';
 import { eq, and, gte, lte, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import { format } from 'date-fns';
 import {
     getAcademicYear,
@@ -30,7 +30,7 @@ export interface UpdateAttendanceParams {
 }
 
 export async function updateAttendanceTimelog(params: UpdateAttendanceParams) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
     const { attendeeId, checkInTime, checkOutTime, dateStr, absenceReason, attendanceNote, sessionTime } = params;
@@ -105,7 +105,7 @@ export async function getSessionLedger(
     centreId: string,
     academicYear?: string,
 ): Promise<StudentLedgerEntry[]> {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id || !session?.user?.organisationId) throw new Error('Unauthorized');
 
     // centreId is client-supplied — verify it belongs to the caller's
@@ -229,7 +229,7 @@ export async function forgiveSessionsAction(params: {
     note: string;
     academicYear?: string;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
     const role = (session.user as any).role as string;
@@ -271,7 +271,7 @@ export async function updateChildFlags(params: {
     flagBehaviour: boolean;
     flagNote?: string | null;
 }) {
-    const session = await auth();
+    const session = await requireTenantSession();
     if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
     // childId is client-supplied — verify org/centre ownership before writing.

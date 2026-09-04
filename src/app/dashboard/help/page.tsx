@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { requireTenantSession } from '@/lib/session';
 import {
   getAllCategories,
   getAllGuides,
@@ -36,7 +36,7 @@ const COMMON_TASK_SLUGS = [
 ];
 
 export default async function HelpPage() {
-  const session = await auth();
+  const session = await requireTenantSession();
 
   // 1. Enforce authenticated dashboard boundary
   if (!session?.user) {

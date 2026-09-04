@@ -69,7 +69,8 @@ describe('markAttendeeAttendance', () => {
             bookingId: 'booking-1',
             attendeeId: 'attendee-1',
             status: 'present',
-        })).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects unauthenticated callers
+        })).rejects.toThrow('REDIRECT:/login');
     });
 
     it('throws error if user has no organisation', async () => {
@@ -79,7 +80,8 @@ describe('markAttendeeAttendance', () => {
             bookingId: 'booking-1',
             attendeeId: 'attendee-1',
             status: 'present',
-        })).rejects.toThrow('Unauthorized');
+        // PM-1.2: requireTenantSession redirects users with no org
+        })).rejects.toThrow('REDIRECT:/onboarding');
     });
 
     it('throws error if booking does not exist', async () => {

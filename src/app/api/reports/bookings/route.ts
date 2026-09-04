@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -10,7 +10,7 @@ import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
 
 export async function GET() {
-  const session = await auth();
+  const session = await getApiSession();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

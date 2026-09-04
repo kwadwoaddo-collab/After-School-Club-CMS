@@ -90,7 +90,8 @@ describe('getCentreChildren — Milestone 3K D3/D4', () => {
     const { auth } = await import('@/lib/auth');
     (auth as any).mockResolvedValueOnce(null);
     const { getCentreChildren } = await import('@/features/incidents/actions');
-    await expect(getCentreChildren('centre-1')).rejects.toThrow('Unauthorized');
+    // PM-1.2: requireTenantSession redirects unauthenticated callers
+    await expect(getCentreChildren('centre-1')).rejects.toThrow('REDIRECT:/login');
   });
 
   it('queries with the provided centreId (D3 — previously ignored)', async () => {
@@ -152,7 +153,8 @@ describe('createIncident — Milestone 3K D5 cross-org verification', () => {
     const { createIncident } = await import('@/features/incidents/actions');
     await expect(
       createIncident({ centreId: 'c1', childId: 'ch1', type: 'accident', date: new Date(), description: 'test' })
-    ).rejects.toThrow('Unauthorized');
+    // PM-1.2: requireTenantSession redirects unauthenticated callers
+    ).rejects.toThrow('REDIRECT:/login');
   });
 
   it('rejects when centreId does not belong to session org (D5)', async () => {

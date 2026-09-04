@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import {
     organisations, parents, children, centres,
@@ -482,7 +482,7 @@ export async function GET(req: NextRequest) {
     // ── 1. Authentication — stop trusting the orgId query param ────────────
     // Previously any caller who knew an orgId could enumerate all registrations.
     // Now we derive the org from the authenticated session exclusively.
-    const session = await auth();
+    const session = await getApiSession();
     if (!session?.user?.organisationId) {
         return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }

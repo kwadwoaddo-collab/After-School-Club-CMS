@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import type { DiscountRule } from '@/db/schema';
 import { sql } from 'drizzle-orm';
@@ -9,7 +9,7 @@ import { sql } from 'drizzle-orm';
 // GET /api/settings/discounts
 export async function GET() {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -28,7 +28,7 @@ export async function GET() {
 // PATCH /api/settings/discounts
 export async function PATCH(request: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

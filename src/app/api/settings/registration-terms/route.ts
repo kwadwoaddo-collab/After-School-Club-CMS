@@ -1,14 +1,14 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET() {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const orgId = (session.user as any).organisationId;
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
     try {
-        const session = await auth();
+        const session = await getApiSession();
         if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const orgId = (session.user as any).organisationId;
