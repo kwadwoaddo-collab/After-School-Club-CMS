@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CURRENT_TERMS_VERSION, CURRENT_TERMS_EFFECTIVE_DATE } from '@/lib/constants/legal';
 
 export const metadata = {
   title: 'Privacy Policy | SprintScale',
@@ -26,11 +27,11 @@ export default function PrivacyPage() {
 
         <div className="mb-8">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
-            Privacy Policy · Version 2026-09-01
+            Privacy Policy · Version {CURRENT_TERMS_VERSION}
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Privacy Policy</h1>
           <p className="text-sm text-white/50">
-            Effective Date: 1 September 2026 · Initial Product Privacy Policy (Subject to Formal Legal Review)
+            Effective Date: {CURRENT_TERMS_EFFECTIVE_DATE} · Initial Terms and Privacy pages implemented; legal review remains an operational/business requirement.
           </p>
         </div>
 
@@ -39,9 +40,9 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-bold text-white mb-2">1. Overview & Scope</h2>
             <p>
               This Privacy Policy explains how SprintScale IT (&quot;SprintScale&quot;, &quot;we&quot;, &quot;us&quot;)
-              collects, processes, and protects personal information when you use our SaaS management platform.
-              We are committed to transparent, secure data handling compliant with the UK Data Protection Act 2018
-              and UK GDPR.
+              processes personal information in connection with our SaaS management platform, in alignment with principles
+              under the UK Data Protection Act 2018 and UK GDPR. Note: Initial Terms and Privacy pages implemented; formal
+              legal and regulatory review remains an operational/business requirement prior to commercial reliance.
             </p>
           </section>
 

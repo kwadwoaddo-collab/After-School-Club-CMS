@@ -18,6 +18,7 @@ dotenv.config({ path: '.env.local' });
 import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { assertSafeTrainingEnvironment } from '../src/lib/training-guard';
 import * as schema from '../src/db/schema';
 import {
   organisations,
@@ -30,15 +31,10 @@ import {
 let client: ReturnType<typeof postgres> | null = null;
 
 async function main() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) throw new Error('DATABASE_URL not set');
-  const urlObj = new URL(dbUrl);
-  console.log(`[E2E Guard] Connecting to DB Host: ${urlObj.host}`);
+  const { host } = assertSafeTrainingEnvironment();
+  console.log(`[E2E Guard Verified] Target host: ${host}`);
 
-  if (urlObj.host.includes('ep-delicate-forest')) {
-    throw new Error('FATAL: Attempting to run E2E against PRODUCTION database! Aborting immediately.');
-  }
-
+  const dbUrl = process.env.DATABASE_URL!;
   client = postgres(dbUrl, {
     max: 5,
     idle_timeout: 10,

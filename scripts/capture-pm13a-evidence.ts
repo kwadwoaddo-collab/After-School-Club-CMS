@@ -14,6 +14,7 @@ import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq, inArray } from 'drizzle-orm';
+import { assertSafeTrainingEnvironment } from '../src/lib/training-guard';
 import * as schema from '../src/db/schema';
 import {
   organisations,
@@ -31,13 +32,10 @@ const BASE_URL = 'http://localhost:3001';
 async function main() {
   fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
 
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) throw new Error('DATABASE_URL is not set');
-  const urlObj = new URL(dbUrl);
-  if (urlObj.host.includes('ep-delicate-forest')) {
-    throw new Error('FATAL: Attempting to run evidence capture on PRODUCTION! Aborting.');
-  }
+  const { host } = assertSafeTrainingEnvironment();
+  console.log(`[Capture Guard Verified] Target host: ${host}`);
 
+  const dbUrl = process.env.DATABASE_URL!;
   const client = postgres(dbUrl, { max: 5, ssl: 'require' });
   const db = drizzle(client, { schema });
 

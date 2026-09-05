@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { users, organisations } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, organisations, orgMemberships } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { validateImageContent } from '@/lib/file-validation';
 import { uploadToBlob } from '@/lib/services/blob';
@@ -11,17 +11,28 @@ import path from 'path';
 import { logger } from '@/lib/logger';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+// Strict raster images only — SVG explicitly forbidden to prevent Stored XSS / XML injection
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+const EXT_MAP: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+};
 
 /**
  * PM-1.3A: Dedicated Scoped Logo Upload for Onboarding
  *
  * Security Model:
  *   - Requires authenticated session (auth())
- *   - Verifies user role is ORG_OWNER
- *   - Target organisation is strictly derived from DB record (zero client trust)
- *   - Allows PENDING and ACTIVE organisations (rejects SUSPENDED / REJECTED)
- *   - Strict file type and content validation (magic bytes)
+ *   - Verifies user role is ORG_OWNER in users table
+ *   - Verifies an authoritative orgMemberships ownership record exists
+ *   - Target organisation is strictly derived from DB record (zero client trust, no client override)
+ *   - Strictly restricted to PENDING organisations only (ACTIVE organisations must use /api/upload/logo)
+ *   - Rejects SUSPENDED, REJECTED, or non-existent organisations (HTTP 403 / 404)
+ *   - Strict binary signature verification (PNG, JPEG, WEBP magic bytes)
+ *   - SVG rejected unconditionally to prevent XML/script injection attacks
+ *   - Filename is generated purely server-side with nanoid (path traversal impossible)
  *   - Scoped strictly to the caller's own organisation
  */
 export async function POST(request: NextRequest) {
@@ -44,16 +55,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify authoritative orgMemberships record
+    const membership = await db.query.orgMemberships.findFirst({
+      where: and(
+        eq(orgMemberships.userId, user.id),
+        eq(orgMemberships.organisationId, user.organisationId),
+        eq(orgMemberships.role, 'ORG_OWNER')
+      ),
+    });
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'Forbidden: User is not an owner member of this organisation' },
+        { status: 403 }
+      );
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const org = (user as any).organisation;
     if (!org) {
       return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
     }
 
-    // Disallow inactive states other than PENDING/ACTIVE
-    if (org.approvalStatus === 'SUSPENDED' || org.approvalStatus === 'REJECTED') {
+    // Onboarding-specific endpoint is strictly restricted to PENDING organisations
+    if (org.approvalStatus !== 'PENDING') {
       return NextResponse.json(
-        { error: `Forbidden: Organisation is ${org.approvalStatus}` },
+        { error: `Forbidden: Onboarding logo upload is only permitted for organisations in PENDING status. Current status: ${org.approvalStatus}` },
         { status: 403 }
       );
     }
@@ -71,12 +98,18 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const contentError = validateImageContent(file.type, buffer, ALLOWED_TYPES, { allowSvg: true });
+
+    // Validate binary signatures — allowSvg is false (SVG rejected)
+    const contentError = validateImageContent(file.type, buffer, ALLOWED_TYPES, { allowSvg: false });
     if (contentError) {
       return NextResponse.json({ error: contentError }, { status: 400 });
     }
 
-    const ext = file.type.split('/')[1].replace('svg+xml', 'svg');
+    const ext = EXT_MAP[file.type];
+    if (!ext) {
+      return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
+    }
+
     const filename = `uploads/${user.organisationId}/logos/logo-${nanoid(12)}.${ext}`;
 
     let publicUrl: string;

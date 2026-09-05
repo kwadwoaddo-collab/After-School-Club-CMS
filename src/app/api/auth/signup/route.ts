@@ -5,6 +5,7 @@ import { users } from '@/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { CURRENT_TERMS_VERSION } from '@/lib/constants/legal';
 
 export async function POST(request: NextRequest) {
     try {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
             role: 'ORG_OWNER',
             organisationId: null,
             termsAcceptedAt: new Date(),
-            termsVersion: '2026-09-01',
+            termsVersion: CURRENT_TERMS_VERSION,
         });
 
         return NextResponse.json(

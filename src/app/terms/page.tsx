@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CURRENT_TERMS_VERSION, CURRENT_TERMS_EFFECTIVE_DATE } from '@/lib/constants/legal';
 
 export const metadata = {
   title: 'Terms of Service | SprintScale',
@@ -26,11 +27,11 @@ export default function TermsPage() {
 
         <div className="mb-8">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3">
-            Product Terms · Version 2026-09-01
+            Product Terms · Version {CURRENT_TERMS_VERSION}
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Terms of Service</h1>
           <p className="text-sm text-white/50">
-            Effective Date: 1 September 2026 · Initial Product Terms (Subject to Formal Legal Review)
+            Effective Date: {CURRENT_TERMS_EFFECTIVE_DATE} · Initial Terms and Privacy pages implemented; legal review remains an operational/business requirement.
           </p>
         </div>
 
