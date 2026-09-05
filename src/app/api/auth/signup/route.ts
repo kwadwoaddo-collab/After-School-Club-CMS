@@ -19,11 +19,19 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { firstName, lastName, email, password } = body;
+        const { firstName, lastName, email, password, acceptedTerms } = body;
 
         if (!email || !password || !firstName || !lastName) {
             return NextResponse.json(
                 { error: 'All fields are required' },
+                { status: 400 }
+            );
+        }
+
+        // PM-1.3A: Mandatory server-side Terms of Service acceptance
+        if (acceptedTerms !== true) {
+            return NextResponse.json(
+                { error: 'You must accept the Terms of Service to create an account' },
                 { status: 400 }
             );
         }
@@ -35,11 +43,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         // Check if user already exists
         const existingUser = await db
             .select()
             .from(users)
-            .where(eq(users.email, email))
+            .where(eq(users.email, normalizedEmail))
             .limit(1);
 
         if (existingUser.length > 0) {
@@ -50,17 +60,19 @@ export async function POST(request: NextRequest) {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const fullName = `${firstName} ${lastName}`.trim();
+        const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
         // Create user — no org yet, that happens in /onboarding
         await db.insert(users).values({
-            email,
+            email: normalizedEmail,
             passwordHash: hashedPassword,
-            firstName,
-            lastName,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
             name: fullName,
             role: 'ORG_OWNER',
             organisationId: null,
+            termsAcceptedAt: new Date(),
+            termsVersion: '2026-09-01',
         });
 
         return NextResponse.json(

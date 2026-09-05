@@ -220,7 +220,7 @@ export default function Home() {
                                 <span className="gradient-text">$0</span>
                             </div>
                             <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                Perfect for getting started
+                                Early Access · Plan limits not currently enforced
                             </p>
                         </div>
 
@@ -229,13 +229,13 @@ export default function Home() {
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Up to 50 students</span>
+                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Core student & class management</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Basic booking management</span>
+                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Smart booking management</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -247,7 +247,7 @@ export default function Home() {
                                 <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Email support</span>
+                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Direct email support</span>
                             </li>
                         </ul>
 
@@ -348,10 +348,10 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Social Proof - Testimonials */}
+            {/* Product Overview / Purpose */}
             <section className="landing-section" style={{ background: 'rgba(139, 92, 246, 0.02)' }}>
                 <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Loved by Organizations</h2>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Built for Educational Providers</h2>
                 </div>
 
                 <div className="testimonial-card">
@@ -365,11 +365,11 @@ export default function Home() {
                         </div>
                     </div>
                     <p className="text-2xl mb-6" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                        "SprintScale has transformed how we manage our tuition centre. The automated booking system alone has saved us 10+ hours per week!"
+                        &quot;A dedicated platform designed to streamline administrative workflows for tuition centres and clubs—from student registrations and session booking to daily attendance and invoicing.&quot;
                     </p>
                     <div>
-                        <p className="font-bold text-lg">Sarah Johnson</p>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Director, ABC Learning Centre</p>
+                        <p className="font-bold text-lg">SprintScale CMS</p>
+                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Childcare & Tuition Management Architecture</p>
                     </div>
                 </div>
             </section>

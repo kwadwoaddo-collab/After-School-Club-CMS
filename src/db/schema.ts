@@ -138,6 +138,10 @@ export const users = pgTable('users', {
   passwordResetToken: varchar('password_reset_token', { length: 255 }),
   passwordResetExpiry: timestamp('password_reset_expiry', { withTimezone: true }),
 
+  // Terms & Compliance (PM-1.3A)
+  termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+  termsVersion: varchar('terms_version', { length: 50 }),
+
   // Compliance & Safeguarding
   dbsNumber: varchar('dbs_number', { length: 100 }),
   dbsExpiryDate: date('dbs_expiry_date'),

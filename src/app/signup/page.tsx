@@ -56,6 +56,7 @@ export default function SignupPage() {
           lastName: formData.lastName,
           email: formData.email,
           password: formData.password,
+          acceptedTerms: formData.acceptedTerms,
         }),
       });
 
@@ -121,12 +122,12 @@ export default function SignupPage() {
 
           <div className="grid grid-cols-3 gap-4 mb-12">
             {[
-              { value: '500+', label: 'Active Centres', color: 'blue' },
-              { value: '50k+', label: 'Bookings Made', color: 'purple' },
-              { value: '4.9', label: 'Avg Rating', color: 'yellow' },
+              { value: 'Multi-Centre', label: 'Architecture', color: 'blue' },
+              { value: 'Real-Time', label: 'Attendance', color: 'purple' },
+              { value: 'Automated', label: 'Billing & Invoicing', color: 'yellow' },
             ].map((stat) => (
               <div key={stat.label} className="p-6 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                <div className="text-xl font-bold text-white mb-1">{stat.value}</div>
                 <div className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
               </div>
             ))}
@@ -360,8 +361,12 @@ export default function SignupPage() {
                   />
                   <label htmlFor="terms" className="text-sm text-white/60">
                     I agree to the{' '}
-                    <Link href="/terms" className="text-blue-400 hover:text-blue-300">
-                      Terms and Conditions
+                    <Link href="/terms" target="_blank" className="text-blue-400 hover:text-blue-300 underline">
+                      Terms of Service
+                    </Link>{' '}
+                    and acknowledge the{' '}
+                    <Link href="/privacy" target="_blank" className="text-blue-400 hover:text-blue-300 underline">
+                      Privacy Policy
                     </Link>
                   </label>
                 </div>
