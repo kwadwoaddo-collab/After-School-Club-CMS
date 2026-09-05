@@ -30,7 +30,16 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const session = await requireTenantSession();
+    let session: any;
+    try {
+        session = await requireTenantSession();
+    } catch (err) {
+        const { OrgNotActiveError } = await import('@/lib/org-approval-guard');
+        if (err instanceof OrgNotActiveError) {
+            return redirect('/pending-approval');
+        }
+        throw err;
+    }
 
     if (!session?.user) {
         return redirect('/login');

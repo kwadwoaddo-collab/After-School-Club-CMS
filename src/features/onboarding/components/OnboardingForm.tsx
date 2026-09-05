@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/lib/logger';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,35 +40,21 @@ export default function OnboardingForm() {
     const watchedColor = useWatch({ control, name: 'brandColor' });
     const watchedLogo = useWatch({ control, name: 'logoUrl' });
 
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setIsUploading(true);
-        setError(null);
-
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const res = await fetch('/api/upload/logo', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!res.ok) throw new Error('Upload failed');
-
-            const data = await res.json();
-            if (data.success) {
-                setValue('logoUrl', data.url);
-            } else {
-                throw new Error(data.error || 'Upload failed');
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Logo upload failed');
-        } finally {
-            setIsUploading(false);
+        if (file.size > 2 * 1024 * 1024) {
+            setError('Logo file too large. Maximum size: 2MB');
+            return;
         }
+
+        setError(null);
+        setSelectedLogoFile(file);
+        // Instant client-side preview
+        setValue('logoUrl', URL.createObjectURL(file));
     };
 
     const onSubmit = async (data: OnboardingInput) => {
@@ -75,10 +62,15 @@ export default function OnboardingForm() {
         setError(null);
 
         try {
+            // 1. Create organisation, centre, and initial membership
             const res = await fetch('/api/onboarding', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    organisationName: data.organisationName,
+                    centreName: data.centreName,
+                    brandColor: data.brandColor,
+                }),
             });
 
             if (!res.ok) {
@@ -86,10 +78,26 @@ export default function OnboardingForm() {
                 throw new Error(errorData.error || 'Setup failed');
             }
 
-            // Force a full page reload so the JWT session is re-fetched with the
-            // new organisationId. Using router.push() alone leaves the stale JWT
-            // in place and can bounce the user back to /onboarding.
-            window.location.assign('/dashboard');
+            // 2. If a logo file was selected, upload via scoped onboarding logo endpoint
+            if (selectedLogoFile) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', selectedLogoFile);
+                    const logoRes = await fetch('/api/onboarding/logo', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (!logoRes.ok) {
+                        const logoErr = await logoRes.json();
+                        logger.warn('Non-blocking onboarding logo upload failed:', logoErr);
+                    }
+                } catch (logoErr) {
+                    logger.warn('Non-blocking onboarding logo upload error:', logoErr);
+                }
+            }
+
+            // 3. PM-1.3A F-01: Direct the new organisation owner to /pending-approval
+            window.location.assign('/pending-approval');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
             setIsSubmitting(false);

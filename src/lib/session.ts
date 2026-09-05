@@ -102,7 +102,7 @@ export async function requireAuthenticatedIdentity(): Promise<TypedSession> {
  * Throws OrgNotActiveError → callers redirect to /pending-approval.
  * For API routes: catch OrgNotActiveError and return 403.
  */
-export async function requireTenantSession(): Promise<TypedSession> {
+export async function requireTenantSession(options?: { redirectOnInactive?: boolean }): Promise<TypedSession> {
   const session = await requireTypedSession();
 
   if (!session.user.organisationId) {
@@ -113,8 +113,17 @@ export async function requireTenantSession(): Promise<TypedSession> {
   }
 
   // Dynamic import avoids circular dependency: session.ts → org-approval-guard.ts → session.ts
-  const { assertOrgActive } = await import('@/lib/org-approval-guard');
-  await assertOrgActive(session.user.organisationId);
+  const { assertOrgActive, OrgNotActiveError } = await import('@/lib/org-approval-guard');
+  try {
+    await assertOrgActive(session.user.organisationId);
+  } catch (err) {
+    if (err instanceof OrgNotActiveError && options?.redirectOnInactive !== false) {
+      const { redirect } = await import('next/navigation');
+      redirect('/pending-approval');
+      return undefined as never;
+    }
+    throw err;
+  }
 
   return session;
 }

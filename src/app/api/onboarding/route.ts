@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 import { auth } from '@/lib/auth';
 import { db } from '@/db';
-import { organisations, centres, users } from '@/db/schema';
+import { organisations, centres, users, orgMemberships, auditEvents } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -67,6 +67,24 @@ export async function POST(req: Request) {
             if (!updatedUser) {
                 throw new Error('User not found or update failed');
             }
+
+            // Create initial Organisation Membership (ORG_OWNER) (PM-1.3A F-03)
+            await tx.insert(orgMemberships).values({
+                userId: session.user.id,
+                organisationId: newOrg.id,
+                role: 'ORG_OWNER',
+            });
+
+            // Write onboarding audit event (PM-1.3A F-08)
+            await tx.insert(auditEvents).values({
+                organisationId: newOrg.id,
+                userId: session.user.id,
+                eventType: 'org.onboarding_completed',
+                eventData: JSON.stringify({
+                    orgName: data.organisationName,
+                    centreName: data.centreName,
+                }),
+            });
 
             return newOrg;
         });

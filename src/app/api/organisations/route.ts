@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { organisations, users, centres } from '@/db/schema';
+import { organisations, users, centres, orgMemberships } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -110,13 +110,20 @@ export async function POST(req: NextRequest) {
             }).returning();
 
             // 2. Create User (Org Owner)
-            await tx.insert(users).values({
+            const [newUser] = await tx.insert(users).values({
                 organisationId: newOrg.id,
                 email: contactEmail,
                 firstName: firstName,
                 lastName: lastName,
                 role: 'ORG_OWNER',
                 passwordHash: passwordHash,
+            }).returning();
+
+            // 3. Create Initial Organisation Membership (ORG_OWNER) (PM-1.3A F-03)
+            await tx.insert(orgMemberships).values({
+                userId: newUser.id,
+                organisationId: newOrg.id,
+                role: 'ORG_OWNER',
             });
 
             // 3. Create Default Centre
