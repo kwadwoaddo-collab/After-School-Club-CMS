@@ -80,13 +80,16 @@ describe('BUG-R1.F.R: Real Runtime & PostgreSQL Replay Certification Suite', () 
     trainingHost = guard.host;
     expect(trainingHost).toBe('ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech');
 
-    serverSecret = new TextEncoder().encode(
-      process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long'
-    );
+    const rawSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+    if (!rawSecret) {
+      throw new Error('[CRITICAL SAFETY] Neither AUTH_SECRET nor NEXTAUTH_SECRET is configured. Aborting integration certification.');
+    }
+    serverSecret = new TextEncoder().encode(rawSecret);
   });
 
   afterAll(async () => {
     // Strict Cleanup of all synthetic fixtures
+    let cleanupError: unknown = null;
     try {
       if (createdRegIds.length > 0) {
         await db.delete(registrationChildren).where(inArray(registrationChildren.registrationId, createdRegIds));
@@ -106,6 +109,7 @@ describe('BUG-R1.F.R: Real Runtime & PostgreSQL Replay Certification Suite', () 
         await db.delete(organisations).where(inArray(organisations.id, createdOrgIds));
       }
     } catch (err) {
+      cleanupError = err;
       console.error('Error during test cleanup:', err);
     }
 
@@ -116,6 +120,9 @@ describe('BUG-R1.F.R: Real Runtime & PostgreSQL Replay Certification Suite', () 
         .from(organisations)
         .where(inArray(organisations.id, createdOrgIds));
       expect(remainingOrgs).toHaveLength(0);
+    }
+    if (cleanupError) {
+      throw new Error(`[CRITICAL] Cleanup failed: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`);
     }
   });
 
