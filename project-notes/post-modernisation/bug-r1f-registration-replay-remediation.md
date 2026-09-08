@@ -1,8 +1,8 @@
-# BUG-R1.F / BUG-R1.F.R — Registration Token Replay-Identity Remediation & PostgreSQL Certification
+# BUG-R1.F / BUG-R1.F.R / BUG-R1.F.S — Registration Token Replay-Identity Remediation & Certification Reconciliation
 
 **Date**: 2026-09-08
-**Milestone**: BUG-R1.F / BUG-R1.F.R — Real Runtime & PostgreSQL Replay Certification
-**Status**: REMEDIATED, CERTIFIED ON POSTGRESQL & READY FOR INDEPENDENT VERIFICATION
+**Milestone**: BUG-R1.F.S — Final Certification Safety & Ancestry Reconciliation
+**Status**: RECONCILED, CERTIFIED ON OAKRIDGE TRAINING POSTGRESQL & READY FOR INDEPENDENT VERIFICATION
 **Severity**: HIGH — Data Integrity
 **Target Repository**: `/Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS`
 **Base Commit**: `c1640522aea73c6a98d4bae3c1d47033a11fa129` (`origin/main`)
@@ -76,7 +76,7 @@ Inside the registration transaction, locks are derived deterministically:
    `reg_submit_${org.id}_${primarySubmittedParent.email.trim().toLowerCase()}`
 
 > **Deadlock Analysis Qualification**:
-> Acquisition ordering is strictly: parent lock first (`reg_submit_parent_${org.id}_${prefillParentId}`), followed by child locks sorted lexicographically (`reg_submit_child_${org.id}_${childId}`). This provides deterministic lock ordering within the `POST /api/register` code path, preventing deadlocks between concurrent registration attempts. Note that this guarantees deadlock prevention within this specific registration transaction path; it does not protect against unrelated external database transactions that might lock child or parent rows in reverse order.
+> Acquisition ordering is strictly: parent lock first (`reg_submit_parent_${org.id}_${prefillParentId}`), followed by child locks sorted lexicographically (`reg_submit_child_${org.id}_${childId}`). This provides deterministic lock ordering within the `POST /api/register` code path, preventing deadlocks between concurrent registration attempts. Note that this guarantees deadlock prevention within this specific registration transaction path; it does not protect against hypothetical unrelated external database transactions that might lock child or parent rows in reverse order.
 
 ---
 
@@ -97,7 +97,8 @@ File: `src/app/api/register/route.ts`
      - Submitted children cannot exceed the token count, and must all match the signed child set.
 3. **Active Registration Status Semantics**:
    - Active registrations are defined as: `registrations.status IN ('awaiting_confirmation', 'signed_up', 'pending')`.
-   - Including `'pending'` guarantees that draft or initial state registrations prevent duplicate submissions.
+   - Complete status enum: `registration_status_v2` has 4 values: `awaiting_confirmation`, `signed_up`, `pending`, and `not_interested`.
+   - The first three represent active or in-flight registrations and block replay. `not_interested` represents explicitly declined registrations and does not block re-application.
 4. **Centre Scope Enforced**:
    - If `prefillCentreId` is signed in the token, the request cannot specify a conflicting `centreId`.
 5. **Authoritative Duplicate Checks in Transaction**:
@@ -111,23 +112,39 @@ File: `src/app/api/register/route.ts`
 
 ---
 
-## 5. Registration Write Path Inventory
+## 5. Registration Write Path Inventory & Deletion Truth
 
-A full static analysis audit across the codebase for `.insert(registrations)`, `.insert(registrationChildren)`, and `.insert(registrationParents)` identified:
-- **Total Runtime Public Write Paths**: Exactly **1** (`POST /api/register` in `src/app/api/register/route.ts`).
-- **Administrative Endpoints**:
-  - `src/app/dashboard/registrations/actions.ts`: Only executes `UPDATE` (status changes) and `DELETE` (cancellations). Does NOT insert new registrations.
-  - `src/app/api/register/[id]/status/route.ts`: Only executes `UPDATE`.
-- **Offline / Developer Scripts**:
-  - `src/db/seed.ts`: Static CLI seed script (not exposed to runtime API traffic).
+A comprehensive static analysis audit across the entire codebase for insertion, mutation, and deletion patterns:
 
-Thus, securing `POST /api/register` comprehensively covers 100% of runtime registration ingestion.
+| Scope | Path | Operations | Notes |
+|---|---|---|---|
+| **A. Public Runtime Ingestion** | `src/app/api/register/route.ts` | `tx.insert(registrations)`<br>`tx.insert(registrationParents)`<br>`tx.insert(registrationChildren)` | Exactly **1** runtime public registration creation path. Protected by advisory locks. |
+| **B. Administrative Actions** | `src/app/dashboard/registrations/actions.ts` | `db.update(registrations)`<br>`db.delete(registrations)` | `deleteRegistrations(ids)` performs **hard DELETE** (cascade deletes registration parents and children). There is NO soft deletion column on the `registrations` table. |
+| **B. Administrative Status Route** | `src/app/api/register/[id]/status/route.ts` | `db.update(registrations)` | Updates status only (`awaiting_confirmation`, `signed_up`, `not_interested`). |
+| **C. Offline / Developer Seed** | `src/db/seed.ts` | `db.insert(registrations)` | Static developer CLI script only. Not accessible via HTTP API. |
+| **D. Test Suites** | `bug-r1f-postgres.integration.test.ts` | `POST` handler invocation + `db.delete(...)` | Category A test suite that cleans up 100% of synthetic entities in `afterAll`. |
 
 ---
 
-## 6. Real Runtime & PostgreSQL Certification (BUG-R1.F.R)
+## 6. Test Environment Safety & Fail-Closed Model
 
-Unlike model simulations, BUG-R1.F.R was verified directly against the real Next.js API route handler (`POST /api/register`), real Drizzle ORM, and the actual Neon PostgreSQL training database (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`).
+### Vitest Setup Isolation
+- `vitest.setup.ts` loads environment variables from `.env.local` and `.env` to ensure database credentials are available to modules imported under ESM.
+- **Safety Boundary**: `vitest.setup.ts` does **NOT** set `ALLOW_TRAINING_SEED` or `TRAINING_ENVIRONMENT`.
+- Running generic unit tests via `npm test` leaves these guard flags `undefined`. Any accidental attempt by a unit test to invoke database seed/reset tooling fails closed immediately with an error from `assertSafeTrainingEnvironment()`.
+- The real PostgreSQL integration test explicitly sets `process.env.ALLOW_TRAINING_SEED = 'true'` and `process.env.TRAINING_ENVIRONMENT = 'oakridge'` locally, and executes `assertSafeTrainingEnvironment()` in `beforeAll` before creating any fixtures.
+
+### Secret Handling & Fail-Fast Integrity
+- The integration test derives `serverSecret` from `process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET`.
+- If neither secret is set in the environment, the integration test throws immediately:
+  `[CRITICAL SAFETY] Neither AUTH_SECRET nor NEXTAUTH_SECRET is configured. Aborting integration certification.`
+- No hardcoded test fallback secret is permitted during certification runs, ensuring token verification strictly matches the production runtime contract.
+
+---
+
+## 7. Real PostgreSQL Runtime Certification (BUG-R1.F.R)
+
+Verified against the allowlisted Oakridge training PostgreSQL database (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`).
 
 ### Real Suite Results
 File: `src/app/api/register/bug-r1f-postgres.integration.test.ts` (19 tests passing)
@@ -157,13 +174,13 @@ File: `src/app/api/register/bug-r1f-postgres.integration.test.ts` (19 tests pass
    - Concurrent 3-child submissions complete without deadlock (1x 201, 1x 409).
    - Student activation lifecycle verified: `isRegistered = false` upon submission, transitions to `true` with `registeredAt: Date` upon `updateRegistrationStatus('signed_up')`.
 5. **Data Cleanup**:
-   - Strict `afterAll` hook deleted 100% of synthetic test entities; verified 0 orphaned rows.
+   - Mutated tables: `organisations`, `centres`, `parents`, `children`, `registrations`, `registration_parents`, `registration_children`. (Note: `bookings` are NOT created or mutated by this suite).
+   - Ordered teardown: `registration_children` → `registration_parents` → `registrations` → `children` → `parents` → `centres` → `organisations`.
+   - Zero residue: Verified 0 orphaned synthetic rows remaining in PostgreSQL.
 
 ---
 
-## 7. Automated Test Taxonomy & Disambiguation
-
-To ensure complete transparency and prevent overclaiming, tests in this repository are categorized as follows:
+## 8. Automated Test Taxonomy
 
 | Category | Description | Files | Test Count |
 |---|---|---|---|
@@ -172,11 +189,11 @@ To ensure complete transparency and prevent overclaiming, tests in this reposito
 | **Category D** | Static Source-Code / AST Analysis Tests | `bug-r1f-replay.test.ts` (part)<br>`bug-r1-conversion.test.ts` (part) | 23 tests |
 | **Category E** | Unit Logic / Pure Helper Tests | `bug-r1-conversion.test.ts` (part) | 4 tests |
 
-All 19 Category A tests execute against real PostgreSQL and enforce genuine database constraints and advisory locks.
+All 19 Category A tests execute against the allowlisted Oakridge training PostgreSQL database and enforce genuine database constraints and advisory locks.
 
 ---
 
-## 8. Quality Gate Verification
+## 9. Quality Gate Verification
 
 - **TypeScript (`NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit`)**: 0 errors
 - **ESLint (`npm run lint`)**: 0 errors, 0 warnings
@@ -186,12 +203,14 @@ All 19 Category A tests execute against real PostgreSQL and enforce genuine data
 
 ---
 
-## 9. Visual Change Determination
+## 10. Visual Change Determination
 
-**NO VISUAL SOURCE CHANGE**: BUG-R1.F / BUG-R1.F.R is strictly a backend data-integrity remediation in `src/app/api/register/route.ts`. The public registration form interface remains identical to the certified UX-F1 / BUG-R1 design. Visual evidence R1–R13 remains 100% valid.
+**VISUAL RECERTIFICATION NOT REQUIRED**: BUG-R1.F / BUG-R1.F.R / BUG-R1.F.S introduces zero changes to registration form JSX, CSS/styles, shared form components, UX-F1 components, or client-side wizard rendering logic. The changes are strictly isolated to `src/app/api/register/route.ts` backend request verification and advisory lock concurrency. Existing visual evidence (R1–R13) remains completely valid.
 
 ---
 
-## 10. Database Invariant & Production Safety Decision
+## 11. Git Ancestry & PM-2B Release Isolation
 
-No database migration was added or executed. The existing schema (`registrations`, `registration_children`, `registration_parents`) already provides the required relational columns. Enforcing the invariant at the transaction boundary with PostgreSQL advisory locks provides robust data integrity without introducing migration risk, schema lock contention, or uncertified PM-2B broadcast files.
+- **Baseline Commit**: `c1640522aea73c6a98d4bae3c1d47033a11fa129` (`origin/main`).
+- **Ancestry Lineage**: Formed through cherry-picked isolated release commits on `release/uxf1-bugr1-certified` above `efac5ff`. Contains all certified UX-F1 and BUG-R1 work.
+- **PM-2B Audit**: 0 PM-2B schema migrations, 0 broadcast cron routes (`/api/cron/broadcasts`), 0 broadcast delivery tables (`broadcast_deliveries`), and 0 background delivery worker files exist in `origin/main` or the `fix/bug-r1f-registration-replay` branch.
