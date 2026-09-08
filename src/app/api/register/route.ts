@@ -9,7 +9,7 @@ import {
     studentNotes,
     authorisedCollectors as authorisedCollectorsTable,
 } from '@/db/schema';
-import { eq, and, ilike, inArray, sql } from 'drizzle-orm';
+import { eq, and, ilike, inArray, sql, isNull } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
@@ -137,14 +137,22 @@ export async function POST(req: NextRequest) {
 
         // Verify prefillToken if present
         let prefillParentId: string | null = null;
+        let prefillCentreId: string | null = null;
+        let prefillChildIds: string[] = [];
         if (prefillToken) {
             try {
                 const secret = new TextEncoder().encode(process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-at-least-32-chars-long');
                 const { jwtVerify } = await import('jose');
                 const result = await jwtVerify(prefillToken, secret);
                 prefillParentId = (result.payload.parentId as string) || null;
+                prefillCentreId = (result.payload.centreId as string) || null;
+                prefillChildIds = Array.isArray(result.payload.childIds) ? (result.payload.childIds as string[]) : [];
             } catch (err) {
                 logger.error('[Registration API] Token verification failed:', err);
+                return NextResponse.json(
+                    { error: 'Invalid or expired registration token' },
+                    { status: 400 }
+                );
             }
         }
 
@@ -156,30 +164,62 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
         }
 
-        // ── 2a. Milestone 3L D4: verify prefillParentId belongs to the resolved org ──────
-        // A JWT token is signed with AUTH_SECRET, but it could have been generated for a
-        // different organisation and replayed here. We re-check the parent record against
-        // org.id before trusting the token's parentId value.
+        // ── 2a. Reconcile and verify token claims against resolved org ──────
+        // If a prefillParentId is provided, verify it belongs to this organisation and is not deleted
         if (prefillParentId) {
             const prefillParentRecord = await db.query.parents.findFirst({
-                where: and(eq(parents.id, prefillParentId), eq(parents.organisationId, org.id)),
+                where: and(
+                    eq(parents.id, prefillParentId),
+                    eq(parents.organisationId, org.id),
+                    isNull(parents.deletedAt)
+                ),
                 columns: { id: true },
             });
             if (!prefillParentRecord) {
-                logger.warn('[Registration API] prefillParentId does not belong to resolved org — discarding token parentId');
-                prefillParentId = null;
+                logger.warn('[Registration API] prefillParentId does not belong to resolved org or is deleted');
+                return NextResponse.json(
+                    { error: 'Parent record not found for this organisation' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        // If prefillChildIds are signed, verify all exist within this org, belong to this parent, and are not deleted
+        if (prefillChildIds.length > 0) {
+            const verifiedChildren = await db.query.children.findMany({
+                where: and(
+                    inArray(children.id, prefillChildIds),
+                    eq(children.organisationId, org.id),
+                    prefillParentId ? eq(children.parentId, prefillParentId) : undefined,
+                    isNull(children.deletedAt)
+                ),
+                columns: { id: true },
+            });
+            if (verifiedChildren.length !== prefillChildIds.length) {
+                logger.warn('[Registration API] One or more token childIds do not exist, belong to another tenant/parent, or are soft-deleted');
+                return NextResponse.json(
+                    { error: 'Child record not found for this organisation' },
+                    { status: 400 }
+                );
             }
         }
 
         // ── 2b. Validate centreId belongs to the resolved org (if supplied) ──
-        // This prevents cross-org data poisoning where a malicious caller
-        // could POST orgSlug=org-a with centreId=<uuid-from-org-b>.
         let validatedCentreId: string | null = null;
         let centreName: string | null = null;
-        if (centreId) {
+        const effectiveCentreId = centreId || prefillCentreId;
+
+        if (prefillCentreId && centreId && centreId !== prefillCentreId) {
+            return NextResponse.json(
+                { error: 'Invalid centre: does not match registration invitation' },
+                { status: 400 }
+            );
+        }
+
+        if (effectiveCentreId) {
             const centre = await db.query.centres.findFirst({
                 where: and(
-                    eq(centres.id, centreId),
+                    eq(centres.id, effectiveCentreId),
                     eq(centres.organisationId, org.id)
                 ),
                 columns: { id: true, name: true },
@@ -194,36 +234,146 @@ export async function POST(req: NextRequest) {
             centreName = centre.name;
         }
 
+        // ── 2c. Guard against unrelated child injection ───────────────────
+        if (prefillToken && prefillChildIds.length > 0) {
+            if (submittedChildren.length > prefillChildIds.length) {
+                return NextResponse.json(
+                    { error: 'Submitted children exceed invitation scope' },
+                    { status: 400 }
+                );
+            }
+            for (const c of submittedChildren) {
+                if (c.childId && !prefillChildIds.includes(c.childId)) {
+                    return NextResponse.json(
+                        { error: 'Unrelated child injection detected' },
+                        { status: 400 }
+                    );
+                }
+            }
+        }
+
         // ── 3 & 4. Concurrency Guard, Duplicate Detection & Record Creation ─────────
         let registration: any;
         const resolvedParents: { parentId: string; wasMatched: boolean; data: any }[] = [];
 
         const primarySubmittedParent = submittedParents?.[0];
 
-        const txResult = await db.transaction(async (tx) => {
-            // Concurrency guard: Acquire transactional advisory lock based on org and primary parent email
-            if (primarySubmittedParent?.email) {
-                const lockKey = `reg_submit_${org.id}_${primarySubmittedParent.email.trim().toLowerCase()}`;
-                await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+        // Gather all target child identifiers (from token and submitted childIds)
+        const targetChildIds: string[] = [
+            ...prefillChildIds,
+            ...(submittedChildren ?? []).map((c: any) => c.childId).filter((cid: any): cid is string => Boolean(cid)),
+        ];
+        // Deduplicate and sort deterministically to prevent advisory lock deadlocks
+        const sortedUniqueChildIds = Array.from(new Set(targetChildIds)).sort();
 
-                // Check if the primary parent's email already has a registration for any
-                // of the same child first names within this org.
-                const existingRegParents = await tx.select({
-                    registrationId: registrationParents.registrationId,
-                })
+        const txResult = await db.transaction(async (tx) => {
+            // ── Concurrency Guard: Advisory Locks on Stable Authoritative Identifiers ──
+            // 1. Lock on parent identity if known from prefill token
+            if (prefillParentId) {
+                const parentLockKey = `reg_submit_parent_${org.id}_${prefillParentId}`;
+                await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${parentLockKey}))`);
+            }
+
+            // 2. Lock on each target child record deterministically
+            for (const cid of sortedUniqueChildIds) {
+                const childLockKey = `reg_submit_child_${org.id}_${cid}`;
+                await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${childLockKey}))`);
+            }
+
+            // 3. Lock on primary parent email for organic submissions without prefill token
+            if (!prefillParentId && primarySubmittedParent?.email) {
+                const emailLockKey = `reg_submit_${org.id}_${primarySubmittedParent.email.trim().toLowerCase()}`;
+                await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${emailLockKey}))`);
+            }
+
+            // ── Duplicate Detection ──────────────────────────────────────────────────
+            // Check A: Stable Child Record Identity (Protects against replay across mutable parent email/phone/name)
+            if (sortedUniqueChildIds.length > 0) {
+                const existingActiveChildren = await tx
+                    .select({
+                        registrationId: registrations.id,
+                        childId: registrationChildren.childId,
+                    })
+                    .from(registrationChildren)
+                    .innerJoin(registrations, and(
+                        eq(registrations.id, registrationChildren.registrationId),
+                        eq(registrations.organisationId, org.id)
+                    ))
+                    .where(and(
+                        inArray(registrationChildren.childId, sortedUniqueChildIds),
+                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])
+                    ))
+                    .limit(1);
+
+                if (existingActiveChildren.length > 0) {
+                    return {
+                        isDuplicate: true,
+                        error: 'A registration for this child already exists. Please contact the centre if you need to make changes.',
+                    };
+                }
+            }
+
+            // Check B: Stable Parent Record Identity + Child Names (for prefillParentId)
+            if (prefillParentId) {
+                const existingParentRegs = await tx
+                    .select({ registrationId: registrations.id })
                     .from(registrationParents)
                     .innerJoin(registrations, and(
                         eq(registrations.id, registrationParents.registrationId),
                         eq(registrations.organisationId, org.id)
                     ))
-                    .where(ilike(registrationParents.submittedEmail, primarySubmittedParent.email.trim()))
+                    .where(and(
+                        eq(registrationParents.parentId, prefillParentId),
+                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])
+                    ));
+
+                if (existingParentRegs.length > 0) {
+                    const regIds = existingParentRegs.map(r => r.registrationId);
+                    const existingRegChildren = await tx
+                        .select({
+                            firstName: registrationChildren.submittedFirstName,
+                            lastName: registrationChildren.submittedLastName,
+                        })
+                        .from(registrationChildren)
+                        .where(inArray(registrationChildren.registrationId, regIds));
+
+                    const submittedNames = (submittedChildren ?? []).map((c: any) =>
+                        `${(c.firstName ?? '').trim().toLowerCase()} ${(c.lastName ?? '').trim().toLowerCase()}`
+                    );
+                    const existingNames = existingRegChildren.map(c =>
+                        `${c.firstName.trim().toLowerCase()} ${c.lastName.trim().toLowerCase()}`
+                    );
+                    const overlap = submittedNames.some(n => existingNames.includes(n));
+                    if (overlap) {
+                        return {
+                            isDuplicate: true,
+                            error: 'A registration for this child already exists. Please contact the centre if you need to make changes.',
+                        };
+                    }
+                }
+            }
+
+            // Check C: Fallback for Organic Submissions by Parent Email + Child First Name
+            if (primarySubmittedParent?.email) {
+                const existingRegParents = await tx
+                    .select({ registrationId: registrations.id })
+                    .from(registrationParents)
+                    .innerJoin(registrations, and(
+                        eq(registrations.id, registrationParents.registrationId),
+                        eq(registrations.organisationId, org.id)
+                    ))
+                    .where(and(
+                        ilike(registrationParents.submittedEmail, primarySubmittedParent.email.trim()),
+                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])
+                    ))
                     .limit(10);
 
                 if (existingRegParents.length > 0) {
                     const regIds = existingRegParents.map(r => r.registrationId);
-                    const existingRegChildren = await tx.select({
-                        firstName: registrationChildren.submittedFirstName,
-                    })
+                    const existingRegChildren = await tx
+                        .select({
+                            firstName: registrationChildren.submittedFirstName,
+                        })
                         .from(registrationChildren)
                         .where(inArray(registrationChildren.registrationId, regIds));
 
