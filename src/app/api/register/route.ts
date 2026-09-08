@@ -9,7 +9,7 @@ import {
     studentNotes,
     authorisedCollectors as authorisedCollectorsTable,
 } from '@/db/schema';
-import { eq, and, ilike, inArray } from 'drizzle-orm';
+import { eq, and, ilike, inArray, sql } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
@@ -194,55 +194,55 @@ export async function POST(req: NextRequest) {
             centreName = centre.name;
         }
 
-        // ── 3. Duplicate detection ───────────────────────────────────────────
-        // Check if the primary parent's email already has a registration for any
-        // of the same child first names within this org. Returns a soft warning.
-        const primarySubmittedParent = submittedParents?.[0];
-        if (primarySubmittedParent?.email) {
-            // Find existing registration parent records matching this email
-            const existingRegParents = await db.select({
-                registrationId: registrationParents.registrationId,
-            })
-                .from(registrationParents)
-                .innerJoin(registrations, and(
-                    eq(registrations.id, registrationParents.registrationId),
-                    eq(registrations.organisationId, org.id)
-                ))
-                .where(ilike(registrationParents.submittedEmail, primarySubmittedParent.email.trim()))
-                .limit(10);
-
-            if (existingRegParents.length > 0) {
-                const regIds = existingRegParents.map(r => r.registrationId);
-                const existingRegChildren = await db.select({
-                    firstName: registrationChildren.submittedFirstName,
-                })
-                    .from(registrationChildren)
-                    .where(inArray(registrationChildren.registrationId, regIds));
-
-                const submittedNames = (submittedChildren ?? []).map((c: any) =>
-                    c.firstName?.toLowerCase().trim()
-                );
-                const existingNames = existingRegChildren.map(c =>
-                    c.firstName.toLowerCase().trim()
-                );
-                const overlap = submittedNames.some((n: string) => existingNames.includes(n));
-                if (overlap) {
-                    return NextResponse.json(
-                        {
-                            duplicate: true,
-                            error: 'A registration for this child already exists. Please contact the centre if you need to make changes.',
-                        },
-                        { status: 409 }
-                    );
-                }
-            }
-        }
-
-        // ── 4. Create the top-level registration record ──────────────────
+        // ── 3 & 4. Concurrency Guard, Duplicate Detection & Record Creation ─────────
         let registration: any;
         const resolvedParents: { parentId: string; wasMatched: boolean; data: any }[] = [];
- 
-        await db.transaction(async (tx) => {
+
+        const primarySubmittedParent = submittedParents?.[0];
+
+        const txResult = await db.transaction(async (tx) => {
+            // Concurrency guard: Acquire transactional advisory lock based on org and primary parent email
+            if (primarySubmittedParent?.email) {
+                const lockKey = `reg_submit_${org.id}_${primarySubmittedParent.email.trim().toLowerCase()}`;
+                await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+                // Check if the primary parent's email already has a registration for any
+                // of the same child first names within this org.
+                const existingRegParents = await tx.select({
+                    registrationId: registrationParents.registrationId,
+                })
+                    .from(registrationParents)
+                    .innerJoin(registrations, and(
+                        eq(registrations.id, registrationParents.registrationId),
+                        eq(registrations.organisationId, org.id)
+                    ))
+                    .where(ilike(registrationParents.submittedEmail, primarySubmittedParent.email.trim()))
+                    .limit(10);
+
+                if (existingRegParents.length > 0) {
+                    const regIds = existingRegParents.map(r => r.registrationId);
+                    const existingRegChildren = await tx.select({
+                        firstName: registrationChildren.submittedFirstName,
+                    })
+                        .from(registrationChildren)
+                        .where(inArray(registrationChildren.registrationId, regIds));
+
+                    const submittedNames = (submittedChildren ?? []).map((c: any) =>
+                        c.firstName?.toLowerCase().trim()
+                    );
+                    const existingNames = existingRegChildren.map(c =>
+                        c.firstName.toLowerCase().trim()
+                    );
+                    const overlap = submittedNames.some((n: string) => existingNames.includes(n));
+                    if (overlap) {
+                        return {
+                            isDuplicate: true,
+                            error: 'A registration for this child already exists. Please contact the centre if you need to make changes.',
+                        };
+                    }
+                }
+            }
+
             const [reg] = await tx.insert(registrations).values({
                 organisationId: org.id,
                 centreId: validatedCentreId,
@@ -419,7 +419,18 @@ export async function POST(req: NextRequest) {
                 }
 
             }
+            return { isDuplicate: false };
         });
+
+        if (txResult?.isDuplicate) {
+            return NextResponse.json(
+                {
+                    duplicate: true,
+                    error: txResult.error || 'A registration for this child already exists. Please contact the centre if you need to make changes.',
+                },
+                { status: 409 }
+            );
+        }
 
         // ── 5. Send confirmation email to primary parent ─────────────────
         const primaryParent = submittedParents[0];
