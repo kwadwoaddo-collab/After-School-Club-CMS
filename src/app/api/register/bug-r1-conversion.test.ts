@@ -605,11 +605,19 @@ describe('BUG-R1: Booking/Assessment -> Registration Conversion Regression Suite
       expect(visibleChildren.map(c => c.id)).not.toContain('c-deleted-3');
     });
 
-    it('guarantees transactional advisory lock key is derived deterministically from org and parent email', () => {
+    it('guarantees transactional advisory lock key is derived deterministically from stable parent/child IDs and organic email fallback', () => {
       const orgId = 'org-123';
+      const parentId = 'p-456';
+      const childId = 'c-789';
       const email = 'Parent@Example.Test ';
-      const normalizedKey = `reg_submit_${orgId}_${email.trim().toLowerCase()}`;
-      expect(normalizedKey).toBe('reg_submit_org-123_parent@example.test');
+
+      const parentLockKey = `reg_submit_parent_${orgId}_${parentId}`;
+      const childLockKey = `reg_submit_child_${orgId}_${childId}`;
+      const emailLockKey = `reg_submit_${orgId}_${email.trim().toLowerCase()}`;
+
+      expect(parentLockKey).toBe('reg_submit_parent_org-123_p-456');
+      expect(childLockKey).toBe('reg_submit_child_org-123_c-789');
+      expect(emailLockKey).toBe('reg_submit_org-123_parent@example.test');
     });
 
     // =========================================================================
