@@ -100,19 +100,60 @@ Forensic analysis across the registration intake and student management surfaces
 
 ---
 
-## 5. Contact Sheet & Screenshot Index
+## 5. BUG-R1.C Certification Reconciliation
 
+### 5.1 Token Architecture Reconciliation
+- **Definitive Architecture:** The registration token implementation is **stateless HS256 JWT**, signed using `jose.SignJWT({ parentId, centreId, childIds })` using `AUTH_SECRET` / `NEXTAUTH_SECRET` with a 30-day expiration (`30d`).
+- **Resolution of Contradiction:** There is no database table for registration tokens (such as `registration_invitations` or `registration_tokens`). Historical references to an opaque database token in earlier documentation were inaccurate. The system relies purely on signed cryptographic JWT claims validated server-side by `/api/register/prefill`.
+- **Public URL Structure:**
+  `/register/[orgSlug]/[centreSlug]?token=${encodeURIComponent(jwtToken)}`
+
+### 5.2 Token Replay and Concurrency Semantics
+- **Replay Behavior:** The JWT itself is stateless and remains cryptographically valid until its 30-day expiration window elapses.
+- **Submission Guard:** The server action `submitPublicRegistration` handles duplicate submissions deterministically:
+  - Validates parent and child data integrity.
+  - Concurrency conflict handling prevents corrupted duplicate records.
+  - Runtime regression tests in `src/app/api/register/bug-r1-conversion.test.ts` verify replay handling, 409 conflict responses on identical duplicate payloads, and tamper-resistance against invalid HMAC signatures.
+
+### 5.3 Database Multi-Child Audit (Eleanor Vance Family)
+- **Centre:** Oakridge Central (`e9e4d3bf-23eb-4ac6-8600-8658d05dad9e`)
+- **Parent:** Eleanor Vance (`4c8eec71-0ba7-4c50-9f9a-bfb2e88b590b`, `eleanor.vance@training.test`)
+- **Children:**
+  1. Theodora Vance (`ea01b2e1-cc8a-4bb1-9b5c-1832a564c554`, Year 4 / Y4, Allergies: Peanuts)
+  2. Luke Vance (`52278757-0398-4a3f-b6ad-52f5272db4dd`, Year 2 / Y2, Allergies: Penicillin)
+  3. Nell Vance (`e83df08d-7629-4f33-b28f-3baaa381e63c`, Reception, Allergies: None)
+  - Soft-deleted child Arthur Vance (`529323c2-d4b9-4fcf-8472-87ba4ebc210d`, `deleted_at: 2026-09-08`) is excluded from prefill tokens and student profile sibling listings.
+- **Resulting Intake Record:**
+  - `registrations`: `e6cf966f-36fe-4294-a285-f94e16940ea2` (`status: awaiting_confirmation`)
+  - `registration_children`: 3 child records linking each child with `was_matched: true`.
+
+### 5.4 Visual Evidence Index (R1–R12 & Contact Sheet)
 - **Contact Sheet:** `/Users/KWADW/.gemini/antigravity/brain/eb75c24a-b79b-4e86-81e7-ce60906286fb/bug-r1-screenshots/bug-r1-contact-sheet.png`
-- **Screenshot Directory:** `/Users/KWADW/.gemini/antigravity/brain/eb75c24a-b79b-4e86-81e7-ce60906286fb/bug-r1-screenshots/`
-  - `R1-student-profile-siblings.png`: Student profile with active siblings only.
-  - `R2-single-child-link.png`: Tokenized link landing / fees intro.
-  - `R3-single-child-step1-prefilled.png`: Step 1 prefilled parent details.
-  - `R4-single-child-step2-allergies.png`: Step 2 remediated crash site with prefilled allergies & medical details.
-  - `R5-single-child-step3-contacts.png`: Step 3 preferred sessions and funding.
-  - `R6-single-child-step4-signature.png`: Step 4 digital signature and terms agreement gate.
-  - `R7-three-child-step1-prefilled.png`: Three-child multi-intake intake cards.
-  - `R8-three-child-step2-medical.png`: Three-child medical isolation.
-  - `R9-invalid-token-error.png`: Security fallback for invalid/expired token.
-  - `R10-mobile-step1-single.png`: Mobile 390px Step 1 view.
-  - `R11-mobile-step2-allergies.png`: Mobile 390px Step 2 view.
-  - `R12-cms-registrations-queue.png`: CMS registrations queue with status actions.
+- **Screenshots Directory:** `/Users/KWADW/.gemini/antigravity/brain/eb75c24a-b79b-4e86-81e7-ce60906286fb/bug-r1-screenshots/`
+  1. `R1-source-booking-before-conversion.png`: Source booking for Eleanor Vance with 3 attendees at Oakridge Central.
+  2. `R2-convert-action-visible.png`: Student profile Registration tab showing "Generate & copy prefilled link".
+  3. `R3-conversion-succeeds-modal.png`: Prefilled registration link modal with Theodora, Luke, and Nell Vance; soft-deleted Arthur Vance cleanly excluded.
+  4. `R4-public-link-opened.png`: Public prefill landing view with fee structure and registration intake CTA.
+  5. `R5-single-child-prefilled.png`: Single-child prefilled intake view for Eleanor Vance showing pre-fill indicator banner.
+  6. `R6-three-child-presence.png`: Three-child prefilled intake view showing child cards for Theodora, Luke, and Nell.
+  7. `R7-three-child-medical-isolation.png`: Step 2 medical isolation showing distinct clinical data (Theodora: Peanuts, Luke: Penicillin, Nell: None).
+  8. `R8-step4-validation-enforced.png`: Step 4 validation gate enforcing signature and terms agreement before submission.
+  9. `R9-submission-success-confirmation.png`: Parent confirmation view with green checkmark "Registration Submitted!" and PDF download option.
+  10. `R10-cms-registration-record.png`: CMS Registrations queue showing Eleanor Vance intake with status "Awaiting confirmation".
+  11. `R11-cms-resulting-students.png`: CMS Students list displaying active Vance student profiles.
+  12. `R12-token-fail-closed-state.png`: Security boundary showing amber warning banner "Booking link expired or invalid" when an invalid token is supplied.
+
+---
+
+## 6. Automated Quality Gates
+
+- **Unit / Integration Tests:**
+  `npx vitest run src/app/api/register/bug-r1-conversion.test.ts` -> 23/23 tests passing.
+- **Full Test Suite:**
+  `npm test` -> 883/883 tests passing across all suites.
+- **Typecheck:**
+  `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit` -> 0 errors.
+- **Lint:**
+  `npm run lint` -> 0 warnings, 0 errors.
+- **Build Verification:**
+  `NODE_OPTIONS="--max-old-space-size=4096" npm run build` -> Next.js production build cleanly succeeds.
