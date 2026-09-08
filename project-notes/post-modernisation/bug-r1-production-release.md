@@ -97,12 +97,12 @@ Conducted in dedicated test organization context (`Tester's College LTD` / `Cent
    - Verified DB state:
      - `registrations.status`: `'awaiting_confirmation'`
      - `children.is_registered`: `false` (remains unactivated until explicit staff approval)
-4. **Sequential Replay Verification**:
+4. **Sequential Replay Verification & Discovery of Replay-Identity Defect**:
    - Executed submission with synthetic test email `canary.synthetic.replay@example.test`.
    - Status: **HTTP 201 Created** (`registrationId: 395580c9-9fc9-411a-94e5-aaabbf551dde`).
    - Re-submitted the exact same token and payload immediately:
    - Status: **HTTP 409 Conflict** (`duplicate: true`, `"A registration for this child already exists. Please contact the centre if you need to make changes."`).
-   - Verified in database: Exactly **1** registration record exists for `canary.synthetic.replay@example.test`. Duplicate creation was completely blocked by the PostgreSQL transactional advisory lock guard.
+   - **Production Verification Discovery**: Production verification identified that while exact sequential replay with identical email was blocked (HTTP 409), changing a mutable parent field (null email -> populated email) bypassed duplicate detection and allowed a second registration (`395580c9-9fc9-411a-94e5-aaabbf551dde`) for the same child (`Penelope Canary`). This triggered milestone BUG-R1.F to anchor replay protection to stable server-authoritative identities.
 5. **Synthetic Canary Cleanup (Section 19)**:
    - Deleted all synthetic registration parent/child junction rows, registration rows, synthetic child, and synthetic parent.
    - Verified post-cleanup count: **0** residual test parent records.
