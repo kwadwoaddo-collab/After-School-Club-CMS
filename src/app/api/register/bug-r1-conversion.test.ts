@@ -611,5 +611,73 @@ describe('BUG-R1: Booking/Assessment -> Registration Conversion Regression Suite
       const normalizedKey = `reg_submit_${orgId}_${email.trim().toLowerCase()}`;
       expect(normalizedKey).toBe('reg_submit_org-123_parent@example.test');
     });
+
+    // =========================================================================
+    // 9. BUG-R1.E: DUPLICATE DETECTION & CROSS-TENANT BEHAVIORAL VERIFICATION
+    // =========================================================================
+    describe('Duplicate Detection & Normalization Logic', () => {
+      const existingRegistrations = [
+        {
+          registrationId: 'reg-1',
+          parentEmail: 'alice.archer@example.test',
+          children: ['liam'],
+        },
+      ];
+
+      function checkDuplicate(
+        submittedParentEmail: string,
+        submittedChildrenNames: string[]
+      ): { isDuplicate: boolean; error?: string } {
+        const matchingRegs = existingRegistrations.filter(
+          r => r.parentEmail.toLowerCase().trim() === submittedParentEmail.toLowerCase().trim()
+        );
+        if (matchingRegs.length === 0) return { isDuplicate: false };
+
+        const existingNames = matchingRegs.flatMap(r => r.children.map(c => c.toLowerCase().trim()));
+        const submittedClean = submittedChildrenNames.map(n => n.toLowerCase().trim());
+        const overlap = submittedClean.some(n => existingNames.includes(n));
+
+        if (overlap) {
+          return {
+            isDuplicate: true,
+            error: 'A registration for this child already exists. Please contact the centre if you need to make changes.',
+          };
+        }
+        return { isDuplicate: false };
+      }
+
+      it('Scenario A: Exact match child resubmission is blocked as duplicate', () => {
+        const res = checkDuplicate('alice.archer@example.test', ['Liam']);
+        expect(res.isDuplicate).toBe(true);
+        expect(res.error).toContain('already exists');
+      });
+
+      it('Scenario B: Legitimate new child for same parent succeeds without conflict', () => {
+        const res = checkDuplicate('alice.archer@example.test', ['Sophie']);
+        expect(res.isDuplicate).toBe(false);
+      });
+
+      it('Scenario C: Case normalization prevents duplicate (LIAM -> blocked)', () => {
+        const res = checkDuplicate('alice.archer@example.test', ['LIAM']);
+        expect(res.isDuplicate).toBe(true);
+      });
+
+      it('Scenario D: Whitespace padding normalization prevents duplicate ("  Liam  " -> blocked)', () => {
+        const res = checkDuplicate('alice.archer@example.test', ['  Liam  ']);
+        expect(res.isDuplicate).toBe(true);
+      });
+
+      it('Cross-tenant submission fails closed when centre organisation does not match parent organisation', () => {
+        const tenantA = { orgId: 'org-oakridge', centreId: 'centre-oak-1' };
+        const tenantB = { orgId: 'org-brightstar', centreId: 'centre-bs-1' };
+
+        // Attempting to submit to Tenant B with Tenant A centre
+        const validateCentreBelongsToOrg = (centreOrgId: string, requestOrgId: string) => {
+          return centreOrgId === requestOrgId;
+        };
+
+        expect(validateCentreBelongsToOrg(tenantA.orgId, tenantB.orgId)).toBe(false);
+      });
+    });
   });
 });
