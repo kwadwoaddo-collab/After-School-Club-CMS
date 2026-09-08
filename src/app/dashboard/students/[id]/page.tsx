@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees, registrationChildren, registrations, registrationParents } from '@/db/schema';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, isNull } from 'drizzle-orm';
 import StudentProfile from '@/features/students/components/StudentProfile';
 import { getStudentNotes } from '@/features/students/notes.actions';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
@@ -123,13 +123,14 @@ export default async function StudentProfilePage(
         centreName: b.centreName || 'Unknown Centre'
     }));
 
-    // Fetch siblings at the same centre (for the billing card's children checkboxes)
+    // Fetch siblings at the same centre (for the billing card's children checkboxes and prefill link)
     const siblings = student.centreId
         ? await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName })
             .from(children)
             .where(and(
                 eq(children.parentId, student.parentId),
                 eq(children.centreId, student.centreId),
+                isNull(children.deletedAt),
             ))
         : [];
 

@@ -312,8 +312,27 @@ export async function updateRegistrationStatus(
 
     await db
         .update(registrations)
-        .set({ status: newStatus })
+        .set({ status: newStatus, updatedAt: new Date() })
         .where(eq(registrations.id, registrationId));
+
+    if (newStatus === 'signed_up') {
+        const regChildren = await db
+            .select({ childId: registrationChildren.childId })
+            .from(registrationChildren)
+            .where(eq(registrationChildren.registrationId, registrationId));
+
+        const childIds = regChildren.map(c => c.childId).filter((cid): cid is string => Boolean(cid));
+        if (childIds.length > 0) {
+            await db
+                .update(children)
+                .set({
+                    isRegistered: true,
+                    registeredAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(and(inArray(children.id, childIds), eq(children.organisationId, orgId)));
+        }
+    }
 
     revalidatePath('/dashboard/registrations');
     revalidatePath('/dashboard/students');

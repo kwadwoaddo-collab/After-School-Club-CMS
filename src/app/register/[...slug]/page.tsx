@@ -191,12 +191,24 @@ export default function RegisterPage() {
                     }
                     if (data.children && data.children.length > 0) {
                         setChildList(data.children.map((c: any) => ({
+                            ...emptyChild(),
+                            ...c,
                             childId: c.childId,
-                            firstName: c.firstName,
-                            lastName: c.lastName,
-                            dateOfBirth: c.dateOfBirth,
-                            schoolYear: c.schoolYear,
-                            sessions: c.sessions,
+                            firstName: c.firstName || '',
+                            lastName: c.lastName || '',
+                            dateOfBirth: c.dateOfBirth || '',
+                            schoolYear: c.schoolYear || '',
+                            sessions: c.sessions || [],
+                            allergies: Array.isArray(c.allergies) ? c.allergies : [],
+                            dietaryRequirements: c.dietaryRequirements || '',
+                            medicalConditions: c.medicalConditions || '',
+                            medicationNotes: c.medicationNotes || '',
+                            gpName: c.gpName || '',
+                            gpPhone: c.gpPhone || '',
+                            senDetails: c.senDetails || '',
+                            photoConsent: Boolean(c.photoConsent),
+                            sunCreamConsent: Boolean(c.sunCreamConsent),
+                            firstAidConsent: Boolean(c.firstAidConsent),
                         })));
                     }
                 }
@@ -322,7 +334,7 @@ export default function RegisterPage() {
 
     // ── Submit ─────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        if (!validateStep(6)) return;
+        if (!validateStep(4)) return;
         setSubmitting(true); setError('');
         try {
             const res = await fetch('/api/register', {
@@ -865,11 +877,11 @@ export default function RegisterPage() {
                                             </Field>
                                             <Field label="Allergies">
                                                 <div className="flex flex-col gap-2">
-                                                    <div className="flex flex-wrap gap-2 mb-2">
-                                                        {c.allergies.map((allergy, aIdx) => (
+                                                     <div className="flex flex-wrap gap-2 mb-2">
+                                                        {(c.allergies || []).map((allergy, aIdx) => (
                                                             <span key={aIdx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-700 text-sm font-medium border border-red-200">
                                                                 {allergy}
-                                                                <button onClick={() => updateChild(i, 'allergies', c.allergies.filter((_, idx) => idx !== aIdx))} className="text-red-400 hover:text-red-700 font-bold ml-1">×</button>
+                                                                <button onClick={() => updateChild(i, 'allergies', (c.allergies || []).filter((_, idx) => idx !== aIdx))} className="text-red-400 hover:text-red-700 font-bold ml-1">×</button>
                                                             </span>
                                                         ))}
                                                     </div>
@@ -881,8 +893,9 @@ export default function RegisterPage() {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 const val = e.currentTarget.value.trim();
-                                                                if (val && !c.allergies.includes(val)) {
-                                                                    updateChild(i, 'allergies', [...c.allergies, val]);
+                                                                const cur = c.allergies || [];
+                                                                if (val && !cur.includes(val)) {
+                                                                    updateChild(i, 'allergies', [...cur, val]);
                                                                     e.currentTarget.value = '';
                                                                 }
                                                             }
@@ -894,8 +907,9 @@ export default function RegisterPage() {
                                                                 key={common} 
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
-                                                                    if (!c.allergies.includes(common)) {
-                                                                        updateChild(i, 'allergies', [...c.allergies, common]);
+                                                                    const cur = c.allergies || [];
+                                                                    if (!cur.includes(common)) {
+                                                                        updateChild(i, 'allergies', [...cur, common]);
                                                                     }
                                                                 }} 
                                                                 className="text-xs bg-secondary hover:bg-secondary/80 text-muted-foreground px-2 py-1 rounded-md transition-colors">

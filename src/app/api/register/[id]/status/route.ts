@@ -3,8 +3,8 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { registrations, registrationParents, registrationChildren, organisations, centres } from '@/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { registrations, registrationParents, registrationChildren, organisations, centres, children } from '@/db/schema';
+import { and, eq, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { emailService } from '@/lib/services/email';
 
@@ -66,6 +66,23 @@ export async function PATCH(
         .update(registrations)
         .set({ status: status as RegistrationStatus, updatedAt: new Date() })
         .where(eq(registrations.id, id));
+
+    // If status is 'signed_up', activate all associated children as registered students
+    if (status === 'signed_up' && reg.registrationChildren?.length) {
+        const childIds = reg.registrationChildren
+            .map(c => c.childId)
+            .filter((cid): cid is string => Boolean(cid));
+        if (childIds.length > 0) {
+            await db
+                .update(children)
+                .set({
+                    isRegistered: true,
+                    registeredAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(and(inArray(children.id, childIds), eq(children.organisationId, session.user.organisationId)));
+        }
+    }
 
     // ── 6. Fire status change email (non-blocking) ──────────────────────────
     // Only send if status actually changed

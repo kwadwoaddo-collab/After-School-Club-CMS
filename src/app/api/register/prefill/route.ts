@@ -102,6 +102,16 @@ export async function GET(req: NextRequest) {
             dateOfBirth: c.dateOfBirth ? new Date(c.dateOfBirth).toISOString().split('T')[0] : '',
             schoolYear: c.schoolYear || 'Reception',
             sessions: c.registeredSessions || [],
+            allergies: c.allergies || [],
+            dietaryRequirements: c.dietaryRequirements || '',
+            medicalConditions: c.medicalConditions || '',
+            medicationNotes: c.medicationNotes || '',
+            gpName: c.gpName || '',
+            gpPhone: c.gpPhone || '',
+            senDetails: c.senDetails || '',
+            photoConsent: c.photoConsent ?? false,
+            sunCreamConsent: c.sunCreamConsent ?? false,
+            firstAidConsent: c.firstAidConsent ?? false,
         }));
 
         return NextResponse.json({
