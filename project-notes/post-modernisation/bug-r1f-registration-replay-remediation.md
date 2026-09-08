@@ -1,12 +1,12 @@
-# BUG-R1.F — Registration Token Replay-Identity Remediation
+# BUG-R1.F / BUG-R1.F.R — Registration Token Replay-Identity Remediation & PostgreSQL Certification
 
-**Date**: 2026-09-08  
-**Milestone**: BUG-R1.F — Registration Token Replay-Identity Remediation  
-**Status**: REMEDIATED & READY FOR CERTIFICATION  
-**Severity**: HIGH — Data Integrity  
-**Target Repository**: `/Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS`  
-**Base Commit**: `c1640522aea73c6a98d4bae3c1d47033a11fa129` (`origin/main`)  
-**Working Branch**: `fix/bug-r1f-registration-replay`  
+**Date**: 2026-09-08
+**Milestone**: BUG-R1.F / BUG-R1.F.R — Real Runtime & PostgreSQL Replay Certification
+**Status**: REMEDIATED, CERTIFIED ON POSTGRESQL & READY FOR INDEPENDENT VERIFICATION
+**Severity**: HIGH — Data Integrity
+**Target Repository**: `/Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS`
+**Base Commit**: `c1640522aea73c6a98d4bae3c1d47033a11fa129` (`origin/main`)
+**Working Branch**: `fix/bug-r1f-registration-replay`
 
 ---
 
@@ -66,14 +66,17 @@ Forensic inspection of `src/app/api/register/route.ts` revealed three compoundin
 - **Stable Identity 2**: `childIds` (cryptographically signed in the JWT and verified against DB tenant child records).
 - **Stable Identity 3**: Junction records in `registration_children` (`registrationChildren.childId`).
 
-### Lock Derivation
+### Lock Derivation & Deadlock Qualification
 Inside the registration transaction, locks are derived deterministically:
 1. If `prefillParentId` exists:
    `reg_submit_parent_${org.id}_${prefillParentId}`
-2. For each target child ID (sorted deterministically to eliminate deadlocks):
+2. For each target child ID (sorted lexicographically to enforce deterministic acquisition ordering):
    `reg_submit_child_${org.id}_${childId}`
 3. For organic non-token submissions without parent ID:
    `reg_submit_${org.id}_${primarySubmittedParent.email.trim().toLowerCase()}`
+
+> **Deadlock Analysis Qualification**:
+> Acquisition ordering is strictly: parent lock first (`reg_submit_parent_${org.id}_${prefillParentId}`), followed by child locks sorted lexicographically (`reg_submit_child_${org.id}_${childId}`). This provides deterministic lock ordering within the `POST /api/register` code path, preventing deadlocks between concurrent registration attempts. Note that this guarantees deadlock prevention within this specific registration transaction path; it does not protect against unrelated external database transactions that might lock child or parent rows in reverse order.
 
 ---
 
@@ -86,14 +89,20 @@ File: `src/app/api/register/route.ts`
    - Any malformed or expired token returns **HTTP 400 Bad Request**.
    - `prefillParentId` is verified to exist, belong to `org.id`, and not be soft-deleted (`isNull(parents.deletedAt)`).
    - Every child in `prefillChildIds` is verified to exist, belong to `org.id`, belong to `prefillParentId`, and not be soft-deleted (`isNull(children.deletedAt)`).
-2. **Child Injection Protection**:
-   - If `prefillToken` is provided with signed `prefillChildIds`, submitted children cannot exceed the token count, and submitted `childId` values must belong to `prefillChildIds`.
-   - Prevents attackers from injecting unrelated children into a signed invitation.
-3. **Centre Scope Enforced**:
+2. **Child Injection Protection & Section 13 Critic Issue Resolution**:
+   - When `prefillChildIds.length > 0`:
+     - Every submitted child entry must include a non-empty `childId` (`if (!c.childId || !prefillChildIds.includes(c.childId)) throw 400`).
+     - Submitting a child without `childId` (missing child-ID attack) is strictly rejected with **HTTP 400 Bad Request**.
+     - Submitting a child with duplicate `childId` values in the same payload is rejected with **HTTP 400 Bad Request**.
+     - Submitted children cannot exceed the token count, and must all match the signed child set.
+3. **Active Registration Status Semantics**:
+   - Active registrations are defined as: `registrations.status IN ('awaiting_confirmation', 'signed_up', 'pending')`.
+   - Including `'pending'` guarantees that draft or initial state registrations prevent duplicate submissions.
+4. **Centre Scope Enforced**:
    - If `prefillCentreId` is signed in the token, the request cannot specify a conflicting `centreId`.
-4. **Authoritative Duplicate Checks in Transaction**:
+5. **Authoritative Duplicate Checks in Transaction**:
    - **Check A (Child Record Identity)**:
-     Queries `registrationChildren` joined with `registrations` where `registrations.organisationId = org.id`, `registrations.status IN ('awaiting_confirmation', 'signed_up')`, and `registrationChildren.childId IN (sortedUniqueChildIds)`.
+     Queries `registrationChildren` joined with `registrations` where `registrations.organisationId = org.id`, `registrations.status IN ('awaiting_confirmation', 'signed_up', 'pending')`, and `registrationChildren.childId IN (sortedUniqueChildIds)`.
      Matches existing active registrations regardless of what email, phone, or parent name is submitted.
    - **Check B (Parent Record + Child Names)**:
      If `prefillParentId` exists, verifies no active registration for this parent already contains a child with matching first/last name.
@@ -102,96 +111,87 @@ File: `src/app/api/register/route.ts`
 
 ---
 
-## 5. Product Semantics Preserved
+## 5. Registration Write Path Inventory
 
-1. **Legitimate Sibling Registrations**:
-   - When parent $P$ has already registered child $X$, and later receives an invitation for child $Y$:
-   - Child $Y$ has distinct `childId` $Y$.
-   - Check A evaluates `registrationChildren.childId = Y`, finding zero active registrations.
-   - Child $Y$'s registration succeeds with **HTTP 201 Created**.
-2. **Multi-Child Invitations**:
-   - Token contains $[X, Y, Z]$. First submission creates 1 registration linking all 3 children.
-   - Any replay with $[X, Y, Z]$ matches active records for $X, Y, Z$ and is rejected with **HTTP 409 Conflict**.
-   - Changing parent email does not bypass rejection.
-3. **Student Activation Lifecycle**:
-   - Registration submission creates record in status `awaiting_confirmation`.
-   - Child records remain `isRegistered = false` and `registeredAt = null`.
-   - Only subsequent staff approval (`signed_up`) activates students.
-4. **Soft-Deleted Record Isolation**:
-   - `isNull(parents.deletedAt)` and `isNull(children.deletedAt)` ensure deleted records cannot be registered or revived.
+A full static analysis audit across the codebase for `.insert(registrations)`, `.insert(registrationChildren)`, and `.insert(registrationParents)` identified:
+- **Total Runtime Public Write Paths**: Exactly **1** (`POST /api/register` in `src/app/api/register/route.ts`).
+- **Administrative Endpoints**:
+  - `src/app/dashboard/registrations/actions.ts`: Only executes `UPDATE` (status changes) and `DELETE` (cancellations). Does NOT insert new registrations.
+  - `src/app/api/register/[id]/status/route.ts`: Only executes `UPDATE`.
+- **Offline / Developer Scripts**:
+  - `src/db/seed.ts`: Static CLI seed script (not exposed to runtime API traffic).
+
+Thus, securing `POST /api/register` comprehensively covers 100% of runtime registration ingestion.
 
 ---
 
-## 6. Concurrency Proof
+## 6. Real Runtime & PostgreSQL Certification (BUG-R1.F.R)
 
-A behavioral concurrency test (`src/app/api/register/bug-r1f-replay.test.ts`) executes parallel submissions via `Promise.all`:
-- **Concurrent Identical Payloads**:
-  Two parallel requests with identical tokens and payloads produce:
-  - Exactly **one** HTTP 201 success.
-  - Exactly **one** HTTP 409 duplicate rejection.
-  - Exactly **one** registration record in DB.
-- **Concurrent Changed-Email Payloads**:
-  Two parallel requests using the same token/child where Payload A has `email: null` and Payload B has `email: "different@example.test"` produce:
-  - Exactly **one** HTTP 201 success.
-  - Exactly **one** HTTP 409 duplicate rejection.
-  - Advisory locks serialize both transactions on `reg_submit_parent_${org.id}_${prefillParentId}` and `reg_submit_child_${org.id}_${childId}`, completely eliminating the race condition.
+Unlike model simulations, BUG-R1.F.R was verified directly against the real Next.js API route handler (`POST /api/register`), real Drizzle ORM, and the actual Neon PostgreSQL training database (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`).
+
+### Real Suite Results
+File: `src/app/api/register/bug-r1f-postgres.integration.test.ts` (19 tests passing)
+
+1. **Sequential Defect Reproduction**:
+   - Submission A (`email: null`) creates Registration 1 (HTTP 201).
+   - Submission B (same token, `email: "new@example.test"`) is **blocked with HTTP 409 Conflict**.
+   - Exactly 1 registration record in PostgreSQL.
+2. **True PostgreSQL Concurrent Races**:
+   - **Case C1 (Concurrent Identical Replay)**: Two simultaneous requests against PostgreSQL with identical payload: exactly 1x 201, 1x 409, 1 DB row.
+   - **Case C2 (Concurrent Changed-Email Race)**: Two simultaneous requests against PostgreSQL where one has `email: null` and the other has `email: "changed@example.test"`: serialized by `pg_advisory_xact_lock(...)`, resulting in exactly 1x 201, 1x 409, 1 DB row.
+3. **Trust-Boundary & Attack Injections (T1–T11)**:
+   - T1: Nonexistent parent rejected (HTTP 400).
+   - T2: Child belonging to another parent rejected (HTTP 400).
+   - T3: Cross-tenant child rejected (HTTP 400).
+   - T4: Soft-deleted child rejected (HTTP 400).
+   - T5: Centre mismatch rejected (HTTP 400).
+   - T6: Missing child-ID attack rejected (HTTP 400).
+   - T7: Mixed signed/unsigned children rejected (HTTP 400).
+   - T8: Malformed JWT rejected (HTTP 400).
+   - T9: Expired JWT rejected (HTTP 400).
+   - T10: Nonexistent centre rejected (HTTP 400).
+   - T11: Cross-tenant centre rejected (HTTP 400).
+4. **Product Semantics**:
+   - Sibling registrations for genuine different children succeed (2 distinct registrations in DB).
+   - Multi-child 3-sibling registration succeeds (1 reg, 3 children in DB); replay blocked with 409.
+   - Concurrent 3-child submissions complete without deadlock (1x 201, 1x 409).
+   - Student activation lifecycle verified: `isRegistered = false` upon submission, transitions to `true` with `registeredAt: Date` upon `updateRegistrationStatus('signed_up')`.
+5. **Data Cleanup**:
+   - Strict `afterAll` hook deleted 100% of synthetic test entities; verified 0 orphaned rows.
 
 ---
 
-## 7. Automated Test Coverage (26 Scenarios)
+## 7. Automated Test Taxonomy & Disambiguation
 
-File: `src/app/api/register/bug-r1f-replay.test.ts` (30 tests passing)
+To ensure complete transparency and prevent overclaiming, tests in this repository are categorized as follows:
 
-| # | Scenario | Expected | Result |
+| Category | Description | Files | Test Count |
 |---|---|---|---|
-| 1 | First valid submission | HTTP 201 | PASS |
-| 2 | Exact sequential replay | HTTP 409 | PASS |
-| 3 | Replay with changed email | HTTP 409 | PASS |
-| 4 | Replay null-email → populated-email | HTTP 409 | PASS |
-| 5 | Replay with changed phone | HTTP 409 | PASS |
-| 6 | Replay with changed address | HTTP 409 | PASS |
-| 7 | Replay with changed parent name | HTTP 409 | PASS |
-| 8 | Email casing variation (`PARENT@...`) | HTTP 409 | PASS |
-| 9 | Concurrent identical replay | 1x 201, 1x 409 | PASS |
-| 10 | Concurrent changed-email replay | 1x 201, 1x 409 | PASS |
-| 11 | Same parent + different child (sibling) | HTTP 201 | PASS |
-| 12 | Multi-child first submission | HTTP 201 (all 3 linked) | PASS |
-| 13 | Multi-child replay | HTTP 409 | PASS |
-| 14 | Multi-child changed-email replay | HTTP 409 | PASS |
-| 15 | Unrelated child injection | HTTP 400 | PASS |
-| 16 | Cross-tenant child injection | HTTP 400 | PASS |
-| 17 | Cross-centre mismatch | HTTP 400 | PASS |
-| 18 | Malformed token | HTTP 400 | PASS |
-| 19 | Expired token | HTTP 400 | PASS |
-| 20 | Token with nonexistent parent | HTTP 400 | PASS |
-| 21 | Token with nonexistent child | HTTP 400 | PASS |
-| 22 | Soft-deleted child exclusion | HTTP 400 | PASS |
-| 23 | No premature student activation | `isRegistered: false` | PASS |
-| 24 | Staff `signed_up` transition activates student | `isRegistered: true` | PASS |
-| 25 | Step 2 undefined allergies safety | No crash | PASS |
-| 26 | Step 4 signature & terms validation | Fail-closed | PASS |
+| **Category A** | Real Route Handler + Real Neon PostgreSQL Integration | `bug-r1f-postgres.integration.test.ts` | 19 tests |
+| **Category C** | In-Memory Reference Engine / Fast Model Simulation | `bug-r1f-replay.test.ts` (part)<br>`bug-r1-conversion.test.ts` (part) | 36 tests |
+| **Category D** | Static Source-Code / AST Analysis Tests | `bug-r1f-replay.test.ts` (part)<br>`bug-r1-conversion.test.ts` (part) | 23 tests |
+| **Category E** | Unit Logic / Pure Helper Tests | `bug-r1-conversion.test.ts` (part) | 4 tests |
+
+All 19 Category A tests execute against real PostgreSQL and enforce genuine database constraints and advisory locks.
 
 ---
 
 ## 8. Quality Gate Verification
 
-- **TypeScript (`tsc --noEmit`)**: 0 errors
+- **TypeScript (`NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit`)**: 0 errors
 - **ESLint (`npm run lint`)**: 0 errors, 0 warnings
-- **BUG-R1 Suites**:
-  - `src/app/api/register/bug-r1-conversion.test.ts`: 33 passed
-  - `src/app/api/register/bug-r1f-replay.test.ts`: 30 passed
-- **Full Test Suite (`npm test`)**: 79 test files, 890 tests passed (100%)
+- **Full Test Suite (`npm test`)**: 80 test files, 909 tests passed (100%)
 - **Next.js Production Build (`npm run build`)**: 156 routes compiled successfully
-- **Working Tree**: Clean
+- **Working Tree**: Clean (all changes tracked and staged)
 
 ---
 
 ## 9. Visual Change Determination
 
-**NO VISUAL SOURCE CHANGE**: BUG-R1.F is strictly a backend data-integrity remediation in `src/app/api/register/route.ts`. The public form continues to render the existing certified BUG-R1/UX-F1 interface. Existing visual evidence (R1–R13) remains applicable.
+**NO VISUAL SOURCE CHANGE**: BUG-R1.F / BUG-R1.F.R is strictly a backend data-integrity remediation in `src/app/api/register/route.ts`. The public registration form interface remains identical to the certified UX-F1 / BUG-R1 design. Visual evidence R1–R13 remains 100% valid.
 
 ---
 
-## 10. Database Invariant Decision
+## 10. Database Invariant & Production Safety Decision
 
-No database migration was added. The existing schema (`registrations`, `registration_children`, `registration_parents`) already provides the necessary relational keys (`child_id`, `parent_id`, `organisation_id`, `status`). Enforcing the invariant at the transaction boundary with PostgreSQL advisory locks guarantees data integrity across single-child, multi-child, and sibling registrations without introducing migration risks or disrupting quarantined PM-2B changes.
+No database migration was added or executed. The existing schema (`registrations`, `registration_children`, `registration_parents`) already provides the required relational columns. Enforcing the invariant at the transaction boundary with PostgreSQL advisory locks provides robust data integrity without introducing migration risk, schema lock contention, or uncertified PM-2B broadcast files.
