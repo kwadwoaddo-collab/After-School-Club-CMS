@@ -36,7 +36,7 @@ import path from 'path';
  * 26. No regression to Step 4 validation
  */
 
-describe('BUG-R1.F: Registration Token Replay-Identity Remediation Suite', () => {
+describe('BUG-R1.F: Fast Model & Unit Registration Replay Suite (In-Memory Reference Engine)', () => {
   const TEST_SECRET = 'test-secret-at-least-32-chars-long-for-jwt-signing';
 
   beforeEach(() => {
@@ -47,7 +47,7 @@ describe('BUG-R1.F: Registration Token Replay-Identity Remediation Suite', () =>
   // =========================================================================
   // SECTION 1: IN-MEMORY REPLAY ENGINE EMULATING ROUTE BEHAVIOR
   // =========================================================================
-  describe('Authoritative Registration Identity Replay Engine', () => {
+  describe('Authoritative Registration Identity Replay Engine (Model Reference)', () => {
     interface ChildRecord {
       id: string;
       organisationId: string;
@@ -1098,7 +1098,7 @@ describe('BUG-R1.F: Registration Token Replay-Identity Remediation Suite', () =>
           firstName: 'Leo',
           allergies: undefined,
         };
-        const sanitizedAllergies = Array.isArray(rawEntry.allergies) ? rawEntry.allergies : [];
+        const sanitizedAllergies: string[] = Array.isArray(rawEntry.allergies) ? rawEntry.allergies : [];
         expect(sanitizedAllergies).toEqual([]);
         expect(() => sanitizedAllergies.includes('Peanuts')).not.toThrow();
       });
@@ -1143,7 +1143,7 @@ describe('BUG-R1.F: Registration Token Replay-Identity Remediation Suite', () =>
       const code = fs.readFileSync(routePath, 'utf-8');
 
       expect(code).toContain('inArray(registrationChildren.childId, sortedUniqueChildIds)');
-      expect(code).toContain("inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])");
+      expect(code).toContain("inArray(registrations.status, ['awaiting_confirmation', 'signed_up', 'pending'])");
     });
 
     it('POST /api/register rejects unrelated child injection outside token scope', () => {
