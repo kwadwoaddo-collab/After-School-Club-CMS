@@ -242,13 +242,21 @@ export async function POST(req: NextRequest) {
                     { status: 400 }
                 );
             }
+            const submittedChildIdSet = new Set<string>();
             for (const c of submittedChildren) {
-                if (c.childId && !prefillChildIds.includes(c.childId)) {
+                if (!c.childId || !prefillChildIds.includes(c.childId)) {
                     return NextResponse.json(
                         { error: 'Unrelated child injection detected' },
                         { status: 400 }
                     );
                 }
+                if (submittedChildIdSet.has(c.childId)) {
+                    return NextResponse.json(
+                        { error: 'Duplicate child submission detected' },
+                        { status: 400 }
+                    );
+                }
+                submittedChildIdSet.add(c.childId);
             }
         }
 
@@ -301,7 +309,7 @@ export async function POST(req: NextRequest) {
                     ))
                     .where(and(
                         inArray(registrationChildren.childId, sortedUniqueChildIds),
-                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])
+                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up', 'pending'])
                     ))
                     .limit(1);
 
@@ -324,7 +332,7 @@ export async function POST(req: NextRequest) {
                     ))
                     .where(and(
                         eq(registrationParents.parentId, prefillParentId),
-                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])
+                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up', 'pending'])
                     ));
 
                 if (existingParentRegs.length > 0) {
@@ -364,7 +372,7 @@ export async function POST(req: NextRequest) {
                     ))
                     .where(and(
                         ilike(registrationParents.submittedEmail, primarySubmittedParent.email.trim()),
-                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up'])
+                        inArray(registrations.status, ['awaiting_confirmation', 'signed_up', 'pending'])
                     ))
                     .limit(10);
 
