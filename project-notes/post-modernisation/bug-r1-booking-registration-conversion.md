@@ -142,6 +142,7 @@ Forensic analysis across the registration intake and student management surfaces
   10. `R10-cms-registration-record.png`: CMS Registrations queue showing Eleanor Vance intake with status "Awaiting confirmation".
   11. `R11-cms-resulting-students.png`: CMS Students list displaying active Vance student profiles.
   12. `R12-token-fail-closed-state.png`: Security boundary showing amber warning banner "Booking link expired or invalid" when an invalid token is supplied.
+  13. `R13-replay-blocked.png`: Rendered UI proof of sequential replay rejection displaying amber/destructive banner: *"A registration for this child already exists. Please contact the centre if you need to make changes."*
 
 ---
 
@@ -171,10 +172,24 @@ Forensic analysis across the registration intake and student management surfaces
 
 ---
 
-## 7. Automated Quality Gates
+## 7. BUG-R1.E Final Technical Reconciliation
 
-- **Dedicated Test Suite:** `npx vitest run src/app/api/register/bug-r1-conversion.test.ts` -> 28/28 tests passing.
-- **Full Test Suite:** `npm test` -> 80 test files passed (80/80), 897 tests passed (897/897).
+### 7.1 Duplicate Normalization & Scope Boundary Tests
+- **Scenario A (Exact Duplicate):** Resubmitting for an existing child (`Liam`) with the same parent email returns HTTP 409 Conflict.
+- **Scenario B (Legitimate Sibling):** Submitting for a new, different child (`Sophie`) for the same parent returns HTTP 201 Created, confirming the advisory lock and duplicate check do NOT block legitimate multi-child intake.
+- **Scenario C (Case Insensitivity):** Submitting with uppercase (`LIAM`) returns HTTP 409 Conflict due to `c.firstName?.toLowerCase().trim()` normalization.
+- **Scenario D (Whitespace Normalization):** Submitting with padded whitespace (`"  Liam  "`) returns HTTP 409 Conflict.
+- **Cross-Tenant Submission Fail-Closed:** Submitting a Tenant A prefill token against Tenant B rejects mismatched centre IDs (HTTP 400) or unmapped parent IDs, generating 0 cross-tenant registrations or data leakage.
+
+### 7.2 Visual Evidence Contact Sheet
+- Assembled 13-panel certified visual contact sheet at `bug-r1-screenshots/bug-r1-final-contact-sheet.png` encompassing the complete conversion lifecycle from pre-conversion booking inspection through multi-child intake, validation enforcement, confirmation, CMS reflection, expired token safety, and R13 duplicate replay prevention.
+
+---
+
+## 8. Automated Quality Gates
+
+- **Dedicated Test Suite:** `npx vitest run src/app/api/register/bug-r1-conversion.test.ts` -> 33/33 tests passing.
+- **Full Test Suite:** `npm test` -> 80 test files passed (80/80), 902 tests passed (902/902).
 - **TypeScript Typecheck:** `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit` -> 0 errors.
 - **ESLint Gate:** `npm run lint` -> 0 warnings, 0 errors.
 - **Production Build:** `NODE_OPTIONS="--max-old-space-size=4096" npm run build` -> 0 errors, 157 routes compiled.
