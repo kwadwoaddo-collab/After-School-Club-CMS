@@ -73,7 +73,7 @@ export default function OrgRegistrationForm() {
                         type="text"
                         required
                         placeholder="e.g. My Tuition Centre"
-                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
@@ -85,7 +85,7 @@ export default function OrgRegistrationForm() {
                             name="firstName"
                             type="text"
                             required
-                            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            className="w-full px-4 py-2 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                         />
                     </div>
                     <div>
@@ -94,7 +94,7 @@ export default function OrgRegistrationForm() {
                             name="lastName"
                             type="text"
                             required
-                            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            className="w-full px-4 py-2 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                         />
                     </div>
                 </div>
@@ -106,7 +106,7 @@ export default function OrgRegistrationForm() {
                         type="email"
                         required
                         placeholder="you@example.com"
-                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
@@ -117,7 +117,7 @@ export default function OrgRegistrationForm() {
                         type="password"
                         required
                         minLength={8}
-                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 
@@ -128,7 +128,7 @@ export default function OrgRegistrationForm() {
                         type="password"
                         required
                         minLength={8}
-                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-card text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
 

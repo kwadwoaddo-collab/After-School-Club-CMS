@@ -77,7 +77,7 @@ function PortalLoginForm() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="parent@example.com"
                                 autoComplete="email"
-                                className="w-full px-4 py-3 border border-outline-variant/20 rounded-lg outline-none transition-all"
+                                className="w-full px-4 py-3 bg-card text-foreground placeholder:text-muted-foreground border border-outline-variant/20 rounded-lg outline-none transition-all"
                             />
                         </div>
                         {error && (

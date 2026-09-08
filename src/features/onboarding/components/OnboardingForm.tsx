@@ -107,8 +107,8 @@ export default function OnboardingForm() {
     return (
         <div className="w-full max-w-lg mx-auto bg-card rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden">
             <div className="bg-secondary/40 px-8 py-6 border-b border-outline-variant/10">
-                <h2 className="text-2xl font-bold text-white">Let&apos;s get you set up</h2>
-                <p className="text-on-surface-variant mt-1">Create your organisation and first centre.</p>
+                <h2 className="text-2xl font-bold text-foreground">Let&apos;s get you set up</h2>
+                <p className="text-muted-foreground mt-1">Create your organisation and first centre.</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
@@ -124,7 +124,7 @@ export default function OnboardingForm() {
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Organisation Logo</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Organisation Logo</label>
                         <div className="flex items-center gap-4">
                             {watchedLogo && (
                                 <img
@@ -148,14 +148,14 @@ export default function OnboardingForm() {
                             />
                         </div>
                         {isUploading && <p className="text-xs text-primary mt-1">Uploading...</p>}
-                        <p className="text-xs text-on-surface-variant mt-1">You can add this later.</p>
+                        <p className="text-xs text-muted-foreground mt-1">You can add this later.</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Organisation Name</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Organisation Name</label>
                         <input
                             {...register('organisationName')}
-                            className="w-full px-4 py-3 bg-secondary/60 text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
+                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. Bright Stars Academy"
                         />
                         {errors.organisationName && <p className="text-red-400 text-sm mt-1" role="alert">{errors.organisationName.message}</p>}
@@ -163,18 +163,18 @@ export default function OnboardingForm() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">First Centre Name</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">First Centre Name</label>
                         <input
                             {...register('centreName')}
-                            className="w-full px-4 py-3 bg-secondary/60 text-white border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
+                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
                             placeholder="e.g. London Campus"
                         />
-                        <p className="text-xs text-on-surface-variant mt-1">You can add more centres later.</p>
+                        <p className="text-xs text-muted-foreground mt-1">You can add more centres later.</p>
                         {errors.centreName && <p className="text-red-400 text-sm mt-1">{errors.centreName.message}</p>}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-2">Brand Color</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Brand Color</label>
                         <div className="flex items-center gap-4">
                             <input
                                 type="color"
@@ -190,7 +190,7 @@ export default function OnboardingForm() {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-xs text-on-surface-variant mt-2">This color will be used for buttons and highlights on your booking page.</p>
+                        <p className="text-xs text-muted-foreground mt-2">This color will be used for buttons and highlights on your booking page.</p>
                         {errors.brandColor && <p className="text-red-400 text-sm mt-1">{errors.brandColor.message}</p>}
                     </div>
                 </div>

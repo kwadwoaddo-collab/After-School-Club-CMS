@@ -65,7 +65,7 @@ export default function RegistrationStatusUpdater({
                 disabled={saving}
                 aria-haspopup="listbox"
                 aria-expanded={open}
-                className="px-4 py-2 rounded-lg bg-secondary/40 text-white text-sm font-medium hover:bg-card transition-colors disabled:opacity-50 border border-outline-variant/10"
+                className="px-4 py-2 rounded-lg bg-secondary/40 text-foreground text-sm font-medium hover:bg-card transition-colors disabled:opacity-50 border border-outline-variant/10"
             >
                 {saving ? 'Saving…' : 'Update Status ▾'}
             </button>

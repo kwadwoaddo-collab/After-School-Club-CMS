@@ -124,7 +124,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
                                     placeholder="e.g. Important Update: Centre Closure Tomorrow"
-                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                                     required
                                 />
                             </div>
@@ -135,7 +135,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                     onChange={(e) => setMessage(e.target.value)}
                                     rows={8}
                                     placeholder="Type your message here..."
-                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-y"
+                                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-y"
                                     required
                                 />
                             </div>
@@ -169,7 +169,7 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                 <select 
                                     value={selectedClassId}
                                     onChange={(e) => setSelectedClassId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-secondary/30 border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                                    className="w-full px-4 py-3 bg-secondary/30 border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
                                 >
                                     <option value="all">All Parents</option>
                                     {classes.map(c => (

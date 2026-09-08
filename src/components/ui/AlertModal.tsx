@@ -32,14 +32,14 @@ export default function AlertModal({
                 <div className={`w-14 h-14 ${iconBg} border rounded-2xl flex items-center justify-center mx-auto mb-5`}>
                     <Icon className={`w-7 h-7 ${iconColor}`} />
                 </div>
-                <h3 className="text-xl font-black text-white text-center mb-2 tracking-tight">{title}</h3>
-                <div className="text-sm text-on-surface-variant text-center mb-6 font-medium">
+                <h3 className="text-xl font-black text-foreground text-center mb-2 tracking-tight">{title}</h3>
+                <div className="text-sm text-muted-foreground text-center mb-6 font-medium">
                     {description}
                 </div>
                 
                 <button
                     onClick={onClose}
-                    className="w-full bg-secondary/80 text-white font-bold py-3.5 rounded-xl hover:bg-secondary/80/80 transition-all border border-outline-variant/10 shadow-lg"
+                    className="w-full bg-secondary/80 text-foreground font-bold py-3.5 rounded-xl hover:bg-secondary/80/80 transition-all border border-outline-variant/10 shadow-lg"
                 >
                     {buttonText}
                 </button>

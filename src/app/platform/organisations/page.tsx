@@ -133,7 +133,7 @@ export default async function PlatformOrganisationsPage() {
                             type="text"
                             name="reason"
                             placeholder="Reason (optional)"
-                            className="px-2 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white/60 placeholder-white/20 w-36"
+                            className="px-2 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white/70 placeholder-white/40 w-36"
                           />
                           <button
                             id={`reject-org-${org.id}`}
