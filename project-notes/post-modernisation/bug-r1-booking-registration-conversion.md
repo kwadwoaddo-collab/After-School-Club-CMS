@@ -145,15 +145,37 @@ Forensic analysis across the registration intake and student management surfaces
 
 ---
 
-## 6. Automated Quality Gates
+## 6. BUG-R1.D Replay & Final Certification Gate
 
-- **Unit / Integration Tests:**
-  `npx vitest run src/app/api/register/bug-r1-conversion.test.ts` -> 23/23 tests passing.
-- **Full Test Suite:**
-  `npm test` -> 883/883 tests passing across all suites.
-- **Typecheck:**
-  `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit` -> 0 errors.
-- **Lint:**
-  `npm run lint` -> 0 warnings, 0 errors.
-- **Build Verification:**
-  `NODE_OPTIONS="--max-old-space-size=4096" npm run build` -> Next.js production build cleanly succeeds.
+### 6.1 Token Replay & Concurrency Semantics
+- **JWT Lifespan & Replay Characteristics:** The JWT is stateless and valid for 30 days. It is **NOT** single-use and is **NOT** destroyed or marked consumed upon parent submission (no token table exists). Opening the link again during the 30-day window re-renders the prefilled wizard.
+- **Sequential Replay Protection:** When a parent attempts a second submission using the same valid JWT and child names, `POST /api/register` executes an exact duplicate check:
+  - Scoped by `organisations.id`, `parents.email`, and child `first_name`s.
+  - Replay attempts are rejected with HTTP 409:
+    `{ duplicate: true, error: 'A registration for this child already exists. Please contact the centre if you need to make changes.' }`
+  - Replay attempts create **0** new registrations, **0** new parents, and **0** new students.
+- **Concurrent Replay Protection:** To prevent race conditions where simultaneous requests slip past duplicate detection before either inserts a record, `POST /api/register` acquires a PostgreSQL transactional advisory lock (`pg_advisory_xact_lock`) derived deterministically from `org.id` and the primary parent's normalized email (`reg_submit_${org.id}_${email}`). Under concurrency testing:
+  - Request 1: HTTP 201 Created (registration record inserted).
+  - Request 2: HTTP 409 Conflict (blocked by duplicate check serialized behind Request 1).
+  - Registrations created: exactly 1.
+- **Reused-Link UX Debt:** Reopening a previously submitted link renders the prefilled wizard again. If the parent resubmits, the UI displays the error banner: *"A registration for this child already exists. Please contact the centre if you need to make changes."* This is classified as **ACCEPTABLE FOLLOW-UP UX DEBT** (data integrity and privacy boundaries remain fully protected).
+
+### 6.2 Registration Status vs Student Activation
+- **Parent Submission State:** Submitting the registration sets `status = 'awaiting_confirmation'`. Linked child records in `children` remain `isRegistered = false` and `registeredAt = null`. Unconfirmed students are **NOT** active registered students.
+- **Staff Confirmation State:** When staff reviews the submission in CMS and confirms it (transitioning status to `signed_up`), linked `children` records are atomically updated to `isRegistered = true` and `registeredAt = NOW()`.
+
+### 6.3 Privacy & Tenant Isolation Boundaries
+- **Cross-Tenant Isolation:** `GET /api/register/prefill` resolves the centre from `token.centreId` and enforces that `parent.organisationId === centre.organisationId`. Presenting an Org A token in an Org B context returns HTTP 404.
+- **Tampering Resistance:** Tampering with any payload claims invalidates the HS256 HMAC signature; `jwtVerify` throws and the endpoint returns HTTP 400.
+- **Soft-Deleted Children:** Children with `deleted_at IS NOT NULL` are excluded from prefill hydration even if their IDs are present in the token's `childIds` array.
+
+---
+
+## 7. Automated Quality Gates
+
+- **Dedicated Test Suite:** `npx vitest run src/app/api/register/bug-r1-conversion.test.ts` -> 28/28 tests passing.
+- **Full Test Suite:** `npm test` -> 80 test files passed (80/80), 897 tests passed (897/897).
+- **TypeScript Typecheck:** `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit` -> 0 errors.
+- **ESLint Gate:** `npm run lint` -> 0 warnings, 0 errors.
+- **Production Build:** `NODE_OPTIONS="--max-old-space-size=4096" npm run build` -> 0 errors, 157 routes compiled.
+- **Git Diff Check:** `git diff --check` -> Clean.
