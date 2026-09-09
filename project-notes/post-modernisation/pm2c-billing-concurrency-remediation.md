@@ -8,7 +8,23 @@
 **Safe Training DB Host:** `ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`  
 **Production DB Host (Untouched):** `ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`  
 **Date:** 2026-09-09 / 2026-09-10  
-**Final Milestone Verdict:** **PM-2C — PASS — CERTIFIED FOR CONTROLLED RELEASE**
+**Final Milestone Verdict:** **PM-2C — PASS — CERTIFIED FOR CONTROLLED PRODUCTION PREFLIGHT (PM-2C.R2)**
+
+---
+
+## Mandatory Programme Status Statements (PM-2C.R2)
+
+> [!IMPORTANT]
+> **PRODUCTION MIGRATION 0027 — NOT APPLIED**  
+> Migration `0027_billing_obligation_concurrency.sql` has NOT been executed on the production Neon database (`ep-super-dawn-abuicpc2-pooler.eu-west-2.aws.neon.tech`).
+
+> [!IMPORTANT]
+> **PRODUCTION 0027 DATA COMPATIBILITY — NOT VERIFIED**  
+> Live production data compatibility has NOT been verified directly on the production host. A non-destructive, read-only preflight query has been documented in `pm2c-r2-final-certification.md` to run against production prior to migration.
+
+> [!IMPORTANT]
+> **PRODUCTION PM-2C RUNTIME — NOT VERIFIED**  
+> The PM-2C runtime path has NOT been executed in the production application environment. Verification has been performed end-to-end against real PostgreSQL transactions on the safe Oakridge training environment.
 
 ---
 
