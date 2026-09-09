@@ -58,7 +58,7 @@ Through **PM-2C.B** (Remediation Implementation) and **PM-2C.C** (Adversarial Co
 
 A dedicated integration test suite (`src/features/billing/pm2c-concurrency.integration.test.ts`) was executed directly against the approved training PostgreSQL database (`ep-aged-morning-abr2278f.eu-west-2.aws.neon.tech`).
 
-All 9 adversarial concurrency scenarios passed:
+All 13 adversarial concurrency scenarios passed:
 1. **C1 (Sequential Automated Generation):**
    - Run 1 generates invoice `INV-...`.
    - Run 2 returns `{ success: true, alreadyGenerated: true, invoiceId: same }`. Exactly 1 invoice in DB.
@@ -85,6 +85,14 @@ All 9 adversarial concurrency scenarios passed:
    - PostgreSQL aborts atomically; exactly 0 orphan invoices remain in DB.
 9. **C20 (Multi-Child Family Snapshot):**
    - Config with 2 siblings generates an invoice capturing both children in `coveredChildrenJson` and properly populates `billingConfigId`.
+10. **R10 (Ad-Hoc Independence Invariant):**
+    - Ad-hoc manual fee (£25 uniform charge) with `billingConfigId = null` does not consume the recurring billing config obligation, allowing automated generation for agreed £150 fee to succeed cleanly. Both invoices coexist.
+11. **R11 (Multiple Ad-Hoc Invoices In Same Month):**
+    - Two separate legitimate ad-hoc charges (£30 uniform, £15 late fee) issued for the same family in the same billing period both succeed without collision.
+12. **R12 (Real `POST /api/cron/billing` Route Execution):**
+    - Full Next.js Route Handler invocation with valid `Bearer CRON_SECRET` detects pre-existing manual invoice, skips duplicate generation, records `billing_run`, and increments `skipped_already_exists`.
+13. **R13 (Cron Security Authorization Rejection):**
+    - `POST /api/cron/billing` verifies authentication fail-closed behavior, rejecting unauthenticated and invalid-secret requests with HTTP 401.
 
 ---
 
@@ -100,9 +108,8 @@ Post-test audit verified:
 ## 5. Security & Quality Assurance Verification (PM-2C.D)
 
 - **TypeScript Compilation:** `tsc --noEmit` passed with exit code 0.
-- **Unit Test Suite:** All 84 test suites (980 tests) passed cleanly with exit code 0.
+- **Unit Test Suite:** All 84 test suites (984 tests) passed cleanly with exit code 0.
 - **Linter:** `npm run lint` passed cleanly with exit code 0.
-- **Production Build:** `npm run build` compiled all 157 routes cleanly with exit code 0.
 - **Git Format:** `git diff --check` passed with 0 errors.
 
 ---
