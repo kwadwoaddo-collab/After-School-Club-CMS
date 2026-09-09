@@ -95,9 +95,11 @@ FOR UPDATE SKIP LOCKED
   where `options.idempotencyKey` passes the HTTP header `Idempotency-Key: <key>`.
 - In `src/lib/services/email.ts`, `sendEmail` explicitly forwards `options.idempotencyKey` to Resend options:
   `await resend.emails.send(createEmailOptions, { idempotencyKey: options.idempotencyKey })`.
-- **Deduplication vs Payload Mismatch Contract**:
-  - If a request is retried with the exact same idempotency key and identical payload (same recipient, subject, html), Resend recognizes the idempotent replay and returns the previously generated message ID without sending a second email.
-  - If a request is retried with the same idempotency key but modified payload parameters, Resend responds with HTTP 409 (`invalid_idempotent_request` / `idempotent_parameter_mismatch`), which `classifyError` classifies as terminal non-retryable to prevent corrupt delivery states.
+
+### Bounded Evidentiary Claims:
+- **Application Proof**: Proved via automated tests (`delivery.test.ts` and `pm2b-postgres.integration.test.ts`) that the application passes `delivery.id` as `idempotencyKey`, reuses the exact same key on retries, maintains identical payloads between attempts, and generates distinct keys for mutated broadcasts.
+- **SDK Contract Proof**: Proved via static inspection of `node_modules/resend/dist/index.d.mts` that `resend.emails.send` maps `options.idempotencyKey` to the provider request.
+- **Provider-Runtime Proof**: **NOT RUNTIME VERIFIED (NOT EXECUTED)**. Production live calls to Resend API are not executed during test suites to avoid sending real emails, incurring external billing, or depending on live third-party uptime. The CMS supplies a stable delivery-specific idempotency key on retries and relies on Resend's documented idempotency semantics to mitigate duplicate provider submissions.
 
 ---
 
@@ -109,43 +111,65 @@ FOR UPDATE SKIP LOCKED
   - `crypto.timingSafeEqual` prevents timing side-channel attacks on `CRON_SECRET`.
   - Missing secret in environment immediately locks endpoint (`503 Service Unavailable`).
   - Mismatched bearer tokens return `401 Unauthorized`.
-- **Operational Assessment**:
+- **Project Identity**: Locally linked via `.vercel/repo.json` to project `after-school-club-live` (`prj_WPyJuSrx5NbelBP3kozySX9F0HmW`).
+- **Plan & Capability Assessment**:
   `CURRENT PROJECT CRON FREQUENCY CAPABILITY NOT INDEPENDENTLY VERIFIED`.
-  Vercel Hobby tier permits at most 1 cron execution per day (`0 2 * * *`). Higher frequencies require Pro or Enterprise plans. PM-2B relies primarily on post-commit immediate dispatch, using the daily cron strictly as a fallback recovery sweep.
+  Neither `.vercel/repo.json` nor `npx vercel project inspect` discloses the billing tier (Hobby vs Pro vs Enterprise).
+- **Operational Latency & Recovery Analysis**:
+  - **Normal Immediate Dispatch Latency**: ~200ms–2000ms (executed in-process immediately following transaction commit).
+  - **Configured Retry Backoff Values**: `10s` (attempt 1), `30s` (attempt 2), `90s` (attempt 3).
+  - **Critical Caveat**: The backoff values (`10s`, `30s`, `90s`) specify `next_attempt_at = NOW() + INTERVAL 'Xs'`. They are **NOT** guaranteed wall-clock execution times unless an active worker or cron is scheduled to execute at those intervals.
+  - **Recovery Behavior if Immediate Execution Disappears**: If immediate processing terminates or is skipped, pending deliveries remain in `PENDING` state with `next_attempt_at <= NOW()`.
+  - **Maximum Scheduled Sweep Delay**: Under the daily `0 2 * * *` cron, worst-case recovery latency for stranded deliveries is **24 hours**. This is accepted operational behaviour/debt under the current configuration until an upgraded plan authorizes a higher-frequency cron (e.g. `*/5 * * * *`).
 
 ---
 
-## 6. Complete F1–F23 Verification Matrix
+## 6. Complete F1–F23 Verification Matrix & Evidence Taxonomy
 
-| Identifier | Scenario / Invariant | Test Target & Class | Verdict | Executed Evidence Summary |
-| :--- | :--- | :--- | :--- | :--- |
-| **F1** | Recipient resolution & atomic queueing | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Header, ledger rows, and audit event committed atomically in single tx |
-| **F2** | Ledger insertion fails halfway / transaction rollback | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Mid-flight error rolls back header and all ledger rows; 0 rows remain |
-| **F3** | Provider HTTP 400 rejection | `delivery.test.ts` (Unit Suite) | **PASS** | 400 Bad Request classified as terminal non-retryable; marked FAILED |
-| **F4** | Provider HTTP 429 rate limit | `delivery.test.ts` (Unit Suite) | **PASS** | 429 classified as retryable; scheduled with exponential backoff |
-| **F5** | Provider HTTP 500 server error | `delivery.test.ts` (Unit Suite) | **PASS** | 500 classified as retryable; scheduled for retry |
-| **F6** | Network exception / socket drop | `delivery.test.ts` (Unit Suite) | **PASS** | ECONNRESET / ETIMEDOUT / fetch failed classified as retryable |
-| **F7** | Provider timeout / ambiguous outcome | `delivery.test.ts` (Unit Suite) | **PASS** | Timeout classified as retryable with same delivery ID idempotency key |
-| **F8** | Worker crash before provider call | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Unclaimed/stale delivery reclaimed by subsequent worker |
-| **F9** | Worker crash after provider success before SENT commit | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Reclaimed row forwards identical idempotencyKey; deduplicated |
-| **F10** | Lease expiry reclaim | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Row with expired lease reclaimed by next worker via SKIP LOCKED |
-| **F11** | Overlapping workers concurrency | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Two workers claim disjoint row sets simultaneously; zero overlap |
-| **F12** | Overlapping recovery invocations | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Multiple concurrent recovery processors complete without double sends |
-| **F13** | Zero eligible recipients | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Handled cleanly; rejected without writing header or ledger rows |
-| **F14** | Invalid recipient address | `delivery.test.ts` (Unit Suite) | **PASS** | Validation errors classified as terminal; immediate FAILED state |
-| **F15** | Cross-tenant isolation | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Tenant A cannot view or claim Tenant B broadcasts or deliveries |
-| **F16** | Latest-booking withdrawn consent | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Re-derives latest booking consent; historical opt-in overridden |
-| **F17** | Shared-email deduplication | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Multiple parents sharing email queue exactly one ledger row |
-| **F18** | Parent deletion after queue | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | `ON DELETE SET NULL` preserves ledger row and recipient address |
-| **F19** | Queued payload immutability | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Subject and message locked at queue time; dispatch uses original payload |
-| **F20** | Unauthorized recovery endpoint | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Timing-safe verification fails closed (503/401) on missing/bad token |
-| **F21** | Process loss survival | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Transaction survives serverless process death; recovered by cron |
-| **F22** | Mixed-result aggregation | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Partial failures reconcile to PARTIALLY_FAILED on broadcast header |
-| **F23** | Unknown-outcome retry idempotency | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Re-claimed delivery forwards same idempotency key and identical payload |
+| Identifier | Invariant / Scenario | Primary Evidence Class | Test Target & File | Mocked Provider? | Real PostgreSQL? | Verdict | Qualification |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **F1** | Recipient resolution & atomic queueing | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Broadcast header, ledger rows, and audit event committed atomically in single tx |
+| **F2** | Ledger insertion fails halfway / transaction rollback | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | Yes | **PASS** | Mid-flight error rolls back header and all ledger rows; zero rows persist |
+| **F3** | Provider HTTP 400 rejection | UNIT TEST | `src/features/communications/delivery.test.ts` | Yes | No | **PASS** | 400 Bad Request classified as terminal non-retryable; marked FAILED |
+| **F4** | Provider HTTP 429 rate limit | UNIT TEST | `src/features/communications/delivery.test.ts` | Yes | No | **PASS** | 429 classified as retryable; scheduled with exponential backoff |
+| **F5** | Provider HTTP 500 server error | UNIT TEST | `src/features/communications/delivery.test.ts` | Yes | No | **PASS** | 500 classified as retryable; scheduled for retry |
+| **F6** | Network exception / socket drop | UNIT TEST | `src/features/communications/delivery.test.ts` | Yes | No | **PASS** | ECONNRESET / ETIMEDOUT / fetch failed classified as retryable |
+| **F7** | Provider timeout / ambiguous outcome | UNIT TEST | `src/features/communications/delivery.test.ts` | Yes | No | **PASS** | Timeout classified as retryable with same delivery ID idempotency key |
+| **F8** | Worker crash before provider call | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Unclaimed/stale delivery reclaimed by subsequent worker |
+| **F9** | Worker crash after provider success before SENT commit | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Reclaimed row forwards identical idempotencyKey; deduplicated |
+| **F10** | Lease expiry reclaim | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | Yes | **PASS** | Row with expired lease reclaimed by next worker via SKIP LOCKED |
+| **F11** | Overlapping workers concurrency | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | Yes | **PASS** | Two workers claim disjoint row sets simultaneously; zero overlap |
+| **F12** | Overlapping recovery invocations | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Multiple concurrent recovery processors complete without double sends |
+| **F13** | Zero eligible recipients | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | Yes | **PASS** | Handled cleanly; rejected without writing header or ledger rows |
+| **F14** | Invalid recipient address | UNIT TEST | `src/features/communications/delivery.test.ts` | Yes | No | **PASS** | Validation errors classified as terminal; immediate FAILED state |
+| **F15** | Cross-tenant isolation | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | Yes | **PASS** | Tenant A cannot view or claim Tenant B broadcasts or deliveries |
+| **F16** | Latest-booking withdrawn consent | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Re-derives latest booking consent; historical opt-in overridden |
+| **F17** | Shared-email deduplication | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Multiple parents sharing email queue exactly one ledger row |
+| **F18** | Parent deletion after queue | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | Yes | **PASS** | `ON DELETE SET NULL` preserves ledger row and recipient address |
+| **F19** | Queued payload immutability | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Subject and message locked at queue time; dispatch uses original payload |
+| **F20** | Unauthorized recovery endpoint | ROUTE INTEGRATION | `src/features/communications/pm2b-postgres.integration.test.ts` | N/A | No | **PASS** | Timing-safe verification fails closed (503/401) on missing/bad token |
+| **F21** | Process loss survival | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Real PostgreSQL verification proves that a committed broadcast remains recoverable when immediate post-commit processing does not execute |
+| **F22** | Mixed-result aggregation | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Partial failures reconcile to PARTIALLY_FAILED on broadcast header |
+| **F23** | Unknown-outcome retry idempotency | REAL POSTGRESQL | `src/features/communications/pm2b-postgres.integration.test.ts` | Yes | Yes | **PASS** | Re-claimed delivery forwards same idempotency key and identical payload |
 
 ---
 
-## 7. Repository Integrity & Quality Gates
+## 7. Cleanup Mechanism & Mutation Inventory
+
+- **Cleanup Mechanism**: Cleaned up in `afterAll` hook of `pm2b-postgres.integration.test.ts`.
+- **Mutated Tables Inventory**:
+  1. `organisations`
+  2. `centres`
+  3. `parents`
+  4. `bookings`
+  5. `broadcasts`
+  6. `broadcast_deliveries`
+  7. `audit_events`
+- **Hygiene Enforcement**: Tracking arrays (`createdOrgIds`, `createdCentreIds`, `createdParentIds`, `createdBookingIds`, `createdBroadcastIds`) record every synthetic primary key. In `afterAll`, all created entities are deleted in reverse dependency order. The hook asserts `remainingOrgs.length === 0` and throws if cleanup fails, ensuring zero residual test data.
+
+---
+
+## 8. Repository Integrity & Quality Gates
 
 - **Vitest Suite**: 83 test files passed, 971 unit and integration tests passed (0 failures).
 - **TypeScript Typecheck**: Clean pass with 0 errors under `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit`.

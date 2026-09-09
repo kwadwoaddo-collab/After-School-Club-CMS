@@ -224,50 +224,71 @@ describe('PM-2B: Real PostgreSQL Broadcast Durability & Invariants Suite (F1-F23
   });
 
   // =========================================================================
-  // F21: PROCESS LOSS SURVIVAL (CORE SERVERLESS DEFECT REMEDIATION)
+  // F21: DURABLE OUTBOX RECOVERY WHEN IMMEDIATE PROCESSING DOES NOT EXECUTE
   // =========================================================================
-  it('F21: Queue accepts and commits to Postgres even when immediate worker throws or dies mid-flight', async () => {
+  it('F21: Real PostgreSQL verification proves that a committed broadcast remains recoverable when immediate post-commit processing does not execute', async () => {
+    // 1. Create synthetic tenant/recipient
     const { org, centre } = await createSyntheticTenant('f21');
     mockSessionUser.organisationId = org.id;
 
     const p1 = await createSyntheticParent(org.id, 'p1.f21@test.com', 'Charlie');
     await createSyntheticBooking(p1.id, true);
 
-    // Simulate immediate dispatcher crashing with uncaught runtime exception
-    vi.mocked(sendEmail).mockRejectedValueOnce(new Error('Process killed: SIGTERM in serverless runtime'));
-
+    // 2. Queue broadcast transactionally with skipImmediateProcessing: true
+    // (deliberately performing NO immediate delivery processing in request lifecycle)
     const result = await sendBroadcast({
       centreId: centre.id,
       audienceParentIds: [p1.id],
-      subject: 'F21 Serverless Survival Subject',
-      message: 'F21 Serverless Body',
+      subject: 'F21 Durable Outbox Recovery Subject',
+      message: 'F21 Durable Outbox Body',
+      skipImmediateProcessing: true,
     });
 
-    // Caller receives success because queueing transaction committed before worker dispatch
+    // 3. Confirm broadcast header and delivery ledger are committed in real PostgreSQL
     expect(result.success).toBe(true);
     expect(result.broadcastId).toBeDefined();
     createdBroadcastIds.push(result.broadcastId!);
 
-    // Ledger row survived safely in Postgres
-    const deliveries = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.broadcastId, result.broadcastId!));
-    expect(deliveries).toHaveLength(1);
-    expect(deliveries[0].recipientEmail).toBe('p1.f21@test.com');
-    expect(deliveries[0].broadcastId).toBe(result.broadcastId!);
+    const [bRow] = await db.select().from(broadcasts).where(eq(broadcasts.id, result.broadcastId!));
+    expect(bRow).toBeDefined();
+    expect(bRow.status).toBe('QUEUED');
+    expect(bRow.recipientCount).toBe(1);
 
-    // Simulate elapsed retry backoff: nextAttemptAt has arrived
-    await db
-      .update(broadcastDeliveries)
-      .set({ nextAttemptAt: new Date(Date.now() - 1000) })
-      .where(eq(broadcastDeliveries.id, deliveries[0].id));
+    // 4. Confirm NO immediate delivery processing occurred
+    expect(sendEmail).not.toHaveBeenCalled();
 
-    // Now simulate recovery cron / background sweep claiming the stranded row
-    vi.mocked(sendEmail).mockResolvedValueOnce({ success: true, messageId: 'recovered-by-cron' });
-    const recoveryResult = await processBroadcastDeliveries({ broadcastId: result.broadcastId!, limit: 10 });
+    const initialDeliveries = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.broadcastId, result.broadcastId!));
+    expect(initialDeliveries).toHaveLength(1);
+    expect(initialDeliveries[0].recipientEmail).toBe('p1.f21@test.com');
+    expect(initialDeliveries[0].status).toBe('PENDING');
+    expect(initialDeliveries[0].sentAt).toBeNull();
+    expect(initialDeliveries[0].attemptCount).toBe(0);
+
+    // 5. End execution phase.
+    // 6. Invoke the normal recovery processor independently (simulating separate recovery cron)
+    vi.mocked(sendEmail).mockResolvedValueOnce({ success: true, messageId: 'msg-recovered-by-processor' });
+    const recoveryResult = await processBroadcastDeliveries({ broadcastId: result.broadcastId!, limit: 10, workerToken: 'cron-recovery-worker' });
+
+    // 7. Prove the persisted row is claimed and sent
     expect(recoveryResult.sentCount).toBe(1);
+    expect(recoveryResult.failedCount).toBe(0);
 
-    const [updatedDelivery] = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.id, deliveries[0].id));
-    expect(updatedDelivery.status).toBe('SENT');
-    expect(updatedDelivery.providerMessageId).toBe('recovered-by-cron');
+    // 8. Prove it progresses through the expected state (SENT with providerMessageId and timestamps)
+    const [finalDelivery] = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.id, initialDeliveries[0].id));
+    expect(finalDelivery.status).toBe('SENT');
+    expect(finalDelivery.providerMessageId).toBe('msg-recovered-by-processor');
+    expect(finalDelivery.sentAt).not.toBeNull();
+    expect(finalDelivery.attemptCount).toBe(1);
+
+    // 9. Prove exactly one ledger row remains
+    const allDeliveries = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.broadcastId, result.broadcastId!));
+    expect(allDeliveries).toHaveLength(1);
+
+    const [finalBroadcast] = await db.select().from(broadcasts).where(eq(broadcasts.id, result.broadcastId!));
+    expect(finalBroadcast.status).toBe('COMPLETED');
+    expect(finalBroadcast.successCount).toBe(1);
+    expect(finalBroadcast.failureCount).toBe(0);
+    // 10. Clean up completely (handled deterministically via afterAll tracking arrays)
   });
 
   // =========================================================================
