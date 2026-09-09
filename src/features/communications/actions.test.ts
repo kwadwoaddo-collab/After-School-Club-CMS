@@ -52,24 +52,106 @@ function makeSelectChain(result: unknown[]) {
   return chain;
 }
 
-const dbUpdateSetMock = vi.fn();
+const {
+  dbUpdateSetMock,
+  getCapturedDeliveries,
+  getCapturedBroadcast,
+  setCapturedDeliveries,
+  setCapturedBroadcast,
+  insertMock,
+  txMock,
+} = vi.hoisted(() => {
+  let capturedDeliveries: any[] = [];
+  let capturedBroadcast: any = null;
+  const dbUpdateSetMock = vi.fn();
+
+  const insertMock = vi.fn(() => ({
+    values: vi.fn((vals: any) => {
+      if (Array.isArray(vals)) {
+        capturedDeliveries = vals;
+      } else if (vals && vals.message !== undefined) {
+        capturedBroadcast = vals;
+      }
+      return {
+        returning: vi.fn().mockResolvedValue([
+          { id: 'mock-broadcast-id', ...(capturedBroadcast || {}) },
+        ]),
+      };
+    }),
+  }));
+
+  const txMock = {
+    insert: insertMock,
+    update: vi.fn(() => ({
+      set: (...args: unknown[]) => {
+        dbUpdateSetMock(...args);
+        return { where: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([]) }) };
+      },
+    })),
+    execute: vi.fn().mockResolvedValue({ rows: [] }),
+  };
+
+  return {
+    dbUpdateSetMock,
+    getCapturedDeliveries: () => capturedDeliveries,
+    getCapturedBroadcast: () => capturedBroadcast,
+    setCapturedDeliveries: (v: any[]) => {
+      capturedDeliveries = v;
+    },
+    setCapturedBroadcast: (v: any) => {
+      capturedBroadcast = v;
+    },
+    insertMock,
+    txMock,
+  };
+});
 
 vi.mock('@/db', () => ({
   db: {
     select: vi.fn(),
-    insert: vi.fn(() => ({
-      values: vi.fn(() => ({
-        returning: vi.fn().mockResolvedValue([{ id: 'mock-broadcast-id' }]),
-      })),
-    })),
+    insert: insertMock,
     update: vi.fn(() => ({
       set: (...args: unknown[]) => {
         dbUpdateSetMock(...args);
-        return { where: vi.fn() };
+        return { where: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([]) }) };
       },
     })),
+    transaction: vi.fn(async (cb: any) => cb(txMock)),
+    execute: vi.fn().mockResolvedValue({ rows: [] }),
   },
 }));
+
+vi.mock('./delivery', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./delivery')>();
+  return {
+    ...actual,
+    processBroadcastDeliveries: vi.fn(async () => {
+      const deliveries = getCapturedDeliveries();
+      const broadcast = getCapturedBroadcast();
+      if (deliveries.length > 0) {
+        let succ = 0;
+        let fail = 0;
+        for (const d of deliveries) {
+          try {
+            const res = await (await import('@/lib/services/email')).sendEmail({
+              to: d.recipientEmail,
+              subject: broadcast?.subject || 'Test',
+              html: `<p>Dear ${actual.escapeHtml(d.recipientName || '')},</p><p>${actual.escapeHtml(broadcast?.message || '')}</p>`,
+              organisationId: d.organisationId,
+            });
+            if (res && res.success) succ++;
+            else fail++;
+          } catch (e) {
+            fail++;
+          }
+        }
+        dbUpdateSetMock({ successCount: succ, failureCount: fail });
+        return { processedCount: deliveries.length, sentCount: succ, failedCount: fail, retriedCount: 0 };
+      }
+      return { processedCount: 0, sentCount: 0, failedCount: 0, retriedCount: 0 };
+    }),
+  };
+});
 
 /** Flushes the fire-and-forget sendEmailsTask (see actions.ts) so tests can
  * assert on its background db.update(broadcasts).set({successCount,...})
@@ -80,7 +162,7 @@ async function flushBackgroundTask() {
 }
 
 vi.mock('@/lib/services/email', () => ({
-  sendEmail: vi.fn().mockResolvedValue(true),
+  sendEmail: vi.fn().mockResolvedValue({ success: true, messageId: 'msg-1' }),
 }));
 
 function ownerSession(overrides: Partial<{ organisationId: string; id: string }> = {}) {
@@ -112,6 +194,8 @@ function frontDeskSession() {
 describe('Communications Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setCapturedDeliveries([]);
+    setCapturedBroadcast(null);
   });
 
   describe('sendBroadcast', () => {
@@ -363,6 +447,71 @@ describe('Communications Actions', () => {
 
       expect(result).toEqual({ success: true, count: 0, sent: 0, failed: 0 });
       expect(db.select).not.toHaveBeenCalled();
+    });
+
+    it('PM-2B.C: deduplicates when two eligible parents share the same email address (destination deduplication)', async () => {
+      (auth as any).mockResolvedValue(ownerSession());
+      const chain = makeSelectChain([
+        { id: 'p1', firstName: 'Alice', email: 'family@shared.test', communicationsConsent: true },
+        { id: 'p2', firstName: 'Bob', email: 'family@shared.test', communicationsConsent: true },
+      ]);
+      (db.select as any).mockReturnValue(chain);
+
+      const result = await sendBroadcast({
+        audienceParentIds: ['p1', 'p2'],
+        subject: 'Family Update',
+        message: 'Hello Family',
+      });
+
+      // Exactly 1 delivery must be queued and dispatched, recipient count must reflect 1
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(1);
+      expect(getCapturedDeliveries()).toHaveLength(1);
+      expect(getCapturedDeliveries()[0].recipientEmail).toBe('family@shared.test');
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('PM-2B.C: prevents duplicate delivery when same parent appears multiple times in audience', async () => {
+      (auth as any).mockResolvedValue(ownerSession());
+      const chain = makeSelectChain([
+        { id: 'p1', firstName: 'Alice', email: 'alice@test.com', communicationsConsent: true },
+      ]);
+      (db.select as any).mockReturnValue(chain);
+
+      const result = await sendBroadcast({
+        audienceParentIds: ['p1', 'p1'],
+        subject: 'Notice',
+        message: 'Test',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.count).toBe(1);
+      expect(getCapturedDeliveries()).toHaveLength(1);
+    });
+
+    it('PM-2B.C: allows same destination email across different broadcasts', async () => {
+      (auth as any).mockResolvedValue(ownerSession());
+      const chain = makeSelectChain([
+        { id: 'p1', firstName: 'Alice', email: 'alice@test.com', communicationsConsent: true },
+      ]);
+      (db.select as any).mockReturnValue(chain);
+
+      const b1 = await sendBroadcast({
+        audienceParentIds: ['p1'],
+        subject: 'Broadcast 1',
+        message: 'Hello 1',
+      });
+
+      const b2 = await sendBroadcast({
+        audienceParentIds: ['p1'],
+        subject: 'Broadcast 2',
+        message: 'Hello 2',
+      });
+
+      expect(b1.success).toBe(true);
+      expect(b2.success).toBe(true);
+      expect(b1.count).toBe(1);
+      expect(b2.count).toBe(1);
     });
   });
 

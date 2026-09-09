@@ -162,6 +162,27 @@
       "when": 1787622779673,
       "tag": "0022_wild_agent_zero",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788500000000,
+      "tag": "0024_org_approval_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788510000000,
+      "tag": "0025_terms_acceptance",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788520000000,
+      "tag": "0026_broadcast_delivery_durability",
+      "breakpoints": true
     }
   ]
 }

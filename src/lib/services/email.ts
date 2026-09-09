@@ -1424,6 +1424,7 @@ export async function sendEmail(data: {
   subject: string;
   html: string;
   organisationId?: string;
+  idempotencyKey?: string;
 }): Promise<EmailResult> {
   if (!resend) {
     logger.warn('[EmailService] Resend client not initialized. Email not sent.');
@@ -1431,12 +1432,15 @@ export async function sendEmail(data: {
   }
 
   try {
-    const { data: result, error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: data.to,
-      subject: data.subject,
-      html: data.html,
-    });
+    const { data: result, error } = await resend.emails.send(
+      {
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: data.to,
+        subject: data.subject,
+        html: data.html,
+      },
+      data.idempotencyKey ? { idempotencyKey: data.idempotencyKey } : undefined
+    );
 
     if (error) {
       logger.error('[EmailService] Failed to send email:', error);

@@ -1,12 +1,12 @@
 'use server';
 
 import { db } from '@/db';
-import { parents, broadcasts, bookings, clubSessions } from '@/db/schema';
+import { parents, broadcasts, broadcastDeliveries, bookings, clubSessions, auditEvents } from '@/db/schema';
 import { eq, inArray, and, sql } from 'drizzle-orm';
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
-import { sendEmail } from '@/lib/services/email';
 import { logger } from '@/lib/logger';
+import { processBroadcastDeliveries } from './delivery';
 
 /**
  * Milestone 3H: narrow, local escaping helper for the one HTML template this
@@ -37,16 +37,9 @@ function escapeHtml(value: string): string {
  * under any organisation's name, to any parent in the database — consented
  * or not. See project-notes/milestone-3h-communications-audit.md, C1-C4.
  *
- * Fixed: organisationId is now derived from the session (never trusted from
- * the caller); the recipient query is scoped to that organisation and
- * re-derives communicationsConsent itself via the same bookings join
- * getParentsForCentre already uses, rather than trusting a field that
- * doesn't even exist on a raw `parents` row; and centreId (when supplied)
- * is verified against the caller's accessible centres for non-owner roles,
- * matching the pattern already established in finance/actions.ts and
- * billing/actions.ts. C8: only ORG_OWNER/MANAGER may send, matching the
- * one sibling precedent for bulk messaging in this codebase
- * (src/app/api/register/bulk-email/route.ts).
+ * PM-2B: Replaced detached in-memory execution with a durable transactional
+ * outbox. Broadcast headers, recipient delivery ledger rows, and audit events
+ * are atomically committed to PostgreSQL before any external transmission.
  */
 export async function sendBroadcast(data: {
   centreId?: string;
@@ -88,7 +81,7 @@ export async function sendBroadcast(data: {
       (
         SELECT ${bookings.communicationsConsent}
         FROM ${bookings}
-        WHERE ${bookings.parentId} = ${parents.id}
+        WHERE ${bookings.parentId} = ${sql`parents.id`}
         ORDER BY ${bookings.createdAt} DESC, ${bookings.id} DESC
         LIMIT 1
       ),
@@ -101,68 +94,92 @@ export async function sendBroadcast(data: {
       eq(parents.organisationId, organisationId),
     ));
 
-  const targetParents = consentRows.filter((p) => p.communicationsConsent);
+  const targetParents = consentRows.filter((p) => p.communicationsConsent && p.email);
 
-  if (targetParents.length === 0) {
-    return { success: true, count: 0, sent: 0, failed: 0 };
+  // PM-2B.C: Deduplicate by destination email address deterministically.
+  // If multiple eligible parent records share the same email (e.g. family sharing an account),
+  // exactly one delivery record is queued per destination address to prevent spam and preserve
+  // the UNIQUE(broadcast_id, recipient_email) database constraint.
+  const seenEmails = new Set<string>();
+  const uniqueTargetParents: typeof targetParents = [];
+
+  for (const parent of targetParents) {
+    const normalisedEmail = parent.email!.trim().toLowerCase();
+    if (!seenEmails.has(normalisedEmail)) {
+      seenEmails.add(normalisedEmail);
+      uniqueTargetParents.push({
+        ...parent,
+        email: normalisedEmail,
+      });
+    }
   }
 
-  // Create broadcast record immediately
-  const [broadcast] = await db.insert(broadcasts).values({
-    organisationId,
-    centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
-    subject: data.subject,
-    message: data.message,
-    recipientCount: targetParents.length,
-    successCount: 0,
-    failureCount: 0,
-  }).returning();
+  if (uniqueTargetParents.length === 0) {
+    return {
+      success: false,
+      count: 0,
+      sent: 0,
+      failed: 0,
+      error: 'No eligible recipients with communications consent and valid email address found',
+    };
+  }
 
-  // Background queue architecture: execute without awaiting
-  const sendEmailsTask = async () => {
-    let successCount = 0;
-    let failureCount = 0;
+  // Atomically persist broadcast header, delivery outbox records, and queued audit event
+  const broadcast = await db.transaction(async (tx) => {
+    const [createdBroadcast] = await tx.insert(broadcasts).values({
+      organisationId,
+      centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
+      subject: data.subject,
+      message: data.message,
+      recipientCount: uniqueTargetParents.length,
+      successCount: 0,
+      failureCount: 0,
+      status: 'QUEUED',
+    }).returning();
 
-    for (const parent of targetParents) {
-      if (!parent.email) {
-        failureCount++;
-        continue;
-      }
-      try {
-        const result = await sendEmail({
-          to: parent.email,
-          subject: data.subject,
-          html: `<p>Dear ${escapeHtml(parent.firstName)},</p><p>${escapeHtml(data.message)}</p>`,
-          organisationId,
-        });
-        // Milestone 3H, C10: sendEmail's contract is to resolve with
-        // {success: boolean}, not to throw on failure (see
-        // src/lib/services/email.ts's own try/catch, which always
-        // returns rather than rejecting) — this catch block alone never
-        // ran for a failed send, so every failure (unconfigured provider,
-        // a rejected Resend API call, an invalid recipient) was counted
-        // as a success. Confirmed live in Stage C: with Resend
-        // unconfigured in this dev environment, a real send recorded
-        // successCount=1/failureCount=0 despite no email ever being sent.
-        if (result.success) {
-          successCount++;
-        } else {
-          failureCount++;
-        }
-      } catch (e) {
-        failureCount++;
-      }
-    }
+    const deliveryRows = uniqueTargetParents.map((parent) => ({
+      organisationId,
+      broadcastId: createdBroadcast.id,
+      parentId: parent.id,
+      recipientEmail: parent.email!,
+      recipientName: parent.firstName || null,
+      channel: 'email',
+      status: 'PENDING',
+    }));
 
-    // Update broadcast record with final delivery status
-    await db.update(broadcasts)
-      .set({ successCount, failureCount })
-      .where(eq(broadcasts.id, broadcast.id));
+    await tx.insert(broadcastDeliveries).values(deliveryRows);
+
+    await tx.insert(auditEvents).values({
+      organisationId,
+      eventType: 'broadcast.queued',
+      eventData: JSON.stringify({
+        broadcastId: createdBroadcast.id,
+        subject: data.subject,
+        recipientCount: uniqueTargetParents.length,
+        centreId: data.centreId && data.centreId !== 'all' ? data.centreId : null,
+      }),
+    });
+
+    return createdBroadcast;
+  });
+
+  // Short post-commit bounded immediate processing attempt.
+  // All work is already safely persisted in the database outbox; if this process
+  // dies or serverless invocation halts, the recovery cron picks up remaining rows.
+  try {
+    await processBroadcastDeliveries({ broadcastId: broadcast.id, limit: 50 });
+  } catch (err) {
+    logger.warn('[Communications] Immediate dispatch batch caught error; pending work remains in durable ledger', err);
+  }
+
+  return {
+    success: true,
+    broadcastId: broadcast.id,
+    count: uniqueTargetParents.length,
+    sent: 0,
+    failed: 0,
+    status: 'QUEUED',
   };
-
-  sendEmailsTask().catch((e) => logger.error('Broadcast email task failed', e));
-
-  return { success: true, count: targetParents.length, sent: 0, failed: 0 };
 }
 
 /**
@@ -240,7 +257,7 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
       (
         SELECT ${bookings.communicationsConsent}
         FROM ${bookings}
-        WHERE ${bookings.parentId} = ${parents.id}
+        WHERE ${bookings.parentId} = ${sql`parents.id`}
         ORDER BY ${bookings.createdAt} DESC, ${bookings.id} DESC
         LIMIT 1
       ),
@@ -263,4 +280,48 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
   baseQuery.where(and(...conditions)).groupBy(parents.id);
 
   return await baseQuery;
+}
+
+/**
+ * PM-2B: Fetches authoritative delivery statistics and ledger records
+ * for a broadcast, strictly scoped to the authenticated tenant.
+ */
+export async function getBroadcastDeliveryStats(broadcastId: string) {
+  const session = await requireTenantSession();
+  if (!session?.user?.organisationId) return null;
+
+  const [broadcast] = await db
+    .select()
+    .from(broadcasts)
+    .where(and(
+      eq(broadcasts.id, broadcastId),
+      eq(broadcasts.organisationId, session.user.organisationId)
+    ))
+    .limit(1);
+
+  if (!broadcast) return null;
+
+  const deliveries = await db
+    .select({
+      id: broadcastDeliveries.id,
+      recipientEmail: broadcastDeliveries.recipientEmail,
+      recipientName: broadcastDeliveries.recipientName,
+      channel: broadcastDeliveries.channel,
+      status: broadcastDeliveries.status,
+      attemptCount: broadcastDeliveries.attemptCount,
+      sentAt: broadcastDeliveries.sentAt,
+      lastError: broadcastDeliveries.lastError,
+      createdAt: broadcastDeliveries.createdAt,
+    })
+    .from(broadcastDeliveries)
+    .where(and(
+      eq(broadcastDeliveries.broadcastId, broadcastId),
+      eq(broadcastDeliveries.organisationId, session.user.organisationId)
+    ))
+    .orderBy(broadcastDeliveries.createdAt);
+
+  return {
+    broadcast,
+    deliveries,
+  };
 }

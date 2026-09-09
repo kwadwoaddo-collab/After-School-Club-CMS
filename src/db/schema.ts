@@ -778,11 +778,41 @@ export const broadcasts = pgTable('broadcasts', {
   recipientCount: integer('recipient_count').default(0).notNull(),
   successCount: integer('success_count').default(0).notNull(),
   failureCount: integer('failure_count').default(0).notNull(),
+  status: varchar('status', { length: 30 }).default('PENDING').notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
   
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index('broadcasts_org_idx').on(table.organisationId),
   centreIdx: index('broadcasts_centre_idx').on(table.centreId),
+  statusIdx: index('broadcasts_status_idx').on(table.status),
+}));
+
+export const broadcastDeliveries = pgTable('broadcast_deliveries', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  broadcastId: uuid('broadcast_id').references(() => broadcasts.id, { onDelete: 'cascade' }).notNull(),
+  parentId: uuid('parent_id').references(() => parents.id, { onDelete: 'set null' }),
+  recipientEmail: varchar('recipient_email', { length: 255 }).notNull(),
+  recipientName: varchar('recipient_name', { length: 255 }),
+  channel: varchar('channel', { length: 20 }).default('email').notNull(),
+  status: varchar('status', { length: 30 }).default('PENDING').notNull(),
+  claimToken: varchar('claim_token', { length: 64 }),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true }),
+  attemptCount: integer('attempt_count').default(0).notNull(),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+  lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  providerMessageId: varchar('provider_message_id', { length: 255 }),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueRecipientIdx: uniqueIndex('broadcast_deliveries_unique_idx').on(table.broadcastId, table.recipientEmail),
+  orgIdx: index('broadcast_deliveries_org_idx').on(table.organisationId),
+  broadcastIdx: index('broadcast_deliveries_broadcast_idx').on(table.broadcastId),
+  queueIdx: index('broadcast_deliveries_queue_idx').on(table.status, table.nextAttemptAt),
 }));
 
 // ==================== RELATIONS ====================
@@ -957,6 +987,21 @@ export const broadcastsRelations = relations(broadcasts, ({ one }) => ({
   centre: one(centres, {
     fields: [broadcasts.centreId],
     references: [centres.id],
+  }),
+}));
+
+export const broadcastDeliveriesRelations = relations(broadcastDeliveries, ({ one }) => ({
+  broadcast: one(broadcasts, {
+    fields: [broadcastDeliveries.broadcastId],
+    references: [broadcasts.id],
+  }),
+  organisation: one(organisations, {
+    fields: [broadcastDeliveries.organisationId],
+    references: [organisations.id],
+  }),
+  parent: one(parents, {
+    fields: [broadcastDeliveries.parentId],
+    references: [parents.id],
   }),
 }));
 
