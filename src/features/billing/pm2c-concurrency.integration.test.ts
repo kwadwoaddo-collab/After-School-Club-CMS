@@ -22,7 +22,9 @@ import {
 } from '@/db/schema';
 import { eq, inArray, and, sql, ne } from 'drizzle-orm';
 import { generateInvoiceFromConfig } from './actions';
-import { createInvoice } from '@/features/finance/actions';
+import { createInvoice, createAdHocInvoice } from '@/features/finance/actions';
+import { POST as billingCronPost } from '@/app/api/cron/billing/route';
+import { NextRequest } from 'next/server';
 
 // Mock session user
 const mockSessionUser = {
@@ -581,5 +583,225 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
     const covered = invoice?.coveredChildrenJson as Array<{ id: string; name: string }>;
     expect(covered).toHaveLength(2);
     expect(covered.map((c) => c.id).sort()).toEqual([child1.id, child2.id].sort());
+  });
+
+  it('R10: Ad-hoc invoice creation does not satisfy recurring obligation nor block monthly billing config generation', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r10');
+    const { parent, child, config } = await createSyntheticFamily(org.id, centre.id, 'r10');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const periodDate = new Date('2027-06-01T00:00:00Z');
+
+    // 1. Staff creates a £25 ad-hoc charge for the family (e.g. uniform fee)
+    const adHocInv = await createAdHocInvoice({
+      centreId: centre.id,
+      parentId: parent.id,
+      childName: `${child.firstName} ${child.lastName}`,
+      amount: '25.00',
+      invoiceDate: new Date(),
+      dueDate: new Date('2027-06-07T00:00:00Z'),
+      billingPeriodStart: periodDate,
+      billingPeriodEnd: new Date('2027-06-30T00:00:00Z'),
+      notes: 'Uniform fee',
+    });
+    expect(adHocInv).toBeDefined();
+    expect(adHocInv.billingConfigId).toBeNull();
+    createdInvoiceIds.push(adHocInv.id);
+
+    // 2. Automated / recurring generation runs for the family's £150 agreed monthly fee
+    const recurringRes = await generateInvoiceFromConfig({
+      configId: config.id,
+      periodStartStr: '2027-06-01',
+      periodEndStr: '2027-06-30',
+      amountPence: 15000,
+    });
+    expect(recurringRes.success).toBe(true);
+    expect(recurringRes.alreadyGenerated).toBe(false);
+    expect(recurringRes.invoiceId).not.toBe(adHocInv.id);
+    createdInvoiceIds.push(recurringRes.invoiceId);
+
+    // 3. Verify both invoices exist in DB: 1 ad-hoc (£25, config null) and 1 recurring (£150, config linked)
+    const allInvoices = await db
+      .select({ id: invoices.id, amount: invoices.amount, billingConfigId: invoices.billingConfigId })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.parentId, parent.id),
+          eq(invoices.billingPeriodStart, periodDate)
+        )
+      );
+    expect(allInvoices).toHaveLength(2);
+    const adHocRow = allInvoices.find((inv) => inv.id === adHocInv.id);
+    const recurringRow = allInvoices.find((inv) => inv.id === recurringRes.invoiceId);
+    expect(adHocRow?.billingConfigId).toBeNull();
+    expect(adHocRow?.amount).toBe('25.00');
+    expect(recurringRow?.billingConfigId).toBe(config.id);
+    expect(recurringRow?.amount).toBe('150.00');
+  });
+
+  it('R11: Multiple legitimate ad-hoc invoices in the same month both succeed without collision', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r11');
+    const { parent, child } = await createSyntheticFamily(org.id, centre.id, 'r11');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const periodDate = new Date('2027-07-01T00:00:00Z');
+
+    // 1. First ad-hoc: uniform fee
+    const inv1 = await createAdHocInvoice({
+      centreId: centre.id,
+      parentId: parent.id,
+      childName: `${child.firstName} ${child.lastName}`,
+      amount: '30.00',
+      invoiceDate: new Date(),
+      dueDate: new Date('2027-07-07T00:00:00Z'),
+      billingPeriodStart: periodDate,
+      billingPeriodEnd: new Date('2027-07-31T00:00:00Z'),
+      notes: 'Uniform purchase',
+    });
+    createdInvoiceIds.push(inv1.id);
+
+    // 2. Second ad-hoc: late fee
+    const inv2 = await createAdHocInvoice({
+      centreId: centre.id,
+      parentId: parent.id,
+      childName: `${child.firstName} ${child.lastName}`,
+      amount: '15.00',
+      invoiceDate: new Date(),
+      dueDate: new Date('2027-07-14T00:00:00Z'),
+      billingPeriodStart: periodDate,
+      billingPeriodEnd: new Date('2027-07-31T00:00:00Z'),
+      notes: 'Late collection fee',
+    });
+    createdInvoiceIds.push(inv2.id);
+
+    expect(inv1.id).not.toBe(inv2.id);
+
+    // Verify both committed cleanly in DB
+    const adHocInDb = await db
+      .select({ id: invoices.id, amount: invoices.amount, notes: invoices.notes })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.parentId, parent.id),
+          eq(invoices.billingPeriodStart, periodDate),
+          sql`${invoices.billingConfigId} IS NULL`
+        )
+      );
+    expect(adHocInDb).toHaveLength(2);
+    expect(adHocInDb.map((i) => i.amount).sort()).toEqual(['15.00', '30.00'].sort());
+  });
+
+  it('R12: POST /api/cron/billing route handler skips existing active invoice and records billing_run idempotently', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r12');
+    const { parent, child, config } = await createSyntheticFamily(org.id, centre.id, 'r12');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    // Set billing config anchor and lead days so cron considers it due today
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    // Anchor on the 1st of next month
+    const nextMonthYear = today.getUTCMonth() === 11 ? today.getUTCFullYear() + 1 : today.getUTCFullYear();
+    const nextMonth = today.getUTCMonth() === 11 ? 1 : today.getUTCMonth() + 2;
+    const nextMonthFirst = new Date(Date.UTC(nextMonthYear, nextMonth - 1, 1));
+    const anchorStr = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+    // Calculate exact days between today and next month 1st
+    const diffDays = Math.round((nextMonthFirst.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const leadDays = diffDays; // invoiceDate = nextMonthFirst - diffDays = today!
+
+    await db
+      .update(billingConfigs)
+      .set({
+        billingAnchorDate: anchorStr,
+        invoiceLeadDays: leadDays,
+      })
+      .where(eq(billingConfigs.id, config.id));
+
+    // Determine the expected period from computeNextBillingPeriod
+    const { computeNextBillingPeriod } = await import('@/lib/billing');
+    const period = computeNextBillingPeriod(
+      { billingAnchorDate: new Date(`${anchorStr}T00:00:00Z`), invoiceLeadDays: leadDays },
+      today
+    );
+
+    // 1. Manually create the invoice ahead of cron
+    const manualInvoice = await createInvoice({
+      centreId: centre.id,
+      parentId: parent.id,
+      childIds: [child.id],
+      amount: '150.00',
+      invoiceDate: new Date(),
+      dueDate: period.dueDate,
+      billingPeriodStart: period.periodStart,
+      billingPeriodEnd: period.periodEnd,
+      notes: 'Pre-issued manual tuition',
+    });
+    createdInvoiceIds.push(manualInvoice.id);
+
+    // 2. Call real POST /api/cron/billing with valid secret
+    const cronSecret = 'test-cron-secret-pm2c';
+    const origSecret = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = cronSecret;
+
+    try {
+      const req = new NextRequest('http://localhost:3000/api/cron/billing', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${cronSecret}`,
+        },
+      });
+
+      const response = await billingCronPost(req);
+      expect(response.status).toBe(200);
+      const data = await response.json();
+
+      expect(data.processed).toBeGreaterThanOrEqual(1);
+      expect(data.skipped_already_exists).toBeGreaterThanOrEqual(1);
+
+      // Verify no duplicate invoice was created for this config & period
+      const inDb = await db
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.billingConfigId, config.id),
+            eq(invoices.billingPeriodStart, period.periodStart)
+          )
+        );
+      expect(inDb).toHaveLength(1);
+      expect(inDb[0].id).toBe(manualInvoice.id);
+    } finally {
+      process.env.CRON_SECRET = origSecret;
+    }
+  });
+
+  it('R13: POST /api/cron/billing route handler enforces security rejection on missing/invalid CRON_SECRET', async () => {
+    const origSecret = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = 'valid-secret-123';
+
+    try {
+      // 1. Missing Authorization header
+      const req1 = new NextRequest('http://localhost:3000/api/cron/billing', {
+        method: 'POST',
+      });
+      const res1 = await billingCronPost(req1);
+      expect(res1.status).toBe(401);
+
+      // 2. Incorrect Authorization Bearer token
+      const req2 = new NextRequest('http://localhost:3000/api/cron/billing', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer wrong-secret',
+        },
+      });
+      const res2 = await billingCronPost(req2);
+      expect(res2.status).toBe(401);
+    } finally {
+      process.env.CRON_SECRET = origSecret;
+    }
   });
 });
