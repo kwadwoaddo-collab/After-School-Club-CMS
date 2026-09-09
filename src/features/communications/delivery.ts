@@ -78,6 +78,22 @@ export function classifyError(rawMessage: unknown): { isRetryable: boolean; clea
     return { isRetryable: false, cleanMessage };
   }
 
+  // Explicit HTTP status classifications:
+  // - 400 Bad Request / 422 Unprocessable Entity: validation/syntax failure. Terminal.
+  // - 401 Unauthorized / 403 Forbidden: authentication/permission failure. Terminal.
+  if (
+    lower.includes('400') ||
+    lower.includes('401') ||
+    lower.includes('403') ||
+    lower.includes('422') ||
+    lower.includes('bad_request') ||
+    lower.includes('unauthorized') ||
+    lower.includes('forbidden') ||
+    lower.includes('unprocessable')
+  ) {
+    return { isRetryable: false, cleanMessage };
+  }
+
   // Non-retryable / permanent errors
   if (
     lower.includes('email service not configured') ||
@@ -95,7 +111,7 @@ export function classifyError(rawMessage: unknown): { isRetryable: boolean; clea
     return { isRetryable: false, cleanMessage };
   }
 
-  // Retryable / transient errors: rate limits, server errors (5xx), network timeouts
+  // Retryable / transient errors: rate limits (429), server errors (5xx), network timeouts
   if (
     lower.includes('rate_limit') ||
     lower.includes('429') ||
@@ -105,6 +121,7 @@ export function classifyError(rawMessage: unknown): { isRetryable: boolean; clea
     lower.includes('503') ||
     lower.includes('504') ||
     lower.includes('timeout') ||
+    lower.includes('timed out') ||
     lower.includes('econnreset') ||
     lower.includes('etimedout') ||
     lower.includes('fetch failed') ||

@@ -46,6 +46,7 @@ export async function sendBroadcast(data: {
   audienceParentIds: string[];
   subject: string;
   message: string;
+  skipImmediateProcessing?: boolean;
 }) {
   const session = await requireTenantSession();
   if (!session?.user?.organisationId) {
@@ -165,11 +166,13 @@ export async function sendBroadcast(data: {
 
   // Short post-commit bounded immediate processing attempt.
   // All work is already safely persisted in the database outbox; if this process
-  // dies or serverless invocation halts, the recovery cron picks up remaining rows.
-  try {
-    await processBroadcastDeliveries({ broadcastId: broadcast.id, limit: 50 });
-  } catch (err) {
-    logger.warn('[Communications] Immediate dispatch batch caught error; pending work remains in durable ledger', err);
+  // dies, serverless invocation halts, or skipImmediateProcessing is set, the recovery cron picks up remaining rows.
+  if (!data.skipImmediateProcessing) {
+    try {
+      await processBroadcastDeliveries({ broadcastId: broadcast.id, limit: 50 });
+    } catch (err) {
+      logger.warn('[Communications] Immediate dispatch batch caught error; pending work remains in durable ledger', err);
+    }
   }
 
   return {

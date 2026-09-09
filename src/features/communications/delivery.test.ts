@@ -105,21 +105,32 @@ describe('Broadcast Delivery Processor & Utilities', () => {
       expect(classifyError('Unsupported delivery channel').isRetryable).toBe(false);
     });
 
-    it('identifies rate limits (429) as retryable', () => {
-      const res = classifyError('rate_limit_exceeded: 429 Too Many Requests');
-      expect(res.isRetryable).toBe(true);
+    it('identifies HTTP 400, 401, 403, 422 as terminal non-retryable', () => {
+      expect(classifyError('400 Bad Request: malformed JSON').isRetryable).toBe(false);
+      expect(classifyError('401 Unauthorized: invalid token').isRetryable).toBe(false);
+      expect(classifyError('403 Forbidden: insufficient permissions').isRetryable).toBe(false);
+      expect(classifyError('422 Unprocessable Entity: domain unverified').isRetryable).toBe(false);
     });
 
-    it('identifies transient 5xx server errors as retryable', () => {
+    it('identifies HTTP 429, 500, 502, 503, 504 as retryable', () => {
+      expect(classifyError('rate_limit_exceeded: 429 Too Many Requests').isRetryable).toBe(true);
       expect(classifyError('500 Internal Server Error').isRetryable).toBe(true);
       expect(classifyError('502 Bad Gateway').isRetryable).toBe(true);
       expect(classifyError('503 Service Unavailable').isRetryable).toBe(true);
+      expect(classifyError('504 Gateway Timeout').isRetryable).toBe(true);
     });
 
-    it('identifies network timeouts as retryable', () => {
+    it('identifies network exceptions and timeouts as retryable', () => {
       expect(classifyError('ETIMEDOUT: Connection timed out').isRetryable).toBe(true);
       expect(classifyError('ECONNRESET').isRetryable).toBe(true);
       expect(classifyError('fetch failed').isRetryable).toBe(true);
+      expect(classifyError('Network error: connection closed unexpectedly').isRetryable).toBe(true);
+      expect(classifyError('Request timed out after 10000ms').isRetryable).toBe(true);
+    });
+
+    it('identifies unknown runtime error as retryable until MAX_DELIVERY_ATTEMPTS', () => {
+      const res = classifyError('Some unrecognised transient system error');
+      expect(res.isRetryable).toBe(true);
     });
 
     it('PM-2B.C: correctly classifies Resend 409 concurrent request as retryable', () => {

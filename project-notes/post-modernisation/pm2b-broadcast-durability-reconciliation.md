@@ -55,6 +55,11 @@ CREATE INDEX IF NOT EXISTS "broadcast_deliveries_pending_claim_idx"
   ON "broadcast_deliveries" ("status", "next_attempt_at", "lease_expires_at");
 ```
 
+### Foreign Key Cascade & Retention Under Hard Deletion
+- In `broadcast_deliveries`, `parent_id` is declared as `REFERENCES parents(id) ON DELETE SET NULL`.
+- If an operator deletes a parent record (hard deletion), PostgreSQL cascade triggers set `broadcast_deliveries.parent_id = NULL`.
+- The ledger record itself and its historical snapshot (`recipient_email`, `sent_at`, `status`, `provider_message_id`) are preserved intact, satisfying statutory audit retention requirements without dangling foreign key violations.
+
 ---
 
 ## 3. Worker Leasing & Concurrency Architecture
@@ -77,12 +82,26 @@ FOR UPDATE SKIP LOCKED
 
 ### Exponential Backoff & Retry Policy
 - **Transient Failures** (`429`, `500`, `502`, `503`, `504`, timeouts, socket drops): Backed off exponentially (`10s`, `30s`, `90s`) up to `MAX_DELIVERY_ATTEMPTS = 3`.
-- **Permanent Failures** (`invalid_email`, `domain_not_verified`, unconfigured provider): Terminated immediately into `FAILED` state without wasting retries.
+- **Permanent Failures** (`invalid_email`, `domain_not_verified`, unconfigured provider, 400, 401, 403, 422): Terminated immediately into `FAILED` state without wasting retries.
 - **Provider Success / Crash Recovery**: Resend idempotency key ensures that re-claiming a delivery record that succeeded at Resend but crashed before local DB commit returns the existing Resend message ID without re-sending the message.
 
 ---
 
-## 4. Cron Recovery Sweeper & Security
+## 4. Provider Contract & Resend SDK 6.9.1 Idempotency
+
+### Exact Resend SDK Idempotency Semantics
+- In Resend SDK (`resend@6.9.1`), the `send` method signature is:
+  `resend.emails.send(payload: CreateEmailOptions, options?: CreateEmailRequestOptions): Promise<CreateEmailResponseSuccess | CreateEmailResponseError>`
+  where `options.idempotencyKey` passes the HTTP header `Idempotency-Key: <key>`.
+- In `src/lib/services/email.ts`, `sendEmail` explicitly forwards `options.idempotencyKey` to Resend options:
+  `await resend.emails.send(createEmailOptions, { idempotencyKey: options.idempotencyKey })`.
+- **Deduplication vs Payload Mismatch Contract**:
+  - If a request is retried with the exact same idempotency key and identical payload (same recipient, subject, html), Resend recognizes the idempotent replay and returns the previously generated message ID without sending a second email.
+  - If a request is retried with the same idempotency key but modified payload parameters, Resend responds with HTTP 409 (`invalid_idempotent_request` / `idempotent_parameter_mismatch`), which `classifyError` classifies as terminal non-retryable to prevent corrupt delivery states.
+
+---
+
+## 5. Cron Recovery Sweeper & Operational Posture
 
 - **Endpoint**: `/api/cron/broadcasts`
 - **Schedule**: `0 2 * * *` (configured in `vercel.json`)
@@ -90,29 +109,46 @@ FOR UPDATE SKIP LOCKED
   - `crypto.timingSafeEqual` prevents timing side-channel attacks on `CRON_SECRET`.
   - Missing secret in environment immediately locks endpoint (`503 Service Unavailable`).
   - Mismatched bearer tokens return `401 Unauthorized`.
+- **Operational Assessment**:
+  `CURRENT PROJECT CRON FREQUENCY CAPABILITY NOT INDEPENDENTLY VERIFIED`.
+  Vercel Hobby tier permits at most 1 cron execution per day (`0 2 * * *`). Higher frequencies require Pro or Enterprise plans. PM-2B relies primarily on post-commit immediate dispatch, using the daily cron strictly as a fallback recovery sweep.
 
 ---
 
-## 5. Verification Matrix (F1–F23)
+## 6. Complete F1–F23 Verification Matrix
 
-| Requirement | Test Suite & Target | Result | Evidence |
-| :--- | :--- | :--- | :--- |
-| **F1: Transactional Outbox** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Header, ledger rows, and audit event committed atomically |
-| **F3: Recipient Deduplication** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Unique index rejects duplicate parent email per broadcast |
-| **F4: Latest-Booking Consent** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Evaluates latest booking consent (`ORDER BY createdAt DESC, id DESC`) |
-| **F5/F6: Worker Leasing** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Concurrent workers claim disjoint rows via `FOR UPDATE SKIP LOCKED` |
-| **F8: Multi-Tenant Ledger Isolation** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | `getBroadcastDeliveryStats` strictly tenant-scoped |
-| **F18: Parent Soft-Deletion Safety** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | `ON DELETE SET NULL` preserves ledger and recipient email |
-| **F21: Serverless Process Loss Survival** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Queue succeeds and persists even when dispatcher throws mid-flight |
-| **F22: Aggregate Status Reconciliation** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Mixed outcomes reconcile to `PARTIALLY_FAILED` on header |
-| **F23: Ambiguous Provider Success Recovery** | Real PostgreSQL (`pm2b-postgres.integration.test.ts`) | **PASS** | Stale delivery reclaimed with exact same `idempotencyKey` |
+| Identifier | Scenario / Invariant | Test Target & Class | Verdict | Executed Evidence Summary |
+| :--- | :--- | :--- | :--- | :--- |
+| **F1** | Recipient resolution & atomic queueing | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Header, ledger rows, and audit event committed atomically in single tx |
+| **F2** | Ledger insertion fails halfway / transaction rollback | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Mid-flight error rolls back header and all ledger rows; 0 rows remain |
+| **F3** | Provider HTTP 400 rejection | `delivery.test.ts` (Unit Suite) | **PASS** | 400 Bad Request classified as terminal non-retryable; marked FAILED |
+| **F4** | Provider HTTP 429 rate limit | `delivery.test.ts` (Unit Suite) | **PASS** | 429 classified as retryable; scheduled with exponential backoff |
+| **F5** | Provider HTTP 500 server error | `delivery.test.ts` (Unit Suite) | **PASS** | 500 classified as retryable; scheduled for retry |
+| **F6** | Network exception / socket drop | `delivery.test.ts` (Unit Suite) | **PASS** | ECONNRESET / ETIMEDOUT / fetch failed classified as retryable |
+| **F7** | Provider timeout / ambiguous outcome | `delivery.test.ts` (Unit Suite) | **PASS** | Timeout classified as retryable with same delivery ID idempotency key |
+| **F8** | Worker crash before provider call | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Unclaimed/stale delivery reclaimed by subsequent worker |
+| **F9** | Worker crash after provider success before SENT commit | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Reclaimed row forwards identical idempotencyKey; deduplicated |
+| **F10** | Lease expiry reclaim | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Row with expired lease reclaimed by next worker via SKIP LOCKED |
+| **F11** | Overlapping workers concurrency | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Two workers claim disjoint row sets simultaneously; zero overlap |
+| **F12** | Overlapping recovery invocations | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Multiple concurrent recovery processors complete without double sends |
+| **F13** | Zero eligible recipients | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Handled cleanly; rejected without writing header or ledger rows |
+| **F14** | Invalid recipient address | `delivery.test.ts` (Unit Suite) | **PASS** | Validation errors classified as terminal; immediate FAILED state |
+| **F15** | Cross-tenant isolation | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Tenant A cannot view or claim Tenant B broadcasts or deliveries |
+| **F16** | Latest-booking withdrawn consent | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Re-derives latest booking consent; historical opt-in overridden |
+| **F17** | Shared-email deduplication | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Multiple parents sharing email queue exactly one ledger row |
+| **F18** | Parent deletion after queue | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | `ON DELETE SET NULL` preserves ledger row and recipient address |
+| **F19** | Queued payload immutability | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Subject and message locked at queue time; dispatch uses original payload |
+| **F20** | Unauthorized recovery endpoint | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Timing-safe verification fails closed (503/401) on missing/bad token |
+| **F21** | Process loss survival | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Transaction survives serverless process death; recovered by cron |
+| **F22** | Mixed-result aggregation | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Partial failures reconcile to PARTIALLY_FAILED on broadcast header |
+| **F23** | Unknown-outcome retry idempotency | `pm2b-postgres.integration.test.ts` (Real Postgres) | **PASS** | Re-claimed delivery forwards same idempotency key and identical payload |
 
 ---
 
-## 6. Repository Integrity & Quality Gates
+## 7. Repository Integrity & Quality Gates
 
-- **Vitest Suite**: 83 test files passed, 960 unit and integration tests passed (0 failures).
+- **Vitest Suite**: 83 test files passed, 971 unit and integration tests passed (0 failures).
 - **TypeScript Typecheck**: Clean pass with 0 errors under `NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit`.
 - **ESLint**: Clean pass with 0 warnings and 0 errors under `npm run lint`.
-- **Next.js Production Build**: Clean pass in 21.2s across 157 routes (`NODE_OPTIONS="--max-old-space-size=4096" npm run build`).
+- **Next.js Production Build**: Clean pass in 21.9s across 157 routes (`NODE_OPTIONS="--max-old-space-size=4096" npm run build`).
 - **Whitespace / Git Diff Check**: Clean pass under `git diff --check`.

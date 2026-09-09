@@ -26,6 +26,8 @@ import {
   MAX_DELIVERY_ATTEMPTS,
 } from './delivery';
 import { sendEmail } from '@/lib/services/email';
+import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
+import { NextRequest } from 'next/server';
 
 // Mock session user
 const mockSessionUser = {
@@ -560,5 +562,366 @@ describe('PM-2B: Real PostgreSQL Broadcast Durability & Invariants Suite (F1-F23
     expect(stats!.deliveries).toHaveLength(1);
     expect(stats!.deliveries[0].recipientEmail).toBe('viewer@test.com');
     expect(stats!.deliveries[0].status).toBe('SENT');
+  });
+
+  // =========================================================================
+  // F2: TRANSACTION ROLLBACK (LEDGER INSERTION FAILURE ROLLBACK)
+  // =========================================================================
+  it('F2: Rolls back broadcast header and all ledger rows when transaction fails mid-flight', async () => {
+    const { org } = await createSyntheticTenant('f2');
+    mockSessionUser.organisationId = org.id;
+
+    let thrownError: unknown = null;
+    try {
+      await db.transaction(async (tx) => {
+        const [b] = await tx.insert(broadcasts).values({
+          organisationId: org.id,
+          subject: 'Aborted Broadcast',
+          message: 'Will be rolled back',
+          recipientCount: 2,
+          status: 'QUEUED',
+        }).returning();
+
+        await tx.insert(broadcastDeliveries).values({
+          organisationId: org.id,
+          broadcastId: b.id,
+          recipientEmail: 'p1.f2@test.com',
+          channel: 'email',
+          status: 'PENDING',
+        });
+
+        // Deliberately trigger failure on second row (e.g. simulate DB crash / constraint error)
+        throw new Error('Simulated mid-transaction ledger insertion failure');
+      });
+    } catch (err) {
+      thrownError = err;
+    }
+
+    expect(thrownError).toBeDefined();
+    expect((thrownError as Error).message).toContain('Simulated mid-transaction ledger insertion failure');
+
+    // Verify zero broadcasts or deliveries exist for this org in real Postgres
+    const survivingBroadcasts = await db.select().from(broadcasts).where(eq(broadcasts.organisationId, org.id));
+    expect(survivingBroadcasts).toHaveLength(0);
+
+    const survivingDeliveries = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.organisationId, org.id));
+    expect(survivingDeliveries).toHaveLength(0);
+  });
+
+  // =========================================================================
+  // F10: LEASE EXPIRY RECLAIM
+  // =========================================================================
+  it('F10: Reclaims stuck PROCESSING row whose lease_expires_at is in the past', async () => {
+    const { org } = await createSyntheticTenant('f10');
+    mockSessionUser.organisationId = org.id;
+
+    const [b] = await db.insert(broadcasts).values({
+      organisationId: org.id,
+      subject: 'Lease Reclaim Test',
+      message: 'Body',
+      recipientCount: 1,
+      status: 'QUEUED',
+    }).returning();
+    createdBroadcastIds.push(b.id);
+
+    const [staleRow] = await db.insert(broadcastDeliveries).values({
+      organisationId: org.id,
+      broadcastId: b.id,
+      recipientEmail: 'stale.worker@test.com',
+      channel: 'email',
+      status: 'PROCESSING',
+      claimToken: 'dead-worker-pid-999',
+      leaseExpiresAt: new Date(Date.now() - 30000), // Expired 30 seconds ago
+      attemptCount: 1,
+    }).returning();
+
+    // Claim deliveries with a new recovery worker
+    const claimed = await claimDeliveries({ batchSize: 10, broadcastId: b.id, workerToken: 'recovery-worker-f10' });
+    expect(claimed).toHaveLength(1);
+    expect(claimed[0].id).toBe(staleRow.id);
+    expect(claimed[0].claimToken).toBe('recovery-worker-f10');
+    expect(claimed[0].status).toBe('PROCESSING');
+    expect(claimed[0].attemptCount).toBe(2);
+  });
+
+  // =========================================================================
+  // F11: OVERLAPPING WORKERS (FOR UPDATE SKIP LOCKED EXCLUSIVITY)
+  // =========================================================================
+  it('F11: Prevents double-claiming across parallel worker invocations', async () => {
+    const { org } = await createSyntheticTenant('f11');
+    mockSessionUser.organisationId = org.id;
+
+    const [b] = await db.insert(broadcasts).values({
+      organisationId: org.id,
+      subject: 'Exclusivity Test',
+      message: 'Body',
+      recipientCount: 3,
+      status: 'QUEUED',
+    }).returning();
+    createdBroadcastIds.push(b.id);
+
+    await db.insert(broadcastDeliveries).values([
+      { organisationId: org.id, broadcastId: b.id, recipientEmail: 'f11_a@test.com', channel: 'email', status: 'PENDING' },
+      { organisationId: org.id, broadcastId: b.id, recipientEmail: 'f11_b@test.com', channel: 'email', status: 'PENDING' },
+      { organisationId: org.id, broadcastId: b.id, recipientEmail: 'f11_c@test.com', channel: 'email', status: 'PENDING' },
+    ]);
+
+    // Launch two workers claiming batchSize=2 simultaneously
+    const [workerA, workerB] = await Promise.all([
+      claimDeliveries({ batchSize: 2, broadcastId: b.id, workerToken: 'worker-A' }),
+      claimDeliveries({ batchSize: 2, broadcastId: b.id, workerToken: 'worker-B' }),
+    ]);
+
+    const idsA = workerA.map(r => r.id);
+    const idsB = workerB.map(r => r.id);
+
+    // Disjoint sets: no overlap
+    const intersection = idsA.filter(id => idsB.includes(id));
+    expect(intersection).toHaveLength(0);
+    expect(idsA.length + idsB.length).toBe(3);
+  });
+
+  // =========================================================================
+  // F12: OVERLAPPING RECOVERY INVOCATIONS
+  // =========================================================================
+  it('F12: Multiple concurrent processBroadcastDeliveries invocations complete work without duplicate sending', async () => {
+    const { org } = await createSyntheticTenant('f12');
+    mockSessionUser.organisationId = org.id;
+
+    const [b] = await db.insert(broadcasts).values({
+      organisationId: org.id,
+      subject: 'Concurrent Recovery',
+      message: 'Body',
+      recipientCount: 2,
+      status: 'QUEUED',
+    }).returning();
+    createdBroadcastIds.push(b.id);
+
+    await db.insert(broadcastDeliveries).values([
+      { organisationId: org.id, broadcastId: b.id, recipientEmail: 'f12_1@test.com', channel: 'email', status: 'PENDING' },
+      { organisationId: org.id, broadcastId: b.id, recipientEmail: 'f12_2@test.com', channel: 'email', status: 'PENDING' },
+    ]);
+
+    vi.mocked(sendEmail).mockResolvedValue({ success: true, messageId: 'msg-f12' });
+
+    // Run two recovery sweeps concurrently
+    const [res1, res2] = await Promise.all([
+      processBroadcastDeliveries({ broadcastId: b.id, workerToken: 'rec-worker-1' }),
+      processBroadcastDeliveries({ broadcastId: b.id, workerToken: 'rec-worker-2' }),
+    ]);
+
+    expect(res1.sentCount + res2.sentCount).toBe(2);
+    expect(sendEmail).toHaveBeenCalledTimes(2);
+
+    const [finalB] = await db.select().from(broadcasts).where(eq(broadcasts.id, b.id));
+    expect(finalB.status).toBe('COMPLETED');
+    expect(finalB.successCount).toBe(2);
+  });
+
+  // =========================================================================
+  // F13: ZERO ELIGIBLE RECIPIENTS
+  // =========================================================================
+  it('F13: Handles zero eligible recipients cleanly without mutating database', async () => {
+    const { org, centre } = await createSyntheticTenant('f13');
+    mockSessionUser.organisationId = org.id;
+
+    // Parent without communications consent
+    const p1 = await createSyntheticParent(org.id, 'unconsented@test.com', 'Unconsented');
+    await createSyntheticBooking(p1.id, false);
+
+    const result = await sendBroadcast({
+      centreId: centre.id,
+      audienceParentIds: [p1.id],
+      subject: 'Zero Recipients Test',
+      message: 'Should not create broadcast',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('No eligible recipients with communications consent');
+
+    // Confirm no broadcast was created
+    const bList = await db.select().from(broadcasts).where(eq(broadcasts.organisationId, org.id));
+    expect(bList).toHaveLength(0);
+  });
+
+  // =========================================================================
+  // F15: CROSS-TENANT ISOLATION
+  // =========================================================================
+  it('F15: Enforces complete isolation between Org A and Org B queues and stats', async () => {
+    const { org: orgA } = await createSyntheticTenant('f15_a');
+    const { org: orgB } = await createSyntheticTenant('f15_b');
+
+    // Create broadcast for Org A
+    const [bA] = await db.insert(broadcasts).values({
+      organisationId: orgA.id,
+      subject: 'Org A Broadcast',
+      message: 'Body Org A',
+      recipientCount: 1,
+      status: 'QUEUED',
+    }).returning();
+    createdBroadcastIds.push(bA.id);
+
+    await db.insert(broadcastDeliveries).values({
+      organisationId: orgA.id,
+      broadcastId: bA.id,
+      recipientEmail: 'parent.orga@test.com',
+      channel: 'email',
+      status: 'PENDING',
+    });
+
+    // Worker operating on Org B cannot see or claim Org A's broadcast via getBroadcastDeliveryStats
+    mockSessionUser.organisationId = orgB.id;
+    const statsForB = await getBroadcastDeliveryStats(bA.id);
+    expect(statsForB).toBeNull();
+
+    // Verify Org A stats are accessible when authenticated as Org A
+    mockSessionUser.organisationId = orgA.id;
+    const statsForA = await getBroadcastDeliveryStats(bA.id);
+    expect(statsForA).not.toBeNull();
+    expect(statsForA!.broadcast.id).toBe(bA.id);
+    expect(statsForA!.deliveries).toHaveLength(1);
+    expect(statsForA!.deliveries[0].recipientEmail).toBe('parent.orga@test.com');
+  });
+
+  // =========================================================================
+  // F16: LATEST-BOOKING CONSENT RE-DERIVATION
+  // =========================================================================
+  it('F16: Re-derives consent in real PostgreSQL: historical false + latest true is accepted', async () => {
+    const { org, centre } = await createSyntheticTenant('f16');
+    mockSessionUser.organisationId = org.id;
+
+    const p = await createSyntheticParent(org.id, 'opted_in_latest@test.com', 'OptedIn');
+    // Historical booking: opted out
+    await createSyntheticBooking(p.id, false, -20000);
+    // Latest booking: opted in
+    await createSyntheticBooking(p.id, true, 0);
+
+    vi.mocked(sendEmail).mockResolvedValue({ success: true, messageId: 'msg-f16' });
+
+    const result = await sendBroadcast({
+      centreId: centre.id,
+      audienceParentIds: [p.id],
+      subject: 'Consent Opted In Subject',
+      message: 'Should send because latest is true',
+      skipImmediateProcessing: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(1);
+    expect(result.broadcastId).toBeDefined();
+    createdBroadcastIds.push(result.broadcastId!);
+
+    const deliveries = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.broadcastId, result.broadcastId!));
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0].recipientEmail).toBe('opted_in_latest@test.com');
+  });
+
+  // =========================================================================
+  // F17: SHARED-EMAIL DETERMINISTIC DEDUPLICATION
+  // =========================================================================
+  it('F17: Multiple siblings sharing one parent email queue exactly one delivery row', async () => {
+    const { org, centre } = await createSyntheticTenant('f17');
+    mockSessionUser.organisationId = org.id;
+
+    // Sibling 1 and Sibling 2 parent contacts have identical emails
+    const p1 = await createSyntheticParent(org.id, 'Shared.Email@test.com', 'Sibling1');
+    const p2 = await createSyntheticParent(org.id, 'shared.email@test.com', 'Sibling2');
+    await createSyntheticBooking(p1.id, true);
+    await createSyntheticBooking(p2.id, true);
+
+    const result = await sendBroadcast({
+      centreId: centre.id,
+      audienceParentIds: [p1.id, p2.id],
+      subject: 'Sibling Announcement',
+      message: 'Announcement Body',
+      skipImmediateProcessing: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(1);
+    createdBroadcastIds.push(result.broadcastId!);
+
+    const deliveries = await db.select().from(broadcastDeliveries).where(eq(broadcastDeliveries.broadcastId, result.broadcastId!));
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0].recipientEmail).toBe('shared.email@test.com');
+  });
+
+  // =========================================================================
+  // F19: QUEUED PAYLOAD IMMUTABILITY
+  // =========================================================================
+  it('F19: Queued broadcast subject and message are immutable in ledger delivery processing', async () => {
+    const { org } = await createSyntheticTenant('f19');
+    mockSessionUser.organisationId = org.id;
+
+    const [b] = await db.insert(broadcasts).values({
+      organisationId: org.id,
+      subject: 'Original Subject',
+      message: 'Original Message',
+      recipientCount: 1,
+      status: 'QUEUED',
+    }).returning();
+    createdBroadcastIds.push(b.id);
+
+    const [del] = await db.insert(broadcastDeliveries).values({
+      organisationId: org.id,
+      broadcastId: b.id,
+      recipientEmail: 'immutable@test.com',
+      channel: 'email',
+      status: 'PENDING',
+    }).returning();
+
+    vi.mocked(sendEmail).mockResolvedValue({ success: true, messageId: 'msg-f19' });
+
+    await processBroadcastDeliveries({ broadcastId: b.id, workerToken: 'worker-f19' });
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'Original Subject',
+        html: expect.stringContaining('Original Message'),
+        idempotencyKey: del.id,
+      })
+    );
+  });
+
+  // =========================================================================
+  // F20: UNAUTHORIZED CRON RECOVERY ENDPOINT
+  // =========================================================================
+  it('F20: verifyCronAuthorization fails closed on missing, invalid, or mismatched secret', () => {
+    const originalCronSecret = process.env.CRON_SECRET;
+
+    try {
+      // 1. Unconfigured in environment -> 503
+      delete process.env.CRON_SECRET;
+      const req1 = new NextRequest('http://localhost:3000/api/cron/broadcasts', {
+        headers: { authorization: 'Bearer some-secret' },
+      });
+      const res1 = verifyCronAuthorization(req1);
+      expect(res1.authorized).toBe(false);
+      expect(res1.status).toBe(503);
+
+      // 2. Configured secret, missing authorization header -> 401
+      process.env.CRON_SECRET = 'super-secret-cron-token-12345';
+      const req2 = new NextRequest('http://localhost:3000/api/cron/broadcasts');
+      const res2 = verifyCronAuthorization(req2);
+      expect(res2.authorized).toBe(false);
+      expect(res2.status).toBe(401);
+
+      // 3. Configured secret, wrong token -> 401
+      const req3 = new NextRequest('http://localhost:3000/api/cron/broadcasts', {
+        headers: { authorization: 'Bearer wrong-secret-token' },
+      });
+      const res3 = verifyCronAuthorization(req3);
+      expect(res3.authorized).toBe(false);
+      expect(res3.status).toBe(401);
+
+      // 4. Configured secret, valid token -> 200 (authorized: true)
+      const req4 = new NextRequest('http://localhost:3000/api/cron/broadcasts', {
+        headers: { authorization: 'Bearer super-secret-cron-token-12345' },
+      });
+      const res4 = verifyCronAuthorization(req4);
+      expect(res4.authorized).toBe(true);
+    } finally {
+      process.env.CRON_SECRET = originalCronSecret;
+    }
   });
 });
