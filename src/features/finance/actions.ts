@@ -4,8 +4,8 @@ import { logger } from '@/lib/logger';
 
 
 import { db } from '@/db';
-import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents } from '@/db/schema';
-import { eq, ilike, or, and, desc, inArray } from 'drizzle-orm';
+import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs } from '@/db/schema';
+import { eq, ilike, or, and, desc, inArray, sql, ne } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
@@ -30,6 +30,7 @@ async function insertInvoiceAndLog(
         adhoc?: boolean;
         childName?: string;
         coveredChildrenJson?: any;
+        billingConfigId?: string | null;
     }
 ) {
     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
@@ -47,6 +48,7 @@ async function insertInvoiceAndLog(
         billingPeriodEnd: params.billingPeriodEnd,
         notes: params.notes,
         coveredChildrenJson: params.coveredChildrenJson,
+        billingConfigId: params.billingConfigId ?? null,
     }).returning();
 
     await tx.insert(auditEvents).values({
@@ -186,10 +188,44 @@ export async function createInvoice(data: {
 
     const coveredChildren = selectedChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
 
-    const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+    // Check if the family has an existing recurring billing configuration for this centre
+    const existingConfig = await db.query.billingConfigs.findFirst({
+        where: and(
+            eq(billingConfigs.parentId,       data.parentId),
+            eq(billingConfigs.centreId,       data.centreId),
+            eq(billingConfigs.organisationId, orgId),
+        ),
+        columns: { id: true, status: true },
+    });
+
+    const billingConfigId = existingConfig?.id || null;
 
     // Execute database operations atomically in a transaction
     const newInvoice = await db.transaction(async (tx) => {
+        // If billingPeriodStart is provided, serialize concurrency via advisory lock
+        if (data.billingPeriodStart) {
+            const periodKey = data.billingPeriodStart.toISOString().split('T')[0];
+            const lockKey = billingConfigId
+                ? `billing_config:${billingConfigId}:${periodKey}`
+                : `manual_invoice:${data.centreId}:${data.parentId}:${periodKey}`;
+            await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+            // Check if active invoice already exists for this parent, centre, and period
+            const existingActive = await tx.query.invoices.findFirst({
+                where: and(
+                    eq(invoices.organisationId,     orgId),
+                    eq(invoices.centreId,           data.centreId),
+                    eq(invoices.parentId,           data.parentId),
+                    eq(invoices.billingPeriodStart, data.billingPeriodStart),
+                    ne(invoices.status,             'void'),
+                ),
+            });
+
+            if (existingActive) {
+                throw new Error(`An active invoice already exists for this family and billing period (${periodKey})`);
+            }
+        }
+
         return await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId: data.parentId,
@@ -201,6 +237,7 @@ export async function createInvoice(data: {
             billingPeriodEnd: data.billingPeriodEnd,
             notes: data.notes || null,
             coveredChildrenJson: coveredChildren,
+            billingConfigId,
         });
     });
 

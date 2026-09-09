@@ -640,6 +640,7 @@ export const invoices = pgTable('invoices', {
   parentIdx: index('invoices_parent_idx').on(table.parentId),
   centreIdx: index('invoices_centre_idx').on(table.centreId),
   childIdx: index('invoices_child_idx').on(table.childId),
+  configPeriodIdx: uniqueIndex('invoices_config_period_uniq').on(table.billingConfigId, table.billingPeriodStart),
 }));
 
 export const invoiceLineItems = pgTable('invoice_line_items', {

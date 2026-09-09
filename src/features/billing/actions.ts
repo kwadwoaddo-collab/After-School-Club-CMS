@@ -8,7 +8,7 @@
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, invoices, children } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import { nanoid } from 'nanoid';
@@ -265,7 +265,7 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     await assertCentreAccess(session, config.centreId);
     if (config.status !== 'active') throw new Error('Billing config is not active');
 
-    // Check for duplicate
+    // Pre-transaction check 1: Billing run check
     const existingRun = await db.query.billingRuns.findFirst({
         where: and(
             eq(billingRuns.billingConfigId, input.configId),
@@ -273,7 +273,23 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         ),
     });
     if (existingRun?.success) {
+        if (existingRun.invoiceId) {
+            return { success: true, invoiceId: existingRun.invoiceId, alreadyGenerated: true };
+        }
         throw new Error(`Invoice already generated for period ${input.periodStartStr}`);
+    }
+
+    // Pre-transaction check 2: Existing active invoice check for this billing config and period
+    const periodStartDate = new Date(input.periodStartStr);
+    const existingInvoice = await db.query.invoices.findFirst({
+        where: and(
+            eq(invoices.billingConfigId,    input.configId),
+            eq(invoices.billingPeriodStart, periodStartDate),
+            ne(invoices.status,             'void'),
+        ),
+    });
+    if (existingInvoice) {
+        return { success: true, invoiceId: existingInvoice.id, alreadyGenerated: true };
     }
 
     // Build children snapshot
@@ -283,6 +299,36 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     }));
 
     const result = await db.transaction(async (tx) => {
+        // PM-2C: Transactional advisory lock to serialize concurrent generation for the same config & period
+        const lockKey = `billing_config:${input.configId}:${input.periodStartStr}`;
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+        // Re-check inside locked transaction: billing_runs
+        const inTxRun = await tx.query.billingRuns.findFirst({
+            where: and(
+                eq(billingRuns.billingConfigId, input.configId),
+                eq(billingRuns.periodStart,     input.periodStartStr),
+            ),
+        });
+        if (inTxRun?.success) {
+            if (inTxRun.invoiceId) {
+                return { id: inTxRun.invoiceId, alreadyGenerated: true };
+            }
+            throw new Error(`Invoice already generated for period ${input.periodStartStr}`);
+        }
+
+        // Re-check inside locked transaction: invoices
+        const inTxInvoice = await tx.query.invoices.findFirst({
+            where: and(
+                eq(invoices.billingConfigId,    input.configId),
+                eq(invoices.billingPeriodStart, periodStartDate),
+                ne(invoices.status,             'void'),
+            ),
+        });
+        if (inTxInvoice) {
+            return { id: inTxInvoice.id, alreadyGenerated: true };
+        }
+
         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 
         // Create invoice
@@ -295,7 +341,7 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             status:              'draft',
             invoiceDate:         new Date(),
             dueDate:             new Date(input.periodStartStr),
-            billingPeriodStart:  new Date(input.periodStartStr),
+            billingPeriodStart:  periodStartDate,
             billingPeriodEnd:    new Date(input.periodEndStr),
             notes:               input.notes ?? null,
             billingConfigId:     config.id,
@@ -314,10 +360,10 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             success:         true,
         });
 
-        return invoice;
+        return { id: invoice.id, alreadyGenerated: false };
     });
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/finance/invoices');
-    return { success: true, invoiceId: result.id };
+    return { success: true, invoiceId: result.id, alreadyGenerated: result.alreadyGenerated };
 }

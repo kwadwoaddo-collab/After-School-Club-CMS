@@ -5,7 +5,7 @@ import {
     billingConfigs, billingConfigChildren, billingRuns, invoices,
     children, parents, centres, organisations,
 } from '@/db/schema';
-import { eq, and, isNull, or } from 'drizzle-orm';
+import { eq, and, isNull, or, ne, sql } from 'drizzle-orm';
 import { computeNextBillingPeriod } from '@/lib/billing';
 import { nanoid } from 'nanoid';
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
                 const periodStartStr = period.periodStart.toISOString().split('T')[0];
                 const periodEndStr = period.periodEnd.toISOString().split('T')[0];
 
-                // ── 3. Idempotency — check for existing run for this period ─────
+                // ── 3. Idempotency — check for existing run or active invoice for this period ─────
                 const existingRun = await db.query.billingRuns.findFirst({
                     where: and(
                         eq(billingRuns.billingConfigId, config.id),
@@ -99,13 +99,67 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // ── 4. Generate invoice in a transaction ───────────────────────
+                // Check for existing active invoice for this config & period (handles manual -> cron overlap)
+                const existingInvoice = await db.query.invoices.findFirst({
+                    where: and(
+                        eq(invoices.billingConfigId,    config.id),
+                        eq(invoices.billingPeriodStart, period.periodStart),
+                        ne(invoices.status,             'void'),
+                    ),
+                });
+
+                if (existingInvoice) {
+                    // Record a billing run linking to this invoice so subsequent cron runs know it's accounted for
+                    try {
+                        await db.insert(billingRuns).values({
+                            billingConfigId: config.id,
+                            periodStart: periodStartStr,
+                            periodEnd: periodEndStr,
+                            invoiceId: existingInvoice.id,
+                            amountPence: config.agreedMonthlyPence,
+                            runBy: null,
+                            success: true,
+                        }).onConflictDoNothing();
+                    } catch {
+                        // Ignore if run already recorded
+                    }
+                    results.skipped_already_exists++;
+                    continue;
+                }
+
+                // ── 4. Generate invoice in a transaction with advisory locking ──
                 const coveredChildren = (config.children ?? []).map(cc => ({
                     id: cc.child.id,
                     name: `${cc.child.firstName} ${cc.child.lastName}`,
                 }));
 
-                await db.transaction(async (tx) => {
+                const generatedResult = await db.transaction(async (tx) => {
+                    // Advisory lock on config and period to serialize overlapping cron runs
+                    const lockKey = `billing_config:${config.id}:${periodStartStr}`;
+                    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+                    // Re-check inside locked transaction
+                    const inTxRun = await tx.query.billingRuns.findFirst({
+                        where: and(
+                            eq(billingRuns.billingConfigId, config.id),
+                            eq(billingRuns.periodStart, periodStartStr)
+                        ),
+                    });
+                    if (inTxRun?.success) {
+                        return { skipped: true };
+                    }
+
+                    const inTxInvoice = await tx.query.invoices.findFirst({
+                        where: and(
+                            eq(invoices.billingConfigId,    config.id),
+                            eq(invoices.billingPeriodStart, period.periodStart),
+                            ne(invoices.status,             'void'),
+                        ),
+                    });
+                    if (inTxInvoice) {
+                        return { skipped: true };
+                    }
+
                     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 
                     const [invoice] = await tx.insert(invoices).values({
@@ -134,9 +188,15 @@ export async function POST(request: NextRequest) {
                         runBy: null, // automated
                         success: true,
                     });
+
+                    return { skipped: false, invoiceId: invoice.id };
                 });
 
-                results.generated++;
+                if (generatedResult.skipped) {
+                    results.skipped_already_exists++;
+                } else {
+                    results.generated++;
+                }
             } catch (err) {
                 results.errors++;
                 const msg = err instanceof Error ? err.message : String(err);

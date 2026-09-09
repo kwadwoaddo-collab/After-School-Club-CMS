@@ -48,12 +48,15 @@ const invoicesFindFirst = vi.fn();
 const dbSelectWhere = vi.fn();
 const dbTransaction = vi.fn();
 
+const billingConfigsFindFirst = vi.fn();
+
 vi.mock('@/db', () => ({
     db: {
         query: {
             centres: { findFirst: (...args: unknown[]) => centresFindFirst(...args) },
             parents: { findFirst: (...args: unknown[]) => parentsFindFirst(...args) },
             invoices: { findFirst: (...args: unknown[]) => invoicesFindFirst(...args) },
+            billingConfigs: { findFirst: (...args: unknown[]) => billingConfigsFindFirst(...args) },
         },
         select: vi.fn(() => ({
             from: vi.fn(() => ({
