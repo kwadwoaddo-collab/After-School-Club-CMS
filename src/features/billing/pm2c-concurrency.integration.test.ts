@@ -17,11 +17,15 @@ import {
   billingConfigChildren,
   billingRuns,
   invoices,
+  invoiceLineItems,
+  payments,
   auditEvents,
   users,
+  orgMemberships,
+  centreMemberships,
 } from '@/db/schema';
 import { eq, inArray, and, sql, ne } from 'drizzle-orm';
-import { generateInvoiceFromConfig } from './actions';
+import { generateInvoiceFromConfig, createBillingConfig } from './actions';
 import { createInvoice, createAdHocInvoice } from '@/features/finance/actions';
 import { POST as billingCronPost } from '@/app/api/cron/billing/route';
 import { NextRequest } from 'next/server';
@@ -61,7 +65,7 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
   const RUN_ID = `pm2c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   let trainingHost: string;
 
-  // Track created IDs for guaranteed cleanup
+  // Track created IDs for guaranteed cleanup across all touched tables
   const createdOrgIds: string[] = [];
   const createdCentreIds: string[] = [];
   const createdUserIds: string[] = [];
@@ -69,6 +73,10 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
   const createdChildIds: string[] = [];
   const createdConfigIds: string[] = [];
   const createdInvoiceIds: string[] = [];
+  const createdPaymentIds: string[] = [];
+  const createdLineItemIds: string[] = [];
+  const createdOrgMembershipIds: string[] = [];
+  const createdCentreMembershipIds: string[] = [];
 
   beforeAll(async () => {
     const guard = assertSafeTrainingEnvironment();
@@ -79,31 +87,73 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
   afterAll(async () => {
     let cleanupError: unknown = null;
     try {
+      // 1. Payments
+      if (createdPaymentIds.length > 0) {
+        await db.delete(payments).where(inArray(payments.id, createdPaymentIds));
+      }
+      // 2. Invoice line items
+      if (createdLineItemIds.length > 0) {
+        await db.delete(invoiceLineItems).where(inArray(invoiceLineItems.id, createdLineItemIds));
+      }
+      if (createdInvoiceIds.length > 0) {
+        // Also cleanup any line items or payments attached to created invoices
+        await db.delete(payments).where(inArray(payments.invoiceId, createdInvoiceIds));
+        await db.delete(invoiceLineItems).where(inArray(invoiceLineItems.invoiceId, createdInvoiceIds));
+      }
+      // 3. Billing runs
       if (createdConfigIds.length > 0) {
         await db.delete(billingRuns).where(inArray(billingRuns.billingConfigId, createdConfigIds));
-        await db.delete(billingConfigChildren).where(inArray(billingConfigChildren.configId, createdConfigIds));
       }
+      if (createdInvoiceIds.length > 0) {
+        await db.delete(billingRuns).where(inArray(billingRuns.invoiceId, createdInvoiceIds));
+      }
+      // 4. Invoices
       if (createdInvoiceIds.length > 0) {
         await db.delete(invoices).where(inArray(invoices.id, createdInvoiceIds));
       }
+      // 5. Billing config children
+      if (createdConfigIds.length > 0) {
+        await db.delete(billingConfigChildren).where(inArray(billingConfigChildren.configId, createdConfigIds));
+      }
+      // 6. Billing configs
       if (createdConfigIds.length > 0) {
         await db.delete(billingConfigs).where(inArray(billingConfigs.id, createdConfigIds));
       }
+      // 7. Children
       if (createdChildIds.length > 0) {
         await db.delete(children).where(inArray(children.id, createdChildIds));
       }
+      // 8. Parents
       if (createdParentIds.length > 0) {
         await db.delete(parents).where(inArray(parents.id, createdParentIds));
       }
+      // 9. Centre memberships
+      if (createdCentreMembershipIds.length > 0) {
+        await db.delete(centreMemberships).where(inArray(centreMemberships.id, createdCentreMembershipIds));
+      }
+      if (createdCentreIds.length > 0) {
+        await db.delete(centreMemberships).where(inArray(centreMemberships.centreId, createdCentreIds));
+      }
+      // 10. Org memberships
+      if (createdOrgMembershipIds.length > 0) {
+        await db.delete(orgMemberships).where(inArray(orgMemberships.id, createdOrgMembershipIds));
+      }
+      if (createdOrgIds.length > 0) {
+        await db.delete(orgMemberships).where(inArray(orgMemberships.organisationId, createdOrgIds));
+      }
+      // 11. Centres
       if (createdCentreIds.length > 0) {
         await db.delete(centres).where(inArray(centres.id, createdCentreIds));
       }
+      // 12. Audit events
       if (createdOrgIds.length > 0) {
         await db.delete(auditEvents).where(inArray(auditEvents.organisationId, createdOrgIds));
       }
+      // 13. Users
       if (createdUserIds.length > 0) {
         await db.delete(users).where(inArray(users.id, createdUserIds));
       }
+      // 14. Organisations
       if (createdOrgIds.length > 0) {
         await db.delete(organisations).where(inArray(organisations.id, createdOrgIds));
       }
@@ -494,7 +544,16 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
     expect(invB?.organisationId).toBe(tenantB.org.id);
   });
 
-  it('C15: Rollback atomicity guarantees zero orphan invoice rows if a transaction aborts', async () => {
+  /**
+   * C15 Taxonomy Note (PM-2C.R2):
+   * CLASSIFICATION: PROVEN — REAL POSTGRES TRANSACTION ROLLBACK
+   * LIMITATION: REAL BILLING-PATH POST-INSERT FAULT INJECTION — NOT VERIFIED
+   *
+   * This test proves that PostgreSQL atomicity via Drizzle transaction guarantees zero orphan
+   * invoice rows when a transaction aborts post-insert. It validates the engine-level transactional
+   * rollback mechanism, not a synthetic monkey-patched runtime fault in generateInvoiceFromConfig.
+   */
+  it('C15: [Real Postgres Transaction Rollback] Rollback atomicity guarantees zero orphan invoice rows if a transaction aborts', async () => {
     const { org, centre, user } = await createSyntheticTenant('c15');
     const { config } = await createSyntheticFamily(org.id, centre.id, 'c15');
     mockSessionUser.id = user.id;
@@ -803,5 +862,674 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
     } finally {
       process.env.CRON_SECRET = origSecret;
     }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PM-2C.R2: Additional Collision Directions (R14 – R17)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  it('R14: Automated recurring invoice FIRST, manual recurring invoice SECOND rejects cleanly with exactly 1 active invoice', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r14');
+    const { parent, child, config } = await createSyntheticFamily(org.id, centre.id, 'r14');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const periodDate = new Date('2027-08-01T00:00:00Z');
+
+    // 1. Automated invoice generated first
+    const autoRes = await generateInvoiceFromConfig({
+      configId: config.id,
+      periodStartStr: '2027-08-01',
+      periodEndStr: '2027-08-31',
+      amountPence: 15000,
+    });
+    expect(autoRes.success).toBe(true);
+    expect(autoRes.invoiceId).toBeDefined();
+    createdInvoiceIds.push(autoRes.invoiceId);
+
+    // 2. Manual createInvoice attempted for identical family, centre and billingPeriodStart
+    let manualError: Error | null = null;
+    try {
+      await createInvoice({
+        centreId: centre.id,
+        parentId: parent.id,
+        childIds: [child.id],
+        amount: '150.00',
+        invoiceDate: new Date(),
+        dueDate: periodDate,
+        billingPeriodStart: periodDate,
+        billingPeriodEnd: new Date('2027-08-31T00:00:00Z'),
+        notes: 'Manual attempt after automated already issued',
+      });
+    } catch (err: any) {
+      manualError = err;
+    }
+
+    expect(manualError).toBeDefined();
+    expect(manualError?.message).toContain('An active invoice already exists for this family and billing period');
+
+    // 3. Verify exactly 1 active invoice exists in the database
+    const inDb = await db
+      .select({ id: invoices.id, status: invoices.status })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.billingConfigId, config.id),
+          eq(invoices.billingPeriodStart, periodDate)
+        )
+      );
+    expect(inDb).toHaveLength(1);
+    expect(inDb[0].id).toBe(autoRes.invoiceId);
+    expect(inDb[0].status).toBe('draft');
+  });
+
+  it('R15: Manual recurring invoice FIRST, automated generation SECOND returns alreadyGenerated and leaves balance unduplicated', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r15');
+    const { parent, child, config } = await createSyntheticFamily(org.id, centre.id, 'r15');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const periodDate = new Date('2027-09-01T00:00:00Z');
+
+    // 1. Manual invoice created first
+    const manualInvoice = await createInvoice({
+      centreId: centre.id,
+      parentId: parent.id,
+      childIds: [child.id],
+      amount: '150.00',
+      invoiceDate: new Date(),
+      dueDate: periodDate,
+      billingPeriodStart: periodDate,
+      billingPeriodEnd: new Date('2027-09-30T00:00:00Z'),
+      notes: 'Manual tuition advance',
+    });
+    createdInvoiceIds.push(manualInvoice.id);
+
+    // 2. Automated generator called for the same config & period
+    const autoRes = await generateInvoiceFromConfig({
+      configId: config.id,
+      periodStartStr: '2027-09-01',
+      periodEndStr: '2027-09-30',
+      amountPence: 15000,
+    });
+
+    expect(autoRes.success).toBe(true);
+    expect(autoRes.alreadyGenerated).toBe(true);
+    expect(autoRes.invoiceId).toBe(manualInvoice.id);
+
+    // 3. Verify exactly 1 invoice exists and total invoiced sum is £150.00 (not £300.00)
+    const inDb = await db
+      .select({ id: invoices.id, amount: invoices.amount })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.parentId, parent.id),
+          eq(invoices.billingPeriodStart, periodDate),
+          ne(invoices.status, 'void')
+        )
+      );
+    expect(inDb).toHaveLength(1);
+    expect(inDb[0].id).toBe(manualInvoice.id);
+    expect(Number(inDb[0].amount)).toBe(150.00);
+  });
+
+  it('R16: Genuinely concurrent manual createInvoice and automated generateInvoiceFromConfig produce exactly 1 active invoice and 0 raw 23505 errors', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r16');
+    const { parent, child, config } = await createSyntheticFamily(org.id, centre.id, 'r16');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const periodDate = new Date('2027-10-01T00:00:00Z');
+
+    // Concurrently fire manual createInvoice and automated generateInvoiceFromConfig
+    const [manualOutcome, autoOutcome] = await Promise.allSettled([
+      createInvoice({
+        centreId: centre.id,
+        parentId: parent.id,
+        childIds: [child.id],
+        amount: '150.00',
+        invoiceDate: new Date(),
+        dueDate: periodDate,
+        billingPeriodStart: periodDate,
+        billingPeriodEnd: new Date('2027-10-31T00:00:00Z'),
+        notes: 'Race manual invoice',
+      }),
+      generateInvoiceFromConfig({
+        configId: config.id,
+        periodStartStr: '2027-10-01',
+        periodEndStr: '2027-10-31',
+        amountPence: 15000,
+      }),
+    ]);
+
+    // Check that neither call threw an unhandled raw PostgreSQL 23505 duplicate key exception
+    if (manualOutcome.status === 'rejected') {
+      expect(manualOutcome.reason.message).not.toMatch(/duplicate key value violates unique constraint/i);
+      expect(manualOutcome.reason.message).toContain('already exists');
+    } else {
+      createdInvoiceIds.push(manualOutcome.value.id);
+    }
+
+    if (autoOutcome.status === 'rejected') {
+      expect(autoOutcome.reason.message).not.toMatch(/duplicate key value violates unique constraint/i);
+    } else {
+      expect(autoOutcome.value.success).toBe(true);
+      createdInvoiceIds.push(autoOutcome.value.invoiceId);
+    }
+
+    // Crucial invariant: Exactly 1 invoice committed in database
+    const inDb = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.billingConfigId, config.id),
+          eq(invoices.billingPeriodStart, periodDate),
+          ne(invoices.status, 'void')
+        )
+      );
+    expect(inDb).toHaveLength(1);
+  });
+
+  it('R17: Genuinely concurrent manual createInvoice and billing cron route produce exactly 1 active invoice and clean billing_run state', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r17');
+    const { parent, child, config } = await createSyntheticFamily(org.id, centre.id, 'r17');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    // Configure config for today's cron trigger
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const nextMonthYear = today.getUTCMonth() === 11 ? today.getUTCFullYear() + 1 : today.getUTCFullYear();
+    const nextMonth = today.getUTCMonth() === 11 ? 1 : today.getUTCMonth() + 2;
+    const nextMonthFirst = new Date(Date.UTC(nextMonthYear, nextMonth - 1, 1));
+    const anchorStr = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`;
+    const diffDays = Math.round((nextMonthFirst.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const leadDays = diffDays;
+
+    await db
+      .update(billingConfigs)
+      .set({
+        billingAnchorDate: anchorStr,
+        invoiceLeadDays: leadDays,
+      })
+      .where(eq(billingConfigs.id, config.id));
+
+    const { computeNextBillingPeriod } = await import('@/lib/billing');
+    const period = computeNextBillingPeriod(
+      { billingAnchorDate: new Date(`${anchorStr}T00:00:00Z`), invoiceLeadDays: leadDays },
+      today
+    );
+
+    const cronSecret = 'test-cron-secret-pm2c-r17';
+    const origSecret = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = cronSecret;
+
+    try {
+      const cronReq = new NextRequest('http://localhost:3000/api/cron/billing', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${cronSecret}` },
+      });
+
+      const [manualRes, cronRes] = await Promise.allSettled([
+        createInvoice({
+          centreId: centre.id,
+          parentId: parent.id,
+          childIds: [child.id],
+          amount: '150.00',
+          invoiceDate: new Date(),
+          dueDate: period.dueDate,
+          billingPeriodStart: period.periodStart,
+          billingPeriodEnd: period.periodEnd,
+          notes: 'Concurrent manual with cron',
+        }),
+        billingCronPost(cronReq),
+      ]);
+
+      if (manualRes.status === 'fulfilled') {
+        createdInvoiceIds.push(manualRes.value.id);
+      }
+
+      // Exactly 1 non-void invoice exists in database
+      const inDb = await db
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.billingConfigId, config.id),
+            eq(invoices.billingPeriodStart, period.periodStart),
+            ne(invoices.status, 'void')
+          )
+        );
+      expect(inDb).toHaveLength(1);
+
+      // Verify billing_run state is uncorrupted (at most 1 successful run for this period)
+      const periodStartStr = period.periodStart.toISOString().split('T')[0];
+      const runs = await db
+        .select({ id: billingRuns.id, success: billingRuns.success })
+        .from(billingRuns)
+        .where(
+          and(
+            eq(billingRuns.billingConfigId, config.id),
+            eq(billingRuns.periodStart, periodStartStr)
+          )
+        );
+      expect(runs.length).toBeLessThanOrEqual(1);
+    } finally {
+      process.env.CRON_SECRET = origSecret;
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PM-2C.R2: Semantic Separation Matrix (R18 – R22)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  it('R18: Same billing config, different billing period allows distinct invoices', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r18');
+    const { config } = await createSyntheticFamily(org.id, centre.id, 'r18');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const resP1 = await generateInvoiceFromConfig({
+      configId: config.id,
+      periodStartStr: '2027-11-01',
+      periodEndStr: '2027-11-30',
+      amountPence: 15000,
+    });
+    const resP2 = await generateInvoiceFromConfig({
+      configId: config.id,
+      periodStartStr: '2027-12-01',
+      periodEndStr: '2027-12-31',
+      amountPence: 15000,
+    });
+
+    expect(resP1.success).toBe(true);
+    expect(resP2.success).toBe(true);
+    expect(resP1.invoiceId).not.toBe(resP2.invoiceId);
+    createdInvoiceIds.push(resP1.invoiceId, resP2.invoiceId);
+
+    const inDb = await db
+      .select({ id: invoices.id, billingPeriodStart: invoices.billingPeriodStart })
+      .from(invoices)
+      .where(eq(invoices.billingConfigId, config.id));
+    expect(inDb).toHaveLength(2);
+  });
+
+  it('R19: Same parent, different centres creates distinct billing configs and allows independent invoices', async () => {
+    const { org, centre: centreA, user } = await createSyntheticTenant('r19');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    // Create Centre B in same organisation
+    const slugB = `${RUN_ID}_r19_b_${Math.random().toString(36).substring(2, 6)}`;
+    const [centreB] = await db
+      .insert(centres)
+      .values({
+        organisationId: org.id,
+        name: `Synthetic Centre B ${slugB}`,
+        slug: `centre_${slugB}`,
+      })
+      .returning();
+    createdCentreIds.push(centreB.id);
+
+    // Parent belongs to org
+    const uniqueEmail = `${RUN_ID}_r19_${Math.random().toString(36).substring(2, 6)}@example.com`;
+    const [parent] = await db
+      .insert(parents)
+      .values({
+        organisationId: org.id,
+        firstName: 'DualCentre',
+        lastName: 'Parent',
+        email: uniqueEmail,
+        preferredContact: 'email',
+      })
+      .returning();
+    createdParentIds.push(parent.id);
+
+    // Child 1 at Centre A
+    const [childA] = await db
+      .insert(children)
+      .values({
+        organisationId: org.id,
+        centreId: centreA.id,
+        parentId: parent.id,
+        firstName: 'ChildA',
+        lastName: 'Family',
+        schoolYear: 'Year 4',
+      })
+      .returning();
+    createdChildIds.push(childA.id);
+
+    // Child 2 at Centre B
+    const [childB] = await db
+      .insert(children)
+      .values({
+        organisationId: org.id,
+        centreId: centreB.id,
+        parentId: parent.id,
+        firstName: 'ChildB',
+        lastName: 'Family',
+        schoolYear: 'Year 6',
+      })
+      .returning();
+    createdChildIds.push(childB.id);
+
+    // Config A
+    const [configA] = await db
+      .insert(billingConfigs)
+      .values({
+        organisationId: org.id,
+        centreId: centreA.id,
+        parentId: parent.id,
+        agreedMonthlyPence: 12000,
+        billingAnchorDate: '2028-01-01',
+        status: 'active',
+      })
+      .returning();
+    createdConfigIds.push(configA.id);
+    await db.insert(billingConfigChildren).values({ configId: configA.id, childId: childA.id });
+
+    // Config B
+    const [configB] = await db
+      .insert(billingConfigs)
+      .values({
+        organisationId: org.id,
+        centreId: centreB.id,
+        parentId: parent.id,
+        agreedMonthlyPence: 16000,
+        billingAnchorDate: '2028-01-01',
+        status: 'active',
+      })
+      .returning();
+    createdConfigIds.push(configB.id);
+    await db.insert(billingConfigChildren).values({ configId: configB.id, childId: childB.id });
+
+    // Generate invoices for both configs for the same period
+    const resA = await generateInvoiceFromConfig({
+      configId: configA.id,
+      periodStartStr: '2028-01-01',
+      periodEndStr: '2028-01-31',
+      amountPence: 12000,
+    });
+    const resB = await generateInvoiceFromConfig({
+      configId: configB.id,
+      periodStartStr: '2028-01-01',
+      periodEndStr: '2028-01-31',
+      amountPence: 16000,
+    });
+
+    expect(resA.success).toBe(true);
+    expect(resB.success).toBe(true);
+    expect(resA.invoiceId).not.toBe(resB.invoiceId);
+    createdInvoiceIds.push(resA.invoiceId, resB.invoiceId);
+
+    const invA = await db.query.invoices.findFirst({ where: eq(invoices.id, resA.invoiceId) });
+    const invB = await db.query.invoices.findFirst({ where: eq(invoices.id, resB.invoiceId) });
+    expect(invA?.centreId).toBe(centreA.id);
+    expect(invB?.centreId).toBe(centreB.id);
+  });
+
+  it('R20: Different parents, same centre and same billing period allows distinct invoices', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r20');
+    const family1 = await createSyntheticFamily(org.id, centre.id, 'r20_f1');
+    const family2 = await createSyntheticFamily(org.id, centre.id, 'r20_f2');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    const res1 = await generateInvoiceFromConfig({
+      configId: family1.config.id,
+      periodStartStr: '2028-02-01',
+      periodEndStr: '2028-02-28',
+      amountPence: 15000,
+    });
+    const res2 = await generateInvoiceFromConfig({
+      configId: family2.config.id,
+      periodStartStr: '2028-02-01',
+      periodEndStr: '2028-02-28',
+      amountPence: 15000,
+    });
+
+    expect(res1.success).toBe(true);
+    expect(res2.success).toBe(true);
+    expect(res1.invoiceId).not.toBe(res2.invoiceId);
+    createdInvoiceIds.push(res1.invoiceId, res2.invoiceId);
+
+    const inv1 = await db.query.invoices.findFirst({ where: eq(invoices.id, res1.invoiceId) });
+    const inv2 = await db.query.invoices.findFirst({ where: eq(invoices.id, res2.invoiceId) });
+    expect(inv1?.parentId).toBe(family1.parent.id);
+    expect(inv2?.parentId).toBe(family2.parent.id);
+  });
+
+  it('R21: Different organisations with identical periods and amounts remain completely isolated', async () => {
+    const tenant1 = await createSyntheticTenant('r21_t1');
+    const family1 = await createSyntheticFamily(tenant1.org.id, tenant1.centre.id, 'r21_f1');
+
+    const tenant2 = await createSyntheticTenant('r21_t2');
+    const family2 = await createSyntheticFamily(tenant2.org.id, tenant2.centre.id, 'r21_f2');
+
+    // Tenant 1 generates
+    mockSessionUser.id = tenant1.user.id;
+    mockSessionUser.organisationId = tenant1.org.id;
+    const res1 = await generateInvoiceFromConfig({
+      configId: family1.config.id,
+      periodStartStr: '2028-03-01',
+      periodEndStr: '2028-03-31',
+      amountPence: 20000,
+    });
+
+    // Tenant 2 generates
+    mockSessionUser.id = tenant2.user.id;
+    mockSessionUser.organisationId = tenant2.org.id;
+    const res2 = await generateInvoiceFromConfig({
+      configId: family2.config.id,
+      periodStartStr: '2028-03-01',
+      periodEndStr: '2028-03-31',
+      amountPence: 20000,
+    });
+
+    expect(res1.success).toBe(true);
+    expect(res2.success).toBe(true);
+    expect(res1.invoiceId).not.toBe(res2.invoiceId);
+    createdInvoiceIds.push(res1.invoiceId, res2.invoiceId);
+
+    const inv1 = await db.query.invoices.findFirst({ where: eq(invoices.id, res1.invoiceId) });
+    const inv2 = await db.query.invoices.findFirst({ where: eq(invoices.id, res2.invoiceId) });
+    expect(inv1?.organisationId).toBe(tenant1.org.id);
+    expect(inv2?.organisationId).toBe(tenant2.org.id);
+  });
+
+  it('R22: Multi-child configuration represents 1 single family obligation and rejects per-child duplicate generation', async () => {
+    const { org, centre, user } = await createSyntheticTenant('r22');
+    const { parent, child: child1, config } = await createSyntheticFamily(org.id, centre.id, 'r22');
+    mockSessionUser.id = user.id;
+    mockSessionUser.organisationId = org.id;
+
+    // Add sibling child 2
+    const [child2] = await db
+      .insert(children)
+      .values({
+        organisationId: org.id,
+        centreId: centre.id,
+        parentId: parent.id,
+        firstName: 'Sibling2',
+        lastName: 'Family_r22',
+        schoolYear: 'Year 5',
+      })
+      .returning();
+    createdChildIds.push(child2.id);
+
+    await db.insert(billingConfigChildren).values({
+      configId: config.id,
+      childId: child2.id,
+    });
+
+    // 1. Generate automated invoice for this multi-child family config
+    const res = await generateInvoiceFromConfig({
+      configId: config.id,
+      periodStartStr: '2028-04-01',
+      periodEndStr: '2028-04-30',
+      amountPence: 25000,
+    });
+    expect(res.success).toBe(true);
+    createdInvoiceIds.push(res.invoiceId);
+
+    // 2. Attempting a manual createInvoice for child2 for the same period must be rejected
+    let child2Error: Error | null = null;
+    try {
+      await createInvoice({
+        centreId: centre.id,
+        parentId: parent.id,
+        childIds: [child2.id],
+        amount: '125.00',
+        invoiceDate: new Date(),
+        dueDate: new Date('2028-04-01T00:00:00Z'),
+        billingPeriodStart: new Date('2028-04-01T00:00:00Z'),
+        billingPeriodEnd: new Date('2028-04-30T00:00:00Z'),
+        notes: 'Duplicate attempt for sibling',
+      });
+    } catch (err: any) {
+      child2Error = err;
+    }
+    expect(child2Error).toBeDefined();
+    expect(child2Error?.message).toContain('An active invoice already exists for this family and billing period');
+
+    // Exactly 1 invoice exists for the family for this period
+    const inDb = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.billingConfigId, config.id),
+          eq(invoices.billingPeriodStart, new Date('2028-04-01T00:00:00Z'))
+        )
+      );
+    expect(inDb).toHaveLength(1);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PM-2C.R2: Hostile Tenant Substitution Matrix (R23 – R26)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  it('R23: Hostile tenant substituting foreign billingConfigId is rejected fail-closed without modifying state', async () => {
+    const victim = await createSyntheticTenant('r23_victim');
+    const victimFamily = await createSyntheticFamily(victim.org.id, victim.centre.id, 'r23_victim');
+
+    const attacker = await createSyntheticTenant('r23_attacker');
+    // Attacker session
+    mockSessionUser.id = attacker.user.id;
+    mockSessionUser.organisationId = attacker.org.id;
+
+    let error: Error | null = null;
+    try {
+      await generateInvoiceFromConfig({
+        configId: victimFamily.config.id,
+        periodStartStr: '2028-05-01',
+        periodEndStr: '2028-05-31',
+        amountPence: 15000,
+      });
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('Billing config not found');
+
+    // Confirm 0 invoices created for victim config for this period
+    const inDb = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.billingConfigId, victimFamily.config.id),
+          eq(invoices.billingPeriodStart, new Date('2028-05-01T00:00:00Z'))
+        )
+      );
+    expect(inDb).toHaveLength(0);
+  });
+
+  it('R24: Hostile tenant substituting foreign parentId into createInvoice is rejected fail-closed', async () => {
+    const victim = await createSyntheticTenant('r24_victim');
+    const victimFamily = await createSyntheticFamily(victim.org.id, victim.centre.id, 'r24_victim');
+
+    const attacker = await createSyntheticTenant('r24_attacker');
+    const attackerFamily = await createSyntheticFamily(attacker.org.id, attacker.centre.id, 'r24_attacker');
+
+    // Attacker session
+    mockSessionUser.id = attacker.user.id;
+    mockSessionUser.organisationId = attacker.org.id;
+
+    let error: Error | null = null;
+    try {
+      await createInvoice({
+        centreId: attacker.centre.id,
+        parentId: victimFamily.parent.id, // Foreign parent ID!
+        childIds: [attackerFamily.child.id],
+        amount: '150.00',
+        invoiceDate: new Date(),
+        dueDate: new Date('2028-06-01T00:00:00Z'),
+      });
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('Parent not found');
+  });
+
+  it('R25: Hostile tenant substituting foreign centreId into createInvoice is rejected fail-closed', async () => {
+    const victim = await createSyntheticTenant('r25_victim');
+    const attacker = await createSyntheticTenant('r25_attacker');
+    const attackerFamily = await createSyntheticFamily(attacker.org.id, attacker.centre.id, 'r25_attacker');
+
+    // Attacker session
+    mockSessionUser.id = attacker.user.id;
+    mockSessionUser.organisationId = attacker.org.id;
+
+    let error: Error | null = null;
+    try {
+      await createInvoice({
+        centreId: victim.centre.id, // Foreign centre ID!
+        parentId: attackerFamily.parent.id,
+        childIds: [attackerFamily.child.id],
+        amount: '150.00',
+        invoiceDate: new Date(),
+        dueDate: new Date('2028-07-01T00:00:00Z'),
+      });
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('Centre not found');
+  });
+
+  it('R26: Hostile tenant substituting foreign childId into createInvoice is rejected fail-closed', async () => {
+    const victim = await createSyntheticTenant('r26_victim');
+    const victimFamily = await createSyntheticFamily(victim.org.id, victim.centre.id, 'r26_victim');
+
+    const attacker = await createSyntheticTenant('r26_attacker');
+    const attackerFamily = await createSyntheticFamily(attacker.org.id, attacker.centre.id, 'r26_attacker');
+
+    // Attacker session
+    mockSessionUser.id = attacker.user.id;
+    mockSessionUser.organisationId = attacker.org.id;
+
+    let error: Error | null = null;
+    try {
+      await createInvoice({
+        centreId: attacker.centre.id,
+        parentId: attackerFamily.parent.id,
+        childIds: [victimFamily.child.id], // Foreign child ID!
+        amount: '150.00',
+        invoiceDate: new Date(),
+        dueDate: new Date('2028-08-01T00:00:00Z'),
+      });
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('One or more children not found');
   });
 });
