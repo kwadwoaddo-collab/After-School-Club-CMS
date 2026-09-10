@@ -13,8 +13,14 @@ export async function POST(req: NextRequest) {
     try {
         // Rate limit: 5 login attempts per minute per IP
         const ip = getClientIP(req);
-        const { success: allowed } = await checkRateLimit(strictRateLimit, `portal:${ip}`);
-        if (!allowed) {
+        const rateLimitResult = await checkRateLimit(strictRateLimit, `portal:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Login service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'Too many login attempts. Please try again later.' },
                 { status: 429 }

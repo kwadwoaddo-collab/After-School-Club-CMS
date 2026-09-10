@@ -94,8 +94,14 @@ export async function POST(req: NextRequest) {
     try {
         // Rate limit: protect against bulk spam registrations
         const ip = getClientIP(req);
-        const { success: allowed } = await checkRateLimit(apiRateLimit, `register:${ip}`);
-        if (!allowed) {
+        const rateLimitResult = await checkRateLimit(apiRateLimit, `register:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Registration service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'Too many registration attempts. Please try again later.' },
                 { status: 429 }

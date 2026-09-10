@@ -11,8 +11,14 @@ export async function POST(request: NextRequest) {
     try {
         // Rate limit: 10 signup attempts per minute per IP
         const ip = getClientIP(request);
-        const { success: allowed } = await checkRateLimit(authRateLimit, `signup:${ip}`);
-        if (!allowed) {
+        const rateLimitResult = await checkRateLimit(authRateLimit, `signup:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Authentication service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'Too many signup attempts. Please try again later.' },
                 { status: 429 }

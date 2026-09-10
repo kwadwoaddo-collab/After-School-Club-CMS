@@ -17,8 +17,14 @@ export async function POST(request: NextRequest) {
     try {
         // RATE-1 fix: rate-limit magic-link requests to prevent email flooding
         const ip = getClientIP(request);
-        const { success: allowed } = await checkRateLimit(strictRateLimit, `magic-link:${ip}`);
-        if (!allowed) {
+        const rateLimitResult = await checkRateLimit(strictRateLimit, `magic-link:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'Too many requests. Please try again later.' },
                 { status: 429 }

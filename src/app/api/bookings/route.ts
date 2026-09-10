@@ -13,8 +13,14 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limit: protect against public booking endpoint spam
     const ip = getClientIP(request);
-    const { success: allowed } = await checkRateLimit(apiRateLimit, `booking:${ip}`);
-    if (!allowed) {
+    const rateLimitResult = await checkRateLimit(apiRateLimit, `booking:${ip}`);
+    if (!rateLimitResult.success) {
+      if (rateLimitResult.status === 'unavailable') {
+        return NextResponse.json(
+          { error: 'Booking service temporarily unavailable. Please try again later.' },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         { error: 'Too many booking attempts. Please try again later.' },
         { status: 429 }

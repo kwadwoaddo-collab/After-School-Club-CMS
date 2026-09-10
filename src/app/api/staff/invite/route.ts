@@ -28,8 +28,14 @@ export async function POST(request: NextRequest) {
 
         // Rate limit: 5 invites per minute per IP to prevent invite spam
         const ip = getClientIP(request);
-        const { success: allowed } = await checkRateLimit(strictRateLimit, `staff-invite:${ip}`);
-        if (!allowed) {
+        const rateLimitResult = await checkRateLimit(strictRateLimit, `staff-invite:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'Too many invite requests. Please try again later.' },
                 { status: 429 }

@@ -16,8 +16,14 @@ export async function POST(request: NextRequest) {
     try {
         // Rate limit: 5 reset attempts per minute per IP
         const ip = getClientIP(request);
-        const { success: allowed } = await checkRateLimit(strictRateLimit, `reset:${ip}`);
-        if (!allowed) {
+        const rateLimitResult = await checkRateLimit(strictRateLimit, `reset:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Password reset service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'Too many reset attempts. Please try again later.' },
                 { status: 429 }
