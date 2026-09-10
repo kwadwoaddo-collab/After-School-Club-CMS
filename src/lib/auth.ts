@@ -13,13 +13,13 @@ import GoogleProvider from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/db';
 import { users, accounts, sessions, verificationTokens, orgMemberships, organisations } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { hashToken } from '@/lib/magic-link';
 // Precomputed cost-10 bcrypt hash for computational symmetry and timing-attack elimination (PM-2E2.B4)
 export const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
-const nextAuthResult = NextAuth({
+export const authConfig: any = {
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
   adapter: DrizzleAdapter(db, {
@@ -30,7 +30,7 @@ const nextAuthResult = NextAuth({
   } as any) as any, // Type assertion needed for drizzle-orm compatibility
 
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60,   // re-issue token once per day max
   },
@@ -117,6 +117,28 @@ const nextAuthResult = NextAuth({
           return null;
         }
 
+        // PM-2E2.B4.F: If user has an unverified email with a pending verification token,
+        // block credentials authentication until email ownership is proven.
+        if (!user.emailVerified) {
+          const [pendingToken] = await db
+            .select()
+            .from(verificationTokens)
+            .where(
+              and(
+                eq(verificationTokens.identifier, normalizedEmail),
+                gt(verificationTokens.expires, new Date())
+              )
+            )
+            .limit(1);
+
+          if (pendingToken) {
+            // Pending unverified signup account — reject credentials authentication
+            // Perform dummy bcrypt comparison for timing symmetry
+            await bcrypt.compare(credentials.password, DUMMY_PASSWORD_HASH);
+            return null;
+          }
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -178,13 +200,13 @@ const nextAuthResult = NextAuth({
   ],
 
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account }: any) {
       // Always allow sign-in — the jwt callback will handle org/onboarding state.
       // Previously we did a DB lookup here which caused a race on first Google login.
       return true;
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account }: any) {
       // ── Initial sign in only ─────────────────────────────────────────────
       if (user) {
         token.id = user.id;
@@ -248,7 +270,7 @@ const nextAuthResult = NextAuth({
       return token;
     },
 
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (token) {
         session.user.id = token.id as string;
         (session as any).user.role = token.role;
@@ -261,7 +283,7 @@ const nextAuthResult = NextAuth({
   },
 
   events: {
-    async createUser({ user }) {
+    async createUser({ user }: any) {
       // For Google OAuth users: set role to ORG_OWNER but do NOT create an org.
       // They will be redirected to /onboarding to set up their org and first centre.
       if (user.id) {
@@ -276,7 +298,9 @@ const nextAuthResult = NextAuth({
       }
     },
   },
-});
+};
+
+export const nextAuthResult = NextAuth(authConfig);
 
 export const { handlers, signIn, signOut } = nextAuthResult;
 

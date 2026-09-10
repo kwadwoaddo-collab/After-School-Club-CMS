@@ -1,12 +1,15 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, verificationTokens } from '@/db/schema';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { CURRENT_TERMS_VERSION } from '@/lib/constants/legal';
 import { validatePassword, normalizeEmail, MAX_EMAIL_LENGTH, MAX_NAME_LENGTH } from '@/lib/validations/auth';
+import { hashToken } from '@/lib/magic-link';
+import { emailService } from '@/lib/services/email';
 
 export async function POST(request: NextRequest) {
     try {
@@ -114,17 +117,44 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(password, 10);
         const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
-        // Create user — no org yet, that happens in /onboarding
-        await db.insert(users).values({
+        // PM-2E2.B4.F: Generate secure verification token
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashToken(rawToken);
+        const expiry = new Date();
+        expiry.setHours(expiry.getHours() + 24); // 24-hour expiration
+
+        // Create unverified user and pending verification token
+        await db.transaction(async (tx) => {
+            await tx.insert(users).values({
+                email: normalizedEmail,
+                passwordHash: hashedPassword,
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                name: fullName,
+                role: 'ORG_OWNER',
+                organisationId: null,
+                emailVerified: null,
+                termsAcceptedAt: new Date(),
+                termsVersion: CURRENT_TERMS_VERSION,
+            });
+
+            await tx.insert(verificationTokens).values({
+                identifier: normalizedEmail,
+                token: tokenHash,
+                expires: expiry,
+            });
+        });
+
+        // Build verification URL with raw token
+        const protocol = request.headers.get('x-forwarded-proto') || 'http';
+        const host = request.headers.get('host') || 'localhost:3000';
+        const verificationUrl = `${protocol}://${host}/api/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
+
+        // Send email verification asynchronously
+        await emailService.sendEmailVerification({
             email: normalizedEmail,
-            passwordHash: hashedPassword,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            name: fullName,
-            role: 'ORG_OWNER',
-            organisationId: null,
-            termsAcceptedAt: new Date(),
-            termsVersion: CURRENT_TERMS_VERSION,
+            name: firstName.trim(),
+            verificationUrl,
         });
 
         return NextResponse.json(

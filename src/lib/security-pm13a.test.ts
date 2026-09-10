@@ -131,6 +131,17 @@ import PrivacyPage from '@/app/privacy/page';
 describe('PM-1.3A & PM-1.3A.C Reconciliation Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTransaction.mockImplementation(async (cb: any) =>
+      cb({
+        insert: mockInsert,
+        update: mockUpdate,
+        select: mockSelect,
+        query: {
+          users: { findFirst: mockFindFirstUser },
+          orgMemberships: { findFirst: mockFindFirstMembership },
+        },
+      })
+    );
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -692,14 +703,16 @@ describe('PM-1.3A & PM-1.3A.C Reconciliation Tests', () => {
         }),
       });
 
-      mockInsert.mockReturnValue({
+      mockInsert.mockImplementation(() => ({
         values: vi.fn((val: any) => {
-          insertedUser = val;
+          if (val.termsVersion) {
+            insertedUser = val;
+          }
           return {
             returning: vi.fn().mockResolvedValue([{ id: 'u-1', ...val }]),
           };
         }),
-      });
+      }));
 
       const req = new NextRequest('http://localhost:3000/api/auth/signup', {
         method: 'POST',

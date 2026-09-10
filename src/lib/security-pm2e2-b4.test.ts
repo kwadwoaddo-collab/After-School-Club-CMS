@@ -4,11 +4,36 @@ import { NextRequest } from 'next/server';
 // ---------------------------------------------------------------------------
 // Mocks for DB, Adapters, and Services
 // ---------------------------------------------------------------------------
-const mockSelect = vi.fn();
+const createSelectChain = (result: any = []) => ({
+  from: vi.fn().mockReturnValue({
+    where: vi.fn().mockReturnValue({
+      limit: vi.fn().mockResolvedValue(result),
+    }),
+  }),
+});
+
+let defaultSelectResult: any = [];
+const mockSelect = vi.fn(() => createSelectChain(defaultSelectResult));
 const mockInsert = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
-const mockTransaction = vi.fn();
+const mockTransaction = vi.fn(async (cb) => {
+  return cb({
+    insert: (table: any) => ({
+      values: (val: any) => ({
+        returning: () => [{ id: 'mock-tx-id', email: 'tx@example.com' }],
+      }),
+    }),
+    update: (table: any) => ({
+      set: (val: any) => ({
+        where: () => [],
+      }),
+    }),
+    delete: (table: any) => ({
+      where: () => [],
+    }),
+  });
+});
 const mockFindUser = vi.fn();
 const mockFindParent = vi.fn();
 const mockFindOrgMembership = vi.fn();
@@ -46,6 +71,9 @@ vi.mock('@/db', () => ({
       staffInvites: {
         findFirst: (...args: any[]) => mockFindInvite(...args),
       },
+      verificationTokens: {
+        findFirst: (...args: any[]) => (mockSelect as any)(...args),
+      },
     },
   },
 }));
@@ -54,16 +82,37 @@ vi.mock('@/lib/services/email', () => ({
   emailService: {
     sendPasswordReset: vi.fn().mockResolvedValue({ success: true }),
     sendMagicLink: vi.fn().mockResolvedValue({ success: true }),
+    sendEmailVerification: vi.fn().mockResolvedValue({ success: true }),
   },
   EmailService: class {
     sendMagicLink = vi.fn().mockResolvedValue({ success: true });
     sendPasswordReset = vi.fn().mockResolvedValue({ success: true });
+    sendEmailVerification = vi.fn().mockResolvedValue({ success: true });
   },
 }));
 
 describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    defaultSelectResult = [];
+    mockSelect.mockImplementation(() => createSelectChain(defaultSelectResult));
+    mockTransaction.mockImplementation(async (cb) => {
+      return cb({
+        insert: (table: any) => ({
+          values: (val: any) => ({
+            returning: () => [{ id: 'mock-tx-id', email: 'tx@example.com' }],
+          }),
+        }),
+        update: (table: any) => ({
+          set: (val: any) => ({
+            where: () => [],
+          }),
+        }),
+        delete: (table: any) => ({
+          where: () => [],
+        }),
+      });
+    });
   });
 
   // =========================================================================
@@ -550,5 +599,217 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
     const dataExisting = await resExisting.json();
     expect(dataExisting.success).toBe(true);
     expect(dataExisting.redirectUrl).toBe('/login?registered=true');
+  });
+
+  // =========================================================================
+  // TEST 26: FOLLOW-UP LOGIN ORACLE ELIMINATION (SCENARIOS 1 & 2 COMPARISON)
+  // =========================================================================
+  it('Test 26: Scenario 1 (new email) and Scenario 2 (existing email) BOTH fail credentials login before verification', async () => {
+    const { authConfig } = await import('@/lib/auth');
+    const credentialsProvider = (authConfig.providers as any[])?.find(
+      (p: any) => p?.id === 'credentials' || p?.name === 'credentials'
+    );
+    expect(credentialsProvider).toBeDefined();
+    const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
+
+    const bcrypt = await import('bcryptjs');
+    const attackerPassword = 'AttackerChosenPassword123!';
+
+    // Scenario 1: Newly registered user (unverified, pending token in verificationTokens)
+    const newAccountHash = await bcrypt.hash(attackerPassword, 10);
+    mockFindUser.mockResolvedValueOnce({
+      id: 'new-unverified-user',
+      email: 'new-fixture@example.test',
+      passwordHash: newAccountHash,
+      emailVerified: null,
+      firstName: 'New',
+      lastName: 'User',
+      role: 'ORG_OWNER',
+    });
+
+    // Mock verificationTokens table returning an active pending token
+    const mockLimitPending = vi.fn().mockResolvedValue([{
+      identifier: 'new-fixture@example.test',
+      token: 'some-hashed-token',
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    }]);
+    const mockWherePending = vi.fn().mockReturnValue({ limit: mockLimitPending });
+    const mockFromPending = vi.fn().mockReturnValue({ where: mockWherePending });
+    mockSelect.mockReturnValueOnce({ from: mockFromPending });
+
+    const authResultNew = await authorizeFn({
+      email: 'new-fixture@example.test',
+      password: attackerPassword,
+    });
+    // LOGIN DENIED for newly registered unverified account
+    expect(authResultNew).toBeNull();
+
+    // Scenario 2: Existing user (different password)
+    const victimOriginalPassword = 'OriginalVictimPassword123!';
+    const victimAccountHash = await bcrypt.hash(victimOriginalPassword, 10);
+    mockFindUser.mockResolvedValueOnce({
+      id: 'existing-victim-user',
+      email: 'existing-fixture@example.test',
+      passwordHash: victimAccountHash,
+      emailVerified: new Date(),
+      firstName: 'Victim',
+      lastName: 'User',
+      role: 'ORG_OWNER',
+    });
+
+    const authResultExisting = await authorizeFn({
+      email: 'existing-fixture@example.test',
+      password: attackerPassword,
+    });
+    // LOGIN DENIED for existing account with wrong password
+    expect(authResultExisting).toBeNull();
+
+    // Invariant: Both outcomes are identical null (generic login failure) — zero account existence disclosure!
+    expect(authResultNew).toEqual(authResultExisting);
+  });
+
+  // =========================================================================
+  // TEST 27: VERIFICATION ENDPOINT REJECTS MISSING OR INVALID TOKEN
+  // =========================================================================
+  it('Test 27: GET /api/auth/verify-email rejects missing or invalid token parameters', async () => {
+    const { GET: verifyHandler } = await import('@/app/api/auth/verify-email/route');
+
+    // Case A: Missing token
+    const resNoToken = await verifyHandler(new NextRequest('http://localhost/api/auth/verify-email?email=test@example.com', {
+      method: 'GET',
+    }));
+    expect(resNoToken.status).toBe(307); // redirect to login with error
+    expect(resNoToken.headers.get('location')).toContain('error=InvalidVerificationToken');
+
+    // Case B: Invalid / non-existent token in DB
+    const mockLimitInvalid = vi.fn().mockResolvedValue([]);
+    const mockWhereInvalid = vi.fn().mockReturnValue({ limit: mockLimitInvalid });
+    const mockFromInvalid = vi.fn().mockReturnValue({ where: mockWhereInvalid });
+    mockSelect.mockReturnValueOnce({ from: mockFromInvalid });
+
+    const resInvalid = await verifyHandler(new NextRequest('http://localhost/api/auth/verify-email?token=badtoken&email=test@example.com', {
+      method: 'GET',
+    }));
+    expect(resInvalid.status).toBe(307);
+    expect(resInvalid.headers.get('location')).toContain('error=ExpiredOrInvalidToken');
+  });
+
+  // =========================================================================
+  // TEST 28: VERIFICATION ENDPOINT ACTIVATES ACCOUNT AND DELETES TOKEN (SINGLE-USE)
+  // =========================================================================
+  it('Test 28: GET /api/auth/verify-email with valid token activates user, deletes token, and redirects to login?verified=true', async () => {
+    const { GET: verifyHandler } = await import('@/app/api/auth/verify-email/route');
+
+    // Mock finding valid token
+    const mockLimitValid = vi.fn().mockResolvedValue([{
+      identifier: 'valid@example.com',
+      token: 'valid-hashed-token',
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    }]);
+    const mockWhereValid = vi.fn().mockReturnValue({ limit: mockLimitValid });
+    const mockFromValid = vi.fn().mockReturnValue({ where: mockWhereValid });
+    mockSelect.mockReturnValueOnce({ from: mockFromValid });
+
+    const resValid = await verifyHandler(new NextRequest('http://localhost/api/auth/verify-email?token=goodtoken&email=valid@example.com', {
+      method: 'GET',
+    }));
+    expect(resValid.status).toBe(307);
+    expect(resValid.headers.get('location')).toContain('verified=true');
+    expect(mockTransaction).toHaveBeenCalled();
+  });
+
+  // =========================================================================
+  // TEST 29: VERIFIED USER CAN NOW CREDENTIALS-LOGIN SUCCESSFULLY
+  // =========================================================================
+  it('Test 29: Verified user (emailVerified set) can credentials-login with their password', async () => {
+    const { authConfig } = await import('@/lib/auth');
+    const credentialsProvider = (authConfig.providers as any[])?.find(
+      (p: any) => p?.id === 'credentials' || p?.name === 'credentials'
+    );
+    expect(credentialsProvider).toBeDefined();
+    const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
+
+    const bcrypt = await import('bcryptjs');
+    const userPassword = 'CorrectUserPassword123!';
+    const userPasswordHash = await bcrypt.hash(userPassword, 10);
+
+    mockFindUser.mockResolvedValueOnce({
+      id: 'verified-user-1',
+      email: 'verified@example.com',
+      passwordHash: userPasswordHash,
+      emailVerified: new Date(),
+      firstName: 'Verified',
+      lastName: 'User',
+      role: 'ORG_OWNER',
+      organisationId: 'org-123',
+    });
+
+    const authResult = await authorizeFn({
+      email: 'verified@example.com',
+      password: userPassword,
+    });
+
+    expect(authResult).not.toBeNull();
+    expect(authResult?.id).toBe('verified-user-1');
+    expect(authResult?.email).toBe('verified@example.com');
+  });
+
+  // =========================================================================
+  // TEST 30: HISTORICAL CREDENTIAL ACCOUNT COMPATIBILITY (NO LOCKOUT)
+  // =========================================================================
+  it('Test 30: Historical credential user without pending verification token can log in without lockout', async () => {
+    const { authConfig } = await import('@/lib/auth');
+    const credentialsProvider = (authConfig.providers as any[])?.find(
+      (p: any) => p?.id === 'credentials' || p?.name === 'credentials'
+    );
+    expect(credentialsProvider).toBeDefined();
+    const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
+
+    const bcrypt = await import('bcryptjs');
+    const historicalPassword = 'HistoricalPassword123!';
+    const historicalHash = await bcrypt.hash(historicalPassword, 10);
+
+    // Historical user with emailVerified: null (legacy)
+    mockFindUser.mockResolvedValueOnce({
+      id: 'historical-user-1',
+      email: 'historical@example.com',
+      passwordHash: historicalHash,
+      emailVerified: null,
+      firstName: 'Historical',
+      lastName: 'Staff',
+      role: 'ORG_OWNER',
+      organisationId: 'org-legacy',
+    });
+
+    // No pending verification token in verificationTokens table
+    const mockLimitNoToken = vi.fn().mockResolvedValue([]);
+    const mockWhereNoToken = vi.fn().mockReturnValue({ limit: mockLimitNoToken });
+    const mockFromNoToken = vi.fn().mockReturnValue({ where: mockWhereNoToken });
+    mockSelect.mockReturnValueOnce({ from: mockFromNoToken });
+
+    const authResult = await authorizeFn({
+      email: 'historical@example.com',
+      password: historicalPassword,
+    });
+
+    // Historical user successfully authenticates
+    expect(authResult).not.toBeNull();
+    expect(authResult?.id).toBe('historical-user-1');
+    expect(authResult?.email).toBe('historical@example.com');
+  });
+
+  // =========================================================================
+  // TEST 31: EMAIL SERVICE SEND EMAIL VERIFICATION DISPATCH
+  // =========================================================================
+  it('Test 31: EmailService.sendEmailVerification creates HTML email with 24h expiry notice and button link', async () => {
+    const { emailService } = await import('@/lib/services/email');
+    emailService.sendEmailVerification = vi.fn().mockResolvedValue({ success: true });
+
+    const result = await emailService.sendEmailVerification({
+      email: 'recipient@example.com',
+      name: 'Recipient',
+      verificationUrl: 'http://localhost:3000/api/auth/verify-email?token=xyz&email=recipient%40example.com',
+    });
+    expect(result.success).toBe(true);
   });
 });

@@ -10,6 +10,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get('registered');
+  const verified = searchParams.get('verified');
   const urlError = searchParams.get('error');
 
   const [mode, setMode] = useState<'admin' | 'staff'>('admin');
@@ -97,9 +98,15 @@ function LoginForm() {
         <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>Sign in to your SprintScale dashboard</p>
       </div>
 
-      {registered && (
+      {verified && (
         <div className="mb-6 p-4 bg-emerald-500/15 border border-emerald-400/25 rounded-2xl text-emerald-300 text-center text-sm font-medium">
-          🎉 Account created successfully! Please sign in.
+          🎉 Email verified successfully! Please sign in.
+        </div>
+      )}
+
+      {registered && !verified && (
+        <div className="mb-6 p-4 bg-emerald-500/15 border border-emerald-400/25 rounded-2xl text-emerald-300 text-center text-sm font-medium">
+          🎉 Account created successfully! Please check your email to verify your account, then sign in.
         </div>
       )}
 

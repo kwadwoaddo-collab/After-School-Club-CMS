@@ -1,12 +1,15 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { organisations, users, centres, orgMemberships } from '@/db/schema';
+import { organisations, users, centres, orgMemberships, verificationTokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { passwordSchema, normalizeEmail, MAX_EMAIL_LENGTH, MAX_NAME_LENGTH } from '@/lib/validations/auth';
+import { hashToken } from '@/lib/magic-link';
+import { emailService } from '@/lib/services/email';
 
 const registrationSchema = z.object({
     organisationName: z.string().min(2).max(255),
@@ -101,6 +104,12 @@ export async function POST(req: NextRequest) {
         // Hash Password
         const passwordHash = await bcrypt.hash(password, 10);
 
+        // PM-2E2.B4.F: Generate secure verification token for new org owner
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashToken(rawToken);
+        const expiry = new Date();
+        expiry.setHours(expiry.getHours() + 24); // 24-hour expiration
+
         // Execute insertions atomically inside a transaction
         await db.transaction(async (tx) => {
             // 1. Create Organisation
@@ -118,7 +127,7 @@ export async function POST(req: NextRequest) {
                 approvalStatus: 'PENDING',
             }).returning();
 
-            // 2. Create User (Org Owner)
+            // 2. Create User (Org Owner) in unverified state
             const [newUser] = await tx.insert(users).values({
                 organisationId: newOrg.id,
                 email: contactEmail,
@@ -126,6 +135,7 @@ export async function POST(req: NextRequest) {
                 lastName: lastName,
                 role: 'ORG_OWNER',
                 passwordHash: passwordHash,
+                emailVerified: null,
             }).returning();
 
             // 3. Create Initial Organisation Membership (ORG_OWNER) (PM-1.3A F-03)
@@ -151,6 +161,25 @@ export async function POST(req: NextRequest) {
                     sunday: { start: '11:00', end: '18:30' },
                 })
             });
+
+            // 5. Store pending verification token (PM-2E2.B4.F)
+            await tx.insert(verificationTokens).values({
+                identifier: contactEmail,
+                token: tokenHash,
+                expires: expiry,
+            });
+        });
+
+        // Build verification URL with raw token
+        const protocol = req.headers.get('x-forwarded-proto') || 'http';
+        const host = req.headers.get('host') || 'localhost:3000';
+        const verificationUrl = `${protocol}://${host}/api/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(contactEmail)}`;
+
+        // Send email verification asynchronously
+        await emailService.sendEmailVerification({
+            email: contactEmail,
+            name: firstName.trim(),
+            verificationUrl,
         });
 
         const response = NextResponse.json({
