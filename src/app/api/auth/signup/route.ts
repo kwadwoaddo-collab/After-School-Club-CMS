@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { CURRENT_TERMS_VERSION } from '@/lib/constants/legal';
+import { validatePassword, normalizeEmail, MAX_EMAIL_LENGTH, MAX_NAME_LENGTH } from '@/lib/validations/auth';
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,8 +26,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const body = await request.json();
-        const { firstName, lastName, email, password, acceptedTerms } = body;
+        let body: Record<string, unknown>;
+        try {
+            body = (await request.json()) as Record<string, unknown>;
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+
+        const firstName = body?.firstName;
+        const lastName = body?.lastName;
+        const email = body?.email;
+        const password = body?.password;
+        const acceptedTerms = body?.acceptedTerms;
 
         if (!email || !password || !firstName || !lastName) {
             return NextResponse.json(
@@ -43,14 +54,44 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (password.length < 8) {
+        if (typeof firstName !== 'string' || firstName.trim().length === 0 || firstName.length > MAX_NAME_LENGTH) {
             return NextResponse.json(
-                { error: 'Password must be at least 8 characters' },
+                { error: `First name is required and must not exceed ${MAX_NAME_LENGTH} characters` },
                 { status: 400 }
             );
         }
 
-        const normalizedEmail = email.trim().toLowerCase();
+        if (typeof lastName !== 'string' || lastName.trim().length === 0 || lastName.length > MAX_NAME_LENGTH) {
+            return NextResponse.json(
+                { error: `Last name is required and must not exceed ${MAX_NAME_LENGTH} characters` },
+                { status: 400 }
+            );
+        }
+
+        if (typeof email !== 'string' || email.length > MAX_EMAIL_LENGTH || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            return NextResponse.json(
+                { error: 'A valid email address is required' },
+                { status: 400 }
+            );
+        }
+
+        if (typeof password !== 'string') {
+            return NextResponse.json(
+                { error: 'Password is required' },
+                { status: 400 }
+            );
+        }
+
+        // PM-2E2.B4: Validate password minimum characters and bcrypt 72-byte limit
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.valid) {
+            return NextResponse.json(
+                { error: passwordValidation.error },
+                { status: 400 }
+            );
+        }
+
+        const normalizedEmail = normalizeEmail(email);
 
         // Check if user already exists
         const existingUser = await db
@@ -60,9 +101,13 @@ export async function POST(request: NextRequest) {
             .limit(1);
 
         if (existingUser.length > 0) {
+            // PM-2E2.B4 (F05 Resolution): Perform dummy bcrypt hash to maintain computational
+            // timing symmetry and return normalized response to eliminate account enumeration oracle.
+            await bcrypt.hash(password, 10);
+            logger.info(`[Signup] Account registration requested for existing email — neutral response returned`);
             return NextResponse.json(
-                { error: 'An account with this email already exists' },
-                { status: 409 }
+                { message: 'Account created successfully' },
+                { status: 201 }
             );
         }
 

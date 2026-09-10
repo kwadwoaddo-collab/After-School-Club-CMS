@@ -6,13 +6,14 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { passwordSchema, normalizeEmail, MAX_EMAIL_LENGTH, MAX_NAME_LENGTH } from '@/lib/validations/auth';
 
 const registrationSchema = z.object({
     organisationName: z.string().min(2).max(255),
-    firstName: z.string().min(1).max(100),
-    lastName: z.string().min(1).max(100),
-    contactEmail: z.string().email(),
-    password: z.string().min(8).max(128),
+    firstName: z.string().min(1).max(MAX_NAME_LENGTH),
+    lastName: z.string().min(1).max(MAX_NAME_LENGTH),
+    contactEmail: z.string().min(3).max(MAX_EMAIL_LENGTH).email().transform(normalizeEmail),
+    password: passwordSchema,
     contactPhone: z.string().max(20).optional(),
     website: z.string().url().max(255).optional().or(z.literal('')),
     privacyPolicyUrl: z.string().url().max(500).optional().or(z.literal('')),
@@ -74,10 +75,13 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingUser) {
-            return NextResponse.json(
-                { error: 'Email already in use' },
-                { status: 409 }
-            );
+            // PM-2E2.B4: Perform dummy bcrypt hash to maintain timing symmetry and return neutral response
+            await bcrypt.hash(password, 10);
+            logger.info(`[OrgRegistration] Account registration requested for existing email — neutral response returned`);
+            return NextResponse.json({
+                success: true,
+                redirectUrl: '/login?registered=true'
+            }, { status: 201 });
         }
 
         // Check if org name already exists (slug collision check)
@@ -88,7 +92,6 @@ export async function POST(req: NextRequest) {
 
         if (existingOrg) {
             // Simple slug deduplication for MVP
-            // In real app we might append numbers or ask user to choose
             return NextResponse.json(
                 { error: 'Organisation name is taken (slug collision)' },
                 { status: 409 }
@@ -132,7 +135,7 @@ export async function POST(req: NextRequest) {
                 role: 'ORG_OWNER',
             });
 
-            // 3. Create Default Centre
+            // 4. Create Default Centre
             await tx.insert(centres).values({
                 organisationId: newOrg.id,
                 name: `${organisationName} Main`,

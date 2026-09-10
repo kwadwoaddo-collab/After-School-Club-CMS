@@ -8,6 +8,9 @@ import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
 import { EmailService } from '@/lib/services/email';
 import { getBaseUrl } from '@/lib/base-url';
+import { normalizeEmail, MAX_EMAIL_LENGTH } from '@/lib/validations/auth';
+
+const GENERIC_PORTAL_LOGIN_MESSAGE = 'If an account exists with this email, a login link has been sent.';
 
 export async function POST(req: NextRequest) {
     try {
@@ -27,17 +30,32 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { email } = await req.json();
-        if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
+        let body: Record<string, unknown>;
+        try {
+            body = (await req.json()) as Record<string, unknown>;
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+
+        const { email } = body;
+        if (!email || typeof email !== 'string' || email.trim().length === 0) {
+            return NextResponse.json({ error: 'Email required' }, { status: 400 });
+        }
+
+        if (email.length > MAX_EMAIL_LENGTH || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            return NextResponse.json({ error: 'A valid email address is required' }, { status: 400 });
+        }
+
+        const normalizedEmail = normalizeEmail(email);
 
         // Find parent
         const parent = await db.query.parents.findFirst({
-            where: eq(parents.email, email),
+            where: eq(parents.email, normalizedEmail),
         });
 
         if (!parent) {
-            // Security: Don't reveal existence.
-            return NextResponse.json({ success: true, message: 'If an account exists with this email, a login link has been sent.' });
+            // Security (PM-2E2.B4): Don't reveal account existence.
+            return NextResponse.json({ success: true, message: GENERIC_PORTAL_LOGIN_MESSAGE });
         }
 
         const rawToken = generateMagicLinkToken();
@@ -53,7 +71,7 @@ export async function POST(req: NextRequest) {
 
         const emailService = new EmailService();
         const emailResult = await emailService.sendMagicLink({
-            email,
+            email: normalizedEmail,
             name: parent.firstName,
             magicLink,
         });
@@ -66,7 +84,7 @@ export async function POST(req: NextRequest) {
         // Only expose the link in development (never in production)
         const response: Record<string, any> = {
             success: true,
-            message: 'Check your email for the login link.',
+            message: GENERIC_PORTAL_LOGIN_MESSAGE,
         };
         if (process.env.NODE_ENV === 'development') {
             response.debugLink = magicLink;

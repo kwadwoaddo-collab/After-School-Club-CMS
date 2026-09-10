@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { normalizeEmail, MAX_EMAIL_LENGTH } from '@/lib/validations/auth';
 
 /**
  * POST /api/staff/request-magic-link
@@ -31,15 +32,28 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { email } = await request.json();
+        let body: Record<string, unknown>;
+        try {
+            body = (await request.json()) as Record<string, unknown>;
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
 
-        if (!email) {
+        const { email } = body;
+
+        if (!email || typeof email !== 'string' || email.trim().length === 0) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
+        if (email.length > MAX_EMAIL_LENGTH || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            return NextResponse.json({ error: 'A valid email address is required' }, { status: 400 });
+        }
+
+        const normalizedEmail = normalizeEmail(email);
+
         // Find the user - must be a staff member (not ORG_OWNER)
         const user = await db.query.users.findFirst({
-            where: eq(users.email, email),
+            where: eq(users.email, normalizedEmail),
         });
 
         // Always return success to prevent email enumeration
@@ -50,7 +64,7 @@ export async function POST(request: NextRequest) {
         // If the user has been removed from the org (organisationId is null),
         // they can't log in — silently succeed (don't reveal account status)
         if (!user.organisationId) {
-            logger.warn(`[Magic Link] User ${email} has no organisationId — access revoked`);
+            logger.warn(`[Magic Link] User ${normalizedEmail} has no organisationId — access revoked`);
             return NextResponse.json({ success: true });
         }
 
@@ -71,7 +85,7 @@ export async function POST(request: NextRequest) {
         // Clean up any used or expired invite/login records for this email address first
         await db.delete(staffInvites).where(
             and(
-                eq(staffInvites.email, email),
+                eq(staffInvites.email, normalizedEmail),
                 or(
                     isNotNull(staffInvites.usedAt),
                     lt(staffInvites.expiresAt, new Date())
@@ -82,7 +96,7 @@ export async function POST(request: NextRequest) {
         // Store as a staff invite (reusing the table) — stores hash, not raw token
         await db.insert(staffInvites).values({
             organisationId: user.organisationId,
-            email,
+            email: normalizedEmail,
             role: user.role,
             token: tokenHash,
             expiresAt,
@@ -95,18 +109,18 @@ export async function POST(request: NextRequest) {
 
         // Send the email — sender will show as "[Org Name] via SprintScale"
         const emailResult = await emailService.sendMagicLink({
-            email,
+            email: normalizedEmail,
             name: user.name || user.firstName || 'there',
             magicLink,
             orgName: org?.name,
         });
 
         if (!emailResult.success) {
-            logger.error(`[Magic Link] Failed to send email to ${email}:`, emailResult.error);
+            logger.error(`[Magic Link] Failed to send email to ${normalizedEmail}:`, emailResult.error);
             return NextResponse.json({ error: 'Failed to send login link' }, { status: 500 });
         }
 
-        logger.info(`[Magic Link] Sent to ${email}, token expires at ${expiresAt.toISOString()} (hash stored)`);
+        logger.info(`[Magic Link] Sent to ${normalizedEmail}, token expires at ${expiresAt.toISOString()} (hash stored)`);
         return NextResponse.json({ success: true });
     } catch (error) {
         logger.error('[Magic Link] Unexpected error:', error);

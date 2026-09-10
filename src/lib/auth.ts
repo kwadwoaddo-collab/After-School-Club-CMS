@@ -16,6 +16,8 @@ import { users, accounts, sessions, verificationTokens, orgMemberships, organisa
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { hashToken } from '@/lib/magic-link';
+// Precomputed cost-10 bcrypt hash for computational symmetry and timing-attack elimination (PM-2E2.B4)
+export const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
 const nextAuthResult = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -80,21 +82,34 @@ const nextAuthResult = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email || !credentials?.password || typeof credentials.email !== 'string' || typeof credentials.password !== 'string') {
+          return null;
+        }
+
+        const normalizedEmail = credentials.email.trim().toLowerCase();
+        if (normalizedEmail.length > 255) {
+          return null;
+        }
+
+        // PM-2E2.B4: If password exceeds bcrypt 72-byte limit, fail safely with computational symmetry
+        if (Buffer.byteLength(credentials.password, 'utf8') > 72) {
+          await bcrypt.compare('dummy-pass', DUMMY_PASSWORD_HASH);
           return null;
         }
 
         const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email as string),
+          where: eq(users.email, normalizedEmail),
           with: { organisation: true },
         });
 
         if (!user || !user.passwordHash) {
+          // PM-2E2.B4: Perform dummy bcrypt comparison to eliminate timing side-channel oracle
+          await bcrypt.compare(credentials.password, DUMMY_PASSWORD_HASH);
           return null;
         }
 
         const isValid = await bcrypt.compare(
-          credentials.password as string,
+          credentials.password,
           user.passwordHash
         );
 

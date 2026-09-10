@@ -4,9 +4,11 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { validatePassword, normalizeEmail, MAX_EMAIL_LENGTH, MAX_TOKEN_LENGTH } from '@/lib/validations/auth';
 
 /**
  * POST /api/auth/reset-password
@@ -30,15 +32,28 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { email } = await request.json();
+        let body: Record<string, unknown>;
+        try {
+            body = (await request.json()) as Record<string, unknown>;
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
 
-        if (!email) {
+        const email = body?.email;
+
+        if (!email || typeof email !== 'string' || email.trim().length === 0) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
+        if (email.length > MAX_EMAIL_LENGTH || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            return NextResponse.json({ error: 'A valid email address is required' }, { status: 400 });
+        }
+
+        const normalizedEmail = normalizeEmail(email);
+
         // Look up user — always return success to prevent email enumeration
         const user = await db.query.users.findFirst({
-            where: eq(users.email, email.toLowerCase().trim()),
+            where: eq(users.email, normalizedEmail),
         });
 
         // Only process credential users who have a password set
@@ -67,9 +82,9 @@ export async function POST(request: NextRequest) {
                 resetUrl,
             });
 
-            logger.info(`[PasswordReset] Reset link sent to ${email}`);
+            logger.info(`[PasswordReset] Reset link sent to ${normalizedEmail}`);
         } else {
-            logger.info(`[PasswordReset] No credential account found for ${email} — silently succeeding`);
+            logger.info(`[PasswordReset] No credential account found for ${normalizedEmail} — silently succeeding`);
         }
 
         // Always return success
@@ -86,20 +101,54 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
     try {
-        const { token, newPassword } = await request.json();
-
-        if (!token || !newPassword) {
-            return NextResponse.json({ error: 'Token and new password are required' }, { status: 400 });
+        // Rate limit: 5 reset confirm attempts per minute per IP
+        const ip = getClientIP(request);
+        const rateLimitResult = await checkRateLimit(strictRateLimit, `reset-confirm:${ip}`);
+        if (!rateLimitResult.success) {
+            if (rateLimitResult.status === 'unavailable') {
+                return NextResponse.json(
+                    { error: 'Password reset service temporarily unavailable. Please try again later.' },
+                    { status: 503 }
+                );
+            }
+            return NextResponse.json(
+                { error: 'Too many attempts. Please try again later.' },
+                { status: 429 }
+            );
         }
 
-        if (newPassword.length < 8) {
-            return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+        let body: Record<string, unknown>;
+        try {
+            body = (await request.json()) as Record<string, unknown>;
+        } catch {
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+
+        const token = body?.token;
+        const newPassword = body?.newPassword;
+
+        if (!token || typeof token !== 'string' || token.trim().length === 0) {
+            return NextResponse.json({ error: 'Token is required' }, { status: 400 });
+        }
+
+        if (token.length > MAX_TOKEN_LENGTH) {
+            return NextResponse.json({ error: 'Invalid token format' }, { status: 400 });
+        }
+
+        if (!newPassword || typeof newPassword !== 'string') {
+            return NextResponse.json({ error: 'Password is required' }, { status: 400 });
+        }
+
+        // PM-2E2.B4: Validate password minimum characters and bcrypt 72-byte limit
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.valid) {
+            return NextResponse.json({ error: passwordValidation.error }, { status: 400 });
         }
 
         // Find user by reset token (hashed)
         // TOKEN-2 fix: compare hash of received token against stored hash.
         const user = await db.query.users.findFirst({
-            where: eq(users.passwordResetToken, hashToken(token)),
+            where: eq(users.passwordResetToken, hashToken(token.trim())),
         });
 
         if (!user || !user.passwordResetExpiry) {
@@ -112,7 +161,6 @@ export async function PATCH(request: NextRequest) {
         }
 
         // Hash new password
-        const bcrypt = await import('bcryptjs');
         const passwordHash = await bcrypt.hash(newPassword, 12);
 
         // Update password and clear reset token
