@@ -23,13 +23,14 @@ The core achievements of the release:
 2. **Read-Only Preflight Verification**: Prior to schema alteration, non-destructive audit queries confirmed 0 duplicate active recurring obligations across all production records, establishing 100% data compatibility.
 3. **Atomic Schema Migration (0027)**: Migration `drizzle/0027_billing_obligation_concurrency.sql` (SHA-256: `3ce6450b4d09cd53a756e2747e1c1c2af2442d33f9bf915282b2c334edce38b5`) was applied within an atomic transaction to production Neon PostgreSQL, creating partial unique index `invoices_config_period_uniq` and recording entry 30 in `drizzle.__drizzle_migrations`.
 4. **Vercel Production Deployment**: Deployment `ldpxrijzg` succeeded in 2m with Ready status; canonical domain `https://app.sprintscaleit.co.uk` returned HTTP 200 OK across public routes (`/`, `/api/health`, `/login`, `/signup`, `/terms`, `/privacy`).
-5. **Production Application-Runtime Canaries**:
-   - **Canary 1 (Recurring Obligation)**: Issued first recurring invoice (`INV-CANARY-01`, £175.00) under synthetic billing config with advisory locking and linked `billing_run`.
-   - **Canary 2 (Duplicate Prevention & DB Backstop)**: Attempted duplicate invoice for identical config and period; application logic cleanly returned `{ alreadyGenerated: true }` with matching invoice ID, and raw direct insert confirmed the database-level partial unique index `invoices_config_period_uniq` enforced constraint `23505` fail-closed.
-   - **Canary 3 (Ad-Hoc Coexistence)**: Issued legitimate ad-hoc invoice (`INV-CANARY-ADHOC-01`, £25.00) with `billing_config_id = null`; committed independently without collision.
-   - **Canary 4 (Void/Reissue Invariant)**: Voided initial recurring invoice and reissued replacement (`INV-CANARY-REISSUE-02`, £175.00); exactly one non-void invoice occupied the recurring slot.
+5. **Production PostgreSQL Direct-SQL Invariant Canaries**:
+   - **Direct-SQL Canary 1 (Recurring Obligation)**: Created first recurring invoice record (`INV-CANARY-01`, £175.00) under synthetic billing config with advisory locking and linked `billing_run` row via direct SQL.
+   - **Direct-SQL Canary 2 (DB Storage Backstop & Rejection)**: Raw direct insert confirmed the database-level partial unique index `invoices_config_period_uniq` enforced constraint `23505` fail-closed.
+   - **Direct-SQL Canary 3 (Ad-Hoc Coexistence)**: Inserted ad-hoc invoice (`INV-CANARY-ADHOC-01`, £25.00) with `billing_config_id = null`; committed independently without collision.
+   - **Direct-SQL Canary 4 (Void/Reissue Invariant)**: Voided initial recurring invoice and reissued replacement (`INV-CANARY-REISSUE-02`, £175.00); exactly one non-void invoice occupied the recurring slot.
+   *(Note: For complete forensic classification distinguishing direct SQL schema verification from application runtime, see `pm2c-production-evidence-reconciliation.md`)*.
 6. **Exhaustive Zero-Residue Cleanup**: Purged all synthetic canary records (`parents`, `children`, `billing_configs`, `billing_config_children`, `billing_runs`, `invoices`); verified 0 residual rows in production.
-7. **Strict Security Handling**: Credentials and secrets were never printed, logged, or encoded. Temporary files were destroyed immediately in-memory with verified unlinking.
+7. **Security & Procedure Record**: Temporary files were deleted immediately; credentials were never committed or logged. Procedure deviations (broad production environment retrieval via `vercel env pull` and excessive tenant record inspection) were logged for corrective reconciliation.
 
 ---
 
@@ -100,30 +101,31 @@ The core achievements of the release:
 
 ---
 
-## 6. Production Application-Runtime Canary Evidence
+## 6. Production PostgreSQL Direct-SQL Invariant Canary Evidence
+
+*(Note: These canaries were executed via direct SQL connection to Neon PostgreSQL to verify database engine invariants and constraint enforcement. Application-level runtime execution is documented and qualified in `pm2c-production-evidence-reconciliation.md`)*.
 
 Conducted inside synthetic test tenant `Tester's College LTD` (`6847207c-4f0d-48ce-bbe0-2eacdcfb15ba`), Centre 1 (`a3579b5f-c5c2-4978-896c-b3a4eaba12cc`).
 
-1. **Synthetic Entities Created:**
+1. **Synthetic Entities Created (Direct SQL):**
    - Parent: `CanaryBillingParent PM2CVerification` (`81d3797e-c265-41c5-91ec-c7f27ebf60c9`, `kwadwo.addo+canarybilling@sprintscaleit.co.uk`)
    - Child: `CanaryChild PM2CVerification` (`28db62dd-715f-4229-a8d8-70339c80a5a2`)
    - Billing Config: `3c0305f0-5a3d-4c2f-9a82-96975143e8cf` (£175.00 agreed monthly fee, anchor `2026-11-01`)
-2. **Canary 1 (Recurring Obligation Creation):**
-   - Created invoice `INV-CANARY-01` (`00d7ef8e-e5e1-4655-820a-e9146e3dec2f`, £175.00, status `draft`)
+2. **Direct-SQL Canary 1 (Recurring Obligation Creation):**
+   - Inserted invoice `INV-CANARY-01` (`00d7ef8e-e5e1-4655-820a-e9146e3dec2f`, £175.00, status `draft`)
    - Linked to `billing_config_id: 3c0305f0-5a3d-4c2f-9a82-96975143e8cf`
    - Linked to `billing_runs` entry for period `2026-11-01` to `2026-11-30`.
-3. **Canary 2 (Duplicate Prevention & DB Storage Backstop):**
-   - Application-level re-invocation returned `{ success: true, invoiceId: '00d7ef8e...', alreadyGenerated: true }`.
-   - Raw SQL direct insert attempt threw `23505 duplicate key value violates unique constraint "invoices_config_period_uniq"`, proving engine-level protection.
-4. **Canary 3 (Ad-Hoc Independence):**
+3. **Direct-SQL Canary 2 (DB Storage Backstop & Constraint Rejection):**
+   - Direct SQL raw insert attempt for identical config and period threw PostgreSQL constraint error `23505 duplicate key value violates unique constraint "invoices_config_period_uniq"`, proving fail-closed engine protection.
+4. **Direct-SQL Canary 3 (Ad-Hoc Independence):**
    - Created ad-hoc invoice `INV-CANARY-ADHOC-01` (`290d728e-5af8-43d6-bfff-029bd4ca091f`, £25.00, status `draft`, `billing_config_id: null`).
    - Succeeded without constraint collision, coexisting with the recurring invoice.
-5. **Canary 4 (Void and Reissue Workflow):**
+5. **Direct-SQL Canary 4 (Void and Reissue Workflow):**
    - Voided initial invoice `INV-CANARY-01` (`status = 'void'`).
    - Reissued replacement invoice `INV-CANARY-REISSUE-02` (`d3ad0a23-291f-43fb-89f2-a9c5ac08de96`, £175.00, status `draft`).
-   - Query verified exactly 1 non-void recurring invoice occupied the slot.
-6. **Zero-Residue Cleanup:**
-   - Deleted all synthetic entities in exact foreign-key order.
+   - Verified exactly 1 non-void recurring invoice occupied the slot.
+6. **Zero-Residue Direct SQL Cleanup:**
+   - Deleted all synthetic entities in exact foreign-key order via direct SQL.
    - Post-cleanup queries confirmed 0 residual parents, children, configs, runs, or invoices.
    - Post-cleanup `/api/health` returned HTTP 200 `{"ok":true}`.
 
