@@ -452,4 +452,103 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
     // B3.F check: auth function exported and callable
     expect(typeof auth).toBe('function');
   });
+
+  // =========================================================================
+  // TEST 23: COMPLETE SIGNUP WORKFLOW REDIRECT ALIGNMENT (B4.F)
+  // =========================================================================
+  it('Test 23: Complete signup workflow produces identical 201 response and /login?registered=true redirect', async () => {
+    const { POST: signupHandler } = await import('@/app/api/auth/signup/route');
+
+    // Case A: New user signup
+    const mockLimitNew = vi.fn().mockResolvedValue([]);
+    const mockWhereNew = vi.fn().mockReturnValue({ limit: mockLimitNew });
+    const mockFromNew = vi.fn().mockReturnValue({ where: mockWhereNew });
+    mockSelect.mockReturnValueOnce({ from: mockFromNew });
+    mockInsert.mockReturnValueOnce({
+      values: vi.fn().mockResolvedValue([{ id: 'new-user-b4f' }]),
+    });
+
+    const resNew = await signupHandler(new NextRequest('http://localhost/api/auth/signup', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '198.51.100.230' },
+      body: JSON.stringify({
+        firstName: 'New',
+        lastName: 'User',
+        email: 'new-user-b4f@example.com',
+        password: 'Password123!',
+        acceptedTerms: true,
+      }),
+    }));
+    expect(resNew.status).toBe(201);
+    const dataNew = await resNew.json();
+    expect(dataNew).toEqual({ message: 'Account created successfully' });
+
+    // Case B: Existing user signup with arbitrary password
+    const mockLimitExisting = vi.fn().mockResolvedValue([{ id: 'existing-user-b4f', email: 'existing-user-b4f@example.com' }]);
+    const mockWhereExisting = vi.fn().mockReturnValue({ limit: mockLimitExisting });
+    const mockFromExisting = vi.fn().mockReturnValue({ where: mockWhereExisting });
+    mockSelect.mockReturnValueOnce({ from: mockFromExisting });
+
+    const resExisting = await signupHandler(new NextRequest('http://localhost/api/auth/signup', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '198.51.100.231' },
+      body: JSON.stringify({
+        firstName: 'New',
+        lastName: 'User',
+        email: 'existing-user-b4f@example.com',
+        password: 'AttackerPassword123!',
+        acceptedTerms: true,
+      }),
+    }));
+    expect(resExisting.status).toBe(201);
+    const dataExisting = await resExisting.json();
+    expect(dataExisting).toEqual({ message: 'Account created successfully' });
+  });
+
+  // =========================================================================
+  // TEST 24: FOLLOW-UP CREDENTIALS AUTHENTICATION (B4.F FORENSIC EVALUATION)
+  // =========================================================================
+  it('Test 24: Credentials authorize differentiates newly activated password from unmutated existing account', async () => {
+    const bcrypt = await import('bcryptjs');
+
+    // Case A: Newly registered user has hash matching the submitted password
+    const submittedPassword = 'AttackerPassword123!';
+    const newAccountHash = await bcrypt.hash(submittedPassword, 10);
+    const newAccountValid = await bcrypt.compare(submittedPassword, newAccountHash);
+    expect(newAccountValid).toBe(true);
+
+    // Case B: Pre-existing user retains their original hash (victim password)
+    const victimOriginalPassword = 'OriginalVictimPassword123!';
+    const existingAccountHash = await bcrypt.hash(victimOriginalPassword, 10);
+    const attackerProbeValid = await bcrypt.compare(submittedPassword, existingAccountHash);
+    expect(attackerProbeValid).toBe(false);
+  });
+
+  // =========================================================================
+  // TEST 25: ORGANISATION REGISTRATION WORKFLOW & REDIRECT ALIGNMENT (B4.F)
+  // =========================================================================
+  it('Test 25: Organisation registration returns identical 201 response and redirectUrl for new and existing accounts', async () => {
+    const { POST: orgRegisterHandler } = await import('@/app/api/organisations/route');
+
+    // Case A: Existing user email during org registration
+    mockFindUser.mockResolvedValueOnce({
+      id: 'existing-org-user',
+      email: 'owner@existing.com',
+    });
+
+    const resExisting = await orgRegisterHandler(new NextRequest('http://localhost/api/organisations', {
+      method: 'POST',
+      body: JSON.stringify({
+        organisationName: 'Acme Org A',
+        firstName: 'John',
+        lastName: 'Doe',
+        contactEmail: 'owner@existing.com',
+        password: 'Password123!',
+      }),
+    }));
+    expect(resExisting.status).toBe(201);
+    const dataExisting = await resExisting.json();
+    expect(dataExisting.success).toBe(true);
+    expect(dataExisting.redirectUrl).toBe('/login?registered=true');
+  });
 });

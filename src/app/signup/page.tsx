@@ -65,21 +65,8 @@ export default function SignupPage() {
         throw new Error(data.error || 'Signup failed');
       }
 
-      // 2. Auto sign them in
-      const result = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        // Account created but sign-in failed — send to login
-        router.push('/login?registered=true');
-        return;
-      }
-
-      // 3. Go straight to onboarding to set up their org + first centre
-      router.push('/onboarding');
+      // 2. Direct to login with registration confirmation
+      router.push('/login?registered=true');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
