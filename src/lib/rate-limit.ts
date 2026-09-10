@@ -217,15 +217,21 @@ function isValidIP(ip: string): boolean {
  * Extract authoritative client IP address from request.
  *
  * Trust Hierarchy:
- * 1. `x-vercel-forwarded-for`: On Vercel Edge, this header is set directly by the
- *    edge proxy infrastructure and stripped/overwritten if supplied by clients.
- * 2. `cf-connecting-ip`: Cloudflare edge proxy connecting IP.
- * 3. `x-forwarded-for` (first entry) / `x-real-ip`: Standard reverse proxy headers
- *    used in non-Vercel environments (e.g. local development, testing, custom Docker).
- * 4. Fallback to '127.0.0.1'.
+ * 1. Production (`process.env.NODE_ENV === 'production'`):
+ *    - `x-vercel-forwarded-for`: Authoritative header populated and guaranteed by
+ *      the Vercel Edge proxy infrastructure. Stripped/overwritten if supplied directly by external callers.
+ *    - If absent or invalid in production, returns 'unknown' (strict boundary — untrusted client headers
+ *      such as x-forwarded-for, x-real-ip, and cf-connecting-ip are NEVER trusted in production).
+ *
+ * 2. Non-Production (`process.env.NODE_ENV !== 'production'` / dev / test runners):
+ *    - `x-vercel-forwarded-for`: Preferred if present.
+ *    - `x-forwarded-for` (leftmost valid IP) / `x-real-ip`: Permitted fallback for local dev / testing.
+ *    - Fallback to '127.0.0.1'.
  */
 export function getClientIP(request: Request): string {
-  // 1. Vercel authoritative edge header
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // 1. Authoritative Vercel Edge Header
   const vercelIP = request.headers.get('x-vercel-forwarded-for')?.trim();
   if (vercelIP) {
     const candidate = vercelIP.split(',')[0]?.trim();
@@ -234,13 +240,12 @@ export function getClientIP(request: Request): string {
     }
   }
 
-  // 2. Cloudflare edge header
-  const cfIP = request.headers.get('cf-connecting-ip')?.trim();
-  if (cfIP && isValidIP(cfIP)) {
-    return cfIP.toLowerCase();
+  // In production, do NOT trust unverified forwarding headers from callers
+  if (isProd) {
+    return 'unknown';
   }
 
-  // 3. Fallback for non-Vercel environments (local dev / test runners)
+  // 2. Non-production fallback for local dev and test runners
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
     const candidate = forwardedFor.split(',')[0]?.trim();

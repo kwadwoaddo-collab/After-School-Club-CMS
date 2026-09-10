@@ -252,4 +252,25 @@ describe('MILESTONE PM-2E2.B2 — Rate Limiting & Trusted Client Identity Regres
     expect(rl.success).toBe(true);
     expect(rl.status).toBe('allowed');
   });
+
+  // =========================================================================
+  // TEST 13: STRICT PRODUCTION TRUST BOUNDARY (PM-2E2.B2.F)
+  // =========================================================================
+  it('Test 13: In production, untrusted forwarding headers are rejected when x-vercel-forwarded-for is missing', () => {
+    const originalEnv = process.env.NODE_ENV;
+    try {
+      (process.env as any).NODE_ENV = 'production';
+      const spoofedReq = new Request('http://localhost/api/auth/signup', {
+        headers: {
+          'cf-connecting-ip': '203.0.113.100',
+          'x-forwarded-for': '198.51.100.200',
+          'x-real-ip': '192.0.2.1',
+        },
+      });
+      // Production must return 'unknown' rather than trusting spoofed headers
+      expect(getClientIP(spoofedReq)).toBe('unknown');
+    } finally {
+      (process.env as any).NODE_ENV = originalEnv;
+    }
+  });
 });

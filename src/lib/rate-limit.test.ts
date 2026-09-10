@@ -19,32 +19,67 @@ describe('src/lib/rate-limit.ts — PM-2E2.B2 Hardened Contract', () => {
       expect(getClientIP(req)).toBe('198.51.100.42');
     });
 
-    it('prioritizes cf-connecting-ip when present without x-vercel-forwarded-for', () => {
-      const req = new Request('http://localhost/api/test', {
-        headers: {
-          'cf-connecting-ip': '198.51.100.55',
-          'x-forwarded-for': '203.0.113.19',
-        },
-      });
-      expect(getClientIP(req)).toBe('198.51.100.55');
+    it('in production, returns unknown when x-vercel-forwarded-for is absent, rejecting attacker spoofed headers', () => {
+      const originalEnv = process.env.NODE_ENV;
+      try {
+        (process.env as any).NODE_ENV = 'production';
+        const req = new Request('http://localhost/api/test', {
+          headers: {
+            'cf-connecting-ip': '198.51.100.55', // fake Cloudflare header
+            'x-forwarded-for': '203.0.113.19', // fake xff header
+            'x-real-ip': '198.51.100.77', // fake real-ip header
+          },
+        });
+        expect(getClientIP(req)).toBe('unknown');
+      } finally {
+        (process.env as any).NODE_ENV = originalEnv;
+      }
     });
 
-    it('falls back to first valid IP in x-forwarded-for in non-Vercel environment', () => {
-      const req = new Request('http://localhost/api/test', {
-        headers: {
-          'x-forwarded-for': '203.0.113.19, 10.0.0.1',
-        },
-      });
-      expect(getClientIP(req)).toBe('203.0.113.19');
+    it('in production, returns valid IP when x-vercel-forwarded-for is present', () => {
+      const originalEnv = process.env.NODE_ENV;
+      try {
+        (process.env as any).NODE_ENV = 'production';
+        const req = new Request('http://localhost/api/test', {
+          headers: {
+            'x-vercel-forwarded-for': '198.51.100.42',
+            'x-forwarded-for': '203.0.113.19',
+          },
+        });
+        expect(getClientIP(req)).toBe('198.51.100.42');
+      } finally {
+        (process.env as any).NODE_ENV = originalEnv;
+      }
     });
 
-    it('falls back to x-real-ip in non-Vercel environment when x-forwarded-for is absent', () => {
-      const req = new Request('http://localhost/api/test', {
-        headers: {
-          'x-real-ip': '198.51.100.77',
-        },
-      });
-      expect(getClientIP(req)).toBe('198.51.100.77');
+    it('in non-production, falls back to first valid IP in x-forwarded-for', () => {
+      const originalEnv = process.env.NODE_ENV;
+      try {
+        (process.env as any).NODE_ENV = 'development';
+        const req = new Request('http://localhost/api/test', {
+          headers: {
+            'x-forwarded-for': '203.0.113.19, 10.0.0.1',
+          },
+        });
+        expect(getClientIP(req)).toBe('203.0.113.19');
+      } finally {
+        (process.env as any).NODE_ENV = originalEnv;
+      }
+    });
+
+    it('in non-production, falls back to x-real-ip when x-forwarded-for is absent', () => {
+      const originalEnv = process.env.NODE_ENV;
+      try {
+        (process.env as any).NODE_ENV = 'test';
+        const req = new Request('http://localhost/api/test', {
+          headers: {
+            'x-real-ip': '198.51.100.77',
+          },
+        });
+        expect(getClientIP(req)).toBe('198.51.100.77');
+      } finally {
+        (process.env as any).NODE_ENV = originalEnv;
+      }
     });
 
     it('handles IPv6 addresses correctly and normalizes to lowercase', () => {
@@ -56,18 +91,25 @@ describe('src/lib/rate-limit.ts — PM-2E2.B2 Hardened Contract', () => {
       expect(getClientIP(req)).toBe('2001:0db8:85a3:0000:0000:8a2e:0370:7334');
     });
 
-    it('rejects garbage / injection strings and falls back to 127.0.0.1', () => {
+    it('rejects garbage / injection strings and falls back to safe default', () => {
       const req = new Request('http://localhost/api/test', {
         headers: {
           'x-vercel-forwarded-for': 'invalid-ip-string; DROP TABLE',
         },
       });
+      // In test env (NODE_ENV=test), falls back to 127.0.0.1
       expect(getClientIP(req)).toBe('127.0.0.1');
     });
 
-    it('returns "127.0.0.1" when no forwarding headers are present', () => {
-      const req = new Request('http://localhost/api/test');
-      expect(getClientIP(req)).toBe('127.0.0.1');
+    it('returns "127.0.0.1" in non-production when no forwarding headers are present', () => {
+      const originalEnv = process.env.NODE_ENV;
+      try {
+        (process.env as any).NODE_ENV = 'development';
+        const req = new Request('http://localhost/api/test');
+        expect(getClientIP(req)).toBe('127.0.0.1');
+      } finally {
+        (process.env as any).NODE_ENV = originalEnv;
+      }
     });
   });
 
