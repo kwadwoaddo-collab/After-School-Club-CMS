@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { chromium } from 'playwright';
-import sharp from 'sharp';
+import sharp, { type OverlayOptions } from 'sharp';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
@@ -173,7 +173,7 @@ async function generateVideoContactSheet() {
   const totalW = paddingX * 2 + thumbW * 3 + gapX * 2; // 1336
   const totalH = headerH + paddingY + ALL_ASSET_IDS.length * (rowLabelH + thumbH + gapY) + paddingY;
 
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
 
   // Header SVG
   const headerSvg = `

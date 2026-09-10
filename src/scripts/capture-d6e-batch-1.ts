@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { chromium } from 'playwright';
-import sharp from 'sharp';
+import sharp, { type OverlayOptions } from 'sharp';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
@@ -134,7 +134,7 @@ async function generateVideoContactSheet() {
     </svg>
   `;
 
-  const compositeInputs: sharp.OverlayOptions[] = [
+  const compositeInputs: OverlayOptions[] = [
     { input: Buffer.from(svgHeader), top: 0, left: 0 },
   ];
 

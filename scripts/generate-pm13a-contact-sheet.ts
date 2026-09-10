@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp, { type OverlayOptions } from 'sharp';
 import path from 'path';
 import fs from 'fs';
 
@@ -18,20 +18,19 @@ const PANELS: PanelConfig[] = [
   { id: 'R3', label: 'R3: Privacy Policy (/privacy)', filename: 'r3_privacy.png' },
   { id: 'R4', label: 'R4: Organisation Onboarding (/onboarding)', filename: 'r4_onboarding.png' },
   { id: 'R5', label: 'R5: Scoped Logo Upload State', filename: 'r5_onboarding_logo.png' },
-  { id: 'R6', label: 'R6: Pending Approval Screen (Desktop)', filename: 'r6_pending_desktop.png' },
-  { id: 'R6M', label: 'R6M: Pending Approval Screen (Mobile)', filename: 'r6_pending_mobile.png' },
-  { id: 'R7', label: 'R7: Direct Dashboard Access -> Pending Redirect', filename: 'r7_direct_pending_dashboard_redirect.png' },
-  { id: 'R8', label: 'R8: Platform Admin View (PENDING Org)', filename: 'r8_platform_pending_org.png' },
-  { id: 'R9', label: 'R9: Platform Admin View (ACTIVE Org)', filename: 'r9_approved_active_platform.png' },
-  { id: 'R10', label: 'R10: Tenant First Dashboard Access (ACTIVE)', filename: 'r10_active_dashboard.png' },
-  { id: 'R11', label: 'R11: Platform Admin View (SUSPENDED Org)', filename: 'r11_suspended_org.png' },
-  { id: 'R12', label: 'R12: Platform Admin View (REJECTED Org)', filename: 'r12_rejected_org.png' },
+  { id: 'R6', label: 'R6: Platform Approvals (/platform/organisations)', filename: 'r6_platform_approvals.png' },
+  { id: 'R7', label: 'R7: Pending Approval Gate (/pending-approval)', filename: 'r7_pending_approval.png' },
+  { id: 'R8', label: 'R8: Post-Approval Dashboard (/dashboard)', filename: 'r8_post_approval_dashboard.png' },
+  { id: 'R9', label: 'R9: Custom Brand Center-Portal (/centre-portal/norbert-centre)', filename: 'r9_custom_brand_portal.png' },
+  { id: 'R10', label: 'R10: Dynamic Favicon & Title Verification', filename: 'r10_favicon_title.png' },
+  { id: 'R11', label: 'R11: Public Parent Registration Form (/register/norbert-centre)', filename: 'r11_public_registration.png' },
+  { id: 'R12', label: 'R12: Public Center Booking Form (/book/norbert-after-school/norbert-centre)', filename: 'r12_public_booking.png' },
 ];
 
 async function buildContactSheet() {
-  const COLS = 2;
-  const ROWS = Math.ceil(PANELS.length / COLS);
-  const PANEL_WIDTH = 900;
+  const COLS = 3;
+  const ROWS = 5; // 13 panels fits in 3x5
+  const PANEL_WIDTH = 640;
   const HEADER_HEIGHT = 44;
   const IMAGE_HEIGHT = 540;
   const PANEL_HEIGHT = HEADER_HEIGHT + IMAGE_HEIGHT;
@@ -43,7 +42,7 @@ async function buildContactSheet() {
 
   console.log(`[Contact Sheet] Canvas dimensions: ${CANVAS_WIDTH} x ${CANVAS_HEIGHT}`);
 
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
 
   // 1. Header Banner SVG
   const headerSvg = `

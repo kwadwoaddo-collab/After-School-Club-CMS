@@ -5,7 +5,7 @@
  */
 
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
-import sharp from 'sharp';
+import sharp, { type OverlayOptions } from 'sharp';
 import fs from 'fs';
 import path from 'path';
 
@@ -457,7 +457,7 @@ export async function captureBatch1() {
     const totalW = cols * thumbW + (cols + 1) * padding;
     const totalH = headerH + rows * thumbH + (rows + 1) * padding;
 
-    const composites: sharp.OverlayOptions[] = [];
+    const composites: OverlayOptions[] = [];
 
     for (let i = 0; i < assetIds.length; i++) {
       const id = assetIds[i];
