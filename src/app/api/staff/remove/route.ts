@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { users, centreMemberships } from '@/db/schema';
+import { users, centreMemberships, orgMemberships } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -71,7 +71,17 @@ export async function POST(request: NextRequest) {
             .delete(centreMemberships)
             .where(eq(centreMemberships.userId, userId));
 
-        // Detach from organisation — they lose access on their next page load
+        // Remove org membership
+        await db
+            .delete(orgMemberships)
+            .where(
+                and(
+                    eq(orgMemberships.userId, userId),
+                    eq(orgMemberships.organisationId, session.user.organisationId)
+                )
+            );
+
+        // Detach from organisation — they lose access immediately on next request
         await db
             .update(users)
             .set({ organisationId: null })

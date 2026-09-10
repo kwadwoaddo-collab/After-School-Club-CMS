@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, orgMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireTenantSession } from '@/lib/session';
@@ -51,6 +51,17 @@ export async function updateStaffRole(targetUserId: string, newRole: StaffRole) 
         .update(users)
         .set({ role: newRole, updatedAt: new Date() })
         .where(eq(users.id, targetUserId));
+
+    // Keep orgMemberships in sync
+    await db
+        .update(orgMemberships)
+        .set({ role: newRole })
+        .where(
+            and(
+                eq(orgMemberships.userId, targetUserId),
+                eq(orgMemberships.organisationId, session.user.organisationId)
+            )
+        );
 
     revalidatePath(`/dashboard/staff/${targetUserId}`);
     revalidatePath('/dashboard/staff');

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, centreMemberships, orgMemberships } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -49,7 +49,19 @@ export async function PATCH(
     }
 
     const updates: Record<string, any> = { updatedAt: new Date() };
-    if (body.data.role) updates.role = body.data.role;
+    if (body.data.role) {
+        updates.role = body.data.role;
+        // Keep orgMemberships in sync
+        await db
+            .update(orgMemberships)
+            .set({ role: body.data.role })
+            .where(
+                and(
+                    eq(orgMemberships.userId, id),
+                    eq(orgMemberships.organisationId, session.user.organisationId)
+                )
+            );
+    }
 
     const [updated] = await db
         .update(users)
@@ -94,6 +106,20 @@ export async function DELETE(
     if (target.role === 'ORG_OWNER') {
         return NextResponse.json({ error: 'Cannot remove another owner. Change their role first.' }, { status: 400 });
     }
+
+    // Remove centre memberships and org memberships
+    await db
+        .delete(centreMemberships)
+        .where(eq(centreMemberships.userId, id));
+
+    await db
+        .delete(orgMemberships)
+        .where(
+            and(
+                eq(orgMemberships.userId, id),
+                eq(orgMemberships.organisationId, session.user.organisationId)
+            )
+        );
 
     // Detach from org (nullify organisationId rather than hard-delete to preserve audit trail)
     await db

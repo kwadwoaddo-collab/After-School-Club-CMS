@@ -284,18 +284,29 @@ export function auth(req: any, ctx: any): any;
 export async function auth(...args: unknown[]) {
   const session = await (nextAuthResult.auth as any)(...args);
 
-  if (session?.user?.id && !session.user.organisationId) {
+  if (session?.user?.id) {
     try {
       const dbUser = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
       });
-      if (dbUser?.organisationId) {
-        session.user.organisationId = dbUser.organisationId;
-        session.user.role = dbUser.role ?? session.user.role;
-        session.user.needsOnboarding = false;
+
+      if (!dbUser) {
+        // Security Invariant (Milestone PM-2E2.B3): If user was deleted or disabled in DB,
+        // revoke session immediately rather than honoring stale cryptographic JWT claims.
+        return null;
       }
+
+      // Revalidate live authority from database source-of-truth
+      session.user.organisationId = dbUser.organisationId ?? null;
+      session.user.role = dbUser.role ?? 'TUTOR';
+      session.user.needsOnboarding = !dbUser.organisationId;
+      if (dbUser.name) session.user.name = dbUser.name;
+      if (dbUser.email) session.user.email = dbUser.email;
     } catch (e) {
-      logger.error('Failed to fetch user organisation in auth wrapper:', e);
+      logger.error('Failed to fetch authoritative user in auth wrapper:', e);
+      // Security Invariant (Milestone PM-2E2.B3): Database failure must fail closed (return null),
+      // never silently fall back to trusting unverified JWT claims.
+      return null;
     }
   }
 
