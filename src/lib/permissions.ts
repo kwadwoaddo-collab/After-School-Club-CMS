@@ -319,16 +319,11 @@ const ROLE_HIERARCHY: Array<'TUTOR' | 'FRONT_DESK' | 'MANAGER' | 'ORG_OWNER'> = 
  */
 export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 'FRONT_DESK' | 'TUTOR') {
     const session = await import('@/lib/auth').then(m => m.auth());
-    if (!session?.user) throw new Error('Unauthorized');
+    if (!session?.user?.id || !session.user.organisationId) throw new Error('Unauthorized');
 
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, session.user.id),
-    });
-
-    if (!user) throw new Error('User not found');
-
+    const role = (session.user.role || 'TUTOR') as (typeof ROLE_HIERARCHY)[number];
     const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole);
-    const userIndex = ROLE_HIERARCHY.indexOf(user.role as (typeof ROLE_HIERARCHY)[number]);
+    const userIndex = ROLE_HIERARCHY.indexOf(role);
 
     if (requiredIndex === -1) {
         // Defensive: an unrecognised requiredRole must never silently pass.
@@ -339,7 +334,7 @@ export async function requirePermission(requiredRole: 'ORG_OWNER' | 'MANAGER' | 
         throw new Error(`Forbidden: ${requiredRole} or higher required`);
     }
 
-    return user;
+    return session.user;
 }
 
 

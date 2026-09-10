@@ -296,10 +296,33 @@ export async function auth(...args: unknown[]) {
         return null;
       }
 
-      // Revalidate live authority from database source-of-truth
-      session.user.organisationId = dbUser.organisationId ?? null;
-      session.user.role = dbUser.role ?? 'TUTOR';
-      session.user.needsOnboarding = !dbUser.organisationId;
+      // Revalidate live organisation membership entitlement from database source-of-truth (Milestone PM-2E2.B3.F)
+      if (dbUser.organisationId) {
+        const membership = await db.query.orgMemberships.findFirst({
+          where: and(
+            eq(orgMemberships.userId, dbUser.id),
+            eq(orgMemberships.organisationId, dbUser.organisationId)
+          ),
+        });
+
+        if (membership) {
+          // Authoritative membership exists for this organisation
+          session.user.organisationId = dbUser.organisationId;
+          session.user.role = membership.role ?? dbUser.role ?? 'TUTOR';
+          session.user.needsOnboarding = false;
+        } else {
+          // Security Invariant (Milestone PM-2E2.B3.F): users.organisationId without an
+          // authoritative orgMemberships record does NOT grant tenant access.
+          session.user.organisationId = null;
+          session.user.role = 'TUTOR';
+          session.user.needsOnboarding = true;
+        }
+      } else {
+        session.user.organisationId = null;
+        session.user.role = 'TUTOR';
+        session.user.needsOnboarding = true;
+      }
+
       if (dbUser.name) session.user.name = dbUser.name;
       if (dbUser.email) session.user.email = dbUser.email;
     } catch (e) {
