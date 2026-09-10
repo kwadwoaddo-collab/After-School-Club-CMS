@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   turbopack: {
     root: process.cwd(),
   },
@@ -70,5 +67,4 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
     disable: true,
   },
-  disableLogger: true,
 });
