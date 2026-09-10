@@ -40,14 +40,32 @@ export interface ChildInput {
   firstAidConsent?: boolean;
 }
 
+export interface ParentResolutionOptions {
+  /**
+   * If true, existing parent records may be updated/enriched with submitted data.
+   * If false (default), existing parent records are strictly read-only and immutable to anonymous callers.
+   */
+  allowUpdate?: boolean;
+}
+
+export interface ChildResolutionOptions {
+  /**
+   * If true, existing child records may be updated/enriched with submitted data.
+   * If false (default), existing child records are strictly read-only and immutable to anonymous callers.
+   */
+  allowUpdate?: boolean;
+}
+
 /**
  * Resolve or create a parent record inside a transaction block, scoped strictly to the organisation.
  */
 export async function resolveOrCreateParent(
   tx: any,
   data: ParentInput,
-  currentOrgId: string
+  currentOrgId: string,
+  options: ParentResolutionOptions = {}
 ) {
+  const { allowUpdate = false } = options;
   const cleanEmail = data.email?.trim() || null;
 
   let parent: any = null;
@@ -92,8 +110,8 @@ export async function resolveOrCreateParent(
       postcode: data.postcode || null,
     }).returning();
     parent = newParent;
-  } else {
-    // Enrich existing parent with any new data provided
+  } else if (allowUpdate) {
+    // Enrich existing parent with any new data provided ONLY when caller has verified authority
     const updateFields: any = {};
     if (cleanEmail && !parent.email) updateFields.email = cleanEmail;
     if (data.phone && !parent.phone) updateFields.phone = data.phone;
@@ -121,8 +139,11 @@ export async function resolveOrCreateParent(
  */
 export async function resolveOrCreateChild(
   tx: any,
-  data: ChildInput
+  data: ChildInput,
+  options: ChildResolutionOptions = {}
 ) {
+  const { allowUpdate = false } = options;
+
   // 1. Enforce strict tenant boundary check on the referenced parent
   const parentRec = await tx.query.parents.findFirst({
     where: and(
@@ -135,7 +156,8 @@ export async function resolveOrCreateChild(
     throw new Error('Tenant boundary violation: Parent record does not belong to this organisation');
   }
 
-  let child;
+  let child: any = null;
+  let isNewlyCreated = false;
 
   // 2. Check if child is uniquely identified by ID
   if (data.id) {
@@ -146,8 +168,8 @@ export async function resolveOrCreateChild(
       ),
     });
 
-    if (child) {
-      // Update child fields with new details
+    if (child && allowUpdate) {
+      // Update child fields with new details ONLY when authorized
       await tx.update(children)
         .set({
           centreId: data.centreId,
@@ -189,8 +211,8 @@ export async function resolveOrCreateChild(
       ),
     });
 
-    if (child) {
-      // Enrich existing child details
+    if (child && allowUpdate) {
+      // Enrich existing child details ONLY when authorized
       await tx.update(children)
         .set({
           dateOfBirth: child.dateOfBirth ?? (data.dateOfBirth || null),
@@ -215,7 +237,7 @@ export async function resolveOrCreateChild(
       child = await tx.query.children.findFirst({
         where: eq(children.id, child.id)
       });
-    } else {
+    } else if (!child) {
       // 4. Create new child record
       const [insertedChild] = await tx.insert(children).values({
         parentId: data.parentId,
@@ -243,11 +265,12 @@ export async function resolveOrCreateChild(
         registeredAt: new Date(),
       }).returning();
       child = insertedChild;
+      isNewlyCreated = true;
     }
   }
 
-  // 5. Append system note if requested
-  if (data.systemNoteContent && child) {
+  // 5. Append system note if requested (ONLY for newly created child or authorized update)
+  if (data.systemNoteContent && child && (isNewlyCreated || allowUpdate)) {
     await tx.insert(studentNotes).values({
       childId: child.id,
       content: data.systemNoteContent,

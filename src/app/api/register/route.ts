@@ -17,8 +17,8 @@ import { z } from 'zod';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { notifyOwners } from '@/lib/db-notifications';
 
-// Helper: treat empty strings as null so optional/nullable fields don't fail
-const emptyToNull = (v: unknown) => (v === '' ? null : v);
+// Helper: treat empty strings as null and trim strings so fields and emails handle leading/trailing whitespace
+const emptyToNull = (v: unknown) => (typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : v);
 
 const registerSchema = z.object({
     orgSlug: z.string().min(1).max(100),
@@ -424,12 +424,12 @@ export async function POST(req: NextRequest) {
                 let matched = false;
                 let parentId: string;
  
-                // If this is the primary parent and we have a verified prefillParentId, use it directly
+                // If this is the primary parent and we have a verified prefillParentId, use it directly with verified authority
                 if (idx === 0 && prefillParentId) {
                     matched = true;
                     parentId = prefillParentId;
 
-                    // Update parent details with potentially updated registration fields
+                    // Update parent details with verified token authority
                     await tx.update(parents).set({
                         firstName: p.firstName,
                         lastName: p.lastName,
@@ -452,6 +452,7 @@ export async function POST(req: NextRequest) {
                     });
                     matched = !!existingBefore;
  
+                    // Unauthenticated/anonymous parent matching must NOT mutate existing parent record
                     const resolvedParent = await resolveOrCreateParent(tx, {
                         firstName: p.firstName,
                         lastName: p.lastName,
@@ -462,7 +463,7 @@ export async function POST(req: NextRequest) {
                         addressLine2: p.addressLine2,
                         city: p.city,
                         postcode: p.postcode,
-                    }, org.id);
+                    }, org.id, { allowUpdate: false });
                     parentId = resolvedParent.id;
                 } else {
                     const [newParent] = await tx.insert(parents).values({
@@ -499,6 +500,11 @@ export async function POST(req: NextRequest) {
             for (const c of submittedChildren) {
                 let childMatched = false;
                 let childId: string | null = null;
+                const isAuthorizedChild = Boolean(
+                    prefillToken &&
+                    c.childId &&
+                    prefillChildIds.includes(c.childId)
+                );
  
                 if (c.firstName && c.lastName && primaryParentId) {
                     let existing;
@@ -523,7 +529,7 @@ export async function POST(req: NextRequest) {
                     childMatched = !!existing;
  
                     const child = await resolveOrCreateChild(tx, {
-                        id: c.childId || existing?.id || null, // pass the prefill ID directly to CRM service
+                        id: isAuthorizedChild ? c.childId : (existing?.id || null),
                         firstName: c.firstName,
                         lastName: c.lastName,
                         parentId: primaryParentId,
@@ -544,7 +550,7 @@ export async function POST(req: NextRequest) {
                         photoConsent: c.photoConsent,
                         sunCreamConsent: c.sunCreamConsent,
                         firstAidConsent: c.firstAidConsent,
-                    });
+                    }, { allowUpdate: isAuthorizedChild });
                     childId = child.id;
                 }
  
@@ -560,10 +566,9 @@ export async function POST(req: NextRequest) {
                 });
 
                 // ── 4.5 Save authorised collectors for this child ─────────────
-                // Note: The form collects collectors globally, so we add them to every child
-                // or just to the first child. Let's add them to all children since they belong to the same family.
-                if (childId && authorisedCollectors?.length) {
-                    // avoid duplicates by deleting existing ones and inserting new ones (since it's a registration refresh)
+                // Only mutate authorised collectors if this is a newly created child or caller has verified token authority!
+                // Anonymous submissions matching an existing child MUST NOT delete or replace existing authorised collectors.
+                if (childId && authorisedCollectors?.length && (!childMatched || isAuthorizedChild)) {
                     await tx.delete(authorisedCollectorsTable).where(eq(authorisedCollectorsTable.childId, childId));
                     for (const collector of authorisedCollectors) {
                         await tx.insert(authorisedCollectorsTable).values({
