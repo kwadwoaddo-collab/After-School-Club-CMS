@@ -15,7 +15,7 @@ FINAL PROGRAMME CLASSIFICATION
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Summary & Remediation Results
 
 Milestone **PM-2E1** executed a disciplined, multi-agent forensic audit and targeted security remediation across the dependency tree of SprintScale CMS.
 
@@ -26,14 +26,14 @@ Milestone **PM-2E1** executed a disciplined, multi-agent forensic audit and targ
    - **Remediated all Category A production Server Action vulnerabilities** (`GHSA-m99w-x7hq-7vfj`, `GHSA-955p-x3mx-jcvp`, `GHSA-68g3-v927-f742`, `GHSA-4633-3j49-mh5q`).
    - Transitively patched `postcss` (<= 8.5.22) and `sharp` (<= 0.35.4-rc.0).
 2. **Direct Dependency Hygiene & Tooling Patches**:
+   - Direct dependency changes were targeted; `npm audit fix` subsequently applied non-force compatible transitive remediations (`fast-uri` >= 3.1.6, `js-yaml` >= 4.3.2, `qs` >= 6.16.0, `brace-expansion`, and `browserslist`), all of which were reviewed and verified.
    - Upgraded `vitest` to `^4.1.11` (remediating path traversal advisory `GHSA-82fw-gwwq-j7x9`).
    - Upgraded `uuid` to `^11.1.1` and pruned redundant `@types/uuid` stub.
-   - Removed unreferenced direct dependency `nodemailer` from `package.json` (all emails are sent exclusively via Resend).
-   - Resolved transitive advisories in `fast-uri` (>= 3.1.6), `js-yaml` (>= 4.3.2), `qs` (>= 6.16.0), `brace-expansion`, and `browserslist` via targeted non-breaking semver patches.
+   - Removed unreferenced direct dependency `nodemailer` from `package.json` (all emails are sent exclusively via Resend API).
 3. **Rigorous Exploitability & Residual Risk Posture**:
-   - Zero production-reachable Critical or High vulnerabilities remain in the runtime path.
-   - 4 High advisories affecting `nodemailer` (bundled transitively in `@auth/core`) are confirmed **Category C (Unreachable)**: SprintScale CMS uses credentials auth and Resend API for emails; nodemailer SMTP transport is never instantiated or invoked in production.
-   - 6 Moderate advisories affecting `esbuild` in `drizzle-kit` and `uuid` in `gaxios` are confirmed **Category D (Dev-only / Build-time)**.
+   - Zero production-reachable Critical vulnerabilities remain.
+   - 4 High advisories affecting `nodemailer` (bundled transitively in `@auth/core`) are classified as **Category C — Installed runtime transitive dependency, vulnerable feature path not used**: SprintScale CMS uses credentials auth and Resend API for emails; `EMAIL_SERVER_HOST` is unset in production, and nodemailer SMTP transport is never initialized.
+   - 6 Moderate advisories affecting `esbuild` in `drizzle-kit` (Category D — Dev/Build-only) and `uuid` in `gaxios` (Category B — Runtime dependency; vulnerable feature path not reached, as gaxios only uses `uuid.v4()` for tracing IDs).
 4. **Zero Regressions & Full QA Verification**:
    - **997/997 tests passed** across 84 test suites (100% pass rate).
    - Full Next.js 16.3.4 Turbopack production build compiled **157/157 static and dynamic routes** with 0 errors.
@@ -87,8 +87,9 @@ Milestone **PM-2E1** executed a disciplined, multi-agent forensic audit and targ
 | 10 | `qs` | `GHSA-x5fp-wj9c-mxmx`, `4mjr-xmp4-gh2g` | **MODERATE** | **FIXED** (Category C) | Transitive via `twilio` and `googleapis`. Updated to `>= 6.16.0`. |
 | 11 | `uuid` | `GHSA-w5hq-g745-h8pq` | **MODERATE** | **FIXED** (Category D) | Direct dependency updated to `^11.1.1`. Transitive stub pruned. |
 | 12 | `vitest` | `GHSA-82fw-gwwq-j7x9` | **MODERATE** | **FIXED** (Category D) | Direct test runner updated to `^4.1.11`. |
-| 13 | `nodemailer` | `GHSA-c7w3-x93f-qmm8` + 9 others | **HIGH** | **ACCEPTED RESIDUAL RISK** (Category C) | Transitive via `@auth/core`. Unreachable: SprintScale CMS sends 100% of emails via Resend API; nodemailer is never initialized. |
-| 14 | `esbuild` | `GHSA-67mh-4wv8-2f99` | **MODERATE** | **ACCEPTED RESIDUAL RISK** (Category D) | Dev-only CLI tool in `drizzle-kit@0.31.10`. Dev server `esbuild.serve()` is never executed. |
+| 13 | `nodemailer` | `GHSA-c7w3-x93f-qmm8` + 9 others | **HIGH** | **ACCEPTED RESIDUAL RISK** (Category C) | Transitive via `@auth/core`. Installed runtime transitive dependency, vulnerable feature path not used: SprintScale CMS sends 100% of emails via Resend API; nodemailer SMTP transport is never initialized. |
+| 14 | `uuid` (in `gaxios`) | `GHSA-w5hq-g745-h8pq` | **MODERATE** | **ACCEPTED RESIDUAL RISK** (Category B) | Runtime dependency; vulnerable feature path not reached: `gaxios` only uses `uuid.v4()` for random request IDs, never custom buffer bounds. |
+| 15 | `esbuild` | `GHSA-67mh-4wv8-2f99` | **MODERATE** | **ACCEPTED RESIDUAL RISK** (Category D) | Dev-only CLI tool in `drizzle-kit@0.31.10`. Dev server `esbuild.serve()` is never executed. |
 
 ---
 
@@ -98,9 +99,9 @@ Milestone **PM-2E1** executed a disciplined, multi-agent forensic audit and targ
 |---|---|---|---|---|
 | **CRITICAL** | **1** | **0** | **-1 (100% Resolved)** | **ZERO CRITICAL VULNERABILITIES** |
 | **HIGH** | **10** | **4** | **-6 (60% Resolved)** | All remaining 4 are Category C (unreachable nodemailer via Auth.js) |
-| **MODERATE** | **10** | **6** | **-4 (40% Resolved)** | All remaining 6 are Category D (dev-only esbuild in drizzle-kit / uuid in gaxios) |
+| **MODERATE** | **10** | **6** | **-4 (40% Resolved)** | Category D (dev-only esbuild) & Category B (unreached uuid path in gaxios) |
 | **LOW** | 0 | 0 | 0 | Clean |
-| **TOTAL** | **21** | **10** | **-11 (-52.4%)** | **0 Production-Reachable Risks** |
+| **TOTAL** | **21** | **10** | **-11 (-52.4%)** | **0 Production-Reachable Critical Risks** |
 
 ---
 
@@ -130,8 +131,8 @@ Milestone **PM-2E1** executed a disciplined, multi-agent forensic audit and targ
 ```
  Test Files  84 passed (84)
       Tests  997 passed (997)
-   Start at  11:47:34
-   Duration  29.27s
+   Start at  12:14:36
+   Duration  19.55s
 ```
 
 Key regression suites explicitly verified:
@@ -153,7 +154,7 @@ Key regression suites explicitly verified:
 | # | Critic Evaluation Invariant | Result | Evidence & Rationale |
 |---|---|---|---|
 | 1 | Was exact baseline preserved? | **YES** | Started from exact `origin/main` hash `a1dbf511f446...` |
-| 2 | Was broad `npm update` avoided? | **YES** | Only targeted package updates applied |
+| 2 | Was broad `npm update` avoided? | **YES** | Only targeted package updates and non-force audit fixes applied |
 | 3 | Was `npm audit fix --force` avoided? | **YES** | `--force` strictly prohibited and not executed |
 | 4 | Were all critical advisories investigated? | **YES** | `GHSA-6gpp-xcg3-4w24` fully investigated and resolved |
 | 5 | Were all high advisories investigated? | **YES** | All 10 High advisories mapped with dependency chains |
@@ -170,7 +171,7 @@ Key regression suites explicitly verified:
 | 16 | Was lockfile churn reviewed? | **YES** | Net diff confined to upgraded package families |
 | 17 | Were package changes minimal? | **YES** | Only 4 direct package edits in `package.json` |
 | 18 | Did any dependency downgrade occur? | **NO** | Zero downgrades |
-| 19 | Were residual advisories explained? | **YES** | `nodemailer` and `esbuild` residual risks documented |
+| 19 | Were residual advisories explained? | **YES** | `nodemailer`, `uuid` (in `gaxios`), and `esbuild` residual risks documented |
 | 20 | Did any security finding get hidden? | **NO** | 100% of audit findings transparently listed |
 | 21 | Did authentication regress? | **NO** | All auth and RBAC unit tests passed |
 | 22 | Did tenant isolation regress? | **NO** | Cross-tenant rejection tests passed (T2, T3, R21, R23) |
