@@ -19,6 +19,42 @@ import { hashToken } from '@/lib/magic-link';
 // Precomputed cost-10 bcrypt hash for computational symmetry and timing-attack elimination (PM-2E2.B4)
 export const DUMMY_PASSWORD_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
+/**
+ * PM-2E2.B4.F: Determines whether a credential user account is subject to
+ * mandatory email verification before credentials authentication is permitted.
+ *
+ * Invariant:
+ * - If user.emailVerified is populated (Date), email ownership is established -> false (eligible).
+ * - If user.emailVerified is null:
+ *   - If AUTH_VERIFICATION_ROLLOUT_BOUNDARY is configured:
+ *     - If user.createdAt < boundary -> false (historical legacy account exempt from lockout).
+ *     - If user.createdAt >= boundary -> true (modern account, strictly required).
+ *   - If AUTH_VERIFICATION_ROLLOUT_BOUNDARY is not configured:
+ *     - Strict fail-closed default -> true (all unverified accounts must verify).
+ */
+export function isEmailVerificationRequired(user: {
+  emailVerified?: Date | null;
+  createdAt?: Date | null;
+}): boolean {
+  if (user.emailVerified) {
+    return false;
+  }
+
+  const boundaryStr = process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY;
+  if (boundaryStr) {
+    const boundaryDate = new Date(boundaryStr);
+    if (!isNaN(boundaryDate.getTime()) && user.createdAt) {
+      const userCreated = new Date(user.createdAt);
+      if (!isNaN(userCreated.getTime()) && userCreated < boundaryDate) {
+        return false;
+      }
+    }
+  }
+
+  // Strict fail-closed default: emailVerified is mandatory
+  return true;
+}
+
 export const authConfig: any = {
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
@@ -108,6 +144,14 @@ export const authConfig: any = {
           return null;
         }
 
+        // PM-2E2.B4.F: Durable email verification gate
+        // An unverified credential account must never authenticate before email ownership
+        // is established, regardless of token state (active, expired, deleted, or absent).
+        if (isEmailVerificationRequired(user)) {
+          await bcrypt.compare(credentials.password, DUMMY_PASSWORD_HASH);
+          return null;
+        }
+
         const isValid = await bcrypt.compare(
           credentials.password,
           user.passwordHash
@@ -115,28 +159,6 @@ export const authConfig: any = {
 
         if (!isValid) {
           return null;
-        }
-
-        // PM-2E2.B4.F: If user has an unverified email with a pending verification token,
-        // block credentials authentication until email ownership is proven.
-        if (!user.emailVerified) {
-          const [pendingToken] = await db
-            .select()
-            .from(verificationTokens)
-            .where(
-              and(
-                eq(verificationTokens.identifier, normalizedEmail),
-                gt(verificationTokens.expires, new Date())
-              )
-            )
-            .limit(1);
-
-          if (pendingToken) {
-            // Pending unverified signup account — reject credentials authentication
-            // Perform dummy bcrypt comparison for timing symmetry
-            await bcrypt.compare(credentials.password, DUMMY_PASSWORD_HASH);
-            return null;
-          }
         }
 
         return {

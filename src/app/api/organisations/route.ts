@@ -163,6 +163,10 @@ export async function POST(req: NextRequest) {
             });
 
             // 5. Store pending verification token (PM-2E2.B4.F)
+            await tx
+                .delete(verificationTokens)
+                .where(eq(verificationTokens.identifier, contactEmail));
+
             await tx.insert(verificationTokens).values({
                 identifier: contactEmail,
                 token: tokenHash,

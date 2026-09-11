@@ -755,9 +755,9 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
   });
 
   // =========================================================================
-  // TEST 30: HISTORICAL CREDENTIAL ACCOUNT COMPATIBILITY (NO LOCKOUT)
+  // TEST 30: EXPIRED TOKEN DOES NOT UNLOCK UNVERIFIED ACCOUNT (BYPASS PREVENTED)
   // =========================================================================
-  it('Test 30: Historical credential user without pending verification token can log in without lockout', async () => {
+  it('Test 30: Newly created unverified user with expired token CANNOT log in (expiry bypass prevented)', async () => {
     const { authConfig } = await import('@/lib/auth');
     const credentialsProvider = (authConfig.providers as any[])?.find(
       (p: any) => p?.id === 'credentials' || p?.name === 'credentials'
@@ -766,42 +766,234 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
     const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
 
     const bcrypt = await import('bcryptjs');
-    const historicalPassword = 'HistoricalPassword123!';
-    const historicalHash = await bcrypt.hash(historicalPassword, 10);
+    const attackerPassword = 'AttackerPassword123!';
+    const passwordHash = await bcrypt.hash(attackerPassword, 10);
 
-    // Historical user with emailVerified: null (legacy)
+    // Modern account created today with emailVerified: null
     mockFindUser.mockResolvedValueOnce({
-      id: 'historical-user-1',
-      email: 'historical@example.com',
-      passwordHash: historicalHash,
+      id: 'unverified-expired-user-1',
+      email: 'unverified-expired@example.com',
+      passwordHash,
       emailVerified: null,
-      firstName: 'Historical',
-      lastName: 'Staff',
+      createdAt: new Date(),
+      firstName: 'Unverified',
+      lastName: 'User',
       role: 'ORG_OWNER',
-      organisationId: 'org-legacy',
     });
-
-    // No pending verification token in verificationTokens table
-    const mockLimitNoToken = vi.fn().mockResolvedValue([]);
-    const mockWhereNoToken = vi.fn().mockReturnValue({ limit: mockLimitNoToken });
-    const mockFromNoToken = vi.fn().mockReturnValue({ where: mockWhereNoToken });
-    mockSelect.mockReturnValueOnce({ from: mockFromNoToken });
 
     const authResult = await authorizeFn({
-      email: 'historical@example.com',
-      password: historicalPassword,
+      email: 'unverified-expired@example.com',
+      password: attackerPassword,
     });
 
-    // Historical user successfully authenticates
-    expect(authResult).not.toBeNull();
-    expect(authResult?.id).toBe('historical-user-1');
-    expect(authResult?.email).toBe('historical@example.com');
+    // Login is strictly DENIED even after token expiry
+    expect(authResult).toBeNull();
   });
 
   // =========================================================================
-  // TEST 31: EMAIL SERVICE SEND EMAIL VERIFICATION DISPATCH
+  // TEST 31: DELETED/ABSENT TOKEN DOES NOT UNLOCK UNVERIFIED ACCOUNT (BYPASS PREVENTED)
   // =========================================================================
-  it('Test 31: EmailService.sendEmailVerification creates HTML email with 24h expiry notice and button link', async () => {
+  it('Test 31: Newly created unverified user with deleted/absent token CANNOT log in (missing token bypass prevented)', async () => {
+    const { authConfig } = await import('@/lib/auth');
+    const credentialsProvider = (authConfig.providers as any[])?.find(
+      (p: any) => p?.id === 'credentials' || p?.name === 'credentials'
+    );
+    expect(credentialsProvider).toBeDefined();
+    const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
+
+    const bcrypt = await import('bcryptjs');
+    const attackerPassword = 'AttackerPassword123!';
+    const passwordHash = await bcrypt.hash(attackerPassword, 10);
+
+    // Modern account with emailVerified: null and no token rows in DB
+    mockFindUser.mockResolvedValueOnce({
+      id: 'unverified-notoken-user-1',
+      email: 'unverified-notoken@example.com',
+      passwordHash,
+      emailVerified: null,
+      createdAt: new Date(),
+      firstName: 'Unverified',
+      lastName: 'User',
+      role: 'ORG_OWNER',
+    });
+
+    const authResult = await authorizeFn({
+      email: 'unverified-notoken@example.com',
+      password: attackerPassword,
+    });
+
+    // Login is strictly DENIED
+    expect(authResult).toBeNull();
+  });
+
+  // =========================================================================
+  // TEST 32: HISTORICAL LEGACY ACCOUNT COMPATIBILITY (ROLLOUT BOUNDARY)
+  // =========================================================================
+  it('Test 32: Historical credential user with createdAt before rollout boundary can log in without lockout', async () => {
+    const origEnv = process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY;
+    process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY = '2026-09-11T00:00:00.000Z';
+
+    try {
+      const { authConfig } = await import('@/lib/auth');
+      const credentialsProvider = (authConfig.providers as any[])?.find(
+        (p: any) => p?.id === 'credentials' || p?.name === 'credentials'
+      );
+      expect(credentialsProvider).toBeDefined();
+      const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
+
+      const bcrypt = await import('bcryptjs');
+      const historicalPassword = 'HistoricalPassword123!';
+      const historicalHash = await bcrypt.hash(historicalPassword, 10);
+
+      // Historical user created before rollout boundary with emailVerified: null
+      mockFindUser.mockResolvedValueOnce({
+        id: 'historical-user-1',
+        email: 'historical@example.com',
+        passwordHash: historicalHash,
+        emailVerified: null,
+        createdAt: new Date('2026-09-01T00:00:00.000Z'),
+        firstName: 'Historical',
+        lastName: 'Staff',
+        role: 'ORG_OWNER',
+        organisationId: 'org-legacy',
+      });
+
+      const authResult = await authorizeFn({
+        email: 'historical@example.com',
+        password: historicalPassword,
+      });
+
+      // Historical user successfully authenticates
+      expect(authResult).not.toBeNull();
+      expect(authResult?.id).toBe('historical-user-1');
+      expect(authResult?.email).toBe('historical@example.com');
+    } finally {
+      process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 33: TOKEN BINDING: TOKEN FOR EMAIL A CANNOT VERIFY EMAIL B
+  // =========================================================================
+  it('Test 33: Verification token for email A cannot be used to verify email B', async () => {
+    const { GET: verifyHandler } = await import('@/app/api/auth/verify-email/route');
+
+    // DB query checks where(and(identifier == emailB, token == hash(tokenA)))
+    // Mock DB returning empty (no matching token for email B)
+    const mockLimitNoMatch = vi.fn().mockResolvedValue([]);
+    const mockWhereNoMatch = vi.fn().mockReturnValue({ limit: mockLimitNoMatch });
+    const mockFromNoMatch = vi.fn().mockReturnValue({ where: mockWhereNoMatch });
+    mockSelect.mockReturnValueOnce({ from: mockFromNoMatch });
+
+    const resSwapped = await verifyHandler(new NextRequest(
+      'http://localhost/api/auth/verify-email?token=validTokenForUserA&email=victimB%40example.com',
+      { method: 'GET' }
+    ));
+
+    expect(resSwapped.status).toBe(307);
+    expect(resSwapped.headers.get('location')).toContain('error=ExpiredOrInvalidToken');
+  });
+
+  // =========================================================================
+  // TEST 34: RESEND VERIFICATION FOR UNVERIFIED ACCOUNT
+  // =========================================================================
+  it('Test 34: POST /api/auth/resend-verification issues new token and returns generic success', async () => {
+    const { POST: resendHandler } = await import('@/app/api/auth/resend-verification/route');
+
+    // Mock finding candidate unverified user
+    const mockLimitUnverified = vi.fn().mockResolvedValue([{
+      id: 'unverified-user-1',
+      email: 'unverified@example.com',
+      passwordHash: 'hash-123',
+      emailVerified: null,
+      firstName: 'Test',
+    }]);
+    const mockWhereUnverified = vi.fn().mockReturnValue({ limit: mockLimitUnverified });
+    const mockFromUnverified = vi.fn().mockReturnValue({ where: mockWhereUnverified });
+    mockSelect.mockReturnValueOnce({ from: mockFromUnverified });
+
+    const res = await resendHandler(new NextRequest('http://localhost/api/auth/resend-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'unverified@example.com' }),
+    }));
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(mockTransaction).toHaveBeenCalled();
+  });
+
+  // =========================================================================
+  // TEST 35: RESEND VERIFICATION FOR ALREADY-VERIFIED / NONEXISTENT ACCOUNT (NEUTRAL)
+  // =========================================================================
+  it('Test 35: POST /api/auth/resend-verification returns generic success for already-verified or unknown email', async () => {
+    const { POST: resendHandler } = await import('@/app/api/auth/resend-verification/route');
+
+    // Mock finding no unverified user
+    const mockLimitNone = vi.fn().mockResolvedValue([]);
+    const mockWhereNone = vi.fn().mockReturnValue({ limit: mockLimitNone });
+    const mockFromNone = vi.fn().mockReturnValue({ where: mockWhereNone });
+    mockSelect.mockReturnValueOnce({ from: mockFromNone });
+
+    const res = await resendHandler(new NextRequest('http://localhost/api/auth/resend-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'verified-or-unknown@example.com' }),
+    }));
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+  });
+
+  // =========================================================================
+  // TEST 36: isEmailVerificationRequired UNIT TESTS
+  // =========================================================================
+  it('Test 36: isEmailVerificationRequired enforces correct fail-closed and boundary semantics', async () => {
+    const { isEmailVerificationRequired } = await import('@/lib/auth');
+
+    const origEnv = process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY;
+    try {
+      // 1. Verified account -> false (never required)
+      expect(isEmailVerificationRequired({ emailVerified: new Date() })).toBe(false);
+
+      // 2. Unverified account with boundary configured
+      process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY = '2026-09-11T00:00:00.000Z';
+
+      // Historical user created before boundary -> false (legacy exempt)
+      expect(isEmailVerificationRequired({
+        emailVerified: null,
+        createdAt: new Date('2026-09-01T00:00:00.000Z'),
+      })).toBe(false);
+
+      // Modern user created on/after boundary -> true (strictly required)
+      expect(isEmailVerificationRequired({
+        emailVerified: null,
+        createdAt: new Date('2026-09-11T12:00:00.000Z'),
+      })).toBe(true);
+
+      // Modern user with null createdAt -> true (fail-closed)
+      expect(isEmailVerificationRequired({
+        emailVerified: null,
+        createdAt: null,
+      })).toBe(true);
+
+      // 3. Unverified account without boundary configured -> true (strict fail-closed default)
+      delete process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY;
+      expect(isEmailVerificationRequired({
+        emailVerified: null,
+        createdAt: new Date('2026-09-01T00:00:00.000Z'),
+      })).toBe(true);
+    } finally {
+      process.env.AUTH_VERIFICATION_ROLLOUT_BOUNDARY = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 37: EMAIL SERVICE SEND EMAIL VERIFICATION DISPATCH
+  // =========================================================================
+  it('Test 37: EmailService.sendEmailVerification creates HTML email with 24h expiry notice and button link', async () => {
     const { emailService } = await import('@/lib/services/email');
     emailService.sendEmailVerification = vi.fn().mockResolvedValue({ success: true });
 

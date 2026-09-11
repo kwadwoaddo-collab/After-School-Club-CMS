@@ -138,6 +138,10 @@ export async function POST(request: NextRequest) {
                 termsVersion: CURRENT_TERMS_VERSION,
             });
 
+            await tx
+                .delete(verificationTokens)
+                .where(eq(verificationTokens.identifier, normalizedEmail));
+
             await tx.insert(verificationTokens).values({
                 identifier: normalizedEmail,
                 token: tokenHash,

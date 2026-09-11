@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users, verificationTokens } from '@/db/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, isNull } from 'drizzle-orm';
 import { hashToken } from '@/lib/magic-link';
 import { normalizeEmail } from '@/lib/validations/auth';
 import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
@@ -45,11 +45,11 @@ export async function GET(request: NextRequest) {
             .limit(1);
 
         if (!record) {
-            logger.warn(`[VerifyEmail] Verification token invalid or expired for ${normalizedEmail}`);
+            logger.warn('[VerifyEmail] Verification token invalid or expired');
             return NextResponse.redirect(new URL('/login?error=ExpiredOrInvalidToken', request.url));
         }
 
-        // Atomically set emailVerified on user and delete the consumed token (single-use)
+        // Atomically set emailVerified on user and consume all verification tokens for this identity
         await db.transaction(async (tx) => {
             await tx
                 .update(users)
@@ -57,19 +57,19 @@ export async function GET(request: NextRequest) {
                     emailVerified: new Date(),
                     updatedAt: new Date(),
                 })
-                .where(eq(users.email, normalizedEmail));
+                .where(
+                    and(
+                        eq(users.email, normalizedEmail),
+                        isNull(users.emailVerified)
+                    )
+                );
 
             await tx
                 .delete(verificationTokens)
-                .where(
-                    and(
-                        eq(verificationTokens.identifier, normalizedEmail),
-                        eq(verificationTokens.token, hashedToken)
-                    )
-                );
+                .where(eq(verificationTokens.identifier, normalizedEmail));
         });
 
-        logger.info(`[VerifyEmail] Email successfully verified for ${normalizedEmail}`);
+        logger.info('[VerifyEmail] Email successfully verified');
         return NextResponse.redirect(new URL('/login?verified=true', request.url));
     } catch (error) {
         logger.error('[VerifyEmail] Error verifying email:', error);

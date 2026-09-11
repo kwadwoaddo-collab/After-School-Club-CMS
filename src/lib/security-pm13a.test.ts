@@ -86,12 +86,14 @@ const mockUpdate = vi.fn();
 const mockSelect = vi.fn();
 const mockFindFirstUser = vi.fn();
 const mockFindFirstMembership = vi.fn();
+const mockDelete = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
 
 vi.mock('@/db', () => ({
   db: {
     transaction: (...args: any[]) => mockTransaction(...args),
     insert: (...args: any[]) => mockInsert(...args),
     update: (...args: any[]) => mockUpdate(...args),
+    delete: (...args: any[]) => mockDelete(...args),
     select: (...args: any[]) => mockSelect(...args),
     query: {
       users: {
@@ -131,10 +133,12 @@ import PrivacyPage from '@/app/privacy/page';
 describe('PM-1.3A & PM-1.3A.C Reconciliation Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDelete.mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
     mockTransaction.mockImplementation(async (cb: any) =>
       cb({
         insert: mockInsert,
         update: mockUpdate,
+        delete: mockDelete,
         select: mockSelect,
         query: {
           users: { findFirst: mockFindFirstUser },
