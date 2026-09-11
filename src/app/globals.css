@@ -205,34 +205,36 @@ body {
 }
 
 /* Input Field Visibility - Apple macOS Style Controls */
-:where(
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="url"],
-  input[type="search"],
-  input[type="date"],
-  input[type="time"],
-  input[type="datetime-local"],
-  textarea,
-  select
-) {
-  background-color: var(--input-bg);
-  color: inherit;
-  font-weight: 500;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-md); /* 10px squircle */
-  padding: 0.625rem 0.875rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
+@layer base {
+  :where(
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select
+  ) {
+    background-color: var(--input-bg);
+    color: inherit;
+    font-weight: 500;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-md); /* 10px squircle */
+    padding: 0.625rem 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
 
-input::placeholder,
-textarea::placeholder {
-  color: hsl(var(--muted-foreground));
-  opacity: 0.6;
-  font-weight: 400;
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 1;
+    font-weight: 400;
+  }
 }
 
 /* Autofill — prevent Chromium/WebKit from making autofilled inputs unreadable
@@ -243,6 +245,7 @@ textarea::placeholder {
 :-webkit-autofill:active {
   -webkit-text-fill-color: hsl(var(--foreground)) !important;
   -webkit-box-shadow: 0 0 0 1000px hsl(var(--secondary)) inset !important;
+  caret-color: hsl(var(--foreground));
   transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -765,15 +768,16 @@ figcaption {
     transform: scale(0.988);
   }
 }
-/* Rounded Pill Capsules for Buttons, Toggle filters, and CTA Links */
 @layer base {
-  button, .btn, [class*="btn-"], [class*="button-"], input[type="submit"] {
+  /* Rounded Pill Capsules for Buttons, Toggle filters, and CTA Links */
+  :where(button, .btn, [class*="btn-"], [class*="button-"], input[type="submit"]) {
     border-radius: 9999px; /* rounded-full pill shape */
   }
-}
-/* Premium Form Inputs & Selects */
-@layer base {
-  input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], input[type="search"], input[type="date"], select, textarea {
+
+  /* Premium Form Inputs & Selects — zero specificity default via :where() so utility classes (bg-white, bg-secondary, etc.) always win */
+  :where(
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], input[type="search"], input[type="date"], select, textarea
+  ) {
     border-radius: 12px; /* rounded-xl */
     border-color: hsl(var(--border));
     background-color: var(--input-bg);

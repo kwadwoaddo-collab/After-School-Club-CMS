@@ -195,7 +195,7 @@ function LoginForm() {
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-medium transition-all"
+                  className="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-medium transition-all"
                   placeholder="you@yourcentre.com"
                   required
                 />
@@ -208,7 +208,7 @@ function LoginForm() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-medium transition-all"
+                  className="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-medium transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -290,7 +290,7 @@ function LoginForm() {
                       autoComplete="email"
                       value={staffEmail}
                       onChange={(e) => setStaffEmail(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl !bg-white border border-slate-200 !text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-medium transition-all"
+                      className="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-medium transition-all"
                       placeholder="you@yourcentre.com"
                       required
                       autoFocus

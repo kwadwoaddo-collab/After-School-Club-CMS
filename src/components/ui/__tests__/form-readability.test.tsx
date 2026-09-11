@@ -158,4 +158,149 @@ describe('UX-F1 — Form control readability regression tests', () => {
     );
     expect(buttonLines, 'StatusUpdater button should not use text-white on bg-secondary').toHaveLength(0);
   });
+
+  // ─── Post-Modernisation UI Contrast Invariants (PM-UI-REG-1) ───────────────
+
+  it('signup page container establishes an explicit dark scope and color-scheme', () => {
+    const src = readSrc('src/app/signup/page.tsx');
+    expect(src).toContain('grid md:grid-cols-2 dark');
+    expect(src).toContain("colorScheme: 'dark'");
+  });
+
+  it('signup page inputs do not use compounded opacity on placeholders', () => {
+    const src = readSrc('src/app/signup/page.tsx');
+    const inputLines = src.split('\n').filter(line =>
+      line.includes('<input') && line.includes('className') && line.includes('bg-secondary')
+    );
+    for (const line of inputLines) {
+      expect(line).not.toContain('placeholder:text-on-surface-variant/50');
+      expect(line).toContain('placeholder:text-muted-foreground');
+    }
+  });
+
+  it('globals.css input::placeholder does not dilute token contrast with opacity: 0.6', () => {
+    const src = readSrc('src/app/globals.css');
+    // The placeholder rule must define opacity: 1 so calibrated --muted-foreground tokens are not degraded
+    expect(src).toMatch(/input::placeholder,\s*textarea::placeholder\s*\{[^}]*opacity:\s*1;/);
+  });
+
+  it('globals.css :-webkit-autofill override specifies caret-color', () => {
+    const src = readSrc('src/app/globals.css');
+    expect(src).toContain('caret-color: hsl(var(--foreground))');
+  });
+
+  it('globals.css wraps input base defaults in @layer base and :where() to eliminate cascade override', () => {
+    const src = readSrc('src/app/globals.css');
+    // Base input defaults must be wrapped in @layer base and :where() so utility classes (bg-white, bg-secondary, etc.) always win
+    expect(src).toContain('@layer base');
+    expect(src).toMatch(/@layer base\s*\{[\s\S]*?:where\([\s\S]*?input\[type="text"\]/);
+  });
+
+  it('login page inputs maintain clean white surface and calibrated placeholder', () => {
+    const src = readSrc('src/app/login/page.tsx');
+    expect(src).toContain('bg-white border border-slate-200 text-slate-900 placeholder:text-slate-500');
+  });
+
+  it('staff-login page email input uses placeholder:text-white/60 to satisfy >= 4.5:1 contrast invariant', () => {
+    const src = readSrc('src/app/staff-login/page.tsx');
+    expect(src).not.toContain('placeholder-white/30');
+    expect(src).toContain('placeholder:text-white/60');
+  });
+
+  // ─── WCAG 2.1 AA Contrast Verification Math ───────────────────────────────
+
+  it('Staff-login glass field contrast invariants meet WCAG 2.1 AA normal text (placeholder >= 4.5:1)', () => {
+    function sRGBtoLin(c: number) {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+    function lum(r: number, g: number, b: number) {
+      return 0.2126 * sRGBtoLin(r) + 0.7152 * sRGBtoLin(g) + 0.0722 * sRGBtoLin(b);
+    }
+    function contrast(l1: number, l2: number) {
+      const [bright, dark] = l1 > l2 ? [l1, l2] : [l2, l1];
+      return (bright + 0.05) / (dark + 0.05);
+    }
+
+    // Staff login card: bg-white/10 over gradient (slate-950 to slate-900)
+    // Input surface: bg-white/5 over card
+    // 1. Over slate-950 [2, 6, 23]
+    const card950 = [2 * 0.9 + 25.5, 6 * 0.9 + 25.5, 23 * 0.9 + 25.5];
+    const input950 = [card950[0] * 0.95 + 12.75, card950[1] * 0.95 + 12.75, card950[2] * 0.95 + 12.75];
+    const lumInput950 = lum(input950[0], input950[1], input950[2]);
+
+    // 2. Over slate-900 [15, 23, 42]
+    const card900 = [15 * 0.9 + 25.5, 23 * 0.9 + 25.5, 42 * 0.9 + 25.5];
+    const input900 = [card900[0] * 0.95 + 12.75, card900[1] * 0.95 + 12.75, card900[2] * 0.95 + 12.75];
+    const lumInput900 = lum(input900[0], input900[1], input900[2]);
+
+    // Placeholder text at 60% white (placeholder:text-white/60)
+    const text950 = [input950[0] * 0.4 + 255 * 0.6, input950[1] * 0.4 + 255 * 0.6, input950[2] * 0.4 + 255 * 0.6];
+    const lumText950 = lum(text950[0], text950[1], text950[2]);
+    const cr950 = contrast(lumText950, lumInput950);
+
+    const text900 = [input900[0] * 0.4 + 255 * 0.6, input900[1] * 0.4 + 255 * 0.6, input900[2] * 0.4 + 255 * 0.6];
+    const lumText900 = lum(text900[0], text900[1], text900[2]);
+    const cr900 = contrast(lumText900, lumInput900);
+
+    // Both ends of the gradient must satisfy normal text contrast >= 4.5:1
+    expect(cr950).toBeGreaterThanOrEqual(4.5); // Actual: ~6.12:1
+    expect(cr900).toBeGreaterThanOrEqual(4.5); // Actual: ~5.33:1
+  });
+
+  it('Dark field contrast invariants meet WCAG 2.1 AA (text >= 4.5:1, placeholder >= 4.5:1)', () => {
+    function sRGBtoLin(c: number) {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+    function lum(r: number, g: number, b: number) {
+      return 0.2126 * sRGBtoLin(r) + 0.7152 * sRGBtoLin(g) + 0.0722 * sRGBtoLin(b);
+    }
+    function contrast(l1: number, l2: number) {
+      const [bright, dark] = l1 > l2 ? [l1, l2] : [l2, l1];
+      return (bright + 0.05) / (dark + 0.05);
+    }
+
+    // Dark field background: #1e1e24 (--secondary in dark mode)
+    const lDarkBg = lum(30, 30, 36);
+    // Dark field text: #f5f5f7 (--foreground in dark mode)
+    const lDarkText = lum(245, 245, 247);
+    // Dark field placeholder: #86868b (--muted-foreground in dark mode, opacity: 1)
+    const lDarkPlaceholder = lum(134, 134, 139);
+
+    const textContrast = contrast(lDarkText, lDarkBg);
+    const placeholderContrast = contrast(lDarkPlaceholder, lDarkBg);
+
+    expect(textContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1
+    expect(textContrast).toBeGreaterThan(14.0);       // Actual: ~15.2:1
+    expect(placeholderContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1 (Actual: ~4.58:1)
+  });
+
+  it('Light field contrast invariants meet WCAG 2.1 AA (text >= 4.5:1, placeholder >= 4.5:1)', () => {
+    function sRGBtoLin(c: number) {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+    function lum(r: number, g: number, b: number) {
+      return 0.2126 * sRGBtoLin(r) + 0.7152 * sRGBtoLin(g) + 0.0722 * sRGBtoLin(b);
+    }
+    function contrast(l1: number, l2: number) {
+      const [bright, dark] = l1 > l2 ? [l1, l2] : [l2, l1];
+      return (bright + 0.05) / (dark + 0.05);
+    }
+
+    // Light field background: #ffffff (--card / pure white input)
+    const lLightBg = lum(255, 255, 255);
+    // Light field text: #1d1d1f (--foreground in light mode)
+    const lLightText = lum(29, 29, 31);
+    // Light field placeholder: #636366 (--muted-foreground in light mode, opacity: 1)
+    const lLightPlaceholder = lum(99, 99, 102);
+
+    const textContrast = contrast(lLightBg, lLightText);
+    const placeholderContrast = contrast(lLightBg, lLightPlaceholder);
+
+    expect(textContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1
+    expect(textContrast).toBeGreaterThan(15.0);       // Actual: ~16.8:1
+    expect(placeholderContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1 (Actual: ~5.99:1)
+  });
 });

@@ -155,7 +155,7 @@ export default function OnboardingForm() {
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Organisation Name</label>
                         <input
                             {...register('organisationName')}
-                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
+                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-muted-foreground"
                             placeholder="e.g. Bright Stars Academy"
                         />
                         {errors.organisationName && <p className="text-red-400 text-sm mt-1" role="alert">{errors.organisationName.message}</p>}
@@ -166,7 +166,7 @@ export default function OnboardingForm() {
                         <label className="block text-sm font-medium text-muted-foreground mb-1">First Centre Name</label>
                         <input
                             {...register('centreName')}
-                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-on-surface-variant/50"
+                            className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-muted-foreground"
                             placeholder="e.g. London Campus"
                         />
                         <p className="text-xs text-muted-foreground mt-1">You can add more centres later.</p>

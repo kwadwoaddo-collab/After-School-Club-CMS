@@ -80,7 +80,7 @@ export default function SignupPage() {
   ];
 
   return (
-    <div className="min-h-screen grid md:grid-cols-2" style={{ backgroundColor: '#05070A' }}>
+    <div className="min-h-screen grid md:grid-cols-2 dark" style={{ backgroundColor: '#05070A', colorScheme: 'dark' }}>
       {/* Left Side - Marketing Content */}
       <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden">
         <Link href="/" className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8">
@@ -251,7 +251,7 @@ export default function SignupPage() {
                       autoComplete="given-name"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Jane"
                       required
                       autoFocus
@@ -265,7 +265,7 @@ export default function SignupPage() {
                       autoComplete="family-name"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Smith"
                       required
                     />
@@ -280,7 +280,7 @@ export default function SignupPage() {
                     autoComplete="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="jane@yourcentre.com"
                     required
                   />
@@ -314,7 +314,7 @@ export default function SignupPage() {
                     autoComplete="new-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Min. 8 characters"
                     required
                     autoFocus
@@ -329,7 +329,7 @@ export default function SignupPage() {
                     autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="••••••••"
                     required
                   />
