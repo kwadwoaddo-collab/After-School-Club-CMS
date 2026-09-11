@@ -1,14 +1,14 @@
 # PM-2E2 — Auth Hardening & Signup Protection Certification Report
 
-**Programme:** SprintScale CMS Post-Modernisation Programme  
-**Milestone:** PM-2E2 — Auth Hardening & Signup Protection  
-**Package:** PM-2E2.B5 — Auth Hardening Security Regression & Certification  
-**Repository:** `/Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS`  
-**Working Branch:** `audit/pm2e2-auth-hardening`  
-**HEAD Commit:** `f0ebfea674fa44b68d0976fbbdd0bdefd2224518`  
-**Starting Origin Main Baseline:** `3e42d54e065e3a29d6869ae245c2f10baf01bf1d`  
-**Protected Historical Branch:** `origin/rebuild/cms-modernisation` (`efac5ff80d3621e0d2393e53683d38ceebe9a804`)  
-**Date:** 2026-09-11  
+**Programme:** SprintScale CMS Post-Modernisation Programme
+**Milestone:** PM-2E2 — Auth Hardening & Signup Protection
+**Package:** PM-2E2.B5 — Auth Hardening Security Regression & Certification
+**Repository:** `/Users/KWADW/Ai-Lab/agent-os/cms-rebuild/After-School-Club-CMS`
+**Working Branch:** `audit/pm2e2-auth-hardening`
+**HEAD Commit:** `f0ebfea674fa44b68d0976fbbdd0bdefd2224518`
+**Starting Origin Main Baseline:** `3e42d54e065e3a29d6869ae245c2f10baf01bf1d`
+**Protected Historical Branch:** `origin/rebuild/cms-modernisation` (`efac5ff80d3621e0d2393e53683d38ceebe9a804`)
+**Date:** 2026-09-11
 
 ============================================================
 FINAL PROGRAMME CLASSIFICATION
@@ -343,18 +343,18 @@ Three rollout strategies were forensically evaluated:
    - **Step 2 — Read-Only Impact Assessment:** Run query to count affected unverified accounts created since release:
      ```sql
      -- Non-destructive preflight count
-     SELECT id, email, created_at 
-     FROM users 
-     WHERE email_verified IS NULL 
+     SELECT id, email, created_at
+     FROM users
+     WHERE email_verified IS NULL
        AND created_at >= '<ACTUAL_PM2E2_RELEASE_BOUNDARY_UTC>';
      ```
    - **Step 3 — Database Snapshot:** Execute a full database snapshot.
    - **Step 4 — Database Quarantine Script:** Execute the quarantine script on the production database **PRIOR** to reverting code:
      ```sql
      -- Non-executable template: replace placeholder before execution
-     UPDATE users 
-     SET password_hash = NULL 
-     WHERE email_verified IS NULL 
+     UPDATE users
+     SET password_hash = NULL
+     WHERE email_verified IS NULL
        AND created_at >= '<ACTUAL_PM2E2_RELEASE_BOUNDARY_UTC>';
      ```
    - **Step 5 — Revert Code:** Revert application deployment to pre-PM-2E2 baseline.
@@ -448,3 +448,122 @@ Time:        18.64s
 **Is PM-2E2 ready to move from the audit branch into a controlled production release process?**
 
 ### **YES — PM-2E2 branch is certified ready to enter the controlled production release process, subject to the documented production release gates.**
+
+
+============================================================
+PRODUCTION RELEASE EVIDENCE
+============================================================
+
+## 26. Production Release Verification Summary
+
+**Release Status:** RELEASED TO PRODUCTION
+**Overall Verdict:** **PASS WITH QUALIFICATION — RELEASED; AUTHENTICATED PRODUCTION SMOKE NOT EXECUTED**
+**Execution Date:** 2026-09-11
+
+---
+
+### 26.1 Release Coordinates & Deployment Identification
+
+| Release Parameter | Target Value | Observed Production Value | Verification Status |
+|---|---|---|---|
+| **Integrated Branch** | `main` | `main` | **MATCH / VERIFIED** |
+| **Integrated Commit** | `6741b0a1066d4dcf55eb6a96370b5a530fed1bae` | `6741b0a1066d4dcf55eb6a96370b5a530fed1bae` | **MATCH / VERIFIED** |
+| **Ancestry Verification** | Fast-forward from `3e42d54` | Fast-forward descendant | **CLEAN / VERIFIED** |
+| **Vercel Deployment ID** | Latest Production | `dpl_9hQV3NPtXaEPimDk99FiQqhKZzF7` | **MATCH / VERIFIED** |
+| **Deployment State** | `Ready` | `● Ready` | **VERIFIED** |
+| **Canonical Production Domain** | `https://app.sprintscaleit.co.uk` | `https://app.sprintscaleit.co.uk` | **ACTIVE (HTTP/2 200)** |
+| **Release Boundary UTC** | ISO 8601 UTC | `2026-09-11T14:40:55.000Z` | **CONFIGURED & ACTIVE** |
+| **Release Tag** | `cms-pm2e2-auth-hardening-certified` | `cms-pm2e2-auth-hardening-certified` | **CREATED & PUSHED** |
+
+---
+
+### 26.2 Production Configuration Preflight & Upstash Gate
+
+- `AUTH_VERIFICATION_ROLLOUT_BOUNDARY`: `2026-09-11T14:40:55.000Z` (Configured in Vercel Production).
+- `UPSTASH_REDIS_REST_URL`: Configured and active (Sensitive, Production).
+- `UPSTASH_REDIS_REST_TOKEN`: Configured and active (Sensitive, Production).
+- `RESEND_API_KEY`: Configured and active (Sensitive, Production).
+- `NEXTAUTH_URL` / `AUTH_URL`: Configured (Production).
+- `AUTH_SECRET` / `NEXTAUTH_SECRET`: Configured (Production).
+- Canonical origin resolution in production: Verified resolving to `https://app.sprintscaleit.co.uk`.
+
+---
+
+### 26.3 Database Preflight Counts (Read-Only)
+
+Non-destructive baseline counts prior to cutover:
+- `total_users`: 11
+- `email_verified_null`: 6
+- `credential_users`: 9
+- `legacy_unverified_credential_users`: 4
+Zero user rows were modified; zero database backfill operations executed (Strategy A adhered to strictly).
+
+---
+
+### 26.4 Public Production Health Smoke
+
+Live HTTP/2 checks against `https://app.sprintscaleit.co.uk`:
+- `GET /api/health`: **HTTP/2 200 OK** (`{"ok":true}`, Server: Vercel)
+- `HEAD /`: **HTTP/2 200 OK** (`x-vercel-cache: PRERENDER`)
+- `HEAD /login`: **HTTP/2 200 OK** (`x-vercel-cache: PRERENDER`)
+- `HEAD /signup`: **HTTP/2 200 OK** (`x-vercel-cache: PRERENDER`)
+- `HEAD /portal/login`: **HTTP/2 200 OK** (`x-vercel-cache: PRERENDER`)
+
+---
+
+### 26.5 Live New-User Verification Workflow Smoke
+
+A controlled canary user was exercised against the live deployment:
+1. **Signup Execution (`POST /api/auth/signup`):**
+   - Result: **HTTP/2 201 Created** (`{"message":"Account created successfully"}`).
+   - Verification token generated and email dispatched via Resend API.
+2. **Pre-Verification Credentials Login (`POST /api/auth/callback/credentials`):**
+   - Result: **HTTP/2 302 Redirect** to `https://app.sprintscaleit.co.uk/login?error=CredentialsSignin&code=credentials`.
+   - Vercel runtime log: `[auth][error] CredentialsSignin`.
+   - Outcome: Unverified account strictly barred from authentication.
+3. **Resend Verification (`POST /api/auth/resend-verification`):**
+   - Result: **HTTP/2 200 OK** (`{"success":true,"message":"If an unverified account exists for this email, a new verification link has been sent."}`).
+   - Non-existent email control test: Returned identical **HTTP/2 200 OK** with identical payload (zero account existence leak).
+4. **Invalid Token Rejection (`GET /api/auth/verify-email?token=invalid_token_123`):**
+   - Result: **HTTP/2 307 Redirect** to `https://app.sprintscaleit.co.uk/login?error=ExpiredOrInvalidToken`.
+
+---
+
+### 26.6 Authenticated Production Smoke Status
+
+**AUTHENTICATED PRODUCTION SMOKE: NOT EXECUTED — SAFE PRODUCTION PERSONA UNAVAILABLE**
+- In accordance with safety directives, no production passwords or accounts were arbitrarily altered or exposed.
+- Full authenticated lifecycle testing was exhaustively executed and certified across unit and integration test suites (1080/1080 tests passing).
+- The historical PM-2E1 qualification remains explicitly documented.
+
+---
+
+### 26.7 Production Runtime Logs Review
+
+Vercel production logs for deployment `dpl_9hQV3NPtXaEPimDk99FiQqhKZzF7`:
+- All edge and serverless requests processed cleanly.
+- `POST /api/auth/signup`: Status 201.
+- `POST /api/auth/resend-verification`: Status 200 (`[ResendVerification] Dispatched verification link`).
+- Zero 500 internal server errors, zero unhandled promise rejections, zero Upstash connection failures.
+
+---
+
+### 26.8 Rollback-Readiness Confirmation
+
+- **Primary Rollback Policy:** **FORWARD-FIX ONLY**.
+- **Invariant:** `PRE-PM2E2 CODE-ONLY ROLLBACK = PROHIBITED AFTER NEW VERIFICATION-REQUIRED USERS EXIST`.
+- No rollback procedures were tested in production; no password hashes were modified.
+
+---
+
+### 26.9 Release Tag Verification
+
+```bash
+$ git tag -v cms-pm2e2-auth-hardening-certified
+tag cms-pm2e2-auth-hardening-certified
+Tagger: kwadwoaddo-collab <kwadwoaddo@googlemail.com>
+Date:   Fri Sep 11 15:45:52 2026 +0100
+
+PM-2E2 auth hardening production certified
+```
+Commit tagged: `6741b0a1066d4dcf55eb6a96370b5a530fed1bae` (Pushed to `origin`).
