@@ -10,6 +10,7 @@ import { CURRENT_TERMS_VERSION } from '@/lib/constants/legal';
 import { validatePassword, normalizeEmail, MAX_EMAIL_LENGTH, MAX_NAME_LENGTH } from '@/lib/validations/auth';
 import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 export async function POST(request: NextRequest) {
     try {
@@ -149,16 +150,17 @@ export async function POST(request: NextRequest) {
             });
         });
 
-        // Build verification URL with raw token
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host') || 'localhost:3000';
-        const verificationUrl = `${protocol}://${host}/api/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
+        // PM-2E2.B4.F: Build verification URL with trusted canonical origin
+        const baseUrl = getTrustedApplicationUrl();
+        const verificationUrl = new URL('/api/auth/verify-email', baseUrl);
+        verificationUrl.searchParams.set('token', rawToken);
+        verificationUrl.searchParams.set('email', normalizedEmail);
 
         // Send email verification asynchronously
         await emailService.sendEmailVerification({
             email: normalizedEmail,
             name: firstName.trim(),
-            verificationUrl,
+            verificationUrl: verificationUrl.toString(),
         });
 
         return NextResponse.json(

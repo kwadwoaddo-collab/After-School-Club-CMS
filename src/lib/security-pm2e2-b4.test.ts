@@ -39,15 +39,33 @@ const mockFindParent = vi.fn();
 const mockFindOrgMembership = vi.fn();
 const mockFindInvite = vi.fn();
 
+const mockFindOrg = vi.fn();
+const mockFindCentre = vi.fn();
+
 vi.mock('@auth/drizzle-adapter', () => ({
   DrizzleAdapter: vi.fn(() => ({})),
+}));
+
+vi.mock('@/lib/session', () => ({
+  getApiSession: vi.fn().mockResolvedValue({
+    user: { id: 'owner-session-id', organisationId: 'org-123', role: 'ORG_OWNER' },
+  }),
+  requireTenantSession: vi.fn().mockResolvedValue({
+    user: { id: 'owner-session-id', organisationId: 'org-123', role: 'ORG_OWNER' },
+  }),
 }));
 
 vi.mock('@/db', () => ({
   db: {
     select: () => mockSelect(),
     insert: (table: any) => ({
-      values: (val: any) => mockInsert(table, val),
+      values: (val: any) => {
+        mockInsert(table, val);
+        return {
+          returning: vi.fn().mockResolvedValue([{ id: 'mock-user-id' }]),
+          onConflictDoNothing: vi.fn().mockResolvedValue([]),
+        };
+      },
     }),
     update: (table: any) => ({
       set: (val: any) => ({
@@ -71,6 +89,12 @@ vi.mock('@/db', () => ({
       staffInvites: {
         findFirst: (...args: any[]) => mockFindInvite(...args),
       },
+      organisations: {
+        findFirst: (...args: any[]) => mockFindOrg(...args),
+      },
+      centres: {
+        findFirst: (...args: any[]) => mockFindCentre(...args),
+      },
       verificationTokens: {
         findFirst: (...args: any[]) => (mockSelect as any)(...args),
       },
@@ -83,11 +107,13 @@ vi.mock('@/lib/services/email', () => ({
     sendPasswordReset: vi.fn().mockResolvedValue({ success: true }),
     sendMagicLink: vi.fn().mockResolvedValue({ success: true }),
     sendEmailVerification: vi.fn().mockResolvedValue({ success: true }),
+    sendStaffInvitation: vi.fn().mockResolvedValue({ success: true }),
   },
   EmailService: class {
     sendMagicLink = vi.fn().mockResolvedValue({ success: true });
     sendPasswordReset = vi.fn().mockResolvedValue({ success: true });
     sendEmailVerification = vi.fn().mockResolvedValue({ success: true });
+    sendStaffInvitation = vi.fn().mockResolvedValue({ success: true });
   },
 }));
 
@@ -1003,5 +1029,347 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
       verificationUrl: 'http://localhost:3000/api/auth/verify-email?token=xyz&email=recipient%40example.com',
     });
     expect(result.success).toBe(true);
+  });
+
+  // =========================================================================
+  // TEST 38: getTrustedApplicationUrl CANONICAL RESOLUTION & FAIL-SAFE
+  // =========================================================================
+  it('Test 38: getTrustedApplicationUrl enforces strict env var priority and production fail-safe', async () => {
+    const { getTrustedApplicationUrl } = await import('@/lib/base-url');
+    const origEnv = { ...process.env };
+
+    try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
+      delete process.env.NEXTAUTH_URL;
+      delete process.env.AUTH_URL;
+      delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+      delete process.env.VERCEL_URL;
+
+      // 1. NEXT_PUBLIC_APP_URL priority
+      process.env.NEXT_PUBLIC_APP_URL = 'https://app-canonical.example.com/';
+      expect(getTrustedApplicationUrl()).toBe('https://app-canonical.example.com');
+      delete process.env.NEXT_PUBLIC_APP_URL;
+
+      // 2. NEXT_PUBLIC_BASE_URL priority
+      process.env.NEXT_PUBLIC_BASE_URL = 'https://base-canonical.example.com';
+      expect(getTrustedApplicationUrl()).toBe('https://base-canonical.example.com');
+      delete process.env.NEXT_PUBLIC_BASE_URL;
+
+      // 3. NEXTAUTH_URL priority
+      process.env.NEXTAUTH_URL = 'https://auth-canonical.example.com';
+      expect(getTrustedApplicationUrl()).toBe('https://auth-canonical.example.com');
+      delete process.env.NEXTAUTH_URL;
+
+      // 4. AUTH_URL priority
+      process.env.AUTH_URL = 'https://authjs-canonical.example.com';
+      expect(getTrustedApplicationUrl()).toBe('https://authjs-canonical.example.com');
+      delete process.env.AUTH_URL;
+
+      // 5. VERCEL_PROJECT_PRODUCTION_URL auto-prefix
+      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'sprintscale-prod.vercel.app';
+      expect(getTrustedApplicationUrl()).toBe('https://sprintscale-prod.vercel.app');
+      delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+      // 6. VERCEL_URL auto-prefix
+      process.env.VERCEL_URL = 'sprintscale-preview-xyz.vercel.app';
+      expect(getTrustedApplicationUrl()).toBe('https://sprintscale-preview-xyz.vercel.app');
+      delete process.env.VERCEL_URL;
+
+      // 7. Production fail-safe fallback
+      (process.env as any).NODE_ENV = 'production';
+      expect(getTrustedApplicationUrl()).toBe('https://app.sprintscaleit.co.uk');
+
+      // 8. Non-production dev fallback
+      (process.env as any).NODE_ENV = 'development';
+      expect(getTrustedApplicationUrl()).toBe('http://localhost:3000');
+    } finally {
+      process.env = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 39: SIGNUP HOST HEADER POISONING IMMUNITY
+  // =========================================================================
+  it('Test 39: POST /api/auth/signup ignores attacker-injected Host headers for verification URL', async () => {
+    const { POST: signupHandler } = await import('@/app/api/auth/signup/route');
+    const { emailService } = await import('@/lib/services/email');
+    const sendSpy = vi.spyOn(emailService, 'sendEmailVerification').mockResolvedValue({ success: true });
+
+    const origEnv = { ...process.env };
+    try {
+      process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
+
+      const mockLimitNew = vi.fn().mockResolvedValue([]);
+      const mockWhereNew = vi.fn().mockReturnValue({ limit: mockLimitNew });
+      const mockFromNew = vi.fn().mockReturnValue({ where: mockWhereNew });
+      mockSelect.mockReturnValueOnce({ from: mockFromNew });
+
+      const req = new NextRequest('http://localhost/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'host': 'evil-attacker-site.com',
+          'x-forwarded-host': 'evil-attacker-site.com',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({
+          firstName: 'Bob',
+          lastName: 'Builder',
+          email: 'bob@example.com',
+          password: 'ValidPassword123!',
+          acceptedTerms: true,
+        }),
+      });
+
+      const res = await signupHandler(req);
+      expect(res.status).toBe(201);
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg.verificationUrl).toContain('https://trusted.sprintscaleit.co.uk');
+      expect(callArg.verificationUrl).not.toContain('evil-attacker-site.com');
+    } finally {
+      process.env = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 40: ORGANISATIONS HOST HEADER POISONING IMMUNITY
+  // =========================================================================
+  it('Test 40: POST /api/organisations ignores attacker-injected Host headers for verification URL', async () => {
+    const { POST: orgHandler } = await import('@/app/api/organisations/route');
+    const { emailService } = await import('@/lib/services/email');
+    const sendSpy = vi.spyOn(emailService, 'sendEmailVerification').mockResolvedValue({ success: true });
+
+    const origEnv = { ...process.env };
+    try {
+      process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
+
+      mockFindUser.mockResolvedValueOnce(null); // No existing user
+      // Org slug collision check:
+      mockSelect.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const req = new NextRequest('http://localhost/api/organisations', {
+        method: 'POST',
+        headers: {
+          'host': 'evil-attacker-site.com',
+          'x-forwarded-host': 'evil-attacker-site.com',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({
+          organisationName: 'Poison Org',
+          firstName: 'John',
+          lastName: 'Doe',
+          contactEmail: 'orgowner@example.com',
+          password: 'ValidPassword123!',
+        }),
+      });
+
+      const res = await orgHandler(req);
+      expect(res.status).toBe(201);
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg.verificationUrl).toContain('https://trusted.sprintscaleit.co.uk');
+      expect(callArg.verificationUrl).not.toContain('evil-attacker-site.com');
+    } finally {
+      process.env = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 41: RESEND VERIFICATION HOST HEADER POISONING IMMUNITY
+  // =========================================================================
+  it('Test 41: POST /api/auth/resend-verification ignores attacker-injected Host headers', async () => {
+    const { POST: resendHandler } = await import('@/app/api/auth/resend-verification/route');
+    const { emailService } = await import('@/lib/services/email');
+    const sendSpy = vi.spyOn(emailService, 'sendEmailVerification').mockResolvedValue({ success: true });
+
+    const origEnv = { ...process.env };
+    try {
+      process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
+
+      const mockLimitUnverified = vi.fn().mockResolvedValue([{
+        id: 'unverified-user-poison',
+        email: 'poison-target@example.com',
+        passwordHash: 'hash-123',
+        emailVerified: null,
+        firstName: 'Target',
+      }]);
+      const mockWhereUnverified = vi.fn().mockReturnValue({ limit: mockLimitUnverified });
+      const mockFromUnverified = vi.fn().mockReturnValue({ where: mockWhereUnverified });
+      mockSelect.mockReturnValueOnce({ from: mockFromUnverified });
+
+      const req = new NextRequest('http://localhost/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'host': 'evil-attacker-site.com',
+          'x-forwarded-host': 'evil-attacker-site.com',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({ email: 'poison-target@example.com' }),
+      });
+
+      const res = await resendHandler(req);
+      expect(res.status).toBe(200);
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg.verificationUrl).toContain('https://trusted.sprintscaleit.co.uk');
+      expect(callArg.verificationUrl).not.toContain('evil-attacker-site.com');
+    } finally {
+      process.env = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 42: PASSWORD RESET HOST HEADER POISONING IMMUNITY
+  // =========================================================================
+  it('Test 42: POST /api/auth/reset-password ignores attacker-injected Host headers', async () => {
+    const { POST: resetHandler } = await import('@/app/api/auth/reset-password/route');
+    const { emailService } = await import('@/lib/services/email');
+    const sendSpy = vi.spyOn(emailService, 'sendPasswordReset').mockResolvedValue({ success: true });
+
+    const origEnv = { ...process.env };
+    try {
+      process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
+
+      mockFindUser.mockResolvedValueOnce({
+        id: 'reset-victim-id',
+        email: 'reset-victim@example.com',
+        passwordHash: '$2a$10$abcdefghijklmnopqrstuvwxyz1234567890',
+        firstName: 'Victim',
+      });
+      mockUpdate.mockReturnValueOnce({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) });
+
+      const req = new NextRequest('http://localhost/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'host': 'evil-attacker-site.com',
+          'x-forwarded-host': 'evil-attacker-site.com',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({ email: 'reset-victim@example.com' }),
+      });
+
+      const res = await resetHandler(req);
+      expect(res.status).toBe(200);
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg.resetUrl).toContain('https://trusted.sprintscaleit.co.uk');
+      expect(callArg.resetUrl).not.toContain('evil-attacker-site.com');
+    } finally {
+      process.env = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 43: STAFF MAGIC LINK HOST HEADER POISONING IMMUNITY
+  // =========================================================================
+  it('Test 43: POST /api/staff/request-magic-link ignores attacker-injected Host headers', async () => {
+    const { POST: magicLinkHandler } = await import('@/app/api/staff/request-magic-link/route');
+    const { emailService } = await import('@/lib/services/email');
+    const sendSpy = vi.spyOn(emailService, 'sendMagicLink').mockResolvedValue({ success: true });
+
+    const origEnv = { ...process.env };
+    try {
+      process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
+
+      mockFindUser.mockResolvedValueOnce({
+        id: 'staff-user-1',
+        email: 'staff@example.com',
+        role: 'MANAGER',
+        organisationId: 'org-staff-1',
+        name: 'Staff Member',
+      });
+
+      // org name lookup
+      const mockLimitOrg = vi.fn().mockResolvedValue([{ name: 'Test Org' }]);
+      const mockWhereOrg = vi.fn().mockReturnValue({ limit: mockLimitOrg });
+      const mockFromOrg = vi.fn().mockReturnValue({ where: mockWhereOrg });
+      mockSelect.mockReturnValueOnce({ from: mockFromOrg });
+
+      const req = new NextRequest('http://localhost/api/staff/request-magic-link', {
+        method: 'POST',
+        headers: {
+          'host': 'evil-attacker-site.com',
+          'x-forwarded-host': 'evil-attacker-site.com',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({ email: 'staff@example.com' }),
+      });
+
+      const res = await magicLinkHandler(req);
+      expect(res.status).toBe(200);
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg.magicLink).toContain('https://trusted.sprintscaleit.co.uk');
+      expect(callArg.magicLink).not.toContain('evil-attacker-site.com');
+    } finally {
+      process.env = origEnv;
+    }
+  });
+
+  // =========================================================================
+  // TEST 44: STAFF INVITE HOST HEADER POISONING IMMUNITY
+  // =========================================================================
+  it('Test 44: POST /api/staff/invite ignores attacker-injected Host headers', async () => {
+    const { POST: inviteHandler } = await import('@/app/api/staff/invite/route');
+    const { emailService } = await import('@/lib/services/email');
+    const sendSpy = vi.spyOn(emailService, 'sendStaffInvitation').mockResolvedValue({ success: true });
+
+    const origEnv = { ...process.env };
+    try {
+      process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
+
+      // Current user query
+      const mockLimitCurrentUser = vi.fn().mockResolvedValue([{
+        id: 'owner-session-id',
+        role: 'ORG_OWNER',
+        name: 'Owner User',
+      }]);
+      const mockWhereCurrentUser = vi.fn().mockReturnValue({ limit: mockLimitCurrentUser });
+      const mockFromCurrentUser = vi.fn().mockReturnValue({ where: mockWhereCurrentUser });
+      mockSelect.mockReturnValueOnce({ from: mockFromCurrentUser });
+
+      // Existing user query (null)
+      mockFindUser.mockResolvedValueOnce(null);
+
+      // Org name query
+      mockSelect.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{ name: 'Test Org' }]),
+          }),
+        }),
+      });
+
+      const req = new NextRequest('http://localhost/api/staff/invite', {
+        method: 'POST',
+        headers: {
+          'host': 'evil-attacker-site.com',
+          'x-forwarded-host': 'evil-attacker-site.com',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({
+          email: 'newtutor@example.com',
+          role: 'TUTOR',
+          firstName: 'New',
+          lastName: 'Tutor',
+        }),
+      });
+
+      const res = await inviteHandler(req);
+      expect(res.status).toBe(200);
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg.inviteLink).toContain('https://trusted.sprintscaleit.co.uk');
+      expect(callArg.inviteLink).not.toContain('evil-attacker-site.com');
+    } finally {
+      process.env = origEnv;
+    }
   });
 });

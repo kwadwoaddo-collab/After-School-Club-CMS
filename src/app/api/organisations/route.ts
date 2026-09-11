@@ -10,6 +10,7 @@ import { authRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { passwordSchema, normalizeEmail, MAX_EMAIL_LENGTH, MAX_NAME_LENGTH } from '@/lib/validations/auth';
 import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 const registrationSchema = z.object({
     organisationName: z.string().min(2).max(255),
@@ -174,16 +175,17 @@ export async function POST(req: NextRequest) {
             });
         });
 
-        // Build verification URL with raw token
-        const protocol = req.headers.get('x-forwarded-proto') || 'http';
-        const host = req.headers.get('host') || 'localhost:3000';
-        const verificationUrl = `${protocol}://${host}/api/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(contactEmail)}`;
+        // PM-2E2.B4.F: Build verification URL with trusted canonical origin
+        const baseUrl = getTrustedApplicationUrl();
+        const verificationUrl = new URL('/api/auth/verify-email', baseUrl);
+        verificationUrl.searchParams.set('token', rawToken);
+        verificationUrl.searchParams.set('email', contactEmail);
 
         // Send email verification asynchronously
         await emailService.sendEmailVerification({
             email: contactEmail,
             name: firstName.trim(),
-            verificationUrl,
+            verificationUrl: verificationUrl.toString(),
         });
 
         const response = NextResponse.json({

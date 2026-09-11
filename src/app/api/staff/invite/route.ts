@@ -9,6 +9,7 @@ import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { z } from 'zod';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 const inviteSchema = z.object({
     email: z.string().email().max(255),
@@ -175,12 +176,11 @@ export async function POST(request: NextRequest) {
             expiresAt,
         });
 
-        // Get base URL from request
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host') || 'localhost:3000';
-        const baseUrl = `${protocol}://${host}`;
-        // Deliver raw token in the link — the hash is what lives in the DB
-        const inviteLink = `${baseUrl}/accept-invite?token=${rawToken}`;
+        // PM-2E2.B4.F: Build invite URL with trusted canonical origin
+        const baseUrl = getTrustedApplicationUrl();
+        const inviteUrl = new URL('/accept-invite', baseUrl);
+        inviteUrl.searchParams.set('token', rawToken);
+        const inviteLink = inviteUrl.toString();
 
         // Get location name for email
         let locationName = 'the team';

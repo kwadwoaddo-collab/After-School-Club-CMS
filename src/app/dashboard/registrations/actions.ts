@@ -10,6 +10,7 @@ import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
 import { createRegistrationNotification } from '@/app/portal/notifications/actions';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 export async function deleteRegistrations(ids: string[]) {
     const session = await requireTenantSession();
@@ -267,12 +268,8 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
 
 
 
-    // Build the absolute registration URL
-    const { headers } = await import('next/headers');
-    const host = (await headers()).get('host') || 'localhost:3000';
-    const proto = (await headers()).get('x-forwarded-proto') || 'http';
-    const baseUrl = `${proto}://${host}`;
-
+    // PM-2E2.B4.F: Build the registration URL with trusted canonical origin
+    const baseUrl = getTrustedApplicationUrl();
     const link = `${baseUrl}/register/${org.slug}/${centre.slug}?token=${encodeURIComponent(token)}`;
     return { success: true, link };
 }

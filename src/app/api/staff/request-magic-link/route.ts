@@ -8,6 +8,7 @@ import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { normalizeEmail, MAX_EMAIL_LENGTH } from '@/lib/validations/auth';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 /**
  * POST /api/staff/request-magic-link
@@ -102,10 +103,11 @@ export async function POST(request: NextRequest) {
             expiresAt,
         });
 
-        // Build the magic link — raw token in URL, hash in DB
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host') || 'localhost:3000';
-        const magicLink = `${protocol}://${host}/accept-invite?token=${rawToken}`;
+        // PM-2E2.B4.F: Build the magic link with trusted canonical origin — raw token in URL, hash in DB
+        const baseUrl = getTrustedApplicationUrl();
+        const magicLinkUrl = new URL('/accept-invite', baseUrl);
+        magicLinkUrl.searchParams.set('token', rawToken);
+        const magicLink = magicLinkUrl.toString();
 
         // Send the email — sender will show as "[Org Name] via SprintScale"
         const emailResult = await emailService.sendMagicLink({

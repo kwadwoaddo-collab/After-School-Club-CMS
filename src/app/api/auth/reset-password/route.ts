@@ -9,6 +9,7 @@ import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { validatePassword, normalizeEmail, MAX_EMAIL_LENGTH, MAX_TOKEN_LENGTH } from '@/lib/validations/auth';
+import { getTrustedApplicationUrl } from '@/lib/base-url';
 
 /**
  * POST /api/auth/reset-password
@@ -70,16 +71,16 @@ export async function POST(request: NextRequest) {
                 passwordResetExpiry: expiry,
             }).where(eq(users.id, user.id));
 
-            // Build reset URL with raw token
-            const protocol = request.headers.get('x-forwarded-proto') || 'http';
-            const host = request.headers.get('host') || 'localhost:3000';
-            const resetUrl = `${protocol}://${host}/reset-password?token=${rawToken}`;
+            // PM-2E2.B4.F: Build reset URL with trusted canonical origin
+            const baseUrl = getTrustedApplicationUrl();
+            const resetUrl = new URL('/reset-password', baseUrl);
+            resetUrl.searchParams.set('token', rawToken);
 
             // Send email
             await emailService.sendPasswordReset({
                 email: user.email,
                 name: user.firstName || user.name || 'there',
-                resetUrl,
+                resetUrl: resetUrl.toString(),
             });
 
             logger.info(`[PasswordReset] Reset link sent to ${normalizedEmail}`);
