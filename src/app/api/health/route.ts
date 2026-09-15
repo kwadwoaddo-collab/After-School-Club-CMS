@@ -1,42 +1,41 @@
 import { NextResponse } from 'next/server';
-import { sql } from 'drizzle-orm';
-import { db } from '@/db';
 
 /**
  * GET /api/health
  *
- * Public health check endpoint for external uptime monitors.
+ * Shallow health check endpoint for frequent external uptime monitoring.
  *
  * Checks:
- *   - Application is running (implicit in any response)
- *   - Database connectivity (executes a minimal SELECT 1 query)
+ *   - Application runtime is alive and responding to HTTP requests.
+ *
+ * Invariants:
+ *   - ZERO database queries or connection initialization.
+ *   - ZERO external network or API calls.
+ *   - ZERO authentication, session, or cookie processing.
+ *   - ZERO secret or configuration exposure.
  *
  * Responses:
- *   200 {"ok": true}  — all critical dependencies healthy
- *   503 {"ok": false} — database unreachable
+ *   200 {"ok": true} — application runtime is operational
  *
- * Security:
- *   - Returns ONLY ok/false status. No hostnames, credentials, stack
- *     traces, tenant data, or implementation details are ever exposed.
- *   - Does not require authentication.
- *   - Suitable for external uptime monitors such as UptimeRobot,
- *     Better Stack, or Vercel monitoring.
- *
- * Note: Redis and email providers (Resend) are deliberately excluded
- * from this check. Those providers can enter a degraded-but-available
- * state independently. Failing the entire health endpoint because
- * Upstash or Resend is unreachable would cause false-positive outage
- * alerts for the core application.
+ * Suitable for high-frequency (e.g. 1-minute to 5-minute) uptime probes
+ * without preventing serverless database compute (Neon) from autosuspending.
  */
 export async function GET() {
-  try {
-    // Minimal read-only probe — validates connectivity without touching
-    // any business data. Uses drizzle's sql tag to bypass the ORM layer
-    // and catch even pool/credential failures.
-    await db.execute(sql`SELECT 1`);
-    return NextResponse.json({ ok: true });
-  } catch {
-    // Do not expose error detail: no message, hostname, or stack trace.
-    return NextResponse.json({ ok: false }, { status: 503 });
-  }
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * HEAD /api/health
+ *
+ * Explicit HEAD handler for uptime monitors that probe using HEAD requests.
+ *
+ * Responses:
+ *   200 (empty body) — application runtime is operational
+ *
+ * Invariants:
+ *   - ZERO database operations.
+ *   - ZERO body payload.
+ */
+export async function HEAD() {
+  return new Response(null, { status: 200 });
 }

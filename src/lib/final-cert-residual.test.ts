@@ -5,7 +5,7 @@ import { isEmailVerificationRequired } from "./auth";
 // ---------------------------------------------------------------------------
 // Mocks for DB and Services
 // ---------------------------------------------------------------------------
-let verificationTokensStore = new Map<string, { identifier: string; token: string; expires: Date }>();
+const verificationTokensStore = new Map<string, { identifier: string; token: string; expires: Date }>();
 
 const mockSelect = vi.fn(() => ({
   from: vi.fn().mockReturnValue({
@@ -54,7 +54,7 @@ vi.mock("@/lib/session", () => ({
 vi.mock("@/db", () => ({
   db: {
     select: () => mockSelect(),
-    transaction: (...args: any[]) => mockTransaction(...args),
+    transaction: (cb: any) => mockTransaction(cb),
     query: {
       users: {
         findFirst: (...args: any[]) => mockFindUser(...args),
