@@ -303,4 +303,46 @@ describe('UX-F1 — Form control readability regression tests', () => {
     expect(textContrast).toBeGreaterThan(15.0);       // Actual: ~16.8:1
     expect(placeholderContrast).toBeGreaterThanOrEqual(4.5); // Required: >= 4.5:1 (Actual: ~5.99:1)
   });
+
+  // ─── Post-Release Interaction UX Fix 1: Surface Geometric Stability ───────
+
+  it('globals.css does not apply hover or active transform scaling to generic layout background classes', () => {
+    const globalsCss = readSrc('src/app/globals.css');
+    const genericSurfaceClasses = [
+      '.bg-card',
+      '.bg-surface',
+      '.bg-surface-container',
+      '.bg-surface-container-high',
+      '.bg-surface-container-low',
+      '.bg-surface-container-highest',
+      '.bg-surface-container-lowest',
+    ];
+
+    for (const surfaceClass of genericSurfaceClasses) {
+      const hoverPattern = new RegExp(`${surfaceClass.replace('.', '\\.')}:hover`);
+      expect(globalsCss).not.toMatch(hoverPattern);
+
+      const activePattern = new RegExp(`${surfaceClass.replace('.', '\\.')}:active`);
+      expect(globalsCss).not.toMatch(activePattern);
+    }
+  });
+
+  it('globals.css preserves intentional interactive card micro-interactions on dedicated selectors', () => {
+    const globalsCss = readSrc('src/app/globals.css');
+    expect(globalsCss).toMatch(/\.card:hover,\s*\.glassmorphic-card:hover,\s*\.kpi-card:hover/);
+    expect(globalsCss).toMatch(/\.card:active,\s*\.glassmorphic-card:active,\s*\.kpi-card:active/);
+  });
+
+  it('globals.css preserves intentional button interaction styles', () => {
+    const globalsCss = readSrc('src/app/globals.css');
+    expect(globalsCss).toContain('.btn-primary:active');
+    expect(globalsCss).toContain('.btn-secondary:active');
+    expect(globalsCss).toContain('.btn-ghost:active');
+    expect(globalsCss).toContain('.btn-danger:active');
+  });
+
+  it('Card component maintains flat, restrained surface primitive without built-in active scale', () => {
+    const cardSrc = readSrc('src/components/ui/Card.tsx');
+    expect(cardSrc).not.toContain('active:scale');
+  });
 });

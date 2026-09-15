@@ -757,14 +757,14 @@ figcaption {
 
 /* Apple Micro-Interactions on hover/active */
 @layer components {
-  .card:hover, .glassmorphic-card:hover, .kpi-card:hover, .bg-card:hover, .bg-surface:hover, .bg-surface-container:hover, .bg-surface-container-high:hover, .bg-surface-container-low:hover, .bg-surface-container-highest:hover, .bg-surface-container-lowest:hover {
+  .card:hover, .glassmorphic-card:hover, .kpi-card:hover {
     transform: scale(1.012);
     box-shadow: var(--shadow-card-hover);
   }
 }
 
 @layer components {
-  .card:active, .glassmorphic-card:active, .kpi-card:active, .bg-card:active, .bg-surface:active, .bg-surface-container:active, .bg-surface-container-high:active, .bg-surface-container-low:active, .bg-surface-container-highest:active, .bg-surface-container-lowest:active {
+  .card:active, .glassmorphic-card:active, .kpi-card:active {
     transform: scale(0.988);
   }
 }
