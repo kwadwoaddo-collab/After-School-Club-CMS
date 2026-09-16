@@ -45,7 +45,7 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <InvoiceDetailsClient 
                 invoice={invoice} 
-                organisationName={org?.name || 'HASC CENTRE'} 
+                organisationName={org?.name || 'CENTRE'}
             />
         </div>
     );

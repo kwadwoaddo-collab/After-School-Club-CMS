@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
     col2: { flex: 1 },
     col3: { flex: 1, textAlign: 'right' },
     managerInfo: {
-        marginTop: 40,
+        marginTop: 25,
         fontSize: 8,
         color: '#64748b',
     }
@@ -21,7 +21,7 @@ interface ReceiptTemplateProps {
 }
 
 export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplateProps) => {
-    const { child, centre, invoiceNumber, payments } = invoice;
+    const { child, centre, invoiceNumber, payments, billingPeriodStart, billingPeriodEnd, childDisplayName, status } = invoice;
     // parent is a top-level relation on the invoice, not nested under child
     const parent = invoice.parent || (child as any)?.parent || null;
     // Parse address into lines for multi-line display
@@ -34,14 +34,30 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
         return format(d, formatStr);
     };
 
+    // Build the canonical list of all children covered by this invoice.
+    // coveredChildrenJson is the source of truth (supports multiple children);
+    // fall back to the single child relation or free-text childDisplayName.
+    const allChildNames: string[] = (() => {
+        const json = invoice.coveredChildrenJson;
+        if (json && Array.isArray(json) && json.length > 0) {
+            return json.map((c: any) => c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim()).filter(Boolean);
+        }
+        if (child) return [`${child.firstName} ${child.lastName}`];
+        if (childDisplayName) return [childDisplayName];
+        return [];
+    })();
+
+    // Only verified payments count towards received funds
+    const verifiedPayments = (payments ?? []).filter((p: any) => p.status === 'verified');
+
     // Sort payments by date desc (latest first)
-    const sortedPayments = [...(payments ?? [])].sort((a: any, b: any) => {
+    const sortedPayments = [...verifiedPayments].sort((a: any, b: any) => {
         const tA = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
         const tB = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
         return tB - tA;
     });
 
-    const totalPaid = (payments ?? []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     const invoiceAmount = Number(invoice.amount);
     const remainingBalance = Math.max(0, invoiceAmount - totalPaid);
 
@@ -57,7 +73,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                         <Text style={styles.subtitle}>Payment Confirmation</Text>
                         <Text style={styles.title}>RECEIPT</Text>
                         <Text style={{ fontSize: 8, color: '#64748b', marginTop: 4 }}>
-                            Ofsted / Ref No: {centre?.ofstedId || 'N/A'}
+                            Ofsted Registration No: {centre?.ofstedId || '—'}
                         </Text>
                     </View>
                     <View style={styles.invoiceInfo}>
@@ -94,12 +110,21 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     </View>
                     <View style={styles.period}>
                         <Text style={styles.sectionTitle}>Payment Summary</Text>
-                        {child && (
-                            <Text style={{ fontWeight: 'bold' }}>Child: {child.firstName} {child.lastName}</Text>
-                        )}
-                        <Text>Original Invoice: £{invoiceAmount.toFixed(2)}</Text>
+                        {allChildNames.length > 0 && allChildNames.map((name: string, i: number) => (
+                            <Text key={i} style={{ fontWeight: 'bold' }}>
+                                {allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}
+                            </Text>
+                        ))}
+                        <Text>Type of Service: Childcare</Text>
+                        {billingPeriodStart && billingPeriodEnd ? (
+                            <Text>Service Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
+                        ) : billingPeriodStart ? (
+                            <Text>Service Period: From {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')}</Text>
+                        ) : null}
+                        <Text>Original Invoice: {invoiceNumber}</Text>
+                        <Text>Invoice Total: £{invoiceAmount.toFixed(2)}</Text>
                         <Text>Total Paid: £{totalPaid.toFixed(2)}</Text>
-                        <Text>Status: {totalPaid >= invoiceAmount ? 'FULLY PAID' : totalPaid > 0 ? 'PARTIALLY PAID' : 'UNPAID'}</Text>
+                        <Text>Status: {totalPaid >= invoiceAmount ? 'FULLY PAID' : totalPaid > 0 ? 'PARTIALLY PAID' : (status ? status.toUpperCase() : 'UNPAID')}</Text>
                     </View>
                 </View>
 
@@ -119,7 +144,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     ))}
                     {sortedPayments.length === 0 && (
                         <View style={styles.tableRow}>
-                            <Text style={{ flex: 1, textAlign: 'center', color: '#64748b', fontStyle: 'italic' }}>No payments recorded yet.</Text>
+                            <Text style={{ flex: 1, textAlign: 'center', color: '#64748b', fontStyle: 'italic' }}>No verified payments recorded yet.</Text>
                         </View>
                     )}
                 </View>
@@ -138,10 +163,12 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                     </View>
                 </View>
 
-                {/* Manager Name */}
+                {/* Manager / Signatory */}
                 <View style={styles.managerInfo}>
-                    <Text>Manager: {centre?.managerName || '—'}</Text>
-                    <Text style={{ marginTop: 2, color: '#94a3b8' }}>Thank you for your payment!</Text>
+                    <Text style={{ fontWeight: 'bold', color: '#334155' }}>Issued by: {centre?.managerName || 'Centre Manager'}</Text>
+                    <Text style={{ marginTop: 2 }}>Role: Centre Manager</Text>
+                    <Text style={{ marginTop: 1, color: '#64748b' }}>{centre?.name || organisationName || ''}</Text>
+                    <Text style={{ marginTop: 4, color: '#94a3b8' }}>Thank you for your payment!</Text>
                 </View>
 
                 {/* Footer */}

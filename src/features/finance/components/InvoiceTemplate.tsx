@@ -8,12 +8,12 @@ const styles = StyleSheet.create({
     col1: { flex: 4 },
     col3: { flex: 1, textAlign: 'right' },
     bankDetails: {
-        marginTop: 40,
-        padding: 15,
+        marginTop: 20,
+        padding: 12,
         backgroundColor: '#f8fafc',
         borderRadius: 4,
         borderLeft: 3,
-        borderLeftColor: '#1e40af', // HASC Blue
+        borderLeftColor: '#1e40af', // Primary Blue
     },
 });
 
@@ -68,7 +68,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
             <Page size="A4" style={styles.page}>
                 {/* Watermark */}
                 <Text style={styles.watermark}>
-                    {status === 'paid' ? 'PAID' : (centre?.name?.toUpperCase() || 'HEATHWAY')}
+                    {status === 'paid' ? 'PAID' : (centre?.name?.toUpperCase() || 'INVOICE')}
                 </Text>
 
                 {/* Header */}
@@ -133,7 +133,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                             <Text key={i}>{allChildNames.length > 1 ? `Child ${i + 1}: ` : 'Child: '}{name}</Text>
                         ))}
                         <Text>Period: {safeFormatDate(billingPeriodStart, 'dd/MM/yyyy')} – {safeFormatDate(billingPeriodEnd, 'dd/MM/yyyy')}</Text>
-                        <Text>Centre: {centre?.name || 'HASC Centre'}</Text>
+                        <Text>Centre: {centre?.name || 'Centre'}</Text>
                     </View>
                 </View>
 
@@ -212,7 +212,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 </View>
 
                 {/* Authorised By */}
-                <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end' }}>
+                <View style={{ marginTop: 14, flexDirection: 'row', justifyContent: 'flex-end' }}>
                     <View style={{ width: 200 }}>
                         <View style={{ borderTopWidth: 1, borderTopColor: '#cbd5e1', paddingTop: 6 }}>
                             <Text style={{ fontSize: 8, color: '#334155', fontWeight: 'bold' }}>
@@ -228,7 +228,7 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.footerLeft}>
-                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{organisationName || centre?.name || 'HASC CENTRE'}</Text>
+                        <Text style={{ fontWeight: 'bold', color: '#ffffff', fontSize: 9 }}>{organisationName || centre?.name || 'CENTRE'}</Text>
                         {addressLines.map((line: string, i: number) => (
                             <Text key={i} style={{ color: '#ffffff', fontSize: 7, marginTop: 1 }}>{line}</Text>
                         ))}

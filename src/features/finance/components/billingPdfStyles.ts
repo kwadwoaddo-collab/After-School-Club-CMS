@@ -122,7 +122,7 @@ export const billingStylesBase = {
         left: 0,
         right: 0,
         minHeight: 75,
-        backgroundColor: '#1e40af', // HASC Blue
+        backgroundColor: '#1e40af', // Primary Blue
         flexDirection: 'row' as const,
         justifyContent: 'space-between' as const,
         alignItems: 'center' as const,
