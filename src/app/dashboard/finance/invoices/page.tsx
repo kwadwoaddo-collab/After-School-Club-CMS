@@ -3,7 +3,8 @@ import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import FilterableInvoiceHistorySection from '@/features/finance/components/FilterableInvoiceHistorySection';
 import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
@@ -14,15 +15,27 @@ export default async function InvoicesListPage() {
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
     
-    // Check role access - Strictly ORG_OWNER
+    // Check role access - ORG_OWNER or MANAGER
     const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER') {
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         return redirect('/dashboard');
     }
 
-    // Fetch all invoices for the organization
+    let whereCondition = eq(invoices.organisationId, session.user.organisationId);
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentres = await getUserAccessibleCentres(session.user.id);
+        const accessibleCentreIds = accessibleCentres.map(c => c.id);
+        whereCondition = and(
+            eq(invoices.organisationId, session.user.organisationId),
+            accessibleCentreIds.length > 0
+                ? inArray(invoices.centreId, accessibleCentreIds)
+                : eq(invoices.centreId, 'unauthorized_centre_id')
+        )!;
+    }
+
+    // Fetch invoices for the organization
     const allInvoices = await db.query.invoices.findMany({
-        where: eq(invoices.organisationId, session.user.organisationId),
+        where: whereCondition,
         orderBy: [desc(invoices.createdAt)],
         with: {
             centre: true,

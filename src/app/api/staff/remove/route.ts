@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { users, centreMemberships, orgMemberships } from '@/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -16,7 +17,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        if ((session.user as any).role !== 'ORG_OWNER') {
+        const userRole = (session.user as any).role;
+        if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -58,15 +60,33 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
         }
 
-        // Prevent removing another ORG_OWNER — same safeguard as
-        // DELETE /api/staff/[id]. Owners must be demoted (role change) before
-        // they can be removed, so a single ORG_OWNER can't unilaterally strip
-        // every other owner from the org.
+        // Prevent removing another ORG_OWNER
         if (targetUser.role === 'ORG_OWNER') {
             return NextResponse.json({ error: 'Cannot remove another owner. Change their role first.' }, { status: 400 });
         }
 
-        // Remove all centre memberships
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            const targetMemberships = await db
+                .select({ centreId: centreMemberships.centreId })
+                .from(centreMemberships)
+                .where(eq(centreMemberships.userId, userId));
+
+            const isInAccessibleCentre = targetMemberships.some(m => accessibleCentreIds.includes(m.centreId));
+            if (targetMemberships.length > 0 && !isInAccessibleCentre) {
+                return NextResponse.json({ error: 'Forbidden: Staff member does not belong to your assigned centres' }, { status: 403 });
+            }
+
+            if (accessibleCentreIds.length > 0) {
+                await db
+                    .delete(centreMemberships)
+                    .where(and(eq(centreMemberships.userId, userId), inArray(centreMemberships.centreId, accessibleCentreIds)));
+            }
+
+            return NextResponse.json({ success: true });
+        }
+
+        // ORG_OWNER full removal: Remove all centre memberships
         await db
             .delete(centreMemberships)
             .where(eq(centreMemberships.userId, userId));

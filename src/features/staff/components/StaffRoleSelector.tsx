@@ -58,14 +58,16 @@ interface Props {
     selectedRole: StaffRole;
     onRoleChange: (role: StaffRole) => void;
     ownerCount: number;
+    isOwner?: boolean;
 }
 
-export default function StaffRoleSelector({ currentRole, selectedRole, onRoleChange, ownerCount }: Props) {
+export default function StaffRoleSelector({ currentRole, selectedRole, onRoleChange, ownerCount, isOwner = true }: Props) {
     // UI-only last-owner lock — server-side owner safety is enforced
     // independently by updateStaffRole's self-change guard (see
     // project-notes/milestone-3c-staff-audit.md §5). This is a more
     // conservative affordance, not a substitute for it.
     const lastOwnerLocked = currentRole === 'ORG_OWNER' && ownerCount === 1;
+    const availableRoles = isOwner ? ROLES : ROLES.filter(r => r.value !== 'ORG_OWNER');
 
     return (
         <Card>
@@ -79,7 +81,7 @@ export default function StaffRoleSelector({ currentRole, selectedRole, onRoleCha
 
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {ROLES.map((role) => {
+                    {availableRoles.map((role) => {
                         const isActive = selectedRole === role.value;
                         const isLocked = lastOwnerLocked && role.value !== 'ORG_OWNER';
                         return (

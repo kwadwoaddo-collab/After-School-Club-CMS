@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import { db } from '@/db';
 import { users, centreMemberships, centres, staffInvites } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -26,10 +27,12 @@ const ROLE_ICONS: Record<string, any> = {
 };
 
 export default async function StaffPage() {
-    // Only ORG_OWNER can manage staff — see project-notes/milestone-3c-staff-audit.md §5.
-    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
+    // Allow ORG_OWNER and MANAGER. Managers are scoped to their assigned centres.
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     const orgId = session.user.organisationId;
+    const userRole = (session.user as any)?.role;
+    const isOwner = userRole === 'ORG_OWNER';
 
     let hasError = false;
     let staffList: any[] = [];
@@ -39,6 +42,11 @@ export default async function StaffPage() {
     let enrichedStaff: any[] = [];
 
     try {
+        const accessibleCentres = isOwner
+            ? []
+            : await getUserAccessibleCentres(session.user.id);
+        const accessibleCentreIds = new Set(accessibleCentres.map((c: any) => c.id));
+
         // Fetch all staff in the org
         staffList = await db
             .select({
@@ -65,12 +73,14 @@ export default async function StaffPage() {
             .innerJoin(centres, eq(centreMemberships.centreId, centres.id))
             .where(eq(centres.organisationId, orgId));
 
-        // Fetch all org centres (for reassignment UI)
-        orgCentres = await db
-            .select({ id: centres.id, name: centres.name })
-            .from(centres)
-            .where(eq(centres.organisationId, orgId))
-            .orderBy(centres.name);
+        // Fetch org centres for reassignment UI (scoped for managers)
+        orgCentres = isOwner
+            ? await db
+                .select({ id: centres.id, name: centres.name })
+                .from(centres)
+                .where(eq(centres.organisationId, orgId))
+                .orderBy(centres.name)
+            : accessibleCentres.map((c: any) => ({ id: c.id, name: c.name }));
 
         // Fetch pending invites (unused only)
         pendingInvites = await db
@@ -100,6 +110,18 @@ export default async function StaffPage() {
                 : (s.name ?? s.email),
             centres: membershipMap[s.id] ?? [],
         }));
+
+        if (!isOwner) {
+            // Managers only see staff who belong to at least one of their accessible centres,
+            // plus organization owners and themselves.
+            enrichedStaff = enrichedStaff.filter(s =>
+                s.role === 'ORG_OWNER' ||
+                s.id === session.user.id ||
+                s.centres.some((c: { centreId: string }) => accessibleCentreIds.has(c.centreId))
+            );
+            // Managers only see non-owner pending invites
+            pendingInvites = pendingInvites.filter(i => i.role !== 'ORG_OWNER');
+        }
     } catch (e: any) {
         logger.error("Error fetching staff data", e);
         hasError = true;

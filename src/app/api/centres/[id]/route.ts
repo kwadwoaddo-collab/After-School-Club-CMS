@@ -6,6 +6,8 @@ import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -36,6 +38,14 @@ export async function PATCH(
             return NextResponse.json({ error: 'Centre not found or access denied' }, { status: 404 });
         }
 
+        // Centre-scoping check for MANAGER
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(id)) {
+                return NextResponse.json({ error: 'Forbidden: You do not have access to this centre' }, { status: 403 });
+            }
+        }
+
         // Validate and update fields
         const { 
             sessionSlots, 
@@ -51,22 +61,6 @@ export async function PATCH(
             billingEmail,
             signatureUrl
         } = body;
-
-        // Strict RBAC: Only ORG_OWNER can update billing details
-        const isUpdatingBilling = bankName !== undefined || 
-                                 sortCode !== undefined || 
-                                 accountNo !== undefined || 
-                                 ofstedId !== undefined || 
-                                 managerName !== undefined || 
-                                 billingPhone !== undefined ||
-                                 billingEmail !== undefined ||
-                                 signatureUrl !== undefined ||
-                                 feeSelfFinance !== undefined ||
-                                 feeAssistedFinance !== undefined;
-
-        if (isUpdatingBilling && userRole !== 'ORG_OWNER') {
-            return NextResponse.json({ error: 'Only organisation owners can update billing settings' }, { status: 403 });
-        }
 
         const updateData: any = {};
         if (sessionSlots !== undefined) {

@@ -10,7 +10,7 @@ import InviteStaffForm from '@/features/staff/components/InviteStaffForm';
  * unchanged, just moved to InviteStaffForm.tsx so this file can gate it.
  */
 export default async function InviteStaffPage() {
-    await requireAuth({ roles: ['ORG_OWNER'] });
+    await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     return <InviteStaffForm />;
 }

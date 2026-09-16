@@ -21,6 +21,11 @@ vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
 }));
 
+vi.mock('@/lib/permissions', () => ({
+  getUserAccessibleCentreIds: vi.fn().mockResolvedValue(['centre-1']),
+  getUserAccessibleCentres: vi.fn().mockResolvedValue([{ id: 'centre-1', name: 'Centre 1' }]),
+}));
+
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
@@ -92,14 +97,26 @@ describe('updateCentreAction', () => {
     expect(db.update).toHaveBeenCalled();
   });
 
-  it('rejects a MANAGER updating bank details — billing fields are ORG_OWNER only', async () => {
+  it('allows a MANAGER to update bank details for an authorised centre', async () => {
+    const { auth } = await import('@/lib/auth');
+    (auth as any).mockResolvedValueOnce(sessionFor('MANAGER'));
+    const { db } = await import('@/db');
+    const { updateCentreAction } = await import('./[id]/settings/actions');
+
+    await expect(
+      updateCentreAction('centre-1', { bankName: 'Lloyds', sortCode: '000000', accountNo: '12345678' })
+    ).resolves.toEqual({ success: true });
+    expect(db.update).toHaveBeenCalled();
+  });
+
+  it('rejects a MANAGER updating bank details for an unassigned centre', async () => {
     const { auth } = await import('@/lib/auth');
     (auth as any).mockResolvedValueOnce(sessionFor('MANAGER'));
     const { updateCentreAction } = await import('./[id]/settings/actions');
 
     await expect(
-      updateCentreAction('centre-1', { bankName: 'Lloyds', sortCode: '000000', accountNo: '12345678' })
-    ).rejects.toThrow('Only Owners can update billing settings');
+      updateCentreAction('centre-unassigned', { bankName: 'Lloyds', sortCode: '000000', accountNo: '12345678' })
+    ).rejects.toThrow('Forbidden: You do not have access to this centre.');
   });
 
   it('allows an ORG_OWNER to update bank details', async () => {

@@ -302,3 +302,99 @@ describe('finance/actions — getInvoiceDetails authorization (Milestone 3G, L2b
         expect(result?.id).toBe('invoice-1');
     });
 });
+
+describe('finance/actions — resendInvoiceEmail authorization (Manager Access Expansion)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    const MANAGER_SESSION = { user: { id: 'user-mgr', organisationId: 'org-1', role: 'MANAGER' } };
+    const TUTOR_SESSION = { user: { id: 'user-tutor', organisationId: 'org-1', role: 'TUTOR' } };
+
+    it('rejects lower roles like FRONT_DESK and TUTOR with Insufficient permissions', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(FRONT_DESK_SESSION);
+
+        const { resendInvoiceEmail } = await import('./actions');
+        const res = await resendInvoiceEmail('invoice-1');
+        expect(res.success).toBe(false);
+        expect(res.error).toMatch(/Insufficient permissions/);
+    });
+
+    it('allows MANAGER when the invoice belongs to an accessible centre', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
+        getUserAccessibleCentreIds.mockResolvedValue(['centre-mgr']);
+        invoicesFindFirst.mockResolvedValue({
+            id: 'invoice-1',
+            centreId: 'centre-mgr',
+            invoiceNumber: 'INV-001',
+            amount: '100.00',
+            status: 'sent',
+            dueDate: new Date(),
+            parent: { firstName: 'Jane', email: 'jane@example.com' },
+            centre: { name: 'Main Centre' },
+        });
+
+        const { resendInvoiceEmail } = await import('./actions');
+        const res = await resendInvoiceEmail('invoice-1');
+        expect(res.success).toBe(true);
+    });
+
+    it('rejects MANAGER when the invoice belongs to an unassigned centre', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
+        getUserAccessibleCentreIds.mockResolvedValue(['centre-other']);
+        invoicesFindFirst.mockResolvedValue({
+            id: 'invoice-1',
+            centreId: 'centre-unassigned',
+            invoiceNumber: 'INV-001',
+            amount: '100.00',
+            status: 'sent',
+            dueDate: new Date(),
+            parent: { firstName: 'Jane', email: 'jane@example.com' },
+            centre: { name: 'Other Centre' },
+        });
+
+        const { resendInvoiceEmail } = await import('./actions');
+        const res = await resendInvoiceEmail('invoice-1');
+        expect(res.success).toBe(false);
+        expect(res.error).toMatch(/Unauthorized: No access to this centre/);
+    });
+
+    it('allows ORG_OWNER regardless of centre', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        invoicesFindFirst.mockResolvedValue({
+            id: 'invoice-1',
+            centreId: 'centre-any',
+            invoiceNumber: 'INV-001',
+            amount: '100.00',
+            status: 'sent',
+            dueDate: new Date(),
+            parent: { firstName: 'Jane', email: 'jane@example.com' },
+            centre: { name: 'Any Centre' },
+        });
+
+        const { resendInvoiceEmail } = await import('./actions');
+        const res = await resendInvoiceEmail('invoice-1');
+        expect(res.success).toBe(true);
+        expect(getUserAccessibleCentreIds).not.toHaveBeenCalled();
+    });
+});
+
+describe('finance/actions — deleteInvoice privilege boundary (Manager Access Expansion)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    const MANAGER_SESSION = { user: { id: 'user-mgr', organisationId: 'org-1', role: 'MANAGER' } };
+
+    it('strictly rejects MANAGER from deleting invoices', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(MANAGER_SESSION);
+
+        const { deleteInvoice } = await import('./actions');
+        await expect(deleteInvoice('invoice-1')).rejects.toThrow(/Only Owner can delete invoices/);
+    });
+});

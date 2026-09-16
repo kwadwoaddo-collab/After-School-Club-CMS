@@ -20,22 +20,28 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
     
-    // Check role access - Strictly ORG_OWNER
+    // Check role access - ORG_OWNER or MANAGER
     const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER') {
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         return redirect('/dashboard');
     }
 
     const { id } = params;
     
     // Fetch invoice and org details in parallel
-    const [invoice, org] = await Promise.all([
-        getInvoiceDetails(id),
-        db.query.organisations.findFirst({
-            where: eq(organisations.id, session.user.organisationId),
-            columns: { name: true }
-        })
-    ]);
+    let invoice = null;
+    let org = null;
+    try {
+        [invoice, org] = await Promise.all([
+            getInvoiceDetails(id),
+            db.query.organisations.findFirst({
+                where: eq(organisations.id, session.user.organisationId),
+                columns: { name: true }
+            })
+        ]);
+    } catch {
+        return notFound();
+    }
 
     if (!invoice) {
         return notFound();

@@ -1,9 +1,10 @@
 import { db } from '@/db';
-import { invoices, parents, children, payments, centres } from '@/db/schema';
-import { eq, and, sql, notInArray, desc, inArray } from 'drizzle-orm';
+import { invoices, parents, children, payments } from '@/db/schema';
+import { eq, and, notInArray, desc, inArray } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import { ReconciliationClient } from './reconciliation-client';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -22,13 +23,23 @@ export default async function ReconciliationPage(props: {
   if (!session?.user) return redirect('/login');
   if (!session.user.organisationId) return redirect('/onboarding');
 
+  // Check role access - ORG_OWNER or MANAGER
+  const userRole = session.user.role;
+  if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+    return redirect('/dashboard');
+  }
+
   const organisationId = session.user.organisationId;
   
-  const orgCentresRaw = await db.query.centres.findMany({
-    where: eq(centres.organisationId, organisationId)
-  });
-  const validCentreIds = orgCentresRaw.map((c: { id: string }) => c.id);
+  const orgCentres = await getUserAccessibleCentres(session.user.id);
+  const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
   const activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
+
+  const centreFilter = activeCentreId !== 'all'
+    ? eq(invoices.centreId, activeCentreId)
+    : validCentreIds.length > 0
+      ? inArray(invoices.centreId, validCentreIds)
+      : eq(invoices.centreId, 'unauthorized_centre_id');
 
   // Find all invoices that are pending (sent or partially_paid)
   const pendingInvoices = await db.select({
@@ -49,7 +60,7 @@ export default async function ReconciliationPage(props: {
   .where(
     and(
       eq(invoices.organisationId, organisationId),
-      eq(invoices.centreId, activeCentreId),
+      centreFilter,
       notInArray(invoices.status, ['draft', 'paid', 'void'])
     )
   )

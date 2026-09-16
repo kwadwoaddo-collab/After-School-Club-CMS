@@ -4,8 +4,9 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { db } from '@/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { centres, children } from '@/db/schema';
+import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
 
 export default async function ReceiptPage() {
@@ -15,15 +16,28 @@ export default async function ReceiptPage() {
     const orgId = (session.user as any).organisationId;
     if (!orgId) return redirect('/onboarding');
 
-    // Fetch accessible centres
-    const orgCentres = await db.query.centres.findMany({
-        where: eq(centres.organisationId, orgId),
-        orderBy: (centres, { asc }) => [asc(centres.name)],
-    });
+    // Check role access - ORG_OWNER or MANAGER
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        return redirect('/dashboard');
+    }
 
-    // Fetch all children with parent records for the selection dropdown
+    // Fetch accessible centres
+    const orgCentres = await getUserAccessibleCentres(session.user.id);
+
+    // Fetch children with parent records for the selection dropdown (scoped to accessible centres)
+    const visibleChildIds = await getVisibleChildIds(session.user.id, orgId);
+    const childrenWhere = visibleChildIds === null
+        ? eq(children.organisationId, orgId)
+        : and(
+            eq(children.organisationId, orgId),
+            visibleChildIds.length > 0
+                ? inArray(children.id, visibleChildIds)
+                : eq(children.id, 'unauthorized_child_id')
+        );
+
     const allChildren = await db.query.children.findMany({
-        where: eq(children.organisationId, orgId),
+        where: childrenWhere,
         with: {
             parent: true,
         },

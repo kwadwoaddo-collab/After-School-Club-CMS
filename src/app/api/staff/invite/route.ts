@@ -10,6 +10,7 @@ import { emailService } from '@/lib/services/email';
 import { z } from 'zod';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const inviteSchema = z.object({
     email: z.string().email().max(255),
@@ -43,16 +44,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if user is ORG_OWNER
+        // Check if user is ORG_OWNER or MANAGER
         const [currentUser] = await db
             .select()
             .from(users)
             .where(eq(users.id, session.user.id))
             .limit(1);
 
-        if (!currentUser || currentUser.role !== 'ORG_OWNER') {
+        if (!currentUser || (currentUser.role !== 'ORG_OWNER' && currentUser.role !== 'MANAGER')) {
             return NextResponse.json(
-                { error: 'Only organization owners can invite staff' },
+                { error: 'Only organization owners and managers can invite staff' },
                 { status: 403 }
             );
         }
@@ -73,6 +74,17 @@ export async function POST(request: NextRequest) {
         }
 
         const { email, role, firstName, lastName, centreId } = parsed.data;
+
+        // Privilege escalation guard: Managers can only invite staff for their assigned centres
+        if (currentUser.role !== 'ORG_OWNER') {
+            const accessibleCentres = await getUserAccessibleCentreIds(session.user.id);
+            if (!centreId || !accessibleCentres.includes(centreId)) {
+                return NextResponse.json(
+                    { error: 'Forbidden: You can only invite staff for your assigned centres' },
+                    { status: 403 }
+                );
+            }
+        }
 
         // Validate centreId belongs to this org before any writes (prevents cross-org injection)
         if (centreId) {

@@ -31,6 +31,13 @@ vi.mock('@/db', () => ({
     query: {
       organisations: { findFirst: vi.fn() },
       centres: { findFirst: vi.fn() },
+      users: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'u1',
+          role: 'MANAGER',
+          memberships: [{ centre: { id: 'centre-1' }, centreId: 'centre-1' }],
+        }),
+      },
     },
     select: vi.fn(() => ({
       from: vi.fn(() => ({

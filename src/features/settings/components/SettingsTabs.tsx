@@ -31,16 +31,21 @@ interface SettingsTabsProps {
     };
     centres: InferSelectModel<typeof centresTable>[];
     baseUrl: string;
+    isOwner?: boolean;
 }
 
 type TabType = 'general' | 'hours' | 'branding' | 'finance' | 'registration' | 'discounts' | 'danger_zone';
 
-export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProps) {
+export default function SettingsTabs({ org, centres, baseUrl, isOwner = true }: SettingsTabsProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const activeTabParam = searchParams.get('tab') as TabType | null;
 
-    const [activeTab, setActiveTab] = useState<TabType>(activeTabParam || 'general');
+    const initialTab = activeTabParam && (isOwner || (activeTabParam !== 'danger_zone' && activeTabParam !== 'branding'))
+        ? activeTabParam
+        : 'general';
+
+    const [activeTab, setActiveTab] = useState<TabType>(initialTab);
     const { toast } = useToast();
     const [isRolling, setIsRolling] = useState(false);
     const [isRollModalOpen, setIsRollModalOpen] = useState(false);
@@ -69,7 +74,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
         router.push(`?${newParams.toString()}`);
     };
 
-    const tabs = [
+    const allTabs = [
         { id: 'general', label: 'General Info', icon: Building2, description: 'Organization name & contact info' },
         { id: 'hours', label: 'Operating Hours', icon: Clock, description: 'Hours & session slots' },
         { id: 'branding', label: 'Branding & Theme', icon: Palette, description: 'Brand color & logotype' },
@@ -78,6 +83,10 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
         { id: 'discounts', label: 'Discount Rules', icon: Tag, description: 'Sibling & custom discount rules' },
         { id: 'danger_zone', label: 'Danger Zone', icon: ShieldCheck, description: 'Data management' },
     ] as const;
+
+    const tabs = isOwner
+        ? allTabs
+        : allTabs.filter(t => t.id !== 'danger_zone' && t.id !== 'branding');
 
     const formattedCentres = centres.map(c => ({
         ...c,
@@ -121,7 +130,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                                 <h2 className="text-xl font-bold text-foreground tracking-tight">Organization Profile</h2>
                                 <p className="text-sm text-muted-foreground mt-1">Configure your organization details and workspace details.</p>
                             </div>
-                            <OrganisationInfoForm org={org} baseUrl={baseUrl} />
+                            <OrganisationInfoForm org={org} baseUrl={baseUrl} isOwner={isOwner} />
                         </div>
                     )}
 
@@ -131,7 +140,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                         </div>
                     )}
 
-                    {activeTab === 'branding' && (
+                    {activeTab === 'branding' && isOwner && (
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-foreground tracking-tight">Branding &amp; Visual Design</h2>
@@ -163,7 +172,7 @@ export default function SettingsTabs({ org, centres, baseUrl }: SettingsTabsProp
                         </div>
                     )}
 
-                    {activeTab === 'danger_zone' && (
+                    {activeTab === 'danger_zone' && isOwner && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-red-500 tracking-tight">Danger Zone</h2>

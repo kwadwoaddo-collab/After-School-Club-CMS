@@ -2,6 +2,7 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import { db } from '@/db';
 import { organisations, centres } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
 
     const [org] = await db
         .select()
@@ -23,6 +24,9 @@ export default async function SettingsPage() {
 
     if (!org) return redirect('/onboarding');
 
+    const userRole = (session.user as any)?.role;
+    const isOwner = userRole === 'ORG_OWNER';
+
     // Fetch discount_rules using raw sql since it's not in the Drizzle schema
     const result = await db.execute(
         sql`SELECT discount_rules FROM organisations WHERE id = ${session.user.organisationId} LIMIT 1`
@@ -30,11 +34,13 @@ export default async function SettingsPage() {
     const row = (result as any)[0] ?? (result as any).rows?.[0];
     const discountRules = row?.discount_rules ?? [];
 
-    // Fetch all organization centres
-    const orgCentres = await db.query.centres.findMany({
-        where: eq(centres.organisationId, org.id),
-        orderBy: (centres, { asc }) => [asc(centres.name)],
-    });
+    // Fetch organization centres: all for owners, scoped to accessible centres for managers
+    const orgCentres = isOwner
+        ? await db.query.centres.findMany({
+            where: eq(centres.organisationId, org.id),
+            orderBy: (centres, { asc }) => [asc(centres.name)],
+        })
+        : await getUserAccessibleCentres(session.user.id);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://after-school-club-live.vercel.app';
 
@@ -58,6 +64,7 @@ export default async function SettingsPage() {
                 org={orgWithDiscounts} 
                 centres={orgCentres} 
                 baseUrl={baseUrl} 
+                isOwner={isOwner}
             />
         </div>
     );

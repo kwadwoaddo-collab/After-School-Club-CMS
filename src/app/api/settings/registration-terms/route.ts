@@ -34,8 +34,8 @@ export async function PATCH(req: NextRequest) {
         const orgId = (session.user as any).organisationId;
         if (!orgId) return NextResponse.json({ error: 'No organisation' }, { status: 400 });
 
-        // Only ORG_OWNER should update registration terms
-        if ((session.user as any).role !== 'ORG_OWNER') {
+        const userRole = (session.user as any).role;
+        if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

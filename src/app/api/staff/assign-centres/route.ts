@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { users, centreMemberships, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 const assignSchema = z.object({
     userId: z.string().uuid(),
@@ -19,16 +20,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check if user is ORG_OWNER
+        // Allow ORG_OWNER and MANAGER
         const [currentUser] = await db
             .select()
             .from(users)
             .where(eq(users.id, session.user.id))
             .limit(1);
 
-        if (!currentUser || currentUser.role !== 'ORG_OWNER') {
+        if (!currentUser || (currentUser.role !== 'ORG_OWNER' && currentUser.role !== 'MANAGER')) {
             return NextResponse.json(
-                { error: 'Only organization owners can assign centres' },
+                { error: 'Only organization owners and managers can assign centres' },
                 { status: 403 }
             );
         }
@@ -89,10 +90,34 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Remove all existing centre assignments for this user
-        await db
-            .delete(centreMemberships)
-            .where(eq(centreMemberships.userId, userId));
+        // Scope check for MANAGER: can only assign centres they manage
+        if (currentUser.role !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            const invalidForManager = centreIds.filter((id) => !accessibleCentreIds.includes(id));
+            if (invalidForManager.length > 0) {
+                return NextResponse.json(
+                    { error: 'Forbidden: You can only assign staff to centres you manage' },
+                    { status: 403 }
+                );
+            }
+
+            // Delete only memberships within the manager's accessible centres
+            if (accessibleCentreIds.length > 0) {
+                await db
+                    .delete(centreMemberships)
+                    .where(
+                        and(
+                            eq(centreMemberships.userId, userId),
+                            inArray(centreMemberships.centreId, accessibleCentreIds)
+                        )
+                    );
+            }
+        } else {
+            // ORG_OWNER: Remove all existing centre assignments for this user
+            await db
+                .delete(centreMemberships)
+                .where(eq(centreMemberships.userId, userId));
+        }
 
         // Add new centre assignments
         if (centreIds && centreIds.length > 0) {

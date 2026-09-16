@@ -890,7 +890,10 @@ export async function failPayment(paymentId: string) {
 export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) return { success: false, error: 'Unauthorized' };
-    if ((session.user as any).role !== 'ORG_OWNER') return { success: false, error: 'Insufficient permissions' };
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        return { success: false, error: 'Insufficient permissions' };
+    }
 
     const invoice = await db.query.invoices.findFirst({
         where: and(
@@ -904,6 +907,12 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
     });
 
     if (!invoice) return { success: false, error: 'Invoice not found' };
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!invoice.centreId || !accessibleCentreIds.includes(invoice.centreId)) {
+            return { success: false, error: 'Unauthorized: No access to this centre' };
+        }
+    }
     if (invoice.status === 'paid') return { success: false, error: 'This invoice is already marked as paid.' };
     if (invoice.status === 'void') return { success: false, error: 'Cannot send a voided invoice.' };
 

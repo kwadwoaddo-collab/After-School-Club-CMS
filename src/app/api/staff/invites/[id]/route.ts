@@ -15,14 +15,15 @@ export async function DELETE(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if ((session.user as any).role !== 'ORG_OWNER') {
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
 
     const [invite] = await db
-        .select({ id: staffInvites.id })
+        .select({ id: staffInvites.id, role: staffInvites.role })
         .from(staffInvites)
         .where(and(
             eq(staffInvites.id, id),
@@ -32,6 +33,10 @@ export async function DELETE(
 
     if (!invite) {
         return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
+    }
+
+    if (userRole !== 'ORG_OWNER' && invite.role === 'ORG_OWNER') {
+        return NextResponse.json({ error: 'Forbidden: Managers cannot revoke owner invites' }, { status: 403 });
     }
 
     await db.delete(staffInvites).where(eq(staffInvites.id, id));

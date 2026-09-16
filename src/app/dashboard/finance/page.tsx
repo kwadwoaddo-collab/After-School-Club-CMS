@@ -1,10 +1,11 @@
 import { requireTenantSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { invoices, centres } from '@/db/schema';
-import { eq, desc, and, count, ne, lt } from 'drizzle-orm';
+import { invoices } from '@/db/schema';
+import { eq, desc, and, count, ne, lt, inArray } from 'drizzle-orm';
 import { Download, CreditCard, Receipt } from 'lucide-react';
 import { resolveActiveCentreId } from '@/lib/centre-filter';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import FinanceDataGridClient from '@/features/finance/components/FinanceDataGridClient';
@@ -14,12 +15,7 @@ import BillingCyclesTab from '@/features/billing/components/BillingCyclesTab';
 import { fetchBillingCycles } from '@/features/billing/queries';
 import { logger } from '@/lib/logger';
 
-async function fetchOrgCentres(organisationId: string) {
-    return db.query.centres.findMany({
-        where: eq(centres.organisationId, organisationId)
-    });
-}
-type OrgCentre = Awaited<ReturnType<typeof fetchOrgCentres>>[number];
+type OrgCentre = Awaited<ReturnType<typeof getUserAccessibleCentres>>[number];
 
 export default async function FinancePage(props: {
     searchParams: Promise<{
@@ -34,9 +30,9 @@ export default async function FinancePage(props: {
     if (!session?.user) return redirect('/login');
     if (!session.user.organisationId) return redirect('/onboarding');
     
-    // Check role access - Strictly ORG_OWNER
+    // Check role access - ORG_OWNER or MANAGER
     const userRole = session.user.role;
-    if (userRole !== 'ORG_OWNER') {
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
         return redirect('/dashboard');
     }
 
@@ -57,7 +53,7 @@ export default async function FinancePage(props: {
     try {
         let orgCentresRaw: OrgCentre[] = [];
         try {
-            orgCentresRaw = await fetchOrgCentres(session.user.organisationId);
+            orgCentresRaw = await getUserAccessibleCentres(session.user.id);
         } catch (e) {
             orgCentresRaw = [];
         }
@@ -66,7 +62,11 @@ export default async function FinancePage(props: {
         const validCentreIds = orgCentres.map((c: { id: string }) => c.id);
         activeCentreId = await resolveActiveCentreId(searchParams.centre, validCentreIds);
 
-        const centreFilter = activeCentreId !== 'all' ? eq(invoices.centreId, activeCentreId) : undefined;
+        const centreFilter = activeCentreId !== 'all'
+            ? eq(invoices.centreId, activeCentreId)
+            : validCentreIds.length > 0
+                ? inArray(invoices.centreId, validCentreIds)
+                : eq(invoices.centreId, 'unauthorized_centre_id');
 
         let dbStatusFilter = undefined;
         if (statusFilter === 'paid') {
@@ -112,6 +112,10 @@ export default async function FinancePage(props: {
     let billingCycles: import('@/features/billing/queries').BillingCycleRow[] = [];
     try {
         billingCycles = await fetchBillingCycles(session.user.organisationId, activeCentreId);
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleIds = orgCentres.map((c: { id: string }) => c.id);
+            billingCycles = billingCycles.filter(c => accessibleIds.includes(c.config.centreId));
+        }
     } catch (err) {
         logger.error('[finance] fetchBillingCycles failed:', err);
     }

@@ -3,7 +3,8 @@ import { logger } from '@/lib/logger';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
-import { eq, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
         }
 
         const role = (session.user as any).role as string;
-        if (role !== 'ORG_OWNER') {
+        if (role !== 'ORG_OWNER' && role !== 'MANAGER') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -49,12 +50,41 @@ export async function GET(req: NextRequest) {
 
         const orgId = session.user.organisationId;
 
+        let centreCondition = undefined;
+        if (role !== 'ORG_OWNER') {
+            const accessibleCentres = await getUserAccessibleCentres(session.user.id);
+            const accessibleCentreIds = accessibleCentres.map(c => c.id);
+            if (accessibleCentreIds.length === 0) {
+                const headers = [
+                    'Date',
+                    'Invoice #',
+                    'Student',
+                    'Parent',
+                    'Centre',
+                    'Amount (£)',
+                    'Paid (£)',
+                    'Outstanding (£)',
+                    'Status',
+                    'Payment Method',
+                ];
+                return new NextResponse(headers.join(','), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'text/csv; charset=utf-8',
+                        'Content-Disposition': 'attachment; filename="finance-export.csv"',
+                    },
+                });
+            }
+            centreCondition = inArray(invoices.centreId, accessibleCentreIds);
+        }
+
         // Query invoices in date range for this organisation
         const invoiceRows = await db.query.invoices.findMany({
             where: and(
                 eq(invoices.organisationId, orgId),
                 gte(invoices.invoiceDate, fromDate),
-                lte(invoices.invoiceDate, toDate)
+                lte(invoices.invoiceDate, toDate),
+                centreCondition
             ),
             orderBy: [desc(invoices.invoiceDate)],
             with: {

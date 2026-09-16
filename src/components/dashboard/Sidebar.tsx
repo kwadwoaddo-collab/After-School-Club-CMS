@@ -49,7 +49,7 @@ const ROLE_NAV: Record<string, string[]> = {
     // N-1 (Milestone 3N): Availability added to ORG_OWNER and MANAGER. The page gate
     // permits ORG_OWNER and MANAGER; the sidebar had no entry — no UI path existed.
     ORG_OWNER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
-    MANAGER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Reports', 'Communications', 'Availability'],
+    MANAGER: ['Dashboard', 'Help & Training', 'Centres', 'Students', 'Parents', 'Bookings', 'Attendance', 'Incidents', 'Kiosk', 'Registrations', 'Finance', 'Reports', 'Team', 'Communications', 'Settings', 'Availability'],
     // A-1 (Milestone 3M — orchestrator decision, Option A): Parents added to FRONT_DESK.
     // The /dashboard/parents page gate explicitly permits FRONT_DESK; this sidebar entry
     // was inconsistent. Follows the same policy as Milestone 3L A-2 (Registrations).

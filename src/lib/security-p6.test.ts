@@ -207,9 +207,9 @@ describe('Dashboard page authorisation — denial paths', () => {
     await expect(StaffPage()).rejects.toThrow('REDIRECT:/dashboard');
   });
 
-  it('/dashboard/settings denies MANAGER (ORG_OWNER only)', async () => {
+  it('/dashboard/settings denies FRONT_DESK', async () => {
     const { auth } = await import('@/lib/auth');
-    (auth as any).mockResolvedValueOnce(sessionFor('MANAGER'));
+    (auth as any).mockResolvedValueOnce(sessionFor('FRONT_DESK'));
     const { default: SettingsPage } = await import('@/app/dashboard/settings/page');
 
     await expect(SettingsPage()).rejects.toThrow('REDIRECT:/dashboard');

@@ -32,7 +32,8 @@ export async function PATCH(request: NextRequest) {
         if (!session?.user?.organisationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        if ((session.user as any).role !== 'ORG_OWNER') {
+        const userRole = (session.user as any).role;
+        if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

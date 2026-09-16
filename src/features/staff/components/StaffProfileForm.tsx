@@ -27,6 +27,7 @@ interface StaffProfileFormProps {
     ownerCount: number;
     allCentres: Centre[];
     currentAssignments: string[];
+    isOwner?: boolean;
 }
 
 export default function StaffProfileForm({
@@ -35,7 +36,8 @@ export default function StaffProfileForm({
     currentRole,
     ownerCount,
     allCentres,
-    currentAssignments
+    currentAssignments,
+    isOwner = true
 }: StaffProfileFormProps) {
     const router = useRouter();
     const { toast } = useToast();
@@ -123,6 +125,7 @@ export default function StaffProfileForm({
                 selectedRole={selectedRole}
                 onRoleChange={setSelectedRole}
                 ownerCount={ownerCount}
+                isOwner={isOwner}
             />
 
             {selectedRole !== 'ORG_OWNER' && (

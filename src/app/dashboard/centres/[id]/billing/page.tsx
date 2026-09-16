@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -14,12 +15,15 @@ export default async function CentreBillingPage(props: { params: Promise<{ id: s
         notFound();
     }
 
-    // Milestone 3D: normalised from a raw auth() + manual role check to the
-    // established requireAuth helper, matching the rest of the Centres
-    // module. Behaviour is unchanged — this page was already correctly
-    // ORG_OWNER-only, deliberately stricter than List/Settings; see
-    // project-notes/milestone-3d-centres-audit.md §3.
-    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
+
+    const userRole = (session.user as { role?: string })?.role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(params.id)) {
+            notFound();
+        }
+    }
 
     const centre = await db.query.centres.findFirst({
         where: and(

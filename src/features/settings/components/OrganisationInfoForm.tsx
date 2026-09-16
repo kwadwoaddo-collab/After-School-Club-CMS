@@ -16,9 +16,10 @@ interface OrganisationInfoFormProps {
         address?: string | null;
     };
     baseUrl: string;
+    isOwner?: boolean;
 }
  
-export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoFormProps) {
+export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: OrganisationInfoFormProps) {
     const router = useRouter();
  
     const [isEditingName, setIsEditingName] = useState(false);
@@ -135,6 +136,13 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
         <div className="bg-card border border-border shadow-sm rounded-2xl p-5 space-y-5">
             <h3 className="text-sm font-bold text-foreground">Organisation Information</h3>
 
+            {!isOwner && (
+                <div className="p-3 bg-secondary/40 border border-border rounded-xl text-xs text-muted-foreground flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span>Organisation identity settings are managed exclusively by Organisation Owners.</span>
+                </div>
+            )}
+
             {error && (
                 <div className="p-2.5 bg-red-900/20 border border-red-500/20 rounded-xl flex items-start gap-2 text-red-600 text-xs">
                     <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
@@ -163,10 +171,12 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     ) : (
                         <div className="flex items-center justify-between group">
                             <span className="text-sm font-bold text-foreground">{org.name}</span>
-                            <button onClick={() => setIsEditingName(true)}
-                                className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
-                                <Pencil className="w-3.5 h-3.5" />
-                            </button>
+                            {isOwner && (
+                                <button onClick={() => setIsEditingName(true)}
+                                    className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
+                                    <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -194,10 +204,12 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     ) : (
                         <div className="flex items-center justify-between group">
                             <span className="text-sm font-mono font-bold text-foreground">{org.slug}</span>
-                            <button onClick={() => setIsEditingSlug(true)}
-                                className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
-                                <Pencil className="w-3.5 h-3.5" />
-                            </button>
+                            {isOwner && (
+                                <button onClick={() => setIsEditingSlug(true)}
+                                    className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
+                                    <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
                     )}
                     <p className="text-[10px] text-muted-foreground/60 mt-1">Used in your sharing links</p>
@@ -213,7 +225,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                         Your Subdomain
                         <span className="text-[10px] bg-primary/10 text-primary px-1 py-0.5 rounded border border-primary/20">Routing</span>
                     </label>
-                    {!isEditingSubdomain && (
+                    {!isEditingSubdomain && isOwner && (
                         <button onClick={() => setIsEditingSubdomain(true)}
                             className="p-1.5 text-muted-foreground/60 hover:text-primary transition-all rounded-lg">
                             <Pencil className="w-3.5 h-3.5" />
@@ -255,7 +267,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                                 {org.subdomain}.sprintscaleit.co.uk
                             </a>
                         ) : (
-                            <span className="text-xs text-muted-foreground/60 italic">Not set — click edit to add one</span>
+                            <span className="text-xs text-muted-foreground/60 italic">Not set</span>
                         )}
                     </div>
                 )}
@@ -270,7 +282,7 @@ export default function OrganisationInfoForm({ org, baseUrl }: OrganisationInfoF
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5" /> Contact Details
                     </h4>
-                    {!isEditingContact && (
+                    {!isEditingContact && isOwner && (
                         <button onClick={() => setIsEditingContact(true)}
                             className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-all">
                             <Pencil className="w-3 h-3" /> Edit

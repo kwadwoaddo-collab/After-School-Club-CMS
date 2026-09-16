@@ -8,6 +8,7 @@ import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export interface CentreBillingPayload {
     centreId: string;
@@ -48,13 +49,23 @@ const billingSchema = z.object({
 export async function updateCentreBilling(payload: CentreBillingPayload) {
     const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
-    if ((session.user as any).role !== 'ORG_OWNER') throw new Error('Only Owners can update billing settings');
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Forbidden: Insufficient privileges.');
+    }
 
     const parsed = billingSchema.safeParse(payload);
     if (!parsed.success) {
         throw new Error(parsed.error.issues[0].message);
     }
     const data = parsed.data;
+
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleCentreIds.includes(data.centreId)) {
+            throw new Error('Forbidden: You do not have access to this centre.');
+        }
+    }
 
     const orgId = (session.user as any).organisationId as string | undefined;
     if (!orgId) throw new Error('No organisation found');

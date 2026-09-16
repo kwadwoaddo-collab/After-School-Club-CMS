@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requireAuth } from '@/lib/require-auth';
+import { getUserAccessibleCentres } from '@/lib/permissions';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import { users, centres } from '@/db/schema';
@@ -18,11 +19,10 @@ interface PageProps {
 
 export default async function EditStaffPage({ params }: PageProps) {
     const { userId } = await params;
-    // Milestone 3C: normalised from a raw auth() + manual role check to the
-    // established requireAuth helper, matching /dashboard/staff and every
-    // other gated page. Behaviour is unchanged — this page was already
-    // correctly ORG_OWNER-only; see project-notes/milestone-3c-staff-audit.md §5.
-    const { session } = await requireAuth({ roles: ['ORG_OWNER'] });
+    const { session } = await requireAuth({ roles: ['ORG_OWNER', 'MANAGER'] });
+
+    const userRole = (session.user as any)?.role;
+    const isOwner = userRole === 'ORG_OWNER';
 
     const staffMember = await db.query.users.findFirst({
         where: eq(users.id, userId),
@@ -31,10 +31,30 @@ export default async function EditStaffPage({ params }: PageProps) {
 
     if (!staffMember || staffMember.organisationId !== session.user.organisationId) return redirect('/dashboard/staff');
 
-    const allCentres = await db.query.centres.findMany({
-        where: eq(centres.organisationId, session.user.organisationId),
-        orderBy: (centres, { asc }) => [asc(centres.name)],
-    });
+    // Privilege escalation protection: Managers cannot view/edit Organisation Owners
+    if (!isOwner && staffMember.role === 'ORG_OWNER') {
+        return redirect('/dashboard/staff');
+    }
+
+    const accessibleCentres = isOwner
+        ? await db.query.centres.findMany({
+            where: eq(centres.organisationId, session.user.organisationId),
+            orderBy: (centres, { asc }) => [asc(centres.name)],
+        })
+        : await getUserAccessibleCentres(session.user.id);
+
+    const accessibleCentreIds = new Set(accessibleCentres.map((c: any) => c.id));
+
+    // For managers: staff member must be self or have at least one membership in manager's accessible centres,
+    // or have no memberships assigned yet.
+    if (!isOwner && staffMember.id !== session.user.id && staffMember.memberships.length > 0) {
+        const hasSharedCentre = staffMember.memberships.some((m: any) => accessibleCentreIds.has(m.centreId));
+        if (!hasSharedCentre) {
+            return redirect('/dashboard/staff');
+        }
+    }
+
+    const allCentres = accessibleCentres;
 
     const allOrgOwners = await db
         .select({ id: users.id })
@@ -120,6 +140,7 @@ export default async function EditStaffPage({ params }: PageProps) {
                 ownerCount={ownerCount}
                 allCentres={allCentres}
                 currentAssignments={currentAssignments}
+                isOwner={isOwner}
             />
         </div>
     );
