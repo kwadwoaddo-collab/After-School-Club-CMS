@@ -655,8 +655,14 @@ export const invoices = pgTable('invoices', {
   // index — silently destroying the void+reissue invariant that allows voided
   // invoices to be replaced with new ones for the same billing config and period.
   //
-  // The production database already has the correct partial index (confirmed by
-  // preflight on 2026-09-17). No Drizzle schema entry is needed or desired here.
+  // The training/staging database (ep-aged-morning-abr2278f) has the correct partial
+  // index (confirmed by read-only preflight on 2026-09-17). Production index state
+  // (ep-super-dawn-abuicpc2-pooler) has NOT been independently verified and MUST be
+  // confirmed before deploying this branch. Run the following on production:
+  //   SELECT indexname, indexdef FROM pg_indexes
+  //   WHERE tablename = 'invoices' AND indexname = 'invoices_config_period_uniq';
+  // Expected: WHERE clause containing status != 'void' AND billing_config_id IS NOT NULL.
+  // If absent, apply drizzle/0027_billing_obligation_concurrency.sql before deployment.
   // ─────────────────────────────────────────────────────────────────────────────
 }));
 
