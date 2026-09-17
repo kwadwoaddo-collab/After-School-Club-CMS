@@ -100,8 +100,8 @@ async function recalculateInvoiceStatus(
         columns: { status: true, amount: true },
     });
     const totalVerified = allPayments
-        .filter(p => p.status === 'verified')
-        .reduce((s, p) => s + Number(p.amount), 0);
+        .filter((p: any) => p.status === 'verified')
+        .reduce((s: number, p: any) => s + Number(p.amount), 0);
 
     let newStatus: 'sent' | 'partially_paid' | 'paid';
     if (totalVerified >= Number(invoice.amount)) {
@@ -543,7 +543,7 @@ export async function getInvoiceDetails(invoiceId: string) {
 export async function recordPayment(data: {
     invoiceId: string;
     amount: string;
-    method: string;
+    method: 'tax_free_childcare' | 'other' | 'cash' | 'bank_transfer' | 'stripe' | 'voucher' | 'gocardless';
     transactionReference?: string;
     recordedAt: Date;
 }) {
@@ -595,8 +595,8 @@ export async function recordPayment(data: {
             columns: { status: true, amount: true }
         });
         const totalVerified = allPayments
-            .filter(p => p.status === 'verified')
-            .reduce((sum, p) => sum + Number(p.amount), 0);
+            .filter((p: any) => p.status === 'verified')
+            .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
         const isOverpaid = totalVerified > Number(invoice.amount);
 
         await tx.insert(auditEvents).values({
@@ -891,8 +891,8 @@ export async function verifyPayment(paymentId: string) {
             columns: { status: true, amount: true }
         });
         const totalVerified = allInvoicePayments
-            .filter(p => p.status === 'verified')
-            .reduce((sum, p) => sum + Number(p.amount), 0);
+            .filter((p: any) => p.status === 'verified')
+            .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
         await tx.insert(auditEvents).values({
             organisationId: session.user.organisationId,
