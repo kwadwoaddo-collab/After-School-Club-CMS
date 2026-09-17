@@ -11,7 +11,7 @@ import NotificationBell from '@/features/portal/components/NotificationBell';
 import { getNotifications } from '@/app/portal/notifications/actions';
 import { db } from '@/db';
 import { invoices, bookingAttendees } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, notInArray } from 'drizzle-orm';
 
 export default async function PortalDashboard() {
     const parent = await getCurrentParent();
@@ -23,11 +23,16 @@ export default async function PortalDashboard() {
     const notifications = await getNotifications();
     const unreadCount = notifications.filter(n => !n.readAt).length;
 
-    const parentInvoices = await db.query.invoices.findMany({
-        where: eq(invoices.parentId, parent.id),
+    // Fetch only invoices that are genuinely outstanding (owed) for this parent.
+    // Exclude draft (unissued), void (cancelled), and paid at the DB level so that
+    // draft invoices are never fetched and never surface to the parent.
+    const outstandingInvoices = await db.query.invoices.findMany({
+        where: and(
+            eq(invoices.parentId, parent.id),
+            notInArray(invoices.status, ['draft', 'void', 'paid'])
+        ),
         with: { payments: true }
     });
-    const outstandingInvoices = parentInvoices.filter(inv => inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'draft');
     const totalOutstanding = outstandingInvoices.reduce((sum, inv) => {
         const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;
         return sum + (Number(inv.amount) - paidAmount);

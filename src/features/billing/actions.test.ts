@@ -38,6 +38,7 @@ const dbUpdate = vi.fn();
 const dbInsert = vi.fn();
 const dbDelete = vi.fn();
 const dbTransaction = vi.fn();
+const dbSelectWhere = vi.fn();
 
 function makeUpdateChain() {
     const chain: any = {
@@ -70,6 +71,11 @@ vi.mock('@/db', () => ({
         insert: (...args: unknown[]) => dbInsert(...args),
         delete: (...args: unknown[]) => dbDelete(...args),
         transaction: (...args: unknown[]) => dbTransaction(...args),
+        select: vi.fn(() => ({
+            from: vi.fn(() => ({
+                where: (...args: unknown[]) => dbSelectWhere(...args)
+            }))
+        })),
     },
 }));
 
@@ -85,6 +91,7 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
         dbTransaction.mockImplementation(async (cb: any) => cb({
             insert: () => makeInsertChain(),
         }));
+        dbSelectWhere.mockResolvedValue([{ id: 'child-1' }]);
     });
 
     describe('createBillingConfig', () => {
@@ -140,6 +147,54 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
             });
 
             expect(result.success).toBe(true);
+        });
+
+        it('rejects when child does not belong to the target centre (tenancy: wrong centre)', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue(null);
+            dbSelectWhere.mockResolvedValue([]); // Mock DB returning no matching children
+
+            const { createBillingConfig } = await import('./actions');
+            await expect(createBillingConfig({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                agreedMonthlyPence: 10000,
+                billingAnchorDate: '2026-01-01',
+                childIds: ['child-wrong-centre'],
+            })).rejects.toThrow(/One or more children are invalid or do not belong to this family\/centre/);
+        });
+
+        it('rejects when child does not belong to the parent (tenancy: wrong parent)', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue(null);
+            dbSelectWhere.mockResolvedValue([]);
+
+            const { createBillingConfig } = await import('./actions');
+            await expect(createBillingConfig({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                agreedMonthlyPence: 10000,
+                billingAnchorDate: '2026-01-01',
+                childIds: ['child-wrong-parent'],
+            })).rejects.toThrow(/One or more children are invalid or do not belong to this family\/centre/);
+        });
+
+        it('rejects when child is deleted', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue(null);
+            dbSelectWhere.mockResolvedValue([]);
+
+            const { createBillingConfig } = await import('./actions');
+            await expect(createBillingConfig({
+                parentId: 'parent-1',
+                centreId: 'centre-target',
+                agreedMonthlyPence: 10000,
+                billingAnchorDate: '2026-01-01',
+                childIds: ['child-deleted'],
+            })).rejects.toThrow(/One or more children are invalid or do not belong to this family\/centre/);
         });
     });
 
@@ -207,6 +262,26 @@ describe('billing/actions — centre-scoped authorization (Milestone 3G, L2)', (
             const { removeChildFromConfig } = await import('./actions');
             await expect(removeChildFromConfig('config-1', 'child-2')).rejects.toThrow(/Unauthorized/);
             expect(dbDelete).not.toHaveBeenCalled();
+        });
+
+        it('addChildToConfig rejects when child does not belong to the target centre (tenancy: wrong centre)', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue({ id: 'config-1', centreId: 'centre-target', parentId: 'parent-1' });
+            dbSelectWhere.mockResolvedValue([]);
+
+            const { addChildToConfig } = await import('./actions');
+            await expect(addChildToConfig('config-1', 'child-wrong-centre')).rejects.toThrow(/Child is invalid or does not belong to this family\/centre/);
+        });
+
+        it('addChildToConfig rejects when child is deleted or wrong parent', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+            billingConfigsFindFirst.mockResolvedValue({ id: 'config-1', centreId: 'centre-target', parentId: 'parent-1' });
+            dbSelectWhere.mockResolvedValue([]);
+
+            const { addChildToConfig } = await import('./actions');
+            await expect(addChildToConfig('config-1', 'child-deleted')).rejects.toThrow(/Child is invalid or does not belong to this family\/centre/);
         });
     });
 

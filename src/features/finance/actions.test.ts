@@ -144,6 +144,42 @@ describe('finance/actions — createInvoice authorization (Milestone 3G, L2a)', 
         })).rejects.toThrow(/children not found/);
     });
 
+    it('rejects when a supplied child is deleted', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        centresFindFirst.mockResolvedValue({ id: 'centre-target' });
+        parentsFindFirst.mockResolvedValue({ id: 'parent-1' });
+        dbSelectWhere.mockResolvedValue([]); // deleted child won't match isNull(deletedAt)
+
+        const { createInvoice } = await import('./actions');
+        await expect(createInvoice({
+            parentId: 'parent-1',
+            childIds: ['child-deleted'],
+            amount: '100.00',
+            invoiceDate: new Date(),
+            dueDate: new Date(),
+            centreId: 'centre-target',
+        })).rejects.toThrow(/children not found/);
+    });
+
+    it('rejects when child does not belong to the parent (wrong parent)', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        centresFindFirst.mockResolvedValue({ id: 'centre-target' });
+        parentsFindFirst.mockResolvedValue({ id: 'parent-1' });
+        dbSelectWhere.mockResolvedValue([]); // will fail to find children
+
+        const { createInvoice } = await import('./actions');
+        await expect(createInvoice({
+            parentId: 'parent-1',
+            childIds: ['child-wrong-parent'],
+            amount: '100.00',
+            invoiceDate: new Date(),
+            dueDate: new Date(),
+            centreId: 'centre-target',
+        })).rejects.toThrow(/children not found/);
+    });
+
     it('allows ORG_OWNER with a valid centre/parent/children combination', async () => {
         const { auth } = await import('@/lib/auth');
         (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
@@ -396,5 +432,99 @@ describe('finance/actions — deleteInvoice privilege boundary (Manager Access E
 
         const { deleteInvoice } = await import('./actions');
         await expect(deleteInvoice('invoice-1')).rejects.toThrow(/Only Owner can delete invoices/);
+    });
+});
+
+describe('finance/actions — deleteInvoice safety rules (§11)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    const mockDelete = vi.fn().mockReturnValue({ where: vi.fn() });
+    const mockInsert = vi.fn().mockReturnValue({ values: vi.fn() });
+
+    it('ORG_OWNER CAN hard-delete a DRAFT invoice with zero payments -> succeeds + auditEvent written', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'draft', payments: [] }) } },
+            delete: mockDelete,
+            insert: mockInsert
+        }));
+
+        const { deleteInvoice } = await import('./actions');
+        await expect(deleteInvoice('inv-1')).resolves.toBeDefined();
+        expect(mockDelete).toHaveBeenCalled();
+        expect(mockInsert).toHaveBeenCalled(); // audit event
+    });
+
+    it('Sent invoice CANNOT be hard-deleted (returns error)', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'sent', payments: [] }) } },
+        }));
+
+        const { deleteInvoice } = await import('./actions');
+        await expect(deleteInvoice('inv-1')).rejects.toThrow(/Only draft invoices can be deleted/);
+    });
+
+    it('Partially-paid invoice CANNOT be hard-deleted', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'partially_paid', payments: [] }) } },
+        }));
+
+        const { deleteInvoice } = await import('./actions');
+        await expect(deleteInvoice('inv-1')).rejects.toThrow(/Only draft invoices can be deleted/);
+    });
+
+    it('Paid invoice CANNOT be hard-deleted', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'paid', payments: [] }) } },
+        }));
+
+        const { deleteInvoice } = await import('./actions');
+        await expect(deleteInvoice('inv-1')).rejects.toThrow(/Only draft invoices can be deleted/);
+    });
+
+    it('Invoice WITH a payment record CANNOT be hard-deleted (even if draft)', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'draft', payments: [{ id: 'pay-1' }] }) } },
+        }));
+
+        const { deleteInvoice } = await import('./actions');
+        await expect(deleteInvoice('inv-1')).rejects.toThrow(/Please delete associated payments before deleting the invoice/);
+    });
+
+    it('voidInvoice (Owner) still works for sent invoices (regression)', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        const mockUpdate = vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) });
+        dbTransaction.mockImplementation(async (cb: any) => cb({
+            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'sent' }) } },
+            update: mockUpdate,
+            insert: mockInsert
+        }));
+
+        const { voidInvoice } = await import('./actions');
+        await expect(voidInvoice('inv-1')).resolves.toBeDefined();
+    });
+
+    it('resendInvoiceEmail rejects draft', async () => {
+        const { auth } = await import('@/lib/auth');
+        (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+        invoicesFindFirst.mockResolvedValue({ id: 'inv-1', status: 'draft', centreId: 'centre-1' });
+
+        const { resendInvoiceEmail } = await import('./actions');
+        const res = await resendInvoiceEmail('inv-1');
+        expect(res.success).toBe(false);
+        expect(res.error).toMatch(/Cannot resend a draft invoice/);
     });
 });

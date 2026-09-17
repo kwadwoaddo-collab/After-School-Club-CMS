@@ -1,7 +1,7 @@
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
 import { invoices } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, ne } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CreditCard, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -22,7 +22,7 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
     const stripeEnabled = !!(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_xxx'));
 
     const parentInvoices = await db.query.invoices.findMany({
-        where: eq(invoices.parentId, parent.id),
+        where: and(eq(invoices.parentId, parent.id), ne(invoices.status, 'draft')),
         orderBy: [desc(invoices.createdAt)],
         with: {
             centre: true,

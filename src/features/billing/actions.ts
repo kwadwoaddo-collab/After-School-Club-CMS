@@ -8,7 +8,7 @@
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, invoices, children } from '@/db/schema';
-import { eq, and, sql, ne } from 'drizzle-orm';
+import { eq, and, sql, ne, inArray, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import { nanoid } from 'nanoid';
@@ -69,6 +69,24 @@ export interface BillingConfigData {
 export async function createBillingConfig(data: BillingConfigData) {
     const { orgId, session } = await getOrgIdAndSession();
     await assertCentreAccess(session, data.centreId);
+
+    if (data.childIds.length > 0) {
+        const validChildren = await db.select({ id: children.id })
+            .from(children)
+            .where(
+                and(
+                    inArray(children.id, data.childIds),
+                    eq(children.organisationId, orgId),
+                    eq(children.parentId, data.parentId),
+                    eq(children.centreId, data.centreId),
+                    isNull(children.deletedAt)
+                )
+            );
+
+        if (validChildren.length !== data.childIds.length) {
+            throw new Error('One or more children are invalid or do not belong to this family/centre');
+        }
+    }
 
     // Check for existing config for this parent+centre
     const existing = await db.query.billingConfigs.findFirst({
@@ -160,6 +178,22 @@ export async function addChildToConfig(configId: string, childId: string) {
     });
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
+
+    const validChildren = await db.select({ id: children.id })
+        .from(children)
+        .where(
+            and(
+                eq(children.id, childId),
+                eq(children.organisationId, orgId),
+                eq(children.parentId, config.parentId),
+                eq(children.centreId, config.centreId),
+                isNull(children.deletedAt)
+            )
+        );
+
+    if (validChildren.length !== 1) {
+        throw new Error('Child is invalid or does not belong to this family/centre');
+    }
 
     await db.insert(billingConfigChildren).values({ configId, childId }).onConflictDoNothing();
 

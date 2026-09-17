@@ -77,7 +77,7 @@ export function computeNextBillingPeriod(
     // If the invoice date for this month is still in the future, use this month
     // Otherwise advance to next month
     let periodStart: Date;
-    if (thisMonthInvoice > now) {
+    if (thisMonthInvoice >= now) {
         periodStart = thisMonthAnchor;
     } else {
         // Move to next month

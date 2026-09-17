@@ -640,7 +640,30 @@ export const invoices = pgTable('invoices', {
   parentIdx: index('invoices_parent_idx').on(table.parentId),
   centreIdx: index('invoices_centre_idx').on(table.centreId),
   childIdx: index('invoices_child_idx').on(table.childId),
-  configPeriodIdx: uniqueIndex('invoices_config_period_uniq').on(table.billingConfigId, table.billingPeriodStart),
+  // ─── PARTIAL INDEX — DO NOT ADD uniqueIndex() HERE ──────────────────────────
+  // The index `invoices_config_period_uniq` is managed EXCLUSIVELY via:
+  //   drizzle/0027_billing_obligation_concurrency.sql
+  //
+  // It is a PARTIAL unique index with a WHERE clause:
+  //   WHERE status != 'void' AND billing_config_id IS NOT NULL
+  //
+  // Drizzle's uniqueIndex() builder has no API for WHERE clauses, so it cannot
+  // represent a partial index. If you add a uniqueIndex() call here, the next
+  // `drizzle-kit generate` run will detect a mismatch between the TypeScript
+  // schema (total index) and the database (partial index), and will emit a
+  // migration that DROPS the partial index and recreates it as a total unique
+  // index — silently destroying the void+reissue invariant that allows voided
+  // invoices to be replaced with new ones for the same billing config and period.
+  //
+  // The training/staging database (ep-aged-morning-abr2278f) has the correct partial
+  // index (confirmed by read-only preflight on 2026-09-17). Production index state
+  // (ep-super-dawn-abuicpc2-pooler) has NOT been independently verified and MUST be
+  // confirmed before deploying this branch. Run the following on production:
+  //   SELECT indexname, indexdef FROM pg_indexes
+  //   WHERE tablename = 'invoices' AND indexname = 'invoices_config_period_uniq';
+  // Expected: WHERE clause containing status != 'void' AND billing_config_id IS NOT NULL.
+  // If absent, apply drizzle/0027_billing_obligation_concurrency.sql before deployment.
+  // ─────────────────────────────────────────────────────────────────────────────
 }));
 
 export const invoiceLineItems = pgTable('invoice_line_items', {

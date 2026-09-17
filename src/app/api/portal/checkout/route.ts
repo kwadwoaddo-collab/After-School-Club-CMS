@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
             eq(invoices.id, invoiceId),
             eq(invoices.parentId, parent.id),
             ne(invoices.status, 'paid'),
-            ne(invoices.status, 'void')
+            ne(invoices.status, 'void'),
+            ne(invoices.status, 'draft')
         ),
         with: {
             centre: { columns: { name: true } },
