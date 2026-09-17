@@ -233,7 +233,7 @@ describe('Category C — Payment Reversal Scenarios', () => {
             await expect(voidInvoice('inv-1')).rejects.toThrow(/verified payment/i);
         });
 
-        it('D2: no verified payments → voidInvoice succeeds', async () => {
+        it('D2: no verified or pending payments → voidInvoice succeeds', async () => {
             const { auth } = await import('@/lib/auth');
             (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
 
@@ -253,6 +253,31 @@ describe('Category C — Payment Reversal Scenarios', () => {
 
             await expect(voidInvoice('inv-1')).resolves.toBeDefined();
         });
+
+        it('D2b: pending payment blocks voidInvoice until resolved', async () => {
+            const { auth } = await import('@/lib/auth');
+            (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
+
+            const tx = {
+                query: {
+                    invoices: {
+                        findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'sent', parentId: 'p-1' }),
+                    },
+                    payments: {
+                        // First findMany call is for verified payments (none), second is for pending (1 pending)
+                        findMany: vi.fn()
+                            .mockResolvedValueOnce([])
+                            .mockResolvedValueOnce([{ id: 'pay-pending', amount: '150.00', status: 'pending' }]),
+                    },
+                },
+                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
+                insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue([]) }),
+            };
+            dbTransaction.mockImplementationOnce((cb: (tx: unknown) => unknown) => cb(tx));
+
+            await expect(voidInvoice('inv-1')).rejects.toThrow(/pending payment/i);
+        });
+
 
         it('D3: reversePayment on void invoice → succeeds, void stays void', async () => {
             const { auth } = await import('@/lib/auth');

@@ -825,15 +825,28 @@ export async function voidInvoice(invoiceId: string) {
             );
         }
 
-        // Check pending payments — warn but allow void (pending = not yet money in hand)
-        // Policy: pending payments on void invoice are left as pending.
-        // The parent's voucher submission becomes orphaned if its invoice is voided.
-        // This is acceptable as a warning scenario; real money has not moved.
+        // Section 11 / Critic Policy: Pending payments represent unresolved financial activity
+        // (e.g. parent voucher submissions in flight). Block void until staff accept or reject them.
+        const pendingPayments = await tx.query.payments.findMany({
+            where: and(
+                eq(payments.invoiceId, invoiceId),
+                eq(payments.status, 'pending')
+            ),
+            columns: { id: true, amount: true },
+        });
+        if (pendingPayments.length > 0) {
+            const pendingTotal = pendingPayments.reduce((s, p) => s + Number(p.amount), 0);
+            throw new Error(
+                `This invoice has ${pendingPayments.length} pending payment(s) totalling £${pendingTotal.toFixed(2)}. ` +
+                `Please verify or reject pending payments before voiding this invoice.`
+            );
+        }
 
         await tx
             .update(invoices)
             .set({ status: 'void', updatedAt: new Date() })
             .where(eq(invoices.id, invoiceId));
+
 
         await tx.insert(auditEvents).values({
             organisationId: orgId,
