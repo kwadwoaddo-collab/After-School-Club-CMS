@@ -1,6 +1,7 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
+import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
 import {
     billingConfigs, billingConfigChildren, billingRuns, invoices,
     children, parents, centres, organisations,
@@ -21,12 +22,10 @@ import { nanoid } from 'nanoid';
  * Schedule (vercel.json): "0 6 * * *" — 6am UTC daily
  */
 export async function POST(request: NextRequest) {
-    // ── Auth: CRON_SECRET check ────────────────────────────────────────────────
-    const cronSecret = process.env.CRON_SECRET;
-    const authHeader = request.headers.get('authorization');
-
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // ── Auth: CRON_SECRET check (timing-safe) ─────────────────────────────────
+    const authCheck = verifyCronAuthorization(request);
+    if (!authCheck.authorized) {
+        return NextResponse.json({ error: authCheck.error }, { status: authCheck.status ?? 401 });
     }
 
     const today = new Date();
@@ -220,4 +219,12 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+/**
+ * GET /api/cron/billing
+ * Vercel Cron invokes scheduled routes via GET. Delegates to POST handler.
+ */
+export async function GET(request: NextRequest) {
+    return POST(request);
 }
