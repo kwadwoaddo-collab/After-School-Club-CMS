@@ -41,13 +41,13 @@ describe('portal/billing/page — Draft Safety (§7)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         getCurrentParent.mockResolvedValue({ id: 'parent-1', email: 'parent@example.com' });
-        
+
         mockWhere.mockReturnValue({
             orderBy: mockOrderBy.mockReturnValue({
                 limit: mockLimit.mockResolvedValue([])
             })
         });
-        
+
         paymentsFindMany.mockResolvedValue([]);
     });
 

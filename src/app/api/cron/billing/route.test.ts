@@ -47,7 +47,7 @@ describe('Cron Billing (§9)', () => {
         const res = await GET(req);
         expect(res.status).toBe(200);
     });
-    
+
     it('GET /api/cron/billing with valid CRON_SECRET responds', async () => {
         const { GET } = await import('./route');
         const req = new NextRequest('http://localhost/api/cron/billing', {

@@ -512,7 +512,7 @@ describe('finance/actions — deleteInvoice safety rules (§11)', () => {
             update: mockUpdate,
             insert: mockInsert
         }));
-        
+
         const { voidInvoice } = await import('./actions');
         await expect(voidInvoice('inv-1')).resolves.toBeDefined();
     });
