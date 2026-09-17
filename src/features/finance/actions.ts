@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 import { db } from '@/db';
 import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs } from '@/db/schema';
-import { eq, ilike, or, and, desc, inArray, sql, ne } from 'drizzle-orm';
+import { eq, ilike, or, and, desc, inArray, sql, ne, isNull } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
@@ -180,10 +180,18 @@ export async function createInvoice(data: {
 
     // Fetch child names for the description if multiple are selected — org-scoped
     const selectedChildren = data.childIds.length > 0
-        ? await db.select().from(children).where(and(inArray(children.id, data.childIds), eq(children.organisationId, orgId)))
+        ? await db.select().from(children).where(
+            and(
+                inArray(children.id, data.childIds),
+                eq(children.organisationId, orgId),
+                eq(children.parentId, data.parentId),
+                eq(children.centreId, data.centreId),
+                isNull(children.deletedAt)
+            )
+        )
         : [];
     if (selectedChildren.length !== data.childIds.length) {
-        throw new Error('One or more children not found');
+        throw new Error('One or more children not found or do not belong to this family/centre');
     }
 
     const coveredChildren = selectedChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
@@ -701,9 +709,20 @@ export async function deleteInvoice(invoiceId: string) {
         if (!invoice) throw new Error('Invoice not found');
         if (invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
 
+        if (invoice.status !== 'draft') {
+            throw new Error('Only draft invoices can be deleted. Use voidInvoice instead.');
+        }
+
         if (invoice.payments && invoice.payments.length > 0) {
             throw new Error('Please delete associated payments before deleting the invoice.');
         }
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId,
+            userId: session.user.id,
+            eventType: 'invoice_deleted',
+            eventData: JSON.stringify({ invoiceId })
+        });
 
         await tx.delete(invoices).where(eq(invoices.id, invoiceId));
         return invoice;
@@ -915,6 +934,7 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
     }
     if (invoice.status === 'paid') return { success: false, error: 'This invoice is already marked as paid.' };
     if (invoice.status === 'void') return { success: false, error: 'Cannot send a voided invoice.' };
+    if (invoice.status === 'draft') return { success: false, error: 'Cannot resend a draft invoice — use Issue Invoice to dispatch.' };
 
     const parentEmail = invoice.parent?.email;
     const parentName = invoice.parent?.firstName ?? 'Parent';
