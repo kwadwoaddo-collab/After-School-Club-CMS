@@ -52,6 +52,7 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
             <InvoiceDetailsClient 
                 invoice={invoice} 
                 organisationName={org?.name || 'CENTRE'}
+                userRole={userRole}
             />
         </div>
     );

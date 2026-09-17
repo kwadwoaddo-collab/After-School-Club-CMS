@@ -33,9 +33,11 @@ interface Props {
     };
     centres: Centre[];
     children: unknown[];
+    paymentId?: string;
+    stableReceiptNo?: string;
 }
 
-export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren }: Props) {
+export default function ReceiptGeneratorClient({ organisation, centres, children: rawChildren, paymentId, stableReceiptNo }: Props) {
     const children = rawChildren as Child[];
     // Generate random receipt number
     const generateReceiptNumber = () => {
@@ -44,7 +46,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
         for (let i = 0; i < 6; i++) {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-        return `RCP-${result}`;
+        return `MANUAL-${result}`; // clear it's a manual reference
     };
 
     const [receiptNo, setReceiptNo] = useState('');
@@ -61,7 +63,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
 
     // Set initial values
     useEffect(() => {
-        setReceiptNo(generateReceiptNumber());
+        setReceiptNo(stableReceiptNo || generateReceiptNumber());
         setDate(new Date().toISOString().split('T')[0]);
     }, []);
 

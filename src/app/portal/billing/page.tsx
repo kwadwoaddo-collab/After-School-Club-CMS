@@ -27,7 +27,9 @@ export default async function BillingDashboard(props: { searchParams: Promise<{ 
         with: {
             centre: true,
             child: true,
-            payments: true
+            payments: {
+                where: (payments, { ne }) => ne(payments.status, 'reversed')
+            }
         }
     });
 

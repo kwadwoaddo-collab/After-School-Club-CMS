@@ -20,9 +20,10 @@ import { useToast } from '@/components/ui/ToastProvider';
 interface InvoiceDetailsClientProps {
     invoice: any;
     organisationName: string;
+    userRole?: string;
 }
 
-export default function InvoiceDetailsClient({ invoice, organisationName }: InvoiceDetailsClientProps) {
+export default function InvoiceDetailsClient({ invoice, organisationName, userRole }: InvoiceDetailsClientProps) {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -107,7 +108,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Navigation & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <Link 
+                <Link
                     href="/dashboard/finance"
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-bold group"
                 >
@@ -123,7 +124,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             <div className="flex flex-col items-center gap-1">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">invoice</span>
                                 <div className="flex items-center rounded-xl overflow-hidden border border-border">
-                                    <button 
+                                    <button
                                         onClick={() => setPreviewType('invoice')}
                                         className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-foreground hover:bg-secondary/80 transition-all border-r border-border"
                                     >
@@ -143,13 +144,13 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                     </PDFDownloadLink>
                                 </div>
                             </div>
-                            
+
                             {/* Receipt Buttons */}
                             {invoice.payments.length > 0 && (
                                 <div className="flex flex-col items-center gap-1">
                                     <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">receipt</span>
                                     <div className="flex items-center rounded-xl overflow-hidden border border-emerald-500/20">
-                                        <button 
+                                        <button
                                             onClick={() => setPreviewType('receipt')}
                                             className="flex items-center gap-2 px-3 py-2 bg-card text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 transition-all border-r border-emerald-500/10"
                                         >
@@ -180,7 +181,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         </div>
                     )}
                     {remainingBalance > 0 && (
-                        <button 
+                        <button
                             disabled={isPending}
                             onClick={() => setIsPaymentModalOpen(true)}
                             className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -213,7 +214,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         </button>
                     )}
                     {invoice.status !== 'void' && (
-                        <button 
+                        <button
                             type="button"
                             disabled={isPending}
                             onClick={() => setConfirmAction('void')}
@@ -223,7 +224,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                         </button>
                     )}
                     {invoice.status !== 'paid' && (
-                        <button 
+                        <button
                             type="button"
                             disabled={isPending}
                             onClick={() => setConfirmAction('delete')}
@@ -241,7 +242,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {/* Invoice Card */}
                     <div className="bg-card border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-                        
+
                         <div className="relative flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
                                 <div className="text-primary font-black tracking-widest text-xs uppercase mb-2">Invoice Details</div>
@@ -261,21 +262,21 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 </p>
                                 {isEditingDate ? (
                                     <div className="flex items-center gap-2 mt-1">
-                                        <input 
+                                        <input
                                             type="date"
                                             value={newDateValue}
                                             disabled={isUpdatingDate}
                                             onChange={(e) => setNewDateValue(e.target.value)}
                                             className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
                                         />
-                                        <button 
+                                        <button
                                             onClick={handleSaveDate}
                                             disabled={isUpdatingDate}
                                             className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
                                         >
                                             <Check className="w-3.5 h-3.5" />
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setIsEditingDate(false);
                                                 setNewDateValue(invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '');
@@ -291,7 +292,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                         <p className="text-sm font-bold text-foreground">
                                             {invoice.invoiceDate ? format(new Date(invoice.invoiceDate), 'dd/MM/yyyy') : '-'}
                                         </p>
-                                        <button 
+                                        <button
                                             onClick={() => setIsEditingDate(true)}
                                             className="opacity-0 group-hover/date:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
                                             title="Edit Issue Date"
@@ -386,7 +387,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Notes</h3>
                                     {!isEditingNotes && (
-                                        <button 
+                                        <button
                                             onClick={() => setIsEditingNotes(true)}
                                             className="text-xs font-black text-primary hover:underline flex items-center gap-1"
                                         >
@@ -397,7 +398,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 <div className="bg-secondary/60 rounded-3xl p-6 border border-border min-h-[100px] relative">
                                     {isEditingNotes ? (
                                         <div className="space-y-4">
-                                            <textarea 
+                                            <textarea
                                                 value={notesValue}
                                                 disabled={isUpdatingNotes}
                                                 onChange={(e) => setNotesValue(e.target.value)}
@@ -406,7 +407,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                                 placeholder="Add custom notes visible on the PDF..."
                                             />
                                             <div className="flex items-center justify-end gap-2">
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         setIsEditingNotes(false);
                                                         setNotesValue(getCleanNotes(invoice.notes));
@@ -416,7 +417,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                                 >
                                                     Cancel
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={handleSaveNotes}
                                                     disabled={isUpdatingNotes}
                                                     className="px-4 py-2 bg-primary rounded-xl text-xs font-bold hover:bg-primary/90 transition-all text-foreground shadow-lg shadow-primary/20 flex items-center gap-1.5"
@@ -438,7 +439,11 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {/* Payment History Section */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold text-foreground px-2">Payment Reconciliation Ledger</h3>
-                        <PaymentHistoryList payments={invoice.payments} />
+                        <PaymentHistoryList
+                            payments={invoice.payments}
+                            canReverse={userRole === 'ORG_OWNER' || userRole === 'MANAGER'}
+                            onPaymentReversed={() => router.refresh()}
+                        />
                     </div>
                 </div>
 
@@ -446,9 +451,9 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 <div className="space-y-6">
                     <div className="bg-secondary/80 border border-border rounded-[40px] p-8 shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[60px]" />
-                        
+
                         <h3 className="text-xl font-black text-foreground mb-8">Summary</h3>
-                        
+
                         <div className="space-y-6">
                             <div className="flex justify-between items-center text-sm font-bold">
                                 <span className="text-muted-foreground">Total Billed</span>
@@ -463,7 +468,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 <div>
                                     <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Balance Remaining</p>
                                     <h4 className={`text-3xl font-black ${remainingBalance <= 0 ? 'text-emerald-600' : 'text-foreground'}`}>
-                                        £{remainingBalance.toFixed(2)}
+                                        £{remainingBalance <= 0 ? '0.00' : remainingBalance.toFixed(2)}
                                     </h4>
                                 </div>
                                 {remainingBalance <= 0 && (
@@ -474,8 +479,21 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                             </div>
                         </div>
 
+                        {totalPaid > Number(invoice.amount) && (
+                            <div className="mt-6 flex items-start gap-3 p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-bold text-amber-700">Overpayment Warning</p>
+                                    <p className="text-sm text-amber-600">
+                                        This invoice is overpaid by £{(totalPaid - Number(invoice.amount)).toFixed(2)}.
+                                        Review payment entries and reverse any mistaken payments.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {remainingBalance > 0 && (
-                            <button 
+                            <button
                                 disabled={isPending}
                                 onClick={() => setIsPaymentModalOpen(true)}
                                 className="w-full mt-10 py-4 bg-primary rounded-2xl text-sm font-black text-white hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -489,7 +507,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
 
             {/* Modals */}
             {isPaymentModalOpen && (
-                <RecordPaymentModal 
+                <RecordPaymentModal
                     invoiceId={invoice.id}
                     invoiceNumber={invoice.invoiceNumber}
                     remainingBalance={remainingBalance}
@@ -510,12 +528,17 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 hasPayments={hasPayments}
                 onConfirm={async () => {
                     startTransition(async () => {
-                        if (confirmAction === 'delete') {
-                            await deleteInvoice(invoice.id);
-                            router.push('/dashboard/finance');
-                        } else {
-                            await voidInvoice(invoice.id);
-                            router.refresh();
+                        try {
+                            if (confirmAction === 'delete') {
+                                await deleteInvoice(invoice.id);
+                                router.push('/dashboard/finance');
+                            } else {
+                                await voidInvoice(invoice.id);
+                                router.refresh();
+                            }
+                        } catch (err) {
+                            const message = err instanceof Error ? err.message : String(err);
+                            toast({ title: 'Error', message: message || 'Action failed', variant: 'error' });
                         }
                     });
                 }}

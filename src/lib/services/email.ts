@@ -1,3 +1,4 @@
+import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -1454,25 +1455,28 @@ export class EmailService {
     amountPaid: number;
     organisationName: string;
     invoiceId: string;
+    paymentId: string;
   }): Promise<void> {
     if (!resend) {
       logger.warn('[EmailService] Resend client not initialized. Email not sent.');
       return;
     }
 
+    const rcp = stableReceiptNumber(params.paymentId);
     const htmlContent = `
-   <h2>Payment Receipt — ${params.organisationName}</h2>
-   <p>Dear ${params.parentName},</p>
-   <p>We have received your payment of £${params.amountPaid} for invoice #${params.invoiceNumber}.</p>
-   <p>Thank you. Your account is now up to date.</p>
-   <p>Best regards,<br/>${params.organisationName}</p>
+      <h2>Payment Receipt — ${params.organisationName}</h2>
+      <p>Dear ${params.parentName},</p>
+      <p>We have received your payment of £${params.amountPaid} for invoice #${params.invoiceNumber}.</p>
+      <p>Receipt No: ${rcp}</p>
+      <p>Thank you. Your account is now up to date.</p>
+      <p>Best regards,<br/>${params.organisationName}</p>
     `;
 
     try {
       await resend.emails.send({
         from: `${params.organisationName} via SprintScale <${FROM_EMAIL}>`,
         to: params.parentEmail,
-        subject: `Payment Receipt — Invoice ${params.invoiceNumber}`,
+        subject: `Payment Receipt — ${rcp} — Invoice ${params.invoiceNumber}`,
         html: htmlContent,
       });
     } catch (err) {

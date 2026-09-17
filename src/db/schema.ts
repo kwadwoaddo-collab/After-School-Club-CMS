@@ -30,7 +30,7 @@ export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'bank_transfe
 export const parentCreditTypeEnum = pgEnum('parent_credit_type', ['credit', 'debit', 'refund']);
 export const instalmentStatusEnum = pgEnum('instalment_status', ['pending', 'processing', 'paid', 'failed']);
 export const incidentTypeEnum = pgEnum('incident_type', ['accident', 'incident', 'medication', 'safeguarding']);
-export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'verified', 'failed']);
+export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'verified', 'failed', 'reversed']);
 export const progressRatingEnum = pgEnum('progress_rating', ['excellent', 'good', 'satisfactory', 'needs_improvement', 'unsatisfactory']);
 export const noteTypeEnum = pgEnum('note_type', ['general', 'progress', 'behaviour', 'subject_feedback', 'attendance_concern', 'medical']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present', 'absent', 'late', 'no_show', 'excused']);
@@ -687,6 +687,19 @@ export const payments = pgTable('payments', {
   status: paymentStatusEnum('status').default('verified').notNull(),
   transactionReference: varchar('transaction_reference', { length: 255 }),
   recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),
+
+  // ─── Category C: Payment Reversal ────────────────────────────────────────────
+  // When a verified payment is reversed, status is updated to 'reversed' and
+  // these two columns capture why and when. All other columns (id, amount,
+  // method, transactionReference, recordedAt, invoiceId) are preserved intact
+  // so that the original payment record remains auditable.
+  // reversalReason is required at the application layer (trimmed, max 500 chars).
+  // reversedAt is set server-side to now() by reversePayment().
+  // Existing payment rows default to NULL — no backfill required.
+  // ─────────────────────────────────────────────────────────────────────────────
+  reversalReason: text('reversal_reason'),
+  reversedAt: timestamp('reversed_at', { withTimezone: true }),
+
   
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
