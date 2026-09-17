@@ -503,12 +503,17 @@ describe('finance/actions — deleteInvoice safety rules (§11)', () => {
         await expect(deleteInvoice('inv-1')).rejects.toThrow(/Please delete associated payments before deleting the invoice/);
     });
 
-    it('voidInvoice (Owner) still works for sent invoices (regression)', async () => {
+    it('voidInvoice (Owner) still works for sent invoices with no verified payments (regression)', async () => {
         const { auth } = await import('@/lib/auth');
         (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
         const mockUpdate = vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) });
         dbTransaction.mockImplementation(async (cb: any) => cb({
-            query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'sent' }) } },
+            query: {
+                invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'sent', parentId: null }) },
+                // Category C: voidInvoice now checks for verified payments first.
+                // An empty array means no verified payments → void proceeds.
+                payments: { findMany: async () => [] },
+            },
             update: mockUpdate,
             insert: mockInsert
         }));
@@ -516,6 +521,7 @@ describe('finance/actions — deleteInvoice safety rules (§11)', () => {
         const { voidInvoice } = await import('./actions');
         await expect(voidInvoice('inv-1')).resolves.toBeDefined();
     });
+
 
     it('resendInvoiceEmail rejects draft', async () => {
         const { auth } = await import('@/lib/auth');
