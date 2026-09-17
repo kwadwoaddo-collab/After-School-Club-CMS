@@ -30,22 +30,30 @@ vi.mock('@/lib/db-notifications', () => ({
     notifyOwners: vi.fn().mockResolvedValue(undefined),
 }));
 
-const centresFindFirst = vi.fn();
-const parentsFindFirst = vi.fn();
-const invoicesFindFirst = vi.fn();
-const paymentsFindFirst = vi.fn();
+const mockUpdateChain = {
+    set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([{}])
+        })
+    })
+};
+const mockInsertChain = {
+    values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{}])
+    })
+};
+
 const dbSelectWhere = vi.fn();
 const dbTransaction = vi.fn();
-const billingConfigsFindFirst = vi.fn();
 
 vi.mock('@/db', () => ({
     db: {
         query: {
-            centres: { findFirst: (...args: unknown[]) => centresFindFirst(...args) },
-            parents: { findFirst: (...args: unknown[]) => parentsFindFirst(...args) },
-            invoices: { findFirst: (...args: unknown[]) => invoicesFindFirst(...args) },
-            payments: { findFirst: (...args: unknown[]) => paymentsFindFirst(...args), findMany: async () => [] },
-            billingConfigs: { findFirst: (...args: unknown[]) => billingConfigsFindFirst(...args) },
+            centres: { findFirst: vi.fn() },
+            parents: { findFirst: vi.fn() },
+            invoices: { findFirst: vi.fn() },
+            payments: { findFirst: vi.fn(), findMany: async () => [] },
+            billingConfigs: { findFirst: vi.fn() },
         },
         select: vi.fn(() => ({
             from: vi.fn(() => ({
@@ -59,7 +67,6 @@ vi.mock('@/db', () => ({
 const OWNER_SESSION = { user: { id: 'user-owner', organisationId: 'org-1', role: 'ORG_OWNER' } };
 const MANAGER_SESSION = { user: { id: 'user-mgr', organisationId: 'org-1', role: 'MANAGER' } };
 const FRONT_DESK_SESSION = { user: { id: 'user-fd', organisationId: 'org-1', role: 'FRONT_DESK' } };
-const TUTOR_SESSION = { user: { id: 'user-tutor', organisationId: 'org-1', role: 'TUTOR' } };
 
 describe('Category C Payment Reversal Scenarios', () => {
     beforeEach(() => {
@@ -72,20 +79,23 @@ describe('Category C Payment Reversal Scenarios', () => {
             (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
             
             dbTransaction.mockImplementationOnce(async (cb: any) => cb({
-                query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', amount: '600.00', status: 'sent', payments: [] }) } },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                query: { 
+                    invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', amount: '600.00', status: 'sent', payments: [] }) },
+                    payments: { findMany: async () => [] }
+                },
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
-            await expect(recordPayment({ invoiceId: 'inv-1', amount: 6000.00, method: 'bank_transfer', reference: 'ref-1', date: new Date() })).resolves.toBeDefined();
+            await expect(recordPayment({ invoiceId: 'inv-1', amount: '6000.00', method: 'bank_transfer', transactionReference: 'ref-1', recordedAt: new Date() })).resolves.toBeDefined();
 
             dbTransaction.mockImplementationOnce(async (cb: any) => cb({
                 query: { 
                     payments: { findFirst: async () => ({ id: 'pay-1', amount: '6000.00', status: 'verified', invoiceId: 'inv-1', invoice: { id: 'inv-1', organisationId: 'org-1' } }), findMany: async () => [] },
                     invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', amount: '600.00', status: 'paid', payments: [{ id: 'pay-1', amount: '6000.00', status: 'verified' }] }) } 
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(reversePayment('pay-1', 'Wrong amount entered')).resolves.toEqual(expect.objectContaining({ success: true }));
@@ -108,8 +118,8 @@ describe('Category C Payment Reversal Scenarios', () => {
                         ] 
                     }) }
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(reversePayment('pay-2', 'Duplicate payment')).resolves.toEqual(expect.objectContaining({ success: true }));
@@ -132,8 +142,8 @@ describe('Category C Payment Reversal Scenarios', () => {
                         ] 
                     }) }
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(reversePayment('pay-1', 'Refunded part 1')).resolves.toEqual(expect.objectContaining({ success: true }));
@@ -148,11 +158,11 @@ describe('Category C Payment Reversal Scenarios', () => {
             dbTransaction.mockImplementationOnce(async (cb: any) => cb({
                 query: { 
                     invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'partially_paid', payments: [{ status: 'verified' }] }) },
-                    payments: { findMany: async () => [{ status: 'verified' }] }
+                    payments: { findMany: async () => [{ status: 'verified', amount: '100' }] }
                 },
             }));
 
-            await expect(voidInvoice('inv-1')).rejects.toThrow(/verified payments/);
+            await expect(voidInvoice('inv-1')).rejects.toThrow(/verified payment/);
         });
 
         it('reversed does not block void', async () => {
@@ -162,10 +172,10 @@ describe('Category C Payment Reversal Scenarios', () => {
             dbTransaction.mockImplementationOnce(async (cb: any) => cb({
                 query: { 
                     invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'sent', payments: [{ status: 'reversed' }] }) },
-                    payments: { findMany: async () => [{ status: 'reversed' }] }
+                    payments: { findMany: async () => [] } // Return empty for verified payments
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(voidInvoice('inv-1')).resolves.toBeDefined();
@@ -180,8 +190,8 @@ describe('Category C Payment Reversal Scenarios', () => {
                     payments: { findFirst: async () => ({ id: 'pay-1', amount: '100.00', status: 'verified', invoiceId: 'inv-1', invoice: { id: 'inv-1', organisationId: 'org-1', status: 'void' } }), findMany: async () => [] },
                     invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'void', payments: [{ id: 'pay-1', status: 'verified' }] }) } 
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(reversePayment('pay-1', 'Void cleanup')).resolves.toEqual(expect.objectContaining({ success: true }));
@@ -195,7 +205,7 @@ describe('Category C Payment Reversal Scenarios', () => {
                 query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'void', payments: [] }) } }
             }));
 
-            await expect(recordPayment({ invoiceId: 'inv-1', amount: 100, method: 'cash', reference: '', date: new Date() })).rejects.toThrow(/voided invoice/);
+            await expect(recordPayment({ invoiceId: 'inv-1', amount: '100.00', method: 'cash', transactionReference: '', recordedAt: new Date() })).rejects.toThrow(/voided invoice/);
         });
     });
 
@@ -208,7 +218,7 @@ describe('Category C Payment Reversal Scenarios', () => {
                 query: { invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', status: 'draft', payments: [] }) } }
             }));
 
-            await expect(recordPayment({ invoiceId: 'inv-1', amount: 100, method: 'cash', reference: '', date: new Date() })).rejects.toThrow(/draft invoice/);
+            await expect(recordPayment({ invoiceId: 'inv-1', amount: '100.00', method: 'cash', transactionReference: '', recordedAt: new Date() })).rejects.toThrow(/draft invoice/);
         });
     });
 
@@ -222,8 +232,8 @@ describe('Category C Payment Reversal Scenarios', () => {
                     payments: { findFirst: async () => ({ id: 'pay-1', amount: '100.00', status: 'pending', invoiceId: 'inv-1', invoice: { id: 'inv-1', organisationId: 'org-1' } }), findMany: async () => [] },
                     invoices: { findFirst: async () => ({ id: 'inv-1', organisationId: 'org-1', amount: '100.00', status: 'partially_paid', payments: [{ id: 'pay-1', status: 'pending' }] }) }
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(failPayment('pay-1')).resolves.toEqual(expect.objectContaining({ success: true }));
@@ -241,8 +251,8 @@ describe('Category C Payment Reversal Scenarios', () => {
                     payments: { findFirst: async () => ({ id: 'pay-1', amount: '100.00', status: 'verified', invoiceId: 'inv-1', invoice: { id: 'inv-1', organisationId: 'org-1', centreId: 'centre-1' } }), findMany: async () => [] },
                     invoices: { findFirst: async () => ({ id: 'inv-1', centreId: 'centre-1', organisationId: 'org-1', amount: '100.00', payments: [] }) }
                 },
-                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-                insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }) })
+                uprecordedAt: vi.fn().mockReturnValue(mockUpdateChain),
+                insert: vi.fn().mockReturnValue(mockInsertChain)
             }));
 
             await expect(reversePayment('pay-1', 'Reason')).resolves.toEqual(expect.objectContaining({ success: true }));
