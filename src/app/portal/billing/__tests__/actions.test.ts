@@ -13,7 +13,7 @@ const dbTransaction = vi.fn(async (cb) => cb({ insert: dbInsert }));
 vi.mock('@/db', () => ({
     db: {
         query: { invoices: { findFirst: (...args: unknown[]) => invoicesFindFirst(...args) } },
-        transaction: (...args: unknown[]) => dbTransaction(...args)
+        transaction: (...args: Parameters<typeof dbTransaction>) => dbTransaction(...args)
     }
 }));
 
