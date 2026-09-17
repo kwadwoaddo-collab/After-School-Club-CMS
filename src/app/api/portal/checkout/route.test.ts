@@ -79,6 +79,21 @@ describe('POST /api/portal/checkout', () => {
     expect(res.status).toBe(404);
   });
 
+  it('returns 404 when invoice is draft (filtered by DB query) (§7)', async () => {
+    getCurrentParent.mockResolvedValue({ id: 'parent-1', email: 'parent@example.com' });
+    isConfigured.mockReturnValue(true);
+    // DB query has ne(status, 'draft'), so findFirst returns null
+    invoiceFindFirst.mockResolvedValue(null);
+
+    const { POST } = await import('./route');
+    const req = new NextRequest('http://localhost/api/portal/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ invoiceId: 'inv-123' }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(404);
+  });
+
   it('returns 400 when invoice is already fully paid', async () => {
     getCurrentParent.mockResolvedValue({ id: 'parent-1', email: 'parent@example.com' });
     isConfigured.mockReturnValue(true);
