@@ -15,7 +15,7 @@
   [10:00 - 15:00]  Step 3: Review student directory and critical medical/allergy alerts
   [15:00 - 20:00]  Step 4: Triage inbound registrations queue and confirm new signups
   [20:00 - 25:00]  Step 5: Verify today's attendance roll call and session schedule
-  [25:00 - 30:00]  Step 6: Confirm Designated Safeguarding Lead (DSL) incident logging access
+  [25:00 - 30:00]  Step 6: Confirm Safeguarding, Finance, and Staffing access for your centre
 ```
 
 ---
@@ -71,11 +71,11 @@
 
 ---
 
-### Step 6: Confirm Safeguarding & Incident Access (Minutes 25–30)
+### Step 6: Confirm Safeguarding, Finance & Staff Access (Minutes 25–30)
 1. Navigate to: `Sidebar → Incidents`.
-2. Click **+ Log Incident**.
-3. Verify that the **Safeguarding** option is visible in your incident type dropdown (confirming your manager-level Designated Safeguarding Lead access).
-4. Cancel out of the modal without saving synthetic data.
+2. Click **+ Log Incident** and verify that the **Safeguarding** option is visible in your incident type dropdown (confirming your manager-level Designated Safeguarding Lead access). Cancel the modal.
+3. Navigate to: `Sidebar → Finance`. Verify that you can view your assigned centre's invoices and offline payment recording controls.
+4. Navigate to: `Sidebar → Staff`. Confirm that you can view your centre's team members and access the **+ Invite Staff Member** screen.
 
 ---
 
@@ -83,12 +83,15 @@
 
 ✅ Your manager account is active and secured.  
 ✅ Your centre scope is verified and locked to your physical location.  
-✅ You know where to view critical medical flags and emergency numbers.  
+✅ You know where to view critical medical flags and emergency numbers.
 ✅ You are ready to supervise classroom roll calls and manage safeguarding files.
+✅ You can access your centre's invoices, log payments, and manage team members.
 
 ---
 
 ## Next Steps & Comprehensive Documentation
-- [Centre Manager Role Guide](../role-guides/manager-guide.md) — Day-to-day operations, attendance, and Designated Safeguarding Lead workflows.
+- [Centre Manager Role Guide](../role-guides/manager-guide.md) — Day-to-day operations, attendance, safeguarding, finance, and staffing workflows.
 - [Registrations & Intake Manual](../functional-manuals/registrations.md) — Reviewing, approving, and triaging inbound student applications.
 - [Daily Attendance Register Manual](../functional-manuals/attendance.md) — Live roll calls, time-tracking, and absence credit reconciliation.
+- [Finance & Invoices Manual](../functional-manuals/invoices-billing.md) — Reviewing invoices, recording payments, and downloading receipts.
+- [Staff Directory & Access Permissions](../functional-manuals/staff-access-permissions.md) — Inviting staff, scoping venue access, and role assignment.

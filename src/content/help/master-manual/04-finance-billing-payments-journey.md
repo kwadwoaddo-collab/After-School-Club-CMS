@@ -109,4 +109,4 @@ When verified payments equal or exceed the total invoice amount:
 2. A payment receipt email is dispatched to the parent.
 3. The invoice details page updates the remaining balance to **£0.00**.
 4. Both staff and parents can download PDF copies of the invoice and downloadable payment record receipt at any time.
-5. Revenue is aggregated into the Owner's financial dashboard overview metrics.
+5. Revenue is aggregated into financial dashboard overview metrics for Organisation Owners (organisation-wide) and Centre Managers (for their assigned venues).

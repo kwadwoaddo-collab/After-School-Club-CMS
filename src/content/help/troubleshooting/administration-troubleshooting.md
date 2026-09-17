@@ -49,7 +49,7 @@
 - **Symptom:** Staff clicks invite link and receives error: *"Invitation token has expired or is invalid."*
 - **Likely Cause:** Staff invitation tokens expire automatically after **7 days** for security.
 - **Safe Resolution:**
-  1. Log in as Organisation Owner.
+  1. Log in as Organisation Owner or Centre Manager (for your assigned centre).
   2. Navigate to `/dashboard/staff/invite` and dispatch a fresh invitation.
 
 ---
@@ -67,22 +67,22 @@
 - **Symptom:** Manager or Tutor logs in but cannot select a specific club location.
 - **Likely Cause:** The user has not been assigned to that venue in `centreMemberships`.
 - **Safe Resolution:**
-  1. Owner opens `/dashboard/staff/[userId]`.
-  2. In the Centre Memberships checklist, check the missing venue and click **Save Centre Assignments**.
+  1. An Organisation Owner or Centre Manager (for centres they manage) opens `/dashboard/staff/[userId]`.
+  2. In the Centre Memberships checklist, check the venue and click **Save Centre Assignments**.
 
 ---
 
 ### 7. Tutor Cannot Access Finance
 - **Symptom:** Tutor asks why they cannot see the Finance tab or invoice records.
 - **Likely Cause:** Expected system behavior. By architectural design, the `TUTOR` role is strictly restricted to live registers, student notes, and scorecards.
-- **Safe Resolution:** Explain least-privilege role boundaries. If the staff member requires financial access, an Owner must upgrade their role to `FRONT_DESK`, `MANAGER`, or `ORG_OWNER`.
+- **Safe Resolution:** Explain least-privilege role boundaries. If the staff member requires financial access, an Owner or Centre Manager can upgrade their role to `FRONT_DESK` or `MANAGER` (upgrading to `ORG_OWNER` requires an Owner).
 
 ---
 
 ### 8. Front Desk Safeguarding / Void Restriction
 - **Symptom:** Front Desk staff reports missing Void button or missing safeguarding file access.
 - **Likely Cause:** Expected system behavior. Voiding invoices is Owner-only; restricted safeguarding records are restricted to Managers and Owners.
-- **Safe Resolution:** Front Desk staff should escalate void requests or safeguarding concerns to their Centre Manager or Organisation Owner.
+- **Safe Resolution:** Front Desk staff should escalate invoice void requests to their Organisation Owner (Centre Managers cannot void invoices), and safeguarding concerns to their Centre Manager or Organisation Owner.
 
 ---
 
@@ -121,7 +121,28 @@
 ### 15. Soft-Deleted Family in Active Search
 - **Symptom:** Staff deleted a family, but cannot find them in the search bar.
 - **Likely Cause:** Soft-deleted families are hidden from active rosters and moved to the **Recovery Bin**.
-- **Safe Resolution:** Navigate to `Sidebar → Parents → Recovery Bin` (`/dashboard/parents/bin`) to view, restore, or permanently delete the family.
+- **Safe Resolution:** Navigate to `Sidebar → Parents → Recovery Bin` (`/dashboard/parents/bin`) to view or restore the family (Front Desk and Centre Managers can view and restore; permanent GDPR purge requires an Organisation Owner).
+
+---
+
+### 16. Restored Family Roster Refresh
+- **Symptom:** Staff clicked Restore in the Recovery Bin, but the family does not immediately appear on an open attendance register or student roster.
+- **Likely Cause:** Client-side cache in an open browser tab has not yet re-fetched the active student directory.
+- **Safe Resolution:** Refresh the browser page (`Ctrl+R` / `Cmd+R`). The restored parent and child records are active in the database immediately upon clicking Restore.
+
+---
+
+### 17. Permanent Purge Button Access
+- **Symptom:** Centre Manager or Front Desk administrator navigates to `/dashboard/parents/bin` and does not see the "Permanent Purge" button next to soft-deleted parent records.
+- **Likely Cause:** Expected system security behavior. Permanent GDPR deletion (`hardDeleteParent`) is an irreversible operation restricted strictly to `ORG_OWNER` accounts. Front Desk and Managers have full authority to view the Recovery Bin and restore records (`restoreParent`), but cannot permanently erase data.
+- **Safe Resolution:** If a formal GDPR Right to Erasure request has been received, an Organisation Owner must log in to execute the permanent purge.
+
+---
+
+### 18. Audit Trail Event Types
+- **Symptom:** Staff member edited a minor student note and expected a corresponding entry in the executive audit trail.
+- **Likely Cause:** Structured audit events (`auditEvents`) capture high-risk operations (invoice creation, invoice voiding, payment recording, and annual academic rollover). Routine student notes are timestamped directly on the note record (`updatedAt`).
+- **Safe Resolution:** View the note history directly on the student profile.
 
 ---
 

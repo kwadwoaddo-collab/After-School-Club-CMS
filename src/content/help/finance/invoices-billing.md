@@ -135,7 +135,7 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 
 ---
 
-### Procedure 4: Voiding an Invoice
+### Procedure 4: Voiding an Invoice (Status Transition)
 
 ![Figure — Invoice Voiding Modal with mandatory reason entry (Owner only)](/training/assets/screenshots/annotated/SS-D6-S062.png)
 *Figure 11.6 — Owner Invoice Voiding Confirmation Modal*
@@ -143,29 +143,29 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 📹 **Video Walkthrough:** [Watch: Voiding an Incorrect Invoice](/training/assets/videos/SS-D6-V018.mp4)
 > [!IMPORTANT]
 > **Owner-Restricted Capability:**
-> Only users with the **Organisation Owner** (`ORG_OWNER`) role can void invoices. Voiding cancels the invoice liability in the Parent Portal. Voiding cannot be reversed in the UI.
+> Only users with the **Organisation Owner** (`ORG_OWNER`) role can void invoices. Voiding cancels the invoice liability in the Parent Portal (reducing outstanding balance to £0.00). It is a status transition (`status: 'void'`) rather than a database deletion: the invoice record and all audit events are preserved for statutory financial record-keeping. Voiding cannot be reversed in the UI.
 
 **Steps:**
 1. Open the invoice at `/dashboard/finance/invoices/[id]`.
 2. In the top action bar, click **Void Invoice**.
-3. In the confirmation dialog, review the warning and click **Confirm Void**.
+3. In the confirmation dialog, review the warning and click **Void Invoice**.
 4. Status transitions to `void`. The outstanding balance drops to £0.00 in the parent portal, and the invoice is displayed with a strikethrough.
 
 ---
 
-### Procedure 5: Deleting an Invoice (Zero-Payment Protection)
+### Procedure 5: Deleting an Invoice (Hard Deletion with Zero-Payment Protection)
 **Who Can Do This:** **Organisation Owner** (`ORG_OWNER`) Only
 
 **Steps:**
 1. Open the invoice at `/dashboard/finance/invoices/[id]`.
-2. Click **Delete Invoice**.
-3. **Safety Protection:** If any payments have been recorded against the invoice, the system **blocks deletion** with the error: *"Please delete associated payments before deleting the invoice."*
-4. If no payments exist, confirm deletion. The record is removed from the database.
+2. Click **Delete Invoice** (red button).
+3. **Safety Protection:** If any payments have been recorded against the invoice, the system **blocks deletion** on both client and server with the error: *"Please delete associated payments before deleting the invoice."* The delete confirmation button is disabled in the UI. (In this situation, an Owner must use **Void Invoice** instead).
+4. If zero payments exist, confirm deletion. The invoice record is permanently erased from the database (`tx.delete(invoices)`).
 
 ---
 
 ### Procedure 6: Resending Invoice Notification Email
-**Who Can Do This:** **Organisation Owner** (`ORG_OWNER`) Only
+**Who Can Do This:** Organisation Owner (`ORG_OWNER`), Centre Manager (`MANAGER`) (for assigned centres)
 
 **Steps:**
 1. Open the invoice at `/dashboard/finance/invoices/[id]`.
@@ -180,6 +180,6 @@ The invoice updates immediately, the changes appear on the live PDF, and an audi
 | Issue | Cause | Solution |
 |---|---|---|
 | **Invoice run gives "Invoice already generated for period"** | Application pre-check in `billingRuns` prevented duplicate invoice creation. | Check the invoice history. The invoice for this billing period already exists in the system. |
-| **Manager cannot find Void or Delete buttons** | Voiding and deleting are restricted by design to the Organisation Owner. | Request the Organisation Owner to review and void the invoice. |
+| **Manager cannot find Void or Delete buttons** | Voiding and deleting are restricted by design to the Organisation Owner. | Request the Organisation Owner to review and void or delete the invoice. |
 | **Parent cannot see newly created invoice** | Invoice was created under a different parent account or different organisation. | Verify parent account email matching on the invoice details screen. |
-| **Invoice shows wrong bank account details on PDF** | Centre billing details have not been configured. | Owner must configure bank details at `Sidebar → Centres → [Centre] → Billing`. |
+| **Invoice shows wrong bank account details on PDF** | Centre billing details have not been configured. | Owner or Centre Manager can configure bank details at `Sidebar → Centres → [Centre] → Billing`. |

@@ -76,18 +76,18 @@ SprintScale implements a four-tier Role-Based Access Control (RBAC) model:
 │                    FOUR CMS STAFF ROLES                     │
 ├─────────────────────────────────────────────────────────────┤
 │  1. `ORG_OWNER`: Complete organisation-wide authority.      │
-│     Can invite staff, change roles, void invoices, manage   │
-│     centre billing, and perform GDPR data exports.          │
+│     Can invite staff, change roles, void/delete invoices,   │
+│     manage billing, and run full organisation GDPR exports. │
 │                                                             │
 │  2. `MANAGER`: Operational centre supervisor.               │
-│     Full operational authority over assigned centres. Can   │
-│     create centres, manage intake, roll call, session logs, │
-│     safeguarding records, and send parent broadcasts.       │
+│     Full operational authority over assigned centres:       │
+│     intake, roll call, finance & invoices, payments, staff  │
+│     invites, centre billing & bank details, and settings.   │
 │                                                             │
 │  3. `FRONT_DESK`: Daily reception administrator.            │
 │     Can check in students, view profiles, create walk-in    │
 │     bookings, and record offline cash/bank payments.        │
-│     Blocked from safeguarding records, voiding, and admin.  │
+│     Blocked from safeguarding, void/delete, and admin.      │
 │                                                             │
 │  4. `TUTOR`: Activity leader & classroom teacher.           │
 │     Scoped strictly to live roll call, student notes, and   │
@@ -106,9 +106,9 @@ SprintScale implements a four-tier Role-Based Access Control (RBAC) model:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│               STAGE 1: OWNER DISPATCHES INVITE              │
-│  Owner enters email, name, role, and optional initial centre│
-│  at `/dashboard/staff/invite`.                              │
+│          STAGE 1: OWNER OR MANAGER DISPATCHES INVITE        │
+│  Staff email, role & centre configured at staff invite page │
+│  (Owner: any centre/role; Manager: assigned centre scope).  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -125,8 +125,8 @@ SprintScale implements a four-tier Role-Based Access Control (RBAC) model:
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
 │            STAGE 4: ACCESS SCOPING & MAINTENANCE            │
-│  Owner assigns additional centres on staff profile. Access  │
-│  can be modified, paused, or detached at any time.          │
+│  Owner or Manager assigns centre memberships on profile.    │
+│  Staff roles and venue access can be updated at any time.   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -155,5 +155,5 @@ SprintScale allows Owners and Managers to communicate with parents at scale:
 📹 **Video Walkthrough:** [Watch: Irreversible Permanent GDPR Family Purge](/training/assets/videos/SS-D6-V030.mp4)
 
 - **Automated September 1st Rollover:** SprintScale includes an automated cron service (`/api/cron/school-year-roll`) that advances pupil year groups by one grade annually on September 1st (e.g. Nursery $\to$ Reception $\to$ Year 1 $\to \dots \to$ Year 13 $\to$ Graduated). The endpoint uses PostgreSQL transactional advisory locking and completion audit checks to guarantee single-execution idempotency.
-- **Soft-Deletion & Recovery Bin:** Deleting a family moves the parent and linked child records to the **Recovery Bin** (`/dashboard/parents/bin`) with a `deletedAt` timestamp. Staff have 30 days to restore the record before background purging, and permanent on-demand erasure is restricted strictly to Organisation Owners.
+- **Soft-Deletion & Recovery Bin:** Deleting a family moves the parent and linked child records to the **Recovery Bin** (`/dashboard/parents/bin`) with a `deletedAt` timestamp. Staff (Front Desk, Managers, Owners) have 30 days to restore the record before background purging, and permanent on-demand erasure (`hardDeleteParent`) is restricted strictly to Organisation Owners.
 - **Audit Event Trail:** High-risk actions (invoice creation, payment logging, invoice voiding, and annual rollover completion) emit structured audit events in `auditEvents` with actor attribution, timestamp, and metadata.

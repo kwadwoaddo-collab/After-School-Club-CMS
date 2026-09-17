@@ -336,10 +336,89 @@ export const HELP_LEARNING_PATHS: HelpLearningPathMetadata[] = [
         ],
       },
       {
+        id: 'manager-finance-invoicing',
+        title: 'Centre Finance, Invoicing & Reconciliation',
+        description: 'Managing invoices, offline payment recording, voucher reconciliation, and receipt delivery for your centre.',
+        items: [
+          {
+            type: 'guide',
+            slug: 'finance-overview',
+            note: 'Overview of revenue tracking, outstanding balances, and financial permission boundaries.',
+          },
+          {
+            type: 'guide',
+            slug: 'invoices-billing',
+            note: 'Invoice generation, issue date editing, invoice resends, and parent portal delivery.',
+          },
+          {
+            type: 'guide',
+            slug: 'payments-reconciliation',
+            note: 'Recording cash and bank transfer payments, reconciling childcare vouchers, and issuing receipts.',
+          },
+          {
+            type: 'video',
+            slug: 'recording-an-offline-cash-payment',
+            note: 'Logging manual cash payments with receipt timestamps and audit trail.',
+          },
+          {
+            type: 'video',
+            slug: 'recording-an-offline-bank-transfer-payment',
+            note: 'Logging direct BACS/Faster Payments bank transfers with transaction references.',
+          },
+          {
+            type: 'video',
+            slug: 'reconciling-childcare-vouchers-and-tfc',
+            note: 'Matching incoming Tax-Free Childcare references and voucher claims against bank deposits.',
+          },
+          {
+            type: 'video',
+            slug: 'exporting-finance-and-invoicing-csv',
+            note: 'Exporting raw billing and revenue ledger data for accountant reconciliation.',
+          },
+        ],
+      },
+      {
+        id: 'manager-staffing-teams',
+        title: 'Team Supervision & Centre Scoping',
+        description: 'Inviting staff, scoping venue access, and managing roles for your centre.',
+        items: [
+          {
+            type: 'guide',
+            slug: 'centres-multi-centre',
+            note: 'Managing multi-site clubs with isolated data boundaries and centre billing details.',
+          },
+          {
+            type: 'guide',
+            slug: 'staff-access-permissions',
+            note: 'Staff directory, invitation workflows, centre assignments, and role boundaries.',
+          },
+          {
+            type: 'video',
+            slug: 'inviting-a-new-staff-member-via-email',
+            note: 'Dispatching secure email invitations to new team members for your assigned centres.',
+          },
+          {
+            type: 'video',
+            slug: 'scoping-staff-access-across-specific-centres',
+            note: 'Restricting staff visibility to assigned centre sites only.',
+          },
+          {
+            type: 'video',
+            slug: 'updating-staff-role-and-privileges',
+            note: 'Promoting or assigning staff roles across Manager, Front Desk, and Tutor.',
+          },
+        ],
+      },
+      {
         id: 'manager-continuous-handbook',
         title: 'Master Operational Handbooks',
         description: 'In-depth reference manuals for supervisory staff.',
         items: [
+          {
+            type: 'guide',
+            slug: 'master-system-foundations',
+            note: 'Continuous Handbook Part 1: Architecture, Security, RBAC & Core Setup.',
+          },
           {
             type: 'guide',
             slug: 'master-family-to-booking',
@@ -349,6 +428,16 @@ export const HELP_LEARNING_PATHS: HelpLearningPathMetadata[] = [
             type: 'guide',
             slug: 'master-attendance-to-safeguarding',
             note: 'Continuous Handbook Part 3: Live Register, Kiosks, First Aid & Safety Protocols.',
+          },
+          {
+            type: 'guide',
+            slug: 'master-finance-billing-payments',
+            note: 'Continuous Handbook Part 4: Invoicing, Agreed Fees & Financial Ledgers.',
+          },
+          {
+            type: 'guide',
+            slug: 'master-administration-operations',
+            note: 'Continuous Handbook Part 5: Multi-Centre Settings, Staff & Compliance.',
           },
         ],
       },

@@ -76,7 +76,7 @@ SprintScale enforces strict role-based access control (RBAC) to ensure that user
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
 │                      2. MANAGER                             │
-│  Supervises assigned centre(s), safeguarding, and attendance │
+│  Supervises assigned centre operations, finance & staffing  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -104,9 +104,9 @@ SprintScale enforces strict role-based access control (RBAC) to ensure that user
 | **Review Inbound Registrations** | Full Access | Assigned Centre(s) | Assigned Centre(s) | No Access |
 | **Create & Reschedule Bookings** | Full Access | Assigned Centre(s) | Assigned Centre(s) | No Access |
 | **Send Parent Broadcast Emails** | Full Access | Assigned Centre(s) | No Access | No Access |
-| **Finance, Invoices & Bank Reconciliation**| Full Access | No Access | No Access | No Access |
-| **Invite Staff & Assign Roles** | Full Access | No Access | No Access | No Access |
-| **Organisation Settings & Branding** | Full Access | No Access | No Access | No Access |
+| **Finance, Invoices & Bank Reconciliation**| Full Access | Assigned Centre(s) | No Access | No Access |
+| **Invite Staff & Assign Roles** | Full Access | Assigned Centre(s) | No Access | No Access |
+| **Organisation Settings & Branding** | Full Access | Operational Settings | No Access | No Access |
 | **Annual School Year Roll-Forward** | Full Access | No Access | No Access | No Access |
 
 ---
@@ -147,8 +147,9 @@ SprintScale CMS is engineered to comply with UK Data Protection Act 2018 and UK 
 
 - **Minimal Data Collection:** Forms collect only information necessary for child care, emergency contact, medical needs, and statutory compliance.
 - **Explicit Communications Consent:** Broadcast emails are sent only to parents who have explicitly provided communications consent during registration or booking.
-- **Soft Deletion & 30-Day Recovery Bin:** When a parent or student record is deleted, it is moved to the **Recovery Bin** for 30 days before permanent erasure, protecting against accidental loss of historical records.
-- **Permanent GDPR Purge:** Only the Organisation Owner can perform an irreversible GDPR erasure of a parent record from the Recovery Bin.
+- **Soft Deletion & 30-Day Recovery Bin:** When a parent or student record is deleted, it is moved to the **Recovery Bin** for 30 days before permanent erasure, protecting against accidental loss of historical records. Front Desk, Managers, and Owners can soft-delete and restore records.
+- **Permanent GDPR Purge:** Only the Organisation Owner can perform an irreversible GDPR erasure (`hardDeleteParent`) of a parent record from the Recovery Bin.
+- **Operational vs. Full GDPR Exports:** Routine operational data exports (attendance registers, session bookings, student rosters, and finance ledgers) are available in CSV format to Centre Managers (for their assigned venues) and Organisation Owners. Full organisation GDPR data exports (JSON archive) are restricted strictly to Organisation Owners in the Settings Danger Zone.
 
 ---
 

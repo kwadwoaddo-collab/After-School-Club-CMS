@@ -64,7 +64,7 @@ As a **Tutor** (classroom club leader), you are the primary face of the club dur
 - [ ] **Full Student & Parent Profiles:** Tutors see operational details on the roll-call card, but full historical profiles and contact databases are restricted to Front Desk/Managers.
 - [ ] **Registrations & Bookings Queue:** Managed by Front Desk and Managers.
 - [ ] **Finance & Invoicing:** Zero access to billing or payment records.
-- [ ] **Staff & Settings:** Managed exclusively by Organisation Owners.
+- [ ] **Staff & Settings:** Managed by Centre Managers and Organisation Owners.
 
 ---
 

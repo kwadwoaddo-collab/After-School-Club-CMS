@@ -50,7 +50,7 @@
 ### 2. Staff Cannot Select or Access a Club Centre
 - **What You May See:** Top-bar centre dropdown is disabled or shows "Access Denied".
 - **Most Likely Causes:** Staff member has not been assigned to the centre in the staff directory.
-- **How to Resolve (Owner Action):** Organisation Owner navigates to `Sidebar → Team → [Staff Member]`, checks the appropriate centre boxes, and clicks **Save Assignments**.
+- **How to Resolve:** An Organisation Owner or Centre Manager navigates to `Sidebar → Staff → [Staff Member]`, checks the appropriate centre boxes, and clicks **Save Centre Assignments**.
 
 ---
 

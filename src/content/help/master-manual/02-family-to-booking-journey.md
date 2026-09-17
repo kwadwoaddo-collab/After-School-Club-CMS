@@ -123,7 +123,7 @@ On the date of the booked session:
 
 ## 7. Stage 6: Family Billing & Reconciliation (Detailed in Milestone D4)
 
-1. **Agreed Monthly Fee:** The Organisation Owner navigates to the student's profile and sets a recurring monthly fee covering all siblings in the household.
+1. **Agreed Monthly Fee:** The Organisation Owner or Centre Manager navigates to the student's profile and sets a recurring monthly fee covering all siblings in the household.
 2. **Monthly Invoice Run:** The billing engine issues automated `INV-XXXXXX` invoices on the monthly cycle anchor date.
 3. **Parent Settlement:** The parent logs into `/portal/billing` to pay instantly via Stripe card/Apple Pay or submits their Tax-Free Childcare voucher reference code.
-4. **Reconciliation:** The Owner matches bank remittances in the reconciliation hub and issues an official PDF receipt.
+4. **Reconciliation:** Staff (Owner or Centre Manager) match bank remittances in the reconciliation hub and issue an official PDF receipt.

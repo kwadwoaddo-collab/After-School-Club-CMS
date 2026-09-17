@@ -23,8 +23,8 @@ Key Capabilities:
 | **View Centres Directory (`/dashboard/centres`)** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ Blocked |
 | **Create New Centre (`/dashboard/centres/add`)** | ✅ Full Access | ✅ Full Access | ❌ Blocked | ❌ Blocked |
 | **Edit General Centre Settings** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
-| **Edit Centre Bank & Billing Details** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ Blocked |
-| **Assign Staff to Centre** | ✅ Full Access | ❌ Blocked | ❌ Blocked | ❌ Blocked |
+| **Edit Centre Bank & Billing Details** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
+| **Assign Staff to Centre** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ Blocked |
 | **Delete / Archive Centre** | ❌ Not in UI | ❌ Not in UI | ❌ Not in UI | ❌ Not in UI |
 
 ---
@@ -77,15 +77,15 @@ Key Capabilities:
 ### Procedure 3: Configuring Centre Bank & Billing Details
 
 ![Figure — Centre Bank Details Card (restricted to Organisation Owner role)](/training/assets/screenshots/annotated/SS-D6-S039.png)
-*Figure 13.5 — Centre Bank Details Card (Owner-Only)*
+*Figure 13.5 — Centre Bank Details Card*
 
 📹 **Video Walkthrough:** [Watch: Managing Centre Bank Account Details](/training/assets/videos/SS-D6-V021.mp4)
-> [!IMPORTANT]
-> **Owner-Only Financial Control:**
-> Even though Centre Managers can edit general venue settings, **only Organisation Owners can update bank details and tuition rates**.
+> [!NOTE]
+> **Venue-Scoped Billing Management:**
+> Organisation Owners and Centre Managers (for their authorised centre venues) can configure operating bank details, sort code, account number, and hourly tuition fee rates.
 
 **Steps:**
-1. Log in as an **Organisation Owner** (`ORG_OWNER`).
+1. Log in as an **Organisation Owner** (`ORG_OWNER`) or **Centre Manager** (`MANAGER`).
 2. Navigate to: `Sidebar → Centres → [Select Centre] → Settings` (or `/dashboard/centres/[id]/billing`).
 3. Scroll to the **Billing & Bank Details** card.
 4. Enter:

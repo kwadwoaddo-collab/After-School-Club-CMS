@@ -64,16 +64,23 @@ SprintScale enforces granular server-side permission gates for all financial act
 
 | Financial Capability / Action | Owner (`ORG_OWNER`) | Manager (`MANAGER`) | Front Desk (`FRONT_DESK`) | Tutor (`TUTOR`) | Parent (`PARENT`) | Evidence Source |
 |---|---|---|---|---|---|---|
-| **Global Finance Dashboard (`/dashboard/finance`)** | ✅ Full Access | ❌ Blocked (Redirect) | ❌ Blocked (Redirect) | ❌ Blocked | ❌ No Access | `src/app/dashboard/finance/page.tsx` |
+| **Finance Dashboard (`/dashboard/finance`)** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked (Redirect) | ❌ Blocked | ❌ No Access | `src/app/dashboard/finance/page.tsx` |
 | **View Invoices / Details** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `getInvoiceDetails` |
 | **Create / Update Agreed Fee Config** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `assertCentreAccess` |
 | **Generate Monthly Invoices (Run)** | ✅ All Centres | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `generateInvoiceFromConfig` |
 | **Record Offline Payment (Cash/Bank)** | ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `recordPayment` |
 | **Reconcile Voucher Submissions** | ✅ Full Access | ✅ Assigned Centres | ✅ Assigned Centres | ❌ No Access | ❌ No Access | `verifyPayment` / `failPayment` |
-| **Void an Issued Invoice** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `voidInvoice` |
-| **Delete an Invoice (Zero Payments)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `deleteInvoice` |
-| **Resend Invoice Notification Email** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `resendInvoiceEmail` |
+| **Void an Issued Invoice (`voidInvoice`)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `voidInvoice` |
+| **Delete an Invoice (`deleteInvoice`, Zero Payments)** | ✅ **Owner Only** | ❌ Blocked | ❌ Blocked | ❌ No Access | ❌ No Access | `deleteInvoice` |
+| **Resend Invoice Notification Email** | ✅ All Centres | ✅ Assigned Centres | ❌ Blocked | ❌ No Access | ❌ No Access | `resendInvoiceEmail` |
 | **Parent Portal Billing (`/portal/billing`)** | ❌ Admin View | ❌ Admin View | ❌ Admin View | ❌ No Access | ✅ **Own Invoices Only** | `src/app/portal/billing/page.tsx` |
+
+> [!NOTE]
+> **Centre Scoping & Destructive Action Boundaries:**
+> - **Centre Scoping:** Centre Managers have broad day-to-day operational capabilities across Finance (viewing invoices, recording payments, reconciling vouchers, resending notifications, and exporting CSVs) strictly scoped to their authorised centre(s).
+> - **Voiding vs. Deleting:**
+>   - **Voiding (`voidInvoice`):** Administrative status transition setting `status = 'void'` and zeroing the parent portal balance. The invoice row, recorded payments, and audit history remain intact in the database for accounting integrity. Restricted strictly to Organisation Owners.
+>   - **Deleting (`deleteInvoice`):** Hard database deletion permanently purging the invoice record (`tx.delete(invoices)`). Restricted strictly to Organisation Owners, and allowed **only** if zero payments have been recorded (`invoice.payments.length === 0`). Invoices with payments cannot be deleted.
 
 ---
 
@@ -97,15 +104,17 @@ SprintScale enforces granular server-side permission gates for all financial act
 
 📹 **Video Walkthrough:** [Watch: Exporting Finance & Invoicing CSV](/training/assets/videos/SS-D6-V043.mp4)
 
+**Who Can Export:** Organisation Owners (all centres organisation-wide) and Centre Managers (strictly for their assigned centre venues) can export the financial ledger CSV at any time via `Sidebar → Finance` (`/api/export/finance`) or `Sidebar → Reports` (`/dashboard/reports`).
+
 ## 7. Overpayment & Correction Rules
 
 - **No Monetary Family Credit Balance:** SprintScale does NOT have a customer credit ledger or surplus balance account. If staff record a payment larger than the invoice amount (e.g. recording £300 on a £250 invoice), the invoice status marks `paid`, but the £50 excess is stored solely as a payment row on that invoice; it does not automatically carry over to other invoices. Staff should record only the amount attributable to the invoice.
 - **Parent Portal Overpayment Guard:** When parents submit voucher claims in the portal, the application strictly blocks amounts greater than the remaining balance (`amount > outstandingBalance`).
-- **Payment Immutability:** Existing payment rows cannot be edited or deleted in the UI. If a payment was recorded in error, an Owner must void the invoice and re-issue the correct billing record.
+- **Payment Immutability:** Existing payment rows cannot be edited or deleted in the UI. If a payment was recorded in error, an Owner must void the invoice (which cancels the invoice liability to £0.00 in the parent portal while preserving all records for audit) and re-issue the correct billing record. Hard deletion of an invoice via `deleteInvoice` is blocked whenever payments exist.
 
 ---
 
-## 7. What SprintScale Finance Is NOT
+## 8. What SprintScale Finance Is NOT
 
 To maintain operational clarity:
 

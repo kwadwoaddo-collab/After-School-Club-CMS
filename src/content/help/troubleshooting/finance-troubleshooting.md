@@ -56,7 +56,7 @@
 - **What You May See:** A family was invoiced £200 instead of £250.
 - **Root Cause:** The billing config was updated after the invoice was generated. Changing an agreed fee applies to future billing runs only.
 - **How to Resolve:**
-  1. If the issued invoice is in `draft` status and no payments exist, an Owner can click **Delete Invoice** and re-generate.
+  1. If zero payments have been recorded against the issued invoice, an Organisation Owner can click **Delete Invoice** to permanently remove it and re-generate. If payments already exist, deleting is blocked by zero-payment protection; an Owner must **Void Invoice** instead to cancel the balance while preserving audit history.
   2. Alternatively, record an adjustment or issue a supplementary ad-hoc invoice for the difference.
 
 ---
@@ -113,7 +113,7 @@
 ### 15. Invoice Under Wrong Family
 - **What You May See:** An ad-hoc invoice was accidentally assigned to the wrong parent.
 - **How to Resolve (Owner Action):**
-  1. If no payments have been recorded, open the invoice and click **Void Invoice** (or **Delete Invoice**).
+  1. If zero payments have been recorded, an Organisation Owner can open the invoice and click **Delete Invoice** to permanently erase it, or **Void Invoice** to cancel the balance. If any payments were recorded, deletion is blocked by zero-payment protection, so the Owner must use **Void Invoice** instead.
   2. Re-create the invoice selecting the correct parent account.
 
 ---
@@ -122,5 +122,5 @@
 - **What You May See:** Staff recorded £150 cash when the parent only paid £15.
 - **Root Cause:** Payment records in the database cannot be directly edited or deleted in the UI.
 - **How to Resolve (Owner Action):**
-  1. An Organisation Owner opens the invoice details page and clicks **Void Invoice** to cancel the inaccurate record.
+  1. An Organisation Owner opens the invoice details page and clicks **Void Invoice** to cancel the inaccurate invoice (the invoice status updates to `void`, reducing the parent portal liability to £0.00 while preserving all records and audit events).
   2. Create a new invoice and record the correct payment amount (£15).

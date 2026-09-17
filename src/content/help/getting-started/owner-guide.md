@@ -53,17 +53,19 @@ As an **Organisation Owner**, you hold top-level administrative, operational, an
 
 ---
 
-## 3. Actions Only an Owner Can Perform
+## 3. Actions Strictly Restricted to Organisation Owners
 
-SprintScale CMS enforces strict role gates. The following actions are **strictly restricted to Organisation Owners**:
+While **Centre Managers** have broad operational management (including invoicing, payments, staff invites, and centre billing for their authorised centres), SprintScale reserves critical legal and platform governance **exclusively for Organisation Owners**:
 
-1. **Finance & Invoicing:** Accessing `/dashboard/finance`, creating agreed-fee family billing configs, running billing cycles, voiding invoices, and recording payments.
-2. **Team & Permissions:** Inviting staff members, promoting/demoting user roles, and revoking staff access.
-3. **Centre Banking Setup:** Configuring sort codes, account numbers, and billing email headers for each centre (`/dashboard/centres/[id]/billing`).
-4. **Organisation Branding & Settings:** Uploading organisation logos, setting primary brand colors, and modifying registration terms.
-5. **Annual School Year Roll-Forward:** Advancing enrolled students' school years in bulk.
-6. **Wonde School Integration:** Connecting API keys and managing school data synchronization.
-7. **Permanent GDPR Purge:** Irreversibly erasing soft-deleted parent data from the Recovery Bin.
+1. **Invoice Ledger Voiding & Deletion:** Permanently voiding an issued invoice (status transition to 'void' preserving audit history) or deleting an un-paid invoice record (hard deletion, strictly restricted to invoices with zero recorded payments).
+2. **Owner Role Governance:** Creating, promoting a user to, or demoting an `Organisation Owner` (`ORG_OWNER`) account.
+3. **Cross-Centre Staff Detachment:** Permanently detaching an employee from the organisation container (Managers only remove memberships from their own centres).
+4. **Organisation Branding & Identity:** Uploading organisation logos, setting brand colours, and modifying the organisation name, slug, or subdomain.
+5. **Annual School Year Rollover:** Bulk advancing enrolled students' school year groups at academic year-end.
+6. **Danger Zone & Permanent GDPR Purge:** Irreversibly erasing soft-deleted parent and student data from the Recovery Bin (`hardDeleteParent`), or exporting the full organisation GDPR data archive (JSON). (Routine operational CSV exports remain accessible to Centre Managers for their assigned centres).
+
+> [!NOTE]
+> **Delegated Centre Operations:** Centre Managers can view invoices, record payments, reconcile vouchers, invite staff for their assigned centres, configure centre bank details, and edit operational settings (Registration Terms & Discount Rules).
 
 ---
 
@@ -142,11 +144,14 @@ SprintScale CMS enforces strict role gates. The following actions are **strictly
 ### Procedure 6: Managing the Recovery Bin & Permanent GDPR Purge
 1. Navigate to: `Sidebar → Parents → Recovery Bin` (`/dashboard/parents/bin`).
 2. Review records soft-deleted within the last 30 days.
-3. **To Restore:** Click **Restore** next to a parent's name to reactivate their account and children.
-4. **To Permanently Delete (GDPR):** Click **Permanent Purge**.
+3. **To Restore:** Click **Restore** next to a parent's name to reactivate their account and children. (Front Desk, Managers, and Owners can restore records).
+4. **To Permanently Delete (GDPR):** Click **Permanent Purge** (`hardDeleteParent`). Only visible to and executable by Organisation Owners.
 
 > [!CAUTION]
-> Permanent Purge is completely irreversible. It erases the parent's contact records from the database. Only perform this action upon receiving a formal GDPR erasure request.
+> **Permanent GDPR Purge vs. Soft Deletion:**
+> - Soft deletion (`softDeleteParent`) moves parent and child records to the Recovery Bin for 30 days and can be performed by Front Desk, Managers, and Owners.
+> - Restoring (`restoreParent`) can be performed by Front Desk, Managers, and Owners.
+> - Permanent Purge (`hardDeleteParent`) is completely irreversible and hard-deletes parent and child records from the database table. It is restricted exclusively to Organisation Owners. Only perform this action upon receiving a formal GDPR erasure request.
 
 ---
 
@@ -154,7 +159,7 @@ SprintScale CMS enforces strict role gates. The following actions are **strictly
 
 | Issue | Root Cause | Solution |
 |---|---|---|
-| **Staff cannot see any students on dashboard** | Staff member has not been assigned to any centres. | Open `Sidebar → Team → [Staff Member]`, check the appropriate centre boxes, and click **Save Assignments**. |
+| **Staff cannot see any students on dashboard** | Staff member has not been assigned to any centres. | Open `Sidebar → Staff → [Staff Member]`, check the appropriate centre boxes, and click **Save Centre Assignments**. |
 | **Invoice generation button disabled or skipped** | An invoice was already generated for this billing cycle. | Check `Sidebar → Finance → Invoices` to view the existing invoice for this period. |
 | **Parent claims they cannot log into portal** | Parent email in DB has a typo or parent was soft-deleted. | Open `Sidebar → Parents`, search for the parent, verify their email address, and resend the magic link. |
 | **Parent paid via Tax-Free Childcare but invoice shows unpaid** | Voucher remittances require manual verification. | Open `Sidebar → Finance → Reconciliation`, find the invoice, and click **Record Payment**. |

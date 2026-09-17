@@ -11,9 +11,11 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 - **Centre Operations & Headcount:** Monitoring daily session capacity, active roll calls, and staff-to-child ratios.
 - **Student & Parent Onboarding:** Reviewing and approving inbound registrations and managing student medical/SEN records.
 - **Designated Safeguarding Lead (DSL):** Authoring and reviewing confidential child protection and safeguarding incident files.
+- **Finance & Invoicing (Assigned Centres):** Managing invoices, recording offline payments (cash/bank), reconciling childcare vouchers and Tax-Free Childcare, downloading payment receipts, and exporting financial CSVs.
+- **Team Supervision & Staffing (Assigned Centres):** Inviting team members, configuring centre access, and managing staff roles (upgrading to Front Desk or Manager) for your managed venues.
+- **Centre Billing & Operational Settings:** Configuring centre bank details, operating hours, registration terms, and discount rules.
 - **Session Credit Ledger Management:** Reviewing student absence balances and granting forgiveness credits for excused absences.
 - **Centre Communications:** Sending targeted email announcements to parents with verified communications consent.
-- **Centre Opening Schedules:** Managing weekly session operating hours and slot capacities.
 
 ---
 
@@ -54,17 +56,20 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 - **Attendance & Kiosk:** Take roll call, monitor arrivals/departures, and operate kiosk check-ins.
 - **Incidents & Safeguarding:** Log standard injuries and author confidential safeguarding disclosures.
 - **Session Credit Ledger:** Grant forgiveness credits for excused absences.
-- **Centre Hours:** Configure daily opening/closing times and capacity rules.
+- **Finance & Invoicing (Assigned Centres):** View invoices, generate batch or ad-hoc invoices, record offline payments (cash and bank transfer), download official payment receipts, reconcile vouchers / Tax-Free Childcare, resend invoice notifications, and export finance ledger CSVs.
+- **Staff Management (Assigned Centres):** Invite staff members with roles `Manager`, `Front Desk`, or `Tutor`, manage centre memberships for your assigned centres, and upgrade staff roles (e.g. promoting to Front Desk or Manager).
+- **Centre Billing & Bank Details:** Configure bank name, sort code, account number, and hourly tuition fees for your assigned centres.
+- **Operational Settings:** Manage Operating Hours & session slots, Registration Terms & Conditions, and Discount Rules.
 - **Parent Broadcasts:** Send bulk email announcements to your centre's consented parents.
-- **Reports:** Export attendance registers and student lists to CSV.
+- **Operational Reports & Exports:** Export attendance registers, student lists, session bookings, and finance ledgers to CSV for your assigned centres.
 
 ### What Requires OWNER Authority (Escalate to Owner):
-- **Finance & Invoicing:** Creating family billing configs, issuing monthly invoices, and recording payments.
-- **Staff Roles & Invites:** Inviting new staff members or modifying staff permissions.
-- **Organisation Settings:** Modifying logo, brand colors, or legal terms.
-- **Annual School Year Roll:** Advancing student year groups at year-end.
-- **Centre Banking Setup:** Modifying centre bank account details.
-- **Permanent Data Deletion:** Permanent GDPR purge of records from the Recovery Bin.
+- **Invoice Ledger Voiding & Deletion:** Voiding an issued invoice (status transition to 'void' via `voidInvoice`) or permanently deleting an un-paid invoice record (hard deletion via `deleteInvoice`, permitted only when zero payments exist).
+- **Owner Account Governance:** Creating, promoting a user to, or demoting an `Organisation Owner` (`ORG_OWNER`) account.
+- **Cross-Centre Staffing & Global Deactivation:** Assigning staff to centres outside your management scope, or globally detaching an employee from the organisation container.
+- **Organisation Governance & Identity:** Modifying organisation name, slug, subdomain, contact info, branding colours, or logos.
+- **Annual Academic Year Rollover:** Advancing student year groups at year-end across the organisation.
+- **Danger Zone & GDPR Permanent Purge:** Irreversible permanent deletion of parent records from the 30-day Recovery Bin (`hardDeleteParent`), or exporting the full organisation GDPR data archive (JSON). (Routine operational CSV exports for assigned centres remain accessible to Managers).
 
 ---
 
@@ -134,11 +139,32 @@ As a **Centre Manager**, you are responsible for day-to-day operational leadersh
 
 ---
 
+### Procedure 5: Recording an Offline Payment & Generating a Receipt
+1. Navigate to: `Sidebar → Finance` (`/dashboard/finance`).
+2. Locate and open the invoice in your centre's ledger.
+3. Click **Record Payment**.
+4. Select payment method (`Cash` or `Bank Transfer`), enter the amount received, and input any reference note.
+5. Click **Save Payment**. The invoice status updates immediately.
+6. Click **Receipt Preview** and **Download Receipt PDF** to provide a payment confirmation receipt to the parent.
+
+---
+
+### Procedure 6: Inviting a Staff Member & Assigning Centre Access
+1. Navigate to: `Sidebar → Staff` (`/dashboard/staff`).
+2. Click **+ Invite Staff Member** (`/dashboard/staff/invite`).
+3. Enter the employee's name and email address.
+4. Select their role (`Manager`, `Front Desk`, or `Tutor`).
+5. Select the assigned centre from the centres you manage.
+6. Click **Send Invitation**. A secure activation link is emailed to the employee.
+
+---
+
 ## 5. Manager Escalation Protocol
 
 | Scenario | Immediate Manager Action | Escalation Route |
 |---|---|---|
 | **Critical Safeguarding Disclosure** | Ensure child's immediate physical safety; log confidential report in `/dashboard/incidents`. | Contact local authority Designated Officer (LADO) / Police, and notify Organisation Owner immediately. |
-| **Parent Disputing Monthly Bill** | Review student's attendance records in Session Ledger; verify attended sessions. | If financial adjustment is required, escalate to Owner to apply a credit or update family billing config. |
-| **New Staff Member Hired** | Collect DBS, First Aid, and Safeguarding certification details. | Provide details to Organisation Owner to issue formal email invitation and configure centre access. |
+| **Parent Disputing Monthly Bill** | Review attendance records and invoice details in `/dashboard/finance/invoices/[id]`. | If an invoice requires status voiding or ledger deletion (zero payments), escalate to Organisation Owner. |
+| **Cross-Centre Staff Transfer** | Review DBS and qualification records. You can directly invite staff or assign them to your centres. | Escalate to Organisation Owner if the staff member requires cross-centre access outside your management scope or promotion to Owner. |
+| **Annual School Year Rollover** | Review student rosters and attendance registers. | Annual rollover is executed organisation-wide by the Organisation Owner. |
 | **Venue Closure / Snow Day** | Log closure in Centre Hours; send urgent broadcast email to all affected parents. | Notify Organisation Owner of lost operational hours. |
