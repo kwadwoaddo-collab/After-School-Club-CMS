@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { getCurrentParent } from '@/lib/parent-auth';
 import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function submitVoucherPayment(invoiceId: string, amount: number, reference: string) {
@@ -16,7 +16,8 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
         const invoice = await db.query.invoices.findFirst({
             where: and(
                 eq(invoices.id, invoiceId),
-                eq(invoices.parentId, parent.id)
+                eq(invoices.parentId, parent.id),
+                ne(invoices.status, 'draft')
             ),
             with: {
                 payments: true
@@ -24,7 +25,7 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
         });
 
         if (!invoice) return { success: false, error: 'Invoice not found' };
-        if (invoice.status === 'paid' || invoice.status === 'void') {
+        if (invoice.status === 'paid' || invoice.status === 'void' || invoice.status === 'draft') {
             return { success: false, error: 'Invoice cannot be paid in its current status' };
         }
 
@@ -53,11 +54,6 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
                 status: 'pending',
                 transactionReference: reference.trim()
             });
-            // Update invoice status (Vouchers take time to clear, so we leave it as partially_paid or let staff mark as Paid)
-            // But for this MVP, we will mark it as partially_paid to reflect a pending payment
-            await tx.update(invoices)
-                .set({ status: 'partially_paid', updatedAt: new Date() })
-                .where(eq(invoices.id, invoice.id));
         });
 
         revalidatePath('/portal/billing');

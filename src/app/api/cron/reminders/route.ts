@@ -9,6 +9,7 @@ import { getBaseUrl } from '@/lib/base-url';
 import { Resend } from 'resend';
 import { InferSelectModel } from 'drizzle-orm';
 import { parents, centres, organisations, bookingAttendees, children } from '@/db/schema';
+import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
 
 // Shape returned by the db.query.bookings.findMany call below —
 // `with: { parent, centre: { with: { organisation } }, attendees: { with: { child } } }`.
@@ -40,15 +41,10 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@sprintscaleit.co.uk';
  * Environment variable required: CRON_SECRET=<random-secret>
  */
 export async function POST(req: NextRequest) {
-    // ── 1. Authenticate cron caller ─────────────────────────────────────────
-    const authHeader = req.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-    if (!cronSecret) {
-        logger.error('[Reminder] CRON_SECRET is not set — endpoint locked.');
-        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
-    }
-    if (authHeader !== `Bearer ${cronSecret}`) {
-        return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+    // ── 1. Authenticate cron caller (timing-safe) ────────────────────────────
+    const authCheck = verifyCronAuthorization(req);
+    if (!authCheck.authorized) {
+        return NextResponse.json({ error: authCheck.error }, { status: authCheck.status ?? 401 });
     }
 
     const tomorrow = addDays(new Date(), 1);
@@ -161,7 +157,7 @@ export async function POST(req: NextRequest) {
         const dueInvoices = await db.query.invoices.findMany({
             where: and(
                 lte(invoices.dueDate, sevenDaysFromNow),
-                inArray(invoices.status, ['sent', 'partially_paid', 'draft'])
+                inArray(invoices.status, ['sent', 'partially_paid'])
             ),
             with: {
                 parent: { columns: { firstName: true, email: true } },
@@ -199,4 +195,12 @@ export async function POST(req: NextRequest) {
         invoiceRemindersSent: invoiceSent,
         message: `Sent ${sent} session reminder${sent !== 1 ? 's' : ''} and ${invoiceSent} invoice reminder${invoiceSent !== 1 ? 's' : ''}`,
     });
+}
+
+/**
+ * GET /api/cron/reminders
+ * Vercel Cron invokes scheduled routes via GET. Delegates to POST handler.
+ */
+export async function GET(req: NextRequest) {
+    return POST(req);
 }
