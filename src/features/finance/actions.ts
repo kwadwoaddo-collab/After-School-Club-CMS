@@ -67,6 +67,58 @@ async function insertInvoiceAndLog(
     return inv;
 }
 
+/**
+ * Category C — Authoritative invoice status recalculation.
+ *
+ * Recalculates invoice status from ONLY verified payments.
+ * Must be called after any payment state change that affects balance.
+ *
+ * Rules:
+ * - draft: untouched (not payment-driven)
+ * - void: untouched (terminal; reversal on void invoice is allowed
+ *   but does NOT resurrect the invoice — see reversePayment)
+ * - verified total >= invoice amount → paid
+ * - verified total > 0 → partially_paid
+ * - verified total === 0 → sent
+ *
+ * Must be called inside a db.transaction() tx.
+ */
+async function recalculateInvoiceStatus(
+    tx: any, // Using any for transaction to match existing codebase patterns
+    invoiceId: string
+): Promise<void> {
+    const invoice = await tx.query.invoices.findFirst({
+        where: eq(invoices.id, invoiceId),
+        columns: { status: true, amount: true },
+    });
+    if (!invoice) return;
+    // draft and void are not payment-driven states
+    if (invoice.status === 'draft' || invoice.status === 'void') return;
+
+    const allPayments = await tx.query.payments.findMany({
+        where: eq(payments.invoiceId, invoiceId),
+        columns: { status: true, amount: true },
+    });
+    const totalVerified = allPayments
+        .filter(p => p.status === 'verified')
+        .reduce((s, p) => s + Number(p.amount), 0);
+
+    let newStatus: 'sent' | 'partially_paid' | 'paid';
+    if (totalVerified >= Number(invoice.amount)) {
+        newStatus = 'paid';
+    } else if (totalVerified > 0) {
+        newStatus = 'partially_paid';
+    } else {
+        newStatus = 'sent';
+    }
+
+    if (newStatus !== invoice.status) {
+        await tx.update(invoices)
+            .set({ status: newStatus, updatedAt: new Date() })
+            .where(eq(invoices.id, invoiceId));
+    }
+}
+
 export async function getParents(query: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
@@ -491,7 +543,7 @@ export async function getInvoiceDetails(invoiceId: string) {
 export async function recordPayment(data: {
     invoiceId: string;
     amount: string;
-    method: 'cash' | 'bank_transfer' | 'stripe' | 'voucher' | 'other';
+    method: string;
     transactionReference?: string;
     recordedAt: Date;
 }) {
@@ -518,6 +570,13 @@ export async function recordPayment(data: {
     const { payments: paymentsTable } = await import('@/db/schema');
 
     const result = await db.transaction(async (tx) => {
+        const invoice = await tx.query.invoices.findFirst({
+            where: eq(invoices.id, data.invoiceId)
+        });
+        if (!invoice) throw new Error('Invoice not found');
+        if (invoice.status === 'draft') throw new Error('Cannot record payment against a draft invoice. Issue the invoice first.');
+        if (invoice.status === 'void') throw new Error('Cannot record payment against a voided invoice.');
+
         // 1. Insert payment record
         const [newPayment] = await tx.insert(paymentsTable).values({
             invoiceId: data.invoiceId,
@@ -527,36 +586,30 @@ export async function recordPayment(data: {
             recordedAt: data.recordedAt,
         }).returning();
 
-        // 2. Fetch all payments and invoice total to update status
+        // 2. Recalculate invoice status
+        await recalculateInvoiceStatus(tx, data.invoiceId);
+
+        // Check for overpayment warning
         const allPayments = await tx.query.payments.findMany({
-            where: eq(paymentsTable.invoiceId, data.invoiceId)
+            where: eq(paymentsTable.invoiceId, data.invoiceId),
+            columns: { status: true, amount: true }
         });
-
-        const invoice = await tx.query.invoices.findFirst({
-            where: eq(invoices.id, data.invoiceId)
-        });
-
-        if (invoice) {
-            const totalPaid = allPayments.reduce((sum, p) => sum + Number(p.amount), 0);
-            const invoiceAmount = Number(invoice.amount);
-            
-            let newStatus: 'paid' | 'partially_paid' | 'sent' = 'sent';
-            if (totalPaid >= invoiceAmount) {
-                newStatus = 'paid';
-            } else if (totalPaid > 0) {
-                newStatus = 'partially_paid';
-            }
-
-            await tx.update(invoices).set({
-                status: newStatus
-            }).where(eq(invoices.id, data.invoiceId));
-        }
+        const totalVerified = allPayments
+            .filter(p => p.status === 'verified')
+            .reduce((sum, p) => sum + Number(p.amount), 0);
+        const isOverpaid = totalVerified > Number(invoice.amount);
 
         await tx.insert(auditEvents).values({
             organisationId: session.user.organisationId!,
             userId: session.user.id!,
             eventType: 'payment_recorded',
-            eventData: JSON.stringify({ invoiceId: data.invoiceId, paymentId: newPayment.id, amount: data.amount, method: data.method })
+            eventData: JSON.stringify({ 
+                invoiceId: data.invoiceId, 
+                paymentId: newPayment.id, 
+                amount: data.amount, 
+                method: data.method,
+                warning: isOverpaid ? 'Payment resulted in overpayment.' : undefined
+            })
         });
 
         return newPayment;
@@ -589,6 +642,7 @@ export async function recordPayment(data: {
                 parentEmail: invoiceRecord.parent.email,
                 parentName: invoiceRecord.parent.firstName,
                 invoiceNumber: invoiceRecord.invoiceNumber,
+                paymentId: result.id,
                 amountPaid: Number(data.amount),
                 organisationName: orgRecord?.name || 'Our Centre',
                 invoiceId: data.invoiceId
@@ -754,6 +808,27 @@ export async function voidInvoice(invoiceId: string) {
         if (!inv) throw new Error('Invoice not found');
         if (inv.status === 'void') throw new Error('Invoice is already voided');
 
+        // Count verified payments — these block void
+        const verifiedPayments = await tx.query.payments.findMany({
+            where: and(
+                eq(payments.invoiceId, invoiceId),
+                eq(payments.status, 'verified')
+            ),
+            columns: { id: true, amount: true },
+        });
+        if (verifiedPayments.length > 0) {
+            const verifiedTotal = verifiedPayments.reduce((s, p) => s + Number(p.amount), 0);
+            throw new Error(
+                `This invoice has ${verifiedPayments.length} verified payment(s) totalling £${verifiedTotal.toFixed(2)}. ` +
+                `Reverse the verified payments before voiding this invoice.`
+            );
+        }
+
+        // Check pending payments — warn but allow void (pending = not yet money in hand)
+        // Policy: pending payments on void invoice are left as pending.
+        // The parent's voucher submission becomes orphaned if its invoice is voided.
+        // This is acceptable as a warning scenario; real money has not moved.
+
         await tx
             .update(invoices)
             .set({ status: 'void', updatedAt: new Date() })
@@ -807,23 +882,17 @@ export async function verifyPayment(paymentId: string) {
             .set({ status: 'verified', updatedAt: new Date() })
             .where(eq(payments.id, paymentId));
 
-        // 3. Check if all verified payments sum up to the invoice amount
+        // 3. Recalculate invoice status
+        await recalculateInvoiceStatus(tx, payment.invoiceId);
+
+        // Fetch verified total for email notification
         const allInvoicePayments = await tx.query.payments.findMany({
-            where: eq(payments.invoiceId, payment.invoiceId)
+            where: eq(payments.invoiceId, payment.invoiceId),
+            columns: { status: true, amount: true }
         });
-
-        // Calculate total of verified payments (including the one we just verified)
-        const totalVerified = allInvoicePayments.reduce((sum, p) => {
-            const isVerified = p.id === paymentId ? true : p.status === 'verified';
-            return isVerified ? sum + Number(p.amount) : sum;
-        }, 0);
-
-        // 4. Update invoice status if fully paid
-        if (totalVerified >= Number(payment.invoice.amount)) {
-            await tx.update(invoices)
-                .set({ status: 'paid', updatedAt: new Date() })
-                .where(eq(invoices.id, payment.invoiceId));
-        }
+        const totalVerified = allInvoicePayments
+            .filter(p => p.status === 'verified')
+            .reduce((sum, p) => sum + Number(p.amount), 0);
 
         await tx.insert(auditEvents).values({
             organisationId: session.user.organisationId,
@@ -856,48 +925,126 @@ export async function failPayment(paymentId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
-    const payment = await db.query.payments.findFirst({
-        where: eq(payments.id, paymentId),
-        with: { invoice: true }
-    });
+    return await db.transaction(async (tx) => {
+        const payment = await tx.query.payments.findFirst({
+            where: eq(payments.id, paymentId),
+            with: { invoice: true }
+        });
 
-    if (!payment || !payment.invoice) throw new Error('Payment not found');
-    if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
+        if (!payment || !payment.invoice) throw new Error('Payment not found');
+        if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
 
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        if (!accessibleCentreIds.includes(payment.invoice.centreId)) {
-            throw new Error('Unauthorized: No access to this centre');
+        const userRole = (session.user as any).role;
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(payment.invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
         }
-    }
 
-    await db.update(payments)
-        .set({ status: 'failed', updatedAt: new Date() })
-        .where(eq(payments.id, paymentId));
+        // SAFE approach: We allow failing both 'pending' and 'verified' (existing behavior),
+        // but typically it should be used for pending payments. Reversal is preferred for verified.
+        // We ensure recalculation runs regardless.
+        await tx.update(payments)
+            .set({ status: 'failed', updatedAt: new Date() })
+            .where(eq(payments.id, paymentId));
 
-    await db.insert(auditEvents).values({
-        organisationId: session.user.organisationId,
-        userId: session.user.id,
-        eventType: 'payment_failed',
-        eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount })
+        await recalculateInvoiceStatus(tx, payment.invoiceId);
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId!,
+            userId: session.user.id!,
+            eventType: 'payment_failed',
+            eventData: JSON.stringify({ paymentId, invoiceId: payment.invoiceId, amount: payment.amount, previousStatus: payment.status })
+        });
+
+        // Send email notification to parent (fire-and-forget)
+        const parentRecord = await tx.query.parents.findFirst({ where: eq(parents.id, payment.invoice.parentId), columns: { firstName: true, email: true } });
+        if (parentRecord?.email) {
+            emailService.sendVoucherPaymentFailed({
+                parentFirstName: parentRecord.firstName,
+                parentEmail: parentRecord.email,
+                invoiceNumber: payment.invoice.invoiceNumber,
+                amount: Number(payment.amount),
+                portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+            }).catch(e => logger.error('[Email] Failed to send voucher failed email:', e));
+        }
+
+        revalidatePath('/dashboard/finance');
+        revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+        return { success: true };
     });
+}
 
-    // Send email notification to parent (fire-and-forget)
-    const parentRecord = await db.query.parents.findFirst({ where: eq(parents.id, payment.invoice.parentId), columns: { firstName: true, email: true } });
-    if (parentRecord?.email) {
-        emailService.sendVoucherPaymentFailed({
-            parentFirstName: parentRecord.firstName,
-            parentEmail: parentRecord.email,
-            invoiceNumber: payment.invoice.invoiceNumber,
-            amount: Number(payment.amount),
-            portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-        }).catch(e => logger.error('[Email] Failed to send voucher failed email:', e));
+export async function reversePayment(
+    paymentId: string,
+    reason: string
+): Promise<{ success: boolean; error?: string }> {
+    const session = await requireTenantSession();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason || trimmedReason.length > 500) {
+        throw new Error('Invalid reason for reversal.');
     }
 
-    revalidatePath('/dashboard/finance');
-    revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
-    return { success: true };
+    return await db.transaction(async (tx) => {
+        const payment = await tx.query.payments.findFirst({
+            where: eq(payments.id, paymentId),
+            with: { invoice: true }
+        });
+
+        if (!payment || !payment.invoice) throw new Error('Payment not found');
+        if (payment.invoice.organisationId !== session.user.organisationId) throw new Error('Unauthorized');
+
+        const userRole = (session.user as any).role;
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(payment.invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
+            if (userRole !== 'MANAGER') {
+                throw new Error('Unauthorized');
+            }
+        }
+
+        if (payment.status !== 'verified') {
+            throw new Error('This payment has already been corrected or is not eligible for reversal.');
+        }
+
+        const [updated] = await tx.update(payments)
+            .set({ status: 'reversed', reversalReason: trimmedReason, reversedAt: new Date(), updatedAt: new Date() })
+            .where(and(eq(payments.id, paymentId), eq(payments.status, 'verified')))
+            .returning({ id: payments.id });
+
+        if (!updated) {
+            throw new Error('This payment has already been corrected or is not eligible for reversal.');
+        }
+
+        if (payment.invoice.status !== 'void') {
+            await recalculateInvoiceStatus(tx, payment.invoiceId);
+        }
+
+        await tx.insert(auditEvents).values({
+            organisationId: session.user.organisationId,
+            userId: session.user.id,
+            eventType: 'payment_reversed',
+            eventData: JSON.stringify({
+                paymentId,
+                invoiceId: payment.invoiceId,
+                invoiceNumber: payment.invoice.invoiceNumber,
+                amount: payment.amount,
+                method: payment.method,
+                reason: trimmedReason,
+                previousStatus: 'verified',
+                invoiceWasVoid: payment.invoice.status === 'void',
+            })
+        });
+
+        revalidatePath('/dashboard/finance');
+        revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+        return { success: true };
+    });
 }
 
 // ─── Resend Invoice Email ───────────────────────────────────────────────────
