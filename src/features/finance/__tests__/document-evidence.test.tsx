@@ -318,7 +318,7 @@ describe('Document Evidence Improvement — Invoice & Receipt Tests', () => {
             expect(pos15).toBeLessThan(pos01);
         });
 
-        it('Receipt header retains authoritative INVOICE NO without inventing synthetic RCP- receipt number', () => {
+        it('Receipt header contains authoritative INVOICE NO and deterministic stable RECEIPT NO', () => {
             const invoice = {
                 invoiceNumber: 'INV-2026-AUTH',
                 amount: '180.00',
@@ -333,9 +333,11 @@ describe('Document Evidence Improvement — Invoice & Receipt Tests', () => {
             const allText = extractTextFromTree(receiptElement);
 
             expect(allText).toContain('INVOICE NO: INV-2026-AUTH');
-            expect(allText).not.toContain('RCP-');
-            expect(allText).not.toContain('RECEIPT NO:');
+            // Category C: PDF receipt displays deterministic stable receipt identity derived from verified payment UUID
+            expect(allText).toContain('RECEIPT NO:');
+            expect(allText).toContain('RCP-');
         });
+
 
         it('Only payments with status === "verified" are included in totals and payment table', () => {
             const invoice = {

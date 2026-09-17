@@ -167,7 +167,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                             <td className="px-6 py-5 text-right">
                                 {payment.status === 'pending' && (
                                     <div className="flex items-center justify-end gap-2">
-                                        <button 
+                                        <button
                                             onClick={() => handleVerify(payment.id)}
                                             disabled={processingId === payment.id}
                                             className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
@@ -175,7 +175,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                                         >
                                             <Check className="w-4 h-4" />
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => handleFail(payment.id)}
                                             disabled={processingId === payment.id}
                                             className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors disabled:opacity-50"
@@ -187,7 +187,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                                 )}
                                 {payment.status === 'verified' && canReverse && (
                                     <div className="flex items-center justify-end gap-2 mt-2">
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setReversalModalPayment(payment);
                                                 setReversalReason('');
@@ -209,10 +209,10 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-card border border-border rounded-[32px] p-8 max-w-md w-full shadow-2xl relative">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-500/10 rounded-full blur-[40px]" />
-                        
+
                         <div className="relative">
                             <h3 className="text-xl font-black text-foreground mb-6">Reverse this payment?</h3>
-                            
+
                             <div className="bg-secondary/40 rounded-xl p-4 mb-6 space-y-2 border border-border">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground font-medium">Amount:</span>
@@ -236,7 +236,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                                 <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">
                                     Correction reason (required)
                                 </label>
-                                <textarea 
+                                <textarea
                                     value={reversalReason}
                                     onChange={(e) => setReversalReason(e.target.value)}
                                     maxLength={500}

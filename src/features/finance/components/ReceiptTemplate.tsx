@@ -2,6 +2,8 @@
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { billingStylesBase } from './billingPdfStyles';
+import { stableReceiptNumber } from '@/lib/finance/receipt-number';
+
 
 const styles = StyleSheet.create({
     ...billingStylesBase,
@@ -26,7 +28,7 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
     const parent = invoice.parent || (child as any)?.parent || null;
     // Parse address into lines for multi-line display
     const addressLines: string[] = centre?.address ? centre.address.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
-    
+
     const safeFormatDate = (date: any, formatStr: string) => {
         if (!date) return '-';
         const d = new Date(date);
@@ -61,6 +63,14 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
     const invoiceAmount = Number(invoice.amount);
     const remainingBalance = Math.max(0, invoiceAmount - totalPaid);
 
+    // Category C: stable deterministic receipt number derived from the most-recently recorded
+    // verified payment UUID. Falls back to 'MANUAL' if no payment IDs are available.
+    // The same payment ID always produces the same RCP — matching the email receipt.
+    const latestVerifiedPayment = sortedPayments[0] ?? null;
+    const rcpNumber = latestVerifiedPayment?.id
+        ? stableReceiptNumber(latestVerifiedPayment.id)
+        : 'RCP-MANUAL';
+
     return (
         <Document title={`Receipt-${invoiceNumber}`}>
             <Page size="A4" style={styles.page}>
@@ -80,6 +90,10 @@ export const ReceiptTemplate = ({ invoice, organisationName }: ReceiptTemplatePr
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>INVOICE NO:</Text>
                             <Text style={styles.infoValue}>{invoiceNumber}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>RECEIPT NO:</Text>
+                            <Text style={styles.infoValue}>{rcpNumber}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>RECEIPT DATE:</Text>

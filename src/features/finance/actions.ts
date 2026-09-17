@@ -384,7 +384,7 @@ export async function createLegacyFamilyAndInvoice(data: {
 
         // 3. Create Invoice
         const coveredChildren = createdChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
- 
+
         const newInvoice = await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.invoice.centreId,
             parentId: newParent.id,
@@ -464,7 +464,7 @@ export async function createAdHocInvoice(data: {
         // 2. Build ad-hoc child details
         const childLabel = data.childName.trim();
         const coveredChildren = [{ childName: childLabel }];
- 
+
         const newInvoice = await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId,
@@ -544,9 +544,10 @@ export async function recordPayment(data: {
     invoiceId: string;
     amount: string;
     method: 'tax_free_childcare' | 'other' | 'cash' | 'bank_transfer' | 'stripe' | 'voucher' | 'gocardless';
-    transactionReference?: string;
+    transactionReference?: string | null;
     recordedAt: Date;
 }) {
+
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
@@ -603,10 +604,10 @@ export async function recordPayment(data: {
             organisationId: session.user.organisationId!,
             userId: session.user.id!,
             eventType: 'payment_recorded',
-            eventData: JSON.stringify({ 
-                invoiceId: data.invoiceId, 
-                paymentId: newPayment.id, 
-                amount: data.amount, 
+            eventData: JSON.stringify({
+                invoiceId: data.invoiceId,
+                paymentId: newPayment.id,
+                amount: data.amount,
                 method: data.method,
                 warning: isOverpaid ? 'Payment resulted in overpayment.' : undefined
             })
@@ -636,7 +637,7 @@ export async function recordPayment(data: {
         const orgRecord = await db.query.organisations.findFirst({
             where: eq(organisations.id, orgId)
         });
-        
+
         if (invoiceRecord?.parent?.email) {
             await emailService.sendPaymentReceiptEmail({
                 parentEmail: invoiceRecord.parent.email,
@@ -786,7 +787,7 @@ export async function deleteInvoice(invoiceId: string) {
     if (result.parentId) {
         revalidatePath(`/dashboard/parents/${result.parentId}`);
     }
-    
+
     return { success: true };
 }
 
