@@ -8,8 +8,10 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { centres, children } from '@/db/schema';
 import { getUserAccessibleCentres, getVisibleChildIds } from '@/lib/permissions';
 import ReceiptGeneratorClient from '@/features/finance/components/ReceiptGeneratorClient';
+import { stableReceiptNumber } from '@/lib/finance/receipt-number';
 
-export default async function ReceiptPage() {
+export default async function ReceiptPage(props: { searchParams: Promise<{ paymentId?: string }> }) {
+    const searchParams = await props.searchParams;
     const session = await requireTenantSession();
 
     if (!session?.user) return redirect('/login');
@@ -75,6 +77,8 @@ export default async function ReceiptPage() {
                     centres={orgCentres}
                     // eslint-disable-next-line react/no-children-prop
                     children={allChildren}
+                    paymentId={searchParams.paymentId}
+                    stableReceiptNo={searchParams.paymentId ? stableReceiptNumber(searchParams.paymentId) : undefined}
                 />
             </div>
         </div>

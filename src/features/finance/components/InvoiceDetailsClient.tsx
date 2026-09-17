@@ -20,9 +20,10 @@ import { useToast } from '@/components/ui/ToastProvider';
 interface InvoiceDetailsClientProps {
     invoice: any;
     organisationName: string;
+    userRole?: string;
 }
 
-export default function InvoiceDetailsClient({ invoice, organisationName }: InvoiceDetailsClientProps) {
+export default function InvoiceDetailsClient({ invoice, organisationName, userRole }: InvoiceDetailsClientProps) {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [previewType, setPreviewType] = useState<'invoice' | 'receipt' | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -438,7 +439,11 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                     {/* Payment History Section */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold text-foreground px-2">Payment Reconciliation Ledger</h3>
-                        <PaymentHistoryList payments={invoice.payments} />
+                        <PaymentHistoryList 
+                            payments={invoice.payments} 
+                            canReverse={userRole === 'ORG_OWNER' || userRole === 'MANAGER'}
+                            onPaymentReversed={() => router.refresh()}
+                        />
                     </div>
                 </div>
 
@@ -463,7 +468,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 <div>
                                     <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Balance Remaining</p>
                                     <h4 className={`text-3xl font-black ${remainingBalance <= 0 ? 'text-emerald-600' : 'text-foreground'}`}>
-                                        £{remainingBalance.toFixed(2)}
+                                        £{remainingBalance <= 0 ? '0.00' : remainingBalance.toFixed(2)}
                                     </h4>
                                 </div>
                                 {remainingBalance <= 0 && (
@@ -473,6 +478,19 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                                 )}
                             </div>
                         </div>
+
+                        {totalPaid > Number(invoice.amount) && (
+                            <div className="mt-6 flex items-start gap-3 p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-bold text-amber-700">Overpayment Warning</p>
+                                    <p className="text-sm text-amber-600">
+                                        This invoice is overpaid by £{(totalPaid - Number(invoice.amount)).toFixed(2)}.
+                                        Review payment entries and reverse any mistaken payments.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {remainingBalance > 0 && (
                             <button 
@@ -510,12 +528,17 @@ export default function InvoiceDetailsClient({ invoice, organisationName }: Invo
                 hasPayments={hasPayments}
                 onConfirm={async () => {
                     startTransition(async () => {
-                        if (confirmAction === 'delete') {
-                            await deleteInvoice(invoice.id);
-                            router.push('/dashboard/finance');
-                        } else {
-                            await voidInvoice(invoice.id);
-                            router.refresh();
+                        try {
+                            if (confirmAction === 'delete') {
+                                await deleteInvoice(invoice.id);
+                                router.push('/dashboard/finance');
+                            } else {
+                                await voidInvoice(invoice.id);
+                                router.refresh();
+                            }
+                        } catch (err) {
+                            const message = err instanceof Error ? err.message : String(err);
+                            toast({ title: 'Error', message: message || 'Action failed', variant: 'error' });
                         }
                     });
                 }}

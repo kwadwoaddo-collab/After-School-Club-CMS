@@ -31,7 +31,11 @@ export default async function PortalDashboard() {
             eq(invoices.parentId, parent.id),
             notInArray(invoices.status, ['draft', 'void', 'paid'])
         ),
-        with: { payments: true }
+        with: {
+            payments: {
+                where: (payments, { ne }) => ne(payments.status, 'reversed')
+            }
+        }
     });
     const totalOutstanding = outstandingInvoices.reduce((sum, inv) => {
         const paidAmount = inv.payments?.reduce((acc, p) => p.status === 'verified' ? acc + Number(p.amount) : acc, 0) || 0;

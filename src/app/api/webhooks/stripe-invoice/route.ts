@@ -1,3 +1,4 @@
+import { recalculateInvoiceStatus } from '@/lib/finance/recalculate-invoice-status';
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { stripeService } from '@/lib/services/stripe';
@@ -72,19 +73,19 @@ export async function POST(req: NextRequest) {
             }
 
             // 1. Record the payment
-            await db.insert(payments).values({
-                invoiceId,
-                amount: String(amountPaid),
-                method: 'stripe',
-                status: 'verified',
-                transactionReference: session.id,
-            });
+            await db.transaction(async (tx) => {
+                // 1. Record the payment
+                await tx.insert(payments).values({
+                    invoiceId,
+                    amount: String(amountPaid),
+                    method: 'stripe',
+                    status: 'verified',
+                    transactionReference: session.id,
+                });
 
-            // 2. Update invoice status to paid
-            await db
-                .update(invoices)
-                .set({ status: 'paid', updatedAt: new Date() })
-                .where(eq(invoices.id, invoiceId));
+                // 2. Recalculate invoice status
+                await recalculateInvoiceStatus(tx, invoiceId);
+            });
 
             logger.info(`[stripe-invoice webhook] Invoice ${invoiceNumber} (${invoiceId}) marked as paid. Amount: £${amountPaid}`);
         } catch (err) {
