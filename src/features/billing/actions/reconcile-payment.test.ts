@@ -28,6 +28,11 @@ vi.mock('@/lib/permissions', () => ({
   getUserAccessibleCentreIds: (...args: unknown[]) => getUserAccessibleCentreIds(...args),
 }));
 
+const recalculateInvoiceStatus = vi.fn();
+vi.mock('@/lib/finance/recalculate-invoice-status', () => ({
+  recalculateInvoiceStatus: (...args: unknown[]) => recalculateInvoiceStatus(...args),
+}));
+
 const invoicesFindFirst = vi.fn();
 vi.mock('@/db', () => ({
   db: {
@@ -99,9 +104,7 @@ describe('reconcilePayment', () => {
     // 1. Idempotency check -> no existing
     txMock.where.mockResolvedValueOnce([]);
     // 2. Invoice fetch — scoped to the session's own organisationId, not a caller-supplied one
-    txMock.where.mockResolvedValueOnce([{ id: '550e8400-e29b-41d4-a716-446655440000', amount: '100.00', status: 'sent' }]);
-    // 3. Existing payments fetch
-    txMock.where.mockResolvedValueOnce([{ amount: '20.00' }]);
+    txMock.where.mockResolvedValueOnce([{ id: '550e8400-e29b-41d4-a716-446655440000', amount: '100.00', status: 'sent', parentId: 'parent-1' }]);
 
     const result = await reconcilePayment({
       invoiceId: '550e8400-e29b-41d4-a716-446655440000',
@@ -112,7 +115,8 @@ describe('reconcilePayment', () => {
 
     expect(result.success).toBe(true);
     expect(txMock.insert).toHaveBeenCalledTimes(1);
-    expect(txMock.update).toHaveBeenCalledTimes(1); // update invoice to paid
+    expect(recalculateInvoiceStatus).toHaveBeenCalledTimes(1);
+    expect(recalculateInvoiceStatus).toHaveBeenCalledWith(txMock, '550e8400-e29b-41d4-a716-446655440000');
     // ORG_OWNER bypasses the centre-membership lookup entirely
     expect(getUserAccessibleCentreIds).not.toHaveBeenCalled();
   });
@@ -137,8 +141,7 @@ describe('reconcilePayment', () => {
     (db.transaction as ReturnType<typeof vi.fn>).mockImplementation(async (cb: any) => cb(txMock));
 
     txMock.where.mockResolvedValueOnce([]);
-    txMock.where.mockResolvedValueOnce([{ id: '550e8400-e29b-41d4-a716-446655440000', amount: '100.00', status: 'sent' }]);
-    txMock.where.mockResolvedValueOnce([{ amount: '20.00' }]);
+    txMock.where.mockResolvedValueOnce([{ id: '550e8400-e29b-41d4-a716-446655440000', amount: '100.00', status: 'sent', parentId: 'parent-1' }]);
 
     const result = await reconcilePayment({
       invoiceId: '550e8400-e29b-41d4-a716-446655440000',
@@ -149,6 +152,8 @@ describe('reconcilePayment', () => {
 
     expect(result.success).toBe(true);
     expect(txMock.insert).toHaveBeenCalledTimes(1);
+    expect(recalculateInvoiceStatus).toHaveBeenCalledTimes(1);
+    expect(recalculateInvoiceStatus).toHaveBeenCalledWith(txMock, '550e8400-e29b-41d4-a716-446655440000');
   });
 
   it('skips double-clicks using idempotency reference', async () => {
