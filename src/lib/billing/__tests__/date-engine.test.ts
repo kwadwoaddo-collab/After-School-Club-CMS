@@ -90,6 +90,17 @@ describe('date-engine.ts — Comprehensive Verification', () => {
             expect(formatIsoDate(p3End)).toBe('2026-12-03');
         });
 
+        it('15th-14th cycle: anchorDay=15 (15 Sep to 14 Oct) advances correctly', () => {
+            const p1Start = createUtcDate(2026, 9, 15);
+            const p1End = computePeriodEnd(p1Start, 15);
+            expect(formatIsoDate(p1End)).toBe('2026-10-14');
+
+            const p2Start = nextPeriodStart(p1Start, 15);
+            expect(formatIsoDate(p2Start)).toBe('2026-10-15');
+            const p2End = computePeriodEnd(p2Start, 15);
+            expect(formatIsoDate(p2End)).toBe('2026-11-14');
+        });
+
         it('Calendar month: anchorDay=1 spans full calendar months', () => {
             const p1Start = createUtcDate(2026, 9, 1);
             const p1End = computePeriodEnd(p1Start, 1);

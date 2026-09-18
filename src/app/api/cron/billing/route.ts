@@ -1,12 +1,12 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
+import { verifyCronAuthorization } from '@/lib/cron-auth';
 import {
     billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices,
     children, parents, centres, organisations,
 } from '@/db/schema';
-import { eq, and, isNull, or, ne, sql, desc } from 'drizzle-orm';
+import { eq, and, isNull, or, ne, sql, desc, inArray } from 'drizzle-orm';
 import { computeBillingSchedule } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 
@@ -99,37 +99,39 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // ── 4. Amount Resolution & Copy-Forward (§16, §17) ───────────────
-                let amountPence = config.agreedMonthlyPence ?? 0;
-                let amountStr = '';
+                // ── 4. Amount Resolution & Copy-Forward (§16, §17, Issue E & 8) ───────────────
+                // Precedence: most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
+                let amountPence = 0;
+                let amountStr = '0.00';
                 let notes: string | null = `Monthly tuition — ${schedule.periodLabel}`;
 
-                if (amountPence > 0) {
-                    amountStr = String(amountPence / 100);
-                } else {
-                    // Look for most recent non-void invoice to copy forward from
-                    const prevInvoice = await db.query.invoices.findFirst({
-                        where: and(
-                            eq(invoices.billingConfigId, config.id),
-                            ne(invoices.status, 'void'),
-                        ),
-                        orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
-                    });
+                // Look for most recent ISSUED invoice for this family & centre context (excluding draft and void)
+                const prevIssuedInvoice = await db.query.invoices.findFirst({
+                    where: and(
+                        eq(invoices.organisationId, config.organisationId),
+                        eq(invoices.centreId,       config.centreId),
+                        eq(invoices.parentId,       config.parentId),
+                        inArray(invoices.status,    ['sent', 'partially_paid', 'paid']),
+                    ),
+                    orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
+                });
 
-                    if (prevInvoice && Number(prevInvoice.amount) > 0) {
-                        amountStr = prevInvoice.amount;
-                        amountPence = Math.round(Number(prevInvoice.amount) * 100);
-                        if (prevInvoice.notes) {
-                            notes = prevInvoice.notes;
-                        }
-                    } else {
-                        // Guard: no agreed fee and no historical invoice template
-                        results.skipped_no_amount++;
-                        continue;
+                if (prevIssuedInvoice && Number(prevIssuedInvoice.amount) > 0) {
+                    amountStr = prevIssuedInvoice.amount;
+                    amountPence = Math.round(Number(prevIssuedInvoice.amount) * 100);
+                    if (prevIssuedInvoice.notes) {
+                        notes = prevIssuedInvoice.notes;
                     }
+                } else if (config.agreedMonthlyPence && config.agreedMonthlyPence > 0) {
+                    amountPence = config.agreedMonthlyPence;
+                    amountStr = String(config.agreedMonthlyPence / 100);
+                } else {
+                    // Issue 8: First cycle with no prior issued invoice and zero agreed fee: draft saved with 0.00
+                    amountPence = 0;
+                    amountStr = '0.00';
                 }
 
-                // ── 5. Idempotency — check for existing run or active invoice for this period ─────
+                // ── 5. Idempotency & Manual Conflict Check (Issue 9) ──────────────────────────
                 const existingRun = await db.query.billingRuns.findFirst({
                     where: and(
                         eq(billingRuns.billingConfigId, config.id),
@@ -142,9 +144,11 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // Check for existing active invoice for this config & period
+                // Check for existing active invoice for this config and period (covers both manual and scheduler invoices linked to this config)
                 const existingInvoice = await db.query.invoices.findFirst({
                     where: and(
+                        eq(invoices.organisationId,     config.organisationId),
+                        eq(invoices.centreId,           config.centreId),
                         eq(invoices.billingConfigId,    config.id),
                         eq(invoices.billingPeriodStart, schedule.periodStart),
                         ne(invoices.status,             'void'),
@@ -202,9 +206,12 @@ export async function POST(request: NextRequest) {
                         return { skipped: true, byManager: false };
                     }
 
+                    // Re-check invoices inside locked transaction (covers both manual and scheduler invoices)
                     const inTxInvoice = await tx.query.invoices.findFirst({
                         where: and(
-                            eq(invoices.billingConfigId,    config.id),
+                            eq(invoices.organisationId,     config.organisationId),
+                            eq(invoices.centreId,           config.centreId),
+                            eq(invoices.parentId,           config.parentId),
                             eq(invoices.billingPeriodStart, schedule.periodStart),
                             ne(invoices.status,             'void'),
                         ),

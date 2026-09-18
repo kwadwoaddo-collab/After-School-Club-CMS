@@ -1391,18 +1391,19 @@ export async function discardDraftInvoice(invoiceId: string) {
         }
 
         // If invoice was created from a billing config, mark the billingRun as success=false
-        // so that cron/manual generation treats the period as unrun (§18)
+        // and null the invoiceId pointer so no dangling pointer remains (§18, Issue A)
         if (invoice.billingConfigId) {
             await tx.update(billingRuns)
                 .set({
                     success: false,
                     errorLog: `Draft discarded by user ${session.user.id}`,
+                    invoiceId: null,
                 })
                 .where(eq(billingRuns.invoiceId, invoiceId));
         }
 
-        await tx.update(invoices)
-            .set({ status: 'void', updatedAt: new Date() })
+        // Delete the unissued draft invoice so it does not pollute the financial ledger with artificial voided obligations (Issue A)
+        await tx.delete(invoices)
             .where(eq(invoices.id, invoiceId));
 
         await tx.insert(auditEvents).values({

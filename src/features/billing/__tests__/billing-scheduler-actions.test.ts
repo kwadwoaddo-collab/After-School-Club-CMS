@@ -146,7 +146,8 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
 
             expect(res.success).toBe(true);
             expect(res.skipId).toBe('skip-1');
-            expect(mockTxUpdate).toHaveBeenCalled(); // voids draft and sets billingRuns success = false
+            expect(mockTxUpdate).toHaveBeenCalled(); // nulls invoiceId and sets billingRuns success = false
+            expect(mockTxDelete).toHaveBeenCalled(); // deletes unissued draft invoice (Issue A)
             expect(mockTxInsert).toHaveBeenCalled(); // inserts billingCycleSkips and audit events
         });
     });
@@ -172,16 +173,52 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
     });
 
     describe('reopenBillingCycle', () => {
-        it('strictly forbids non-Owner roles', async () => {
+        it('strictly forbids unauthorized roles (e.g. FRONT_DESK)', async () => {
             const { requireTenantSession } = await import('@/lib/session');
-            (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
+            (requireTenantSession as any).mockResolvedValue({ user: { id: 'user-fd', organisationId: 'org-1', role: 'FRONT_DESK' } });
 
             const { reopenBillingCycle } = await import('../actions');
             await expect(reopenBillingCycle('config-1', '2026-10-01'))
-                .rejects.toThrow(/Only Org Owner can reopen a billing cycle/);
+                .rejects.toThrow(/Only Org Owner and Centre Managers can reopen a billing cycle/);
         });
 
-        it('reopens cycle by deleting billingRuns entry when no active invoice exists', async () => {
+        it('rejects MANAGER without access to target centre', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
+            getUserAccessibleCentreIds.mockResolvedValue(['other-centre']);
+
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({
+                id: 'config-1',
+                centreId: 'centre-1',
+                organisationId: 'org-1',
+            });
+
+            const { reopenBillingCycle } = await import('../actions');
+            await expect(reopenBillingCycle('config-1', '2026-10-01'))
+                .rejects.toThrow(/Unauthorized: No access to this centre/);
+        });
+
+        it('allows MANAGER with centre access to reopen cycle', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
+            getUserAccessibleCentreIds.mockResolvedValue(['centre-1']);
+
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({
+                id: 'config-1',
+                centreId: 'centre-1',
+                organisationId: 'org-1',
+            });
+            mockTxQuery.invoices.findFirst.mockResolvedValue(null);
+
+            const { reopenBillingCycle } = await import('../actions');
+            const res = await reopenBillingCycle('config-1', '2026-10-01');
+
+            expect(res.success).toBe(true);
+            expect(mockTxDelete).toHaveBeenCalled();
+            expect(mockTxInsert).toHaveBeenCalled();
+        });
+
+        it('reopens cycle by deleting billingRuns entry when no active invoice exists for Owner', async () => {
             const { requireTenantSession } = await import('@/lib/session');
             (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
 

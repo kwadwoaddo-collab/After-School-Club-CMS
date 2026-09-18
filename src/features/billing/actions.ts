@@ -349,13 +349,12 @@ export async function skipBillingCycle(
                 throw new Error('Cannot skip cycle: draft invoice has associated payments');
             }
 
-            // Discard draft invoice
+            // Discard unissued draft invoice (Issue A)
             await tx.update(billingRuns)
-                .set({ success: false, errorLog: `Draft discarded due to cycle skip by ${session.user.id}` })
+                .set({ success: false, errorLog: `Draft discarded due to cycle skip by ${session.user.id}`, invoiceId: null })
                 .where(eq(billingRuns.invoiceId, existingInvoice.id));
 
-            await tx.update(invoices)
-                .set({ status: 'void', updatedAt: new Date() })
+            await tx.delete(invoices)
                 .where(eq(invoices.id, existingInvoice.id));
 
             await tx.insert(auditEvents).values({
@@ -364,6 +363,7 @@ export async function skipBillingCycle(
                 eventType: 'invoice_draft_discarded',
                 eventData: JSON.stringify({
                     invoiceId: existingInvoice.id,
+                    invoiceNumber: existingInvoice.invoiceNumber,
                     reason: 'Discarded during skip cycle',
                 }),
             });
@@ -437,20 +437,21 @@ export async function unskipBillingCycle(configId: string, periodStartStr: strin
 }
 
 /**
- * Owner-only explicit regeneration of a voided billing cycle (§27).
+ * Manager/Owner explicit regeneration of a voided/skipped billing cycle (§27, Issue B).
  * Removes the historical billingRun entry, allowing draft generation to re-occur.
  */
 export async function reopenBillingCycle(configId: string, periodStartStr: string) {
     const { orgId, session } = await getOrgIdAndSession();
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER') {
-        throw new Error('Unauthorized: Only Org Owner can reopen a billing cycle');
+    const userRole = (session.user as { role?: string }).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Org Owner and Centre Managers can reopen a billing cycle');
     }
 
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
     });
     if (!config) throw new Error('Billing config not found');
+    await assertCentreAccess(session, config.centreId);
 
     const periodStartDate = new Date(periodStartStr);
 
@@ -546,11 +547,13 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         throw new Error(`Invoice already generated for period ${input.periodStartStr}`);
     }
 
-    // Pre-transaction check 2: Existing active invoice check for this billing config and period
+    // Pre-transaction check 2: Existing active invoice check (covers both scheduler & manual invoices for this config and period)
     const periodStartDate = new Date(input.periodStartStr);
     const existingInvoice = await db.query.invoices.findFirst({
         where: and(
-            eq(invoices.billingConfigId,    input.configId),
+            eq(invoices.organisationId,     orgId),
+            eq(invoices.centreId,           config.centreId),
+            eq(invoices.billingConfigId,    config.id),
             eq(invoices.billingPeriodStart, periodStartDate),
             ne(invoices.status,             'void'),
         ),
@@ -559,7 +562,8 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         return { success: true, invoiceId: existingInvoice.id, alreadyGenerated: true };
     }
 
-    // Copy-forward resolution (§16, §17)
+    // Copy-forward resolution (§16, §17, Issue E & 8)
+    // Precedence: explicit input > most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
     let finalAmountStr: string;
     let finalNotes: string | null = input.notes ?? null;
     let recordedAmountPence: number = 0;
@@ -567,27 +571,29 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     if (input.amountPence !== undefined && input.amountPence > 0) {
         recordedAmountPence = input.amountPence;
         finalAmountStr = String(input.amountPence / 100);
-    } else if (config.agreedMonthlyPence > 0) {
-        recordedAmountPence = config.agreedMonthlyPence;
-        finalAmountStr = String(config.agreedMonthlyPence / 100);
     } else {
-        // Find most recent non-void invoice to copy forward from
-        const prevInvoice = await db.query.invoices.findFirst({
+        // Query most recent issued invoice (excluding draft and void)
+        const prevIssuedInvoice = await db.query.invoices.findFirst({
             where: and(
-                eq(invoices.billingConfigId, input.configId),
-                ne(invoices.status, 'void'),
+                eq(invoices.organisationId, orgId),
+                eq(invoices.centreId,       config.centreId),
+                eq(invoices.parentId,       config.parentId),
+                inArray(invoices.status,    ['sent', 'partially_paid', 'paid']),
             ),
             orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
         });
 
-        if (prevInvoice) {
-            finalAmountStr = prevInvoice.amount;
-            recordedAmountPence = Math.round(Number(prevInvoice.amount) * 100);
-            if (!finalNotes && prevInvoice.notes) {
-                finalNotes = prevInvoice.notes;
+        if (prevIssuedInvoice && Number(prevIssuedInvoice.amount) > 0) {
+            finalAmountStr = prevIssuedInvoice.amount;
+            recordedAmountPence = Math.round(Number(prevIssuedInvoice.amount) * 100);
+            if (!finalNotes && prevIssuedInvoice.notes) {
+                finalNotes = prevIssuedInvoice.notes;
             }
+        } else if (config.agreedMonthlyPence > 0) {
+            recordedAmountPence = config.agreedMonthlyPence;
+            finalAmountStr = String(config.agreedMonthlyPence / 100);
         } else {
-            // First cycle with no prior invoice and zero agreed fee: draft saved with 0.00
+            // First cycle with no prior issued invoice and zero agreed fee: draft saved with 0.00 (Issue 8)
             finalAmountStr = '0.00';
             recordedAmountPence = 0;
         }
@@ -632,10 +638,12 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             throw new Error(`Invoice already generated for period ${input.periodStartStr}`);
         }
 
-        // Re-check inside locked transaction: invoices
+        // Re-check inside locked transaction: invoices (covers both scheduler & manual invoices linked to this config)
         const inTxInvoice = await tx.query.invoices.findFirst({
             where: and(
-                eq(invoices.billingConfigId,    input.configId),
+                eq(invoices.organisationId,     orgId),
+                eq(invoices.centreId,           config.centreId),
+                eq(invoices.billingConfigId,    config.id),
                 eq(invoices.billingPeriodStart, periodStartDate),
                 ne(invoices.status,             'void'),
             ),

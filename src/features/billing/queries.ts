@@ -6,7 +6,7 @@
 
 import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, parents, children, centres } from '@/db/schema';
-import { eq, and, desc, ne, inArray, lt, gte } from 'drizzle-orm';
+import { eq, and, desc, ne, inArray, lt, gte, isNull, sql, type Column } from 'drizzle-orm';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import { computeBillingSchedule, LeadTimeUnit } from '@/lib/billing/date-engine';
 
@@ -86,8 +86,6 @@ export async function fetchBillingCycles(
     // Filter out configs linked to soft-deleted parents
     const configs = rawConfigs.filter(c => !c.parent?.deletedAt);
 
-    if (configs.length === 0) return [];
-
     const enriched = await Promise.all(configs.map(async (config) => {
         const parent = config.parent;
         const centre = config.centre;
@@ -164,7 +162,83 @@ export async function fetchBillingCycles(
         } satisfies BillingCycleRow;
     }));
 
-    return enriched;
+    // Append unconfigured registered families (Issue D)
+    const registeredKids = await db.query.children.findMany({
+        where: and(
+            eq(children.organisationId, orgId),
+            eq(children.isRegistered, true),
+            isNull(children.deletedAt),
+            centreId !== 'all' ? eq(children.centreId, centreId) : undefined,
+        ),
+        with: {
+            parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
+            centre: { columns: { name: true } },
+        },
+    });
+
+    const configKeySet = new Set(configs.map(c => `${c.parentId}:${c.centreId}`));
+
+    const unconfiguredMap = new Map<string, {
+        parentId: string;
+        centreId: string;
+        parent: { firstName: string; lastName: string; email: string; deletedAt: Date | null } | null;
+        centre: { name: string } | null;
+        kids: { id: string; firstName: string; lastName: string }[];
+    }>();
+
+    for (const kid of registeredKids) {
+        if (!kid.parentId || !kid.centreId || !kid.parent || kid.parent.deletedAt) continue;
+        const key = `${kid.parentId}:${kid.centreId}`;
+        if (configKeySet.has(key)) continue;
+
+        if (!unconfiguredMap.has(key)) {
+            unconfiguredMap.set(key, {
+                parentId: kid.parentId,
+                centreId: kid.centreId,
+                parent: kid.parent,
+                centre: kid.centre,
+                kids: [],
+            });
+        }
+        unconfiguredMap.get(key)!.kids.push({
+            id: kid.id,
+            firstName: kid.firstName,
+            lastName: kid.lastName,
+        });
+    }
+
+    const unconfiguredRows: BillingCycleRow[] = Array.from(unconfiguredMap.values()).map(item => ({
+        config: {
+            id:                 `unconfigured-${item.parentId}-${item.centreId}`,
+            parentId:           item.parentId,
+            centreId:           item.centreId,
+            agreedMonthlyPence: 0,
+            billingAnchorDate:  new Date().toISOString().split('T')[0],
+            invoiceLeadDays:    7,
+            paymentDayOfMonth:  null,
+            leadTimeUnit:       null,
+            leadTimeValue:      null,
+            status:             'active',
+            notes:              null,
+        },
+        familyName:      item.parent ? `${item.parent.firstName} ${item.parent.lastName}` : '',
+        parentEmail:     item.parent?.email ?? '',
+        centreName:      item.centre?.name ?? '',
+        coveredChildren: item.kids.map(k => ({
+            childId:   k.id,
+            childName: `${k.firstName} ${k.lastName}`,
+        })),
+        amountDisplay:   '£0.00',
+        periodLabel:     'Schedule Setup Required',
+        nextInvoiceDateStr: null,
+        dueDateStr:         null,
+        lastRunAt:          null,
+        lastRunPeriodStart: null,
+        cycleStatus:        'needs_setup',
+        currentPeriodStart: null,
+    }));
+
+    return [...enriched, ...unconfiguredRows];
 }
 
 // ─── Fetch billing config for a specific student (via parent+centre) ──────────
@@ -237,17 +311,27 @@ export async function fetchStudentBillingConfig(
 
 // ─── Operational Dashboard Queries (§41–§48, B10–B13) ─────────────────────────
 
+function buildCentreFilter(column: Column, centreId: string | string[]) {
+    if (centreId === 'all') return undefined;
+    if (Array.isArray(centreId)) {
+        if (centreId.length === 0) return sql`false`;
+        return inArray(column, centreId);
+    }
+    return eq(column, centreId);
+}
+
 /**
  * Fetch all unissued draft invoices awaiting Manager review (B10).
  */
-export async function fetchDraftsToReview(orgId: string, centreId: string = 'all') {
+export async function fetchDraftsToReview(orgId: string, centreId: string | string[] = 'all') {
+    const centreCond = buildCentreFilter(invoices.centreId, centreId);
     const whereConditions = [
         eq(invoices.organisationId, orgId),
         eq(invoices.status, 'draft'),
     ];
 
-    if (centreId !== 'all') {
-        whereConditions.push(eq(invoices.centreId, centreId));
+    if (centreCond) {
+        whereConditions.push(centreCond);
     }
 
     return await db.query.invoices.findMany({
@@ -261,17 +345,19 @@ export async function fetchDraftsToReview(orgId: string, centreId: string = 'all
 }
 
 /**
- * Fetch all active billing configs that require fee setup or anchor definition (B11).
+ * Fetch all active billing configs that require fee setup or anchor definition (B11, Issue D).
+ * Includes both 0-fee active configs and registered families with active children having no config yet.
  */
-export async function fetchBillingSetupRequired(orgId: string, centreId: string = 'all') {
+export async function fetchBillingSetupRequired(orgId: string, centreId: string | string[] = 'all') {
+    const centreCond = buildCentreFilter(billingConfigs.centreId, centreId);
     const whereConditions = [
         eq(billingConfigs.organisationId, orgId),
         eq(billingConfigs.status, 'active'),
         eq(billingConfigs.agreedMonthlyPence, 0),
     ];
 
-    if (centreId !== 'all') {
-        whereConditions.push(eq(billingConfigs.centreId, centreId));
+    if (centreCond) {
+        whereConditions.push(centreCond);
     }
 
     const configs = await db.query.billingConfigs.findMany({
@@ -285,24 +371,90 @@ export async function fetchBillingSetupRequired(orgId: string, centreId: string 
         },
     });
 
-    return configs.filter(c => !c.parent?.deletedAt);
+    const activeConfigs = configs.filter(c => !c.parent?.deletedAt);
+
+    // Also include active registered children with no billing config (Issue D)
+    const childCentreCond = buildCentreFilter(children.centreId, centreId);
+    const registeredKids = await db.query.children.findMany({
+        where: and(
+            eq(children.organisationId, orgId),
+            eq(children.isRegistered, true),
+            isNull(children.deletedAt),
+            childCentreCond,
+        ),
+        with: {
+            parent: { columns: { firstName: true, lastName: true, email: true, deletedAt: true } },
+            centre: { columns: { name: true } },
+        },
+    });
+
+    const allOrgConfigs = await db.query.billingConfigs.findMany({
+        where: eq(billingConfigs.organisationId, orgId),
+        columns: { parentId: true, centreId: true },
+    });
+    const configKeySet = new Set(allOrgConfigs.map(c => `${c.parentId}:${c.centreId}`));
+
+    const unconfiguredMap = new Map<string, {
+        parentId: string;
+        centreId: string;
+        parent: { firstName: string; lastName: string; email: string; deletedAt: Date | null } | null;
+        centre: { name: string } | null;
+        kids: { id: string; firstName: string; lastName: string }[];
+    }>();
+
+    for (const kid of registeredKids) {
+        if (!kid.parentId || !kid.centreId || !kid.parent || kid.parent.deletedAt) continue;
+        const key = `${kid.parentId}:${kid.centreId}`;
+        if (configKeySet.has(key)) continue;
+
+        if (!unconfiguredMap.has(key)) {
+            unconfiguredMap.set(key, {
+                parentId: kid.parentId,
+                centreId: kid.centreId,
+                parent: kid.parent,
+                centre: kid.centre,
+                kids: [],
+            });
+        }
+        unconfiguredMap.get(key)!.kids.push({
+            id: kid.id,
+            firstName: kid.firstName,
+            lastName: kid.lastName,
+        });
+    }
+
+    const unconfiguredItems = Array.from(unconfiguredMap.values()).map(item => ({
+        id: `unconfigured-${item.parentId}-${item.centreId}`,
+        organisationId: orgId,
+        centreId: item.centreId,
+        parentId: item.parentId,
+        agreedMonthlyPence: 0,
+        billingAnchorDate: null as unknown as string,
+        status: 'active' as const,
+        parent: item.parent,
+        centre: item.centre,
+        children: item.kids.map(k => ({ child: k })),
+    }));
+
+    return [...activeConfigs, ...unconfiguredItems];
 }
 
 /**
  * Fetch upcoming expected payments on issued invoices (B12).
  */
-export async function fetchPaymentsExpected(orgId: string, centreId: string = 'all') {
+export async function fetchPaymentsExpected(orgId: string, centreId: string | string[] = 'all') {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
+    const centreCond = buildCentreFilter(invoices.centreId, centreId);
     const whereConditions = [
         eq(invoices.organisationId, orgId),
         eq(invoices.status, 'sent'),
         gte(invoices.dueDate, today),
     ];
 
-    if (centreId !== 'all') {
-        whereConditions.push(eq(invoices.centreId, centreId));
+    if (centreCond) {
+        whereConditions.push(centreCond);
     }
 
     return await db.query.invoices.findMany({
@@ -318,18 +470,19 @@ export async function fetchPaymentsExpected(orgId: string, centreId: string = 'a
 /**
  * Fetch overdue issued invoices that require staff attention (B13).
  */
-export async function fetchOverdueInvoices(orgId: string, centreId: string = 'all') {
+export async function fetchOverdueInvoices(orgId: string, centreId: string | string[] = 'all') {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
+    const centreCond = buildCentreFilter(invoices.centreId, centreId);
     const whereConditions = [
         eq(invoices.organisationId, orgId),
         inArray(invoices.status, ['sent', 'partially_paid']),
         lt(invoices.dueDate, today),
     ];
 
-    if (centreId !== 'all') {
-        whereConditions.push(eq(invoices.centreId, centreId));
+    if (centreCond) {
+        whereConditions.push(centreCond);
     }
 
     return await db.query.invoices.findMany({

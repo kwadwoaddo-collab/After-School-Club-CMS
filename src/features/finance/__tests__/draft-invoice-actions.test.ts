@@ -31,6 +31,7 @@ const mockDbQuery = {
 const mockTxSelect = vi.fn();
 const mockTxUpdate = vi.fn();
 const mockTxInsert = vi.fn();
+const mockTxDelete = vi.fn();
 
 function makeTxSelectChain(returnValue: any = []) {
     const chain: any = {
@@ -40,6 +41,14 @@ function makeTxSelectChain(returnValue: any = []) {
     };
     // Also support when .for is not chained
     chain.then = (resolve: any) => resolve(returnValue);
+    return chain;
+}
+
+function makeTxDeleteChain() {
+    const chain: any = {
+        where: vi.fn(() => chain),
+    };
+    chain.then = (resolve: any) => resolve(undefined);
     return chain;
 }
 
@@ -69,6 +78,7 @@ vi.mock('@/db', () => ({
             select: (...args: any[]) => (mockTxSelect as any)(...args),
             update: (...args: any[]) => (mockTxUpdate as any)(...args),
             insert: (...args: any[]) => (mockTxInsert as any)(...args),
+            delete: (...args: any[]) => (mockTxDelete as any)(...args),
             query: mockDbQuery,
         }),
     },
@@ -84,6 +94,7 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
         mockTxSelect.mockImplementation(() => makeTxSelectChain([{ count: 0 }]));
         mockTxUpdate.mockImplementation(() => makeTxUpdateChain());
         mockTxInsert.mockImplementation(() => makeTxInsertChain());
+        mockTxDelete.mockImplementation(() => makeTxDeleteChain());
     });
 
     describe('issueDraftInvoice (B1)', () => {
@@ -223,7 +234,7 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
                 .rejects.toThrow(/Only Managers and Owners can discard draft invoices/);
         });
 
-        it('discards draft by voiding invoice and failing billingRun', async () => {
+        it('discards draft by deleting invoice and failing billingRun', async () => {
             const { requireTenantSession } = await import('@/lib/session');
             (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
             getUserAccessibleCentreIds.mockResolvedValue(['centre-1']);
@@ -249,8 +260,9 @@ describe('Draft Invoice Lifecycle Actions (§18, B1, B2, B3)', () => {
             const res = await discardDraftInvoice('inv-1');
 
             expect(res.success).toBe(true);
-            expect(mockTxUpdate).toHaveBeenCalled();
-            expect(mockTxInsert).toHaveBeenCalled();
+            expect(mockTxDelete).toHaveBeenCalled(); // deletes unissued draft invoice (Issue A)
+            expect(mockTxUpdate).toHaveBeenCalled(); // sets billingRuns success=false and invoiceId=null
+            expect(mockTxInsert).toHaveBeenCalled(); // logs audit event
         });
     });
 });

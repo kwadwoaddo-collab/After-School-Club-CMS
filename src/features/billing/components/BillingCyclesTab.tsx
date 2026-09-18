@@ -55,8 +55,8 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
         try {
             await unskipBillingCycle(cycle.config.id, periodStartForSkip);
             onGenerated();
-        } catch (err: any) {
-            alert(err?.message || 'Failed to unskip cycle');
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : 'Failed to unskip cycle');
         } finally {
             setIsSkipping(false);
         }
@@ -68,8 +68,8 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
             await skipBillingCycle(cycle.config.id, periodStartForSkip, skipReason || 'Skipped by manager');
             setShowSkipModal(false);
             onGenerated();
-        } catch (err: any) {
-            alert(err?.message || 'Failed to skip cycle');
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : 'Failed to skip cycle');
         } finally {
             setIsSkipping(false);
         }
