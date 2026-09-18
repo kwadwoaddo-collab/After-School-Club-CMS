@@ -787,7 +787,7 @@ export async function deleteInvoice(invoiceId: string) {
         }
 
         if (invoice.payments && invoice.payments.length > 0) {
-            throw new Error('Please delete associated payments before deleting the invoice.');
+            throw new Error('Cannot delete this draft because payment records are associated with it. Review the payment records before continuing.');
         }
 
         await tx.insert(auditEvents).values({

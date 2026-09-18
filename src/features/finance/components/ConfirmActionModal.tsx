@@ -9,7 +9,6 @@ interface ConfirmActionModalProps {
     onConfirm: () => Promise<void>;
     variant: 'delete' | 'void';
     invoiceNumber: string;
-    hasPayments?: boolean;
 }
 
 export default function ConfirmActionModal({
@@ -18,7 +17,6 @@ export default function ConfirmActionModal({
     onConfirm,
     variant,
     invoiceNumber,
-    hasPayments = false,
 }: ConfirmActionModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -31,13 +29,11 @@ export default function ConfirmActionModal({
         ? {
               icon: <Trash2 className="w-6 h-6" />,
               iconBg: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-              title: 'Delete Invoice',
-              confirmLabel: 'Delete Permanently',
+              title: 'Delete Draft Invoice',
+              confirmLabel: 'Discard Permanently',
               confirmClass:
                   'bg-error hover:bg-red-700 text-foreground shadow-lg shadow-error/20',
-              description: hasPayments
-                  ? 'This invoice has recorded payments. Please delete all associated payments first before deleting the invoice.'
-                  : `Invoice ${invoiceNumber} will be permanently removed from the database. This action cannot be undone.`,
+              description: `Draft invoice ${invoiceNumber} will be permanently removed from the database. This action cannot be undone.`,
           }
         : {
               icon: <Ban className="w-6 h-6" />,
@@ -109,20 +105,17 @@ export default function ConfirmActionModal({
                     >
                         Cancel
                     </button>
-                    {/* If delete + has payments, only show Cancel */}
-                    {!(isDelete && hasPayments) && (
-                        <button
-                            onClick={handleConfirm}
-                            disabled={isLoading}
-                            className={`flex-1 py-3.5 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-60 ${config.confirmClass}`}
-                        >
-                            {isLoading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                config.confirmLabel
-                            )}
-                        </button>
-                    )}
+                    <button
+                        onClick={handleConfirm}
+                        disabled={isLoading}
+                        className={`flex-1 py-3.5 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-60 ${config.confirmClass}`}
+                    >
+                        {isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            config.confirmLabel
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
