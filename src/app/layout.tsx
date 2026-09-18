@@ -62,9 +62,14 @@ export default function RootLayout({
 
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
+                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (var i = 0; i < registrations.length; i++) {
+                      registrations[i].unregister();
+                    }
                   });
+                  if ('caches' in window) {
+                    caches.delete('kiosk-cache-v1');
+                  }
                 });
               }
             `,

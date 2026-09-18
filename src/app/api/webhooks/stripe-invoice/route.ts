@@ -5,6 +5,7 @@ import { stripeService } from '@/lib/services/stripe';
 import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 
 /**
  * POST /api/webhooks/stripe-invoice
@@ -16,6 +17,7 @@ import { and, eq } from 'drizzle-orm';
  * On successful payment:
  *   1. Records a payment row linked to the invoice
  *   2. Updates invoice status to 'paid'
+ *   3. Revalidates affected Finance & Portal routes
  *
  * Env vars required:
  *   STRIPE_INVOICE_WEBHOOK_SECRET (or falls back to STRIPE_WEBHOOK_SECRET)
@@ -72,9 +74,26 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ ok: true, duplicate: true });
             }
 
-            // 1. Record the payment
+            // Verify invoice exists and satisfies Category A invariants
+            const invoice = await db.query.invoices.findFirst({
+                where: eq(invoices.id, invoiceId),
+                columns: { id: true, status: true, parentId: true, centreId: true },
+            });
+            if (!invoice) {
+                logger.error(`[stripe-invoice webhook] Invoice ${invoiceId} not found`);
+                return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+            }
+            if (invoice.status === 'draft') {
+                logger.warn(`[stripe-invoice webhook] Cannot record payment against draft invoice ${invoiceId}`);
+                return NextResponse.json({ ok: true, skipped: true, reason: 'draft_invoice' });
+            }
+            if (invoice.status === 'void') {
+                logger.warn(`[stripe-invoice webhook] Cannot record payment against void invoice ${invoiceId}`);
+                return NextResponse.json({ ok: true, skipped: true, reason: 'void_invoice' });
+            }
+
+            // 1. Record the payment atomically
             await db.transaction(async (tx) => {
-                // 1. Record the payment
                 await tx.insert(payments).values({
                     invoiceId,
                     amount: String(amountPaid),
@@ -88,6 +107,23 @@ export async function POST(req: NextRequest) {
             });
 
             logger.info(`[stripe-invoice webhook] Invoice ${invoiceNumber} (${invoiceId}) marked as paid. Amount: £${amountPaid}`);
+
+            // 3. Post-commit revalidation (MAINT-REL-1 / CACHE-M1 pattern)
+            try {
+                revalidatePath('/dashboard/finance');
+                revalidatePath('/dashboard/finance/invoices');
+                revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+                revalidatePath('/portal/billing');
+                if (invoice.parentId) {
+                    revalidatePath(`/dashboard/parents/${invoice.parentId}`);
+                }
+                if (invoice.centreId) {
+                    revalidatePath(`/dashboard/centres/${invoice.centreId}/billing`);
+                }
+            } catch (revalErr) {
+                // Secondary revalidation failure must never rollback or fail an already-committed Stripe payment
+                logger.warn('[stripe-invoice webhook] Post-commit revalidation warning:', revalErr);
+            }
         } catch (err) {
             logger.error('[stripe-invoice webhook] DB error processing payment:', err);
             return NextResponse.json({ error: 'Database error' }, { status: 500 });

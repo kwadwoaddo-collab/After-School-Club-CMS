@@ -56,6 +56,10 @@ const nextConfig: NextConfig = {
         source: '/b/:slug*',
         destination: '/book/:slug*',
       },
+      {
+        source: '/manifest.json',
+        destination: '/manifest.webmanifest',
+      },
     ];
   },
 };
