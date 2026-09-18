@@ -63,3 +63,12 @@ credentials/*.json
 /tsconfig.tsbuildinfo
 /PROJECT_ROOT.lock
 
+# Maintenance framework runtime artifacts
+/maintenance/reports/**/*.json
+/maintenance/reports/**/*.md
+/maintenance/state/*.lock
+/maintenance/logs/*.log
+!/maintenance/reports/**/.gitkeep
+!/maintenance/logs/.gitkeep
+!/maintenance/state/.gitkeep
+

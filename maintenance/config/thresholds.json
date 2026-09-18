@@ -1,0 +1,29 @@
+{
+  "production": {
+    "responseTimeWarningMs": 1500,
+    "responseTimeCriticalMs": 3000,
+    "probeTimeoutMs": 10000
+  },
+  "database": {
+    "statementTimeoutMs": 15000,
+    "queryLatencyWarningMs": 1000,
+    "queryLatencyCriticalMs": 3000
+  },
+  "scale": {
+    "invoicesWarning": 3000,
+    "invoicesCritical": 5000,
+    "paymentsWarning": 3000,
+    "paymentsCritical": 5000,
+    "bookingsWarning": 5000,
+    "bookingsCritical": 10000,
+    "auditLogsWarning": 25000,
+    "auditLogsCritical": 50000,
+    "databaseSizeMbWarning": 250,
+    "databaseSizeMbCritical": 500
+  },
+  "retention": {
+    "weeklyDays": 90,
+    "monthlyDays": 365,
+    "quarterlyDays": 730
+  }
+}
