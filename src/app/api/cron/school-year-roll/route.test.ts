@@ -22,7 +22,7 @@ describe('/api/cron/school-year-roll (D5.R)', () => {
     const res = await GET(req);
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe('Unauthorised');
+    expect(body.error).toBe('Missing authorization header');
   });
 
   it('rejects requests with invalid Authorization token with 401', async () => {
