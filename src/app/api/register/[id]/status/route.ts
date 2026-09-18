@@ -7,6 +7,7 @@ import { registrations, registrationParents, registrationChildren, organisations
 import { and, eq, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { emailService } from '@/lib/services/email';
+import { revalidatePath } from 'next/cache';
 
 const VALID_STATUSES = ['awaiting_confirmation', 'signed_up', 'not_interested'] as const;
 type RegistrationStatus = typeof VALID_STATUSES[number];
@@ -119,6 +120,12 @@ export async function PATCH(
                 logger.error('[Status Email] Failed to send status update email:', err);
             }
         })();
+    }
+
+    revalidatePath('/dashboard/registrations');
+    revalidatePath(`/dashboard/registrations/${id}`);
+    if (status === 'signed_up') {
+        revalidatePath('/dashboard/students');
     }
 
     return NextResponse.json({ success: true });

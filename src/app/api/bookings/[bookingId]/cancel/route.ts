@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notificationService } from '@/lib/services/notifications';
 import { notifyOwners } from '@/lib/db-notifications';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(
     request: Request,
@@ -92,6 +93,13 @@ export async function POST(
             message: `Booking for ${childrenNames} at ${booking.centre.name} on ${dateStr} has been cancelled.`,
             bookingId,
         }).catch(e => logger.error('[cancel] db-notify error:', e));
+
+        revalidatePath('/dashboard/bookings');
+        revalidatePath(`/dashboard/bookings/${bookingId}`);
+        revalidatePath('/dashboard/attendance');
+        if (booking.centreId) {
+            revalidatePath(`/dashboard/centres/${booking.centreId}`);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

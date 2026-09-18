@@ -6,6 +6,7 @@ import { eq, inArray, and, sql } from 'drizzle-orm';
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
+import { revalidatePath } from 'next/cache';
 import { processBroadcastDeliveries } from './delivery';
 
 /**
@@ -174,6 +175,8 @@ export async function sendBroadcast(data: {
       logger.warn('[Communications] Immediate dispatch batch caught error; pending work remains in durable ledger', err);
     }
   }
+
+  revalidatePath('/dashboard/communications');
 
   return {
     success: true,

@@ -27,6 +27,7 @@ export default function StudentActions({ studentId, studentName }: DeleteStudent
             if (res.ok) {
                 toast('Student deleted successfully', 'success');
                 router.push('/dashboard/students');
+                router.refresh();
             } else {
                 toast('Failed to delete student — please try again', 'error');
                 setAlertError('Failed to delete student. Please try again.');

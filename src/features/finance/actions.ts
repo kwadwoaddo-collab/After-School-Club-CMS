@@ -317,6 +317,10 @@ export async function createInvoice(data: {
     }
 
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    if (data.parentId) {
+        revalidatePath(`/dashboard/parents/${data.parentId}`);
+    }
     return newInvoice;
 }
 
@@ -398,6 +402,10 @@ export async function createLegacyFamilyAndInvoice(data: {
             coveredChildrenJson: coveredChildren,
         });
 
+        revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
+        revalidatePath('/dashboard/parents');
+        revalidatePath('/dashboard/students');
         return { parent: newParent, children: createdChildren, invoice: newInvoice };
     });
 }
@@ -481,6 +489,10 @@ export async function createAdHocInvoice(data: {
         });
 
         revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
+        if (parentId) {
+            revalidatePath(`/dashboard/parents/${parentId}`);
+        }
         return newInvoice;
     });
 }
@@ -613,11 +625,15 @@ export async function recordPayment(data: {
             })
         });
 
-        return newPayment;
+        return { ...newPayment, parentId: invoice.parentId };
     });
 
     revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    if (result.parentId) {
+        revalidatePath(`/dashboard/parents/${result.parentId}`);
+    }
 
     // In-app notification: payment recorded (fire-and-forget)
     notifyOwners({
@@ -700,6 +716,7 @@ export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date)
 
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
     return result;
 }
 
@@ -747,6 +764,7 @@ export async function updateInvoiceNotes(invoiceId: string, notes: string | null
 
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
     return result;
 }
 
@@ -784,6 +802,7 @@ export async function deleteInvoice(invoiceId: string) {
     });
 
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
     if (result.parentId) {
         revalidatePath(`/dashboard/parents/${result.parentId}`);
     }
@@ -860,6 +879,7 @@ export async function voidInvoice(invoiceId: string) {
 
     // Revalidate paths using the safely retrieved invoice parentId
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     if (invoice.parentId) {
         revalidatePath(`/dashboard/parents/${invoice.parentId}`);
@@ -930,7 +950,11 @@ export async function verifyPayment(paymentId: string) {
         }
 
         revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
         revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+        if (payment.invoice.parentId) {
+            revalidatePath(`/dashboard/parents/${payment.invoice.parentId}`);
+        }
         return { success: true };
     });
 }
@@ -985,7 +1009,11 @@ export async function failPayment(paymentId: string) {
         }
 
         revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
         revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+        if (payment.invoice.parentId) {
+            revalidatePath(`/dashboard/parents/${payment.invoice.parentId}`);
+        }
         return { success: true };
     });
 }
@@ -1056,7 +1084,11 @@ export async function reversePayment(
         });
 
         revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
         revalidatePath(`/dashboard/finance/invoices/${payment.invoiceId}`);
+        if (payment.invoice.parentId) {
+            revalidatePath(`/dashboard/parents/${payment.invoice.parentId}`);
+        }
         return { success: true };
     });
 }
@@ -1345,6 +1377,7 @@ export async function updateDraftInvoice(invoiceId: string, data: UpdateDraftInv
 
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
     return { success: true, invoice: updated };
 }
 
@@ -1363,7 +1396,7 @@ export async function discardDraftInvoice(invoiceId: string) {
         throw new Error('Unauthorized: Only Managers and Owners can discard draft invoices');
     }
 
-    await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
         const [invoice] = await tx.select()
             .from(invoices)
             .where(and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)))
@@ -1416,10 +1449,15 @@ export async function discardDraftInvoice(invoiceId: string) {
                 discardedBy: session.user.id,
             }),
         });
+
+        return { centreId: invoice.centreId, billingConfigId: invoice.billingConfigId };
     });
 
     revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/finance/invoices');
+    if (result?.centreId && result?.billingConfigId) {
+        revalidatePath(`/dashboard/centres/${result.centreId}/billing`);
+    }
     return { success: true };
 }

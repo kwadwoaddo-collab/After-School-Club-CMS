@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,6 +98,10 @@ export async function POST(request: NextRequest) {
 
     // Create the booking — BookingService resolves org from centre internally
     const result = await bookingService.createBooking(validated);
+
+    revalidatePath('/dashboard/bookings');
+    revalidatePath('/dashboard/attendance');
+    revalidatePath(`/dashboard/centres/${centreId}`);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

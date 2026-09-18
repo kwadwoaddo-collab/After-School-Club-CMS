@@ -57,9 +57,8 @@ export async function addStudentNote(
     });
 
     // Revalidate paths where this might be used
-    revalidatePath('/dashboard/bookings/[bookingId]', 'page');
-    revalidatePath('/dashboard/students/[id]', 'page');
-    revalidatePath('/dashboard', 'layout');
+    revalidatePath(`/dashboard/students/${childId}`);
+    revalidatePath('/dashboard/students');
     
     return { success: true };
 }
@@ -84,9 +83,8 @@ export async function deleteStudentNote(noteId: string) {
 
     await db.delete(studentNotes).where(eq(studentNotes.id, noteId));
 
-    revalidatePath('/dashboard/bookings/[bookingId]', 'page');
-    revalidatePath('/dashboard/students/[id]', 'page');
-    revalidatePath('/dashboard', 'layout');
+    revalidatePath(`/dashboard/students/${note.childId}`);
+    revalidatePath('/dashboard/students');
     
     return { success: true };
 }
@@ -97,15 +95,14 @@ export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
         throw new Error('Unauthorized');
     }
 
+    const note = await db.query.studentNotes.findFirst({
+        where: eq(studentNotes.id, noteId)
+    });
+    if (!note) throw new Error('Note not found');
+
     const userRole = (session.user as any).role;
     if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
-        // Just enforcing that only admins can pin/unpin for robust security, OR could allow authors too.
-        // Task 26 says pinning is for high priority. Let's let authors or admins pin.
-        const note = await db.query.studentNotes.findFirst({
-            where: eq(studentNotes.id, noteId)
-        });
-        
-        if (!note || note.userId !== session.user.id) {
+        if (note.userId !== session.user.id) {
             throw new Error('Unauthorized: Only the author or an Admin can pin/unpin notes');
         }
     }
@@ -114,9 +111,8 @@ export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
         .set({ pinnedAt: pinned ? new Date() : null })
         .where(eq(studentNotes.id, noteId));
 
-    revalidatePath('/dashboard/bookings/[bookingId]', 'page');
-    revalidatePath('/dashboard/students/[id]', 'page');
-    revalidatePath('/dashboard', 'layout');
+    revalidatePath(`/dashboard/students/${note.childId}`);
+    revalidatePath('/dashboard/students');
 
     return { success: true };
 }
@@ -170,9 +166,8 @@ export async function editStudentNote(
         .where(eq(studentNotes.id, noteId));
 
     // 6. Revalidate relevant cache paths
-    revalidatePath('/dashboard/bookings/[bookingId]', 'page');
-    revalidatePath('/dashboard/students/[id]', 'page');
-    revalidatePath('/dashboard', 'layout');
+    revalidatePath(`/dashboard/students/${note.childId}`);
+    revalidatePath('/dashboard/students');
 
     return { success: true };
 }

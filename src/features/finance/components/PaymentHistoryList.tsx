@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CreditCard, Landmark, Ticket, HelpCircle, Check, X, Clock, AlertCircle, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { verifyPayment, failPayment, reversePayment } from '../actions';
 
 interface Payment {
@@ -29,6 +30,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
     const [reversalReason, setReversalReason] = useState('');
     const [isReversingId, setIsReversingId] = useState<string | null>(null);
     const { toast } = useToast();
+    const router = useRouter();
 
     if (payments.length === 0) {
         return (
@@ -59,6 +61,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
             const res = await verifyPayment(paymentId);
             if (res.success) {
                 toast({ title: 'Success', message: 'Payment verified successfully.', variant: 'success' });
+                router.refresh();
             }
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
@@ -77,6 +80,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
                 toast({ title: 'Success', message: 'Payment reversed successfully.', variant: 'success' });
                 setReversalModalPayment(null);
                 setReversalReason('');
+                router.refresh();
                 onPaymentReversed?.();
             } else {
                 toast({ title: 'Error', message: res.error || 'Failed to reverse payment', variant: 'error' });
@@ -95,6 +99,7 @@ export default function PaymentHistoryList({ payments, canReverse, onPaymentReve
             const res = await failPayment(paymentId);
             if (res.success) {
                 toast({ title: 'Success', message: 'Payment marked as failed.', variant: 'success' });
+                router.refresh();
             }
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);

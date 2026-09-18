@@ -5,7 +5,7 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-
+import { revalidatePath } from 'next/cache';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export async function PATCH(
@@ -89,6 +89,10 @@ export async function PATCH(
             .set({ ...updateData, updatedAt: new Date() })
             .where(eq(centres.id, id))
             .returning();
+
+        revalidatePath('/dashboard/centres');
+        revalidatePath(`/dashboard/centres/${id}`);
+        revalidatePath(`/dashboard/centres/${id}/settings`);
 
         return NextResponse.json({ success: true, centre: updatedCentre });
     } catch (error) {

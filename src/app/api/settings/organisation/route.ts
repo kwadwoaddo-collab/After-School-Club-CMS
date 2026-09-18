@@ -5,6 +5,7 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { organisations } from '@/db/schema';
 import { eq, not } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 
 export async function PATCH(request: NextRequest) {
     try {
@@ -132,6 +133,8 @@ export async function PATCH(request: NextRequest) {
         if (!updatedOrg) {
             return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
         }
+
+        revalidatePath('/dashboard/settings');
 
         return NextResponse.json({ success: true, org: updatedOrg });
     } catch (error) {

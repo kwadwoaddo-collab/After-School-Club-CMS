@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { parents, children, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const newChildId = await db.transaction(async (tx) => {
+        const result = await db.transaction(async (tx) => {
             let pId: string;
             const existingParent = await tx.query.parents.findFirst({
                 where: and(
@@ -88,10 +89,17 @@ export async function POST(req: Request) {
                 schoolYear: data.schoolYear,
             }).returning({ id: children.id });
 
-            return newChild.id;
+            return { childId: newChild.id, parentId: pId };
         });
 
-        return NextResponse.json({ success: true, id: newChildId });
+        revalidatePath('/dashboard/students');
+        revalidatePath('/dashboard/parents');
+        revalidatePath('/dashboard/attendance');
+        revalidatePath(`/dashboard/students/${result.childId}`);
+        revalidatePath(`/dashboard/parents/${result.parentId}`);
+        revalidatePath(`/dashboard/centres/${data.centreId}`);
+
+        return NextResponse.json({ success: true, id: result.childId });
     } catch (error) {
         logger.error('Add Student error:', error);
         if (error instanceof z.ZodError) {

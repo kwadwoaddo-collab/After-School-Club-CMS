@@ -46,6 +46,7 @@ export async function updateCentreAction(centreId: string, data: any) {
         );
 
     revalidatePath('/dashboard/centres');
+    revalidatePath(`/dashboard/centres/${centreId}`);
     revalidatePath(`/dashboard/centres/${centreId}/settings`);
     
     return { success: true };

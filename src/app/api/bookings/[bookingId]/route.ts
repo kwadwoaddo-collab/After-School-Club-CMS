@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { revalidatePath } from 'next/cache';
 
 interface RouteContext {
     params: Promise<{ bookingId: string }>;
@@ -59,6 +60,12 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
         // Hard delete — booking_attendees are removed via ON DELETE CASCADE
         await db.delete(bookings).where(eq(bookings.id, bookingId));
+
+        revalidatePath('/dashboard/bookings');
+        revalidatePath('/dashboard/attendance');
+        if (booking.centreId) {
+            revalidatePath(`/dashboard/centres/${booking.centreId}`);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

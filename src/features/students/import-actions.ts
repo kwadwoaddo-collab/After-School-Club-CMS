@@ -5,6 +5,7 @@ import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
 import { parents, children, studentNotes } from '@/db/schema';
 import { eq, and, or, ilike } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 
 export interface StudentImportRow {
   studentFirstName: string;
@@ -294,6 +295,12 @@ export async function importStudentsAction(
         message: message || 'Database error occurred.',
       });
     }
+  }
+
+  revalidatePath('/dashboard/students');
+  revalidatePath('/dashboard/parents');
+  if (defaultCentreId) {
+    revalidatePath(`/dashboard/centres/${defaultCentreId}`);
   }
 
   return {

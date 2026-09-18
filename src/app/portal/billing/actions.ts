@@ -57,6 +57,12 @@ export async function submitVoucherPayment(invoiceId: string, amount: number, re
         });
 
         revalidatePath('/portal/billing');
+        revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
+        revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+        if (invoice.parentId) {
+            revalidatePath(`/dashboard/parents/${invoice.parentId}`);
+        }
         return { success: true };
     } catch (e) {
         logger.error('Failed to submit voucher payment:', e);
