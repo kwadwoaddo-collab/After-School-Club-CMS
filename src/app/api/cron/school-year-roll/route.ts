@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children, auditEvents, organisations } from '@/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
+import { verifyCronAuthorization } from '@/lib/cron-auth';
 
 /**
  * GET /api/cron/school-year-roll
@@ -16,15 +17,10 @@ import { eq, sql, and } from 'drizzle-orm';
  * executes at most once.
  */
 export async function GET(req: NextRequest) {
-  // 1. Authenticate cron caller
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    logger.error('[Cron Roll] CRON_SECRET is not set — endpoint locked.');
-    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
-  }
-  if (authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+  // 1. Authenticate cron caller (timing-safe)
+  const authCheck = verifyCronAuthorization(req);
+  if (!authCheck.authorized) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status ?? 401 });
   }
 
   // Determine rollover target year (default to current calendar year, or override via searchParam for testing)
@@ -126,7 +122,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     logger.error('[Cron Roll] Failed to run rollover cron:', err);
-    return NextResponse.json({ error: (err instanceof Error ? err.message : String(err)) || 'Internal database error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal database error' }, { status: 500 });
   }
 }
 
