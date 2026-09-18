@@ -32,6 +32,8 @@ export async function addMedicalNote(childId: string, content: string) {
         });
 
         revalidatePath(`/portal/children/${childId}`);
+        revalidatePath(`/dashboard/students/${childId}`);
+        revalidatePath('/dashboard/students');
         return { success: true };
     } catch (e) {
         logger.error('Failed to add medical note:', e);

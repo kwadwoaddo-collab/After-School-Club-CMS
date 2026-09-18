@@ -146,6 +146,15 @@ export async function createBillingConfig(data: BillingConfigData) {
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/centres/${data.centreId}/billing`);
+    if (data.parentId) {
+        revalidatePath(`/dashboard/parents/${data.parentId}`);
+    }
+    if (data.childIds) {
+        for (const childId of data.childIds) {
+            revalidatePath(`/dashboard/students/${childId}`);
+        }
+    }
     return { success: true, configId: config.id };
 }
 
@@ -160,6 +169,9 @@ export async function updateBillingConfig(
 
     const existingConfig = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
+        with: {
+            children: true,
+        },
     });
     if (!existingConfig) throw new Error('Billing config not found');
     await assertCentreAccess(session, existingConfig.centreId);
@@ -192,6 +204,15 @@ export async function updateBillingConfig(
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/centres/${existingConfig.centreId}/billing`);
+    if (existingConfig.parentId) {
+        revalidatePath(`/dashboard/parents/${existingConfig.parentId}`);
+    }
+    if (existingConfig.children) {
+        for (const c of existingConfig.children) {
+            revalidatePath(`/dashboard/students/${c.childId}`);
+        }
+    }
     return { success: true };
 }
 
@@ -230,6 +251,11 @@ export async function addChildToConfig(configId: string, childId: string) {
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/students/${childId}`);
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
     return { success: true };
 }
 
@@ -254,6 +280,11 @@ export async function removeChildFromConfig(configId: string, childId: string) {
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/students/${childId}`);
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
     return { success: true };
 }
 
@@ -262,39 +293,65 @@ export async function removeChildFromConfig(configId: string, childId: string) {
 async function requireOwnedConfig(configId: string, orgId: string, session: TypedSession) {
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
-        columns: { centreId: true },
+        columns: { centreId: true, parentId: true },
+        with: { children: true },
     });
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
+    return config;
 }
 
 export async function pauseBillingConfig(configId: string) {
     const { orgId, session } = await getOrgIdAndSession();
-    await requireOwnedConfig(configId, orgId, session);
+    const config = await requireOwnedConfig(configId, orgId, session);
     await db.update(billingConfigs)
         .set({ status: 'paused', updatedAt: new Date() })
         .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
+    for (const c of config.children ?? []) {
+        revalidatePath(`/dashboard/students/${c.childId}`);
+    }
     return { success: true };
 }
 
 export async function resumeBillingConfig(configId: string) {
     const { orgId, session } = await getOrgIdAndSession();
-    await requireOwnedConfig(configId, orgId, session);
+    const config = await requireOwnedConfig(configId, orgId, session);
     await db.update(billingConfigs)
         .set({ status: 'active', updatedAt: new Date() })
         .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
+    for (const c of config.children ?? []) {
+        revalidatePath(`/dashboard/students/${c.childId}`);
+    }
     return { success: true };
 }
 
 export async function cancelBillingConfig(configId: string) {
     const { orgId, session } = await getOrgIdAndSession();
-    await requireOwnedConfig(configId, orgId, session);
+    const config = await requireOwnedConfig(configId, orgId, session);
     await db.update(billingConfigs)
         .set({ status: 'cancelled', updatedAt: new Date() })
         .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/students');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
+    for (const c of config.children ?? []) {
+        revalidatePath(`/dashboard/students/${c.childId}`);
+    }
     return { success: true };
 }
 
@@ -398,6 +455,11 @@ export async function skipBillingCycle(
     });
 
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
     return { success: true, skipId: result.id };
 }
 
@@ -433,6 +495,11 @@ export async function unskipBillingCycle(configId: string, periodStartStr: strin
     });
 
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
     return { success: true };
 }
 
@@ -486,6 +553,11 @@ export async function reopenBillingCycle(configId: string, periodStartStr: strin
     });
 
     revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
     return { success: true };
 }
 
@@ -697,5 +769,12 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/finance/invoices');
+    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
+    if (config.parentId) {
+        revalidatePath(`/dashboard/parents/${config.parentId}`);
+    }
+    for (const cc of config.children ?? []) {
+        revalidatePath(`/dashboard/students/${cc.child.id}`);
+    }
     return { success: true, invoiceId: result.id, alreadyGenerated: result.alreadyGenerated };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { PoundSterling, Calendar, Users, ChevronDown, ChevronUp, Pencil, X, Check, Pause, Play, AlertTriangle } from 'lucide-react';
 import { penceToPounds, poundsToPence, previewBillingPeriods } from '@/lib/billing';
 import { cn } from '@/components/ui/utils';
@@ -404,11 +405,12 @@ export default function BillingSettingsCard({
     siblings,
     existingConfig,
 }: Props) {
+    const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
 
     const handleSaved = () => {
         setIsEditing(false);
-        // Page will revalidate via server action's revalidatePath
+        router.refresh();
     };
 
     return (

@@ -6,6 +6,7 @@ import { users, centreMemberships, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { revalidatePath } from 'next/cache';
 
 const assignSchema = z.object({
     userId: z.string().uuid(),
@@ -128,6 +129,14 @@ export async function POST(request: NextRequest) {
             }));
 
             await db.insert(centreMemberships).values(assignments);
+        }
+
+        revalidatePath('/dashboard/staff');
+        revalidatePath(`/dashboard/staff/${userId}`);
+        if (centreIds && centreIds.length > 0) {
+            for (const cId of centreIds) {
+                revalidatePath(`/dashboard/centres/${cId}`);
+            }
         }
 
         return NextResponse.json({

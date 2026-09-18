@@ -30,5 +30,6 @@ export async function updateStudentSchedule(studentId: string, sessions: string[
         .where(eq(children.id, studentId));
 
     revalidatePath(`/dashboard/students/${studentId}`);
+    revalidatePath('/dashboard/students');
     revalidatePath(`/dashboard/attendance`);
 }

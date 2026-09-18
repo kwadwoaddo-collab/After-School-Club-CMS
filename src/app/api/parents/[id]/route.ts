@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { parents } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 // ── PATCH /api/parents/[id] ───────────────────────────────────────────────────
@@ -74,6 +75,10 @@ export async function PATCH(
             .set(updates)
             .where(eq(parents.id, id))
             .returning();
+
+        revalidatePath('/dashboard/parents');
+        revalidatePath(`/dashboard/parents/${id}`);
+        revalidatePath('/dashboard/students');
 
         return NextResponse.json({ success: true, parent: updated });
     } catch (e: any) {

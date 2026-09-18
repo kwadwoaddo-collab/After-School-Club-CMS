@@ -583,6 +583,7 @@ export async function registerWalkInChild(params: {
 
     revalidatePath('/dashboard/attendance');
     revalidatePath('/dashboard/kiosk');
+    revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard');
 }
 
@@ -655,5 +656,6 @@ export async function registerExistingChildWalkIn(params: {
 
     revalidatePath('/dashboard/attendance');
     revalidatePath('/dashboard/kiosk');
+    revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard');
 }

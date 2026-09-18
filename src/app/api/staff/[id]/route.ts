@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users, centreMemberships, orgMemberships } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
@@ -92,6 +93,9 @@ export async function PATCH(
         .where(eq(users.id, id))
         .returning({ id: users.id, role: users.role });
 
+    revalidatePath('/dashboard/staff');
+    revalidatePath(`/dashboard/staff/${id}`);
+
     return NextResponse.json({ success: true, user: updated });
 }
 
@@ -150,6 +154,8 @@ export async function DELETE(
                 .where(and(eq(centreMemberships.userId, id), inArray(centreMemberships.centreId, accessibleCentreIds)));
         }
 
+        revalidatePath('/dashboard/staff');
+        revalidatePath(`/dashboard/staff/${id}`);
         return NextResponse.json({ success: true });
     }
 
@@ -172,6 +178,9 @@ export async function DELETE(
         .update(users)
         .set({ organisationId: null, updatedAt: new Date() })
         .where(eq(users.id, id));
+
+    revalidatePath('/dashboard/staff');
+    revalidatePath(`/dashboard/staff/${id}`);
 
     return NextResponse.json({ success: true });
 }

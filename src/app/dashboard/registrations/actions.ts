@@ -75,6 +75,7 @@ export async function assignRegistrationCentre(registrationId: string, centreId:
             .where(and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)));
 
         revalidatePath('/dashboard/registrations');
+        revalidatePath(`/dashboard/registrations/${registrationId}`);
         return { success: true };
     } catch (error) {
         logger.error('Failed to assign centre:', error);
@@ -332,6 +333,7 @@ export async function updateRegistrationStatus(
     }
 
     revalidatePath('/dashboard/registrations');
+    revalidatePath(`/dashboard/registrations/${registrationId}`);
     revalidatePath('/dashboard/students');
 
     // ── Fire status email for approve / reject (not for revert-to-pending) ──

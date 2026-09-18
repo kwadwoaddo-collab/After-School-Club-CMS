@@ -7,6 +7,7 @@ import { bookings, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { revalidatePath } from 'next/cache';
 
 // Must match the bookingStatusEnum in schema.ts: confirmed | cancelled | rescheduled | completed | pending | signed_up
 const statusSchema = z.object({
@@ -72,6 +73,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
             .set({ status, updatedAt: new Date() })
             .where(eq(bookings.id, bookingId))
             .returning({ id: bookings.id, status: bookings.status });
+
+        revalidatePath('/dashboard/bookings');
+        revalidatePath(`/dashboard/bookings/${bookingId}`);
+        revalidatePath('/dashboard/attendance');
+        if (booking.centreId) {
+            revalidatePath(`/dashboard/centres/${booking.centreId}`);
+        }
 
         return NextResponse.json({ success: true, booking: updated });
     } catch (error) {

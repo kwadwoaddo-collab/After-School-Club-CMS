@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { strictRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { revalidatePath } from 'next/cache';
 
 const inviteSchema = z.object({
     email: z.string().email().max(255),
@@ -228,6 +229,11 @@ export async function POST(request: NextRequest) {
             }
         } catch (emailError) {
             logger.error('[Staff Invite] Email exception:', emailError);
+        }
+
+        revalidatePath('/dashboard/staff');
+        if (centreId) {
+            revalidatePath(`/dashboard/centres/${centreId}`);
         }
 
         return NextResponse.json({

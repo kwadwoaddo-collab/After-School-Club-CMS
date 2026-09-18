@@ -7,6 +7,7 @@ import { bookings } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { revalidatePath } from 'next/cache';
 
 const bulkUpdateSchema = z.object({
     bookingIds: z.array(z.string().uuid()),
@@ -65,6 +66,12 @@ export async function PATCH(request: NextRequest) {
             .update(bookings)
             .set({ status, updatedAt: new Date() })
             .where(inArray(bookings.id, validBookingIds));
+
+        revalidatePath('/dashboard/bookings');
+        revalidatePath('/dashboard/attendance');
+        for (const id of validBookingIds) {
+            revalidatePath(`/dashboard/bookings/${id}`);
+        }
 
         return NextResponse.json({ success: true, count: validBookingIds.length });
     } catch (error) {

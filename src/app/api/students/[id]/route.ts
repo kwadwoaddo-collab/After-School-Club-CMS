@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { children, parents, centres } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
@@ -128,6 +129,19 @@ export async function PATCH(
             .where(eq(children.id, id))
             .returning();
 
+        revalidatePath('/dashboard/students');
+        revalidatePath(`/dashboard/students/${id}`);
+        revalidatePath('/dashboard/attendance');
+        if (student.parentId) {
+            revalidatePath(`/dashboard/parents/${student.parentId}`);
+        }
+        if (student.centreId) {
+            revalidatePath(`/dashboard/centres/${student.centreId}`);
+        }
+        if (data.centreId && data.centreId !== student.centreId) {
+            revalidatePath(`/dashboard/centres/${data.centreId}`);
+        }
+
         return NextResponse.json({ success: true, student: updated });
     } catch (error) {
         logger.error('[Students API] Error', error);
@@ -158,6 +172,15 @@ export async function DELETE(
 
         // Delete the student (cascade handles notes, attendees, registration links)
         await db.delete(children).where(eq(children.id, id));
+
+        revalidatePath('/dashboard/students');
+        revalidatePath('/dashboard/attendance');
+        if (student.parentId) {
+            revalidatePath(`/dashboard/parents/${student.parentId}`);
+        }
+        if (student.centreId) {
+            revalidatePath(`/dashboard/centres/${student.centreId}`);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

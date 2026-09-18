@@ -7,6 +7,7 @@ import { bookings } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { revalidatePath } from 'next/cache';
 
 const bulkDeleteSchema = z.object({
     bookingIds: z.array(z.string().uuid()),
@@ -63,6 +64,9 @@ export async function DELETE(request: NextRequest) {
         await db
             .delete(bookings)
             .where(inArray(bookings.id, validBookingIds));
+
+        revalidatePath('/dashboard/bookings');
+        revalidatePath('/dashboard/attendance');
 
         return NextResponse.json({ success: true, count: validBookingIds.length });
     } catch (error) {

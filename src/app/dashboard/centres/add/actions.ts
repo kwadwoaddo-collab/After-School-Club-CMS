@@ -7,6 +7,7 @@ import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres } from '@/db/schema';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function createCentre(prevState: any, formData: FormData) {
     const session = await requireTenantSession();
@@ -45,5 +46,6 @@ export async function createCentre(prevState: any, formData: FormData) {
         return { message: 'Failed to create centre. Please try again.' };
     }
 
+    revalidatePath('/dashboard/centres');
     redirect(`/dashboard/centres/${newId}/settings`);
 }

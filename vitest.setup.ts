@@ -22,6 +22,12 @@ vi.mock('next/navigation', () => ({
     redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`); }),
 }))
 
+vi.mock('next/cache', () => ({
+    revalidatePath: vi.fn(),
+    revalidateTag: vi.fn(),
+    unstable_cache: vi.fn((fn: (...args: unknown[]) => unknown) => fn),
+}))
+
 /**
  * PM-1.2 — Global mock for org-approval-guard.
  *
