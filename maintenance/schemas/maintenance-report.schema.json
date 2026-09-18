@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://after-school-club-live.vercel.app/schemas/maintenance-report.schema.json",
+  "title": "CMSMaintenanceReport",
+  "description": "Schema for CMS automated preventive maintenance reports and Mission Control integration",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "reportId",
+    "cadence",
+    "generatedAt",
+    "executionHost",
+    "certifiedProductionBaselineSha",
+    "gitHeadSha",
+    "overallStatus",
+    "summary",
+    "sections",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0.0" },
+    "reportId": { "type": "string", "pattern": "^maint-(weekly|monthly|quarterly)-[0-9]{8}T[0-9]{6}Z$" },
+    "cadence": { "type": "string", "enum": ["weekly", "monthly", "quarterly"] },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "executionHost": {
+      "type": "object",
+      "required": ["hostname", "user", "os", "nodeVersion"],
+      "properties": {
+        "hostname": { "type": "string" },
+        "user": { "type": "string" },
+        "os": { "type": "string" },
+        "nodeVersion": { "type": "string" }
+      }
+    },
+    "certifiedProductionBaselineSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "gitHeadSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "baselineDiffCount": { "type": "integer", "minimum": 0 },
+    "overallStatus": { "type": "string", "enum": ["HEALTHY", "WARNING", "ACTION_REQUIRED", "EXECUTION_FAILURE"] },
+    "summary": {
+      "type": "object",
+      "required": ["totalChecks", "passed", "warned", "failed", "findingsCount"],
+      "properties": {
+        "totalChecks": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "warned": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "findingsCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "properties": {
+        "productionHealth": { "type": "object" },
+        "vercelDeployment": { "type": "object" },
+        "databaseHealth": { "type": "object" },
+        "financeInvariants": { "type": "object" },
+        "qualityGates": { "type": "object" },
+        "dependencyAudit": { "type": "object" },
+        "scaleSnapshot": { "type": "object" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fingerprint", "code", "severity", "title", "description", "lifecycle", "firstDetectedAt", "lastObservedAt", "occurrences"],
+        "properties": {
+          "fingerprint": { "type": "string" },
+          "code": { "type": "string" },
+          "severity": { "type": "string", "enum": ["INFO", "WARNING", "ACTION_REQUIRED"] },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "lifecycle": { "type": "string", "enum": ["NEW", "PERSISTENT", "RESOLVED"] },
+          "firstDetectedAt": { "type": "string", "format": "date-time" },
+          "lastObservedAt": { "type": "string", "format": "date-time" },
+          "occurrences": { "type": "integer", "minimum": 1 },
+          "context": { "type": "object" }
+        }
+      }
+    }
+  }
+}
