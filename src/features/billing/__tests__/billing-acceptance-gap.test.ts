@@ -341,7 +341,7 @@ describe('Category B Acceptance & Gap Verification (Issues D, E, 8, 9)', () => {
 
             expect(items).toHaveLength(1);
             expect(items[0].id).toBe('unconfigured-parent-smith-centre-1');
-            expect(items[0].parent.firstName).toBe('John');
+            expect(items[0].parent?.firstName).toBe('John');
             expect(items[0].children[0].child.firstName).toBe('Alice');
         });
     });

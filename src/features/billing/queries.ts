@@ -181,7 +181,7 @@ export async function fetchBillingCycles(
     const unconfiguredMap = new Map<string, {
         parentId: string;
         centreId: string;
-        parent: { firstName: string; lastName: string; email: string; deletedAt: Date | null } | null;
+        parent: { firstName: string; lastName: string; email: string | null; deletedAt: Date | null } | null;
         centre: { name: string } | null;
         kids: { id: string; firstName: string; lastName: string }[];
     }>();
@@ -397,7 +397,7 @@ export async function fetchBillingSetupRequired(orgId: string, centreId: string 
     const unconfiguredMap = new Map<string, {
         parentId: string;
         centreId: string;
-        parent: { firstName: string; lastName: string; email: string; deletedAt: Date | null } | null;
+        parent: { firstName: string; lastName: string; email: string | null; deletedAt: Date | null } | null;
         centre: { name: string } | null;
         kids: { id: string; firstName: string; lastName: string }[];
     }>();
