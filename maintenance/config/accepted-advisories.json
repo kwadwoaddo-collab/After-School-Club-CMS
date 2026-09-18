@@ -1,0 +1,33 @@
+{
+  "description": "Registry of reviewed and accepted dependency advisories with documented rationale and review dates. These advisories are actively monitored by Mission Control and do not trigger false-positive ACTION_REQUIRED production incidents unless their scope expands.",
+  "advisories": {
+    "nodemailer": {
+      "package": "nodemailer",
+      "acceptedUntil": "2027-01-01",
+      "reason": "Direct dependency required by next-auth EmailProvider. Removing nodemailer while EmailProvider is imported causes clean Vercel/Turbopack production build failures. The package is not exposed to untrusted external input in the current CMS mailer architecture.",
+      "disposition": "ONGOING_ACCEPTED_RISK",
+      "monitoredSeverity": "high"
+    },
+    "@auth/core": {
+      "package": "@auth/core",
+      "acceptedUntil": "2027-01-01",
+      "reason": "Upstream NextAuth v4 peer dependency. Core authentication flow is strictly isolated behind NextAuth session middleware. Upstream fix is tracked for NextAuth v5 upgrade.",
+      "disposition": "ONGOING_ACCEPTED_RISK",
+      "monitoredSeverity": "high"
+    },
+    "@auth/drizzle-adapter": {
+      "package": "@auth/drizzle-adapter",
+      "acceptedUntil": "2027-01-01",
+      "reason": "Adapter dependency tied to NextAuth v4 ecosystem. All database queries pass through Drizzle ORM schema validation.",
+      "disposition": "ONGOING_ACCEPTED_RISK",
+      "monitoredSeverity": "high"
+    },
+    "next-auth": {
+      "package": "next-auth",
+      "acceptedUntil": "2027-01-01",
+      "reason": "NextAuth v4 framework dependency. Production configuration uses secure session tokens and server-side secret validation. Monitored until major framework upgrade.",
+      "disposition": "ONGOING_ACCEPTED_RISK",
+      "monitoredSeverity": "high"
+    }
+  }
+}

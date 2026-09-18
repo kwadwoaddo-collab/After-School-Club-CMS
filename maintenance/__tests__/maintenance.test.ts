@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { redactText, redactObject, createStableFingerprint } from '../src/lib/redact';
@@ -6,8 +6,11 @@ import { determineScheduledCadence } from '../src/lib/precedence';
 import { acquireLock, releaseLock } from '../src/lib/lock';
 import { FindingsStoreManager } from '../src/lib/findings-store';
 import { enforceReportRetention } from '../src/lib/retention';
+import { evaluateMaintPerf1 } from '../src/checks/database';
+import { classifyDependencyVulnerability, AcceptedAdvisory } from '../src/checks/dependencies';
+import { DEFAULT_PROBES } from '../src/checks/production';
 
-describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
+describe('MAINT-AUTO-1R Maintenance Framework Unit & Contract Tests', () => {
   const testLockPath = path.resolve(process.cwd(), 'maintenance/state/test-maintenance.lock');
   const testStorePath = path.resolve(process.cwd(), 'maintenance/state/test-findings-state.json');
 
@@ -61,9 +64,8 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
     });
   });
 
-  describe('2. Calendar Precedence Logic', () => {
+  describe('2. Calendar Precedence Logic (All Representative Dates)', () => {
     it('resolves 1st Monday of January (Jan 5) to quarterly', () => {
-      // Month 0 is Jan, Day 5
       const jan5 = new Date('2026-01-05T08:00:00Z');
       expect(determineScheduledCadence(jan5)).toBe('quarterly');
     });
@@ -73,9 +75,24 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
       expect(determineScheduledCadence(apr6)).toBe('quarterly');
     });
 
+    it('resolves 1st Monday of July (Jul 6) to quarterly', () => {
+      const jul6 = new Date('2026-07-06T08:00:00Z');
+      expect(determineScheduledCadence(jul6)).toBe('quarterly');
+    });
+
+    it('resolves 1st Monday of October (Oct 5) to quarterly', () => {
+      const oct5 = new Date('2026-10-05T08:00:00Z');
+      expect(determineScheduledCadence(oct5)).toBe('quarterly');
+    });
+
     it('resolves 1st Monday of February (Feb 2) to monthly', () => {
       const feb2 = new Date('2026-02-02T08:00:00Z');
       expect(determineScheduledCadence(feb2)).toBe('monthly');
+    });
+
+    it('resolves 1st Monday of March (Mar 2) to monthly', () => {
+      const mar2 = new Date('2026-03-02T08:00:00Z');
+      expect(determineScheduledCadence(mar2)).toBe('monthly');
     });
 
     it('resolves 2nd Monday of February (Feb 9) to weekly', () => {
@@ -110,22 +127,20 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
     });
 
     it('recovers from stale lock when PID is dead or timestamp is ancient', () => {
-      // Simulate dead PID (PID 99999999)
       const staleData = {
         pid: 99999999,
-        timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
         cadence: 'weekly'
       };
       fs.writeFileSync(testLockPath, JSON.stringify(staleData));
 
-      // Should break stale lock and acquire successfully
       const acquired = acquireLock('monthly', testLockPath);
       expect(acquired).toBe(true);
       releaseLock(testLockPath);
     });
   });
 
-  describe('4. Finding Lifecycle State Machine', () => {
+  describe('4. Finding Lifecycle & Domain Scoping', () => {
     it('tracks finding transitions: NEW -> PERSISTENT -> RESOLVED', () => {
       const manager = new FindingsStoreManager(testStorePath);
       const testFinding = {
@@ -136,19 +151,16 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
         description: 'First occurrence'
       };
 
-      // Run 1: Seen for first time -> NEW
       const run1 = manager.reconcileFindings([testFinding]);
       expect(run1).toHaveLength(1);
       expect(run1[0].lifecycle).toBe('NEW');
       expect(run1[0].occurrences).toBe(1);
 
-      // Run 2: Seen again -> PERSISTENT
       const run2 = manager.reconcileFindings([testFinding]);
       expect(run2).toHaveLength(1);
       expect(run2[0].lifecycle).toBe('PERSISTENT');
       expect(run2[0].occurrences).toBe(2);
 
-      // Run 3: Absent -> RESOLVED
       const run3 = manager.reconcileFindings([]);
       expect(run3).toHaveLength(1);
       expect(run3[0].lifecycle).toBe('RESOLVED');
@@ -169,13 +181,13 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
       manager.reconcileFindings([finFinding], false, ['PROD', 'VERCEL', 'DB', 'FIN']);
       expect(manager.getStoredFindings()['FIN_TEST:abcdef12'].status).toBe('ACTIVE');
 
-      // Subsequent Weekly run executes ONLY ['PROD', 'VERCEL', 'DB']
+      // Weekly run executes ONLY ['PROD', 'VERCEL', 'DB']
       const weeklyRun = manager.reconcileFindings([], false, ['PROD', 'VERCEL', 'DB']);
-      // Should NOT resolve FIN_TEST because FIN was not executed
+      // Must NOT resolve FIN_TEST because FIN was not executed
       expect(weeklyRun).toHaveLength(0);
       expect(manager.getStoredFindings()['FIN_TEST:abcdef12'].status).toBe('ACTIVE');
 
-      // Next Monthly run executes ['PROD', 'VERCEL', 'DB', 'FIN'] with finding fixed
+      // Subsequent Monthly run executes FIN with finding cleared
       const monthlyRunResolved = manager.reconcileFindings([], false, ['PROD', 'VERCEL', 'DB', 'FIN']);
       expect(monthlyRunResolved).toHaveLength(1);
       expect(monthlyRunResolved[0].lifecycle).toBe('RESOLVED');
@@ -183,7 +195,166 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
     });
   });
 
-  describe('5. Report Retention & Cleanup', () => {
+  describe('5. Authoritative MAINT-PERF-1 Trigger Boundary Tests', () => {
+    it('499 invoices for an organisation does NOT trigger MAINT-PERF-1', () => {
+      const res = evaluateMaintPerf1(499, 10, null);
+      expect(res.status).toBe('NOT_TRIGGERED');
+      expect(res.maxInvoicesForAnyOrganisation).toBe(499);
+      expect(res.triggerReasons).toHaveLength(0);
+    });
+
+    it('500 invoices for an organisation DOES trigger MAINT-PERF-1', () => {
+      const res = evaluateMaintPerf1(500, 10, null);
+      expect(res.status).toBe('TRIGGERED');
+      expect(res.maxInvoicesForAnyOrganisation).toBe(500);
+      expect(res.triggerReasons[0]).toContain('Invoice count for organisation (500) >= 500 threshold');
+    });
+
+    it('49 active billing configs does NOT trigger MAINT-PERF-1', () => {
+      const res = evaluateMaintPerf1(100, 49, null);
+      expect(res.status).toBe('NOT_TRIGGERED');
+      expect(res.activeBillingConfigs).toBe(49);
+      expect(res.triggerReasons).toHaveLength(0);
+    });
+
+    it('50 active billing configs DOES trigger MAINT-PERF-1', () => {
+      const res = evaluateMaintPerf1(100, 50, null);
+      expect(res.status).toBe('TRIGGERED');
+      expect(res.activeBillingConfigs).toBe(50);
+      expect(res.triggerReasons[0]).toContain('Active billing configurations (50) >= 50 threshold');
+    });
+
+    it('p95 latency exactly 250ms does NOT trigger MAINT-PERF-1', () => {
+      const res = evaluateMaintPerf1(100, 10, 250);
+      expect(res.status).toBe('NOT_TRIGGERED');
+      expect(res.observedP95Ms).toBe(250);
+      expect(res.measurementAvailable).toBe(true);
+      expect(res.triggerReasons).toHaveLength(0);
+    });
+
+    it('p95 latency of 251ms DOES trigger MAINT-PERF-1', () => {
+      const res = evaluateMaintPerf1(100, 10, 251);
+      expect(res.status).toBe('TRIGGERED');
+      expect(res.observedP95Ms).toBe(251);
+      expect(res.measurementAvailable).toBe(true);
+      expect(res.triggerReasons[0]).toContain('p95 invoice-history query response time (251ms) > 250ms threshold');
+    });
+
+    it('unavailable p95 latency is reported honestly as null and does not trigger alone', () => {
+      const res = evaluateMaintPerf1(100, 10, null);
+      expect(res.status).toBe('NOT_TRIGGERED');
+      expect(res.observedP95Ms).toBeNull();
+      expect(res.measurementAvailable).toBe(false);
+    });
+  });
+
+  describe('6. Dependency Classification & Accepted Risk Semantics', () => {
+    const mockAcceptedRegistry: Record<string, AcceptedAdvisory> = {
+      nodemailer: {
+        package: 'nodemailer',
+        acceptedUntil: '2027-01-01',
+        reason: 'Required by next-auth EmailProvider; removing breaks Vercel build',
+        disposition: 'ONGOING_ACCEPTED_RISK',
+        monitoredSeverity: 'high'
+      }
+    };
+
+    it('classifies reviewed advisory as ONGOING_ACCEPTED_RISK with INFO severity', () => {
+      const res = classifyDependencyVulnerability(
+        'nodemailer',
+        {
+          name: 'nodemailer',
+          severity: 'high',
+          isDirect: true,
+          via: [],
+          effects: [],
+          range: '<6.9.9'
+        },
+        mockAcceptedRegistry
+      );
+
+      expect(res.isAccepted).toBe(true);
+      expect(res.findingSeverity).toBe('INFO');
+      expect(res.findingCode).toBe('DEP_ADVISORY_ACCEPTED');
+      expect(res.title).toContain('[ACCEPTED RISK]');
+      expect(res.description).toContain('ONGOING_ACCEPTED_RISK');
+    });
+
+    it('classifies genuinely new unaccepted high-severity vulnerability as ACTION_REQUIRED', () => {
+      const res = classifyDependencyVulnerability(
+        'some-vulnerable-package',
+        {
+          name: 'some-vulnerable-package',
+          severity: 'high',
+          isDirect: true,
+          via: [],
+          effects: [],
+          range: '*'
+        },
+        mockAcceptedRegistry
+      );
+
+      expect(res.isAccepted).toBe(false);
+      expect(res.findingSeverity).toBe('ACTION_REQUIRED');
+      expect(res.findingCode).toBe('DEP_VULN_HIGH');
+      expect(res.title).toContain('High Dependency Vulnerability');
+    });
+  });
+
+  describe('7. Weekly Cron Boundary Coverage Probes', () => {
+    it('includes all three unauthorized cron probes expecting 401', () => {
+      const billingProbe = DEFAULT_PROBES.find((p) => p.path === '/api/cron/billing');
+      const digestProbe = DEFAULT_PROBES.find((p) => p.path === '/api/cron/digest');
+      const rollProbe = DEFAULT_PROBES.find((p) => p.path === '/api/cron/school-year-roll');
+
+      expect(billingProbe).toBeDefined();
+      expect(billingProbe?.expectedStatus).toBe(401);
+
+      expect(digestProbe).toBeDefined();
+      expect(digestProbe?.expectedStatus).toBe(401);
+
+      expect(rollProbe).toBeDefined();
+      expect(rollProbe?.expectedStatus).toBe(401);
+    });
+
+    it('includes negative probes for auth-test (404) and invalid stripe webhook (400)', () => {
+      const authTestProbe = DEFAULT_PROBES.find((p) => p.path === '/auth-test');
+      const stripeProbe = DEFAULT_PROBES.find((p) => p.path === '/api/webhooks/stripe-invoice');
+
+      expect(authTestProbe).toBeDefined();
+      expect(authTestProbe?.expectedStatus).toBe(404);
+
+      expect(stripeProbe).toBeDefined();
+      expect(stripeProbe?.expectedStatus).toBe(400);
+    });
+  });
+
+  describe('8. Quality Gates & Scheduler Command Inspection', () => {
+    it('prohibits scheduled automated run from using --skip-quality-gates', () => {
+      const wrapperContent = fs.readFileSync(
+        path.resolve(process.cwd(), 'maintenance/scripts/scheduler-wrapper.sh'),
+        'utf8'
+      );
+      expect(wrapperContent).not.toContain('--skip-quality-gates');
+      expect(wrapperContent).toContain('--auto-cadence');
+    });
+
+    it('launchd plist points to wrapper and runs every Monday at 08:00', () => {
+      const plistContent = fs.readFileSync(
+        path.resolve(process.cwd(), 'maintenance/scripts/launchd/com.afterschoolclub.cms-maintenance.plist'),
+        'utf8'
+      );
+      expect(plistContent).toContain('scheduler-wrapper.sh');
+      expect(plistContent).toContain('<key>Weekday</key>');
+      expect(plistContent).toContain('<integer>1</integer>');
+      expect(plistContent).toContain('<key>Hour</key>');
+      expect(plistContent).toContain('<integer>8</integer>');
+      expect(plistContent).toContain('<key>RunAtLoad</key>');
+      expect(plistContent).toContain('<false/>');
+    });
+  });
+
+  describe('9. Report Retention & Cleanup', () => {
     it('identifies aged reports for retention and preserves .gitkeep', () => {
       const tempReportsDir = path.resolve(process.cwd(), 'maintenance/reports/temp_test_retention');
       const weeklyDir = path.join(tempReportsDir, 'weekly');
@@ -192,13 +363,11 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
       const gitkeepPath = path.join(weeklyDir, '.gitkeep');
       fs.writeFileSync(gitkeepPath, '');
 
-      // Create an old report (95 days old)
       const oldReportPath = path.join(weeklyDir, 'maint-weekly-old.json');
       fs.writeFileSync(oldReportPath, '{}');
       const oldTime = (Date.now() - 95 * 24 * 60 * 60 * 1000) / 1000;
       fs.utimesSync(oldReportPath, oldTime, oldTime);
 
-      // Create a fresh report (5 days old)
       const freshReportPath = path.join(weeklyDir, 'maint-weekly-fresh.json');
       fs.writeFileSync(freshReportPath, '{}');
 
@@ -209,7 +378,6 @@ describe('MAINT-AUTO-1 Maintenance Framework Unit Tests', () => {
       expect(fs.existsSync(gitkeepPath)).toBe(true);
       expect(fs.existsSync(oldReportPath)).toBe(false);
 
-      // Cleanup
       fs.rmSync(tempReportsDir, { recursive: true, force: true });
     });
   });

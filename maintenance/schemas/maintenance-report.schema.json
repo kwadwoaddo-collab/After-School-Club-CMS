@@ -56,7 +56,8 @@
         "financeInvariants": { "type": "object" },
         "qualityGates": { "type": "object" },
         "dependencyAudit": { "type": "object" },
-        "scaleSnapshot": { "type": "object" }
+        "scaleSnapshot": { "type": "object" },
+        "quarterlyDeepReview": { "type": "object" }
       }
     },
     "findings": {

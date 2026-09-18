@@ -76,11 +76,32 @@ export async function runQualityGateChecks(
   const executeGate = (gateName: string, cmd: string, timeoutMs = 120000) => {
     const start = Date.now();
     try {
+      const childEnv = { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' };
+      const envRecord = childEnv as Record<string, string | undefined>;
+      // Strip production-specific overrides so CI quality gates run in standard clean test isolation
+      const prodKeysToStrip = [
+        'DATABASE_URL',
+        'AUTH_URL',
+        'VERCEL_ENV',
+        'VERCEL_URL',
+        'VERCEL_PROJECT_PRODUCTION_URL',
+        'NEXT_PUBLIC_BASE_URL',
+        'NEXT_PUBLIC_APP_URL',
+        'CRON_SECRET',
+        'PARENT_SESSION_SECRET',
+        'RESEND_API_KEY',
+        'UPSTASH_REDIS_REST_URL',
+        'UPSTASH_REDIS_REST_TOKEN'
+      ];
+      for (const k of prodKeysToStrip) {
+        delete envRecord[k];
+      }
+
       execSync(cmd, {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: timeoutMs,
-        env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' }
+        env: childEnv as NodeJS.ProcessEnv
       });
       const elapsed = Date.now() - start;
       gates.push({
@@ -114,20 +135,23 @@ export async function runQualityGateChecks(
     }
   };
 
-  // 3. TypeScript Typecheck
-  executeGate('TypeScript Compilation', 'npx tsc --noEmit', 60000);
+  // 3. Git Diff Formatting / Whitespace Gate
+  executeGate('Git Diff Formatting', 'git diff --check', 30000);
 
-  // 4. ESLint
-  executeGate('ESLint', 'npm run lint', 60000);
+  // 4. TypeScript Typecheck
+  executeGate('TypeScript Compilation', 'NODE_OPTIONS=--max-old-space-size=4096 npx tsc --noEmit', 90000);
 
-  // 5. Test Suite (Vitest)
+  // 5. ESLint
+  executeGate('ESLint', 'npm run lint', 90000);
+
+  // 6. Test Suite (Vitest)
   if (!options.skipTests) {
-    executeGate('Vitest Unit Tests', 'npm test', 120000);
+    executeGate('Vitest Unit Tests', 'npm test', 180000);
   }
 
-  // 6. Next.js Build (Optional, typically Quarterly)
-  if (options.includeBuild) {
-    executeGate('Next.js Build', 'npm run build', 180000);
+  // 7. Next.js Production Build (Mandatory for Monthly and Quarterly)
+  if (options.includeBuild !== false) {
+    executeGate('Next.js Build', 'NODE_OPTIONS=--max-old-space-size=4096 npm run build', 240000);
   }
 
   const failedGates = gates.filter((g) => !g.passed).length;

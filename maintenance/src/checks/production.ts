@@ -26,7 +26,7 @@ interface ProbeDefinition {
   redirect?: RequestRedirect;
 }
 
-const DEFAULT_PROBES: ProbeDefinition[] = [
+export const DEFAULT_PROBES: ProbeDefinition[] = [
   // Tier 1: Shallow health
   { name: 'Shallow Health API', path: '/api/health', expectedStatus: 200 },
   // Tier 2: Deep health
@@ -40,7 +40,9 @@ const DEFAULT_PROBES: ProbeDefinition[] = [
   { name: 'Finance Dashboard Auth Redirect', path: '/dashboard/finance', expectedStatus: [302, 307, 308], redirect: 'manual' },
   // Tier 5: Negative Security Probes
   { name: 'Negative: Removed Test Endpoint', path: '/auth-test', expectedStatus: 404 },
-  { name: 'Negative: Cron Unauthenticated Request', path: '/api/cron/billing', expectedStatus: 401 },
+  { name: 'Negative: Cron Billing Unauthenticated Request', path: '/api/cron/billing', expectedStatus: 401 },
+  { name: 'Negative: Cron Digest Unauthenticated Request', path: '/api/cron/digest', expectedStatus: 401 },
+  { name: 'Negative: Cron School Year Roll Unauthenticated Request', path: '/api/cron/school-year-roll', expectedStatus: 401 },
   { name: 'Negative: Stripe Webhook Missing Signature', path: '/api/webhooks/stripe-invoice', method: 'POST', body: '{}', expectedStatus: 400 }
 ];
 

@@ -104,7 +104,8 @@ export interface DependencyAuditSection {
   highCount: number;
   moderateCount: number;
   lowCount: number;
-  reachableVulnerabilitiesCount: number;
+  acceptedRiskCount: number;
+  newActionableCount: number;
   notes?: string;
 }
 
@@ -114,10 +115,44 @@ export interface TableScale {
   status: 'NORMAL' | 'APPROACHING_LIMIT' | 'THRESHOLD_EXCEEDED';
 }
 
+export interface MaintPerf1Trigger {
+  status: 'NOT_TRIGGERED' | 'TRIGGERED';
+  invoiceCountThreshold: 500;
+  maxInvoicesForAnyOrganisation: number;
+  activeBillingConfigThreshold: 50;
+  activeBillingConfigs: number;
+  p95ThresholdMs: 250;
+  observedP95Ms: number | null;
+  measurementAvailable: boolean;
+  triggerReasons: string[];
+}
+
 export interface ScaleSnapshotSection {
   status: StatusLevel;
   tables: TableScale[];
+  maintPerf1: MaintPerf1Trigger;
   maintPerf1TriggerRecommendation: 'DEFER' | 'SCHEDULE' | 'IMMEDIATE';
+  notes?: string;
+}
+
+export interface QuarterlyDeepReviewSection {
+  status: StatusLevel;
+  architectureDrift: {
+    status: 'IN_ALIGNMENT' | 'DRIFT_DETECTED';
+    details: string;
+  };
+  tenancyRbacReview: {
+    status: 'VALIDATED' | 'REQUIRES_ATTENTION';
+    details: string;
+  };
+  recoveryReadiness: {
+    status: 'READY' | 'DEGRADED';
+    details: string;
+  };
+  technicalDebtReview: {
+    recommendation: string;
+    deferredCandidates: string[];
+  };
   notes?: string;
 }
 
@@ -129,6 +164,7 @@ export interface MaintenanceReportSections {
   qualityGates?: QualityGatesSection;
   dependencyAudit?: DependencyAuditSection;
   scaleSnapshot?: ScaleSnapshotSection;
+  quarterlyDeepReview?: QuarterlyDeepReviewSection;
 }
 
 export interface CMSMaintenanceReport {

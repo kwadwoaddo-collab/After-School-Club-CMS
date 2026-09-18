@@ -86,8 +86,15 @@ export function generateMarkdownReport(report: CMSMaintenanceReport): string {
     }
     if (report.sections.scaleSnapshot) {
       lines.push('');
-      lines.push(`### MAINT-PERF-1 Scale Snapshot`);
-      lines.push(`**Recommendation:** \`${report.sections.scaleSnapshot.maintPerf1TriggerRecommendation}\``);
+      lines.push(`### MAINT-PERF-1 Authoritative Performance Trigger`);
+      lines.push(`- **Trigger Status:** \`${report.sections.scaleSnapshot.maintPerf1.status}\``);
+      lines.push(`- **Recommendation:** \`${report.sections.scaleSnapshot.maintPerf1TriggerRecommendation}\``);
+      lines.push(`- **Max Invoices for Single Organisation:** **${report.sections.scaleSnapshot.maintPerf1.maxInvoicesForAnyOrganisation}** (Threshold: ${report.sections.scaleSnapshot.maintPerf1.invoiceCountThreshold})`);
+      lines.push(`- **Active Billing Configurations:** **${report.sections.scaleSnapshot.maintPerf1.activeBillingConfigs}** (Threshold: ${report.sections.scaleSnapshot.maintPerf1.activeBillingConfigThreshold})`);
+      lines.push(`- **Invoice-History Query p95 Latency:** ${report.sections.scaleSnapshot.maintPerf1.observedP95Ms !== null ? `${report.sections.scaleSnapshot.maintPerf1.observedP95Ms}ms` : 'Not Measured / Null (Reliable telemetry currently unavailable)'} (Threshold: ${report.sections.scaleSnapshot.maintPerf1.p95ThresholdMs}ms)`);
+      if (report.sections.scaleSnapshot.maintPerf1.triggerReasons.length > 0) {
+        lines.push(`- **Trigger Reasons:** ${report.sections.scaleSnapshot.maintPerf1.triggerReasons.join('; ')}`);
+      }
       lines.push('');
       lines.push('| Table | Row Count | Scale Status |');
       lines.push('| :--- | :--- | :--- |');
@@ -117,10 +124,9 @@ export function generateMarkdownReport(report: CMSMaintenanceReport): string {
     lines.push('## 7. Dependency Security Audit');
     lines.push(`*Status: ${report.sections.dependencyAudit.status}*  `);
     lines.push(`- Critical: **${report.sections.dependencyAudit.criticalCount}**`);
-    lines.push(`- High: **${report.sections.dependencyAudit.highCount}**`);
+    lines.push(`- High: **${report.sections.dependencyAudit.highCount}** (Accepted Ongoing Risks: **${report.sections.dependencyAudit.acceptedRiskCount}**, New Actionable: **${report.sections.dependencyAudit.newActionableCount}**)`);
     lines.push(`- Moderate: **${report.sections.dependencyAudit.moderateCount}**`);
     lines.push(`- Low: **${report.sections.dependencyAudit.lowCount}**`);
-    lines.push(`- Reachable in production: **${report.sections.dependencyAudit.reachableVulnerabilitiesCount}**`);
     lines.push('');
   }
 
@@ -140,8 +146,21 @@ export function generateMarkdownReport(report: CMSMaintenanceReport): string {
     lines.push('');
   }
 
-  // 9. Findings & Action Items
-  lines.push('## 9. Findings & Action Items');
+  // 9. Quarterly Deep Engineering Review
+  if (report.sections.quarterlyDeepReview) {
+    lines.push('## 9. Quarterly Deep Engineering Review');
+    lines.push(`*Status: ${report.sections.quarterlyDeepReview.status}*  `);
+    lines.push(`- **Architecture & Config Drift:** \`${report.sections.quarterlyDeepReview.architectureDrift.status}\` — ${report.sections.quarterlyDeepReview.architectureDrift.details}`);
+    lines.push(`- **Tenancy & RBAC Review:** \`${report.sections.quarterlyDeepReview.tenancyRbacReview.status}\` — ${report.sections.quarterlyDeepReview.tenancyRbacReview.details}`);
+    lines.push(`- **Recovery Readiness:** \`${report.sections.quarterlyDeepReview.recoveryReadiness.status}\` — ${report.sections.quarterlyDeepReview.recoveryReadiness.details}`);
+    lines.push(`- **Technical Debt & Deferred Work:** ${report.sections.quarterlyDeepReview.technicalDebtReview.recommendation}`);
+    for (const item of report.sections.quarterlyDeepReview.technicalDebtReview.deferredCandidates) {
+      lines.push(`  - ${item}`);
+    }
+    lines.push('');
+  }
+  // 10. Findings & Action Items
+  lines.push('## 10. Findings & Action Items');
   if (report.findings.length === 0) {
     lines.push('✅ **No findings detected. System is in certified optimal condition.**');
   } else {

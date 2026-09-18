@@ -115,10 +115,10 @@ export async function runFinanceInvariantChecks(
       LEFT JOIN (
         SELECT invoice_id, COALESCE(SUM(amount), 0) as verified_total
         FROM payments
-        WHERE status = 'verified'
+        WHERE status::text = 'verified'
         GROUP BY invoice_id
       ) p ON i.id = p.invoice_id
-      WHERE i.status = 'paid' AND COALESCE(p.verified_total, 0) < i.amount
+      WHERE i.status::text = 'paid' AND COALESCE(p.verified_total, 0) < i.amount
     `;
     const underpaidPaidInvoices = parseInt(q3[0]?.count || '0', 10);
     const inv3Passed = underpaidPaidInvoices === 0;
@@ -170,7 +170,7 @@ export async function runFinanceInvariantChecks(
       SELECT count(*)::text as count
       FROM payments p
       JOIN invoices i ON p.invoice_id = i.id
-      WHERE i.status = 'void' AND p.status = 'verified'
+      WHERE i.status::text = 'void' AND p.status::text = 'verified'
     `;
     const verifiedOnVoid = parseInt(q5[0]?.count || '0', 10);
     const inv5Passed = verifiedOnVoid === 0;
@@ -195,7 +195,7 @@ export async function runFinanceInvariantChecks(
     const q6 = await sql<{ count: string }[]>`
       SELECT count(*)::text as count
       FROM payments
-      WHERE status = 'reversed' AND (reversed_at IS NULL OR reversal_reason IS NULL OR TRIM(reversal_reason) = '')
+      WHERE status::text = 'reversed' AND (reversed_at IS NULL OR reversal_reason IS NULL OR TRIM(reversal_reason) = '')
     `;
     const incompleteReversals = parseInt(q6[0]?.count || '0', 10);
     const inv6Passed = incompleteReversals === 0;

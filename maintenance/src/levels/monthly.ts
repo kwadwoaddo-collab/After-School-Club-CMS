@@ -50,7 +50,7 @@ export async function runMonthlyChecks(options: MonthlyRunnerOptions) {
   if (!options.skipQualityGates) {
     const qgResult = await runQualityGateChecks({
       certifiedBaselineSha: options.certifiedBaselineSha,
-      includeBuild: false,
+      includeBuild: true,
       skipTests: false
     });
     allFindings.push(...qgResult.findings);

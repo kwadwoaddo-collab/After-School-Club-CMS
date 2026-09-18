@@ -1,6 +1,35 @@
 import postgres from 'postgres';
-import { DatabaseHealthSection, ScaleSnapshotSection, StatusLevel, FindingSeverity, TableScale } from '../types';
+import { DatabaseHealthSection, ScaleSnapshotSection, StatusLevel, FindingSeverity, TableScale, MaintPerf1Trigger } from '../types';
 import { createStableFingerprint, redactText } from '../lib/redact';
+
+export function evaluateMaintPerf1(
+  maxInvoicesForAnyOrg: number,
+  activeBillingConfigs: number,
+  observedP95Ms: number | null = null
+): MaintPerf1Trigger {
+  const triggerReasons: string[] = [];
+  if (maxInvoicesForAnyOrg >= 500) {
+    triggerReasons.push(`Invoice count for organisation (${maxInvoicesForAnyOrg}) >= 500 threshold`);
+  }
+  if (activeBillingConfigs >= 50) {
+    triggerReasons.push(`Active billing configurations (${activeBillingConfigs}) >= 50 threshold`);
+  }
+  if (observedP95Ms !== null && observedP95Ms > 250) {
+    triggerReasons.push(`p95 invoice-history query response time (${observedP95Ms}ms) > 250ms threshold`);
+  }
+
+  return {
+    status: triggerReasons.length > 0 ? 'TRIGGERED' : 'NOT_TRIGGERED',
+    invoiceCountThreshold: 500,
+    maxInvoicesForAnyOrganisation: maxInvoicesForAnyOrg,
+    activeBillingConfigThreshold: 50,
+    activeBillingConfigs,
+    p95ThresholdMs: 250,
+    observedP95Ms,
+    measurementAvailable: observedP95Ms !== null,
+    triggerReasons
+  };
+}
 
 interface RawFinding {
   fingerprint: string;
@@ -33,6 +62,18 @@ export async function runDatabaseHealthAndScaleChecks(
       description: 'DATABASE_URL not configured in environment. Database connectivity checks were not executed.'
     });
 
+    const fallbackMaintPerf1: MaintPerf1Trigger = {
+      status: 'NOT_TRIGGERED',
+      invoiceCountThreshold: 500,
+      maxInvoicesForAnyOrganisation: 0,
+      activeBillingConfigThreshold: 50,
+      activeBillingConfigs: 0,
+      p95ThresholdMs: 250,
+      observedP95Ms: null,
+      measurementAvailable: false,
+      triggerReasons: []
+    };
+
     return {
       dbSection: {
         status: 'WARNING',
@@ -43,6 +84,7 @@ export async function runDatabaseHealthAndScaleChecks(
       scaleSection: {
         status: 'WARNING',
         tables: [],
+        maintPerf1: fallbackMaintPerf1,
         maintPerf1TriggerRecommendation: 'DEFER',
         notes: 'DATABASE_URL not configured. Scale snapshot skipped.'
       },
@@ -68,6 +110,17 @@ export async function runDatabaseHealthAndScaleChecks(
   let activeConnections = 0;
   const tables: TableScale[] = [];
   let maintPerf1TriggerRecommendation: 'DEFER' | 'SCHEDULE' | 'IMMEDIATE' = 'DEFER';
+  let maintPerf1: MaintPerf1Trigger = {
+    status: 'NOT_TRIGGERED',
+    invoiceCountThreshold: 500,
+    maxInvoicesForAnyOrganisation: 0,
+    activeBillingConfigThreshold: 50,
+    activeBillingConfigs: 0,
+    p95ThresholdMs: 250,
+    observedP95Ms: null,
+    measurementAvailable: false,
+    triggerReasons: []
+  };
 
   try {
     // 1. Connection Ping & Latency
@@ -154,31 +207,54 @@ export async function runDatabaseHealthAndScaleChecks(
       }
     }
 
-    // 4. MAINT-PERF-1 Trigger Recommendation
-    const hasExceeded = tables.some((t) => t.status === 'THRESHOLD_EXCEEDED');
-    const hasApproaching = tables.some((t) => t.status === 'APPROACHING_LIMIT');
+    // 4. Authoritative MAINT-PERF-1 Trigger Evaluation
+    let maxInvoicesForAnyOrg = 0;
+    try {
+      const maxOrgRes = await sql<{ max_org: string }[]>`
+        SELECT COALESCE(MAX(cnt), 0)::text as max_org FROM (
+          SELECT organisation_id, count(*) as cnt FROM invoices GROUP BY organisation_id
+        ) sub
+      `;
+      maxInvoicesForAnyOrg = parseInt(maxOrgRes[0]?.max_org || '0', 10);
+    } catch {
+      // Non-fatal
+    }
 
-    if (hasExceeded || databaseSizeMb > 500) {
+    let activeBillingConfigs = 0;
+    try {
+      const cfgRes = await sql<{ count: string }[]>`
+        SELECT count(*)::text as count FROM billing_configs WHERE status::text = 'active'
+      `;
+      activeBillingConfigs = parseInt(cfgRes[0]?.count || '0', 10);
+    } catch {
+      // Non-fatal
+    }
+
+    // p95 invoice-history response time: reported honestly as null if reliable measurement unavailable
+    const observedP95Ms: number | null = null;
+    maintPerf1 = evaluateMaintPerf1(maxInvoicesForAnyOrg, activeBillingConfigs, observedP95Ms);
+
+    if (maintPerf1.status === 'TRIGGERED') {
       maintPerf1TriggerRecommendation = 'IMMEDIATE';
-      const fp = createStableFingerprint('SCALE_MAINT_PERF_1_TRIGGER', 'immediate');
+      const fp = createStableFingerprint('SCALE_MAINT_PERF_1_TRIGGER', 'triggered');
       findings.push({
         fingerprint: fp,
         code: 'SCALE_MAINT_PERF_1_TRIGGER',
         severity: 'ACTION_REQUIRED',
-        title: 'MAINT-PERF-1 Trigger Condition Met: High Table Volume',
-        description: 'One or more tables exceed the critical scale threshold. Immediate scheduling of index/query tuning recommended.',
-        context: { tables, databaseSizeMb }
+        title: 'MAINT-PERF-1 Performance Tuning Triggered',
+        description: `Authoritative MAINT-PERF-1 trigger conditions met: ${maintPerf1.triggerReasons.join('; ')}`,
+        context: { maintPerf1 }
       });
-    } else if (hasApproaching || databaseSizeMb > 250) {
+    } else if (maxInvoicesForAnyOrg >= 400 || activeBillingConfigs >= 40) {
       maintPerf1TriggerRecommendation = 'SCHEDULE';
-      const fp = createStableFingerprint('SCALE_MAINT_PERF_1_APPROACHING', 'schedule');
+      const fp = createStableFingerprint('SCALE_MAINT_PERF_1_APPROACHING', 'approaching');
       findings.push({
         fingerprint: fp,
         code: 'SCALE_MAINT_PERF_1_APPROACHING',
         severity: 'WARNING',
-        title: 'MAINT-PERF-1 Approaching Trigger: Table Volume Growth',
-        description: 'Table volume is approaching limits. Schedule MAINT-PERF-1 in next cycle.',
-        context: { tables, databaseSizeMb }
+        title: 'MAINT-PERF-1 Approaching Trigger Thresholds',
+        description: `Metrics approaching trigger thresholds (max org invoices: ${maxInvoicesForAnyOrg}/500, active configs: ${activeBillingConfigs}/50). Schedule tuning in next cycle.`,
+        context: { maintPerf1 }
       });
     } else {
       maintPerf1TriggerRecommendation = 'DEFER';
@@ -231,8 +307,9 @@ export async function runDatabaseHealthAndScaleChecks(
     scaleSection: {
       status: scaleStatus,
       tables,
+      maintPerf1,
       maintPerf1TriggerRecommendation,
-      notes: `MAINT-PERF-1 Recommendation: ${maintPerf1TriggerRecommendation}.`
+      notes: `MAINT-PERF-1 Status: ${maintPerf1.status}. Recommendation: ${maintPerf1TriggerRecommendation}.`
     },
     findings
   };

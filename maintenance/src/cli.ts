@@ -14,6 +14,14 @@ for (const f of envFiles) {
     if (process.env.DATABASE_URL) break;
   }
 }
+
+// Sanitize any scrubbed placeholder strings in process.env so they don't corrupt libraries (e.g. rate-limit Redis URL)
+for (const key of Object.keys(process.env)) {
+  const val = process.env[key];
+  if (typeof val === 'string' && (val.startsWith('[SENSITIVE') || val.startsWith('[REDACTED'))) {
+    delete process.env[key];
+  }
+}
 import { Cadence, CMSMaintenanceReport, StatusLevel, ReportSummary, CliOptions } from './types';
 import { acquireLock, releaseLock } from './lib/lock';
 import { redactObject } from './lib/redact';
@@ -258,6 +266,18 @@ export async function runMaintenance(options: CliOptions): Promise<{ report: CMS
       }
     }
 
+    // H. Quarterly Deep Review
+    if (executionResult.sections.quarterlyDeepReview) {
+      totalChecks++;
+      if (executionResult.sections.quarterlyDeepReview.status === 'HEALTHY') {
+        passedChecks++;
+      } else if (executionResult.sections.quarterlyDeepReview.status === 'WARNING') {
+        warnedChecks++;
+      } else {
+        failedChecks++;
+      }
+    }
+
     const summary: ReportSummary = {
       totalChecks,
       passed: passedChecks,
@@ -310,6 +330,14 @@ export async function runMaintenance(options: CliOptions): Promise<{ report: CMS
     }
 
     console.log(`[MAINTENANCE] Finished ${options.level.toUpperCase()} run. Status: ${sanitizedReport.overallStatus}`);
+
+    const actionReqs = sanitizedReport.findings.filter((f) => f.severity === 'ACTION_REQUIRED');
+    if (actionReqs.length > 0) {
+      console.log(`[MAINTENANCE] Action Required Findings (${actionReqs.length}):`);
+      for (const f of actionReqs) {
+        console.log(`  - [${f.code}] ${f.title}: ${f.description}`);
+      }
+    }
 
     let exitCode = 0;
     if (sanitizedReport.overallStatus === 'WARNING') exitCode = 1;
