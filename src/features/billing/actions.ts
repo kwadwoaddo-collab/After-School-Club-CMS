@@ -7,10 +7,11 @@
 
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
-import { billingConfigs, billingConfigChildren, billingRuns, invoices, children } from '@/db/schema';
-import { eq, and, sql, ne, inArray, isNull } from 'drizzle-orm';
+import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, children, auditEvents, payments } from '@/db/schema';
+import { eq, and, sql, ne, inArray, isNull, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
+import { computeExpectedPaymentDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
@@ -58,6 +59,9 @@ export interface BillingConfigData {
     agreedMonthlyPence: number;
     billingAnchorDate:  string;   // ISO date string 'YYYY-MM-DD'
     invoiceLeadDays?:   number;
+    paymentDayOfMonth?: number | null;
+    leadTimeUnit?:      LeadTimeUnit | null;
+    leadTimeValue?:     number | null;
     notes?:             string;
     childIds:           string[]; // which children to cover
 }
@@ -105,9 +109,12 @@ export async function createBillingConfig(data: BillingConfigData) {
             organisationId:     orgId,
             centreId:           data.centreId,
             parentId:           data.parentId,
-            agreedMonthlyPence: data.agreedMonthlyPence,
+            agreedMonthlyPence: data.agreedMonthlyPence ?? 0,
             billingAnchorDate:  data.billingAnchorDate,
             invoiceLeadDays:    data.invoiceLeadDays ?? 7,
+            paymentDayOfMonth:  data.paymentDayOfMonth ?? null,
+            leadTimeUnit:       data.leadTimeUnit ?? null,
+            leadTimeValue:      data.leadTimeValue ?? null,
             notes:              data.notes ?? null,
             status:             'active',
         }).returning();
@@ -122,6 +129,18 @@ export async function createBillingConfig(data: BillingConfigData) {
             ).onConflictDoNothing();
         }
 
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'billing_config_created',
+            eventData: JSON.stringify({
+                configId: newConfig.id,
+                parentId: data.parentId,
+                centreId: data.centreId,
+                agreedMonthlyPence: data.agreedMonthlyPence ?? 0,
+            }),
+        });
+
         return newConfig;
     });
 
@@ -131,7 +150,7 @@ export async function createBillingConfig(data: BillingConfigData) {
 }
 
 /**
- * Update an existing billing config's fee and dates.
+ * Update an existing billing config's fee, dates, and scheduler settings.
  */
 export async function updateBillingConfig(
     configId: string,
@@ -141,7 +160,6 @@ export async function updateBillingConfig(
 
     const existingConfig = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
-        columns: { centreId: true },
     });
     if (!existingConfig) throw new Error('Billing config not found');
     await assertCentreAccess(session, existingConfig.centreId);
@@ -151,6 +169,9 @@ export async function updateBillingConfig(
             ...(data.agreedMonthlyPence !== undefined && { agreedMonthlyPence: data.agreedMonthlyPence }),
             ...(data.billingAnchorDate  !== undefined && { billingAnchorDate:  data.billingAnchorDate }),
             ...(data.invoiceLeadDays    !== undefined && { invoiceLeadDays:    data.invoiceLeadDays }),
+            ...(data.paymentDayOfMonth  !== undefined && { paymentDayOfMonth:  data.paymentDayOfMonth }),
+            ...(data.leadTimeUnit       !== undefined && { leadTimeUnit:       data.leadTimeUnit }),
+            ...(data.leadTimeValue      !== undefined && { leadTimeValue:      data.leadTimeValue }),
             ...(data.notes              !== undefined && { notes:              data.notes }),
             updatedAt: new Date(),
         })
@@ -158,6 +179,16 @@ export async function updateBillingConfig(
             eq(billingConfigs.id,             configId),
             eq(billingConfigs.organisationId, orgId),
         ));
+
+    await db.insert(auditEvents).values({
+        organisationId: orgId,
+        userId: session.user.id,
+        eventType: 'billing_config_updated',
+        eventData: JSON.stringify({
+            configId,
+            changedFields: Object.keys(data),
+        }),
+    });
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
@@ -267,19 +298,210 @@ export async function cancelBillingConfig(configId: string) {
     return { success: true };
 }
 
+// ─── Skip Cycle & Reopen Actions (§26, §27, B4, B7) ──────────────────────────
+
+/**
+ * Intentionally skip a billing cycle for a family billing configuration (§26, B4).
+ * If an unissued draft invoice already exists for this cycle, it is discarded (voided).
+ * Rejects if an issued invoice already exists.
+ */
+export async function skipBillingCycle(
+    configId: string,
+    periodStartStr: string,
+    reason: string,
+) {
+    const { orgId, session } = await getOrgIdAndSession();
+    if (!reason || !reason.trim()) {
+        throw new Error('Skip reason is required');
+    }
+
+    const config = await db.query.billingConfigs.findFirst({
+        where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
+    });
+    if (!config) throw new Error('Billing config not found');
+    await assertCentreAccess(session, config.centreId);
+
+    const periodStartDate = new Date(periodStartStr);
+
+    const result = await db.transaction(async (tx) => {
+        const lockKey = `billing_config:${configId}:${periodStartStr}`;
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+        // Check for existing invoice for this period
+        const existingInvoice = await tx.query.invoices.findFirst({
+            where: and(
+                eq(invoices.billingConfigId, configId),
+                eq(invoices.billingPeriodStart, periodStartDate),
+                ne(invoices.status, 'void'),
+            ),
+        });
+
+        if (existingInvoice) {
+            if (existingInvoice.status !== 'draft') {
+                throw new Error(`Cannot skip cycle: an issued invoice (${existingInvoice.invoiceNumber}) already exists for this period`);
+            }
+
+            // Check if draft has any payments
+            const paymentCount = await tx.select({ count: sql<number>`count(*)` })
+                .from(payments)
+                .where(eq(payments.invoiceId, existingInvoice.id));
+            if (Number(paymentCount[0]?.count ?? 0) > 0) {
+                throw new Error('Cannot skip cycle: draft invoice has associated payments');
+            }
+
+            // Discard draft invoice
+            await tx.update(billingRuns)
+                .set({ success: false, errorLog: `Draft discarded due to cycle skip by ${session.user.id}` })
+                .where(eq(billingRuns.invoiceId, existingInvoice.id));
+
+            await tx.update(invoices)
+                .set({ status: 'void', updatedAt: new Date() })
+                .where(eq(invoices.id, existingInvoice.id));
+
+            await tx.insert(auditEvents).values({
+                organisationId: orgId,
+                userId: session.user.id,
+                eventType: 'invoice_draft_discarded',
+                eventData: JSON.stringify({
+                    invoiceId: existingInvoice.id,
+                    reason: 'Discarded during skip cycle',
+                }),
+            });
+        }
+
+        const [skip] = await tx.insert(billingCycleSkips).values({
+            billingConfigId: configId,
+            periodStart: periodStartStr,
+            skippedBy: session.user.id,
+            skipReason: reason.trim(),
+        }).onConflictDoUpdate({
+            target: [billingCycleSkips.billingConfigId, billingCycleSkips.periodStart],
+            set: {
+                skippedBy: session.user.id,
+                skipReason: reason.trim(),
+                skippedAt: new Date(),
+            },
+        }).returning();
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'billing_cycle_skipped',
+            eventData: JSON.stringify({
+                configId,
+                periodStart: periodStartStr,
+                reason: reason.trim(),
+            }),
+        });
+
+        return skip;
+    });
+
+    revalidatePath('/dashboard/finance');
+    return { success: true, skipId: result.id };
+}
+
+/**
+ * Remove a cycle skip record, allowing the cycle to be billed on the next run (§26).
+ */
+export async function unskipBillingCycle(configId: string, periodStartStr: string) {
+    const { orgId, session } = await getOrgIdAndSession();
+
+    const config = await db.query.billingConfigs.findFirst({
+        where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
+    });
+    if (!config) throw new Error('Billing config not found');
+    await assertCentreAccess(session, config.centreId);
+
+    await db.transaction(async (tx) => {
+        await tx.delete(billingCycleSkips).where(
+            and(
+                eq(billingCycleSkips.billingConfigId, configId),
+                eq(billingCycleSkips.periodStart, periodStartStr),
+            )
+        );
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'billing_cycle_unskipped',
+            eventData: JSON.stringify({
+                configId,
+                periodStart: periodStartStr,
+            }),
+        });
+    });
+
+    revalidatePath('/dashboard/finance');
+    return { success: true };
+}
+
+/**
+ * Owner-only explicit regeneration of a voided billing cycle (§27).
+ * Removes the historical billingRun entry, allowing draft generation to re-occur.
+ */
+export async function reopenBillingCycle(configId: string, periodStartStr: string) {
+    const { orgId, session } = await getOrgIdAndSession();
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        throw new Error('Unauthorized: Only Org Owner can reopen a billing cycle');
+    }
+
+    const config = await db.query.billingConfigs.findFirst({
+        where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
+    });
+    if (!config) throw new Error('Billing config not found');
+
+    const periodStartDate = new Date(periodStartStr);
+
+    await db.transaction(async (tx) => {
+        const activeInvoice = await tx.query.invoices.findFirst({
+            where: and(
+                eq(invoices.billingConfigId, configId),
+                eq(invoices.billingPeriodStart, periodStartDate),
+                ne(invoices.status, 'void'),
+            ),
+        });
+        if (activeInvoice) {
+            throw new Error(`Cannot reopen cycle: an active invoice (${activeInvoice.invoiceNumber}) exists for this period`);
+        }
+
+        await tx.delete(billingRuns).where(
+            and(
+                eq(billingRuns.billingConfigId, configId),
+                eq(billingRuns.periodStart, periodStartStr),
+            )
+        );
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'billing_cycle_reopened',
+            eventData: JSON.stringify({
+                configId,
+                periodStart: periodStartStr,
+            }),
+        });
+    });
+
+    revalidatePath('/dashboard/finance');
+    return { success: true };
+}
+
 // ─── Invoice generation ───────────────────────────────────────────────────────
 
 export interface GenerateInvoiceInput {
     configId:        string;
     periodStartStr:  string;  // 'YYYY-MM-DD'
     periodEndStr:    string;
-    amountPence:     number;
+    amountPence?:    number;
     notes?:          string;
 }
 
 /**
- * Generate a family invoice for a billing period.
+ * Generate a family invoice draft for a billing period.
  * Idempotent — will not generate duplicate invoices for the same period.
+ * Respects billing cycle skips (§26) and copy-forward rules (§16, §17).
  */
 export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     const { orgId, session } = await getOrgIdAndSession();
@@ -298,6 +520,17 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
     if (config.status !== 'active') throw new Error('Billing config is not active');
+
+    // Pre-check: Skip cycle check
+    const existingSkip = await db.query.billingCycleSkips.findFirst({
+        where: and(
+            eq(billingCycleSkips.billingConfigId, input.configId),
+            eq(billingCycleSkips.periodStart,     input.periodStartStr),
+        ),
+    });
+    if (existingSkip) {
+        throw new Error(`Cannot generate invoice: billing cycle ${input.periodStartStr} is skipped (${existingSkip.skipReason})`);
+    }
 
     // Pre-transaction check 1: Billing run check
     const existingRun = await db.query.billingRuns.findFirst({
@@ -326,16 +559,64 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         return { success: true, invoiceId: existingInvoice.id, alreadyGenerated: true };
     }
 
+    // Copy-forward resolution (§16, §17)
+    let finalAmountStr: string;
+    let finalNotes: string | null = input.notes ?? null;
+    let recordedAmountPence: number = 0;
+
+    if (input.amountPence !== undefined && input.amountPence > 0) {
+        recordedAmountPence = input.amountPence;
+        finalAmountStr = String(input.amountPence / 100);
+    } else if (config.agreedMonthlyPence > 0) {
+        recordedAmountPence = config.agreedMonthlyPence;
+        finalAmountStr = String(config.agreedMonthlyPence / 100);
+    } else {
+        // Find most recent non-void invoice to copy forward from
+        const prevInvoice = await db.query.invoices.findFirst({
+            where: and(
+                eq(invoices.billingConfigId, input.configId),
+                ne(invoices.status, 'void'),
+            ),
+            orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
+        });
+
+        if (prevInvoice) {
+            finalAmountStr = prevInvoice.amount;
+            recordedAmountPence = Math.round(Number(prevInvoice.amount) * 100);
+            if (!finalNotes && prevInvoice.notes) {
+                finalNotes = prevInvoice.notes;
+            }
+        } else {
+            // First cycle with no prior invoice and zero agreed fee: draft saved with 0.00
+            finalAmountStr = '0.00';
+            recordedAmountPence = 0;
+        }
+    }
+
     // Build children snapshot
     const coveredChildren = (config.children ?? []).map(cc => ({
         id:   cc.child.id,
         name: `${cc.child.firstName} ${cc.child.lastName}`,
     }));
 
+    // Calculate due date respecting paymentDayOfMonth
+    const dueDate = computeExpectedPaymentDate(periodStartDate, config.paymentDayOfMonth);
+
     const result = await db.transaction(async (tx) => {
         // PM-2C: Transactional advisory lock to serialize concurrent generation for the same config & period
         const lockKey = `billing_config:${input.configId}:${input.periodStartStr}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+        // Re-check inside locked transaction: skip cycle
+        const inTxSkip = await tx.query.billingCycleSkips.findFirst({
+            where: and(
+                eq(billingCycleSkips.billingConfigId, input.configId),
+                eq(billingCycleSkips.periodStart,     input.periodStartStr),
+            ),
+        });
+        if (inTxSkip) {
+            throw new Error(`Cannot generate invoice: billing cycle ${input.periodStartStr} is skipped (${inTxSkip.skipReason})`);
+        }
 
         // Re-check inside locked transaction: billing_runs
         const inTxRun = await tx.query.billingRuns.findFirst({
@@ -365,19 +646,19 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
 
         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
 
-        // Create invoice
+        // Create invoice draft
         const [invoice] = await tx.insert(invoices).values({
             organisationId:      orgId,
             centreId:            config.centreId,
             parentId:            config.parentId,
             invoiceNumber:       invoiceNumber,
-            amount:              String(input.amountPence / 100),
+            amount:              finalAmountStr,
             status:              'draft',
             invoiceDate:         new Date(),
-            dueDate:             new Date(input.periodStartStr),
+            dueDate:             dueDate,
             billingPeriodStart:  periodStartDate,
             billingPeriodEnd:    new Date(input.periodEndStr),
-            notes:               input.notes ?? null,
+            notes:               finalNotes,
             billingConfigId:     config.id,
             billingPeriodLabel:  `${input.periodStartStr} to ${input.periodEndStr}`,
             coveredChildrenJson: coveredChildren,
@@ -389,9 +670,18 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             periodStart:     input.periodStartStr,
             periodEnd:       input.periodEndStr,
             invoiceId:       invoice.id,
-            amountPence:     input.amountPence,
+            amountPence:     recordedAmountPence,
             runBy:           session?.user?.id ?? null,
             success:         true,
+        }).onConflictDoUpdate({
+            target: [billingRuns.billingConfigId, billingRuns.periodStart],
+            set: {
+                invoiceId: invoice.id,
+                amountPence: recordedAmountPence,
+                runBy: session?.user?.id ?? null,
+                success: true,
+                runAt: new Date(),
+            },
         });
 
         return { id: invoice.id, alreadyGenerated: false };

@@ -5,7 +5,7 @@ import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Users, Loade
 import GenerateInvoiceModal from './GenerateInvoiceModal';
 import BulkInvoiceConfirmModal from './BulkInvoiceConfirmModal';
 import { useRouter } from 'next/navigation';
-import { generateInvoiceFromConfig } from '@/features/billing/actions';
+import { generateInvoiceFromConfig, skipBillingCycle, unskipBillingCycle } from '@/features/billing/actions';
 import type { BillingCycleRow } from '@/features/billing/queries';
 
 // ─── Status pill ──────────────────────────────────────────────────────────────
@@ -16,6 +16,7 @@ function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
         needs_setup:  { label: 'Needs Setup',  cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
         invoice_sent: { label: 'Invoice Sent', cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
         paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
+        skipped:      { label: 'Skipped',      cls: 'bg-muted/60 text-muted-foreground border-border/50' },
     };
     const { label, cls } = map[status];
     return (
@@ -30,6 +31,9 @@ function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
 function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onGenerated: () => void }) {
     const router = useRouter();
     const [showModal, setShowModal] = useState(false);
+    const [showSkipModal, setShowSkipModal] = useState(false);
+    const [skipReason, setSkipReason] = useState('');
+    const [isSkipping, setIsSkipping] = useState(false);
 
     const canGenerate = cycle.cycleStatus === 'ready' && cycle.config.agreedMonthlyPence > 0;
 
@@ -40,14 +44,41 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
         ? cycle.dueDateStr.split('T')[0]
         : new Date().toISOString().split('T')[0];
 
+    const periodStartForSkip = cycle.currentPeriodStart || dueDateStr;
+
     const lastRunDisplay = cycle.lastRunAt
         ? new Date(cycle.lastRunAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
         : null;
 
+    const handleUnskip = async () => {
+        setIsSkipping(true);
+        try {
+            await unskipBillingCycle(cycle.config.id, periodStartForSkip);
+            onGenerated();
+        } catch (err: any) {
+            alert(err?.message || 'Failed to unskip cycle');
+        } finally {
+            setIsSkipping(false);
+        }
+    };
+
+    const handleSkip = async () => {
+        setIsSkipping(true);
+        try {
+            await skipBillingCycle(cycle.config.id, periodStartForSkip, skipReason || 'Skipped by manager');
+            setShowSkipModal(false);
+            onGenerated();
+        } catch (err: any) {
+            alert(err?.message || 'Failed to skip cycle');
+        } finally {
+            setIsSkipping(false);
+        }
+    };
+
     return (
         <>
             <div className={`bg-card/80 backdrop-blur-md rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between ${
-                cycle.cycleStatus === 'paused'      ? 'opacity-60 border-border/40' :
+                cycle.cycleStatus === 'paused' || cycle.cycleStatus === 'skipped' ? 'opacity-60 border-border/40' :
                 cycle.cycleStatus === 'needs_setup' ? 'border-amber-500/30 bg-amber-500/5' : 'border-border/60'
             }`}>
                 <div>
@@ -117,20 +148,81 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                         <Settings2 className="w-3.5 h-3.5" />
                         Profile
                     </button>
-                    <button
-                        disabled={!canGenerate}
-                        onClick={() => setShowModal(true)}
-                        className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                            canGenerate
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20'
-                                : 'bg-secondary/60 text-muted-foreground cursor-not-allowed'
-                        }`}
-                    >
-                        Invoice
-                        {canGenerate && <ArrowRight className="w-3.5 h-3.5" />}
-                    </button>
+                    {cycle.cycleStatus === 'skipped' ? (
+                        <button
+                            disabled={isSkipping}
+                            onClick={handleUnskip}
+                            className="flex-1 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold hover:bg-amber-500/20 border border-amber-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                        >
+                            {isSkipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Unskip
+                        </button>
+                    ) : (
+                        <>
+                            {cycle.cycleStatus === 'ready' && (
+                                <button
+                                    disabled={isSkipping}
+                                    onClick={() => setShowSkipModal(true)}
+                                    className="px-3 h-10 rounded-xl bg-secondary/80 text-muted-foreground hover:text-foreground text-xs font-bold hover:bg-secondary border border-border/50 transition-all active:scale-95"
+                                    title="Skip this cycle"
+                                >
+                                    Skip
+                                </button>
+                            )}
+                            <button
+                                disabled={!canGenerate}
+                                onClick={() => setShowModal(true)}
+                                className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+                                    canGenerate
+                                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20'
+                                        : 'bg-secondary/60 text-muted-foreground cursor-not-allowed'
+                                }`}
+                            >
+                                Invoice
+                                {canGenerate && <ArrowRight className="w-3.5 h-3.5" />}
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
+
+            {showSkipModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                        <h3 className="text-lg font-bold text-foreground">Skip Billing Cycle</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Skip billing for {cycle.familyName} for period starting {periodStartForSkip}. Any existing draft invoice will be safely discarded.
+                        </p>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                                Reason for skip
+                            </label>
+                            <input
+                                type="text"
+                                value={skipReason}
+                                onChange={e => setSkipReason(e.target.value)}
+                                placeholder="e.g., Extended family holiday"
+                                className="w-full px-3 py-2 text-sm rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                        <div className="flex gap-2 justify-end pt-2">
+                            <button
+                                onClick={() => setShowSkipModal(false)}
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled={isSkipping}
+                                onClick={handleSkip}
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                            >
+                                {isSkipping ? 'Skipping...' : 'Confirm Skip'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showModal && (
                 <GenerateInvoiceModal
@@ -160,7 +252,7 @@ interface Props {
 export default function BillingCyclesTab({ cycles, centreId }: Props) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
-    const [filter, setFilter] = useState<'all' | 'ready' | 'needs_setup' | 'invoice_sent'>('all');
+    const [filter, setFilter] = useState<'all' | 'ready' | 'needs_setup' | 'invoice_sent' | 'skipped'>('all');
     const [isGeneratingAll, setIsGeneratingAll] = useState(false);
     const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
@@ -195,6 +287,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
         ready:        cycles.filter(c => c.cycleStatus === 'ready').length,
         needs_setup:  cycles.filter(c => c.cycleStatus === 'needs_setup').length,
         invoice_sent: cycles.filter(c => c.cycleStatus === 'invoice_sent').length,
+        skipped:      cycles.filter(c => c.cycleStatus === 'skipped').length,
     };
 
     return (
@@ -202,7 +295,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
             {/* Filter pills + Generate All */}
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                 <div className="flex gap-2 flex-wrap">
-                    {(['all', 'ready', 'needs_setup', 'invoice_sent'] as const).map(f => (
+                    {(['all', 'ready', 'needs_setup', 'invoice_sent', 'skipped'] as const).map(f => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -212,7 +305,7 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
                                     : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-primary'
                             }`}
                         >
-                            {f === 'all' ? 'All' : f === 'needs_setup' ? 'Needs Setup' : f === 'invoice_sent' ? 'Sent' : 'Ready'}
+                            {f === 'all' ? 'All' : f === 'needs_setup' ? 'Needs Setup' : f === 'invoice_sent' ? 'Sent' : f === 'skipped' ? 'Skipped' : 'Ready'}
                             {' '}<span className="opacity-70">({counts[f]})</span>
                         </button>
                     ))}

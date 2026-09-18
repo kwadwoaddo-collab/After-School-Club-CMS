@@ -3,18 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { verifyCronAuthorization } from '@/app/api/cron/broadcasts/route';
 import {
-    billingConfigs, billingConfigChildren, billingRuns, invoices,
+    billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices,
     children, parents, centres, organisations,
 } from '@/db/schema';
-import { eq, and, isNull, or, ne, sql } from 'drizzle-orm';
-import { computeNextBillingPeriod } from '@/lib/billing';
+import { eq, and, isNull, or, ne, sql, desc } from 'drizzle-orm';
+import { computeBillingSchedule } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 
 /**
  * POST /api/cron/billing
  *
  * Automated monthly invoice generation for all active billing configs.
- * Runs daily and generates invoices for configs whose invoice date is today or overdue.
+ * Runs daily and generates draft invoices for configs whose draft creation date is today or overdue.
  *
  * Secured by CRON_SECRET header.
  * Idempotent — won't double-generate for the same billing period.
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         skipped_already_exists: 0,
         skipped_not_due: 0,
         skipped_no_amount: 0,
+        skipped_by_manager: 0,
         errors: 0,
         errorDetails: [] as string[],
     };
@@ -58,34 +59,77 @@ export async function POST(request: NextRequest) {
 
         for (const config of configs) {
             try {
-                // Guard: need a non-zero agreed amount
-                if (!config.agreedMonthlyPence || config.agreedMonthlyPence <= 0) {
-                    results.skipped_no_amount++;
-                    continue;
-                }
-
-                // Parse the anchor date (Drizzle returns date as string 'YYYY-MM-DD')
+                // Parse anchor date
                 const anchorDate = new Date((config.billingAnchorDate as unknown as string) + 'T00:00:00Z');
-                const leadDays = config.invoiceLeadDays ?? 7;
 
-                const period = computeNextBillingPeriod(
-                    { billingAnchorDate: anchorDate, invoiceLeadDays: leadDays },
+                // Compute billing schedule using Category B Date Engine (§20–§23)
+                const schedule = computeBillingSchedule(
+                    {
+                        id: config.id,
+                        billingAnchorDate: anchorDate,
+                        invoiceLeadDays: config.invoiceLeadDays ?? 7,
+                        paymentDayOfMonth: config.paymentDayOfMonth,
+                        leadTimeUnit: config.leadTimeUnit,
+                        leadTimeValue: config.leadTimeValue,
+                    },
                     today
                 );
 
-                const invoiceDate = period.invoiceDate;
-                invoiceDate.setUTCHours(0, 0, 0, 0);
+                const draftDate = new Date(schedule.draftCreationDate);
+                draftDate.setUTCHours(0, 0, 0, 0);
 
-                // ── 2. Check if invoice date is today or already overdue ────────
-                if (invoiceDate > today) {
+                // ── 2. Check if draft creation date is today or already overdue ────────
+                if (draftDate > today) {
                     results.skipped_not_due++;
                     continue;
                 }
 
-                const periodStartStr = period.periodStart.toISOString().split('T')[0];
-                const periodEndStr = period.periodEnd.toISOString().split('T')[0];
+                const periodStartStr = schedule.periodStart.toISOString().split('T')[0];
+                const periodEndStr = schedule.periodEnd.toISOString().split('T')[0];
 
-                // ── 3. Idempotency — check for existing run or active invoice for this period ─────
+                // ── 3. Skip Cycle Check (§26, B6) ────────────────────────────────
+                const skip = await db.query.billingCycleSkips.findFirst({
+                    where: and(
+                        eq(billingCycleSkips.billingConfigId, config.id),
+                        eq(billingCycleSkips.periodStart, periodStartStr),
+                    ),
+                });
+                if (skip) {
+                    results.skipped_by_manager++;
+                    continue;
+                }
+
+                // ── 4. Amount Resolution & Copy-Forward (§16, §17) ───────────────
+                let amountPence = config.agreedMonthlyPence ?? 0;
+                let amountStr = '';
+                let notes: string | null = `Monthly tuition — ${schedule.periodLabel}`;
+
+                if (amountPence > 0) {
+                    amountStr = String(amountPence / 100);
+                } else {
+                    // Look for most recent non-void invoice to copy forward from
+                    const prevInvoice = await db.query.invoices.findFirst({
+                        where: and(
+                            eq(invoices.billingConfigId, config.id),
+                            ne(invoices.status, 'void'),
+                        ),
+                        orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
+                    });
+
+                    if (prevInvoice && Number(prevInvoice.amount) > 0) {
+                        amountStr = prevInvoice.amount;
+                        amountPence = Math.round(Number(prevInvoice.amount) * 100);
+                        if (prevInvoice.notes) {
+                            notes = prevInvoice.notes;
+                        }
+                    } else {
+                        // Guard: no agreed fee and no historical invoice template
+                        results.skipped_no_amount++;
+                        continue;
+                    }
+                }
+
+                // ── 5. Idempotency — check for existing run or active invoice for this period ─────
                 const existingRun = await db.query.billingRuns.findFirst({
                     where: and(
                         eq(billingRuns.billingConfigId, config.id),
@@ -98,24 +142,23 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // Check for existing active invoice for this config & period (handles manual -> cron overlap)
+                // Check for existing active invoice for this config & period
                 const existingInvoice = await db.query.invoices.findFirst({
                     where: and(
                         eq(invoices.billingConfigId,    config.id),
-                        eq(invoices.billingPeriodStart, period.periodStart),
+                        eq(invoices.billingPeriodStart, schedule.periodStart),
                         ne(invoices.status,             'void'),
                     ),
                 });
 
                 if (existingInvoice) {
-                    // Record a billing run linking to this invoice so subsequent cron runs know it's accounted for
                     try {
                         await db.insert(billingRuns).values({
                             billingConfigId: config.id,
                             periodStart: periodStartStr,
                             periodEnd: periodEndStr,
                             invoiceId: existingInvoice.id,
-                            amountPence: config.agreedMonthlyPence,
+                            amountPence: amountPence,
                             runBy: null,
                             success: true,
                         }).onConflictDoNothing();
@@ -126,7 +169,7 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // ── 4. Generate invoice in a transaction with advisory locking ──
+                // ── 6. Generate draft invoice in a transaction with advisory locking ──
                 const coveredChildren = (config.children ?? []).map(cc => ({
                     id: cc.child.id,
                     name: `${cc.child.firstName} ${cc.child.lastName}`,
@@ -137,7 +180,18 @@ export async function POST(request: NextRequest) {
                     const lockKey = `billing_config:${config.id}:${periodStartStr}`;
                     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
 
-                    // Re-check inside locked transaction
+                    // Re-check skip cycle inside locked transaction
+                    const inTxSkip = await tx.query.billingCycleSkips.findFirst({
+                        where: and(
+                            eq(billingCycleSkips.billingConfigId, config.id),
+                            eq(billingCycleSkips.periodStart, periodStartStr),
+                        ),
+                    });
+                    if (inTxSkip) {
+                        return { skipped: true, byManager: true };
+                    }
+
+                    // Re-check billingRuns inside locked transaction
                     const inTxRun = await tx.query.billingRuns.findFirst({
                         where: and(
                             eq(billingRuns.billingConfigId, config.id),
@@ -145,18 +199,18 @@ export async function POST(request: NextRequest) {
                         ),
                     });
                     if (inTxRun?.success) {
-                        return { skipped: true };
+                        return { skipped: true, byManager: false };
                     }
 
                     const inTxInvoice = await tx.query.invoices.findFirst({
                         where: and(
                             eq(invoices.billingConfigId,    config.id),
-                            eq(invoices.billingPeriodStart, period.periodStart),
+                            eq(invoices.billingPeriodStart, schedule.periodStart),
                             ne(invoices.status,             'void'),
                         ),
                     });
                     if (inTxInvoice) {
-                        return { skipped: true };
+                        return { skipped: true, byManager: false };
                     }
 
                     const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
@@ -166,15 +220,15 @@ export async function POST(request: NextRequest) {
                         centreId: config.centreId,
                         parentId: config.parentId,
                         invoiceNumber,
-                        amount: String(config.agreedMonthlyPence / 100),
+                        amount: amountStr,
                         status: 'draft',
                         invoiceDate: new Date(),
-                        dueDate: period.dueDate,
-                        billingPeriodStart: period.periodStart,
-                        billingPeriodEnd: period.periodEnd,
-                        notes: `Monthly tuition — ${period.periodLabel}`,
+                        dueDate: schedule.dueDate,
+                        billingPeriodStart: schedule.periodStart,
+                        billingPeriodEnd: schedule.periodEnd,
+                        notes: notes,
                         billingConfigId: config.id,
-                        billingPeriodLabel: `${periodStartStr} to ${periodEndStr}`,
+                        billingPeriodLabel: schedule.periodLabel,
                         coveredChildrenJson: coveredChildren,
                     }).returning();
 
@@ -183,16 +237,29 @@ export async function POST(request: NextRequest) {
                         periodStart: periodStartStr,
                         periodEnd: periodEndStr,
                         invoiceId: invoice.id,
-                        amountPence: config.agreedMonthlyPence,
+                        amountPence: amountPence,
                         runBy: null, // automated
                         success: true,
+                    }).onConflictDoUpdate({
+                        target: [billingRuns.billingConfigId, billingRuns.periodStart],
+                        set: {
+                            invoiceId: invoice.id,
+                            amountPence: amountPence,
+                            runBy: null,
+                            success: true,
+                            runAt: new Date(),
+                        },
                     });
 
                     return { skipped: false, invoiceId: invoice.id };
                 });
 
                 if (generatedResult.skipped) {
-                    results.skipped_already_exists++;
+                    if (generatedResult.byManager) {
+                        results.skipped_by_manager++;
+                    } else {
+                        results.skipped_already_exists++;
+                    }
                 } else {
                     results.generated++;
                 }

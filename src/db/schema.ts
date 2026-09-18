@@ -1222,6 +1222,7 @@ export const sessionCreditsRelations = relations(sessionCredits, ({ one }) => ({
 // ==================== BILLING ====================
 
 export const billingStatusEnum = pgEnum('billing_status', ['active', 'paused', 'cancelled']);
+export const leadTimeUnitEnum = pgEnum('lead_time_unit', ['DAYS', 'CALENDAR_MONTHS']);
 
 /**
  * One billing config per parent per centre.
@@ -1241,6 +1242,11 @@ export const billingConfigs = pgTable('billing_configs', {
   billingAnchorDate: date('billing_anchor_date').notNull(),
   billingEndDate:    date('billing_end_date'),
   invoiceLeadDays:   integer('invoice_lead_days').notNull().default(7),
+
+  // Category B: Billing Scheduler extensions
+  paymentDayOfMonth: integer('payment_day_of_month'),
+  leadTimeUnit:      leadTimeUnitEnum('lead_time_unit'),
+  leadTimeValue:     integer('lead_time_value'),
 
   status: billingStatusEnum('status').notNull().default('active'),
   notes:  text('notes'),
@@ -1292,9 +1298,25 @@ export const billingRuns = pgTable('billing_runs', {
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
-  configIdx:  index('billing_runs_config_idx').on(table.billingConfigId),
-  periodIdx:  index('billing_runs_period_idx').on(table.periodStart),
-  invoiceIdx: index('billing_runs_invoice_idx').on(table.invoiceId),
+  configIdx:          index('billing_runs_config_idx').on(table.billingConfigId),
+  periodIdx:          index('billing_runs_period_idx').on(table.periodStart),
+  invoiceIdx:         index('billing_runs_invoice_idx').on(table.invoiceId),
+  configPeriodUnique: unique('billing_runs_config_period_uniq').on(table.billingConfigId, table.periodStart),
+}));
+
+/**
+ * Dedicated business state table for intentionally skipped billing cycles (§26, B5).
+ */
+export const billingCycleSkips = pgTable('billing_cycle_skips', {
+  id:              uuid('id').defaultRandom().primaryKey(),
+  billingConfigId: uuid('billing_config_id').references(() => billingConfigs.id, { onDelete: 'cascade' }).notNull(),
+  periodStart:     date('period_start').notNull(),
+  skippedAt:       timestamp('skipped_at', { withTimezone: true }).defaultNow().notNull(),
+  skippedBy:       uuid('skipped_by').references(() => users.id, { onDelete: 'set null' }),
+  skipReason:      text('skip_reason').notNull(),
+}, (table) => ({
+  configPeriodUniq: unique('bcs_config_period_unique').on(table.billingConfigId, table.periodStart),
+  configIdx:        index('bcs_config_idx').on(table.billingConfigId),
 }));
 
 // ── Billing Relations ─────────────────────────────────────────────────────────
@@ -1309,6 +1331,7 @@ export const billingConfigsRelations = relations(billingConfigs, ({ one, many })
   }),
   children: many(billingConfigChildren),
   runs:     many(billingRuns),
+  skips:    many(billingCycleSkips),
 }));
 
 export const billingConfigChildrenRelations = relations(billingConfigChildren, ({ one }) => ({
@@ -1326,6 +1349,17 @@ export const billingRunsRelations = relations(billingRuns, ({ one }) => ({
   config: one(billingConfigs, {
     fields: [billingRuns.billingConfigId],
     references: [billingConfigs.id],
+  }),
+}));
+
+export const billingCycleSkipsRelations = relations(billingCycleSkips, ({ one }) => ({
+  config: one(billingConfigs, {
+    fields: [billingCycleSkips.billingConfigId],
+    references: [billingConfigs.id],
+  }),
+  skippedByUser: one(users, {
+    fields: [billingCycleSkips.skippedBy],
+    references: [users.id],
   }),
 }));
 
