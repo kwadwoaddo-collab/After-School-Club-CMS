@@ -52,12 +52,17 @@ export default async function ParentProfilePage({ params }: ParentPageProps) {
     });
 
     // 3. Calculate Ledger Stats
-    const totalOwed = familyInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
-    const totalPaid = familyInvoices.reduce((sum, inv) => {
-        const paid = inv.payments?.reduce((s, p) => s + Number(p.amount), 0) || 0;
+    // Void and draft invoices are excluded from billing liabilities.
+    // Only verified payments on non-void invoices count toward paid totals (reversals/failed excluded).
+    const billableInvoices = familyInvoices.filter(inv => inv.status !== 'void' && inv.status !== 'draft');
+    const totalOwed = billableInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
+    const totalPaid = billableInvoices.reduce((sum, inv) => {
+        const paid = inv.payments
+            ?.filter(p => p.status === 'verified')
+            ?.reduce((s, p) => s + Number(p.amount), 0) || 0;
         return sum + paid;
     }, 0);
-    const outstanding = totalOwed - totalPaid;
+    const outstanding = Math.max(0, totalOwed - totalPaid);
 
     const fullName = `${parent.firstName} ${parent.lastName}`;
     const initials = `${(parent.firstName || '')[0] ?? ''}${(parent.lastName || '')[0] ?? ''}`.toUpperCase();

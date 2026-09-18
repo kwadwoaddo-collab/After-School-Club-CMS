@@ -1,12 +1,14 @@
 'use server';
 
 import { db } from '@/db';
-import { invoices, payments, children, parents } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { invoices, payments } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { requireTenantSession } from '@/lib/session';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { recalculateInvoiceStatus } from '@/lib/finance/recalculate-invoice-status';
+import { revalidatePath } from 'next/cache';
 
 const ReconcileSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -58,7 +60,7 @@ export async function reconcilePayment(
       }
     }
 
-    return await db.transaction(async (tx) => {
+    const txResult = await db.transaction(async (tx) => {
       // 1. Check idempotency: does this reference already exist for this invoice?
       const [existing] = await tx.select()
         .from(payments)
@@ -96,23 +98,24 @@ export async function reconcilePayment(
         transactionReference: data.reference,
       });
 
-      // 4. Recalculate invoice status
-      const existingPayments = await tx.select({ amount: payments.amount })
-        .from(payments)
-        .where(eq(payments.invoiceId, data.invoiceId));
-      
-      const totalPaid = existingPayments.reduce((sum, p) => sum + parseFloat(p.amount as string), 0) + data.amount;
-      const invoiceTotal = parseFloat(invoice.amount as string);
-
-      if (totalPaid >= invoiceTotal - 0.01) {
-        await tx.update(invoices).set({ status: 'paid' }).where(eq(invoices.id, data.invoiceId));
-      } else {
-        await tx.update(invoices).set({ status: 'partially_paid' }).where(eq(invoices.id, data.invoiceId));
-      }
+      // 4. Recalculate invoice status using authoritative Category C helper
+      await recalculateInvoiceStatus(tx, data.invoiceId);
 
       logger.info(`[Reconcile] Staff ${staffId} reconciled £${data.amount} via ${data.method} to invoice ${data.invoiceId}`);
-      return { success: true };
+      return { success: true, parentId: invoice.parentId };
     });
+
+    if (txResult.success) {
+      revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
+      revalidatePath('/dashboard/finance');
+      revalidatePath('/dashboard/finance/reconciliation');
+      if ('parentId' in txResult && txResult.parentId) {
+        revalidatePath(`/dashboard/parents/${txResult.parentId}`);
+      }
+      return { success: true };
+    }
+
+    return txResult;
   } catch (err) {
     logger.error('[Reconcile] Error reconciling payment:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };

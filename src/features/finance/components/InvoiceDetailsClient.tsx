@@ -311,7 +311,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     {isSendingEmail ? 'Sending…' : 'Send to Parent'}
                                 </button>
                             )}
-                            {invoice.status !== 'void' && (
+                            {userRole === 'ORG_OWNER' && invoice.status !== 'void' && (
                                 <button
                                     type="button"
                                     disabled={isPending}
