@@ -500,7 +500,7 @@ describe('finance/actions — deleteInvoice safety rules (§11)', () => {
         }));
 
         const { deleteInvoice } = await import('./actions');
-        await expect(deleteInvoice('inv-1')).rejects.toThrow(/Please delete associated payments before deleting the invoice/);
+        await expect(deleteInvoice('inv-1')).rejects.toThrow(/Cannot delete this draft because payment records are associated with it/);
     });
 
     it('voidInvoice (Owner) still works for sent invoices with no verified payments (regression)', async () => {

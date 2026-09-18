@@ -157,8 +157,6 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
         setIsClient(true);
     }, []);
 
-    const hasPayments = invoice.payments?.length > 0;
-
     const totalPaid = invoice.payments.reduce((sum: number, p: any) => p.status === 'verified' ? sum + Number(p.amount) : sum, 0);
     const remainingBalance = Number(invoice.amount) - totalPaid;
 
@@ -321,16 +319,6 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                     className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Ban className="w-4 h-4" /> Void
-                                </button>
-                            )}
-                            {invoice.status !== 'paid' && (
-                                <button
-                                    type="button"
-                                    disabled={isPending}
-                                    onClick={() => setConfirmAction('delete')}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Trash2 className="w-4 h-4" /> Delete
                                 </button>
                             )}
                         </>
@@ -733,9 +721,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
             <ConfirmActionModal
                 isOpen={confirmAction !== null}
                 onClose={() => setConfirmAction(null)}
-                variant={confirmAction ?? 'delete'}
+                variant={confirmAction ?? 'void'}
                 invoiceNumber={invoice.invoiceNumber}
-                hasPayments={hasPayments}
                 onConfirm={async () => {
                     startTransition(async () => {
                         try {

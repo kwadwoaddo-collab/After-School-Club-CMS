@@ -55,7 +55,7 @@ export function InvoiceTable({
     onCreateInvoice?: () => void;
 }) {
     const router = useRouter();
-    const [confirmTarget, setConfirmTarget] = useState<{ id: string; invoiceNumber: string; hasPayments: boolean; action: 'delete' | 'void' } | null>(null);
+    const [confirmTarget, setConfirmTarget] = useState<{ id: string; invoiceNumber: string; action: 'delete' | 'void' } | null>(null);
     const [isPending, startTransition] = useTransition();
     
     if (!invoices || invoices.length === 0) {
@@ -105,7 +105,6 @@ export function InvoiceTable({
                     </thead>
                     <tbody className="divide-y divide-border">
                         {invoices.map((invoice: any) => {
-                            const hasPayments = (invoice.payments?.length ?? 0) > 0;
                             const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : null;
                             const todayMidnight = new Date();
                             todayMidnight.setHours(0, 0, 0, 0);
@@ -160,24 +159,24 @@ export function InvoiceTable({
                                     {isOwner && (
                                         <td className="py-4 text-right px-4" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
-                                                {invoice.status !== 'void' && (
+                                                {invoice.status !== 'void' && invoice.status !== 'draft' && (
                                                     <button 
                                                         type="button"
                                                         disabled={isPending}
-                                                        onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'void' })}
+                                                        onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'void' })}
                                                         className="p-2 bg-warning/10 text-warning hover:bg-warning/20 rounded-lg transition-all border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
                                                         title="Void Invoice"
                                                     >
                                                         <Ban className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                {invoice.status !== 'paid' && (
+                                                {invoice.status === 'draft' && (
                                                     <button 
                                                         type="button"
                                                         disabled={isPending}
-                                                        onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, hasPayments, action: 'delete' })}
+                                                        onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'delete' })}
                                                         className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all border border-destructive/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
-                                                        title="Delete Invoice"
+                                                        title="Delete Draft"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -197,7 +196,6 @@ export function InvoiceTable({
                 onClose={() => setConfirmTarget(null)}
                 variant={confirmTarget?.action ?? 'delete'}
                 invoiceNumber={confirmTarget?.invoiceNumber ?? ''}
-                hasPayments={confirmTarget?.hasPayments ?? false}
                 onConfirm={async () => {
                     if (!confirmTarget) return;
                     startTransition(async () => {
