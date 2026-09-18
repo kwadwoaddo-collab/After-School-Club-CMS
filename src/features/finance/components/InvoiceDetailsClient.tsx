@@ -3,7 +3,7 @@
 
 
 import { useState, useEffect, useTransition } from 'react';
-import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
+import { CreditCard, ArrowLeft, Download, Send, Clock, CheckCircle2, AlertCircle, AlertTriangle, Trash2, Ban, Eye, Loader2, Edit2, Check, X as XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -14,7 +14,7 @@ import { InvoiceTemplate } from './InvoiceTemplate';
 import { ReceiptTemplate } from './ReceiptTemplate';
 import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
-import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail } from '../actions';
+import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface InvoiceDetailsClientProps {
@@ -35,6 +35,79 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
     const [isSendingEmail, setIsSendingEmail] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
+
+    const [isIssuingDraft, setIsIssuingDraft] = useState(false);
+    const [isDiscardingDraft, setIsDiscardingDraft] = useState(false);
+    const [isEditingAmount, setIsEditingAmount] = useState(false);
+    const [newAmountValue, setNewAmountValue] = useState(Number(invoice.amount).toFixed(2));
+    const [isUpdatingAmount, setIsUpdatingAmount] = useState(false);
+    const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+    const [newDueDateValue, setNewDueDateValue] = useState(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
+    const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
+
+    const handleIssueDraft = async () => {
+        setIsIssuingDraft(true);
+        try {
+            await issueDraftInvoice(invoice.id);
+            toast({ title: 'Invoice issued', message: 'Draft invoice has been issued and sent to parent.', variant: 'success' });
+            router.refresh();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'Issuance failed', message: message || 'Failed to issue invoice', variant: 'error' });
+        } finally {
+            setIsIssuingDraft(false);
+        }
+    };
+
+    const handleDiscardDraft = async () => {
+        if (!confirm('Are you sure you want to discard this draft invoice? This action cannot be undone.')) return;
+        setIsDiscardingDraft(true);
+        try {
+            await discardDraftInvoice(invoice.id);
+            toast({ title: 'Draft discarded', message: 'Draft invoice has been discarded.', variant: 'success' });
+            router.push('/dashboard/finance');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'Discard failed', message: message || 'Failed to discard draft invoice', variant: 'error' });
+            setIsDiscardingDraft(false);
+        }
+    };
+
+    const handleSaveAmount = async () => {
+        const parsed = Number(newAmountValue);
+        if (isNaN(parsed) || parsed < 0) {
+            toast({ title: 'Invalid amount', message: 'Please enter a valid amount', variant: 'error' });
+            return;
+        }
+        setIsUpdatingAmount(true);
+        try {
+            await updateDraftInvoice(invoice.id, { amount: newAmountValue });
+            setIsEditingAmount(false);
+            router.refresh();
+            toast({ title: 'Amount updated', message: 'Invoice amount updated.', variant: 'success' });
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'Update failed', message: message || 'Failed to update amount', variant: 'error' });
+        } finally {
+            setIsUpdatingAmount(false);
+        }
+    };
+
+    const handleSaveDueDate = async () => {
+        if (!newDueDateValue) return;
+        setIsUpdatingDueDate(true);
+        try {
+            await updateDraftInvoice(invoice.id, { dueDate: new Date(newDueDateValue) });
+            setIsEditingDueDate(false);
+            router.refresh();
+            toast({ title: 'Due date updated', message: 'Invoice due date updated.', variant: 'success' });
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            toast({ title: 'Update failed', message: message || 'Failed to update due date', variant: 'error' });
+        } finally {
+            setIsUpdatingDueDate(false);
+        }
+    };
 
     const handleSaveDate = async () => {
         if (!newDateValue) return;
@@ -91,6 +164,8 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
 
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'draft':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold ring-1 ring-amber-500/20"><Clock className="w-3.5 h-3.5" /> DRAFT</span>;
             case 'paid':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold ring-1 ring-emerald-500/20"><CheckCircle2 className="w-3.5 h-3.5" /> PAID</span>;
             case 'partially_paid':
@@ -180,61 +255,101 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             </div>
                         </div>
                     )}
-                    {remainingBalance > 0 && (
-                        <button
-                            disabled={isPending}
-                            onClick={() => setIsPaymentModalOpen(true)}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <CreditCard className="w-4 h-4" /> Record Payment
-                        </button>
-                    )}
-                    {/* Send to Parent button */}
-                    {invoice.status !== 'paid' && invoice.status !== 'void' && (
-                        <button
-                            type="button"
-                            disabled={isPending || isSendingEmail}
-                            onClick={async () => {
-                                setIsSendingEmail(true);
-                                try {
-                                    const result = await resendInvoiceEmail(invoice.id);
-                                    if (result.success) {
-                                        toast({ title: 'Email sent', message: 'Invoice email sent to parent.', variant: 'success' });
-                                    } else {
-                                        toast({ title: 'Email failed', message: result.error || 'Could not send email.', variant: 'error' });
-                                    }
-                                } finally {
-                                    setIsSendingEmail(false);
-                                }
-                            }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            {isSendingEmail ? 'Sending…' : 'Send to Parent'}
-                        </button>
-                    )}
-                    {invoice.status !== 'void' && (
-                        <button
-                            type="button"
-                            disabled={isPending}
-                            onClick={() => setConfirmAction('void')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Ban className="w-4 h-4" /> Void
-                        </button>
-                    )}
-                    {invoice.status !== 'paid' && (
-                        <button
-                            type="button"
-                            disabled={isPending}
-                            onClick={() => setConfirmAction('delete')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Trash2 className="w-4 h-4" /> Delete
-                        </button>
+                    {/* Draft Actions vs Issued Actions */}
+                    {invoice.status === 'draft' ? (
+                        <>
+                            <button
+                                type="button"
+                                disabled={isPending || isIssuingDraft || Number(invoice.amount) <= 0}
+                                onClick={handleIssueDraft}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                title={Number(invoice.amount) <= 0 ? "Amount must be greater than £0.00 to issue" : "Issue invoice to parent"}
+                            >
+                                {isIssuingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                Issue Invoice
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isPending || isDiscardingDraft}
+                                onClick={handleDiscardDraft}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isDiscardingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                Discard Draft
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {remainingBalance > 0 && (
+                                <button
+                                    disabled={isPending}
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <CreditCard className="w-4 h-4" /> Record Payment
+                                </button>
+                            )}
+                            {/* Send to Parent button */}
+                            {invoice.status !== 'paid' && invoice.status !== 'void' && (
+                                <button
+                                    type="button"
+                                    disabled={isPending || isSendingEmail}
+                                    onClick={async () => {
+                                        setIsSendingEmail(true);
+                                        try {
+                                            const result = await resendInvoiceEmail(invoice.id);
+                                            if (result.success) {
+                                                toast({ title: 'Email sent', message: 'Invoice email sent to parent.', variant: 'success' });
+                                            } else {
+                                                toast({ title: 'Email failed', message: result.error || 'Could not send email.', variant: 'error' });
+                                            }
+                                        } finally {
+                                            setIsSendingEmail(false);
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                    {isSendingEmail ? 'Sending…' : 'Send to Parent'}
+                                </button>
+                            )}
+                            {invoice.status !== 'void' && (
+                                <button
+                                    type="button"
+                                    disabled={isPending}
+                                    onClick={() => setConfirmAction('void')}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Ban className="w-4 h-4" /> Void
+                                </button>
+                            )}
+                            {invoice.status !== 'paid' && (
+                                <button
+                                    type="button"
+                                    disabled={isPending}
+                                    onClick={() => setConfirmAction('delete')}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Trash2 className="w-4 h-4" /> Delete
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
+
+            {/* Zero-amount Draft Warning Banner */}
+            {invoice.status === 'draft' && Number(invoice.amount) <= 0 && (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                        <p className="font-bold text-amber-600 dark:text-amber-400">Action Required: Draft Invoice Amount is £0.00</p>
+                        <p className="text-muted-foreground mt-0.5">
+                            This draft invoice cannot be issued with a zero amount. Click the edit icon next to the amount to specify the tuition fee.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Details */}
@@ -242,6 +357,16 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                     {/* Invoice Card */}
                     <div className="bg-card border border-border rounded-[40px] p-8 md:p-12 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+
+                        {invoice.status === 'draft' && Number(invoice.amount) <= 0 && (
+                            <div className="relative mb-8 flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-600 dark:text-amber-400">
+                                <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-500 mt-0.5" />
+                                <div className="text-xs md:text-sm">
+                                    <span className="font-bold uppercase tracking-wider text-[11px] block text-amber-600 dark:text-amber-400 mb-0.5">Amount required to issue</span>
+                                    This draft invoice has a £0.00 amount. Staff must set a valid amount before this invoice can be issued to parents.
+                                </div>
+                            </div>
+                        )}
 
                         <div className="relative flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
@@ -251,7 +376,52 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             </div>
                             <div className="text-right flex flex-col items-end">
                                 <div className="text-muted-foreground font-black tracking-widest text-xs uppercase mb-2">Total Amount</div>
-                                <div className="text-5xl font-black text-foreground">£{Number(invoice.amount).toFixed(2)}</div>
+                                {invoice.status === 'draft' && isEditingAmount ? (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <div className="relative">
+                                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">£</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={newAmountValue}
+                                                disabled={isUpdatingAmount}
+                                                onChange={(e) => setNewAmountValue(e.target.value)}
+                                                className="bg-secondary/40 border border-border rounded-xl pl-7 pr-3 py-1.5 text-lg text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleSaveAmount}
+                                            disabled={isUpdatingAmount}
+                                            className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
+                                        >
+                                            <Check className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditingAmount(false);
+                                                setNewAmountValue(Number(invoice.amount).toFixed(2));
+                                            }}
+                                            disabled={isUpdatingAmount}
+                                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-colors"
+                                        >
+                                            <XIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 group/amt">
+                                        <div className="text-5xl font-black text-foreground">£{Number(invoice.amount).toFixed(2)}</div>
+                                        {invoice.status === 'draft' && (
+                                            <button
+                                                onClick={() => setIsEditingAmount(true)}
+                                                className="opacity-0 group-hover/amt:opacity-100 p-1.5 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                title="Edit Amount"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -303,8 +473,48 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                                 )}
                             </div>
                             <div>
-                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Due Date</p>
-                                <p className="text-sm font-bold text-foreground">{format(new Date(invoice.dueDate), 'dd/MM/yyyy')}</p>
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-1">Due Date</p>
+                                {invoice.status === 'draft' && isEditingDueDate ? (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <input
+                                            type="date"
+                                            value={newDueDateValue}
+                                            disabled={isUpdatingDueDate}
+                                            onChange={(e) => setNewDueDateValue(e.target.value)}
+                                            className="bg-secondary/40 border border-border rounded-xl px-3 py-1.5 text-xs text-foreground font-bold focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                                        />
+                                        <button
+                                            onClick={handleSaveDueDate}
+                                            disabled={isUpdatingDueDate}
+                                            className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 rounded-lg transition-colors"
+                                        >
+                                            <Check className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditingDueDate(false);
+                                                setNewDueDateValue(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
+                                            }}
+                                            disabled={isUpdatingDueDate}
+                                            className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg transition-colors"
+                                        >
+                                            <XIcon className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 mt-1 group/due">
+                                        <p className="text-sm font-bold text-foreground">{format(new Date(invoice.dueDate), 'dd/MM/yyyy')}</p>
+                                        {invoice.status === 'draft' && (
+                                            <button
+                                                onClick={() => setIsEditingDueDate(true)}
+                                                className="opacity-0 group-hover/due:opacity-100 p-1 hover:bg-secondary rounded-lg transition-all text-muted-foreground hover:text-foreground"
+                                                title="Edit Due Date"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Billing Start</p>

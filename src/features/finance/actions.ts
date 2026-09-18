@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 
 import { db } from '@/db';
-import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs } from '@/db/schema';
+import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs, billingRuns, portalNotifications } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray, sql, ne, isNull } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
@@ -1120,5 +1120,306 @@ export async function resendInvoiceEmail(invoiceId: string): Promise<{ success: 
         return { success: false, error: result.error ?? 'Email could not be sent. Check RESEND_API_KEY.' };
     }
 
+    return { success: true };
+}
+
+// ─── Category B: Draft Invoice Lifecycle Actions ─────────────────────────────
+
+/**
+ * Transition a draft invoice to 'sent' (issued) status (§13, B1).
+ * Idempotent, enforced with row-locking, checks amount > 0 and dueDate,
+ * updates status, logs audit event, and dispatches email/notifications.
+ */
+export async function issueDraftInvoice(invoiceId: string) {
+    const session = await requireTenantSession();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    // RBAC: Manager or Owner
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can issue draft invoices');
+    }
+
+    // Inside transaction with row locking
+    const result = await db.transaction(async (tx) => {
+        const [invoice] = await tx.select()
+            .from(invoices)
+            .where(and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)))
+            .for('update');
+
+        if (!invoice) throw new Error('Invoice not found');
+
+        // Centre access check
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
+        }
+
+        // Idempotency: if already sent/partially_paid/paid, return success without re-issuing
+        if (invoice.status === 'sent' || invoice.status === 'partially_paid' || invoice.status === 'paid') {
+            return { alreadyIssued: true, invoice };
+        }
+
+        if (invoice.status !== 'draft') {
+            throw new Error(`Cannot issue invoice: Status is ${invoice.status}`);
+        }
+
+        const numAmount = Number(invoice.amount);
+        if (!numAmount || isNaN(numAmount) || numAmount <= 0) {
+            throw new Error('Invoice cannot be issued without a valid amount greater than zero');
+        }
+
+        if (!invoice.dueDate) {
+            throw new Error('Invoice cannot be issued without a due date');
+        }
+
+        const [updated] = await tx.update(invoices)
+            .set({ status: 'sent', updatedAt: new Date() })
+            .where(eq(invoices.id, invoiceId))
+            .returning();
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'invoice_issued',
+            eventData: JSON.stringify({
+                invoiceId,
+                invoiceNumber: invoice.invoiceNumber,
+                amount: invoice.amount,
+                issuedBy: session.user.id,
+            }),
+        });
+
+        return { alreadyIssued: false, invoice: updated };
+    });
+
+    if (!result.alreadyIssued) {
+        // Fire-and-forget email notification
+        try {
+            const parent = await db.query.parents.findFirst({
+                where: eq(parents.id, result.invoice.parentId),
+                columns: { firstName: true, email: true },
+            });
+            const centre = await db.query.centres.findFirst({
+                where: eq(centres.id, result.invoice.centreId),
+                columns: { name: true },
+            });
+
+            if (parent?.email) {
+                emailService.sendInvoiceCreated({
+                    parentFirstName: parent.firstName,
+                    parentEmail: parent.email,
+                    invoiceNumber: result.invoice.invoiceNumber,
+                    amount: Number(result.invoice.amount),
+                    dueDate: result.invoice.dueDate,
+                    centreName: centre?.name || 'the centre',
+                    portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
+                }).catch(e => logger.error('[Email] Failed to send issued invoice email:', e));
+            }
+        } catch (err) {
+            logger.error('[issueDraftInvoice] Email dispatch failed:', err);
+        }
+
+        // Fire-and-forget portal notification
+        try {
+            await db.insert(portalNotifications).values({
+                parentId: result.invoice.parentId,
+                organisationId: orgId,
+                type: 'invoice_issued',
+                title: `Invoice ${result.invoice.invoiceNumber} Issued`,
+                body: `An invoice for £${Number(result.invoice.amount).toFixed(2)} has been issued and is due on ${result.invoice.dueDate ? new Date(result.invoice.dueDate).toISOString().split('T')[0] : ''}.`,
+                href: '/portal/billing',
+            });
+        } catch (err) {
+            logger.error('[issueDraftInvoice] Portal notification failed:', err);
+        }
+    }
+
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
+    return { success: true, alreadyIssued: result.alreadyIssued, invoiceId: result.invoice.id };
+}
+
+export interface UpdateDraftInvoiceData {
+    amount?: string | number;
+    dueDate?: Date;
+    invoiceDate?: Date;
+    billingPeriodStart?: Date;
+    billingPeriodEnd?: Date;
+    billingPeriodLabel?: string;
+    notes?: string | null;
+    childIds?: string[];
+}
+
+/**
+ * Edit fields of a draft invoice before issuance (§14, B2).
+ * Strictly guards against modifying issued or void invoices.
+ */
+export async function updateDraftInvoice(invoiceId: string, data: UpdateDraftInvoiceData) {
+    const session = await requireTenantSession();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can edit draft invoices');
+    }
+
+    const updated = await db.transaction(async (tx) => {
+        const [invoice] = await tx.select()
+            .from(invoices)
+            .where(and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)))
+            .for('update');
+
+        if (!invoice) throw new Error('Invoice not found');
+
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
+        }
+
+        if (invoice.status !== 'draft') {
+            throw new Error(`Invoice cannot be edited after issuance. Status: ${invoice.status}`);
+        }
+
+        let coveredChildrenJson = invoice.coveredChildrenJson;
+        if (data.childIds !== undefined) {
+            if (data.childIds.length > 0) {
+                const validChildren = await tx.select()
+                    .from(children)
+                    .where(
+                        and(
+                            inArray(children.id, data.childIds),
+                            eq(children.organisationId, orgId),
+                            eq(children.parentId, invoice.parentId),
+                            eq(children.centreId, invoice.centreId),
+                            isNull(children.deletedAt),
+                        )
+                    );
+                if (validChildren.length !== data.childIds.length) {
+                    throw new Error('One or more children not found or do not belong to this family/centre');
+                }
+                coveredChildrenJson = validChildren.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }));
+            } else {
+                coveredChildrenJson = [];
+            }
+        }
+
+        const updateSet: Record<string, any> = { updatedAt: new Date() };
+        if (data.amount !== undefined) {
+            const num = Number(data.amount);
+            if (isNaN(num) || num < 0) throw new Error('Invalid invoice amount');
+            updateSet.amount = num.toFixed(2);
+        }
+        if (data.dueDate !== undefined) updateSet.dueDate = data.dueDate;
+        if (data.invoiceDate !== undefined) updateSet.invoiceDate = data.invoiceDate;
+        if (data.billingPeriodStart !== undefined) updateSet.billingPeriodStart = data.billingPeriodStart;
+        if (data.billingPeriodEnd !== undefined) updateSet.billingPeriodEnd = data.billingPeriodEnd;
+        if (data.billingPeriodLabel !== undefined) updateSet.billingPeriodLabel = data.billingPeriodLabel;
+        if (data.notes !== undefined) updateSet.notes = data.notes;
+        if (data.childIds !== undefined) updateSet.coveredChildrenJson = coveredChildrenJson;
+
+        const [res] = await tx.update(invoices)
+            .set(updateSet)
+            .where(eq(invoices.id, invoiceId))
+            .returning();
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'invoice_draft_updated',
+            eventData: JSON.stringify({
+                invoiceId,
+                updatedFields: Object.keys(data),
+            }),
+        });
+
+        return res;
+    });
+
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    revalidatePath('/dashboard/finance');
+    return { success: true, invoice: updated };
+}
+
+/**
+ * Discard a draft invoice before issuance (§18, B3).
+ * Marks invoice as 'void' and marks linked billingRuns row as success=false
+ * so the period can be legitimately regenerated if desired.
+ */
+export async function discardDraftInvoice(invoiceId: string) {
+    const session = await requireTenantSession();
+    if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can discard draft invoices');
+    }
+
+    await db.transaction(async (tx) => {
+        const [invoice] = await tx.select()
+            .from(invoices)
+            .where(and(eq(invoices.id, invoiceId), eq(invoices.organisationId, orgId)))
+            .for('update');
+
+        if (!invoice) throw new Error('Invoice not found');
+
+        if (userRole !== 'ORG_OWNER') {
+            const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+            if (!accessibleCentreIds.includes(invoice.centreId)) {
+                throw new Error('Unauthorized: No access to this centre');
+            }
+        }
+
+        if (invoice.status !== 'draft') {
+            throw new Error(`Only draft invoices can be discarded. Status: ${invoice.status}`);
+        }
+
+        // Verify zero payments
+        const paymentCount = await tx.select({ count: sql<number>`count(*)` })
+            .from(payments)
+            .where(eq(payments.invoiceId, invoiceId));
+        if (Number(paymentCount[0]?.count ?? 0) > 0) {
+            throw new Error('Cannot discard invoice with associated payments');
+        }
+
+        // If invoice was created from a billing config, mark the billingRun as success=false
+        // and null the invoiceId pointer so no dangling pointer remains (§18, Issue A)
+        if (invoice.billingConfigId) {
+            await tx.update(billingRuns)
+                .set({
+                    success: false,
+                    errorLog: `Draft discarded by user ${session.user.id}`,
+                    invoiceId: null,
+                })
+                .where(eq(billingRuns.invoiceId, invoiceId));
+        }
+
+        // Delete the unissued draft invoice so it does not pollute the financial ledger with artificial voided obligations (Issue A)
+        await tx.delete(invoices)
+            .where(eq(invoices.id, invoiceId));
+
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: 'invoice_draft_discarded',
+            eventData: JSON.stringify({
+                invoiceId,
+                invoiceNumber: invoice.invoiceNumber,
+                discardedBy: session.user.id,
+            }),
+        });
+    });
+
+    revalidatePath(`/dashboard/finance/invoices/${invoiceId}`);
+    revalidatePath('/dashboard/finance');
+    revalidatePath('/dashboard/finance/invoices');
     return { success: true };
 }
