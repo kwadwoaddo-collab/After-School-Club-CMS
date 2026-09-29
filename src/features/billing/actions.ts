@@ -14,6 +14,7 @@ import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import { computeExpectedPaymentDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ export interface BillingConfigData {
 export async function createBillingConfig(data: BillingConfigData) {
     const { orgId, session } = await getOrgIdAndSession();
     await assertCentreAccess(session, data.centreId);
+    assertNotQuarantined(data.parentId, 'Billing configuration');
 
     if (data.childIds.length > 0) {
         const validChildren = await db.select({ id: children.id })
@@ -175,6 +177,7 @@ export async function updateBillingConfig(
     });
     if (!existingConfig) throw new Error('Billing config not found');
     await assertCentreAccess(session, existingConfig.centreId);
+    assertNotQuarantined(existingConfig.parentId, 'Billing configuration update');
 
     await db.update(billingConfigs)
         .set({
@@ -593,6 +596,7 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
     if (config.status !== 'active') throw new Error('Billing config is not active');
+    assertNotQuarantined(config.parentId, 'Invoice generation');
 
     // Pre-check: Skip cycle check
     const existingSkip = await db.query.billingCycleSkips.findFirst({

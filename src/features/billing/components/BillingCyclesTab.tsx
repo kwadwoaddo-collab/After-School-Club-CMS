@@ -13,8 +13,9 @@ import type { BillingCycleRow } from '@/features/billing/queries';
 function StatusPill({ status }: { status: BillingCycleRow['cycleStatus'] }) {
     const map = {
         ready:        { label: 'Ready',        cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
-        needs_setup:  { label: 'Needs Setup',  cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
-        invoice_sent: { label: 'Invoice Sent', cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
+        needs_setup:          { label: 'Needs Setup',          cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+        data_review_required: { label: 'Data Review Required', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' },
+        invoice_sent:         { label: 'Invoice Sent',         cls: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' },
         paused:       { label: 'Paused',       cls: 'bg-secondary/60 text-muted-foreground border-border/50' },
         skipped:      { label: 'Skipped',      cls: 'bg-muted/60 text-muted-foreground border-border/50' },
     };
@@ -79,6 +80,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
         <>
             <div className={`bg-card/80 backdrop-blur-md rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between ${
                 cycle.cycleStatus === 'paused' || cycle.cycleStatus === 'skipped' ? 'opacity-60 border-border/40' :
+                cycle.cycleStatus === 'data_review_required' ? 'border-amber-500/40 bg-amber-500/5' :
                 cycle.cycleStatus === 'needs_setup' ? 'border-amber-500/30 bg-amber-500/5' : 'border-border/60'
             }`}>
                 <div>
@@ -126,6 +128,12 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                                 <span className="text-muted-foreground font-medium">Last invoice</span>
                                 <span className="text-muted-foreground font-semibold">{lastRunDisplay}</span>
                             </div>
+                        )}
+                        {cycle.cycleStatus === 'data_review_required' && (
+                            <p className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-start gap-1.5 pt-1">
+                                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                Imported family details require verification before billing can be set up.
+                            </p>
                         )}
                         {cycle.cycleStatus === 'needs_setup' && (
                             <p className="text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5 pt-1">

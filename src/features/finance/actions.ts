@@ -12,6 +12,7 @@ import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
+import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 
 async function insertInvoiceAndLog(
     tx: any,
@@ -229,6 +230,7 @@ export async function createInvoice(data: {
         columns: { id: true }
     });
     if (!parentRecord) throw new Error('Parent not found');
+    assertNotQuarantined(data.parentId, 'Invoice creation');
 
     // Fetch child names for the description if multiple are selected — org-scoped
     const selectedChildren = data.childIds.length > 0

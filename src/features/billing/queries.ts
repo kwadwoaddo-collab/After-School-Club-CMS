@@ -9,6 +9,7 @@ import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, 
 import { eq, and, desc, ne, inArray, lt, gte, isNull, sql, type Column } from 'drizzle-orm';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import { computeBillingSchedule, LeadTimeUnit } from '@/lib/billing/date-engine';
+import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ export interface BillingCycleRow {
     dueDateStr:         string | null;
     lastRunAt:          string | null;
     lastRunPeriodStart: string | null;
-    cycleStatus:    'ready' | 'needs_setup' | 'invoice_sent' | 'paused' | 'skipped';
+    cycleStatus:    'ready' | 'needs_setup' | 'invoice_sent' | 'paused' | 'skipped' | 'data_review_required';
     currentPeriodStart?: string | null;
 }
 
@@ -207,36 +208,39 @@ export async function fetchBillingCycles(
         });
     }
 
-    const unconfiguredRows: BillingCycleRow[] = Array.from(unconfiguredMap.values()).map(item => ({
-        config: {
-            id:                 `unconfigured-${item.parentId}-${item.centreId}`,
-            parentId:           item.parentId,
-            centreId:           item.centreId,
-            agreedMonthlyPence: 0,
-            billingAnchorDate:  new Date().toISOString().split('T')[0],
-            invoiceLeadDays:    7,
-            paymentDayOfMonth:  null,
-            leadTimeUnit:       null,
-            leadTimeValue:      null,
-            status:             'active',
-            notes:              null,
-        },
-        familyName:      item.parent ? `${item.parent.firstName} ${item.parent.lastName}` : '',
-        parentEmail:     item.parent?.email ?? '',
-        centreName:      item.centre?.name ?? '',
-        coveredChildren: item.kids.map(k => ({
-            childId:   k.id,
-            childName: `${k.firstName} ${k.lastName}`,
-        })),
-        amountDisplay:   '£0.00',
-        periodLabel:     'Schedule Setup Required',
-        nextInvoiceDateStr: null,
-        dueDateStr:         null,
-        lastRunAt:          null,
-        lastRunPeriodStart: null,
-        cycleStatus:        'needs_setup',
-        currentPeriodStart: null,
-    }));
+    const unconfiguredRows: BillingCycleRow[] = Array.from(unconfiguredMap.values()).map(item => {
+        const isQuarantined = isQuarantinedParentId(item.parentId);
+        return {
+            config: {
+                id:                 `unconfigured-${item.parentId}-${item.centreId}`,
+                parentId:           item.parentId,
+                centreId:           item.centreId,
+                agreedMonthlyPence: 0,
+                billingAnchorDate:  new Date().toISOString().split('T')[0],
+                invoiceLeadDays:    7,
+                paymentDayOfMonth:  null,
+                leadTimeUnit:       null,
+                leadTimeValue:      null,
+                status:             'active',
+                notes:              null,
+            },
+            familyName:      item.parent ? `${item.parent.firstName} ${item.parent.lastName}` : '',
+            parentEmail:     item.parent?.email ?? '',
+            centreName:      item.centre?.name ?? '',
+            coveredChildren: item.kids.map(k => ({
+                childId:   k.id,
+                childName: `${k.firstName} ${k.lastName}`,
+            })),
+            amountDisplay:   isQuarantined ? '—' : '£0.00',
+            periodLabel:     isQuarantined ? 'Data Review Required' : 'Schedule Setup Required',
+            nextInvoiceDateStr: null,
+            dueDateStr:         null,
+            lastRunAt:          null,
+            lastRunPeriodStart: null,
+            cycleStatus:        isQuarantined ? 'data_review_required' : 'needs_setup',
+            currentPeriodStart: null,
+        };
+    });
 
     return [...enriched, ...unconfiguredRows];
 }
