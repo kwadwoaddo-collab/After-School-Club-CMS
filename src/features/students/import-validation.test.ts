@@ -99,10 +99,10 @@ describe('DATA-REMEDIATION-1A — Import Validation Guards (Phase 8)', () => {
     // Valid
     expect(validateAndNormalizeSchoolYear('Reception')).toEqual({ valid: true, normalized: 'Reception' });
     expect(validateAndNormalizeSchoolYear('Rec')).toEqual({ valid: true, normalized: 'Reception' });
-    expect(validateAndNormalizeSchoolYear('Year 3')).toEqual({ valid: true, normalized: '3' });
-    expect(validateAndNormalizeSchoolYear('Y3')).toEqual({ valid: true, normalized: '3' });
-    expect(validateAndNormalizeSchoolYear('3')).toEqual({ valid: true, normalized: '3' });
-    expect(validateAndNormalizeSchoolYear('Year 11')).toEqual({ valid: true, normalized: '11' });
+    expect(validateAndNormalizeSchoolYear('Year 3')).toEqual({ valid: true, normalized: 'Y3' });
+    expect(validateAndNormalizeSchoolYear('Y3')).toEqual({ valid: true, normalized: 'Y3' });
+    expect(validateAndNormalizeSchoolYear('3')).toEqual({ valid: true, normalized: 'Y3' });
+    expect(validateAndNormalizeSchoolYear('Year 11')).toEqual({ valid: true, normalized: 'Y11' });
   });
 
   // Scenario 8 helper: Row-level validation checks

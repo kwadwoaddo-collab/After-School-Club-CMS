@@ -4,6 +4,22 @@
  * Provides deterministic classification and safety guards for the defective
  * legacy CSV import cohort created on 2026-07-16.
  *
+ * REGISTRY LIFECYCLE & RETIREMENT ROADMAP:
+ * - This 46-parent UUID registry is a deliberately TEMPORARY deterministic
+ *   Stage 1A safety mechanism designed to protect the billing scheduler and
+ *   family UI immediately with zero production database mutations.
+ * - It is NOT intended as the permanent data-quality architecture.
+ * - Lifecycle stages:
+ *     * Stage 1A (Current): Fail-safe quarantine blocking automated billing runs
+ *       and flagging malformed parent UI for human review.
+ *     * Stage 1B (Reconciliation): Per-family audited reconciliation mapping
+ *       against genuine families or confirming orphan status.
+ *     * Stage 1C (Cleanup): Controlled data correction / archiving, after which
+ *       this in-memory static registry will be retired/removed completely.
+ * - This registry CANNOT expand dynamically based on generic heuristics.
+ * - Quarantine is strictly bounded to the audited 2026-07-16 cohort and cannot
+ *   affect unrelated organisations, native families, or new registrations.
+ *
  * SAFETY INVARIANTS:
  * 1. Zero false positives: No generic heuristic (such as firstName === lastName
  *    or parentName === childName) is used to quarantine records.

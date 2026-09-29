@@ -163,7 +163,7 @@ export function validateAndNormalizeSchoolYear(rawYear: string | null | undefine
   if (match) {
     const num = parseInt(match[1], 10);
     if (num >= 1 && num <= 13) {
-      return { valid: true, normalized: String(num) };
+      return { valid: true, normalized: `Y${num}` };
     }
   }
 
