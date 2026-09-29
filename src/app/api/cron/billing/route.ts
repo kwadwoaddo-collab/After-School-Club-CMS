@@ -54,6 +54,15 @@ export async function POST(request: NextRequest) {
                         child: { columns: { id: true, firstName: true, lastName: true } },
                     },
                 },
+                runs: {
+                    where: eq(billingRuns.success, true),
+                    orderBy: [desc(billingRuns.periodStart)],
+                    limit: 1,
+                },
+                skips: {
+                    orderBy: [desc(billingCycleSkips.periodStart)],
+                    limit: 1,
+                },
             },
         });
 
@@ -67,217 +76,237 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // Parse anchor date
-                const anchorDate = new Date((config.billingAnchorDate as unknown as string) + 'T00:00:00Z');
+                // Resolve last handled period start from prior runs and cycle skips
+                const lastRun = config.runs?.[0] ?? null;
+                const lastSkip = config.skips?.[0] ?? null;
+                const lastBilled = lastRun?.success ? lastRun.periodStart : null;
+                const lastSkipped = lastSkip ? lastSkip.periodStart : null;
+                let lastHandledPeriodStart: string | null = (lastBilled && lastSkipped)
+                    ? (lastBilled > lastSkipped ? lastBilled : lastSkipped)
+                    : (lastBilled || lastSkipped || null);
 
-                // Compute billing schedule using Category B Date Engine (§20–§23)
-                const schedule = computeBillingSchedule(
-                    {
-                        id: config.id,
-                        billingAnchorDate: anchorDate,
-                        invoiceLeadDays: config.invoiceLeadDays ?? 7,
-                        paymentDayOfMonth: config.paymentDayOfMonth,
-                        leadTimeUnit: config.leadTimeUnit,
-                        leadTimeValue: config.leadTimeValue,
-                    },
-                    today
-                );
+                // Process all currently eligible cycles for this config (consecutive cycles & missed eligibility)
+                const MAX_CYCLES_PER_CONFIG = 12;
+                let cyclesProcessed = 0;
 
-                const draftDate = new Date(schedule.draftCreationDate);
-                draftDate.setUTCHours(0, 0, 0, 0);
+                while (cyclesProcessed < MAX_CYCLES_PER_CONFIG) {
+                    cyclesProcessed++;
 
-                // ── 2. Check if draft creation date is today or already overdue ────────
-                if (draftDate > today) {
-                    results.skipped_not_due++;
-                    continue;
-                }
+                    // Compute billing schedule using canonical Date Engine
+                    const schedule = computeBillingSchedule(
+                        {
+                            id: config.id,
+                            billingAnchorDate: config.billingAnchorDate,
+                            invoiceLeadDays: config.invoiceLeadDays ?? 7,
+                            paymentDayOfMonth: config.paymentDayOfMonth,
+                            leadTimeUnit: config.leadTimeUnit,
+                            leadTimeValue: config.leadTimeValue,
+                            lastBilledPeriodStart: lastHandledPeriodStart,
+                        },
+                        today
+                    );
 
-                const periodStartStr = schedule.periodStart.toISOString().split('T')[0];
-                const periodEndStr = schedule.periodEnd.toISOString().split('T')[0];
+                    const draftDate = new Date(schedule.draftCreationDate);
+                    draftDate.setUTCHours(0, 0, 0, 0);
 
-                // ── 3. Skip Cycle Check (§26, B6) ────────────────────────────────
-                const skip = await db.query.billingCycleSkips.findFirst({
-                    where: and(
-                        eq(billingCycleSkips.billingConfigId, config.id),
-                        eq(billingCycleSkips.periodStart, periodStartStr),
-                    ),
-                });
-                if (skip) {
-                    results.skipped_by_manager++;
-                    continue;
-                }
-
-                // ── 4. Amount Resolution & Copy-Forward (§16, §17, Issue E & 8) ───────────────
-                // Precedence: most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
-                let amountPence = 0;
-                let amountStr = '0.00';
-                let notes: string | null = `Monthly tuition — ${schedule.periodLabel}`;
-
-                // Look for most recent ISSUED invoice for this family & centre context (excluding draft and void)
-                const prevIssuedInvoice = await db.query.invoices.findFirst({
-                    where: and(
-                        eq(invoices.organisationId, config.organisationId),
-                        eq(invoices.centreId,       config.centreId),
-                        eq(invoices.parentId,       config.parentId),
-                        inArray(invoices.status,    ['sent', 'partially_paid', 'paid']),
-                    ),
-                    orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
-                });
-
-                if (prevIssuedInvoice && Number(prevIssuedInvoice.amount) > 0) {
-                    amountStr = prevIssuedInvoice.amount;
-                    amountPence = Math.round(Number(prevIssuedInvoice.amount) * 100);
-                    if (prevIssuedInvoice.notes) {
-                        notes = prevIssuedInvoice.notes;
+                    // ── 2. Check if draft creation date is today or already overdue ────────
+                    if (draftDate > today) {
+                        results.skipped_not_due++;
+                        break;
                     }
-                } else if (config.agreedMonthlyPence && config.agreedMonthlyPence > 0) {
-                    amountPence = config.agreedMonthlyPence;
-                    amountStr = String(config.agreedMonthlyPence / 100);
-                } else {
-                    // Issue 8: First cycle with no prior issued invoice and zero agreed fee: draft saved with 0.00
-                    amountPence = 0;
-                    amountStr = '0.00';
-                }
 
-                // ── 5. Idempotency & Manual Conflict Check (Issue 9) ──────────────────────────
-                const existingRun = await db.query.billingRuns.findFirst({
-                    where: and(
-                        eq(billingRuns.billingConfigId, config.id),
-                        eq(billingRuns.periodStart, periodStartStr)
-                    ),
-                });
+                    const periodStartStr = schedule.periodStart.toISOString().split('T')[0];
+                    const periodEndStr = schedule.periodEnd.toISOString().split('T')[0];
 
-                if (existingRun?.success) {
-                    results.skipped_already_exists++;
-                    continue;
-                }
-
-                // Check for existing active invoice for this config and period (covers both manual and scheduler invoices linked to this config)
-                const existingInvoice = await db.query.invoices.findFirst({
-                    where: and(
-                        eq(invoices.organisationId,     config.organisationId),
-                        eq(invoices.centreId,           config.centreId),
-                        eq(invoices.billingConfigId,    config.id),
-                        eq(invoices.billingPeriodStart, schedule.periodStart),
-                        ne(invoices.status,             'void'),
-                    ),
-                });
-
-                if (existingInvoice) {
-                    try {
-                        await db.insert(billingRuns).values({
-                            billingConfigId: config.id,
-                            periodStart: periodStartStr,
-                            periodEnd: periodEndStr,
-                            invoiceId: existingInvoice.id,
-                            amountPence: amountPence,
-                            runBy: null,
-                            success: true,
-                        }).onConflictDoNothing();
-                    } catch {
-                        // Ignore if run already recorded
-                    }
-                    results.skipped_already_exists++;
-                    continue;
-                }
-
-                // ── 6. Generate draft invoice in a transaction with advisory locking ──
-                const coveredChildren = (config.children ?? []).map(cc => ({
-                    id: cc.child.id,
-                    name: `${cc.child.firstName} ${cc.child.lastName}`,
-                }));
-
-                const generatedResult = await db.transaction(async (tx) => {
-                    // Advisory lock on config and period to serialize overlapping cron runs
-                    const lockKey = `billing_config:${config.id}:${periodStartStr}`;
-                    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
-
-                    // Re-check skip cycle inside locked transaction
-                    const inTxSkip = await tx.query.billingCycleSkips.findFirst({
+                    // ── 3. Skip Cycle Check (§26, B6) ────────────────────────────────
+                    const skip = await db.query.billingCycleSkips.findFirst({
                         where: and(
                             eq(billingCycleSkips.billingConfigId, config.id),
                             eq(billingCycleSkips.periodStart, periodStartStr),
                         ),
                     });
-                    if (inTxSkip) {
-                        return { skipped: true, byManager: true };
+                    if (skip) {
+                        results.skipped_by_manager++;
+                        lastHandledPeriodStart = periodStartStr;
+                        continue;
                     }
 
-                    // Re-check billingRuns inside locked transaction
-                    const inTxRun = await tx.query.billingRuns.findFirst({
+                    // ── 4. Amount Resolution & Copy-Forward (§16, §17, Issue E & 8) ───────────────
+                    // Precedence: most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
+                    let amountPence = 0;
+                    let amountStr = '0.00';
+                    let notes: string | null = `Monthly tuition — ${schedule.periodLabel}`;
+
+                    // Look for most recent ISSUED invoice for this family & centre context (excluding draft and void)
+                    const prevIssuedInvoice = await db.query.invoices.findFirst({
+                        where: and(
+                            eq(invoices.organisationId, config.organisationId),
+                            eq(invoices.centreId,       config.centreId),
+                            eq(invoices.parentId,       config.parentId),
+                            inArray(invoices.status,    ['sent', 'partially_paid', 'paid']),
+                        ),
+                        orderBy: [desc(invoices.billingPeriodStart), desc(invoices.createdAt)],
+                    });
+
+                    if (prevIssuedInvoice && Number(prevIssuedInvoice.amount) > 0) {
+                        amountStr = prevIssuedInvoice.amount;
+                        amountPence = Math.round(Number(prevIssuedInvoice.amount) * 100);
+                        if (prevIssuedInvoice.notes) {
+                            notes = prevIssuedInvoice.notes;
+                        }
+                    } else if (config.agreedMonthlyPence && config.agreedMonthlyPence > 0) {
+                        amountPence = config.agreedMonthlyPence;
+                        amountStr = String(config.agreedMonthlyPence / 100);
+                    } else {
+                        // Issue 8: First cycle with no prior issued invoice and zero agreed fee: draft saved with 0.00
+                        amountPence = 0;
+                        amountStr = '0.00';
+                    }
+
+                    // ── 5. Idempotency & Manual Conflict Check (Issue 9) ──────────────────────────
+                    const existingRun = await db.query.billingRuns.findFirst({
                         where: and(
                             eq(billingRuns.billingConfigId, config.id),
                             eq(billingRuns.periodStart, periodStartStr)
                         ),
                     });
-                    if (inTxRun?.success) {
-                        return { skipped: true, byManager: false };
+
+                    if (existingRun?.success) {
+                        results.skipped_already_exists++;
+                        lastHandledPeriodStart = periodStartStr;
+                        continue;
                     }
 
-                    // Re-check invoices inside locked transaction (covers both manual and scheduler invoices)
-                    const inTxInvoice = await tx.query.invoices.findFirst({
+                    // Check for existing active invoice for this config and period (covers both manual and scheduler invoices linked to this config)
+                    const existingInvoice = await db.query.invoices.findFirst({
                         where: and(
                             eq(invoices.organisationId,     config.organisationId),
                             eq(invoices.centreId,           config.centreId),
-                            eq(invoices.parentId,           config.parentId),
+                            eq(invoices.billingConfigId,    config.id),
                             eq(invoices.billingPeriodStart, schedule.periodStart),
                             ne(invoices.status,             'void'),
                         ),
                     });
-                    if (inTxInvoice) {
-                        return { skipped: true, byManager: false };
+
+                    if (existingInvoice) {
+                        try {
+                            await db.insert(billingRuns).values({
+                                billingConfigId: config.id,
+                                periodStart: periodStartStr,
+                                periodEnd: periodEndStr,
+                                invoiceId: existingInvoice.id,
+                                amountPence: amountPence,
+                                runBy: null,
+                                success: true,
+                            }).onConflictDoNothing();
+                        } catch {
+                            // Ignore if run already recorded
+                        }
+                        results.skipped_already_exists++;
+                        lastHandledPeriodStart = periodStartStr;
+                        continue;
                     }
 
-                    const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+                    // ── 6. Generate draft invoice in a transaction with advisory locking ──
+                    const coveredChildren = (config.children ?? []).map(cc => ({
+                        id: cc.child.id,
+                        name: `${cc.child.firstName} ${cc.child.lastName}`,
+                    }));
 
-                    const [invoice] = await tx.insert(invoices).values({
-                        organisationId: config.organisationId,
-                        centreId: config.centreId,
-                        parentId: config.parentId,
-                        invoiceNumber,
-                        amount: amountStr,
-                        status: 'draft',
-                        invoiceDate: new Date(),
-                        dueDate: schedule.dueDate,
-                        billingPeriodStart: schedule.periodStart,
-                        billingPeriodEnd: schedule.periodEnd,
-                        notes: notes,
-                        billingConfigId: config.id,
-                        billingPeriodLabel: schedule.periodLabel,
-                        coveredChildrenJson: coveredChildren,
-                    }).returning();
+                    const generatedResult = await db.transaction(async (tx) => {
+                        // Advisory lock on config and period to serialize overlapping cron runs
+                        const lockKey = `billing_config:${config.id}:${periodStartStr}`;
+                        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
 
-                    await tx.insert(billingRuns).values({
-                        billingConfigId: config.id,
-                        periodStart: periodStartStr,
-                        periodEnd: periodEndStr,
-                        invoiceId: invoice.id,
-                        amountPence: amountPence,
-                        runBy: null, // automated
-                        success: true,
-                    }).onConflictDoUpdate({
-                        target: [billingRuns.billingConfigId, billingRuns.periodStart],
-                        set: {
+                        // Re-check skip cycle inside locked transaction
+                        const inTxSkip = await tx.query.billingCycleSkips.findFirst({
+                            where: and(
+                                eq(billingCycleSkips.billingConfigId, config.id),
+                                eq(billingCycleSkips.periodStart, periodStartStr),
+                            ),
+                        });
+                        if (inTxSkip) {
+                            return { skipped: true, byManager: true };
+                        }
+
+                        // Re-check billingRuns inside locked transaction
+                        const inTxRun = await tx.query.billingRuns.findFirst({
+                            where: and(
+                                eq(billingRuns.billingConfigId, config.id),
+                                eq(billingRuns.periodStart, periodStartStr)
+                            ),
+                        });
+                        if (inTxRun?.success) {
+                            return { skipped: true, byManager: false };
+                        }
+
+                        // Re-check invoices inside locked transaction (covers both manual and scheduler invoices)
+                        const inTxInvoice = await tx.query.invoices.findFirst({
+                            where: and(
+                                eq(invoices.organisationId,     config.organisationId),
+                                eq(invoices.centreId,           config.centreId),
+                                eq(invoices.parentId,           config.parentId),
+                                eq(invoices.billingPeriodStart, schedule.periodStart),
+                                ne(invoices.status,             'void'),
+                            ),
+                        });
+                        if (inTxInvoice) {
+                            return { skipped: true, byManager: false };
+                        }
+
+                        const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+
+                        const [invoice] = await tx.insert(invoices).values({
+                            organisationId: config.organisationId,
+                            centreId: config.centreId,
+                            parentId: config.parentId,
+                            invoiceNumber,
+                            amount: amountStr,
+                            status: 'draft',
+                            invoiceDate: new Date(),
+                            dueDate: schedule.dueDate,
+                            billingPeriodStart: schedule.periodStart,
+                            billingPeriodEnd: schedule.periodEnd,
+                            notes: notes,
+                            billingConfigId: config.id,
+                            billingPeriodLabel: schedule.periodLabel,
+                            coveredChildrenJson: coveredChildren,
+                        }).returning();
+
+                        await tx.insert(billingRuns).values({
+                            billingConfigId: config.id,
+                            periodStart: periodStartStr,
+                            periodEnd: periodEndStr,
                             invoiceId: invoice.id,
                             amountPence: amountPence,
-                            runBy: null,
+                            runBy: null, // automated
                             success: true,
-                            runAt: new Date(),
-                        },
+                        }).onConflictDoUpdate({
+                            target: [billingRuns.billingConfigId, billingRuns.periodStart],
+                            set: {
+                                invoiceId: invoice.id,
+                                amountPence: amountPence,
+                                runBy: null,
+                                success: true,
+                                runAt: new Date(),
+                            },
+                        });
+
+                        return { skipped: false, invoiceId: invoice.id };
                     });
 
-                    return { skipped: false, invoiceId: invoice.id };
-                });
+                    lastHandledPeriodStart = periodStartStr;
 
-                if (generatedResult.skipped) {
-                    if (generatedResult.byManager) {
-                        results.skipped_by_manager++;
+                    if (generatedResult.skipped) {
+                        if (generatedResult.byManager) {
+                            results.skipped_by_manager++;
+                        } else {
+                            results.skipped_already_exists++;
+                        }
                     } else {
-                        results.skipped_already_exists++;
+                        results.generated++;
                     }
-                } else {
-                    results.generated++;
-                }
+                } // end while (consecutive cycles)
             } catch (err) {
                 results.errors++;
                 const msg = err instanceof Error ? err.message : String(err);

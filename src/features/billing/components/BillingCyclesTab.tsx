@@ -242,6 +242,8 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     periodLabel={cycle.periodLabel}
                     invoiceDateStr={invoiceDateStr}
                     dueDateStr={dueDateStr}
+                    periodStartStr={cycle.periodStartStr || cycle.currentPeriodStart}
+                    periodEndStr={cycle.periodEndStr}
                     onClose={() => setShowModal(false)}
                     onSuccess={onGenerated}
                 />
@@ -271,14 +273,13 @@ export default function BillingCyclesTab({ cycles, centreId }: Props) {
         try {
             const readyCycles = cycles.filter(c => c.cycleStatus === 'ready');
             for (const cycle of readyCycles) {
-                const dueDateStr = cycle.dueDateStr
-                    ? cycle.dueDateStr.split('T')[0]
-                    : new Date().toISOString().split('T')[0];
+                const periodStart = cycle.periodStartStr || cycle.currentPeriodStart || (cycle.dueDateStr ? cycle.dueDateStr.split('T')[0] : new Date().toISOString().split('T')[0]);
+                const periodEnd = cycle.periodEndStr || periodStart;
 
                 await generateInvoiceFromConfig({
                     configId: cycle.config.id,
-                    periodStartStr: dueDateStr,
-                    periodEndStr: dueDateStr,
+                    periodStartStr: periodStart,
+                    periodEndStr: periodEnd,
                     amountPence: cycle.config.agreedMonthlyPence,
                 });
             }

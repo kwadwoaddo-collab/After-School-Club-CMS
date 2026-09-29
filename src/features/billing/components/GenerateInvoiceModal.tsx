@@ -15,6 +15,8 @@ interface Props {
     periodLabel:     string;
     invoiceDateStr:  string;  // 'YYYY-MM-DD'
     dueDateStr:      string;
+    periodStartStr?: string | null;
+    periodEndStr?:   string | null;
     onClose:         () => void;
     onSuccess:       () => void;
 }
@@ -30,6 +32,8 @@ export default function GenerateInvoiceModal({
     periodLabel,
     invoiceDateStr,
     dueDateStr,
+    periodStartStr,
+    periodEndStr,
     onClose,
     onSuccess,
 }: Props) {
@@ -54,12 +58,15 @@ export default function GenerateInvoiceModal({
             return;
         }
 
+        const startStr = periodStartStr || dueDateStr;
+        const endStr = periodEndStr || dueDateStr;
+
         start(async () => {
             try {
                 const result = await generateInvoiceFromConfig({
                     configId,
-                    periodStartStr: dueDateStr,
-                    periodEndStr:   dueDateStr,
+                    periodStartStr: startStr,
+                    periodEndStr:   endStr,
                     amountPence:    editedPence,
                     notes:          notes || undefined,
                 });
