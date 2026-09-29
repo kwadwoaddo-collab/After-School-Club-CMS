@@ -44,6 +44,8 @@ export interface BillingCycleRow {
     lastRunPeriodStart: string | null;
     cycleStatus:    'ready' | 'needs_setup' | 'invoice_sent' | 'paused' | 'skipped' | 'data_review_required';
     currentPeriodStart?: string | null;
+    periodStartStr?:     string | null;
+    periodEndStr?:       string | null;
 }
 
 // ─── Fetch all billing cycles for the finance dashboard ───────────────────────
@@ -91,30 +93,40 @@ export async function fetchBillingCycles(
         const parent = config.parent;
         const centre = config.centre;
 
+        const lastRun = config.runs?.[0] ?? null;
+        const lastSkip = config.skips?.[0] ?? null;
+        const lastBilled = lastRun?.success ? lastRun.periodStart : null;
+        const lastSkipped = lastSkip ? lastSkip.periodStart : null;
+        const lastHandledPeriodStart = (lastBilled && lastSkipped)
+            ? (lastBilled > lastSkipped ? lastBilled : lastSkipped)
+            : (lastBilled || lastSkipped || null);
+
         // Compute next period (all dates as strings for serialisability)
         let periodLabel        = '';
         let nextInvoiceDateStr = null as string | null;
         let dueDateStr         = null as string | null;
         let currentPeriodStr   = '';
+        let periodStartStr     = '';
+        let periodEndStr       = '';
 
         try {
-            const anchorDate = new Date((config.billingAnchorDate as unknown as string) + 'T00:00:00Z');
             const schedule = computeBillingSchedule({
                 id: config.id,
-                billingAnchorDate: anchorDate,
+                billingAnchorDate: config.billingAnchorDate,
                 invoiceLeadDays: config.invoiceLeadDays ?? 7,
                 paymentDayOfMonth: config.paymentDayOfMonth,
                 leadTimeUnit: config.leadTimeUnit,
                 leadTimeValue: config.leadTimeValue,
+                lastBilledPeriodStart: lastHandledPeriodStart,
             });
             periodLabel        = schedule.periodLabel;
             nextInvoiceDateStr = schedule.draftCreationDate.toISOString();
             dueDateStr         = schedule.dueDate.toISOString();
             currentPeriodStr   = schedule.periodStart.toISOString().split('T')[0];
+            periodStartStr     = schedule.periodStart.toISOString().split('T')[0];
+            periodEndStr       = schedule.periodEnd.toISOString().split('T')[0];
         } catch { /* malformed config */ }
 
-        const lastRun = config.runs?.[0] ?? null;
-        const lastSkip = config.skips?.[0] ?? null;
         const coveredChildren: CoveredChild[] = (config.children ?? []).map(cc => ({
             childId:   cc.child.id,
             childName: `${cc.child.firstName} ${cc.child.lastName}`,
@@ -122,7 +134,9 @@ export async function fetchBillingCycles(
 
         // Determine status (§26, B7)
         let cycleStatus: BillingCycleRow['cycleStatus'] = 'needs_setup';
-        if (config.status === 'paused') {
+        if (config.parentId && isQuarantinedParentId(config.parentId)) {
+            cycleStatus = 'data_review_required';
+        } else if (config.status === 'paused') {
             cycleStatus = 'paused';
         } else if (lastSkip && lastSkip.periodStart === currentPeriodStr) {
             cycleStatus = 'skipped';
@@ -160,6 +174,8 @@ export async function fetchBillingCycles(
             lastRunPeriodStart: lastRun?.periodStart ?? null,
             cycleStatus,
             currentPeriodStart: currentPeriodStr || null,
+            periodStartStr:     periodStartStr || null,
+            periodEndStr:       periodEndStr || null,
         } satisfies BillingCycleRow;
     }));
 

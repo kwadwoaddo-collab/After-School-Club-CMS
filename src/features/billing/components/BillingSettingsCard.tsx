@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { PoundSterling, Calendar, Users, ChevronDown, ChevronUp, Pencil, X, Check, Pause, Play, AlertTriangle } from 'lucide-react';
-import { penceToPounds, poundsToPence, previewBillingPeriods } from '@/lib/billing';
+import { penceToPounds, poundsToPence } from '@/lib/billing';
+import { previewBillingPeriods, formatDisplayDate, LeadTimeUnit } from '@/lib/billing/date-engine';
 import { cn } from '@/components/ui/utils';
 import { Button } from '@/components/ui/Button';
 import {
@@ -69,7 +70,12 @@ function CollapsedView({
     config: StudentBillingConfig;
     onEdit: () => void;
 }) {
-    const preview = previewBillingPeriods(new Date(config.billingAnchorDate), 1);
+    const preview = previewBillingPeriods(config.billingAnchorDate, 1, {
+        leadTimeUnit: config.leadTimeUnit,
+        leadTimeValue: config.leadTimeValue,
+        invoiceLeadDays: config.invoiceLeadDays,
+        paymentDayOfMonth: config.paymentDayOfMonth,
+    });
 
     return (
         <div className="space-y-3">
@@ -81,7 +87,7 @@ function CollapsedView({
                         <span className="text-small-body font-normal text-text-muted ml-1">/month</span>
                     </p>
                     {preview[0] && (
-                        <p className="text-metadata mt-0.5">{preview[0]}</p>
+                        <p className="text-metadata mt-0.5">{preview[0].periodSpan}</p>
                     )}
                 </div>
                 <StatusBadge status={config.status} />
@@ -137,8 +143,16 @@ function EditForm({
 
     const [fee, setFee]                 = useState(existingConfig ? String(existingConfig.agreedMonthlyPence / 100) : '');
     const [anchorDate, setAnchorDate]   = useState(existingConfig?.billingAnchorDate ?? '');
-    const [leadDays, setLeadDays]       = useState(existingConfig?.invoiceLeadDays ?? 7);
     const [notes, setNotes]             = useState(existingConfig?.notes ?? '');
+    const [leadMode, setLeadMode]       = useState<'CALENDAR_MONTH' | 'CUSTOM_DAYS'>(() => {
+        if (existingConfig?.leadTimeUnit === 'DAYS') return 'CUSTOM_DAYS';
+        if (existingConfig?.leadTimeUnit === 'CALENDAR_MONTHS') return 'CALENDAR_MONTH';
+        if (existingConfig && existingConfig.invoiceLeadDays !== 30 && existingConfig.invoiceLeadDays !== undefined) {
+            return 'CUSTOM_DAYS';
+        }
+        return 'CALENDAR_MONTH';
+    });
+    const [customDays, setCustomDays]   = useState(existingConfig?.leadTimeValue ?? existingConfig?.invoiceLeadDays ?? 7);
     const [selectedChildIds, setSelected] = useState<Set<string>>(
         // If config exists, use its covered children.
         // If new setup: pre-select ALL siblings at this centre — siblings registered together should all be covered.
@@ -150,7 +164,11 @@ function EditForm({
 
     // Live period preview
     const periodPreview = anchorDate
-        ? previewBillingPeriods(new Date(anchorDate), 2)
+        ? previewBillingPeriods(anchorDate, 4, {
+            leadTimeUnit: leadMode === 'CALENDAR_MONTH' ? 'CALENDAR_MONTHS' : 'DAYS',
+            leadTimeValue: leadMode === 'CALENDAR_MONTH' ? 1 : customDays,
+            invoiceLeadDays: customDays,
+        })
         : [];
 
     const toggleChild = (id: string) => {
@@ -168,6 +186,10 @@ function EditForm({
         if (!anchorDate) { setError('Please select a billing start date'); return; }
         if (selectedChildIds.size === 0) { setError('Please select at least one child'); return; }
 
+        const leadTimeUnit: LeadTimeUnit = leadMode === 'CALENDAR_MONTH' ? 'CALENDAR_MONTHS' : 'DAYS';
+        const leadTimeValue: number = leadMode === 'CALENDAR_MONTH' ? 1 : customDays;
+        const leadDays: number = leadMode === 'CALENDAR_MONTH' ? 30 : customDays;
+
         start(async () => {
             try {
                 if (isNew) {
@@ -177,6 +199,8 @@ function EditForm({
                         agreedMonthlyPence: amountPence,
                         billingAnchorDate:  anchorDate,
                         invoiceLeadDays:    leadDays,
+                        leadTimeUnit,
+                        leadTimeValue,
                         notes:              notes || undefined,
                         childIds:           [...selectedChildIds],
                     });
@@ -186,6 +210,8 @@ function EditForm({
                         agreedMonthlyPence: amountPence,
                         billingAnchorDate:  anchorDate,
                         invoiceLeadDays:    leadDays,
+                        leadTimeUnit,
+                        leadTimeValue,
                         notes:              notes || undefined,
                     });
                     // Sync children — add new ones, remove removed ones
@@ -234,9 +260,12 @@ function EditForm({
 
             {/* Billing start date */}
             <div>
-                <label className="text-label text-text-muted block mb-1.5">
-                    First Billing Date
+                <label className="text-label text-text-muted block mb-1">
+                    First Billing Period Start Date
                 </label>
+                <p className="text-xs text-text-muted mb-1.5">
+                    This date sets the start of the family&apos;s recurring monthly billing cycle.
+                </p>
                 <input
                     type="date"
                     value={anchorDate}
@@ -244,32 +273,70 @@ function EditForm({
                     className="w-full h-10 px-3 rounded-sm border border-border text-text font-medium text-small-body focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                 />
                 {periodPreview.length > 0 && (
-                    <div className="mt-2 space-y-1">
+                    <div className="mt-2.5 p-3 rounded-sm bg-accent-soft/40 border border-accent/20 space-y-1.5">
+                        <p className="text-xs font-bold text-accent uppercase tracking-wider mb-1">Upcoming Billing Schedule</p>
                         {periodPreview.map((p, i) => (
-                            <p key={i} className="text-metadata text-accent">
-                                {i === 0 ? '→ Next: ' : '→ Then: '}{p}
-                            </p>
+                            <div key={i} className="text-xs text-text flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-0.5">
+                                <div>
+                                    <span className="font-semibold text-accent">{p.label}:</span>{' '}
+                                    <span className="font-medium">{p.periodSpan}</span>
+                                </div>
+                                <span className="text-[11px] text-text-muted">
+                                    {i === 0 ? '(initial period — available immediately)' : `(draft prepared ${formatDisplayDate(p.draftDate)})`}
+                                </span>
+                            </div>
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* Invoice lead days */}
+            {/* Invoice Preparation */}
             <div>
-                <label className="text-label text-text-muted block mb-1.5">
-                    Invoice Lead Time
+                <label className="text-label text-text-muted block mb-1">
+                    Invoice Preparation
                 </label>
-                <div className="flex items-center gap-3">
-                    <input
-                        type="number"
-                        min="1"
-                        max="30"
-                        value={leadDays}
-                        onChange={e => setLeadDays(Number(e.target.value))}
-                        className="w-20 h-10 px-3 rounded-sm border border-border text-text font-medium text-small-body text-center focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
-                    />
-                    <span className="text-small-body text-text-secondary">days before period start</span>
+                <p className="text-xs text-text-muted mb-2">
+                    Controls when the draft invoice for each future billing period is prepared. It does not change the dates covered by the invoice.
+                </p>
+                <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="leadMode"
+                            checked={leadMode === 'CALENDAR_MONTH'}
+                            onChange={() => setLeadMode('CALENDAR_MONTH')}
+                            className="w-4 h-4 accent-accent"
+                        />
+                        <span className="text-small-body font-medium text-text">
+                            1 calendar month before (Default)
+                        </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="leadMode"
+                            checked={leadMode === 'CUSTOM_DAYS'}
+                            onChange={() => setLeadMode('CUSTOM_DAYS')}
+                            className="w-4 h-4 accent-accent"
+                        />
+                        <span className="text-small-body font-medium text-text">
+                            Custom days before period start
+                        </span>
+                    </label>
                 </div>
+                {leadMode === 'CUSTOM_DAYS' && (
+                    <div className="flex items-center gap-3 mt-2 pl-6">
+                        <input
+                            type="number"
+                            min="1"
+                            max="60"
+                            value={customDays}
+                            onChange={e => setCustomDays(Number(e.target.value))}
+                            className="w-20 h-9 px-3 rounded-sm border border-border text-text font-medium text-small-body text-center focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
+                        />
+                        <span className="text-small-body text-text-secondary">days before period start</span>
+                    </div>
+                )}
             </div>
 
             {/* Children covered */}
