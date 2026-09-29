@@ -52,20 +52,14 @@ function parseCSV(text: string): string[][] {
   return lines;
 }
 
-const REQUIRED_FIELDS = {
-  studentFirstName: 'Student First Name',
-  studentLastName: 'Student Last Name',
-  studentSchoolYear: 'School Year (e.g. Year 3 or 3)',
-  parentFirstName: 'Parent First Name',
-  parentLastName: 'Parent Last Name',
-  parentEmail: 'Parent Email',
-};
+import {
+  validateImportMappings,
+  REQUIRED_IMPORT_FIELDS,
+  OPTIONAL_IMPORT_FIELDS,
+} from '@/features/students/import-validation';
 
-const OPTIONAL_FIELDS = {
-  studentDoB: 'Student Date of Birth (DD/MM/YYYY)',
-  studentNotes: 'Student Notes / Allergies',
-  parentPhone: 'Parent Phone Number',
-};
+const REQUIRED_FIELDS = REQUIRED_IMPORT_FIELDS;
+const OPTIONAL_FIELDS = OPTIONAL_IMPORT_FIELDS;
 
 // ─── Step indicator ────────────────────────────────────────────────────────────
 function StepIndicator({ current }: { current: number }) {
@@ -168,7 +162,8 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
     if (f && f.name.endsWith('.csv')) processFile(f);
   };
 
-  const isMappingValid = () => Object.keys(REQUIRED_FIELDS).every(k => mappings[k] !== undefined && mappings[k] !== '');
+  const mappingValidation = validateImportMappings(mappings);
+  const isMappingValid = () => mappingValidation.valid;
 
   const handleStartImport = async () => {
     if (!isMappingValid()) return;
@@ -190,7 +185,7 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
       parentPhone: getVal(row, 'parentPhone'),
     }));
     try {
-      const res = await importStudentsAction(importRows, centreId || null);
+      const res = await importStudentsAction(importRows, centreId || null, mappings);
       setResult(res);
     } catch (err) {
       const message = err instanceof Error ? err.message : undefined;
@@ -341,26 +336,99 @@ export default function ImportStudentsClient({ centres }: { centres: Centre[] })
             </div>
           </div>
 
-          {/* Row 1 preview */}
-          {csvRows.length > 0 && (
-            <div className="p-4 bg-page rounded-md border border-border-subtle">
-              <p className="text-label text-text-muted mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Row 1 Preview
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                {Object.entries({ ...REQUIRED_FIELDS, ...OPTIONAL_FIELDS }).map(([key, lbl]) => {
-                  const i = mappings[key];
-                  const val = i !== undefined && i !== '' ? csvRows[0][parseInt(i, 10)] : null;
-                  return (
-                    <div key={key} className="min-w-0">
-                      <span className="text-text-muted text-[10px] block truncate">{lbl}</span>
-                      <span className={cn('font-medium block truncate mt-0.5', val ? 'text-text' : 'text-text-muted italic')}>
-                        {val || 'Not mapped'}
-                      </span>
-                    </div>
-                  );
-                })}
+          {/* Mapping validation errors */}
+          {!mappingValidation.valid && Object.keys(mappings).length > 0 && (
+            <div className="p-3.5 bg-danger-soft border border-danger/30 rounded-md space-y-1.5">
+              <div className="flex items-center gap-2 text-danger text-xs font-semibold">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Column Mapping Issues Detected</span>
               </div>
+              <ul className="list-disc list-inside text-xs text-danger space-y-1">
+                {mappingValidation.errors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Multi-Row Preview & Anomaly Warning */}
+          {csvRows.length > 0 && (
+            <div className="space-y-3">
+              {(() => {
+                const getVal = (row: string[], key: string) => {
+                  const i = mappings[key];
+                  return i !== undefined && i !== '' ? (row[parseInt(i, 10)] || '').trim() : '';
+                };
+                const previewRows = csvRows.slice(0, 5);
+                const hasDuplication = previewRows.some(row => {
+                  const sf = getVal(row, 'studentFirstName').toLowerCase();
+                  const sl = getVal(row, 'studentLastName').toLowerCase();
+                  const pf = getVal(row, 'parentFirstName').toLowerCase();
+                  const pl = getVal(row, 'parentLastName').toLowerCase();
+                  return (sf && sl && sf === sl) || (pf && pl && pf === pl) || (sf && pf && sf === pf && sl === pl);
+                });
+
+                const selectedCentreName = centres.find(c => c.id === centreId)?.name || 'No Centre Assigned';
+
+                return (
+                  <>
+                    {hasDuplication && (
+                      <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="font-semibold block mb-0.5">High Name Duplication Detected in Preview</strong>
+                          <span>One or more rows have identical first and last names. Please ensure you have mapped distinct columns for first and last names.</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-page rounded-md border border-border-subtle space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-label text-text-muted flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                          Import Preview (First {previewRows.length} Rows)
+                        </p>
+                        <span className="text-[11px] text-text-muted">Target Centre: <strong className="text-text">{selectedCentreName}</strong></span>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead>
+                            <tr className="border-b border-border-subtle text-text-muted text-[11px]">
+                              <th className="py-1.5 pr-3 font-semibold">Row</th>
+                              <th className="py-1.5 pr-3 font-semibold">Student Name</th>
+                              <th className="py-1.5 pr-3 font-semibold">Parent / Guardian</th>
+                              <th className="py-1.5 pr-3 font-semibold">Email</th>
+                              <th className="py-1.5 pr-3 font-semibold">Phone</th>
+                              <th className="py-1.5 font-semibold">Year</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border-subtle">
+                            {previewRows.map((row, idx) => {
+                              const sName = `${getVal(row, 'studentFirstName')} ${getVal(row, 'studentLastName')}`.trim();
+                              const pName = `${getVal(row, 'parentFirstName')} ${getVal(row, 'parentLastName')}`.trim();
+                              const email = getVal(row, 'parentEmail');
+                              const phone = getVal(row, 'parentPhone');
+                              const year = getVal(row, 'studentSchoolYear');
+
+                              return (
+                                <tr key={idx} className="hover:bg-surface/50">
+                                  <td className="py-2 pr-3 font-mono text-text-muted">{idx + 1}</td>
+                                  <td className="py-2 pr-3 font-medium text-text">{sName || <span className="text-text-muted italic">Incomplete</span>}</td>
+                                  <td className="py-2 pr-3 text-text">{pName || <span className="text-text-muted italic">Incomplete</span>}</td>
+                                  <td className="py-2 pr-3 text-text-muted truncate max-w-[150px]">{email || <span className="italic">None</span>}</td>
+                                  <td className="py-2 pr-3 text-text-muted">{phone || <span className="italic">None</span>}</td>
+                                  <td className="py-2 text-text-muted">{year || <span className="italic">1</span>}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 

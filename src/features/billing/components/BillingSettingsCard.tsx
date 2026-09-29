@@ -16,6 +16,7 @@ import {
     removeChildFromConfig,
 } from '@/features/billing/actions';
 import type { StudentBillingConfig, CoveredChild } from '@/features/billing/queries';
+import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -407,6 +408,7 @@ export default function BillingSettingsCard({
 }: Props) {
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
+    const isQuarantined = isQuarantinedParentId(parentId);
 
     const handleSaved = () => {
         setIsEditing(false);
@@ -426,9 +428,13 @@ export default function BillingSettingsCard({
                         <p className="text-metadata">Family billing settings</p>
                     </div>
                 </div>
-                {existingConfig && !isEditing && (
+                {isQuarantined && !existingConfig && !isEditing ? (
+                    <span className="px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-warning-soft text-amber-700 dark:text-amber-400">
+                        Data Review Required
+                    </span>
+                ) : existingConfig && !isEditing ? (
                     <StatusBadge status={existingConfig.status} />
-                )}
+                ) : null}
             </div>
 
             <div className="border-t border-border-subtle" />
@@ -451,6 +457,21 @@ export default function BillingSettingsCard({
                         <CollapsedView config={existingConfig} onEdit={() => setIsEditing(true)} />
                         <StatusControls config={existingConfig} onDone={handleSaved} />
                     </>
+                ) : isQuarantined ? (
+                    <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-3">
+                        <div className="w-9 h-9 bg-amber-500/10 rounded-md flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <p className="text-small-body font-semibold text-text">Data Review Required</p>
+                            <p className="text-metadata text-text-muted mt-1 max-w-sm mx-auto">
+                                Imported family details require verification before billing can be set up.
+                            </p>
+                        </div>
+                        <Button disabled variant="secondary" className="w-full opacity-60 cursor-not-allowed">
+                            Billing Setup Unavailable (Review Required)
+                        </Button>
+                    </div>
                 ) : (
                     <div className="text-center py-4">
                         <div className="w-9 h-9 bg-page rounded-md flex items-center justify-center mx-auto mb-2">

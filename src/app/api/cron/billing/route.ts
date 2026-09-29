@@ -9,6 +9,7 @@ import {
 import { eq, and, isNull, or, ne, sql, desc, inArray } from 'drizzle-orm';
 import { computeBillingSchedule } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
+import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 /**
  * POST /api/cron/billing
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
         skipped_not_due: 0,
         skipped_no_amount: 0,
         skipped_by_manager: 0,
+        skipped_quarantined: 0,
         errors: 0,
         errorDetails: [] as string[],
     };
@@ -59,6 +61,12 @@ export async function POST(request: NextRequest) {
 
         for (const config of configs) {
             try {
+                // DATA-REMEDIATION-1A: Quarantine safety guard
+                if (config.parentId && isQuarantinedParentId(config.parentId)) {
+                    results.skipped_quarantined++;
+                    continue;
+                }
+
                 // Parse anchor date
                 const anchorDate = new Date((config.billingAnchorDate as unknown as string) + 'T00:00:00Z');
 

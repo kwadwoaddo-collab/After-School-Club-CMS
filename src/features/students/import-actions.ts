@@ -3,9 +3,11 @@ import { logger } from '@/lib/logger';
 
 import { requireApiAuth } from '@/lib/require-auth';
 import { db } from '@/db';
-import { parents, children, studentNotes } from '@/db/schema';
+import { parents, children, studentNotes, centres } from '@/db/schema';
 import { eq, and, or, ilike } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { validateImportMappings, validateImportRow, validateAndNormalizeSchoolYear } from './import-validation';
+import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 export interface StudentImportRow {
   studentFirstName: string;
@@ -33,7 +35,8 @@ export interface ImportResult {
 
 export async function importStudentsAction(
   rows: StudentImportRow[],
-  defaultCentreId: string | null
+  defaultCentreId: string | null,
+  mappings?: Record<string, string>
 ): Promise<ImportResult> {
   // Same role rule as the rest of the Students module — see
   // project-notes/milestone-3-people-audit.md §2. This server action is the
@@ -47,6 +50,34 @@ export async function importStudentsAction(
   const organisationId = authResult.organisationId;
   const importedByUserId = authResult.user.id;
   const importedByName = authResult.user.name || 'System Import';
+
+  // ─── Server-side Mapping Validation (Do not trust client) ───
+  if (mappings && Object.keys(mappings).length > 0) {
+    const mappingCheck = validateImportMappings(mappings);
+    if (!mappingCheck.valid) {
+      return {
+        success: false,
+        stats: {
+          totalRows: rows.length,
+          createdParents: 0,
+          matchedParents: 0,
+          createdStudents: 0,
+          skippedStudents: 0,
+        },
+        errors: mappingCheck.errors.map(err => ({ row: 0, message: err })),
+      };
+    }
+  }
+
+  // ─── Scoping: Verify Centre Belongs to Organisation ───
+  if (defaultCentreId) {
+    const centreRecord = await db.query.centres.findFirst({
+      where: and(eq(centres.id, defaultCentreId), eq(centres.organisationId, organisationId)),
+    });
+    if (!centreRecord) {
+      throw new Error('Unauthorized: Centre does not belong to your organisation.');
+    }
+  }
 
   // ─── Deduplicate Rows in Memory ───
   const uniqueRows: StudentImportRow[] = [];
@@ -85,63 +116,31 @@ export async function importStudentsAction(
     const rowNumber = i + 1;
 
     try {
-      // Basic sanitisation & fallbacks to force the information through
-      let studentFirstName = row.studentFirstName?.trim().replace(/\s+/g, ' ') || '';
-      let studentLastName = row.studentLastName?.trim().replace(/\s+/g, ' ') || '';
-      let parentFirstName = row.parentFirstName?.trim().replace(/\s+/g, ' ') || '';
-      let parentLastName = row.parentLastName?.trim().replace(/\s+/g, ' ') || '';
-      let parentEmail = row.parentEmail?.trim().toLowerCase() || '';
-      let parentPhone = row.parentPhone?.trim() || null;
-      let schoolYear = row.studentSchoolYear?.trim() || '1';
-
-      // Fill missing student name parameters
-      if (!studentFirstName && !studentLastName) {
-        studentFirstName = 'Imported';
-        studentLastName = `Child ${rowNumber}`;
-      } else {
-        if (!studentFirstName) studentFirstName = 'Imported';
-        if (!studentLastName) studentLastName = 'Child';
+      // ─── Row-level validation ───
+      const rowCheck = validateImportRow(row, rowNumber);
+      if (!rowCheck.valid) {
+        for (const msg of rowCheck.errors) {
+          errors.push({
+            row: rowNumber,
+            email: row.parentEmail,
+            name: `${row.studentFirstName || ''} ${row.studentLastName || ''}`.trim(),
+            message: msg,
+          });
+        }
+        continue;
       }
 
-      // Fill missing parent name parameters
-      if (!parentFirstName && !parentLastName) {
-        parentFirstName = 'Imported';
-        parentLastName = `Parent ${rowNumber}`;
-      } else {
-        if (!parentFirstName) parentFirstName = 'Imported';
-        if (!parentLastName) parentLastName = 'Parent';
-      }
+      // Normalise school year
+      const yearResult = validateAndNormalizeSchoolYear(row.studentSchoolYear);
+      const schoolYear = yearResult.normalized || '1';
 
-      // Fill/format missing or invalid parent email
-      let emailIsPlaceholder = false;
-      if (!parentEmail) {
-        parentEmail = `parent-${rowNumber}-${Date.now()}@asc-cms.local`;
-        emailIsPlaceholder = true;
-      } else if (!parentEmail.includes('@')) {
-        const cleanPart = parentEmail.replace(/[^a-z0-9._-]/g, '');
-        parentEmail = `${cleanPart || `parent-${rowNumber}`}@asc-cms.local`;
-        emailIsPlaceholder = true;
-      }
-
-      // Safeguard database length limits by truncating values
-      studentFirstName = studentFirstName.slice(0, 100);
-      studentLastName = studentLastName.slice(0, 100);
-      parentFirstName = parentFirstName.slice(0, 100);
-      parentLastName = parentLastName.slice(0, 100);
-      parentEmail = parentEmail.slice(0, 255);
-      
-      if (parentPhone) {
-        parentPhone = parentPhone.slice(0, 20);
-      }
-
-      // Normalize school year: extract number if it says "Year X", then clamp to database limits
-      const yearMatch = schoolYear.match(/year\s*(\d+)/i);
-      if (yearMatch) {
-        schoolYear = yearMatch[1];
-      } else {
-        schoolYear = schoolYear.replace(/\s+/g, '');
-      }
-      schoolYear = schoolYear.slice(0, 10) || '1';
+      // Sanitise & bounds-check values
+      const studentFirstName = row.studentFirstName.trim().replace(/\s+/g, ' ').slice(0, 100);
+      const studentLastName = row.studentLastName.trim().replace(/\s+/g, ' ').slice(0, 100);
+      const parentFirstName = row.parentFirstName.trim().replace(/\s+/g, ' ').slice(0, 100);
+      const parentLastName = row.parentLastName.trim().replace(/\s+/g, ' ').slice(0, 100);
+      const parentEmail = row.parentEmail.trim().toLowerCase().slice(0, 255);
+      const parentPhone = row.parentPhone?.trim() ? row.parentPhone.trim().slice(0, 25) : null;
 
       // Parse Date of Birth if provided
       let dob: Date | null = null;
@@ -174,15 +173,15 @@ export async function importStudentsAction(
         // 1. Resolve Parent
         let parentId: string;
         
-        // Match by email first (if email is NOT a generated placeholder)
-        let existingParent = emailIsPlaceholder ? null : await tx.query.parents.findFirst({
+        // Match by email first within the organisation
+        let existingParent = await tx.query.parents.findFirst({
           where: and(
             eq(parents.organisationId, organisationId),
             ilike(parents.email, parentEmail)
           ),
         });
 
-        // Match by names if not found by email or if email is a placeholder
+        // Match by names if not found by email
         if (!existingParent) {
           existingParent = await tx.query.parents.findFirst({
             where: and(
@@ -194,17 +193,15 @@ export async function importStudentsAction(
         }
 
         if (existingParent) {
+          // Guard: do not link students to quarantined families in data review
+          if (isQuarantinedParentId(existingParent.id)) {
+            throw new Error(`Cannot link student to existing family (${existingParent.firstName} ${existingParent.lastName}) in data review status.`);
+          }
+
           parentId = existingParent.id;
           stats.matchedParents++;
 
-          const isExistingPlaceholder = existingParent.email?.endsWith('@asc-cms.local');
-          const isNewRealEmail = parentEmail && !parentEmail.endsWith('@asc-cms.local');
           const updateData: Partial<typeof parents.$inferInsert> = {};
-
-          // Update parent's email if it was previously a placeholder and we now have a real email
-          if (isExistingPlaceholder && isNewRealEmail) {
-            updateData.email = parentEmail;
-          }
           // Update parent's phone number if not set
           if (!existingParent.phone && parentPhone) {
             updateData.phone = parentPhone;
