@@ -72,6 +72,7 @@ export class SMSService {
 
     try {
       const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         weekday: 'short',
         day: 'numeric',
         month: 'short',
@@ -117,6 +118,7 @@ export class SMSService {
 
     try {
       const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         weekday: 'short',
         day: 'numeric',
         month: 'short',
@@ -156,6 +158,7 @@ export class SMSService {
 
     try {
       const formattedTime = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,

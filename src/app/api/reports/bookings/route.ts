@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { bookings, bookingAttendees, children, parents, centres } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { format } from 'date-fns';
+import { formatInTimezone } from '@/lib/datetime';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { neutralizeCsvFormula } from '@/lib/csv-safety';
 
@@ -78,8 +79,8 @@ export async function GET() {
     const csvRows = rows.map(r => [
       escape(r.bookingId),
       escape(r.confirmationCode),
-      r.startAt ? escape(format(new Date(r.startAt), 'dd/MM/yyyy')) : '""',
-      r.startAt ? escape(format(new Date(r.startAt), 'HH:mm')) : '""',
+      r.startAt ? escape(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(r.startAt))) : '""',
+      r.startAt ? escape(formatInTimezone(new Date(r.startAt))) : '""',
       escape(r.status),
       escape(r.modality),
       escape(`${r.childFirstName} ${r.childLastName}`),

@@ -16,6 +16,7 @@ import type { AttendanceStatus } from '@/lib/attendance';
 import { emailService } from '@/lib/services/email';
 import { resolveOrCreateParent, resolveOrCreateChild } from '@/lib/services/crm';
 import { canUserAccessCentre, getUserAccessibleCentreIds } from '@/lib/permissions';
+import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
 
 export async function updateBookingStatus(bookingId: string, status: 'completed' | 'cancelled' | 'confirmed' | 'rescheduled') {
     const session = await requireTenantSession();
@@ -294,8 +295,8 @@ export async function markAttendeeAttendance(params: {
             throw new Error('Centre not found or unauthorized');
         }
 
-        // Form startAt date
-        const startAt = new Date(`${dateStr}T${sessionTime}:00`);
+        // Form startAt date in centre timezone (Europe/London)
+        const startAt = parseInTimezone(dateStr, sessionTime, DEFAULT_TIMEZONE);
 
         const result = await db.transaction(async (tx) => {
             // Check if booking already exists for today/time slot for this specific parent/family
@@ -551,9 +552,9 @@ export async function registerWalkInChild(params: {
         });
 
 
-        // Calculate booking start time
+        // Calculate booking start time in centre timezone (Europe/London)
         // dateStr is YYYY-MM-DD, sessionTime is HH:MM
-        const startAt = new Date(`${dateStr}T${sessionTime}:00`);
+        const startAt = parseInTimezone(dateStr, sessionTime, DEFAULT_TIMEZONE);
 
         const code = Date.now().toString(36).toUpperCase();
         const magicLinkToken = `${code}-${Math.random().toString(36).slice(2)}`;
@@ -623,8 +624,8 @@ export async function registerExistingChildWalkIn(params: {
         throw new Error('Child not found or unauthorized');
     }
 
-    // Calculate booking start time
-    const startAt = new Date(`${dateStr}T${sessionTime}:00`);
+    // Calculate booking start time in centre timezone (Europe/London)
+    const startAt = parseInTimezone(dateStr, sessionTime, DEFAULT_TIMEZONE);
 
     // 3. Perform operations inside a transaction
     await db.transaction(async (tx) => {

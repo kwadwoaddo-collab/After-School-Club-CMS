@@ -9,6 +9,7 @@ import { centres } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { revalidatePath } from 'next/cache';
+import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     // validity and prevent cross-org injection.
     const centre = await db.query.centres.findFirst({
       where: eq(centres.id, centreId),
-      columns: { id: true, organisationId: true },
+      columns: { id: true, organisationId: true, timezone: true },
       with: {
         organisation: {
           columns: { id: true }
@@ -68,11 +69,19 @@ export async function POST(request: NextRequest) {
     const bookingService = new BookingService();
     const availabilityService = new AvailabilityService();
 
-    // Normalise startAt: handle time-string + separate date field
-    let parsedStartDate = new Date(validated.appointment.startAt);
-    if (isNaN(parsedStartDate.getTime()) && validated.appointment.date) {
-       parsedStartDate = new Date(`${validated.appointment.date}T${validated.appointment.startAt}:00`);
-       validated.appointment.startAt = parsedStartDate.toISOString();
+    // Normalise startAt: interpret in centre operational timezone (Europe/London)
+    const centreTimezone = centre.timezone || DEFAULT_TIMEZONE;
+    let parsedStartDate: Date;
+
+    if (validated.appointment.date && !validated.appointment.startAt.includes('T') && !validated.appointment.startAt.includes('Z')) {
+      parsedStartDate = parseInTimezone(validated.appointment.date, validated.appointment.startAt, centreTimezone);
+      validated.appointment.startAt = parsedStartDate.toISOString();
+    } else {
+      parsedStartDate = new Date(validated.appointment.startAt);
+      if (isNaN(parsedStartDate.getTime()) && validated.appointment.date) {
+        parsedStartDate = parseInTimezone(validated.appointment.date, validated.appointment.startAt, centreTimezone);
+        validated.appointment.startAt = parsedStartDate.toISOString();
+      }
     }
 
     if (isNaN(parsedStartDate.getTime())) {

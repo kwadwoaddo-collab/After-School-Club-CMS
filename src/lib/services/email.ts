@@ -55,6 +55,7 @@ export class EmailService {
 
     try {
       const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -62,6 +63,7 @@ export class EmailService {
       }).format(data.startAt);
 
       const formattedTime = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
@@ -559,6 +561,7 @@ export class EmailService {
 
     try {
       const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -632,6 +635,7 @@ export class EmailService {
 
     try {
       const fmt = (d: Date) => new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
         hour: '2-digit', minute: '2-digit',
       }).format(d);

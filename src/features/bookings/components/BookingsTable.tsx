@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { formatDisplayTimeInTimezone, formatShortDateInTimezone, formatDateInTimezone } from '@/lib/datetime';
 import { MoreVertical, Eye, Calendar as CalendarIcon, X, Clock, MapPin, Trash2, CheckCircle, Loader2, AlertTriangle, Shield, BookOpen, GraduationCap, ChevronUp, ChevronDown, SearchX, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -548,10 +549,10 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="font-medium text-text whitespace-nowrap">
-                                                {booking.startAt ? format(new Date(booking.startAt), 'EEE, MMM d') : 'N/A'}
+                                                {booking.startAt ? formatShortDateInTimezone(new Date(booking.startAt)) : 'N/A'}
                                             </span>
                                             <span className="text-metadata mt-0.5 whitespace-nowrap">
-                                                {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
+                                                {booking.startAt ? formatDisplayTimeInTimezone(new Date(booking.startAt)) : 'Time TBD'}
                                             </span>
                                         </div>
                                     </TableCell>
@@ -891,11 +892,11 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     <span className="font-medium text-text-secondary">{booking.assessmentType === 'initial_assessment' ? 'Initial Assessment' : booking.assessmentType === 'progress_review' ? 'Progress Check' : 'Activity'}</span>
                                     <div className="flex items-center gap-1.5">
                                         <CalendarIcon className="w-3.5 h-3.5 text-text-muted" />
-                                        {booking.startAt ? format(new Date(booking.startAt), 'MMM d, yyyy') : 'Date TBD'}
+                                        {booking.startAt ? formatDateInTimezone(new Date(booking.startAt)) : 'Date TBD'}
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Clock className="w-3.5 h-3.5 text-text-muted" />
-                                        {booking.startAt ? format(new Date(booking.startAt), 'h:mm a') : 'Time TBD'}
+                                        {booking.startAt ? formatDisplayTimeInTimezone(new Date(booking.startAt)) : 'Time TBD'}
                                     </div>
                                 </div>
                             </div>

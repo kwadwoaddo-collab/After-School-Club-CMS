@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { formatInTimezone } from './datetime';
+import { formatInTimezone, formatDisplayTimeInTimezone } from './datetime';
 import { InferSelectModel } from 'drizzle-orm';
 import { children, parents, centres, bookings, bookingAttendees } from '@/db/schema';
 
@@ -258,7 +258,7 @@ export function compileDailyRegisterSlots(params: {
 
       // Check if there is an actual booking for today at this time containing this child
       const bookingMatch = dayBookings.find(b => {
-        const bTime = format(new Date(b.startAt), 'HH:mm');
+        const bTime = formatInTimezone(new Date(b.startAt));
         const hasChild = b.attendees.some((a) => a.childId === child.id);
         return hasChild && bTime === parsedTime;
       });
@@ -320,12 +320,12 @@ export function compileDailyRegisterSlots(params: {
 
   // Step B: Map catchups from actual bookings
   for (const booking of dayBookings) {
-    const bookingTime = format(new Date(booking.startAt), 'HH:mm');
+    const bookingTime = formatInTimezone(new Date(booking.startAt));
     
     if (!slotsMap[bookingTime]) {
       slotsMap[bookingTime] = {
         time: bookingTime,
-        timeLabel: format(new Date(booking.startAt), 'h:mm a'),
+        timeLabel: formatDisplayTimeInTimezone(new Date(booking.startAt)),
         regulars: [],
         catchups: [],
       };
