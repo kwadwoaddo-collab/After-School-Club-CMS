@@ -22,6 +22,7 @@ import {
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { recordPayment } from '@/features/finance/actions';
+import { parseStoredDecimalToPence, formatPenceToDecimal } from '../domain/payment-eligibility';
 import CreateInvoiceModal from './CreateInvoiceModal';
 
 export interface InvoicePayment {
@@ -170,14 +171,20 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             const selected = invoices.filter((i) => selectedInvoices.has(i.id));
             for (const invoice of selected) {
                 const payments = invoice.payments || [];
-                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p) => sum + Number(p.amount), 0);
-                if (outstanding > 0) {
-                    await recordPayment({
+                const totalPaidPence = payments.reduce((sum: number, p: { amount: string | number }) => sum + parseStoredDecimalToPence(p.amount), 0);
+                const invoiceAmountPence = parseStoredDecimalToPence(invoice.amount);
+                const outstandingPence = invoiceAmountPence - totalPaidPence;
+                if (outstandingPence > 0) {
+                    const res = await recordPayment({
                         invoiceId: invoice.id,
-                        amount: outstanding.toString(),
+                        amount: formatPenceToDecimal(outstandingPence),
                         method: 'bank_transfer',
-                        recordedAt: new Date()
+                        recordedAt: new Date(),
+                        operationMode: 'SETTLE_OUTSTANDING'
                     });
+                    if (!res.success) {
+                        throw new Error(res.error);
+                    }
                 }
             }
             addToast('Bulk payments recorded successfully', 'success');

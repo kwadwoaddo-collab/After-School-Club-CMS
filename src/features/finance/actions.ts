@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 
 import { db } from '@/db';
-import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs, billingRuns, portalNotifications } from '@/db/schema';
+import { children, parents, centres, invoices, payments, bookings, bookingAttendees, registrationChildren, registrations, auditEvents, billingConfigs, billingRuns, portalNotifications, orgMemberships, centreMemberships } from '@/db/schema';
 import { eq, ilike, or, and, desc, inArray, sql, ne, isNull } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
@@ -13,6 +13,22 @@ import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
+import {
+    canAcceptStaffPayment,
+    isPermittedStaffPaymentMethod,
+    parseStrictDecimalToPence,
+    parseStoredDecimalToPence,
+    formatPenceToDecimal,
+    toEuropeLondonBusinessDate,
+    computePaymentRequestFingerprint,
+} from './domain/payment-eligibility';
+
+function isNextControlFlowError(err: unknown): boolean {
+    if (err && typeof err === 'object' && 'digest' in err && typeof (err as any).digest === 'string') {
+        return (err as any).digest.startsWith('NEXT_');
+    }
+    return false;
+}
 
 async function insertInvoiceAndLog(
     tx: any,
@@ -100,14 +116,16 @@ async function recalculateInvoiceStatus(
         where: eq(payments.invoiceId, invoiceId),
         columns: { status: true, amount: true },
     });
-    const totalVerified = allPayments
+    const totalVerifiedPence = allPayments
         .filter((p: any) => p.status === 'verified')
-        .reduce((s: number, p: any) => s + Number(p.amount), 0);
+        .reduce((s: number, p: any) => s + parseStoredDecimalToPence(p.amount), 0);
+
+    const invoiceAmountPence = parseStoredDecimalToPence(invoice.amount);
 
     let newStatus: 'sent' | 'partially_paid' | 'paid';
-    if (totalVerified >= Number(invoice.amount)) {
+    if (totalVerifiedPence >= invoiceAmountPence) {
         newStatus = 'paid';
-    } else if (totalVerified > 0) {
+    } else if (totalVerifiedPence > 0) {
         newStatus = 'partially_paid';
     } else {
         newStatus = 'sent';
@@ -554,125 +572,408 @@ export async function getInvoiceDetails(invoiceId: string) {
     return { ...result, childDisplayName };
 }
 
-export async function recordPayment(data: {
+export interface RecordPaymentParams {
     invoiceId: string;
-    amount: string;
-    method: 'tax_free_childcare' | 'other' | 'cash' | 'bank_transfer' | 'stripe' | 'voucher' | 'gocardless';
+    amount?: string;
+    method: 'tax_free_childcare' | 'other' | 'cash' | 'bank_transfer' | 'stripe' | 'voucher' | 'gocardless' | string;
     transactionReference?: string | null;
-    recordedAt: Date;
-}) {
-
-    const session = await requireTenantSession();
-    if (!session?.user?.organisationId) throw new Error('Unauthorized');
-    const orgId = session.user.organisationId;
-
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ORG_OWNER') {
-        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-        const invoice = await db.query.invoices.findFirst({
-            where: and(
-                eq(invoices.id, data.invoiceId),
-                eq(invoices.organisationId, orgId)
-            ),
-            columns: { centreId: true }
-        });
-        if (!invoice || !accessibleCentreIds.includes(invoice.centreId)) {
-            throw new Error('Unauthorized: No access to this centre');
-        }
-    }
-
-    // Link back to schema imports
-    const { payments: paymentsTable } = await import('@/db/schema');
-
-    const result = await db.transaction(async (tx) => {
-        const invoice = await tx.query.invoices.findFirst({
-            where: eq(invoices.id, data.invoiceId)
-        });
-        if (!invoice) throw new Error('Invoice not found');
-        if (invoice.status === 'draft') throw new Error('Cannot record payment against a draft invoice. Issue the invoice first.');
-        if (invoice.status === 'void') throw new Error('Cannot record payment against a voided invoice.');
-
-        // 1. Insert payment record
-        const [newPayment] = await tx.insert(paymentsTable).values({
-            invoiceId: data.invoiceId,
-            amount: data.amount,
-            method: data.method,
-            transactionReference: data.transactionReference,
-            recordedAt: data.recordedAt,
-        }).returning();
-
-        // 2. Recalculate invoice status
-        await recalculateInvoiceStatus(tx, data.invoiceId);
-
-        // Check for overpayment warning
-        const allPayments = await tx.query.payments.findMany({
-            where: eq(paymentsTable.invoiceId, data.invoiceId),
-            columns: { status: true, amount: true }
-        });
-        const totalVerified = allPayments
-            .filter((p: any) => p.status === 'verified')
-            .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-        const isOverpaid = totalVerified > Number(invoice.amount);
-
-        await tx.insert(auditEvents).values({
-            organisationId: session.user.organisationId!,
-            userId: session.user.id!,
-            eventType: 'payment_recorded',
-            eventData: JSON.stringify({
-                invoiceId: data.invoiceId,
-                paymentId: newPayment.id,
-                amount: data.amount,
-                method: data.method,
-                warning: isOverpaid ? 'Payment resulted in overpayment.' : undefined
-            })
-        });
-
-        return { ...newPayment, parentId: invoice.parentId };
-    });
-
-    revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/finance/invoices');
-    if (result.parentId) {
-        revalidatePath(`/dashboard/parents/${result.parentId}`);
-    }
-
-    // In-app notification: payment recorded (fire-and-forget)
-    notifyOwners({
-        orgId,
-        type: 'system',
-        title: 'Payment Recorded',
-        message: `A £${Number(data.amount).toFixed(2)} payment (${data.method.replace('_', ' ')}) has been recorded.`,
-    }).catch(() => {});
-
-    // Send receipt email after successful payment (non-blocking)
-    try {
-        const { organisations } = await import('@/db/schema');
-        const invoiceRecord = await db.query.invoices.findFirst({
-            where: eq(invoices.id, data.invoiceId),
-            with: { parent: true }
-        });
-        const orgRecord = await db.query.organisations.findFirst({
-            where: eq(organisations.id, orgId)
-        });
-
-        if (invoiceRecord?.parent?.email) {
-            await emailService.sendPaymentReceiptEmail({
-                parentEmail: invoiceRecord.parent.email,
-                parentName: invoiceRecord.parent.firstName,
-                invoiceNumber: invoiceRecord.invoiceNumber,
-                paymentId: result.id,
-                amountPaid: Number(data.amount),
-                organisationName: orgRecord?.name || 'Our Centre',
-                invoiceId: data.invoiceId
-            });
-        }
-    } catch (err) {
-        logger.error('[recordPayment] Failed to send receipt email:', err);
-    }
-
-    return result;
+    recordedAt: Date | string;
+    idempotencyKey?: string | null;
+    operationMode?: 'MANUAL_AMOUNT' | 'SETTLE_OUTSTANDING';
 }
+
+export type RecordPaymentResult =
+    | {
+          success: true;
+          isReplay: boolean;
+          payment: any;
+          id: string;
+          invoiceId: string;
+          amount: string;
+          parentId?: string | null;
+          warning?: string;
+          code?: string;
+          error?: string;
+          existingPayment?: any;
+      }
+    | {
+          success: false;
+          error: string;
+          code: string;
+          existingPayment?: any;
+          isReplay?: boolean;
+          payment?: any;
+          id?: string;
+          invoiceId?: string;
+          amount?: string;
+          parentId?: string | null;
+          warning?: string;
+      };
+
+export async function recordPayment(data: RecordPaymentParams): Promise<RecordPaymentResult> {
+    try {
+        const session = await requireTenantSession();
+        if (!session?.user?.id || !session?.user?.organisationId) {
+            return { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' };
+        }
+        const userId = session.user.id;
+        const orgId = session.user.organisationId;
+
+        // 1. Cheap live org membership precheck (avoids acquiring lock if unauthorized)
+        const liveOrgMember = await db.query.orgMemberships.findFirst({
+            where: and(
+                eq(orgMemberships.userId, userId),
+                eq(orgMemberships.organisationId, orgId)
+            ),
+            columns: { role: true }
+        });
+
+        if (!liveOrgMember) {
+            return { success: false, error: 'User does not belong to this organisation.', code: 'FORBIDDEN_ORG' };
+        }
+
+        const allowedRoles = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'];
+        if (!allowedRoles.includes(liveOrgMember.role)) {
+            return {
+                success: false,
+                error: `Role '${liveOrgMember.role}' is not authorized to record payments.`,
+                code: 'FORBIDDEN_ROLE'
+            };
+        }
+
+        // 2. Validate payment method
+        if (!isPermittedStaffPaymentMethod(data.method)) {
+            if (data.method === 'stripe' || data.method === 'gocardless') {
+                return {
+                    success: false,
+                    error: 'Payment method not permitted for manual recording.',
+                    code: 'INVALID_PAYMENT_METHOD'
+                };
+            }
+            return {
+                success: false,
+                error: `Invalid payment method '${data.method}'.`,
+                code: 'INVALID_PAYMENT_METHOD'
+            };
+        }
+
+        // 3. Amount & Operation Mode Validation
+        const operationMode = data.operationMode || 'MANUAL_AMOUNT';
+        let amountPence: number | null = null;
+        if (operationMode === 'MANUAL_AMOUNT') {
+            if (!data.amount) {
+                return { success: false, error: 'Amount is required for manual payment recording.', code: 'INVALID_AMOUNT' };
+            }
+            try {
+                amountPence = parseStrictDecimalToPence(data.amount);
+            } catch (err) {
+                return {
+                    success: false,
+                    error: err instanceof Error ? err.message : 'Invalid amount format',
+                    code: 'INVALID_AMOUNT'
+                };
+            }
+            if (amountPence <= 0) {
+                return { success: false, error: 'Payment amount must be greater than zero.', code: 'INVALID_AMOUNT' };
+            }
+        }
+
+        // 4. Normalise Date & Transaction Reference
+        let businessDate: string;
+        try {
+            businessDate = toEuropeLondonBusinessDate(data.recordedAt);
+        } catch {
+            return { success: false, error: 'Invalid recorded date.', code: 'INVALID_DATE' };
+        }
+        const normalizedRef = data.transactionReference?.trim() || null;
+
+        // 5. Generate versioned request fingerprint if idempotencyKey is supplied
+        const requestFingerprint = data.idempotencyKey
+            ? computePaymentRequestFingerprint({
+                  operationMode,
+                  method: data.method,
+                  recordedAt: businessDate,
+                  transactionReference: normalizedRef,
+                  amountPence,
+              })
+            : null;
+
+        // 6. Execute in transaction with transaction-scoped lock timeout
+        const txResult = await db.transaction(async (tx) => {
+            // SET LOCAL lock_timeout is strictly scoped to this transaction
+            await tx.execute(sql`SET LOCAL lock_timeout = '5s'`);
+
+            // Deterministic row lock on invoice scoped to organisationId
+            const [lockedInvoice] = await tx
+                .select()
+                .from(invoices)
+                .where(and(eq(invoices.id, data.invoiceId), eq(invoices.organisationId, orgId)))
+                .for('update');
+
+            if (!lockedInvoice) {
+                return { success: false, error: 'Invoice not found', code: 'INVOICE_NOT_FOUND' } as const;
+            }
+
+            // In-transaction live authorization re-check
+            const [txOrgMember] = await tx
+                .select({ role: orgMemberships.role })
+                .from(orgMemberships)
+                .where(and(eq(orgMemberships.userId, userId), eq(orgMemberships.organisationId, orgId)));
+
+            if (!txOrgMember || !allowedRoles.includes(txOrgMember.role)) {
+                return { success: false, error: 'Unauthorized: insufficient role permissions.', code: 'FORBIDDEN_ROLE' } as const;
+            }
+
+            if (txOrgMember.role !== 'ORG_OWNER') {
+                const [centreMember] = await tx
+                    .select()
+                    .from(centreMemberships)
+                    .where(and(
+                        eq(centreMemberships.userId, userId),
+                        eq(centreMemberships.centreId, lockedInvoice.centreId)
+                    ));
+
+                if (!centreMember) {
+                    return { success: false, error: 'Unauthorized: No access to this centre', code: 'FORBIDDEN_CENTRE' } as const;
+                }
+            }
+
+            // Idempotency check inside transaction
+            if (data.idempotencyKey) {
+                const [existingPayment] = await tx
+                    .select()
+                    .from(payments)
+                    .where(and(
+                        eq(payments.invoiceId, data.invoiceId),
+                        eq(payments.idempotencyKey, data.idempotencyKey)
+                    ));
+
+                if (existingPayment) {
+                    if (existingPayment.requestFingerprint === requestFingerprint) {
+                        // Idempotent replay: return existing payment with zero mutations
+                        return {
+                            success: true,
+                            isReplay: true,
+                            payment: existingPayment,
+                            ...existingPayment,
+                            parentId: lockedInvoice.parentId,
+                        } as const;
+                    } else {
+                        // Conflict: same key, different payload
+                        return {
+                            success: false,
+                            error: 'Payment idempotency key already used with different parameters.',
+                            code: 'IDEMPOTENCY_CONFLICT',
+                            existingPayment: {
+                                id: existingPayment.id,
+                                amount: existingPayment.amount,
+                                method: existingPayment.method,
+                                recordedAt: existingPayment.recordedAt,
+                                status: existingPayment.status,
+                                transactionReference: existingPayment.transactionReference,
+                            }
+                        } as const;
+                    }
+                }
+            }
+
+            // Lifecycle check: reject draft/void; accept sent/partially_paid/paid
+            const lifecycleCheck = canAcceptStaffPayment(lockedInvoice.status);
+            if (!lifecycleCheck.accepted) {
+                return {
+                    success: false,
+                    error: lifecycleCheck.reason!,
+                    code: lifecycleCheck.code!
+                } as const;
+            }
+
+            // Calculate current verified balance
+            const allPayments = await tx
+                .select({ amount: payments.amount, status: payments.status })
+                .from(payments)
+                .where(eq(payments.invoiceId, data.invoiceId));
+
+            const totalVerifiedPence = allPayments
+                .filter(p => p.status === 'verified')
+                .reduce((sum, p) => sum + parseStoredDecimalToPence(p.amount), 0);
+
+            const invoiceAmountPence = parseStoredDecimalToPence(lockedInvoice.amount);
+            const remainingPence = invoiceAmountPence - totalVerifiedPence;
+
+            let finalAmountPence: number;
+            if (operationMode === 'SETTLE_OUTSTANDING') {
+                if (remainingPence <= 0) {
+                    return {
+                        success: false,
+                        error: 'Invoice has no outstanding balance due.',
+                        code: 'ALREADY_SETTLED'
+                    } as const;
+                }
+                finalAmountPence = remainingPence;
+            } else {
+                finalAmountPence = amountPence!;
+            }
+
+            const finalAmountStr = formatPenceToDecimal(finalAmountPence);
+            const isOverpaid = (totalVerifiedPence + finalAmountPence) > invoiceAmountPence;
+
+            // Insert payment record
+            const [newPayment] = await tx.insert(payments).values({
+                invoiceId: data.invoiceId,
+                amount: finalAmountStr,
+                method: data.method as any,
+                status: 'verified',
+                transactionReference: normalizedRef,
+                recordedAt: new Date(data.recordedAt),
+                idempotencyKey: data.idempotencyKey || null,
+                requestFingerprint: requestFingerprint,
+            }).returning();
+
+            // Recalculate invoice status
+            await recalculateInvoiceStatus(tx, data.invoiceId);
+
+            // Insert audit row
+            await tx.insert(auditEvents).values({
+                organisationId: orgId,
+                userId: userId,
+                eventType: 'payment_recorded',
+                eventData: JSON.stringify({
+                    invoiceId: data.invoiceId,
+                    paymentId: newPayment.id,
+                    amount: finalAmountStr,
+                    method: data.method,
+                    idempotencyKey: data.idempotencyKey || null,
+                    warning: isOverpaid ? 'Payment resulted in overpayment.' : undefined
+                })
+            });
+
+            return {
+                success: true,
+                isReplay: false,
+                payment: newPayment,
+                ...newPayment,
+                parentId: lockedInvoice.parentId,
+                warning: isOverpaid ? 'Payment resulted in overpayment.' : undefined
+            } as const;
+        });
+
+        if (!txResult.success) {
+            return txResult;
+        }
+
+        // 7. Post-transaction revalidations & side effects
+        revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
+        revalidatePath('/dashboard/finance');
+        revalidatePath('/dashboard/finance/invoices');
+        if (txResult.parentId) {
+            revalidatePath(`/dashboard/parents/${txResult.parentId}`);
+        }
+        revalidatePath('/portal/billing');
+
+        // Only dispatch notifications and emails for fresh (non-replay) payments!
+        if (!txResult.isReplay) {
+            notifyOwners({
+                orgId,
+                type: 'system',
+                title: 'Payment Recorded',
+                message: `A £${Number(txResult.amount).toFixed(2)} payment (${data.method.replace('_', ' ')}) has been recorded.`,
+            }).catch(() => {});
+
+            try {
+                const { organisations } = await import('@/db/schema');
+                const invoiceRecord = await db.query.invoices.findFirst({
+                    where: eq(invoices.id, data.invoiceId),
+                    with: { parent: true }
+                });
+                const orgRecord = await db.query.organisations.findFirst({
+                    where: eq(organisations.id, orgId)
+                });
+
+                if (invoiceRecord?.parent?.email) {
+                    await emailService.sendPaymentReceiptEmail({
+                        parentEmail: invoiceRecord.parent.email,
+                        parentName: invoiceRecord.parent.firstName,
+                        invoiceNumber: invoiceRecord.invoiceNumber,
+                        paymentId: txResult.id,
+                        amountPaid: Number(txResult.amount),
+                        organisationName: orgRecord?.name || 'Our Centre',
+                        invoiceId: data.invoiceId
+                    });
+                }
+            } catch (err) {
+                logger.error('[recordPayment] Failed to send receipt email:', err);
+            }
+        }
+
+        return txResult;
+    } catch (err: any) {
+        if (isNextControlFlowError(err)) {
+            throw err;
+        }
+
+        // Map PostgreSQL lock timeout SQLSTATE 55P03
+        if (err?.code === '55P03' || /55P03/i.test(String(err)) || /lock_timeout/i.test(String(err))) {
+            return {
+                success: false,
+                error: 'Operation timed out waiting for invoice lock.',
+                code: 'LOCK_TIMEOUT'
+            };
+        }
+
+        // Map PostgreSQL unique violation 23505 on idempotency key race
+        if (err?.code === '23505' && data.idempotencyKey) {
+            try {
+                const [existing] = await db
+                    .select()
+                    .from(payments)
+                    .where(and(
+                        eq(payments.invoiceId, data.invoiceId),
+                        eq(payments.idempotencyKey, data.idempotencyKey)
+                    ));
+
+                if (existing) {
+                    const businessDate = toEuropeLondonBusinessDate(data.recordedAt);
+                    const normalizedRef = data.transactionReference?.trim() || null;
+                    const opMode = data.operationMode || 'MANUAL_AMOUNT';
+                    const amtPence = opMode === 'MANUAL_AMOUNT' && data.amount ? parseStrictDecimalToPence(data.amount) : null;
+                    const expectedFp = computePaymentRequestFingerprint({
+                        operationMode: opMode,
+                        method: data.method,
+                        recordedAt: businessDate,
+                        transactionReference: normalizedRef,
+                        amountPence: amtPence,
+                    });
+
+                    if (existing.requestFingerprint === expectedFp) {
+                        return {
+                            success: true,
+                            isReplay: true,
+                            payment: existing,
+                            ...existing,
+                        };
+                    } else {
+                        return {
+                            success: false,
+                            error: 'Payment idempotency key already used with different parameters.',
+                            code: 'IDEMPOTENCY_CONFLICT',
+                            existingPayment: existing
+                        };
+                    }
+                }
+            } catch (innerErr) {
+                logger.error('[recordPayment] Error during 23505 race resolution:', innerErr);
+            }
+        }
+
+        logger.error('[recordPayment] Unexpected error:', err);
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : 'An unexpected error occurred while recording payment.',
+            code: 'INTERNAL_ERROR'
+        };
+    }
+}
+
 
 export async function updateInvoiceDate(invoiceId: string, newInvoiceDate: Date) {
     const session = await requireTenantSession();

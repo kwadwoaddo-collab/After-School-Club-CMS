@@ -15,6 +15,7 @@ import { ReceiptTemplate } from './ReceiptTemplate';
 import PDFPreviewModal from './PDFPreviewModal';
 import ConfirmActionModal from './ConfirmActionModal';
 import { deleteInvoice, voidInvoice, updateInvoiceDate, updateInvoiceNotes, resendInvoiceEmail, issueDraftInvoice, updateDraftInvoice, discardDraftInvoice } from '../actions';
+import { canOfferRecordPayment, parseStoredDecimalToPence } from '../domain/payment-eligibility';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface InvoiceDetailsClientProps {
@@ -278,7 +279,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                         </>
                     ) : (
                         <>
-                            {remainingBalance > 0 && (
+                            {canOfferRecordPayment({ status: invoice.status, remainingBalancePence: parseStoredDecimalToPence(remainingBalance), userRole }) && (
                                 <button
                                     disabled={isPending}
                                     onClick={() => setIsPaymentModalOpen(true)}
@@ -690,7 +691,7 @@ export default function InvoiceDetailsClient({ invoice, organisationName, userRo
                             </div>
                         )}
 
-                        {remainingBalance > 0 && (
+                        {canOfferRecordPayment({ status: invoice.status, remainingBalancePence: parseStoredDecimalToPence(remainingBalance), userRole }) && (
                             <button
                                 disabled={isPending}
                                 onClick={() => setIsPaymentModalOpen(true)}

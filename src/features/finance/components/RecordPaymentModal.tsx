@@ -3,8 +3,9 @@
 
 
 import { useState } from 'react';
-import { X, CreditCard, Calendar, Check, Loader2, Landmark, Ticket } from 'lucide-react';
+import { X, CreditCard, Calendar, Check, Loader2, Landmark, Ticket, AlertTriangle, RefreshCw } from 'lucide-react';
 import { recordPayment } from '../actions';
+import { usePaymentIdempotency } from '../hooks/use-payment-idempotency';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface RecordPaymentModalProps {
@@ -23,12 +24,14 @@ export default function RecordPaymentModal({
     onSuccess 
 }: RecordPaymentModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [conflictPayment, setConflictPayment] = useState<any | null>(null);
     const { toast } = useToast();
+    const { idempotencyKey, originalRecordedAt, rotateIdempotencyKey, clearIdempotencyKey } = usePaymentIdempotency(invoiceId);
     
     const [formData, setFormData] = useState({
         amount: remainingBalance.toString(),
-        method: 'bank_transfer' as 'cash' | 'bank_transfer' | 'voucher' | 'other',
-        recordedAt: new Date().toISOString().split('T')[0],
+        method: 'bank_transfer' as 'cash' | 'bank_transfer' | 'voucher' | 'other' | 'tax_free_childcare',
+        recordedAt: originalRecordedAt ? originalRecordedAt.split('T')[0] : new Date().toISOString().split('T')[0],
         reference: ''
     });
 
@@ -42,14 +45,31 @@ export default function RecordPaymentModal({
 
         setIsSubmitting(true);
         try {
-            await recordPayment({
+            const res = await recordPayment({
                 invoiceId,
-                amount: formData.amount, // action expects string
+                amount: formData.amount,
                 method: formData.method,
-                recordedAt: new Date(formData.recordedAt),
+                recordedAt: formData.recordedAt,
                 transactionReference: formData.reference || undefined,
+                idempotencyKey,
+                operationMode: 'MANUAL_AMOUNT',
             });
-            toast('Payment recorded successfully', 'success');
+
+            if (!res.success) {
+                if (res.code === 'IDEMPOTENCY_CONFLICT') {
+                    setConflictPayment(res.existingPayment || {});
+                    toast('Submission conflict: idempotency key was already used with different parameters.', 'error');
+                } else {
+                    toast(res.error || 'Failed to record payment', 'error');
+                    if (res.code === 'FORBIDDEN_ROLE' || res.code === 'FORBIDDEN_CENTRE' || res.code === 'DRAFT_INVOICE' || res.code === 'VOID_INVOICE') {
+                        rotateIdempotencyKey();
+                    }
+                }
+                return;
+            }
+
+            clearIdempotencyKey();
+            toast(res.isReplay ? 'Payment already recorded (idempotent replay)' : 'Payment recorded successfully', 'success');
             onSuccess();
             onClose();
         } catch (error) {
@@ -60,10 +80,16 @@ export default function RecordPaymentModal({
         }
     };
 
+    const handleStartNewPayment = () => {
+        rotateIdempotencyKey();
+        setConflictPayment(null);
+    };
+
     const methods = [
         { id: 'bank_transfer', label: 'Bank Transfer', icon: Landmark, color: 'text-blue-400' },
         { id: 'cash', label: 'Cash', icon: CreditCard, color: 'text-emerald-600' },
         { id: 'voucher', label: 'Voucher', icon: Ticket, color: 'text-amber-600' },
+        { id: 'tax_free_childcare', label: 'Tax-Free Childcare', icon: CreditCard, color: 'text-purple-400' },
         { id: 'other', label: 'Other', icon: CreditCard, color: 'text-muted-foreground' },
     ];
 
@@ -83,6 +109,32 @@ export default function RecordPaymentModal({
                         <X className="w-6 h-6" />
                     </button>
                 </div>
+
+                {conflictPayment && (
+                    <div className="mx-8 mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="text-xs text-amber-200/90 space-y-1">
+                                <p className="font-bold text-amber-100">Payment Already Recorded With Different Parameters</p>
+                                <p>An existing payment was previously recorded under this key:</p>
+                                <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+                                    <li>Amount: £{conflictPayment.amount}</li>
+                                    <li>Method: {conflictPayment.method}</li>
+                                    <li>Date: {conflictPayment.recordedAt ? new Date(conflictPayment.recordedAt).toLocaleDateString('en-GB') : 'N/A'}</li>
+                                    <li>Status: {conflictPayment.status}</li>
+                                    {conflictPayment.transactionReference && <li>Reference: {conflictPayment.transactionReference}</li>}
+                                </ul>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleStartNewPayment}
+                            className="w-full py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" /> Start a New Payment
+                        </button>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     {/* Amount */}

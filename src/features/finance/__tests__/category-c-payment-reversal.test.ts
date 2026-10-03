@@ -116,6 +116,8 @@ vi.mock('@/db', () => ({
             payments: { findFirst: vi.fn(), findMany: async () => [] },
             billingConfigs: { findFirst: vi.fn() },
             organisations: { findFirst: vi.fn() },
+            orgMemberships: { findFirst: vi.fn().mockResolvedValue({ role: 'ORG_OWNER' }) },
+            centreMemberships: { findFirst: vi.fn().mockResolvedValue({ id: 'cm-1' }) },
         },
         select: vi.fn(() => ({
             from: vi.fn(() => ({
@@ -305,6 +307,23 @@ describe('Category C — Payment Reversal Scenarios', () => {
             (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
 
             const tx = {
+                execute: vi.fn().mockResolvedValue([]),
+                select: vi.fn(() => ({
+                    from: vi.fn(() => ({
+                        where: vi.fn(() => {
+                            const promise = Promise.resolve([
+                                { role: 'ORG_OWNER' },
+                                { id: 'inv-1', organisationId: 'org-1', status: 'void', amount: '600.00', parentId: 'p-1', centreId: 'c-1' }
+                            ]);
+                            return {
+                                for: vi.fn().mockResolvedValue([
+                                    { id: 'inv-1', organisationId: 'org-1', status: 'void', amount: '600.00', parentId: 'p-1', centreId: 'c-1' }
+                                ]),
+                                then: promise.then.bind(promise),
+                            };
+                        }),
+                    })),
+                })),
                 query: {
                     invoices: {
                         findFirst: async () => ({
@@ -322,9 +341,10 @@ describe('Category C — Payment Reversal Scenarios', () => {
             };
             dbTransaction.mockImplementationOnce((cb: (tx: unknown) => unknown) => cb(tx));
 
-            await expect(
-                recordPayment({ invoiceId: 'inv-1', amount: '600.00', method: 'cash', transactionReference: null, recordedAt: new Date() })
-            ).rejects.toThrow(/voided invoice/i);
+            const result = await recordPayment({ invoiceId: 'inv-1', amount: '600.00', method: 'cash', transactionReference: null, recordedAt: new Date() });
+            expect(result.success).toBe(false);
+            expect(result.code).toBe('VOID_INVOICE');
+            expect(result.error).toMatch(/voided invoice/i);
         });
     });
 
@@ -337,6 +357,23 @@ describe('Category C — Payment Reversal Scenarios', () => {
             (auth as ReturnType<typeof vi.fn>).mockResolvedValue(OWNER_SESSION);
 
             const tx = {
+                execute: vi.fn().mockResolvedValue([]),
+                select: vi.fn(() => ({
+                    from: vi.fn(() => ({
+                        where: vi.fn(() => {
+                            const promise = Promise.resolve([
+                                { role: 'ORG_OWNER' },
+                                { id: 'inv-1', organisationId: 'org-1', status: 'draft', amount: '600.00', parentId: 'p-1', centreId: 'c-1' }
+                            ]);
+                            return {
+                                for: vi.fn().mockResolvedValue([
+                                    { id: 'inv-1', organisationId: 'org-1', status: 'draft', amount: '600.00', parentId: 'p-1', centreId: 'c-1' }
+                                ]),
+                                then: promise.then.bind(promise),
+                            };
+                        }),
+                    })),
+                })),
                 query: {
                     invoices: {
                         findFirst: async () => ({
@@ -353,9 +390,10 @@ describe('Category C — Payment Reversal Scenarios', () => {
             };
             dbTransaction.mockImplementationOnce((cb: (tx: unknown) => unknown) => cb(tx));
 
-            await expect(
-                recordPayment({ invoiceId: 'inv-1', amount: '600.00', method: 'cash', transactionReference: null, recordedAt: new Date() })
-            ).rejects.toThrow(/draft invoice/i);
+            const result = await recordPayment({ invoiceId: 'inv-1', amount: '600.00', method: 'cash', transactionReference: null, recordedAt: new Date() });
+            expect(result.success).toBe(false);
+            expect(result.code).toBe('DRAFT_INVOICE');
+            expect(result.error).toMatch(/draft invoice/i);
         });
     });
 

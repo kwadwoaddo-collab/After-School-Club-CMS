@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, pgEnum, boolean, integer, unique, numeric, index, date, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // ==================== DISCOUNT RULE TYPE ====================
 export type DiscountRule = {
@@ -700,11 +700,16 @@ export const payments = pgTable('payments', {
   reversalReason: text('reversal_reason'),
   reversedAt: timestamp('reversed_at', { withTimezone: true }),
 
-  
+  idempotencyKey: varchar('idempotency_key', { length: 255 }),
+  requestFingerprint: varchar('request_fingerprint', { length: 255 }),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   invoiceIdx: index('payments_invoice_idx').on(table.invoiceId),
+  invoiceIdempotencyIdx: uniqueIndex('payments_invoice_idempotency_uniq')
+    .on(table.invoiceId, table.idempotencyKey)
+    .where(sql`idempotency_key IS NOT NULL`),
 }));
 
 export const parentCredits = pgTable('parent_credits', {
