@@ -372,6 +372,7 @@ export const bookings = pgTable('bookings', {
   magicLinkToken: varchar('magic_link_token', { length: 255 }).notNull().unique(),
   googleCalendarEventId: varchar('google_calendar_event_id', { length: 255 }),
   communicationsConsent: boolean('communications_consent').default(false).notNull(),
+  communicationVersion: integer('communication_version').default(1).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -1381,3 +1382,75 @@ export const portalNotifications = pgTable('portal_notifications', {
 });
 
 
+
+// ==================== BOOKING EMAIL OUTBOX (CMS-OPS-REMEDIATION-1C V15) ====================
+// Migration-owned (drizzle/0031_booking_email_outbox.sql). The hard-delete trigger
+// trg_scrub_outbox_on_booking_delete, the CHECK constraints and the partial indexes live in the
+// migration only (kept out of these definitions so drizzle-kit generate produces no spurious migration).
+// PostgreSQL enum evolution requires a governed separate migration: a value added by ALTER TYPE ... ADD VALUE
+// cannot be used in the same transaction, and the Drizzle migrator wraps pending migrations in one transaction.
+export const bookingEmailOutboxStatusEnum = pgEnum('booking_email_outbox_status', [
+  'PENDING', 'PROCESSING', 'RETRY_SCHEDULED', 'ACCEPTED', 'ATTENTION', 'FAILED_PERMANENT', 'SUPERSEDED',
+  'HELD_PARENT_BINNED', 'HELD_BOOKING_PENDING', 'HELD_PROVIDER_OPERATIONAL',
+  'SKIPPED_BINNED_EXPIRED', 'SKIPPED_PENDING_EXPIRED', 'SKIPPED_PAST_SESSION', 'SKIPPED_CANCELLED',
+  'SKIPPED_ORPHANED', 'SKIPPED_ROLLBACK',
+]);
+
+export const bookingEmailOutbox = pgTable('booking_email_outbox', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'cascade' }).notNull(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'set null' }),
+  bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'set null' }),
+  transitionVersion: integer('transition_version').notNull(),
+  communicationType: text('communication_type').notNull(),
+  recipientEmail: text('recipient_email').notNull(),
+  idempotencyKey: text('idempotency_key').notNull().unique(),
+  status: bookingEmailOutboxStatusEnum('status').default('PENDING').notNull(),
+  payload: jsonb('payload'),
+  claimToken: uuid('claim_token'),
+  claimExpiresAt: timestamp('claim_expires_at', { withTimezone: true }),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).defaultNow().notNull(),
+  attemptCount: integer('attempt_count').default(0).notNull(),
+  firstProviderAttemptAt: timestamp('first_provider_attempt_at', { withTimezone: true }),
+  unknownOutcomeSeen: boolean('unknown_outcome_seen').default(false).notNull(),
+  linkMode: text('link_mode'),
+  firstHeldAt: timestamp('first_held_at', { withTimezone: true }),
+  heldAt: timestamp('held_at', { withTimezone: true }),
+  providerMessageId: text('provider_message_id'),
+  providerHoldReason: text('provider_hold_reason'),
+  providerHoldScope: text('provider_hold_scope'),
+  providerHoldErrorName: text('provider_hold_error_name'),
+  attentionReason: text('attention_reason'),
+  lastErrorName: text('last_error_name'),
+  lastErrorStatus: integer('last_error_status'),
+  lastErrorAt: timestamp('last_error_at', { withTimezone: true }),
+  idempotencyEpoch: integer('idempotency_epoch').default(0).notNull(),
+  lastUnknownAt: timestamp('last_unknown_at', { withTimezone: true }),
+  lastRateLimitedAt: timestamp('last_rate_limited_at', { withTimezone: true }),
+  holdHits: integer('hold_hits').default(0).notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  bookingVersionUnique: unique('booking_email_outbox_booking_version_unique').on(table.bookingId, table.transitionVersion),
+  bookingVersionIdx: index('booking_email_outbox_booking_version_idx').on(table.bookingId, table.transitionVersion),
+}));
+
+// Singleton circuit-breaker / pacing row (id = 1). Platform state, no PII, no booking reference.
+export const bookingEmailProviderState = pgTable('booking_email_provider_state', {
+  id: integer('id').primaryKey(),
+  state: text('state').default('CLOSED').notNull(),
+  reason: text('reason'),
+  errorName: text('error_name'),
+  openedAt: timestamp('opened_at', { withTimezone: true }),
+  nextProbeAt: timestamp('next_probe_at', { withTimezone: true }),
+  probeStartedAt: timestamp('probe_started_at', { withTimezone: true }),
+  probeOutboxId: uuid('probe_outbox_id'),
+  consecutiveFailures: integer('consecutive_failures').default(0).notNull(),
+  configFingerprint: text('config_fingerprint'),
+  lastBulkReleaseAt: timestamp('last_bulk_release_at', { withTimezone: true }),
+  dispatchWindowStart: timestamp('dispatch_window_start', { withTimezone: true }),
+  dispatchWindowCount: integer('dispatch_window_count').default(0).notNull(),
+  rampUntil: timestamp('ramp_until', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
