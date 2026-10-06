@@ -36,6 +36,7 @@ import { claimOutboxBatch, recoverStaleLeases } from '@/lib/services/email-outbo
 import {
   decidePostStamp,
   dispatchClaimedRowSlice,
+  dispatchOutboxRow,
   startInvocationBudget,
 } from '@/lib/services/email-outbox-dispatch';
 import {
@@ -46,6 +47,9 @@ import {
   type ClaimedOutboxRow,
   type DispatchOrigin,
 } from '@/lib/services/email-outbox-types';
+
+vi.mock('@/db', () => ({ db: {} }));
+vi.mock('@/lib/org-approval-guard', () => ({ isPlatformAdmin: () => false }));
 
 const testDbUrl = assertTestDatabaseUrl(process.env.TEST_DATABASE_URL);
 
@@ -1200,4 +1204,289 @@ describe('booking email outbox: first gate (known post-stamp no-call, D-05 / D-0
       });
     });
   });
+
+  // ==========================================================================================
+  // PHASE 3: complete dispatcher, maintenance, public API (real PostgreSQL; the provider is an in-memory fake port)
+  // ==========================================================================================
+  describe('phase 3: dispatcher, maintenance and public API', () => {
+    interface FakeCall { key: string; type: string; recipient: string; linkMode: string | null; signal: AbortSignal }
+    function fakePort(result: () => unknown, opts: { configured?: boolean } = {}) {
+      const calls: FakeCall[] = [];
+      const port = {
+        isConfigured: () => opts.configured ?? true,
+        send: async (req: { idempotencyKey: string; communicationType: string; recipientEmail: string; linkMode: string | null; signal: AbortSignal }) => {
+          calls.push({ key: req.idempotencyKey, type: req.communicationType, recipient: req.recipientEmail, linkMode: req.linkMode, signal: req.signal });
+          return result() as never;
+        },
+      };
+      return { port, calls };
+    }
+    const okResponse = () => ({ response: { data: { id: 'msg_p3' }, error: null, headers: null } });
+    const errResponse = (name: string, status: number | null, headers: Record<string, string> | null = null) => () => ({ response: { data: null, error: { name, statusCode: status, message: 'x' }, headers } });
+    const noSleep = async () => {};
+
+    beforeAll(async () => {
+      if (stubBaseline) {
+        await directSql.unsafe(`
+          ALTER TABLE parents ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+          ALTER TABLE parents ADD COLUMN IF NOT EXISTS magic_link_token varchar(255);
+          ALTER TABLE parents ADD COLUMN IF NOT EXISTS magic_link_expires_at timestamptz;
+          ALTER TABLE bookings ADD COLUMN IF NOT EXISTS google_calendar_event_id varchar(255);
+        `);
+      }
+    });
+    beforeEach(async () => {
+      await directSql`DELETE FROM booking_email_outbox WHERE organisation_id = ${ORG_ID}`;
+      await directSql`UPDATE booking_email_provider_state SET last_bulk_release_at = NULL, config_fingerprint = NULL WHERE id = 1`;
+      await directSql`UPDATE parents SET deleted_at = NULL WHERE id = ${PARENT_ID}`;
+      await directSql`DROP TRIGGER IF EXISTS outbox_p3_slow_trg ON booking_email_outbox`;
+      vi.restoreAllMocks();
+    });
+
+    const dispatch = (seed: SeededRow, port: ReturnType<typeof fakePort>['port'], extra: Record<string, unknown> = {}, origin: DispatchOrigin = 'route') =>
+      dispatchOutboxRow(rootDb, seed.claim, { port, budget: makeBudget(origin, { elapsed: 0 }), sleep: noSleep, ...extra } as never);
+
+    it('full flow: ACCEPTED, idempotency key + AbortSignal reach the port, payload nulled, breaker CLOSED', async () => {
+      const seed = await seedClaimedRow();
+      const { port, calls } = fakePort(okResponse);
+      const res = await dispatch(seed, port);
+      expect(res.kind).toBe('PROVIDER_CALLED');
+      expect(calls).toHaveLength(1);
+      expect(calls[0].key).toBe(`booking_confirmation:${seed.bookingId}:v1:parent`);
+      expect(calls[0].signal).toBeInstanceOf(AbortSignal);
+      const row = await getRow(seed.outboxId);
+      expect(row.status).toBe('ACCEPTED');
+      expect(row.payload).toBeNull();
+      expect(row.attempt_count).toBe(1);
+      expect((await getBreaker()).state).toBe('CLOSED');
+    });
+
+    it.each([
+      ['booking cancelled', `UPDATE bookings SET status = 'cancelled' WHERE id = $1`],
+      ['booking version mismatch', `UPDATE bookings SET communication_version = 5 WHERE id = $1`],
+    ])('ladder: %s => no provider call', async (_n, stmt) => {
+      const seed = await seedClaimedRow();
+      await directSql.unsafe(stmt, [seed.bookingId]);
+      const { port, calls } = fakePort(okResponse);
+      const res = await dispatch(seed, port);
+      expect(['REJECTED_BY_LADDER', 'FENCE_LOST']).toContain(res.kind);
+      expect(calls).toHaveLength(0);
+      expect((await getRow(seed.outboxId)).status).not.toBe('ACCEPTED');
+      await directSql`UPDATE bookings SET status = 'confirmed', communication_version = 1 WHERE id = ${seed.bookingId}`;
+    });
+
+    it('ladder: deleted parent => no provider call', async () => {
+      const seed = await seedClaimedRow();
+      await directSql`UPDATE parents SET deleted_at = now() WHERE id = ${PARENT_ID}`;
+      const { port, calls } = fakePort(okResponse);
+      const res = await dispatch(seed, port);
+      expect(res.kind).toBe('REJECTED_BY_LADDER');
+      expect(calls).toHaveLength(0);
+    });
+
+    it('provider 500 => RETRY_SCHEDULED, counted unknown, breaker failure recorded', async () => {
+      const seed = await seedClaimedRow();
+      const { port } = fakePort(errResponse('internal_server_error', 500));
+      const res = await dispatch(seed, port);
+      expect(res.kind).toBe('PROVIDER_CALLED');
+      const row = await getRow(seed.outboxId);
+      expect(row.status).toBe('RETRY_SCHEDULED');
+      expect(row.unknown_outcome_seen).toBe(true);
+      expect(row.last_unknown_at).not.toBeNull();
+    });
+
+    it('thrown AbortError => unknown outcome, row not ACCEPTED', async () => {
+      const seed = await seedClaimedRow();
+      const { port } = fakePort(() => ({ thrown: Object.assign(new Error('aborted'), { name: 'AbortError' }) }));
+      await dispatch(seed, port);
+      const row = await getRow(seed.outboxId);
+      expect(row.status).toBe('RETRY_SCHEDULED');
+      expect(row.unknown_outcome_seen).toBe(true);
+    });
+
+    it('unconfigured provider => CONFIG precheck hold, zero calls, breaker lock before outbox UPDATE', async () => {
+      const seed = await seedClaimedRow();
+      recorded.length = 0;
+      const { port, calls } = fakePort(okResponse, { configured: false });
+      const res = await dispatch(seed, port);
+      expect(calls).toHaveLength(0);
+      expect(res.kind).toBe('RELEASED');
+      const row = await getRow(seed.outboxId);
+      expect(row.status).not.toBe('ACCEPTED');
+    });
+
+    it('bumping communication_version during the send converts the outcome to SUPERSEDED for retryable outcomes only', async () => {
+      const seed = await seedClaimedRow();
+      const { port } = fakePort(() => {
+        return errResponse('internal_server_error', 500)();
+      });
+      const origSend = port.send;
+      port.send = async (req) => {
+        await directSql`UPDATE bookings SET communication_version = 2 WHERE id = ${seed.bookingId}`;
+        return origSend(req);
+      };
+      await dispatch(seed, port);
+      expect((await getRow(seed.outboxId)).status).toBe('SUPERSEDED');
+      const seed2 = await seedClaimedRow();
+      const { port: port2 } = fakePort(okResponse);
+      const send2 = port2.send;
+      port2.send = async (req) => {
+        await directSql`UPDATE bookings SET communication_version = 2 WHERE id = ${seed2.bookingId}`;
+        return send2(req);
+      };
+      await dispatch(seed2, port2);
+      expect((await getRow(seed2.outboxId)).status).toBe('ACCEPTED');
+    });
+
+    it('pacing: full bucket => ROLLBACK before the single 1100 ms wait, no lock held in the sleep, then one retry in a new txn', async () => {
+      const seed = await seedClaimedRow();
+      await directSql`UPDATE booking_email_provider_state SET dispatch_window_start = now(), dispatch_window_count = 2 WHERE id = 1`;
+      const sleeps: number[] = [];
+      let lockFreeDuringSleep: boolean | null = null;
+      const sleep = async (ms: number) => {
+        sleeps.push(ms);
+        if (ms === 1100) {
+          const got = await directSql.begin(async (t) => {
+            try {
+              await t`SELECT 1 FROM booking_email_provider_state WHERE id = 1 FOR UPDATE NOWAIT`;
+              await t`SELECT 1 FROM booking_email_outbox WHERE id = ${seed.outboxId} FOR UPDATE NOWAIT`;
+              return true;
+            } catch { return false; }
+          });
+          lockFreeDuringSleep = got;
+          await new Promise((r) => setTimeout(r, 1100));
+        }
+      };
+      const { port, calls } = fakePort(okResponse);
+      recorded.length = 0;
+      const res = await dispatch(seed, port, { sleep });
+      expect(sleeps.filter((s) => s === 1100)).toHaveLength(1);
+      expect(lockFreeDuringSleep).toBe(true);
+      expect(res.kind).toBe('PROVIDER_CALLED');
+      expect(calls).toHaveLength(1);
+      const rb = recorded.findIndex((s) => /^ROLLBACK/i.test(s));
+      expect(rb).toBeGreaterThanOrEqual(0);
+    });
+
+    it('pacing still full after the wait => released +5 s, attempt_count unchanged, no provider call', async () => {
+      const seed = await seedClaimedRow();
+      await directSql`UPDATE booking_email_provider_state SET dispatch_window_start = now(), dispatch_window_count = 2 WHERE id = 1`;
+      const { port, calls } = fakePort(okResponse);
+      // The fake sleep does not actually wait, so the bucket is still full on the single retry.
+      const res = await dispatch(seed, port);
+      expect(calls).toHaveLength(0);
+      expect(res.kind).toBe('RELEASED');
+      const row = await getRow(seed.outboxId);
+      expect(row.status).toBe('PENDING');
+      expect(row.attempt_count).toBe(0);
+      expect(intervalSeconds(row.next_in)).toBeGreaterThan(3);
+    });
+
+    it('55P03: held breaker lock => release +5 s, attempt_count 0, breaker untouched, no provider call', async () => {
+      const seed = await seedClaimedRow();
+      const holder = await directSql.reserve();
+      try {
+        await holder`BEGIN`;
+        await holder`SELECT 1 FROM booking_email_provider_state WHERE id = 1 FOR UPDATE`;
+        const { port, calls } = fakePort(okResponse);
+        const res = await dispatch(seed, port);
+        expect(res.kind).toBe('RELEASED');
+        expect(calls).toHaveLength(0);
+      } finally {
+        await holder`ROLLBACK`;
+        holder.release();
+      }
+      const row = await getRow(seed.outboxId);
+      expect(row.status).toBe('PENDING');
+      expect(row.attempt_count).toBe(0);
+      expect((await getBreaker()).state).toBe('CLOSED');
+    });
+
+    it('no-call (candidate timeout < 1000 ms) through the full dispatcher: exactly one finalisation, no provider call', async () => {
+      const seed = await seedClaimedRow();
+      const { port, calls } = fakePort(okResponse);
+      const state = { elapsed: ACTION_BUDGET_MS - 2200 };
+      const res = await dispatchOutboxRow(rootDb, seed.claim, { port, budget: makeBudget('action', state), sleep: noSleep } as never);
+      expect(calls).toHaveLength(0);
+      expect(['NO_CALL', 'RELEASED']).toContain(res.kind);
+      const row = await getRow(seed.outboxId);
+      expect(row.status).not.toBe('ACCEPTED');
+    });
+
+    describe('maintenance', () => {
+      it('72 h disposal: PENDING row older than 72 h is disposed, fresh row untouched', async () => {
+        const { runMaintenance } = await import('@/lib/services/email-outbox-maintenance');
+        const old = await seedClaimedRow();
+        await directSql`UPDATE booking_email_outbox SET status='PENDING', claim_token=NULL, claim_expires_at=NULL, created_at = now() - interval '80 hours' WHERE id = ${old.outboxId}`;
+        const fresh = await seedClaimedRow();
+        await directSql`UPDATE booking_email_outbox SET status='PENDING', claim_token=NULL, claim_expires_at=NULL, next_attempt_at = now() + interval '1 hour' WHERE id = ${fresh.outboxId}`;
+        await runMaintenance(rootDb, { origin: 'route', budget: makeBudget('route', { elapsed: 0 }) });
+        expect((await getRow(old.outboxId)).status).not.toBe('PENDING');
+        expect((await getRow(fresh.outboxId)).status).toBe('PENDING');
+      });
+
+      it('paused mode: no probe promotion and no bulk release; stale PROCESSING > 72 h still disposed', async () => {
+        const { runMaintenance } = await import('@/lib/services/email-outbox-maintenance');
+        const stale = await seedClaimedRow();
+        await directSql`UPDATE booking_email_outbox SET created_at = now() - interval '80 hours', claim_expires_at = now() - interval '1 hour' WHERE id = ${stale.outboxId}`;
+        const held = await seedRow_p3('HELD_PROVIDER_OPERATIONAL');
+        await runMaintenance(rootDb, { origin: 'route', paused: true, budget: makeBudget('route', { elapsed: 0 }) });
+        expect((await getRow(stale.outboxId)).status).not.toBe('PROCESSING');
+        expect((await getRow(held)).status).toBe('HELD_PROVIDER_OPERATIONAL');
+        expect((await getBreaker()).state).toBe('CLOSED');
+      });
+    });
+
+    async function seedRow_p3(status: string): Promise<string> {
+      const s = await seedClaimedRow();
+      await directSql`UPDATE booking_email_outbox SET status = ${status}, claim_token = NULL, claim_expires_at = NULL, provider_hold_reason = 'CONFIG', provider_hold_scope = 'GLOBAL' WHERE id = ${s.outboxId}`;
+      return s.outboxId;
+    }
+
+    describe('public API', () => {
+      it('enqueueBookingEmail is atomic with the caller txn (rollback leaves no row) and idempotent per version', async () => {
+        const { enqueueBookingEmail, buildIdempotencyKey } = await import('@/lib/services/email-outbox');
+        const bookingId = randomUUID();
+        await directSql`INSERT INTO bookings (id, parent_id, start_at, status, confirmation_code, magic_link_token${stubBaseline ? directSql`` : directSql`, centre_id, modality`})
+          VALUES (${bookingId}, ${PARENT_ID}, now() + interval '30 days', 'confirmed', ${'API' + Date.now().toString().slice(-9)}, ${'api-token-' + randomUUID()}${stubBaseline ? directSql`` : directSql`, ${CENTRE_ID}, 'online'`})`;
+        createdBookingIds.push(bookingId);
+        const args = { organisationId: ORG_ID, centreId: CENTRE_ID, bookingId, version: 1, type: 'BOOKING_CONFIRMATION' as const, recipientEmail: 'api@outbox-gate.test', payload: { payloadVersion: 1 } as never, linkMode: null };
+        await expect(rootDb.transaction(async (tx) => { await enqueueBookingEmail(tx, args); throw new Error('rollback'); })).rejects.toThrow('rollback');
+        expect(await directSql`SELECT 1 FROM booking_email_outbox WHERE booking_id = ${bookingId}`).toHaveLength(0);
+        const a = await rootDb.transaction((tx) => enqueueBookingEmail(tx, args));
+        const b = await rootDb.transaction((tx) => enqueueBookingEmail(tx, args));
+        expect(b.outboxId).toBe(a.outboxId);
+        expect((await getRow(a.outboxId)).idempotency_key).toBe(buildIdempotencyKey('BOOKING_CONFIRMATION', bookingId, 1));
+      });
+
+      it('buildIdempotencyKey rejects a null/invalid version (never "vnull")', async () => {
+        const { buildIdempotencyKey } = await import('@/lib/services/email-outbox');
+        expect(() => buildIdempotencyKey('BOOKING_CONFIRMATION', randomUUID(), null as never)).toThrow();
+      });
+
+      it('runFastPath with the worker paused performs zero claims', async () => {
+        const { runFastPath } = await import('@/lib/services/email-outbox');
+        const seed = await seedClaimedRow();
+        await directSql`UPDATE booking_email_outbox SET status='PENDING', claim_token=NULL, claim_expires_at=NULL WHERE id = ${seed.outboxId}`;
+        const prev = process.env.FEATURE_OUTBOX_WORKER_ENABLED;
+        process.env.FEATURE_OUTBOX_WORKER_ENABLED = 'false';
+        try {
+          const { port, calls } = fakePort(okResponse);
+          await runFastPath({ origin: 'route', outboxId: seed.outboxId, port, rootDb } as never);
+          expect(calls).toHaveLength(0);
+        } finally {
+          if (prev === undefined) delete process.env.FEATURE_OUTBOX_WORKER_ENABLED; else process.env.FEATURE_OUTBOX_WORKER_ENABLED = prev;
+        }
+        expect((await getRow(seed.outboxId)).status).toBe('PENDING');
+      });
+
+      it('tenant diagnostics are scoped to the organisation and never include the breaker', async () => {
+        const { getTenantDiagnostics } = await import('@/lib/services/email-outbox');
+        await seedClaimedRow();
+        const d = (await getTenantDiagnostics(rootDb, { organisationId: ORG_ID, centreIds: null, includeIdentifiers: false })) as unknown as Record<string, unknown>;
+        expect(JSON.stringify(d)).not.toMatch(/consecutive_failures|probe_outbox_id|gate-recipient@/);
+      });
+    });
+  });
+
 });

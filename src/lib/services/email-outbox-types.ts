@@ -178,12 +178,16 @@ export interface BookingConfirmationPayload extends OutboxPayloadBase {
   duration: number;
   /** Raw magic link; removed when frozen LINK_FREE or when the token expires (E4 rung 5a). */
   magicLink?: string;
+  /** Optional replacement context (public replacement path, E6 A); renders without dropping access fields. */
+  replacement?: { oldStartAt: string; supersededUnsentConfirmation: boolean };
 }
 export interface BookingReschedulePayload extends OutboxPayloadBase {
   childrenNames: string[];
   oldStartAt: string;
   newStartAt: string;
   centreName?: string;
+  /** True only when an unsent confirmation was superseded (E6 B; plan 22). */
+  includePortalLoginGuidance?: boolean;
 }
 export interface BookingCancelledPayload extends OutboxPayloadBase {
   childrenNames: string[];

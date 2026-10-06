@@ -11,6 +11,14 @@ import { Resend, type Attachment } from 'resend';
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { RegistrationTemplate } from '@/features/registration/components/RegistrationTemplate';
+import type {
+  BookingCancelledPayload,
+  BookingConfirmationPayload,
+  BookingReschedulePayload,
+  CommunicationType,
+  LinkMode,
+  OutboxPayload,
+} from './email-outbox-types';
 
 // Initialize Resend client only if API key is allowed
 const resendApiKey = process.env.RESEND_API_KEY;
@@ -39,21 +47,44 @@ interface EmailResult {
   error?: string;
 }
 
-/**
- * Email Service class for sending transactional emails
- */
-export class EmailService {
-  /**
-   * Send booking confirmation email
-   */
-  async sendBookingConfirmation(data: BookingEmailData): Promise<EmailResult> {
-    // Check if API key is configured
-    if (!resend) {
-      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
-      return { success: false, error: 'Email service not configured' };
-    }
+const LINK_FREE_GUIDANCE_HTML = `<div style="text-align: center; margin: 24px 0; padding: 16px; background-color: #f1f5f9; border-radius: 8px;"><p style="margin: 0; color: #334155;">To view or manage your booking, sign in to the parent portal with this email address and request a sign-in link. Keep your confirmation code safe.</p></div>`;
+const LINK_FREE_FOOTER_TEXT = 'If you need to reschedule or cancel, please sign in to the parent portal or reply to this email.';
+const PORTAL_LOGIN_GUIDANCE_PARAGRAPH = '<p>To view or manage your booking, sign in to the parent portal with this email address and request a sign-in link.</p>';
 
-    try {
+export interface RenderedEmail {
+  subject: string;
+  html: string;
+}
+interface ConfirmationRenderOptions {
+  linkFree?: boolean;
+  replacementOldStartAt?: Date;
+}
+interface BookingCancellationEmailData {
+  parentFirstName: string;
+  parentEmail: string;
+  childrenNames: string;
+  startAt: Date;
+  confirmationCode: string;
+}
+interface BookingRescheduleEmailData {
+  parentFirstName: string;
+  parentEmail: string;
+  childrenNames: string;
+  oldStartAt: Date;
+  newStartAt: Date;
+  confirmationCode: string;
+  centreName: string;
+}
+
+/**
+ * Pure render of the booking confirmation email (extracted unchanged from EmailService.sendBookingConfirmation so the
+ * durable outbox renders the SAME template). `linkFree` replaces the magic-link button with portal login guidance and
+ * never reads data.magicLink; `replacementOldStartAt` adds the replaced-booking note without dropping access fields.
+ */
+function renderBookingConfirmationMessage(data: BookingEmailData, opts: ConfirmationRenderOptions = {}): RenderedEmail {
+  const replacementNote = opts.replacementOldStartAt
+    ? `<p style="color: #64748b; font-size: 14px;">This booking replaces your previous booking on ${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(opts.replacementOldStartAt)}.</p>`
+    : '';
       const formattedDate = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Europe/London',
         weekday: 'long',
@@ -267,17 +298,18 @@ export class EmailService {
           </div>
         `).join('')}
 
+        ${replacementNote}
         <div class="code-box">
           <div class="code-label">Your Confirmation Code</div>
           <div class="code-value">${data.confirmationCode}</div>
         </div>
 
-        <div class="button-container">
+        ${opts.linkFree ? LINK_FREE_GUIDANCE_HTML : `<div class="button-container">
           <a href="${data.magicLink}" class="button" style="color: #ffffff;">View or Manage Booking</a>
-        </div>
+        </div>`}
 
         <p style="color: #64748b; font-size: 14px; text-align: center; margin-top: 40px;">
-          If you need to reschedule or cancel, please use the button above or reply to this email.
+          ${opts.linkFree ? LINK_FREE_FOOTER_TEXT : 'If you need to reschedule or cancel, please use the button above or reply to this email.'}
         </p>
       </div>
       <div class="footer">
@@ -288,11 +320,122 @@ export class EmailService {
 </body>
 </html>
       `;
+  return { subject: `Booking Confirmed: Assessment for ${childrenNames} on ${formattedDate}`, html: htmlContent };
+}
+
+/** Pure render of the booking cancellation email (extracted unchanged from EmailService.sendBookingCancellation). */
+function renderBookingCancellationMessage(data: BookingCancellationEmailData): RenderedEmail {
+      const formattedDate = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(data.startAt);
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #EF4444; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Booking Cancelled</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${data.parentFirstName},</p>
+      <p>Your assessment booking for <strong>${data.childrenNames}</strong> on ${formattedDate} has been cancelled.</p>
+      <p>Confirmation Code: <strong>${data.confirmationCode}</strong></p>
+      <p>If you'd like to book a new assessment, please visit our website.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+  return { subject: `Booking Cancelled: ${data.confirmationCode}`, html: htmlContent };
+}
+
+/** Pure render of the booking reschedule email (extracted from EmailService.sendBookingReschedule; optional portal login guidance). */
+function renderBookingRescheduleMessage(data: BookingRescheduleEmailData, opts: { portalLoginGuidance?: boolean } = {}): RenderedEmail {
+      const fmt = (d: Date) => new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }).format(d);
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #F59E0B; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
+    .date-row { display: flex; gap: 16px; margin: 12px 0; }
+    .date-box { flex: 1; padding: 12px; border-radius: 6px; }
+    .date-old { background: #fee2e2; border: 1px solid #fca5a5; }
+    .date-new { background: #d1fae5; border: 1px solid #6ee7b7; }
+    .label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📅 Booking Rescheduled</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${data.parentFirstName},</p>
+      <p>Your assessment booking for <strong>${data.childrenNames}</strong> at <strong>${data.centreName}</strong> has been rescheduled.</p>
+      <div class="date-row">
+        <div class="date-box date-old">
+          <div class="label">Previous Date</div>
+          <strong>${fmt(data.oldStartAt)}</strong>
+        </div>
+        <div class="date-box date-new">
+          <div class="label">New Date</div>
+          <strong>${fmt(data.newStartAt)}</strong>
+        </div>
+      </div>
+      <p>Your reference code remains: <strong>${data.confirmationCode}</strong></p>
+      ${opts.portalLoginGuidance ? PORTAL_LOGIN_GUIDANCE_PARAGRAPH : ''}
+      <p>If you did not request this change or have any questions, please contact us directly.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+  return { subject: `Booking Rescheduled: ${data.confirmationCode}`, html: htmlContent };
+}
+
+/**
+ * Email Service class for sending transactional emails
+ */
+export class EmailService {
+  /**
+   * Send booking confirmation email
+   */
+  async sendBookingConfirmation(data: BookingEmailData): Promise<EmailResult> {
+    // Check if API key is configured
+    if (!resend) {
+      logger.warn('[EmailService] Resend client not initialized. Email not sent.');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const { subject, html: htmlContent } = renderBookingConfirmationMessage(data);
 
       const { data: result, error } = await resend.emails.send({
         from: `${FROM_NAME} <${FROM_EMAIL}>`,
         to: data.parentEmail,
-        subject: `Booking Confirmed: Assessment for ${childrenNames} on ${formattedDate}`,
+        subject,
         html: htmlContent,
       });
 
@@ -560,45 +703,12 @@ export class EmailService {
     }
 
     try {
-      const formattedDate = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Europe/London',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }).format(data.startAt);
-
-      const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #EF4444; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Booking Cancelled</h1>
-    </div>
-    <div class="content">
-      <p>Hi ${data.parentFirstName},</p>
-      <p>Your assessment booking for <strong>${data.childrenNames}</strong> on ${formattedDate} has been cancelled.</p>
-      <p>Confirmation Code: <strong>${data.confirmationCode}</strong></p>
-      <p>If you'd like to book a new assessment, please visit our website.</p>
-    </div>
-  </div>
-</body>
-</html>
-      `;
+      const { subject, html: htmlContent } = renderBookingCancellationMessage(data);
 
       const { data: result, error } = await resend.emails.send({
         from: `${FROM_NAME} <${FROM_EMAIL}>`,
         to: data.parentEmail,
-        subject: `Booking Cancelled: ${data.confirmationCode}`,
+        subject,
         html: htmlContent,
       });
 
@@ -634,58 +744,12 @@ export class EmailService {
     }
 
     try {
-      const fmt = (d: Date) => new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Europe/London',
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-      }).format(d);
-
-      const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #F59E0B; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
-    .date-row { display: flex; gap: 16px; margin: 12px 0; }
-    .date-box { flex: 1; padding: 12px; border-radius: 6px; }
-    .date-old { background: #fee2e2; border: 1px solid #fca5a5; }
-    .date-new { background: #d1fae5; border: 1px solid #6ee7b7; }
-    .label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>📅 Booking Rescheduled</h1>
-    </div>
-    <div class="content">
-      <p>Hi ${data.parentFirstName},</p>
-      <p>Your assessment booking for <strong>${data.childrenNames}</strong> at <strong>${data.centreName}</strong> has been rescheduled.</p>
-      <div class="date-row">
-        <div class="date-box date-old">
-          <div class="label">Previous Date</div>
-          <strong>${fmt(data.oldStartAt)}</strong>
-        </div>
-        <div class="date-box date-new">
-          <div class="label">New Date</div>
-          <strong>${fmt(data.newStartAt)}</strong>
-        </div>
-      </div>
-      <p>Your reference code remains: <strong>${data.confirmationCode}</strong></p>
-      <p>If you did not request this change or have any questions, please contact us directly.</p>
-    </div>
-  </div>
-</body>
-</html>
-      `;
+      const { subject, html: htmlContent } = renderBookingRescheduleMessage(data);
 
       const { data: result, error } = await resend.emails.send({
         from: `${FROM_NAME} <${FROM_EMAIL}>`,
         to: data.parentEmail,
-        subject: `Booking Rescheduled: ${data.confirmationCode}`,
+        subject,
         html: htmlContent,
       });
 
@@ -1533,5 +1597,116 @@ export async function sendEmail(data: {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error('[EmailService] Error sending email:', error);
     return { success: false, error: errorMessage };
+  }
+}
+
+// ==================== DURABLE OUTBOX SEAM (CMS-OPS-REMEDIATION-1C V15, additive) ====================
+// The outbox renders from stored payloads with the SAME templates and sends through the SDK with an idempotency key and an
+// AbortSignal. Existing public behaviour (emailService.*, sendEmail) is unchanged.
+
+/** True when a real Resend client exists (RESEND_API_KEY set and not the re_xxx placeholder). */
+export function isProviderConfigured(): boolean {
+  return resend !== null;
+}
+
+/** Inputs of the config fingerprint (first 8 hex of SHA-256 is computed by the breaker module; the key never leaves here as a log). */
+export function getProviderConfigParts(): { apiKey: string; fromEmail: string; fromName: string; gitCommitSha: string | null } {
+  return { apiKey: resendApiKey ?? '', fromEmail: FROM_EMAIL, fromName: FROM_NAME, gitCommitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null };
+}
+
+/** SDK send options widened with `signal`: resend 6.14.0 does not declare it but spreads options into fetch (post()). */
+export type OutboxProviderSendOptions = NonNullable<Parameters<Resend['emails']['send']>[1]> & { signal?: AbortSignal };
+
+export interface OutboxRenderRequest {
+  communicationType: CommunicationType;
+  recipientEmail: string;
+  payload: OutboxPayload;
+  /** Frozen link variant: LINK_FREE never reads or renders a token. */
+  linkMode: LinkMode | null;
+}
+
+/** Render a stored outbox payload with the existing templates (deterministic: a retry under the same key yields the same body). */
+export function renderOutboxEmail(req: OutboxRenderRequest): RenderedEmail & { to: string } {
+  const to = req.recipientEmail;
+  switch (req.communicationType) {
+    case 'BOOKING_CONFIRMATION': {
+      const p = req.payload as BookingConfirmationPayload;
+      const linkFree = req.linkMode === 'LINK_FREE' || !p.magicLink;
+      const rendered = renderBookingConfirmationMessage(
+        {
+          parentFirstName: p.parentFirstName,
+          parentEmail: to,
+          children: p.children,
+          centreName: p.centreName,
+          centreAddress: p.centreAddress,
+          modality: p.modality,
+          startAt: new Date(p.startAt),
+          duration: p.duration,
+          confirmationCode: p.confirmationCode,
+          magicLink: linkFree ? '' : (p.magicLink as string),
+        },
+        { linkFree, replacementOldStartAt: p.replacement ? new Date(p.replacement.oldStartAt) : undefined },
+      );
+      return { ...rendered, to };
+    }
+    case 'BOOKING_RESCHEDULE': {
+      const p = req.payload as BookingReschedulePayload;
+      return {
+        ...renderBookingRescheduleMessage(
+          {
+            parentFirstName: p.parentFirstName,
+            parentEmail: to,
+            childrenNames: p.childrenNames.join(', '),
+            oldStartAt: new Date(p.oldStartAt),
+            newStartAt: new Date(p.newStartAt),
+            confirmationCode: p.confirmationCode,
+            centreName: p.centreName ?? '',
+          },
+          { portalLoginGuidance: p.includePortalLoginGuidance === true },
+        ),
+        to,
+      };
+    }
+    case 'BOOKING_CANCELLED': {
+      const p = req.payload as BookingCancelledPayload;
+      return {
+        ...renderBookingCancellationMessage({
+          parentFirstName: p.parentFirstName,
+          parentEmail: to,
+          childrenNames: p.childrenNames.join(', '),
+          startAt: new Date(p.startAt),
+          confirmationCode: p.confirmationCode,
+        }),
+        to,
+      };
+    }
+  }
+}
+
+/**
+ * Send one rendered outbox email through the Resend SDK. Returns what the SDK RETURNS ({ data, error, headers }) so the
+ * dispatcher classifies by error.name/statusCode (message text is never read here); a thrown value is returned as `thrown`.
+ * No transaction is open across this call; the caller passes AbortSignal.timeout(timeoutMs) and the idempotency key.
+ */
+export async function sendOutboxEmail(
+  req: OutboxRenderRequest & { idempotencyKey: string; signal: AbortSignal },
+): Promise<{ response: { data: { id?: string } | null; error: { name: string; statusCode: number | null; message?: string } | null; headers: Record<string, string> | null } } | { thrown: unknown }> {
+  if (!resend) return { thrown: new Error('Missing API key. Pass it to the constructor `new Resend("re_123")`') };
+  try {
+    const rendered = renderOutboxEmail(req);
+    const options: OutboxProviderSendOptions = { idempotencyKey: req.idempotencyKey, signal: req.signal };
+    const result = await resend.emails.send(
+      { from: `${FROM_NAME} <${FROM_EMAIL}>`, to: rendered.to, subject: rendered.subject, html: rendered.html },
+      options,
+    );
+    return {
+      response: {
+        data: (result.data as { id?: string } | null) ?? null,
+        error: result.error ? { name: String(result.error.name), statusCode: (result.error.statusCode as number | null) ?? null } : null,
+        headers: (result.headers as Record<string, string> | null) ?? null,
+      },
+    };
+  } catch (thrown) {
+    return { thrown };
   }
 }
