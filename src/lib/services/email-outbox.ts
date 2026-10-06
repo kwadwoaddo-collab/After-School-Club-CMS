@@ -13,7 +13,6 @@
 import { sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { logger } from '@/lib/logger';
-import { isPlatformAdmin } from '@/lib/org-approval-guard';
 import { computeConfigFingerprint, readBreakerSnapshot, type RootDb, type Tx } from './email-outbox-breaker';
 import { claimOutboxBatch } from './email-outbox-claim';
 import {
@@ -399,12 +398,27 @@ export async function runSweeper(opts: SweeperOptions = {}): Promise<SweeperRepo
 // ============================================================================
 export type DiagnosticsScope = 'TENANT' | 'PLATFORM' | 'NOT_FOUND';
 
+function checkPlatformAdmin(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const raw = process.env.PLATFORM_ADMIN_EMAILS ?? '';
+  if (!raw.trim()) return false;
+  const allowlist = raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return allowlist.includes(email.toLowerCase());
+}
+
 /**
  * ?scope=platform is honoured ONLY for a session email that passes isPlatformAdmin (fail-closed); anything else requesting
  * it is NOT_FOUND (a not-found style response, never a redirect). No requested scope = TENANT.
  */
-export function resolveDiagnosticsScope(params: { requestedScope?: string | null; email?: string | null }): DiagnosticsScope {
-  if (params.requestedScope === 'platform') return isPlatformAdmin(params.email) ? 'PLATFORM' : 'NOT_FOUND';
+export function resolveDiagnosticsScope(params: {
+  requestedScope?: string | null;
+  email?: string | null;
+  isPlatformAdmin?: (email?: string | null) => boolean;
+}): DiagnosticsScope {
+  if (params.requestedScope === 'platform') {
+    const adminCheck = params.isPlatformAdmin ?? checkPlatformAdmin;
+    return adminCheck(params.email) ? 'PLATFORM' : 'NOT_FOUND';
+  }
   return 'TENANT';
 }
 

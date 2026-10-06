@@ -602,7 +602,6 @@ export type RecipientValidation = { ok: true } | { ok: false; reason: RecipientR
 export function validateRecipientSyntax(address: unknown): RecipientValidation {
   if (typeof address !== 'string' || address.length === 0) return { ok: false, reason: 'EMPTY' };
   if (address.length > 254) return { ok: false, reason: 'TOO_LONG' };
-  // eslint-disable-next-line no-control-regex
   if (/[\s\u0000-\u001f\u007f]/.test(address)) return { ok: false, reason: 'WHITESPACE_OR_CONTROL' };
   const parts = address.split('@');
   if (parts.length !== 2) return { ok: false, reason: 'AT_SIGN_COUNT' };
