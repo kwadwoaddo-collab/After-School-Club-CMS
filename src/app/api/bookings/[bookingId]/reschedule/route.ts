@@ -4,16 +4,26 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notificationService } from '@/lib/services/notifications';
 import { notifyOwners } from '@/lib/db-notifications';
 import { revalidatePath } from 'next/cache';
+import {
+    captureEntryBudget,
+    registerFastPathAfterCommit,
+    transitionBookingAndEnqueue,
+    OUTBOX_PAYLOAD_VERSION,
+    type BookingReschedulePayload,
+} from '@/lib/services/email-outbox';
+
+export const maxDuration = 60;
 
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ bookingId: string }> }
 ) {
+    const budget = captureEntryBudget('route');
     try {
         const session = await getApiSession();
         if (!session?.user?.organisationId) {
@@ -66,35 +76,77 @@ export async function POST(
 
         // Capture old date before overwriting
         const oldStartAt = booking.startAt;
+        const orgId = session.user.organisationId;
+        const centreName = booking.centre.name;
+        const childrenNamesArray = (booking.attendees ?? [])
+            .map((a: any) => `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim())
+            .filter(Boolean);
+        const childrenNames = childrenNamesArray.join(', ') || 'your child';
+        const confirmationCode = booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase();
 
-        // ── Update the booking ─────────────────────────────────────────────────
+        // ── Update the booking & enqueue outbox row atomically ─────────────────
         // Always reset to 'confirmed' so the student appears in Upcoming with
         // a blue Booked badge, even if they previously had 'completed' status.
-        await db
-            .update(bookings)
-            .set({
-                startAt: newStartDate,
-                status: 'confirmed',
-                updatedAt: new Date(),
-            })
-            .where(eq(bookings.id, bookingId));
+        let outboxId: string | null = null;
+        try {
+            const txResult = await db.transaction(async (tx) => {
+                return await transitionBookingAndEnqueue(tx, {
+                    bookingId,
+                    organisationId: orgId,
+                    centreId: booking.centreId,
+                    type: 'BOOKING_RESCHEDULE',
+                    recipientEmail: booking.parent?.email || null,
+                    applyBookingChange: async (innerTx) => {
+                        await innerTx
+                            .update(bookings)
+                            .set({
+                                startAt: newStartDate,
+                                status: 'confirmed',
+                                updatedAt: new Date(),
+                            })
+                            .where(eq(bookings.id, bookingId));
+                    },
+                    buildPayload: (ctx): BookingReschedulePayload => ({
+                        payloadVersion: OUTBOX_PAYLOAD_VERSION,
+                        parentFirstName: booking.parent?.firstName ?? 'Parent',
+                        parentEmail: booking.parent?.email ?? '',
+                        childrenNames: childrenNamesArray.length > 0 ? childrenNamesArray : ['your child'],
+                        centreName,
+                        oldStartAt: new Date(oldStartAt).toISOString(),
+                        newStartAt: newStartDate.toISOString(),
+                        confirmationCode,
+                        includePortalLoginGuidance: ctx.hadUnsentConfirmation,
+                    }),
+                });
+            });
+            outboxId = txResult.outboxId;
+        } catch (err) {
+            logger.error('[reschedule] Failed to transition booking:', {
+                bookingId,
+                errorName: err instanceof Error ? err.name : 'UnknownError',
+            });
+            throw new Error('Failed to reschedule booking');
+        }
 
-        // ── Fire-and-forget: parent reschedule email + in-app bell ────────────
-        const orgId = session.user.organisationId;
-        const childrenNames = (booking.attendees ?? [])
-            .map((a: any) => `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim())
-            .filter(Boolean)
-            .join(', ') || 'your child';
+        // Register after() fast path
+        if (outboxId) {
+            registerFastPathAfterCommit(after, {
+                origin: 'route',
+                outboxId,
+                budget,
+            });
+        }
 
+        // ── Post-commit SMS notification (email handled via outbox) ───────────
         void notificationService.sendBookingReschedule({
             parentFirstName: booking.parent?.firstName ?? 'Parent',
-            parentEmail: booking.parent?.email ?? undefined,
+            parentEmail: undefined, // Email handled via outbox
             parentPhone: booking.parent?.phone ?? undefined,
             childrenNames,
             centreName: booking.centre.name,
             oldStartAt,
             newStartAt: newStartDate,
-            confirmationCode: booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase(),
+            confirmationCode,
         }).catch(e => logger.error('[reschedule] notification error:', e));
 
         const newDateStr = newStartDate.toLocaleDateString('en-GB', {

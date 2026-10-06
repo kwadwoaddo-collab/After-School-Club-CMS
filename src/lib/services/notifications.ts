@@ -6,8 +6,6 @@ import { logger } from '@/lib/logger';
  * Orchestrates email and SMS notifications for bookings.
  * Sends both email AND SMS based on parent preferences and available contact info.
  */
-
-import { emailService } from './email';
 import { smsService } from './sms';
 
 interface BookingNotificationData {
@@ -40,7 +38,7 @@ interface NotificationResult {
  */
 export class NotificationService {
   /**
-   * Send booking confirmation notifications (email AND/OR SMS)
+   * Send booking confirmation notifications (SMS-only leg in 1C; email is handled via outbox)
    */
   async sendBookingConfirmation(data: BookingNotificationData): Promise<NotificationResult> {
     const result: NotificationResult = {
@@ -48,26 +46,7 @@ export class NotificationService {
       smsSent: false,
     };
 
-    // Send email if email is available
-    if (data.parentEmail) {
-      const emailResult = await emailService.sendBookingConfirmation({
-        parentFirstName: data.parentFirstName,
-        parentEmail: data.parentEmail,
-        children: data.children,
-        centreName: data.centreName,
-        centreAddress: data.centreAddress,
-        modality: data.modality,
-        startAt: data.startAt,
-        duration: data.duration,
-        confirmationCode: data.confirmationCode,
-        magicLink: data.magicLink,
-      });
-
-      result.emailSent = emailResult.success;
-      if (!emailResult.success) {
-        result.emailError = emailResult.error;
-      }
-    }
+    // Email leg removed per 1C Action 10 (email is enqueued durably in DB transaction).
 
     // Send SMS if phone is available
     if (data.parentPhone) {
@@ -90,13 +69,13 @@ export class NotificationService {
     }
 
     // Log result
-    logger.info(`[NotificationService] Booking confirmation sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    logger.info(`[NotificationService] Booking confirmation SMS sent: ${result.smsSent}`);
 
     return result;
   }
 
   /**
-   * Send booking cancellation notifications
+   * Send booking cancellation notifications (SMS-only leg in 1C; email is handled via outbox)
    */
   async sendBookingCancellation(data: {
     parentFirstName: string;
@@ -111,19 +90,7 @@ export class NotificationService {
       smsSent: false,
     };
 
-    // Send email
-    if (data.parentEmail) {
-      const emailResult = await emailService.sendBookingCancellation({
-        parentFirstName: data.parentFirstName,
-        parentEmail: data.parentEmail,
-        childrenNames: data.childrenNames,
-        startAt: data.startAt,
-        confirmationCode: data.confirmationCode,
-      });
-
-      result.emailSent = emailResult.success;
-      if (!emailResult.success) result.emailError = emailResult.error;
-    }
+    // Email leg removed per 1C Action 10 (email is enqueued durably in DB transaction).
 
     // Send SMS
     if (data.parentPhone) {
@@ -139,13 +106,13 @@ export class NotificationService {
       if (!smsResult.success) result.smsError = smsResult.error;
     }
 
-    logger.info(`[NotificationService] Cancellation sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    logger.info(`[NotificationService] Cancellation SMS sent: ${result.smsSent}`);
 
     return result;
   }
 
   /**
-   * Send booking reschedule notifications (email + SMS)
+   * Send booking reschedule notifications (SMS-only leg in 1C; email is handled via outbox)
    */
   async sendBookingReschedule(data: {
     parentFirstName: string;
@@ -159,19 +126,7 @@ export class NotificationService {
   }): Promise<NotificationResult> {
     const result: NotificationResult = { emailSent: false, smsSent: false };
 
-    if (data.parentEmail) {
-      const emailResult = await emailService.sendBookingReschedule({
-        parentFirstName: data.parentFirstName,
-        parentEmail: data.parentEmail,
-        childrenNames: data.childrenNames,
-        centreName: data.centreName,
-        oldStartAt: data.oldStartAt,
-        newStartAt: data.newStartAt,
-        confirmationCode: data.confirmationCode,
-      });
-      result.emailSent = emailResult.success;
-      if (!emailResult.success) result.emailError = emailResult.error;
-    }
+    // Email leg removed per 1C Action 10 (email is enqueued durably in DB transaction).
 
     if (data.parentPhone) {
       // Reuse cancellation SMS template for reschedule (new date as startAt)
@@ -185,7 +140,7 @@ export class NotificationService {
       result.smsSent = (smsResult as any).success ?? false;
     }
 
-    logger.info(`[NotificationService] Reschedule sent - Email: ${result.emailSent}, SMS: ${result.smsSent}`);
+    logger.info(`[NotificationService] Reschedule SMS sent: ${result.smsSent}`);
     return result;
   }
 

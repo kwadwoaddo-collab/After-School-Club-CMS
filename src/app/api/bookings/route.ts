@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { bookingSchema } from '@/lib/validations/booking';
 import { BookingService } from '@/lib/services/booking';
 import { AvailabilityService } from '@/lib/services/availability';
@@ -10,8 +10,12 @@ import { eq } from 'drizzle-orm';
 import { apiRateLimit, checkRateLimit, getClientIP } from '@/lib/rate-limit';
 import { revalidatePath } from 'next/cache';
 import { parseInTimezone, DEFAULT_TIMEZONE } from '@/lib/datetime';
+import { captureEntryBudget, registerFastPathAfterCommit } from '@/lib/services/email-outbox';
+
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const budget = captureEntryBudget('route');
   try {
     // Rate limit: protect against public booking endpoint spam
     const ip = getClientIP(request);
@@ -107,6 +111,15 @@ export async function POST(request: NextRequest) {
 
     // Create the booking — BookingService resolves org from centre internally
     const result = await bookingService.createBooking(validated);
+
+    // Register after() fast path for outbox dispatch
+    if (result.outboxId) {
+      registerFastPathAfterCommit(after, {
+        origin: 'route',
+        outboxId: result.outboxId,
+        budget,
+      });
+    }
 
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/attendance');

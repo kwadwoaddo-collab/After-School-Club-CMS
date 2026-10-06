@@ -1,19 +1,29 @@
 import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { bookings, bookingAttendees, children, parents } from '@/db/schema';
+import { bookings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notificationService } from '@/lib/services/notifications';
 import { notifyOwners } from '@/lib/db-notifications';
 import { revalidatePath } from 'next/cache';
+import {
+    captureEntryBudget,
+    registerFastPathAfterCommit,
+    transitionBookingAndEnqueue,
+    OUTBOX_PAYLOAD_VERSION,
+    type BookingCancelledPayload,
+} from '@/lib/services/email-outbox';
+
+export const maxDuration = 60;
 
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ bookingId: string }> }
 ) {
+    const budget = captureEntryBudget('route');
     try {
         const session = await getApiSession();
         if (!session?.user?.organisationId) {
@@ -57,30 +67,68 @@ export async function POST(
             return NextResponse.json({ success: true, alreadyCancelled: true });
         }
 
-        // ── Update the booking status to 'cancelled' ───────────────────────────
-        await db
-            .update(bookings)
-            .set({ status: 'cancelled', updatedAt: new Date() })
-            .where(eq(bookings.id, bookingId));
-
-        // ── Fire-and-forget: parent cancellation email + in-app bell ──────────
         const orgId = session.user.organisationId;
-        const childrenNames = (booking.attendees ?? [])
+        const childrenNamesArray = (booking.attendees ?? [])
             .map((a: any) => `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim())
-            .filter(Boolean)
-            .join(', ') || 'your child';
+            .filter(Boolean);
+        const childrenNames = childrenNamesArray.join(', ') || 'your child';
+        const confirmationCode = booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase();
 
-        // 1. Parent email / SMS notification
+        // ── Transition booking and enqueue outbox row atomically ───────────────
+        let outboxId: string | null = null;
+        try {
+            const txResult = await db.transaction(async (tx) => {
+                return await transitionBookingAndEnqueue(tx, {
+                    bookingId,
+                    organisationId: orgId,
+                    centreId: booking.centreId,
+                    type: 'BOOKING_CANCELLED',
+                    recipientEmail: booking.parent?.email || null,
+                    applyBookingChange: async (innerTx) => {
+                        await innerTx
+                            .update(bookings)
+                            .set({ status: 'cancelled', updatedAt: new Date() })
+                            .where(eq(bookings.id, bookingId));
+                    },
+                    buildPayload: (): BookingCancelledPayload => ({
+                        payloadVersion: OUTBOX_PAYLOAD_VERSION,
+                        parentFirstName: booking.parent?.firstName ?? 'Parent',
+                        parentEmail: booking.parent?.email ?? '',
+                        childrenNames: childrenNamesArray.length > 0 ? childrenNamesArray : ['your child'],
+                        startAt: new Date(booking.startAt).toISOString(),
+                        confirmationCode,
+                    }),
+                });
+            });
+            outboxId = txResult.outboxId;
+        } catch (err) {
+            logger.error('[cancel] Failed to transition booking:', {
+                bookingId,
+                errorName: err instanceof Error ? err.name : 'UnknownError',
+            });
+            throw new Error('Failed to cancel booking');
+        }
+
+        // Register after() fast path
+        if (outboxId) {
+            registerFastPathAfterCommit(after, {
+                origin: 'route',
+                outboxId,
+                budget,
+            });
+        }
+
+        // ── Post-commit best-effort SMS notification ──────────────────────────
         void notificationService.sendBookingCancellation({
             parentFirstName: booking.parent?.firstName ?? 'Parent',
-            parentEmail: booking.parent?.email ?? undefined,
+            parentEmail: undefined, // Email handled via outbox
             parentPhone: booking.parent?.phone ?? undefined,
             childrenNames,
             startAt: booking.startAt,
-            confirmationCode: booking.confirmationCode ?? bookingId.slice(0, 8).toUpperCase(),
+            confirmationCode,
         }).catch(e => logger.error('[cancel] notification error:', e));
 
-        // 2. In-app bell for org owners
+        // ── In-app bell for org owners ────────────────────────────────────────
         const dateStr = booking.startAt
             ? new Date(booking.startAt).toLocaleDateString('en-GB', {
                 day: 'numeric', month: 'short', year: 'numeric',

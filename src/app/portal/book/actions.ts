@@ -6,7 +6,16 @@ import { db } from '@/db';
 import { bookings, bookingAttendees, centres, children } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { emailService } from '@/lib/services/email';
+import { after } from 'next/server';
+import {
+    captureEntryBudget,
+    enqueueBookingEmail,
+    registerFastPathAfterCommit,
+    supersedeOldBookingForReplacement,
+    OUTBOX_PAYLOAD_VERSION,
+    type BookingConfirmationPayload,
+    type BookingReschedulePayload,
+} from '@/lib/services/email-outbox';
 
 export async function createPortalBooking({
     childId,
@@ -19,6 +28,7 @@ export async function createPortalBooking({
     startAt: string;
     duration: number;
 }): Promise<{ success: boolean; confirmationCode?: string; error?: string }> {
+    const budget = captureEntryBudget('action');
     try {
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
@@ -42,8 +52,9 @@ export async function createPortalBooking({
         if (isNaN(startDate.getTime())) return { success: false, error: 'Invalid date' };
  
         let confirmationCode: string;
+        let outboxId: string | null = null;
         try {
-            confirmationCode = await db.transaction(async (tx) => {
+            const txResult = await db.transaction(async (tx) => {
                 // Check for duplicate booking (same child, same startAt)
                 const existingAttendee = await tx
                     .select({ id: bookingAttendees.id })
@@ -95,30 +106,67 @@ export async function createPortalBooking({
                     bookingId: newBooking.id,
                     childId,
                 });
+
+                // Enqueue outbox row inside the same transaction
+                let enqueuedId: string | null = null;
+                if (parent.email) {
+                    try {
+                        const payload: BookingConfirmationPayload = {
+                            payloadVersion: OUTBOX_PAYLOAD_VERSION,
+                            parentFirstName: parent.firstName,
+                            parentEmail: parent.email,
+                            children: [{ firstName: child.firstName, lastName: child.lastName, subjects: [] }],
+                            centreName: centre.name,
+                            centreAddress: centre.address || undefined,
+                            modality: 'in_person',
+                            startAt: startDate.toISOString(),
+                            duration,
+                            confirmationCode: code,
+                            magicLink: `${process.env.NEXTAUTH_URL || ''}/portal`,
+                        };
+                        const enq = await enqueueBookingEmail(tx, {
+                            organisationId: parent.organisationId,
+                            centreId,
+                            bookingId: newBooking.id,
+                            version: 1,
+                            type: 'BOOKING_CONFIRMATION',
+                            recipientEmail: parent.email,
+                            payload,
+                            linkMode: 'PORTAL_URL',
+                        });
+                        enqueuedId = enq.outboxId;
+                    } catch (enqErr) {
+                        logger.error('[createPortalBooking] Failed to enqueue outbox row:', {
+                            errorName: enqErr instanceof Error ? enqErr.name : 'UnknownError',
+                        });
+                        throw new Error('Failed to complete booking.');
+                    }
+                }
  
-                return code;
+                return { code, outboxId: enqueuedId };
             });
+            confirmationCode = txResult.code;
+            outboxId = txResult.outboxId;
         } catch (e) {
             const message = e instanceof Error ? e.message : undefined;
             return { success: false, error: message || 'Failed to complete booking.' };
         }
+
+        // Post-commit: register after() fast path
+        if (outboxId) {
+            registerFastPathAfterCommit(after, {
+                origin: 'action',
+                outboxId,
+                budget,
+            });
+        }
  
-        revalidatePath('/portal');
- 
-        // Fire-and-forget email confirmation
-        if (parent.email) {
-            emailService.sendBookingConfirmation({
-                parentFirstName: parent.firstName,
-                parentEmail: parent.email,
-                children: [{ firstName: child.firstName, lastName: child.lastName, subjects: [] }],
-                centreName: centre.name,
-                centreAddress: centre.address || undefined,
-                modality: 'in_person',
-                startAt: startDate,
-                duration,
-                confirmationCode,
-                magicLink: `${process.env.NEXTAUTH_URL || ''}/portal`,
-            }).catch((e: unknown) => logger.error('[Email] Failed to send booking confirmation:', e));
+        try {
+            revalidatePath('/portal');
+        } catch (revErr) {
+            logger.error('[createPortalBooking] revalidatePath failed:', {
+                errorName: revErr instanceof Error ? revErr.name : 'UnknownError',
+            });
         }
  
         return { success: true, confirmationCode };
@@ -127,6 +175,7 @@ export async function createPortalBooking({
         return { success: false, error: 'An error occurred while creating the booking.' };
     }
 }
+
 export async function reschedulePortalBooking({
     oldBookingId,
     childId,
@@ -140,6 +189,7 @@ export async function reschedulePortalBooking({
     startAt: string;
     duration: number;
 }): Promise<{ success: boolean; confirmationCode?: string; error?: string }> {
+    const budget = captureEntryBudget('action');
     try {
         const parent = await getCurrentParent();
         if (!parent) return { success: false, error: 'Unauthorized' };
@@ -170,15 +220,20 @@ export async function reschedulePortalBooking({
         if (newStartDate <= new Date()) return { success: false, error: 'New date must be in the future' };
 
         let confirmationCode: string;
-        const oldStartAt = oldBooking.startAt;
+        let outboxId: string | null = null;
 
         try {
-            confirmationCode = await db.transaction(async (tx) => {
-                // 1. Cancel old booking
-                await tx
-                    .update(bookings)
-                    .set({ status: 'cancelled', updatedAt: new Date() })
-                    .where(eq(bookings.id, oldBookingId));
+            const txResult = await db.transaction(async (tx) => {
+                // 1. Supersede old booking via supersedeOldBookingForReplacement
+                const outcome = await supersedeOldBookingForReplacement(tx, {
+                    oldBookingId,
+                    expectedParentId: parent.id,
+                    expectedOrganisationId: parent.organisationId,
+                });
+
+                if (!outcome.replaced) {
+                    throw new Error(outcome.rejectedReason === 'ALREADY_CANCELLED' ? 'Booking is already cancelled' : 'Booking not found');
+                }
 
                 // 2. Create new booking
                 const code = Date.now().toString(36).toUpperCase();
@@ -202,26 +257,64 @@ export async function reschedulePortalBooking({
                     childId,
                 });
 
-                return code;
+                // 4. Enqueue BOOKING_RESCHEDULE outbox row in the same transaction
+                let enqueuedId: string | null = null;
+                if (parent.email) {
+                    try {
+                        const payload: BookingReschedulePayload = {
+                            payloadVersion: OUTBOX_PAYLOAD_VERSION,
+                            parentFirstName: parent.firstName,
+                            parentEmail: parent.email,
+                            childrenNames: [`${child.firstName} ${child.lastName}`],
+                            centreName: centre.name,
+                            oldStartAt: (outcome.oldStartAt ?? oldBooking.startAt).toISOString(),
+                            newStartAt: newStartDate.toISOString(),
+                            confirmationCode: code,
+                            includePortalLoginGuidance: outcome.hadUnsentConfirmation,
+                        };
+                        const enq = await enqueueBookingEmail(tx, {
+                            organisationId: parent.organisationId,
+                            centreId,
+                            bookingId: newBooking.id,
+                            version: 1,
+                            type: 'BOOKING_RESCHEDULE',
+                            recipientEmail: parent.email,
+                            payload,
+                            linkMode: null,
+                        });
+                        enqueuedId = enq.outboxId;
+                    } catch (enqErr) {
+                        logger.error('[reschedulePortalBooking] Failed to enqueue outbox row:', {
+                            errorName: enqErr instanceof Error ? enqErr.name : 'UnknownError',
+                        });
+                        throw new Error('Failed to reschedule booking.');
+                    }
+                }
+
+                return { code, outboxId: enqueuedId };
             });
+            confirmationCode = txResult.code;
+            outboxId = txResult.outboxId;
         } catch (e) {
             const message = e instanceof Error ? e.message : undefined;
             return { success: false, error: message || 'Failed to reschedule booking.' };
         }
 
-        revalidatePath('/portal');
+        // Post-commit: register after() fast path
+        if (outboxId) {
+            registerFastPathAfterCommit(after, {
+                origin: 'action',
+                outboxId,
+                budget,
+            });
+        }
 
-        // Fire-and-forget reschedule email
-        if (parent.email) {
-            emailService.sendBookingReschedule({
-                parentFirstName: parent.firstName,
-                parentEmail: parent.email,
-                childrenNames: `${child.firstName} ${child.lastName}`,
-                centreName: centre.name,
-                oldStartAt,
-                newStartAt: newStartDate,
-                confirmationCode,
-            }).catch((e: unknown) => logger.error('[Email] Failed to send reschedule email:', e));
+        try {
+            revalidatePath('/portal');
+        } catch (revErr) {
+            logger.error('[reschedulePortalBooking] revalidatePath failed:', {
+                errorName: revErr instanceof Error ? revErr.name : 'UnknownError',
+            });
         }
 
         return { success: true, confirmationCode };

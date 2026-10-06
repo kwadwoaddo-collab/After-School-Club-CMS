@@ -12,12 +12,20 @@ import { notifyOwners } from '@/lib/db-notifications';
 import { stripeService } from './stripe';
 import { generateMagicLinkToken, hashToken } from '@/lib/magic-link';
 import { getBaseUrl } from '@/lib/base-url';
+import {
+  enqueueBookingEmail,
+  supersedeOldBookingForReplacement,
+  OUTBOX_PAYLOAD_VERSION,
+  type BookingConfirmationPayload,
+  type ReplacementOutcome,
+} from './email-outbox';
 
 interface BookingResult {
   bookingId: string;
   confirmationCode: string;
   magicLink: string;
   calendarEventId?: string | null;
+  outboxId?: string | null;
   notificationsSent: {
     email: boolean;
     sms: boolean;
@@ -79,43 +87,33 @@ export class BookingService {
       // caller receives a fresh booking without destroying the existing one.
       // This prevents denial-of-service attacks and protects bookings
       // belonging to a different parent or a different organisation.
+      // S-3 fix: If this is a reschedule, verify ownership before cancelling.
+      // Action 12: Nested savepoint (tx.transaction) calling supersedeOldBookingForReplacement.
+      // Invalid/foreign/cancelled rescheduleId is logged (booking IDs only, no PII) and ignored.
+      let replacementOutcome: ReplacementOutcome | null = null;
       if (input.rescheduleId) {
         try {
-          const oldBooking = await tx.query.bookings.findFirst({
-            where: eq(bookings.id, input.rescheduleId),
-            with: { centre: { columns: { organisationId: true } } },
+          replacementOutcome = await tx.transaction(async (innerTx) => {
+            return await supersedeOldBookingForReplacement(innerTx, {
+              oldBookingId: input.rescheduleId!,
+              expectedParentId: parent.id,
+              expectedOrganisationId: centre.organisationId,
+            });
           });
 
-          // Verify same parent (resolved above) and same organisation.
-          const ownershipValid =
-            oldBooking &&
-            oldBooking.parentId === parent.id &&
-            oldBooking.centre?.organisationId === centre.organisationId;
-
-          if (!ownershipValid) {
+          if (!replacementOutcome.replaced) {
             logger.warn(
-              `[BOOKING] S-3: rescheduleId ${input.rescheduleId} failed ownership check ` +
-              `(expected parentId=${parent.id}, got parentId=${oldBooking?.parentId}; ` +
-              `expected orgId=${centre.organisationId}, got orgId=${oldBooking?.centre?.organisationId}) — ignoring reschedule`
+              `[BOOKING] S-3: rescheduleId ${input.rescheduleId} failed replacement ` +
+              `(reason=${replacementOutcome.rejectedReason}) — ignoring reschedule`
             );
           } else {
-            if (oldBooking.googleCalendarEventId) {
-              await googleCalendarService
-                .deleteCalendarEvent(oldBooking.googleCalendarEventId)
-                .catch(err => logger.error('[BOOKING] Failed to delete calendar event:', err));
-            }
-
-            await tx.update(bookings)
-              .set({ status: 'cancelled', updatedAt: new Date() })
-              .where(and(
-                eq(bookings.id, input.rescheduleId),
-                eq(bookings.parentId, parent.id)   // redundant double-guard in WHERE
-              ));
-
-            logger.info(`[BOOKING] Old booking ${input.rescheduleId} cancelled for rescheduling by parent ${parent.id}`);
+            logger.info(`[BOOKING] Old booking ${input.rescheduleId} superseded for replacement by parent ${parent.id}`);
           }
         } catch (error) {
-          logger.error('[BOOKING] Failed to cancel old booking for reschedule:', error);
+          logger.error('[BOOKING] Failed to supersede old booking for reschedule:', {
+            bookingId: input.rescheduleId,
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+          });
         }
       }
 
@@ -188,19 +186,75 @@ export class BookingService {
           childId: child.id,
         });
 
-
-
         createdChildren.push({
           firstName: child.firstName,
           lastName: child.lastName,
           subjects: childInput.subjects,
         });
       }
+
+      // Enqueue outbox row in the same transaction (only if parent has email)
+      let outboxId: string | null = null;
+      if (input.parent.email) {
+        const confirmationPayload: BookingConfirmationPayload = {
+          payloadVersion: OUTBOX_PAYLOAD_VERSION,
+          parentFirstName: input.parent.firstName,
+          parentEmail: input.parent.email,
+          children: createdChildren,
+          centreName: centre.name,
+          centreAddress: centre.address || undefined,
+          modality: input.appointment.modality,
+          startAt: new Date(input.appointment.startAt).toISOString(),
+          duration: input.appointment.duration,
+          confirmationCode,
+          magicLink,
+          ...(replacementOutcome?.replaced && replacementOutcome.oldStartAt
+            ? {
+                replacement: {
+                  oldStartAt: replacementOutcome.oldStartAt.toISOString(),
+                  supersededUnsentConfirmation: replacementOutcome.hadUnsentConfirmation,
+                },
+              }
+            : {}),
+        };
+
+        const enq = await enqueueBookingEmail(tx, {
+          organisationId: centre.organisationId,
+          centreId: input.appointment.centreId ?? null,
+          bookingId: booking.id,
+          version: 1,
+          type: 'BOOKING_CONFIRMATION',
+          recipientEmail: input.parent.email,
+          payload: confirmationPayload,
+          linkMode: null,
+        });
+        outboxId = enq.outboxId;
+      }
       
-      return { parent, booking, createdChildren, confirmationCode, magicLink, centreDetails: { name: centre.name, address: centre.address || '' } };
+      return {
+        parent,
+        booking,
+        createdChildren,
+        confirmationCode,
+        magicLink,
+        centreDetails: { name: centre.name, address: centre.address || '' },
+        outboxId,
+        replacementOutcome,
+      };
     });
 
-    const { parent, booking, createdChildren, confirmationCode, magicLink, centreDetails } = txResult;
+    const { parent, booking, createdChildren, confirmationCode, magicLink, centreDetails, outboxId, replacementOutcome } = txResult;
+
+    // Post-commit: delete old calendar event strictly AFTER outer commit and ONLY when replaced = true
+    if (replacementOutcome?.replaced && replacementOutcome.oldGoogleCalendarEventId) {
+      try {
+        await googleCalendarService.deleteCalendarEvent(replacementOutcome.oldGoogleCalendarEventId);
+      } catch (err) {
+        logger.error('[BOOKING] Failed to delete calendar event for replaced booking:', {
+          errorName: err instanceof Error ? err.name : 'UnknownError',
+        });
+      }
+    }
 
     // Ensure Stripe Customer exists for parent
     if (input.parent.email && !parent.stripeCustomerId) {
@@ -246,7 +300,7 @@ export class BookingService {
       logger.error('[BookingService] Failed to create calendar event:', error);
     }
 
-    // Send notifications (email + SMS)
+    // Send SMS-only notifications (email is enqueued in outbox)
     let notificationResult = { emailSent: false, smsSent: false };
     try {
       notificationResult = await notificationService.sendBookingConfirmation({
@@ -283,8 +337,9 @@ export class BookingService {
       confirmationCode,
       magicLink,
       calendarEventId,
+      outboxId,
       notificationsSent: {
-        email: notificationResult.emailSent,
+        email: outboxId !== null,
         sms: notificationResult.smsSent,
       },
     };

@@ -162,6 +162,31 @@ describe('source scans', () => {
     expect(calls.length).toBeGreaterThan(0);
     for (const l of calls) expect(l).not.toMatch(/\b(recipient|recipientEmail|magicLink|payload|email)\s*:/);
   });
+  it('plan 306: "use server" files never export maxDuration, dynamic, revalidate or constants', () => {
+    const actionFiles = [
+      'src/app/portal/actions.ts',
+      'src/app/portal/book/actions.ts',
+    ];
+    for (const f of actionFiles) {
+      const fullPath = path.resolve(process.cwd(), f);
+      const src = fs.readFileSync(fullPath, 'utf8');
+      expect(src).toMatch(/^\s*['"]use server['"]/m);
+      expect(src).not.toMatch(/export\s+const\s+maxDuration/);
+      expect(src).not.toMatch(/export\s+const\s+dynamic/);
+      expect(src).not.toMatch(/export\s+const\s+revalidate/);
+    }
+  });
+  it('plan 307: api/bookings/route.ts and api/cron/email-outbox/route.ts export numeric maxDuration <= 300', async () => {
+    const bRoute = await import('@/app/api/bookings/route');
+    expect(typeof bRoute.maxDuration).toBe('number');
+    expect(bRoute.maxDuration).toBeLessThanOrEqual(300);
+    expect(bRoute.maxDuration).toBe(60);
+
+    const cRoute = await import('@/app/api/cron/email-outbox/route');
+    expect(typeof cRoute.maxDuration).toBe('number');
+    expect(cRoute.maxDuration).toBeLessThanOrEqual(300);
+    expect(cRoute.maxDuration).toBe(60);
+  });
 });
 
 describe('real email.ts send path (SDK options pass-through)', () => {
