@@ -29,6 +29,7 @@ export interface InvoicePayment {
     id: string;
     amount: string | number;
     method?: string | null;
+    status?: string | null;
     recordedAt: string | Date;
 }
 
@@ -116,8 +117,8 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
             const payments = inv.payments || [];
             const paid = payments
-                .filter((p: any) => !p.status || p.status === 'verified')
-                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+                .filter((p: InvoicePayment) => !p.status || p.status === 'verified')
+                .reduce((sum: number, p: InvoicePayment) => sum + (Number(p.amount) || 0), 0);
 
             if (inv.status === 'paid') {
                 totalPaid += amt;
@@ -363,8 +364,8 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                     dueDateObj < todayMidnightUtc;
                                 const payments = invoice.payments || [];
                                 const outstanding = Number(invoice.amount) - payments
-                                    .filter((p: any) => !p.status || p.status === 'verified')
-                                    .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+                                    .filter((p: InvoicePayment) => !p.status || p.status === 'verified')
+                                    .reduce((sum: number, p: InvoicePayment) => sum + Number(p.amount), 0);
 
                                 return (
                                     <tr 
