@@ -18,6 +18,11 @@ import {
     toUtcDate,
     createUtcDate,
     formatIsoDate,
+    isHistoricalBillingPeriod,
+    computeAutomatedBillingScheduleForIndex,
+    isEligibleAutomatedBillingSchedule,
+    isValidIsoCalendarDate,
+    validateBillingPeriodSelection,
 } from '../date-engine';
 
 describe('date-engine.ts — Comprehensive Verification Matrix', () => {
@@ -521,6 +526,57 @@ describe('date-engine.ts — Comprehensive Verification Matrix', () => {
             expect(formatIsoDate(schedule.periodEnd)).toBe('2026-12-05');
             expect(formatIsoDate(schedule.draftCreationDate)).toBe('2026-10-06');
             expect(schedule.cycleKey).toBe('cfg-test:2026-11-06');
+        });
+    });
+
+    describe('11. CMS-FINANCE-INCIDENT-1: Inclusive Historical Semantics & Period Validation', () => {
+        it('treats a period ending today (00:00:00.000Z) as NOT historical even when referenceDate is later in the day', () => {
+            const periodEndTodayMidnight = new Date('2026-10-15T00:00:00.000Z');
+            const nowAfternoon = new Date('2026-10-15T18:45:00.000Z');
+            expect(isHistoricalBillingPeriod(periodEndTodayMidnight, nowAfternoon)).toBe(false);
+
+            const periodEndYesterday = new Date('2026-10-14T00:00:00.000Z');
+            expect(isHistoricalBillingPeriod(periodEndYesterday, nowAfternoon)).toBe(true);
+        });
+
+        it('evaluates automated eligibility strictly for non-historical periods whose draft date is due', () => {
+            const refToday = new Date('2026-10-15T14:00:00.000Z');
+            const historicalSchedule = computeAutomatedBillingScheduleForIndex(
+                { id: 'cfg-1', billingAnchorDate: '2026-08-01', leadTimeUnit: 'CALENDAR_MONTHS', leadTimeValue: 1 },
+                0, // Aug 1 - Aug 31, 2026
+            );
+            expect(isEligibleAutomatedBillingSchedule(historicalSchedule, refToday)).toBe(false);
+
+            const currentSchedule = computeAutomatedBillingScheduleForIndex(
+                { id: 'cfg-1', billingAnchorDate: '2026-08-01', leadTimeUnit: 'CALENDAR_MONTHS', leadTimeValue: 1 },
+                2, // Oct 1 - Oct 31, 2026
+            );
+            expect(isEligibleAutomatedBillingSchedule(currentSchedule, refToday)).toBe(true);
+
+            const upcomingEligibleSchedule = computeAutomatedBillingScheduleForIndex(
+                { id: 'cfg-1', billingAnchorDate: '2026-08-01', leadTimeUnit: 'CALENDAR_MONTHS', leadTimeValue: 1 },
+                3, // Nov 1 - Nov 30, 2026 (draftCreationDate Oct 1 <= Oct 15)
+            );
+            expect(isEligibleAutomatedBillingSchedule(upcomingEligibleSchedule, refToday)).toBe(true);
+
+            const upcomingNotYetDueSchedule = computeAutomatedBillingScheduleForIndex(
+                { id: 'cfg-1', billingAnchorDate: '2026-08-01', leadTimeUnit: 'CALENDAR_MONTHS', leadTimeValue: 1 },
+                4, // Dec 1 - Dec 31, 2026 (draftCreationDate Nov 1 > Oct 15)
+            );
+            expect(isEligibleAutomatedBillingSchedule(upcomingNotYetDueSchedule, refToday)).toBe(false);
+        });
+
+        it('validates ISO calendar dates and rejects impossible dates or unanchored spans', () => {
+            expect(isValidIsoCalendarDate('2026-02-28')).toBe(true);
+            expect(isValidIsoCalendarDate('2026-02-29')).toBe(false);
+            expect(isValidIsoCalendarDate('2026-13-01')).toBe(false);
+
+            const validHistorical = validateBillingPeriodSelection('2026-08-06', '2026-09-05', '2026-09-06');
+            expect(validHistorical.valid).toBe(true);
+
+            const invalidSpan = validateBillingPeriodSelection('2026-09-06', '2026-09-20', '2026-09-06');
+            expect(invalidSpan.valid).toBe(false);
+            expect(invalidSpan.error).toMatch(/does not align/);
         });
     });
 });

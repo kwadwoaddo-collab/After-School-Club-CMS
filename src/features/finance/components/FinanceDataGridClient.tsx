@@ -96,21 +96,28 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
     }, [searchParams]);
 
 
-    // KPI Metrics calculation for summary banner
+    // KPI Metrics calculation for summary banner (CMS-FINANCE-INCIDENT-1: exclude draft and void from issued receivable totals and overdue counts)
     const metrics = useMemo(() => {
         let totalInvoiced = 0;
         let totalPaid = 0;
         let totalOutstanding = 0;
         let overdueCount = 0;
 
-        const now = new Date();
+        const todayMidnightUtc = new Date();
+        todayMidnightUtc.setUTCHours(0, 0, 0, 0);
 
         invoices.forEach((inv) => {
+            if (inv.status === 'draft' || inv.status === 'void') {
+                return;
+            }
+
             const amt = Number(inv.amount) || 0;
             totalInvoiced += amt;
 
             const payments = inv.payments || [];
-            const paid = payments.reduce((sum: number, p) => sum + (Number(p.amount) || 0), 0);
+            const paid = payments
+                .filter((p: any) => !p.status || p.status === 'verified')
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
             if (inv.status === 'paid') {
                 totalPaid += amt;
@@ -121,7 +128,11 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                     totalOutstanding += outstanding;
                 }
                 const dueDateObj = inv.dueDate ? new Date(inv.dueDate) : null;
-                const isOverdue = dueDateObj && !isNaN(dueDateObj.getTime()) && dueDateObj < now && inv.status !== 'void';
+                const isOverdue =
+                    (inv.status === 'sent' || inv.status === 'partially_paid') &&
+                    !!dueDateObj &&
+                    !isNaN(dueDateObj.getTime()) &&
+                    dueDateObj < todayMidnightUtc;
                 if (isOverdue) {
                     overdueCount++;
                 }
@@ -267,7 +278,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
             {/* Segmented Toolbar */}
             <div className="flex flex-col sm:flex-row justify-between items-center bg-card/80 backdrop-blur-md p-3.5 rounded-3xl border border-border/60 shadow-sm gap-4">
                 <div className="flex bg-secondary/50 p-1.5 rounded-2xl w-full sm:w-auto border border-border/40 gap-1">
-                    {['all', 'overdue', 'paid'].map((s) => (
+                    {['all', 'draft', 'overdue', 'paid'].map((s) => (
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
@@ -343,9 +354,17 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 </tr>
                             ) : invoices.map((invoice) => {
                                 const dueDateObj = invoice.dueDate ? new Date(invoice.dueDate) : null;
-                                const isOverdue = invoice.status !== 'paid' && invoice.status !== 'void' && !!dueDateObj && !isNaN(dueDateObj.getTime()) && dueDateObj < new Date();
+                                const todayMidnightUtc = new Date();
+                                todayMidnightUtc.setUTCHours(0, 0, 0, 0);
+                                const isOverdue =
+                                    (invoice.status === 'sent' || invoice.status === 'partially_paid') &&
+                                    !!dueDateObj &&
+                                    !isNaN(dueDateObj.getTime()) &&
+                                    dueDateObj < todayMidnightUtc;
                                 const payments = invoice.payments || [];
-                                const outstanding = Number(invoice.amount) - payments.reduce((sum: number, p) => sum + Number(p.amount), 0);
+                                const outstanding = Number(invoice.amount) - payments
+                                    .filter((p: any) => !p.status || p.status === 'verified')
+                                    .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
                                 return (
                                     <tr 
@@ -392,7 +411,15 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            {invoice.status === 'paid' ? (
+                                            {invoice.status === 'draft' ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
+                                                    <FileText className="w-3.5 h-3.5" /> DRAFT
+                                                </span>
+                                            ) : invoice.status === 'void' ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 text-muted-foreground border border-border/50 text-xs font-bold uppercase tracking-wider">
+                                                    VOID
+                                                </span>
+                                            ) : invoice.status === 'paid' ? (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
                                                     <CheckCircle2 className="w-3.5 h-3.5" /> Paid
                                                 </span>
@@ -408,7 +435,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="font-bold text-foreground tabular-nums text-base">£{Number(invoice.amount).toFixed(2)}</div>
-                                            {invoice.status !== 'paid' && outstanding < Number(invoice.amount) && (
+                                            {invoice.status !== 'paid' && invoice.status !== 'draft' && invoice.status !== 'void' && outstanding < Number(invoice.amount) && (
                                                 <div className="text-xs text-muted-foreground tabular-nums font-semibold">Bal: £{outstanding.toFixed(2)}</div>
                                             )}
                                         </td>

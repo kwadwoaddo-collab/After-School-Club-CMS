@@ -276,6 +276,8 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
       periodStartStr: '2026-09-01',
       periodEndStr: '2026-09-30',
       amountPence: 15000,
+      confirmHistorical: true,
+      historicalReason: 'Concurrency test fixture',
     });
     expect(res1.success).toBe(true);
     expect(res1.invoiceId).toBeDefined();
@@ -287,6 +289,8 @@ describe('PM-2C: Real PostgreSQL Billing Concurrency & Invariants Suite', () => 
       periodStartStr: '2026-09-01',
       periodEndStr: '2026-09-30',
       amountPence: 15000,
+      confirmHistorical: true,
+      historicalReason: 'Concurrency test fixture',
     });
     expect(res2.success).toBe(true);
     expect(res2.invoiceId).toBe(res1.invoiceId);

@@ -107,8 +107,12 @@ export function InvoiceTable({
                         {invoices.map((invoice: any) => {
                             const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : null;
                             const todayMidnight = new Date();
-                            todayMidnight.setHours(0, 0, 0, 0);
-                            const isOverdue = dueDate && dueDate < todayMidnight && invoice.status !== 'paid' && invoice.status !== 'void';
+                            todayMidnight.setUTCHours(0, 0, 0, 0);
+                            const isOverdue = Boolean(
+                                dueDate &&
+                                dueDate < todayMidnight &&
+                                (invoice.status === 'sent' || invoice.status === 'partially_paid')
+                            );
 
                             return (
                                 <tr 
@@ -143,6 +147,7 @@ export function InvoiceTable({
                                     </td>
                                     <td className="py-4 px-4">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                                            invoice.status === 'draft'          ? 'bg-warning/15 text-warning border border-warning/30' :
                                             invoice.status === 'paid'           ? 'bg-success/10 text-success' : 
                                             invoice.status === 'partially_paid' ? 'bg-warning/10 text-warning' :
                                             invoice.status === 'sent'           ? 'bg-info/10 text-info' :
@@ -150,7 +155,7 @@ export function InvoiceTable({
                                             isOverdue                           ? 'bg-destructive/10 text-destructive' :
                                                                                   'bg-secondary/60 text-muted-foreground'
                                         }`}>
-                                            {invoice.status.replace(/_/g, ' ')}
+                                            {invoice.status === 'draft' ? 'DRAFT' : invoice.status.replace(/_/g, ' ')}
                                         </span>
                                     </td>
                                     <td className="py-4 text-right px-4">

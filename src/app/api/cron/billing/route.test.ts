@@ -126,8 +126,12 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
         expect(data.generated).toBe(0);
     });
 
-    it('Respects billing cycle skips by manager', async () => {
+    it('Respects billing cycle skips by manager for current/upcoming periods and never walks historical periods', async () => {
         const { POST } = await import('./route');
+        const { getBillingPeriodForDate, formatIsoDate } = await import('@/lib/billing/date-engine');
+        const currentPeriod = getBillingPeriodForDate('2026-01-01', new Date());
+        const currentPeriodStartStr = formatIsoDate(currentPeriod.periodStart);
+
         mockDbQuery.billingConfigs.findMany.mockResolvedValue([
             {
                 id: 'cfg-skipped',
@@ -135,21 +139,21 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 centreId: 'c-1',
                 organisationId: 'o-1',
                 status: 'active',
-                billingAnchorDate: '2026-01-01', // in past, so due
+                billingAnchorDate: '2026-01-01', // old anchor in the past
                 leadTimeUnit: 'CALENDAR_MONTHS',
                 leadTimeValue: 1,
                 runs: [],
-                skips: [{ periodStart: '2026-01-01' }],
+                skips: [{ periodStart: currentPeriodStartStr }],
                 children: [],
             },
         ]);
 
-        mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue({
+        mockDbQuery.billingCycleSkips.findFirst.mockImplementation(async () => ({
             id: 'skip-1',
             billingConfigId: 'cfg-skipped',
-            periodStart: '2026-01-01',
+            periodStart: currentPeriodStartStr,
             skipReason: 'Family holiday',
-        });
+        }));
 
         const req = new NextRequest('http://localhost/api/cron/billing', {
             headers: new Headers({ 'Authorization': 'Bearer test-secret' }),
@@ -159,19 +163,23 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
         const data = await res.json();
         expect(data.processed).toBe(1);
         expect(data.skipped_by_manager).toBeGreaterThanOrEqual(1);
+        expect(data.generated).toBe(0);
     });
 
-    it('Generates draft invoice for eligible config in transaction', async () => {
+    it('Generates draft invoices ONLY for current and eligible upcoming periods (never creates completed historical periods from old anchors)', async () => {
         const { POST } = await import('./route');
+        const { toUtcDate, formatIsoDate } = await import('@/lib/billing/date-engine');
+        const todayUtc = toUtcDate(new Date());
+
         mockDbQuery.billingConfigs.findMany.mockResolvedValue([
             {
-                id: 'cfg-eligible',
+                id: 'cfg-old-anchor',
                 parentId: 'parent-regular-3',
                 centreId: 'c-1',
                 organisationId: 'o-1',
                 status: 'active',
-                billingAnchorDate: '2026-09-01',
-                agreedMonthlyPence: 25000,
+                billingAnchorDate: '2025-09-01', // Old anchor with >12 completed historical months and zero prior runs
+                agreedMonthlyPence: 120000,
                 leadTimeUnit: 'CALENDAR_MONTHS',
                 leadTimeValue: 1,
                 runs: [],
@@ -179,6 +187,9 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                 children: [{ child: { id: 'child-1', firstName: 'Alice', lastName: 'Smith' } }],
             },
         ]);
+
+        const createdInvoices: any[] = [];
+        const createdRuns: any[] = [];
 
         mockTransaction.mockImplementation(async (cb: any) => {
             const tx = {
@@ -188,7 +199,22 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
                     billingRuns: { findFirst: vi.fn().mockResolvedValue(null) },
                     invoices: { findFirst: vi.fn().mockResolvedValue(null) },
                 },
-                insert: vi.fn(() => makeTxInsertChain()),
+                insert: vi.fn(() => {
+                    const chain: any = {
+                        values: vi.fn((vals) => {
+                            if (vals.invoiceNumber) {
+                                createdInvoices.push(vals);
+                            } else if (vals.billingConfigId) {
+                                createdRuns.push(vals);
+                            }
+                            return chain;
+                        }),
+                        onConflictDoUpdate: vi.fn(() => chain),
+                        onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+                        returning: vi.fn().mockResolvedValue([{ id: `inv-${createdInvoices.length}`, amount: '1200.00' }]),
+                    };
+                    return chain;
+                }),
             };
             return cb(tx);
         });
@@ -200,6 +226,119 @@ describe('Cron Billing Route (§9, Phase 11)', () => {
         expect(res.status).toBe(200);
         const data = await res.json();
         expect(data.processed).toBe(1);
+        expect(data.generated).toBe(2); // Current period + 1 upcoming period (1 month lead time)
+        expect(createdInvoices).toHaveLength(2);
+
+        // Verify NO completed historical period was generated and NO fabricated run records were inserted for past cycles
+        for (const inv of createdInvoices) {
+            expect(inv.status).toBe('draft');
+            expect(toUtcDate(inv.billingPeriodEnd).getTime()).toBeGreaterThanOrEqual(todayUtc.getTime());
+        }
+        expect(createdRuns).toHaveLength(2);
+        for (const run of createdRuns) {
+            expect(toUtcDate(run.periodEnd).getTime()).toBeGreaterThanOrEqual(todayUtc.getTime());
+        }
+    });
+
+    it('Inclusive billing-date semantics: treats a period ending today (midnight UTC) as current, not historical', async () => {
+        const { POST } = await import('./route');
+        const { toUtcDate, formatIsoDate } = await import('@/lib/billing/date-engine');
+        const todayUtc = toUtcDate(new Date());
+        // Tomorrow is the anchor day -> current period ends today at 00:00:00.000Z!
+        const tomorrowUtc = new Date(todayUtc.getTime() + 86_400_000);
+        const anchorYear = tomorrowUtc.getUTCFullYear() - 1;
+        const anchorMonth = String(tomorrowUtc.getUTCMonth() + 1).padStart(2, '0');
+        const anchorDay = String(tomorrowUtc.getUTCDate()).padStart(2, '0');
+        const anchorStr = `${anchorYear}-${anchorMonth}-${anchorDay}`;
+
+        mockDbQuery.billingConfigs.findMany.mockResolvedValue([
+            {
+                id: 'cfg-ends-today',
+                parentId: 'parent-ends-today',
+                centreId: 'c-1',
+                organisationId: 'o-1',
+                status: 'active',
+                billingAnchorDate: anchorStr,
+                agreedMonthlyPence: 50000,
+                leadTimeUnit: 'DAYS',
+                leadTimeValue: 0, // Only period whose start <= today is due; period ending today has start ~1 month ago
+                runs: [],
+                skips: [],
+                children: [],
+            },
+        ]);
+
+        const createdPeriodEnds: string[] = [];
+        mockTransaction.mockImplementation(async (cb: any) => {
+            const tx = {
+                execute: vi.fn().mockResolvedValue(undefined),
+                query: {
+                    billingCycleSkips: { findFirst: vi.fn().mockResolvedValue(null) },
+                    billingRuns: { findFirst: vi.fn().mockResolvedValue(null) },
+                    invoices: { findFirst: vi.fn().mockResolvedValue(null) },
+                },
+                insert: vi.fn(() => {
+                    const chain: any = {
+                        values: vi.fn((vals) => {
+                            if (vals.billingPeriodEnd) {
+                                createdPeriodEnds.push(formatIsoDate(vals.billingPeriodEnd));
+                            }
+                            return chain;
+                        }),
+                        onConflictDoUpdate: vi.fn(() => chain),
+                        returning: vi.fn().mockResolvedValue([{ id: 'inv-today', amount: '500.00' }]),
+                    };
+                    return chain;
+                }),
+            };
+            return cb(tx);
+        });
+
+        const req = new NextRequest('http://localhost/api/cron/billing', {
+            headers: new Headers({ 'Authorization': 'Bearer test-secret' }),
+        });
+        const res = await POST(req);
+        const data = await res.json();
         expect(data.generated).toBeGreaterThanOrEqual(1);
+        expect(createdPeriodEnds).toContain(formatIsoDate(todayUtc));
+    });
+
+    it('Does NOT regenerate discarded drafts (billingRuns row with success=false, invoiceId=null)', async () => {
+        const { POST } = await import('./route');
+        mockDbQuery.billingConfigs.findMany.mockResolvedValue([
+            {
+                id: 'cfg-discarded',
+                parentId: 'parent-discarded',
+                centreId: 'c-1',
+                organisationId: 'o-1',
+                status: 'active',
+                billingAnchorDate: '2026-01-01',
+                agreedMonthlyPence: 120000,
+                leadTimeUnit: 'CALENDAR_MONTHS',
+                leadTimeValue: 1,
+                runs: [], // config.runs only loads success=true, so discarded run is absent from config.runs!
+                skips: [],
+                children: [],
+            },
+        ]);
+
+        // Every queried period already has a discarded run (success: false, invoiceId: null)
+        mockDbQuery.billingRuns.findFirst.mockResolvedValue({
+            id: 'run-discarded-1',
+            billingConfigId: 'cfg-discarded',
+            success: false,
+            invoiceId: null,
+            errorLog: 'Draft discarded by user',
+        });
+
+        const req = new NextRequest('http://localhost/api/cron/billing', {
+            headers: new Headers({ 'Authorization': 'Bearer test-secret' }),
+        });
+        const res = await POST(req);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.generated).toBe(0);
+        expect(data.skipped_already_exists).toBeGreaterThanOrEqual(1);
+        expect(mockTransaction).not.toHaveBeenCalled();
     });
 });

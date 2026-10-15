@@ -264,5 +264,141 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
                 periodEndStr: '2026-10-31',
             })).rejects.toThrow(/Cannot generate invoice: billing cycle 2026-10-01 is skipped \(Family vacation\)/);
         });
+
+        it('rejects FRONT_DESK role from calling generateInvoiceFromConfig even with centre access', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue({
+                user: { id: 'user-fd', organisationId: 'org-1', role: 'FRONT_DESK' },
+            });
+            getUserAccessibleCentreIds.mockResolvedValue(['centre-1']);
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({
+                id: 'config-1',
+                centreId: 'centre-1',
+                organisationId: 'org-1',
+                status: 'active',
+                billingAnchorDate: '2026-09-01',
+                children: [],
+            });
+
+            const { generateInvoiceFromConfig } = await import('../actions');
+            await expect(generateInvoiceFromConfig({
+                configId: 'config-1',
+                periodStartStr: '2026-10-01',
+                periodEndStr: '2026-10-31',
+            })).rejects.toThrow(/Only Org Owner and Centre Managers can generate invoices/);
+        });
+
+        it('rejects manual historical period draft generation without explicit confirmation and audit reason', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({
+                id: 'config-1',
+                centreId: 'centre-1',
+                parentId: 'parent-1',
+                organisationId: 'org-1',
+                status: 'active',
+                billingAnchorDate: '2025-09-01',
+                agreedMonthlyPence: 50000,
+                children: [],
+            });
+            mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
+
+            const { generateInvoiceFromConfig } = await import('../actions');
+            await expect(generateInvoiceFromConfig({
+                configId: 'config-1',
+                periodStartStr: '2025-09-01',
+                periodEndStr: '2025-09-30',
+            })).rejects.toThrow(/Historical billing period warning/);
+        });
+
+        it('rejects unaligned or invalid period selections against billingAnchorDate', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(OWNER_SESSION);
+
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({
+                id: 'config-1',
+                centreId: 'centre-1',
+                parentId: 'parent-1',
+                organisationId: 'org-1',
+                status: 'active',
+                billingAnchorDate: '2026-09-06',
+                agreedMonthlyPence: 50000,
+                children: [],
+            });
+
+            const { generateInvoiceFromConfig } = await import('../actions');
+            await expect(generateInvoiceFromConfig({
+                configId: 'config-1',
+                periodStartStr: '2026-09-01',
+                periodEndStr: '2026-09-30',
+                confirmHistorical: true,
+                historicalReason: 'Backdated test',
+            })).rejects.toThrow(/does not align with the family billing anchor date/);
+        });
+
+        it('allows Manager/Owner explicit historical draft generation with confirmation & reason, recording audit event and actual creation timestamp', async () => {
+            const { requireTenantSession } = await import('@/lib/session');
+            (requireTenantSession as any).mockResolvedValue(MANAGER_SESSION);
+            getUserAccessibleCentreIds.mockResolvedValue(['centre-1']);
+
+            mockDbQuery.billingConfigs.findFirst.mockResolvedValue({
+                id: 'config-1',
+                centreId: 'centre-1',
+                parentId: 'parent-1',
+                organisationId: 'org-1',
+                status: 'active',
+                billingAnchorDate: '2025-09-01',
+                agreedMonthlyPence: 45000,
+                children: [],
+            });
+            mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
+            mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);
+            mockDbQuery.invoices.findFirst.mockResolvedValue(null);
+
+            mockTxQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
+            mockTxQuery.billingRuns.findFirst.mockResolvedValue(null);
+            mockTxQuery.invoices.findFirst.mockResolvedValue(null);
+
+            const insertedPayloads: any[] = [];
+            mockTxInsert.mockImplementation(() => {
+                const chain: any = {
+                    values: vi.fn((vals) => {
+                        insertedPayloads.push(vals);
+                        return chain;
+                    }),
+                    onConflictDoUpdate: vi.fn(() => chain),
+                    returning: vi.fn().mockResolvedValue([{ id: 'hist-draft-1', amount: '450.00' }]),
+                };
+                return chain;
+            });
+
+            const beforeCall = Date.now();
+            const { generateInvoiceFromConfig } = await import('../actions');
+            const res = await generateInvoiceFromConfig({
+                configId: 'config-1',
+                periodStartStr: '2025-09-01',
+                periodEndStr: '2025-09-30',
+                confirmHistorical: true,
+                historicalReason: 'Approved manual historical billing for Sept 2025',
+            });
+
+            expect(res.success).toBe(true);
+            expect(res.invoiceId).toBe('hist-draft-1');
+
+            const invoicePayload = insertedPayloads.find(p => p.invoiceNumber);
+            expect(invoicePayload).toBeDefined();
+            expect(invoicePayload.status).toBe('draft');
+            expect(invoicePayload.invoiceDate.getTime()).toBeGreaterThanOrEqual(beforeCall);
+
+            const auditPayload = insertedPayloads.find(p => p.eventType === 'manual_historical_invoice_draft_created');
+            expect(auditPayload).toBeDefined();
+            expect(auditPayload.userId).toBe('user-mgr');
+            const parsedAudit = JSON.parse(auditPayload.eventData);
+            expect(parsedAudit.isHistorical).toBe(true);
+            expect(parsedAudit.historicalReason).toBe('Approved manual historical billing for Sept 2025');
+            expect(parsedAudit.actorRole).toBe('MANAGER');
+            expect(parsedAudit.status).toBe('draft');
+        });
     });
 });

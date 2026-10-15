@@ -18,7 +18,7 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const filtered = initialInvoices.filter(invoice => {
         const matchesSearch =
@@ -27,7 +27,11 @@ export default function FilterableInvoiceHistorySection({ initialInvoices, isOwn
             `${invoice.child?.firstName} ${invoice.child?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
 
         const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : null;
-        const isOverdue = dueDate && dueDate < today && invoice.status !== 'paid' && invoice.status !== 'void';
+        const isOverdue = Boolean(
+            dueDate &&
+            dueDate < today &&
+            (invoice.status === 'sent' || invoice.status === 'partially_paid')
+        );
 
         const matchesStatus =
             statusFilter === 'all'      ? true :

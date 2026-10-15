@@ -33,7 +33,7 @@ export async function RevenueWidget({ organisationId }: RevenueWidgetProps) {
         `,
         outstanding: sql<number>`
           coalesce(sum(${invoices.amount}) filter (
-            where ${invoices.status} in ('sent', 'partially_paid', 'draft')
+            where ${invoices.status} in ('sent', 'partially_paid')
           ), 0)::float
         `,
         overdueCount: sql<number>`

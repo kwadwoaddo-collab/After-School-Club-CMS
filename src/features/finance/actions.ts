@@ -234,6 +234,9 @@ export async function createInvoice(data: {
             throw new Error('Unauthorized: No access to this centre');
         }
     }
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can create invoices');
+    }
 
     // Verify the centre belongs to this organisation
     const centreRecord = await db.query.centres.findFirst({
@@ -321,20 +324,8 @@ export async function createInvoice(data: {
         });
     });
 
-    // Send invoice email notification to parent (fire-and-forget)
-    const parent = await db.query.parents.findFirst({ where: eq(parents.id, data.parentId), columns: { firstName: true, email: true } });
-    const centre = await db.query.centres.findFirst({ where: eq(centres.id, data.centreId), columns: { name: true } });
-    if (parent?.email) {
-        emailService.sendInvoiceCreated({
-            parentFirstName: parent.firstName,
-            parentEmail: parent.email,
-            invoiceNumber: newInvoice.invoiceNumber,
-            amount: Number(newInvoice.amount),
-            dueDate: newInvoice.dueDate,
-            centreName: centre?.name || 'the centre',
-            portalUrl: `${process.env.NEXTAUTH_URL || ''}/portal/billing`,
-        }).catch(e => logger.error('[Email] Failed to send invoice created email:', e));
-    }
+    // CMS-FINANCE-INCIDENT-1: Draft creation must NEVER send an issuance/payment-demand email.
+    // Emails are dispatched exclusively when a draft is issued via issueDraftInvoice.
 
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/finance/invoices');
@@ -1091,6 +1082,16 @@ export async function deleteInvoice(invoiceId: string) {
 
         if (invoice.payments && invoice.payments.length > 0) {
             throw new Error('Cannot delete this draft because payment records are associated with it. Review the payment records before continuing.');
+        }
+
+        if (invoice.billingConfigId && typeof (tx as any).update === 'function') {
+            await tx.update(billingRuns)
+                .set({
+                    success: false,
+                    errorLog: `Draft deleted by owner ${session.user.id}`,
+                    invoiceId: null,
+                })
+                .where(eq(billingRuns.invoiceId, invoiceId));
         }
 
         await tx.insert(auditEvents).values({

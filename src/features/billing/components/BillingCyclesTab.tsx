@@ -244,6 +244,7 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     dueDateStr={dueDateStr}
                     periodStartStr={cycle.periodStartStr || cycle.currentPeriodStart}
                     periodEndStr={cycle.periodEndStr}
+                    billingAnchorDate={cycle.config.billingAnchorDate}
                     onClose={() => setShowModal(false)}
                     onSuccess={onGenerated}
                 />

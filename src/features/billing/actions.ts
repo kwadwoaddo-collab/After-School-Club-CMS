@@ -11,7 +11,12 @@ import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, 
 import { eq, and, sql, ne, inArray, isNull, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
-import { computeExpectedPaymentDate, LeadTimeUnit } from '@/lib/billing/date-engine';
+import {
+    computeExpectedPaymentDate,
+    isHistoricalBillingPeriod,
+    validateBillingPeriodSelection,
+    LeadTimeUnit,
+} from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
@@ -567,17 +572,24 @@ export async function reopenBillingCycle(configId: string, periodStartStr: strin
 // ─── Invoice generation ───────────────────────────────────────────────────────
 
 export interface GenerateInvoiceInput {
-    configId:        string;
-    periodStartStr:  string;  // 'YYYY-MM-DD'
-    periodEndStr:    string;
-    amountPence?:    number;
-    notes?:          string;
+    configId:          string;
+    periodStartStr:    string;  // 'YYYY-MM-DD'
+    periodEndStr:      string;
+    amountPence?:      number;
+    notes?:            string;
+    confirmHistorical?: boolean;
+    historicalReason?:  string;
 }
 
 /**
- * Generate a family invoice draft for a billing period.
- * Idempotent — will not generate duplicate invoices for the same period.
- * Respects billing cycle skips (§26) and copy-forward rules (§16, §17).
+ * Generate a family invoice draft for a single explicitly selected billing period.
+ * Authoritative rules (CMS-FINANCE-INCIDENT-1):
+ * - Restricted to ORG_OWNER and centre-authorized MANAGER.
+ * - Validates periodStartStr / periodEndStr against the configuration's anchor.
+ * - When the selected period is historical (periodEnd < today UTC), requires explicit
+ *   confirmation and a non-empty reason, and records an actor/reason audit event.
+ * - Creates a DRAFT only (status: 'draft') with actual creation timestamp (new Date()).
+ * - Never triggers automatic catch-up across other periods and never sends parent email.
  */
 export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     const { orgId, session } = await getOrgIdAndSession();
@@ -595,8 +607,24 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     });
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
+
+    const userRole = (session.user as { role?: string }).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Org Owner and Centre Managers can generate invoices');
+    }
+
     if (config.status !== 'active') throw new Error('Billing config is not active');
     assertNotQuarantined(config.parentId, 'Invoice generation');
+
+    // Validate period selection
+    const periodValidation = validateBillingPeriodSelection(
+        input.periodStartStr,
+        input.periodEndStr,
+        config.billingAnchorDate,
+    );
+    if (!periodValidation.valid) {
+        throw new Error(periodValidation.error || 'Invalid billing period selection');
+    }
 
     // Pre-check: Skip cycle check
     const existingSkip = await db.query.billingCycleSkips.findFirst({
@@ -607,6 +635,17 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
     });
     if (existingSkip) {
         throw new Error(`Cannot generate invoice: billing cycle ${input.periodStartStr} is skipped (${existingSkip.skipReason})`);
+    }
+
+    // Historical period control: require explicit warning confirmation and audit reason
+    const isHistorical = isHistoricalBillingPeriod(input.periodEndStr, new Date());
+    const trimmedHistoricalReason = input.historicalReason?.trim() ?? '';
+    if (isHistorical) {
+        if (!input.confirmHistorical || trimmedHistoricalReason.length < 3) {
+            throw new Error(
+                'Historical billing period warning: generating a draft for a completed historical period requires explicit confirmation and a reason for audit.'
+            );
+        }
     }
 
     // Pre-transaction check 1: Billing run check
@@ -729,8 +768,10 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         }
 
         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
+        const actualCreatedAt = new Date();
+        const canonicalPeriodLabel = periodValidation.periodLabel || `${input.periodStartStr} to ${input.periodEndStr}`;
 
-        // Create invoice draft
+        // Create invoice draft with actual creation timestamp
         const [invoice] = await tx.insert(invoices).values({
             organisationId:      orgId,
             centreId:            config.centreId,
@@ -738,13 +779,13 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             invoiceNumber:       invoiceNumber,
             amount:              finalAmountStr,
             status:              'draft',
-            invoiceDate:         new Date(),
+            invoiceDate:         actualCreatedAt,
             dueDate:             dueDate,
             billingPeriodStart:  periodStartDate,
             billingPeriodEnd:    new Date(input.periodEndStr),
             notes:               finalNotes,
             billingConfigId:     config.id,
-            billingPeriodLabel:  `${input.periodStartStr} to ${input.periodEndStr}`,
+            billingPeriodLabel:  canonicalPeriodLabel,
             coveredChildrenJson: coveredChildren,
         }).returning();
 
@@ -764,8 +805,29 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
                 amountPence: recordedAmountPence,
                 runBy: session?.user?.id ?? null,
                 success: true,
-                runAt: new Date(),
+                runAt: actualCreatedAt,
             },
+        });
+
+        // Record explicit actor & reason audit trail
+        await tx.insert(auditEvents).values({
+            organisationId: orgId,
+            userId: session.user.id,
+            eventType: isHistorical ? 'manual_historical_invoice_draft_created' : 'invoice_draft_created',
+            eventData: JSON.stringify({
+                configId: config.id,
+                invoiceId: invoice.id,
+                invoiceNumber,
+                periodStart: input.periodStartStr,
+                periodEnd: input.periodEndStr,
+                amountPence: recordedAmountPence,
+                status: 'draft',
+                actorId: session.user.id,
+                actorRole: userRole,
+                isHistorical,
+                historicalReason: isHistorical ? trimmedHistoricalReason : null,
+                createdAt: actualCreatedAt.toISOString(),
+            }),
         });
 
         return { id: invoice.id, alreadyGenerated: false };

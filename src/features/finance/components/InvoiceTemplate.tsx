@@ -105,7 +105,8 @@ export const InvoiceTemplate = ({ invoice, organisationName }: InvoiceTemplatePr
                                     fontWeight: 'bold'
                                 }
                             ]}>
-                                {status === 'paid' ? 'PAID' :
+                                {status === 'draft' ? 'DRAFT' :
+                                 status === 'paid' ? 'PAID' :
                                  status === 'partially_paid' ? 'PART PAID' :
                                  status === 'sent' ? 'AWAITING PAYMENT' :
                                  status === 'void' ? 'VOID' :
