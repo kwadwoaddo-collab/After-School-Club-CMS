@@ -8,7 +8,14 @@ import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, parents, children, centres } from '@/db/schema';
 import { eq, and, desc, ne, inArray, lt, gte, isNull, sql, type Column } from 'drizzle-orm';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
-import { computeBillingSchedule, LeadTimeUnit } from '@/lib/billing/date-engine';
+import {
+    computeBillingSchedule,
+    getBillingPeriodForDate,
+    computeAutomatedBillingScheduleForIndex,
+    isHistoricalBillingPeriod,
+    toUtcDate,
+    LeadTimeUnit,
+} from '@/lib/billing/date-engine';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -88,6 +95,7 @@ export async function fetchBillingCycles(
 
     // Filter out configs linked to soft-deleted parents
     const configs = rawConfigs.filter(c => !c.parent?.deletedAt);
+    const todayUtc = toUtcDate(new Date());
 
     const enriched = await Promise.all(configs.map(async (config) => {
         const parent = config.parent;
@@ -101,7 +109,7 @@ export async function fetchBillingCycles(
             ? (lastBilled > lastSkipped ? lastBilled : lastSkipped)
             : (lastBilled || lastSkipped || null);
 
-        // Compute next period (all dates as strings for serialisability)
+        // Compute current or next anchored period (never default to a completed historical period)
         let periodLabel        = '';
         let nextInvoiceDateStr = null as string | null;
         let dueDateStr         = null as string | null;
@@ -110,7 +118,7 @@ export async function fetchBillingCycles(
         let periodEndStr       = '';
 
         try {
-            const schedule = computeBillingSchedule({
+            let schedule = computeBillingSchedule({
                 id: config.id,
                 billingAnchorDate: config.billingAnchorDate,
                 invoiceLeadDays: config.invoiceLeadDays ?? 7,
@@ -118,7 +126,20 @@ export async function fetchBillingCycles(
                 leadTimeUnit: config.leadTimeUnit,
                 leadTimeValue: config.leadTimeValue,
                 lastBilledPeriodStart: lastHandledPeriodStart,
-            });
+            }, todayUtc);
+
+            if (isHistoricalBillingPeriod(schedule.periodEnd, todayUtc)) {
+                const currentAnchored = getBillingPeriodForDate(config.billingAnchorDate, todayUtc);
+                schedule = computeAutomatedBillingScheduleForIndex({
+                    id: config.id,
+                    billingAnchorDate: config.billingAnchorDate,
+                    invoiceLeadDays: config.invoiceLeadDays ?? 7,
+                    paymentDayOfMonth: config.paymentDayOfMonth,
+                    leadTimeUnit: config.leadTimeUnit,
+                    leadTimeValue: config.leadTimeValue,
+                }, currentAnchored.periodIndex);
+            }
+
             periodLabel        = schedule.periodLabel;
             nextInvoiceDateStr = schedule.draftCreationDate.toISOString();
             dueDateStr         = schedule.dueDate.toISOString();

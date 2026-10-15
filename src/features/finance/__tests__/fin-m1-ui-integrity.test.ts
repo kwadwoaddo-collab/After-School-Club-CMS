@@ -76,6 +76,35 @@ describe('FIN-M1: UI Code Invariants & Category C Alignment', () => {
         // Must use the approved safe warning
         expect(content).toContain('Cannot delete this draft because payment records are associated with it. Review the payment records before continuing.');
     });
+
+    it('CMS-FINANCE-INCIDENT-1: selectively removes only /api/cron/billing from vercel.json while preserving all other crons', () => {
+        const vercelJsonPath = path.join(rootDir, 'vercel.json');
+        const vercelConfig = JSON.parse(fs.readFileSync(vercelJsonPath, 'utf8'));
+        const cronPaths = (vercelConfig.crons ?? []).map((c: { path: string }) => c.path);
+
+        expect(cronPaths).not.toContain('/api/cron/billing');
+        expect(cronPaths).toContain('/api/cron/reminders');
+        expect(cronPaths).toContain('/api/cron/school-year-roll');
+        expect(cronPaths).toContain('/api/cron/broadcasts');
+        expect(cronPaths).toContain('/api/cron/digest');
+    });
+
+    it('CMS-FINANCE-INCIDENT-1: ensures draft invoices never become Overdue in FinanceDataGridClient, FinanceDashboardClient, FilterableInvoiceHistorySection, or RevenueWidget', () => {
+        const gridContent = fs.readFileSync(path.join(rootDir, 'src/features/finance/components/FinanceDataGridClient.tsx'), 'utf8');
+        expect(gridContent).toContain("inv.status === 'draft' || inv.status === 'void'");
+        expect(gridContent).toContain("invoice.status === 'draft'");
+        expect(gridContent).toContain('DRAFT');
+
+        const dashContent = fs.readFileSync(path.join(rootDir, 'src/features/finance/components/FinanceDashboardClient.tsx'), 'utf8');
+        expect(dashContent).toContain("(invoice.status === 'sent' || invoice.status === 'partially_paid')");
+
+        const historyContent = fs.readFileSync(path.join(rootDir, 'src/features/finance/components/FilterableInvoiceHistorySection.tsx'), 'utf8');
+        expect(historyContent).toContain("(invoice.status === 'sent' || invoice.status === 'partially_paid')");
+
+        const revenueWidgetContent = fs.readFileSync(path.join(rootDir, 'src/components/dashboard/RevenueWidget.tsx'), 'utf8');
+        expect(revenueWidgetContent).not.toContain("'sent', 'partially_paid', 'draft'");
+        expect(revenueWidgetContent).toContain("where ${invoices.status} in ('sent', 'partially_paid')");
+    });
 });
 
 describe('FIN-M1: Backend Actions & RBAC Invariants', () => {

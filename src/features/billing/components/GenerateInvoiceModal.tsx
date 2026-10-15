@@ -1,27 +1,42 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { X, Check, AlertTriangle, FileText, Users } from 'lucide-react';
+import { useMemo, useState, useTransition } from 'react';
+import { X, Check, AlertTriangle, FileText, Users, History } from 'lucide-react';
 import { penceToPounds, poundsToPence } from '@/lib/billing';
+import {
+    formatIsoDate,
+    getBillingPeriodBySignedIndex,
+    getBillingPeriodForDate,
+    isHistoricalBillingPeriod,
+} from '@/lib/billing/date-engine';
 import { generateInvoiceFromConfig } from '@/features/billing/actions';
 import type { CoveredChild } from '@/features/billing/queries';
 
 interface Props {
-    configId:        string;
-    familyName:      string;
-    parentEmail:     string;
-    coveredChildren: CoveredChild[];
-    amountPence:     number;
-    periodLabel:     string;
-    invoiceDateStr:  string;  // 'YYYY-MM-DD'
-    dueDateStr:      string;
-    periodStartStr?: string | null;
-    periodEndStr?:   string | null;
-    onClose:         () => void;
-    onSuccess:       () => void;
+    configId:           string;
+    familyName:         string;
+    parentEmail:        string;
+    coveredChildren:    CoveredChild[];
+    amountPence:        number;
+    periodLabel:        string;
+    invoiceDateStr:     string;  // 'YYYY-MM-DD'
+    dueDateStr:         string;
+    periodStartStr?:    string | null;
+    periodEndStr?:      string | null;
+    billingAnchorDate?: string | null;
+    onClose:            () => void;
+    onSuccess:          () => void;
 }
 
 type Step = 'review' | 'success';
+
+interface SelectablePeriod {
+    key: string;
+    periodStartStr: string;
+    periodEndStr: string;
+    periodLabel: string;
+    isHistorical: boolean;
+}
 
 export default function GenerateInvoiceModal({
     configId,
@@ -34,13 +49,74 @@ export default function GenerateInvoiceModal({
     dueDateStr,
     periodStartStr,
     periodEndStr,
+    billingAnchorDate,
     onClose,
     onSuccess,
 }: Props) {
-    const [step, setStep]         = useState<Step>('review');
+    const defaultStartStr = periodStartStr || dueDateStr;
+    const defaultEndStr = periodEndStr || dueDateStr;
+
+    const selectablePeriods = useMemo<SelectablePeriod[]>(() => {
+        const now = new Date();
+        const options: SelectablePeriod[] = [];
+        const seen = new Set<string>();
+
+        if (billingAnchorDate) {
+            try {
+                const current = getBillingPeriodForDate(billingAnchorDate, now);
+                for (let idx = current.periodIndex - 12; idx <= current.periodIndex + 3; idx++) {
+                    const p = getBillingPeriodBySignedIndex(billingAnchorDate, idx);
+                    const sStr = formatIsoDate(p.periodStart);
+                    const eStr = formatIsoDate(p.periodEnd);
+                    const key = `${sStr}:${eStr}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        options.push({
+                            key,
+                            periodStartStr: sStr,
+                            periodEndStr: eStr,
+                            periodLabel: p.periodLabel,
+                            isHistorical: isHistoricalBillingPeriod(eStr, now),
+                        });
+                    }
+                }
+            } catch {
+                // fallback to default period below
+            }
+        }
+
+        const defaultKey = `${defaultStartStr}:${defaultEndStr}`;
+        if (!seen.has(defaultKey) && defaultStartStr && defaultEndStr) {
+            options.unshift({
+                key: defaultKey,
+                periodStartStr: defaultStartStr,
+                periodEndStr: defaultEndStr,
+                periodLabel,
+                isHistorical: isHistoricalBillingPeriod(defaultEndStr, now),
+            });
+        }
+
+        return options;
+    }, [billingAnchorDate, defaultStartStr, defaultEndStr, periodLabel]);
+
+    const [selectedPeriodKey, setSelectedPeriodKey] = useState(`${defaultStartStr}:${defaultEndStr}`);
+    const activePeriod = useMemo(
+        () => selectablePeriods.find(p => p.key === selectedPeriodKey) ?? {
+            key: `${defaultStartStr}:${defaultEndStr}`,
+            periodStartStr: defaultStartStr,
+            periodEndStr: defaultEndStr,
+            periodLabel,
+            isHistorical: isHistoricalBillingPeriod(defaultEndStr, new Date()),
+        },
+        [selectablePeriods, selectedPeriodKey, defaultStartStr, defaultEndStr, periodLabel],
+    );
+
+    const [step, setStep]               = useState<Step>('review');
     const [editedPence, setEditedPence] = useState(amountPence);
     const [editedFee, setEditedFee]     = useState(String(amountPence / 100));
     const [notes, setNotes]             = useState('');
+    const [historicalReason, setHistoricalReason] = useState('');
+    const [confirmHistorical, setConfirmHistorical] = useState(false);
     const [error, setError]             = useState('');
     const [isPending, start]            = useTransition();
     const [invoiceId, setInvoiceId]     = useState('');
@@ -58,17 +134,23 @@ export default function GenerateInvoiceModal({
             return;
         }
 
-        const startStr = periodStartStr || dueDateStr;
-        const endStr = periodEndStr || dueDateStr;
+        if (activePeriod.isHistorical) {
+            if (!confirmHistorical || historicalReason.trim().length < 3) {
+                setError('Historical billing period warning: please confirm historical draft creation and enter an audit reason (at least 3 characters).');
+                return;
+            }
+        }
 
         start(async () => {
             try {
                 const result = await generateInvoiceFromConfig({
                     configId,
-                    periodStartStr: startStr,
-                    periodEndStr:   endStr,
-                    amountPence:    editedPence,
-                    notes:          notes || undefined,
+                    periodStartStr:    activePeriod.periodStartStr,
+                    periodEndStr:      activePeriod.periodEndStr,
+                    amountPence:       editedPence,
+                    notes:             notes || undefined,
+                    confirmHistorical: activePeriod.isHistorical ? confirmHistorical : undefined,
+                    historicalReason:  activePeriod.isHistorical ? historicalReason.trim() : undefined,
                 });
                 setInvoiceId(result.invoiceId);
                 setStep('success');
@@ -82,7 +164,7 @@ export default function GenerateInvoiceModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[92vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
@@ -90,7 +172,7 @@ export default function GenerateInvoiceModal({
                             <FileText className="w-4.5 h-4.5 text-primary" />
                         </div>
                         <div>
-                            <p className="text-sm font-black text-foreground">Generate Invoice</p>
+                            <p className="text-sm font-black text-foreground">Generate Draft Invoice</p>
                             <p className="text-xs text-muted-foreground">{familyName}</p>
                         </div>
                     </div>
@@ -104,21 +186,80 @@ export default function GenerateInvoiceModal({
 
                 {step === 'review' && (
                     <div className="px-5 py-4 space-y-4">
-                        {/* Period */}
+                        {/* Period Selector */}
+                        {selectablePeriods.length > 1 && (
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                    Billing Period
+                                </label>
+                                <select
+                                    value={selectedPeriodKey}
+                                    onChange={(e) => {
+                                        setSelectedPeriodKey(e.target.value);
+                                        setError('');
+                                    }}
+                                    className="w-full h-11 px-3 rounded-xl border border-border bg-background text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                >
+                                    {selectablePeriods.map((p) => (
+                                        <option key={p.key} value={p.key}>
+                                            {p.periodLabel} ({p.periodStartStr} – {p.periodEndStr}){p.isHistorical ? ' [Historical]' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* Period Details */}
                         <div className="bg-secondary/40 rounded-xl p-4 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground font-semibold">Period</span>
-                                <span className="font-black text-foreground">{periodLabel}</span>
+                                <span className="font-black text-foreground">{activePeriod.periodLabel}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground font-semibold">Invoice date</span>
-                                <span className="font-bold text-foreground">{invoiceDateStr}</span>
+                                <span className="text-muted-foreground font-semibold">Draft creation date</span>
+                                <span className="font-bold text-foreground">{invoiceDateStr || 'Today'}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground font-semibold">Due date</span>
-                                <span className="font-bold text-foreground">{dueDateStr}</span>
+                                <span className="font-bold text-foreground">{activePeriod.periodStartStr}</span>
                             </div>
                         </div>
+
+                        {/* Historical Period Warning & Audit Controls */}
+                        {activePeriod.isHistorical && (
+                            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-3">
+                                <div className="flex items-start gap-2">
+                                    <History className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                    <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                                        <p className="font-black uppercase tracking-wider">Historical Billing Period Warning</p>
+                                        <p className="font-medium">
+                                            This billing period ({activePeriod.periodStartStr} to {activePeriod.periodEndStr}) has already ended. Generating a historical draft is audited and will create a DRAFT only (it will not email the parent until issued separately).
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider mb-1">
+                                        Reason for Historical Draft (Required for Audit)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={historicalReason}
+                                        onChange={e => setHistoricalReason(e.target.value)}
+                                        placeholder="e.g. Agreed backdated billing after late registration"
+                                        className="w-full h-10 px-3 rounded-lg border border-amber-500/40 bg-background text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                    />
+                                </div>
+                                <label className="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={confirmHistorical}
+                                        onChange={e => setConfirmHistorical(e.target.checked)}
+                                        className="rounded border-amber-500/40 accent-amber-600 w-4 h-4"
+                                    />
+                                    I confirm this completed historical period should be generated as a draft.
+                                </label>
+                            </div>
+                        )}
 
                         {/* Children */}
                         {coveredChildren.length > 0 && (
@@ -175,7 +316,7 @@ export default function GenerateInvoiceModal({
 
                         {/* Bill-to info */}
                         <div className="bg-secondary/40 rounded-xl px-4 py-3">
-                            <p className="text-xs text-muted-foreground font-semibold">Invoice will be sent to</p>
+                            <p className="text-xs text-muted-foreground font-semibold">Draft created for (parent notified only upon separate issuance)</p>
                             <p className="text-sm font-bold text-foreground mt-0.5">{familyName}</p>
                             {parentEmail && <p className="text-xs text-muted-foreground">{parentEmail}</p>}
                         </div>
@@ -204,7 +345,7 @@ export default function GenerateInvoiceModal({
                                 {isPending ? (
                                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating…</>
                                 ) : (
-                                    <><Check className="w-4 h-4" />Generate Invoice</>
+                                    <><Check className="w-4 h-4" />Generate Draft</>
                                 )}
                             </button>
                         </div>
@@ -217,9 +358,9 @@ export default function GenerateInvoiceModal({
                             <Check className="w-7 h-7 text-emerald-600" />
                         </div>
                         <div>
-                            <p className="text-lg font-black text-foreground">Invoice Generated!</p>
+                            <p className="text-lg font-black text-foreground">Draft Invoice Generated!</p>
                             <p className="text-sm text-muted-foreground mt-1">
-                                {penceToPounds(editedPence)} invoice for {familyName} — {periodLabel}
+                                {penceToPounds(editedPence)} draft for {familyName} — {activePeriod.periodLabel}
                             </p>
                         </div>
                         <div className="flex gap-2 justify-center">
@@ -235,7 +376,7 @@ export default function GenerateInvoiceModal({
                                     className="px-5 h-10 rounded-xl bg-primary text-white text-sm font-black hover:bg-primary/90 transition-all flex items-center gap-1.5"
                                 >
                                     <FileText className="w-4 h-4" />
-                                    View Invoice
+                                    Review & Issue Draft
                                 </a>
                             )}
                         </div>

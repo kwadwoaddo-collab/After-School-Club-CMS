@@ -68,14 +68,18 @@ export default async function FinancePage(props: {
                 ? inArray(invoices.centreId, validCentreIds)
                 : eq(invoices.centreId, 'unauthorized_centre_id');
 
+        const todayMidnightUtc = new Date();
+        todayMidnightUtc.setUTCHours(0, 0, 0, 0);
+
         let dbStatusFilter = undefined;
         if (statusFilter === 'paid') {
             dbStatusFilter = eq(invoices.status, 'paid');
+        } else if (statusFilter === 'draft') {
+            dbStatusFilter = eq(invoices.status, 'draft');
         } else if (statusFilter === 'overdue') {
             dbStatusFilter = and(
-                ne(invoices.status, 'paid'),
-                ne(invoices.status, 'void'),
-                lt(invoices.dueDate, new Date())
+                inArray(invoices.status, ['sent', 'partially_paid']),
+                lt(invoices.dueDate, todayMidnightUtc)
             );
         }
 

@@ -7,7 +7,13 @@ import {
     children, parents, centres, organisations,
 } from '@/db/schema';
 import { eq, and, isNull, or, ne, sql, desc, inArray } from 'drizzle-orm';
-import { computeBillingSchedule } from '@/lib/billing/date-engine';
+import {
+    getBillingPeriodForDate,
+    computeAutomatedBillingScheduleForIndex,
+    isHistoricalBillingPeriod,
+    isEligibleAutomatedBillingSchedule,
+    toUtcDate,
+} from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
 
@@ -15,12 +21,18 @@ import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
  * POST /api/cron/billing
  *
  * Automated monthly invoice generation for all active billing configs.
- * Runs daily and generates draft invoices for configs whose draft creation date is today or overdue.
+ * Authoritative rule (CMS-FINANCE-INCIDENT-1):
+ * - Automation may create DRAFTS for current and eligible upcoming periods only.
+ * - Automation must NEVER create completed historical periods (inclusive UTC date-only semantics:
+ *   a period ending today at 00:00:00.000Z is current, not historical).
+ * - Selects the current anchored period and eligible upcoming periods directly without walking
+ *   historical backlog or fabricating run/skip history.
+ * - Discarded drafts (recorded in billing_runs with success=false, invoiceId=null) are not
+ *   regenerated automatically unless explicitly reopened by a Manager/Owner.
  *
  * Secured by CRON_SECRET header.
- * Idempotent — won't double-generate for the same billing period.
- *
- * Schedule (vercel.json): "0 6 * * *" — 6am UTC daily
+ * Note: Scheduled execution has been selectively removed from vercel.json for containment;
+ * direct CRON_SECRET-authorized calls remain possible and are enforced by the eligibility rules below.
  */
 export async function POST(request: NextRequest) {
     // ── Auth: CRON_SECRET check (timing-safe) ─────────────────────────────────
@@ -29,8 +41,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: authCheck.error }, { status: authCheck.status ?? 401 });
     }
 
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const today = toUtcDate(new Date());
 
     const results = {
         processed: 0,
@@ -76,24 +87,20 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // Resolve last handled period start from prior runs and cycle skips
-                const lastRun = config.runs?.[0] ?? null;
-                const lastSkip = config.skips?.[0] ?? null;
-                const lastBilled = lastRun?.success ? lastRun.periodStart : null;
-                const lastSkipped = lastSkip ? lastSkip.periodStart : null;
-                let lastHandledPeriodStart: string | null = (lastBilled && lastSkipped)
-                    ? (lastBilled > lastSkipped ? lastBilled : lastSkipped)
-                    : (lastBilled || lastSkipped || null);
+                // Directly resolve the current anchored period as of today (never walk historical backlog)
+                const currentAnchoredPeriod = getBillingPeriodForDate(config.billingAnchorDate, today);
+                let periodIndex = currentAnchoredPeriod.periodIndex;
 
-                // Process all currently eligible cycles for this config (consecutive cycles & missed eligibility)
+                // Evaluate only current and eligible upcoming anchored periods
                 const MAX_CYCLES_PER_CONFIG = 12;
                 let cyclesProcessed = 0;
 
                 while (cyclesProcessed < MAX_CYCLES_PER_CONFIG) {
+                    const targetIndex = periodIndex;
+                    periodIndex++;
                     cyclesProcessed++;
 
-                    // Compute billing schedule using canonical Date Engine
-                    const schedule = computeBillingSchedule(
+                    const schedule = computeAutomatedBillingScheduleForIndex(
                         {
                             id: config.id,
                             billingAnchorDate: config.billingAnchorDate,
@@ -101,17 +108,22 @@ export async function POST(request: NextRequest) {
                             paymentDayOfMonth: config.paymentDayOfMonth,
                             leadTimeUnit: config.leadTimeUnit,
                             leadTimeValue: config.leadTimeValue,
-                            lastBilledPeriodStart: lastHandledPeriodStart,
                         },
-                        today
+                        targetIndex,
                     );
 
-                    const draftDate = new Date(schedule.draftCreationDate);
-                    draftDate.setUTCHours(0, 0, 0, 0);
+                    // Authoritative guard: never create completed historical periods, and never fabricate run/skip records
+                    if (isHistoricalBillingPeriod(schedule.periodEnd, today)) {
+                        continue;
+                    }
 
-                    // ── 2. Check if draft creation date is today or already overdue ────────
+                    const draftDate = toUtcDate(schedule.draftCreationDate);
+
+                    // ── 2. Check if draft creation date is today or already due ────────
                     if (draftDate > today) {
-                        results.skipped_not_due++;
+                        if (cyclesProcessed === 1) {
+                            results.skipped_not_due++;
+                        }
                         break;
                     }
 
@@ -127,7 +139,6 @@ export async function POST(request: NextRequest) {
                     });
                     if (skip) {
                         results.skipped_by_manager++;
-                        lastHandledPeriodStart = periodStartStr;
                         continue;
                     }
 
@@ -163,7 +174,7 @@ export async function POST(request: NextRequest) {
                         amountStr = '0.00';
                     }
 
-                    // ── 5. Idempotency & Manual Conflict Check (Issue 9) ──────────────────────────
+                    // ── 5. Idempotency, Discarded-Draft & Manual Conflict Check ──────────────────────────
                     const existingRun = await db.query.billingRuns.findFirst({
                         where: and(
                             eq(billingRuns.billingConfigId, config.id),
@@ -171,9 +182,10 @@ export async function POST(request: NextRequest) {
                         ),
                     });
 
-                    if (existingRun?.success) {
+                    // Respect both completed runs (success=true) and discarded drafts (success=false)
+                    // until explicitly reopened via reopenBillingCycle.
+                    if (existingRun) {
                         results.skipped_already_exists++;
-                        lastHandledPeriodStart = periodStartStr;
                         continue;
                     }
 
@@ -203,7 +215,6 @@ export async function POST(request: NextRequest) {
                             // Ignore if run already recorded
                         }
                         results.skipped_already_exists++;
-                        lastHandledPeriodStart = periodStartStr;
                         continue;
                     }
 
@@ -218,6 +229,12 @@ export async function POST(request: NextRequest) {
                         const lockKey = `billing_config:${config.id}:${periodStartStr}`;
                         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
 
+                        // Recheck period eligibility inside the creation transaction (inclusive UTC date-only semantics)
+                        const txToday = toUtcDate(new Date());
+                        if (!isEligibleAutomatedBillingSchedule(schedule, txToday)) {
+                            return { skipped: true, byManager: false, notEligible: true };
+                        }
+
                         // Re-check skip cycle inside locked transaction
                         const inTxSkip = await tx.query.billingCycleSkips.findFirst({
                             where: and(
@@ -226,18 +243,18 @@ export async function POST(request: NextRequest) {
                             ),
                         });
                         if (inTxSkip) {
-                            return { skipped: true, byManager: true };
+                            return { skipped: true, byManager: true, notEligible: false };
                         }
 
-                        // Re-check billingRuns inside locked transaction
+                        // Re-check billingRuns inside locked transaction (including discarded drafts with success=false)
                         const inTxRun = await tx.query.billingRuns.findFirst({
                             where: and(
                                 eq(billingRuns.billingConfigId, config.id),
                                 eq(billingRuns.periodStart, periodStartStr)
                             ),
                         });
-                        if (inTxRun?.success) {
-                            return { skipped: true, byManager: false };
+                        if (inTxRun) {
+                            return { skipped: true, byManager: false, notEligible: false };
                         }
 
                         // Re-check invoices inside locked transaction (covers both manual and scheduler invoices)
@@ -251,7 +268,7 @@ export async function POST(request: NextRequest) {
                             ),
                         });
                         if (inTxInvoice) {
-                            return { skipped: true, byManager: false };
+                            return { skipped: true, byManager: false, notEligible: false };
                         }
 
                         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
@@ -292,13 +309,13 @@ export async function POST(request: NextRequest) {
                             },
                         });
 
-                        return { skipped: false, invoiceId: invoice.id };
+                        return { skipped: false, invoiceId: invoice.id, notEligible: false };
                     });
 
-                    lastHandledPeriodStart = periodStartStr;
-
                     if (generatedResult.skipped) {
-                        if (generatedResult.byManager) {
+                        if (generatedResult.notEligible) {
+                            results.skipped_not_due++;
+                        } else if (generatedResult.byManager) {
                             results.skipped_by_manager++;
                         } else {
                             results.skipped_already_exists++;
@@ -306,7 +323,7 @@ export async function POST(request: NextRequest) {
                     } else {
                         results.generated++;
                     }
-                } // end while (consecutive cycles)
+                } // end while (current & upcoming eligible cycles)
             } catch (err) {
                 results.errors++;
                 const msg = err instanceof Error ? err.message : String(err);

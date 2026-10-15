@@ -518,3 +518,182 @@ export function computeNextBillingPeriod(
 
     return { periodStart, periodEnd, invoiceDate, dueDate, periodLabel };
 }
+
+// ─── CMS-FINANCE-INCIDENT-1: Automated Eligibility & Period Validation ──────
+
+/**
+ * Inclusive UTC date-only comparison for whether a billing period is already completed (historical).
+ * Authoritative rule: a period ending today (even if represented as 00:00:00.000Z) is NOT historical.
+ * Only a period whose UTC calendar end date is strictly before referenceDate's UTC calendar date is historical.
+ */
+export function isHistoricalBillingPeriod(
+    periodEndInput: Date | string,
+    referenceDateInput: Date | string = new Date(),
+): boolean {
+    const periodEndUtc = toUtcDate(periodEndInput);
+    const refUtc = toUtcDate(referenceDateInput);
+    return periodEndUtc.getTime() < refUtc.getTime();
+}
+
+/**
+ * Computes the billing schedule directly for a specific anchored period index (k >= 0),
+ * without walking historical backlog from lastBilledPeriodStart.
+ */
+export function computeAutomatedBillingScheduleForIndex(
+    config: Omit<BillingScheduleInput, 'lastBilledPeriodStart'>,
+    periodIndex: number,
+): BillingSchedule {
+    const period = getBillingPeriodByIndex(config.billingAnchorDate, periodIndex);
+    const expectedPaymentDate = computeExpectedPaymentDate(period.periodStart, config.paymentDayOfMonth);
+    const draftCreationDate = computeDraftCreationDate({
+        expectedPaymentDate,
+        leadTimeUnit: config.leadTimeUnit,
+        leadTimeValue: config.leadTimeValue,
+        invoiceLeadDays: config.invoiceLeadDays,
+    });
+    const dueDate = expectedPaymentDate;
+    const cycleKey = generateCycleKey(config.id ?? 'config', period.periodStart);
+
+    return {
+        periodStart: period.periodStart,
+        periodEnd: period.periodEnd,
+        draftCreationDate,
+        expectedPaymentDate,
+        dueDate,
+        periodLabel: period.periodLabel,
+        cycleKey,
+    };
+}
+
+/**
+ * Checks whether an anchored billing schedule is eligible for automated draft creation on referenceDate:
+ * 1. The period must NOT be a completed historical period (inclusive: periodEnd >= referenceDate UTC day).
+ * 2. The draft creation date must be due on or before referenceDate UTC day (draftCreationDate <= referenceDate UTC day).
+ */
+export function isEligibleAutomatedBillingSchedule(
+    schedule: Pick<BillingSchedule, 'periodEnd' | 'draftCreationDate'>,
+    referenceDateInput: Date | string = new Date(),
+): boolean {
+    if (isHistoricalBillingPeriod(schedule.periodEnd, referenceDateInput)) {
+        return false;
+    }
+    const draftDateUtc = toUtcDate(schedule.draftCreationDate);
+    const refUtc = toUtcDate(referenceDateInput);
+    return draftDateUtc.getTime() <= refUtc.getTime();
+}
+
+/**
+ * Strictly validates that a string is a real 'YYYY-MM-DD' calendar date (e.g. rejects '2026-02-31').
+ */
+export function isValidIsoCalendarDate(dateStr: string): boolean {
+    if (typeof dateStr !== 'string') return false;
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (month < 1 || month > 12) return false;
+    const maxDay = daysInMonth(year, month);
+    return day >= 1 && day <= maxDay;
+}
+
+/**
+ * Computes the k-th billing period relative to anchorDate for any integer periodIndex (including negative indices for pre-anchor historical periods).
+ */
+export function getBillingPeriodBySignedIndex(
+    anchorDateInput: Date | string,
+    periodIndex: number,
+): { periodStart: Date; periodEnd: Date; periodLabel: string } {
+    if (periodIndex >= 0) {
+        return getBillingPeriodByIndex(anchorDateInput, periodIndex);
+    }
+    const anchor = toUtcDate(anchorDateInput);
+    const originalAnchorDay = anchor.getUTCDate();
+    const startYear = anchor.getUTCFullYear();
+    const startMonth = anchor.getUTCMonth() + 1;
+
+    const monthOffsetK = (startMonth - 1) + periodIndex;
+    const yearK = startYear + Math.floor(monthOffsetK / 12);
+    const monthK = ((monthOffsetK % 12) + 12) % 12 + 1;
+    const dayK = clampToMonthEnd(yearK, monthK, originalAnchorDay);
+    const periodStart = createUtcDate(yearK, monthK, dayK);
+
+    const monthOffsetNext = (startMonth - 1) + periodIndex + 1;
+    const yearNext = startYear + Math.floor(monthOffsetNext / 12);
+    const monthNext = ((monthOffsetNext % 12) + 12) % 12 + 1;
+    const dayNext = (periodIndex + 1 === 0)
+        ? originalAnchorDay
+        : clampToMonthEnd(yearNext, monthNext, originalAnchorDay);
+    const nextStart = createUtcDate(yearNext, monthNext, dayNext);
+
+    const periodEnd = new Date(nextStart.getTime() - 86_400_000);
+    const periodLabel = formatPeriodLabel(periodStart, periodEnd);
+    return { periodStart, periodEnd, periodLabel };
+}
+
+/**
+ * Validates an explicit billing period selection (periodStartStr, periodEndStr).
+ * Ensures valid ISO calendar dates, start <= end, and when billingAnchorDate is provided,
+ * verifies that the selected period matches a canonical anchored period for that configuration.
+ */
+export function validateBillingPeriodSelection(
+    periodStartStr: string,
+    periodEndStr: string,
+    billingAnchorDate?: Date | string | null,
+): { valid: boolean; error?: string; periodStart?: Date; periodEnd?: Date; periodLabel?: string } {
+    if (!isValidIsoCalendarDate(periodStartStr)) {
+        return { valid: false, error: `Invalid billing period start date: ${periodStartStr}` };
+    }
+    if (!isValidIsoCalendarDate(periodEndStr)) {
+        return { valid: false, error: `Invalid billing period end date: ${periodEndStr}` };
+    }
+
+    const periodStart = toUtcDate(periodStartStr);
+    const periodEnd = toUtcDate(periodEndStr);
+
+    if (periodEnd.getTime() < periodStart.getTime()) {
+        return { valid: false, error: 'Billing period end date must not be before start date' };
+    }
+
+    if (billingAnchorDate && (billingAnchorDate instanceof Date || isValidIsoCalendarDate(String(billingAnchorDate).slice(0, 10)))) {
+        const anchor = toUtcDate(billingAnchorDate);
+        const monthDiff = (periodStart.getUTCFullYear() - anchor.getUTCFullYear()) * 12
+            + (periodStart.getUTCMonth() - anchor.getUTCMonth());
+
+        for (const candidateIndex of [monthDiff - 1, monthDiff, monthDiff + 1]) {
+            const candidate = getBillingPeriodBySignedIndex(anchor, candidateIndex);
+            if (
+                formatIsoDate(candidate.periodStart) === periodStartStr &&
+                formatIsoDate(candidate.periodEnd) === periodEndStr
+            ) {
+                return {
+                    valid: true,
+                    periodStart: candidate.periodStart,
+                    periodEnd: candidate.periodEnd,
+                    periodLabel: candidate.periodLabel,
+                };
+            }
+        }
+
+        return {
+            valid: false,
+            error: `Selected billing period (${periodStartStr} to ${periodEndStr}) does not align with the family billing anchor date (${formatIsoDate(anchor)})`,
+        };
+    }
+
+    const expectedEnd = computePeriodEnd(periodStart, periodStart.getUTCDate());
+    if (formatIsoDate(expectedEnd) !== periodEndStr) {
+        return {
+            valid: false,
+            error: `Selected billing period (${periodStartStr} to ${periodEndStr}) is not a valid monthly billing cycle (expected end date ${formatIsoDate(expectedEnd)})`,
+        };
+    }
+
+    return {
+        valid: true,
+        periodStart,
+        periodEnd,
+        periodLabel: formatPeriodLabel(periodStart, periodEnd),
+    };
+}
+
