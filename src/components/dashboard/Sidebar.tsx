@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
     LayoutGrid,
     School,
@@ -69,7 +69,6 @@ const ROLE_QUICK_ACTIONS: Record<string, string[]> = {
 export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'AfterSchool', orgId, userOrgs = [] }: SidebarProps) {
     const { collapsed, setCollapsed } = useSidebar();
     const pathname = usePathname();
-    const router = useRouter();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const { selectedCentreId, setSelectedCentreId, centres } = useCentreFilter();
     const centreBtnRef = useRef<HTMLButtonElement>(null);
@@ -126,9 +125,6 @@ export default function Sidebar({ userName, userRole = 'TUTOR', orgName = 'After
     const selectCentre = (centreId: string) => {
         setSelectedCentreId(centreId);
         setDropdownOpen(false);
-        if (pathname !== '/dashboard') {
-            router.push('/dashboard');
-        }
     };
 
     const allowedNav = ROLE_NAV[userRole] || ROLE_NAV['TUTOR'];
