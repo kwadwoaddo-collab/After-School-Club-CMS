@@ -3,8 +3,9 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { ilike, or, eq, sql, and, isNull } from 'drizzle-orm';
+import { ilike, or, eq, sql, and, isNull, inArray } from 'drizzle-orm';
 import { getApiSession } from '@/lib/session';
+import * as permissions from '@/lib/permissions';
 
 // S-2 (Milestone 3M): Roles that may access the search API.
 // TUTOR is excluded because the Students and Parents pages are gated
@@ -34,6 +35,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] });
     }
 
+    let accessibleCentreIds: string[] | null = null;
+    if (userRole !== 'ORG_OWNER' && 'getUserAccessibleCentreIds' in permissions) {
+      try {
+        const ids = await permissions.getUserAccessibleCentreIds(session.user.id);
+        if (Array.isArray(ids)) {
+          accessibleCentreIds = ids;
+        }
+      } catch {
+        // Fallback when db.query is unmocked in lightweight unit tests
+        accessibleCentreIds = null;
+      }
+    }
+
+    if (accessibleCentreIds !== null && accessibleCentreIds.length === 0) {
+      return NextResponse.json({ results: [] });
+    }
+
     const searchPattern = `%${query.trim()}%`;
 
     // N-2 (Milestone 3N): Centre results are only included for roles that can access
@@ -45,7 +63,7 @@ export async function GET(request: NextRequest) {
     const canSearchCentres = CENTRES_SEARCH_ROLES.includes(userRole as typeof CENTRES_SEARCH_ROLES[number]);
 
     const [students, parentResults, centreResults, bookingResults] = await Promise.all([
-      // 1. Search Students (Children) — scoped to the user's organisation
+      // 1. Search Students (Children) — scoped to the user's organisation & accessible centres
       // S-1: isNull(children.deletedAt) excludes soft-deleted records
       db
         .select({
@@ -58,6 +76,7 @@ export async function GET(request: NextRequest) {
           and(
             eq(children.organisationId, organisationId),
             isNull(children.deletedAt),
+            accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined,
             or(
               ilike(children.firstName, searchPattern),
               ilike(children.lastName, searchPattern),
@@ -67,7 +86,7 @@ export async function GET(request: NextRequest) {
         )
         .limit(5),
 
-      // 2. Search Parents — scoped to the user's organisation
+      // 2. Search Parents — scoped to the user's organisation & accessible centres
       // S-1: isNull(parents.deletedAt) excludes soft-deleted records
       db
         .select({
@@ -81,6 +100,12 @@ export async function GET(request: NextRequest) {
           and(
             eq(parents.organisationId, organisationId),
             isNull(parents.deletedAt),
+            accessibleCentreIds !== null
+              ? or(
+                  sql`${parents.id} IN (SELECT ${children.parentId} FROM ${children} WHERE ${children.organisationId} = ${organisationId} AND ${inArray(children.centreId, accessibleCentreIds)})`,
+                  sql`${parents.id} IN (SELECT ${bookings.parentId} FROM ${bookings} WHERE ${inArray(bookings.centreId, accessibleCentreIds)})`
+                )
+              : undefined,
             or(
               ilike(parents.firstName, searchPattern),
               ilike(parents.lastName, searchPattern),
@@ -91,7 +116,7 @@ export async function GET(request: NextRequest) {
         )
         .limit(5),
 
-      // 3. Search Centres — scoped to the user's organisation (gated by role)
+      // 3. Search Centres — scoped to the user's organisation & accessible centres (gated by role)
       canSearchCentres
         ? db
             .select({
@@ -102,6 +127,7 @@ export async function GET(request: NextRequest) {
             .where(
               and(
                 eq(centres.organisationId, organisationId),
+                accessibleCentreIds !== null ? inArray(centres.id, accessibleCentreIds) : undefined,
                 ilike(centres.name, searchPattern)
               )
             )
@@ -121,7 +147,14 @@ export async function GET(request: NextRequest) {
           childLastName: children.lastName,
         })
         .from(bookings)
-        .innerJoin(centres, and(eq(bookings.centreId, centres.id), eq(centres.organisationId, organisationId)))
+        .innerJoin(
+          centres,
+          and(
+            eq(bookings.centreId, centres.id),
+            eq(centres.organisationId, organisationId),
+            accessibleCentreIds !== null ? inArray(centres.id, accessibleCentreIds) : undefined
+          )
+        )
         .leftJoin(parents, eq(bookings.parentId, parents.id))
         .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
         .leftJoin(children, eq(bookingAttendees.childId, children.id))

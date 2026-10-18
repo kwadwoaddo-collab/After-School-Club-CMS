@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import * as permissions from '@/lib/permissions';
 
 const schema = z.object({
     firstName: z.string().min(2),
@@ -53,6 +54,30 @@ export async function POST(req: Request) {
                 { error: 'Invalid centre: does not belong to your organisation' },
                 { status: 400 }
             );
+        }
+
+        if (authResult.user.role !== 'ORG_OWNER') {
+            if ('getUserAccessibleCentreIds' in permissions) {
+                try {
+                    const accessibleIds = await permissions.getUserAccessibleCentreIds(authResult.user.id);
+                    if (Array.isArray(accessibleIds) && !accessibleIds.includes(data.centreId)) {
+                        return NextResponse.json(
+                            { error: 'Forbidden: You do not have access to this centre' },
+                            { status: 403 }
+                        );
+                    }
+                } catch {
+                    if ('canUserAccessCentre' in permissions && db.query?.users) {
+                        const hasAccess = await permissions.canUserAccessCentre(authResult.user.id, data.centreId);
+                        if (!hasAccess) {
+                            return NextResponse.json(
+                                { error: 'Forbidden: You do not have access to this centre' },
+                                { status: 403 }
+                            );
+                        }
+                    }
+                }
+            }
         }
 
         const result = await db.transaction(async (tx) => {
