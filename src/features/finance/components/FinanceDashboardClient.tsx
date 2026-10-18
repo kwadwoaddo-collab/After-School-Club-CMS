@@ -161,9 +161,9 @@ export function InvoiceTable({
                                     </td>
                                     <td className="py-4 px-4">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                            invoice.status === 'draft'          ? 'bg-warning/15 text-warning border border-warning/30' :
-                                            invoice.status === 'paid'           ? 'bg-success/10 text-success' : 
-                                            invoice.status === 'partially_paid' ? 'bg-warning/10 text-warning' :
+                                            invoice.status === 'draft'          ? 'bg-warning/15 text-amber-700 dark:text-amber-400 border border-warning/30' :
+                                            invoice.status === 'paid'           ? 'bg-success/10 text-emerald-700 dark:text-emerald-400' : 
+                                            invoice.status === 'partially_paid' ? 'bg-warning/10 text-amber-700 dark:text-amber-400' :
                                             invoice.status === 'sent'           ? 'bg-info/10 text-info' :
                                             invoice.status === 'void'           ? 'bg-secondary/60 text-muted-foreground' : 
                                             isOverdue                           ? 'bg-destructive/10 text-destructive' :
@@ -183,7 +183,7 @@ export function InvoiceTable({
                                                         type="button"
                                                         disabled={isPending}
                                                         onClick={() => setConfirmTarget({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, action: 'void' })}
-                                                        className="p-2 bg-warning/10 text-warning hover:bg-warning/20 rounded-lg transition-all border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
+                                                        className="p-2 bg-warning/10 text-amber-700 dark:text-amber-400 hover:bg-warning/20 rounded-lg transition-all border border-warning/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 duration-100"
                                                         title="Void Invoice"
                                                     >
                                                         <Ban className="w-4 h-4" />
@@ -297,7 +297,7 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: unknown[] })
                                     <span className="text-sm font-medium text-foreground">£{Number(invoice.amount).toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 text-right px-4">
-                                    <span className="text-sm font-medium text-success">£{paid.toFixed(2)}</span>
+                                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">£{paid.toFixed(2)}</span>
                                 </td>
                                 <td className="py-4 text-right px-4">
                                     <span className="text-sm font-black text-destructive">£{balance.toFixed(2)}</span>
@@ -309,7 +309,7 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: unknown[] })
                                 </td>
                                 <td className="py-4 px-4">
                                     <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                                        invoice.status === 'partially_paid' ? 'bg-warning/10 text-warning' :
+                                        invoice.status === 'partially_paid' ? 'bg-warning/10 text-amber-700 dark:text-amber-400' :
                                         invoice.status === 'sent'           ? 'bg-info/10 text-info' :
                                                                               'bg-secondary/60 text-muted-foreground'
                                     }`}>
@@ -329,9 +329,9 @@ export function InvoiceAgingSummary({ buckets }: { buckets: any }) {
     if (!buckets) return null;
     
     const items = [
-        { label: 'Current',    data: buckets.current,      color: 'bg-success/10 text-success border-success/20' },
-        { label: '1–7 Days',   data: buckets.days_1_7,     color: 'bg-warning/10 text-warning border-warning/20' },
-        { label: '8–30 Days',  data: buckets.days_8_30,    color: 'bg-warning/20 text-warning border-warning/30' },
+        { label: 'Current',    data: buckets.current,      color: 'bg-success/10 text-emerald-700 dark:text-emerald-400 border-success/20' },
+        { label: '1–7 Days',   data: buckets.days_1_7,     color: 'bg-warning/10 text-amber-700 dark:text-amber-400 border-warning/20' },
+        { label: '8–30 Days',  data: buckets.days_8_30,    color: 'bg-warning/20 text-amber-700 dark:text-amber-400 border-warning/30' },
         { label: '31–60 Days', data: buckets.days_31_60,   color: 'bg-destructive/10 text-destructive border-destructive/20' },
         { label: '60+ Days',   data: buckets.days_60_plus, color: 'bg-destructive/15 text-destructive border-destructive/30' },
     ];
@@ -401,7 +401,7 @@ export function ParentBalanceTable({ balances = [] }: { balances?: unknown[] }) 
                                 <span className="text-sm font-medium text-foreground">£{Number(row.total_invoiced).toFixed(2)}</span>
                             </td>
                             <td className="py-4 text-right px-4">
-                                <span className="text-sm font-medium text-success">£{Number(row.total_paid).toFixed(2)}</span>
+                                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">£{Number(row.total_paid).toFixed(2)}</span>
                             </td>
                             <td className="py-4 text-right px-4">
                                 <span className="text-sm font-black text-destructive">£{Number(row.balance).toFixed(2)}</span>
