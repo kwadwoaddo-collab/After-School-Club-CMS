@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { staffInvites } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { staffInvites, verificationTokens, users } from '@/db/schema';
+import { eq, and, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 // ── DELETE /api/staff/invites/[id] — revoke a pending invite ─────────────────
@@ -23,7 +23,13 @@ export async function DELETE(
     const { id } = await params;
 
     const [invite] = await db
-        .select({ id: staffInvites.id, role: staffInvites.role })
+        .select({
+            id: staffInvites.id,
+            role: staffInvites.role,
+            email: staffInvites.email,
+            token: staffInvites.token,
+            usedAt: staffInvites.usedAt,
+        })
         .from(staffInvites)
         .where(and(
             eq(staffInvites.id, id),
@@ -40,6 +46,21 @@ export async function DELETE(
     }
 
     await db.delete(staffInvites).where(eq(staffInvites.id, id));
+    if (invite.token) {
+        await db.delete(verificationTokens).where(
+            eq(verificationTokens.identifier, `invite-centre:${invite.token}`)
+        );
+    }
+    if (!invite.usedAt && invite.email) {
+        await db.delete(users).where(
+            and(
+                eq(users.email, invite.email),
+                isNull(users.emailVerified),
+                isNull(users.organisationId),
+                isNull(users.passwordHash)
+            )
+        );
+    }
 
     return NextResponse.json({ success: true });
 }
