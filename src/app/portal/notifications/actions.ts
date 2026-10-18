@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { portalNotifications } from '@/db/schema';
 import { eq, and, isNull, desc } from 'drizzle-orm';
 import { getCurrentParent } from '@/lib/parent-auth';
+import { getApiSession } from '@/lib/session';
 
 export async function getNotifications() {
   const parent = await getCurrentParent();
@@ -55,6 +56,11 @@ export async function createRegistrationNotification({
   childName: string;
   registrationId: string;
 }) {
+  const session = await getApiSession();
+  if (!session?.user?.organisationId || session.user.organisationId !== organisationId) {
+    return;
+  }
+
   await db.insert(portalNotifications).values({
     parentId,
     organisationId,
