@@ -47,6 +47,8 @@ export default async function ReconciliationPage(props: {
     invoiceNumber: invoices.invoiceNumber,
     amount: invoices.amount,
     status: invoices.status,
+    parentId: invoices.parentId,
+    childId: invoices.childId,
     parentFirstName: parents.firstName,
     parentLastName: parents.lastName,
     parentEmail: parents.email,
@@ -76,7 +78,7 @@ export default async function ReconciliationPage(props: {
       amount: payments.amount,
     })
     .from(payments)
-    .where(inArray(payments.invoiceId, allInvoiceIds));
+    .where(and(inArray(payments.invoiceId, allInvoiceIds), eq(payments.status, 'verified')));
     
     paymentsByInvoice = existingPayments.reduce((acc, p) => {
       acc[p.invoiceId] = (acc[p.invoiceId] || 0) + parseFloat(p.amount as string);
