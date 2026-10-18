@@ -274,12 +274,13 @@ describe('S-3: rescheduleId ownership verification', () => {
                     parentId: 'parent-jane',
                     status: 'confirmed',
                     confirmationCode: 'TESTCODE01',
+                    communicationVersion: 1,
                 }])),
             })),
         }));
 
         (db.transaction as any).mockImplementation(async (fn: any) => {
-            const tx = {
+            const tx: any = {
                 query: {
                     bookings:       { findFirst: db.query.bookings.findFirst },
                     childSubjects:  { findFirst: vi.fn().mockResolvedValue(null) },
@@ -288,6 +289,27 @@ describe('S-3: rescheduleId ownership verification', () => {
                 },
                 update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => Promise.resolve()) })) })),
                 insert: makeTxInsert(),
+                transaction: vi.fn(async (innerFn: any) => innerFn(tx)),
+                execute: vi.fn(async (queryObj: any) => {
+                    const sqlText = JSON.stringify(queryObj);
+                    if (sqlText.includes('FOR UPDATE OF b')) {
+                        const old = await (db.query.bookings.findFirst as any)();
+                        if (
+                            old &&
+                            old.parentId === resolvedParent.id &&
+                            old.centre?.organisationId === resolvedParent.organisationId
+                        ) {
+                            return [{
+                                id: old.id,
+                                status: old.status ?? 'confirmed',
+                                start_at: new Date(),
+                                google_calendar_event_id: old.googleCalendarEventId ?? null,
+                            }];
+                        }
+                        return [];
+                    }
+                    return [{ id: 'outbox-1', communication_version: 2 }];
+                }),
             };
             return fn(tx);
         });
