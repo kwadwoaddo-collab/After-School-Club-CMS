@@ -181,12 +181,13 @@ export const authConfig: any = {
       async authorize(credentials) {
         if (!credentials?.token) return null;
 
-        const { staffInvites } = await import('@/db/schema');
+        const { staffInvites, orgMemberships, centreMemberships, verificationTokens } = await import('@/db/schema');
+        const tokenHash = hashToken(credentials.token as string);
 
         const [invite] = await db
           .select()
           .from(staffInvites)
-          .where(eq(staffInvites.token, hashToken(credentials.token as string)))
+          .where(eq(staffInvites.token, tokenHash))
           .limit(1);
 
         if (!invite || invite.usedAt || new Date() > invite.expiresAt) {
@@ -199,7 +200,32 @@ export const authConfig: any = {
 
         if (!user) return null;
 
-        // Mark invite as used and email as verified
+        const existingMemberships = db.query?.orgMemberships?.findMany
+          ? await db.query.orgMemberships.findMany({
+              where: eq(orgMemberships.userId, user.id),
+            })
+          : [];
+
+        const isAlreadyMemberOfInviteOrg =
+          (user.organisationId === invite.organisationId && Boolean(user.emailVerified)) ||
+          existingMemberships.some((m) => m.organisationId === invite.organisationId);
+
+        const isExistingAccount =
+          Boolean(user.passwordHash) ||
+          Boolean(user.organisationId && user.organisationId !== invite.organisationId) ||
+          existingMemberships.some((m) => m.organisationId !== invite.organisationId) ||
+          Boolean(user.emailVerified && !isAlreadyMemberOfInviteOrg);
+
+        // Security: Never allow a bare invite token to sign in an existing password-protected
+        // or cross-tenant account without prior authenticated ownership verification.
+        if (isExistingAccount) {
+          return null;
+        }
+
+        const effectiveOrgId = user.organisationId || invite.organisationId;
+        const effectiveRole = user.organisationId ? user.role : invite.role;
+
+        // Mark invite as used and activate user in the invited organisation
         await db
           .update(staffInvites)
           .set({ usedAt: new Date() })
@@ -207,15 +233,52 @@ export const authConfig: any = {
 
         await db
           .update(users)
-          .set({ emailVerified: new Date() })
+          .set({
+            emailVerified: user.emailVerified ?? new Date(),
+            organisationId: effectiveOrgId,
+            role: effectiveRole,
+          })
           .where(eq(users.id, user.id));
+
+        await Promise.resolve(
+          db.insert(orgMemberships).values({
+            userId: user.id,
+            organisationId: invite.organisationId,
+            role: invite.role,
+          }).onConflictDoNothing?.()
+        ).catch(() => {});
+
+        // Materialize any pending centre assignment stored at invite creation time
+        if (db.query?.verificationTokens?.findFirst) {
+          const pendingCentreToken = await db.query.verificationTokens.findFirst({
+            where: eq(verificationTokens.identifier, `invite-centre:${tokenHash}`),
+          });
+          if (pendingCentreToken?.token) {
+            const parts = pendingCentreToken.token.split(':');
+            const pendingCentreId = parts.length > 1 ? parts[1] : null;
+            if (pendingCentreId) {
+              await Promise.resolve(
+                db.insert(centreMemberships).values({
+                  userId: user.id,
+                  centreId: pendingCentreId,
+                  role: invite.role,
+                }).onConflictDoNothing?.()
+              ).catch(() => {});
+            }
+            if (typeof db.delete === 'function') {
+              await db.delete(verificationTokens).where(
+                eq(verificationTokens.identifier, `invite-centre:${tokenHash}`)
+              );
+            }
+          }
+        }
 
         return {
           id: user.id,
           email: user.email,
           name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-          role: user.role,
-          organisationId: user.organisationId,
+          role: effectiveRole,
+          organisationId: effectiveOrgId,
         };
       },
     }),
