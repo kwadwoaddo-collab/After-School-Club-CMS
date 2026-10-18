@@ -3,6 +3,7 @@
 
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { Plus, Search, FileText, Trash2, Ban, Loader2, ChevronDown } from 'lucide-react';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import ConfirmActionModal from './ConfirmActionModal';
@@ -129,10 +130,23 @@ export function InvoiceTable({
                                     </td>
                                     <td className="py-4 px-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-foreground">
-                                                {invoice.child?.firstName} {invoice.child?.lastName}
-                                                {!invoice.child && invoice.parent && `${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
-                                            </span>
+                                            {invoice.child ? (
+                                                <Link
+                                                    href={`/dashboard/students/${invoice.child.id || invoice.childId}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
+                                                >
+                                                    {invoice.child.firstName} {invoice.child.lastName}
+                                                </Link>
+                                            ) : invoice.parent ? (
+                                                <Link
+                                                    href={`/dashboard/parents/${invoice.parent.id || invoice.parentId}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
+                                                >
+                                                    {`${invoice.parent.firstName} ${invoice.parent.lastName} Family`}
+                                                </Link>
+                                            ) : null}
                                             <span className="text-xs text-muted-foreground">{invoice.centre?.name}</span>
                                         </div>
                                     </td>
@@ -254,14 +268,30 @@ export function OverdueInvoiceTable({ invoices = [] }: { invoices?: unknown[] })
                                     <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{invoice.invoiceNumber}</span>
                                 </td>
                                 <td className="py-4 px-4">
-                                    <span className="text-sm font-bold text-foreground">
-                                        {invoice.parent?.firstName} {invoice.parent?.lastName}
-                                    </span>
+                                    {invoice.parent ? (
+                                        <Link
+                                            href={`/dashboard/parents/${invoice.parent.id || invoice.parentId}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors"
+                                        >
+                                            {invoice.parent.firstName} {invoice.parent.lastName}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-sm font-bold text-foreground">—</span>
+                                    )}
                                 </td>
                                 <td className="py-4 px-4">
-                                    <span className="text-sm font-medium text-muted-foreground">
-                                        {invoice.child ? `${invoice.child.firstName} ${invoice.child.lastName}` : '—'}
-                                    </span>
+                                    {invoice.child ? (
+                                        <Link
+                                            href={`/dashboard/students/${invoice.child.id || invoice.childId}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="text-sm font-medium text-muted-foreground hover:text-primary hover:underline transition-colors"
+                                        >
+                                            {`${invoice.child.firstName} ${invoice.child.lastName}`}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-sm font-medium text-muted-foreground">—</span>
+                                    )}
                                 </td>
                                 <td className="py-4 text-right px-4">
                                     <span className="text-sm font-medium text-foreground">£{Number(invoice.amount).toFixed(2)}</span>
@@ -355,9 +385,12 @@ export function ParentBalanceTable({ balances = [] }: { balances?: unknown[] }) 
                         <tr key={row.parent_id} className="group hover:bg-secondary/60 transition-colors">
                             <td className="py-4 px-4">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-foreground">
+                                    <Link
+                                        href={`/dashboard/parents/${row.parent_id}`}
+                                        className="text-sm font-bold text-foreground hover:text-primary hover:underline transition-colors w-fit"
+                                    >
                                         {row.first_name} {row.last_name}
-                                    </span>
+                                    </Link>
                                     {row.email ? <span className="text-xs text-muted-foreground">{row.email}</span> : null}
                                 </div>
                             </td>
