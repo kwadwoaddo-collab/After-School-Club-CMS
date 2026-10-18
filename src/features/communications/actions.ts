@@ -310,6 +310,7 @@ export async function getBroadcastDeliveryStats(broadcastId: string) {
   const deliveries = await db
     .select({
       id: broadcastDeliveries.id,
+      parentId: broadcastDeliveries.parentId,
       recipientEmail: broadcastDeliveries.recipientEmail,
       recipientName: broadcastDeliveries.recipientName,
       channel: broadcastDeliveries.channel,
