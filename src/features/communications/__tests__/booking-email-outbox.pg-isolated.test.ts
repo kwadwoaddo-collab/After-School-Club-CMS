@@ -93,6 +93,27 @@ async function ensureBaselineAndMigration() {
     for (const statement of ddl.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean)) {
       await directSql.unsafe(statement);
     }
+  } else {
+    await directSql.unsafe(`
+      DROP TRIGGER IF EXISTS trg_scrub_outbox_on_booking_delete ON "bookings";
+      DROP FUNCTION IF EXISTS scrub_outbox_on_booking_delete();
+      INSERT INTO "booking_email_provider_state" ("id") VALUES (1) ON CONFLICT DO NOTHING;
+      CREATE OR REPLACE FUNCTION trg_fn_scrub_outbox_on_booking_delete() RETURNS TRIGGER AS $fn$
+      BEGIN
+        IF OLD.booking_id IS NOT NULL AND NEW.booking_id IS NULL THEN
+          NEW.payload := NULL;
+          NEW.recipient_email := '[REDACTED_DELETED]';
+          NEW.claim_token := NULL;
+          NEW.held_at := NULL;
+          IF NEW.status IN ('PENDING','PROCESSING','RETRY_SCHEDULED','HELD_PARENT_BINNED','HELD_BOOKING_PENDING','HELD_PROVIDER_OPERATIONAL') THEN
+            NEW.status := 'SKIPPED_ORPHANED';
+          END IF;
+        END IF;
+        RETURN NEW;
+      END; $fn$ LANGUAGE plpgsql;
+      DROP TRIGGER IF EXISTS trg_scrub_outbox_on_booking_delete ON booking_email_outbox;
+      CREATE TRIGGER trg_scrub_outbox_on_booking_delete BEFORE UPDATE OF booking_id ON booking_email_outbox FOR EACH ROW EXECUTE FUNCTION trg_fn_scrub_outbox_on_booking_delete();
+    `);
   }
   // Stub detection is persistent across runs: a real baseline bookings table has the modality column.
   const [{ is_real }] = await directSql<{ is_real: boolean }[]>`SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'bookings' AND column_name = 'modality') AS is_real`;
