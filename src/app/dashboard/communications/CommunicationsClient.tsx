@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Send, Users, History, AlertCircle, Loader2, X, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 import { sendBroadcast, getBroadcasts, getParentsForCentre, getClassesForCentre, getBroadcastDeliveryStats } from '@/features/communications/actions';
 import { logger } from '@/lib/logger';
@@ -383,7 +384,16 @@ export default function CommunicationsClient({ centreId }: { centreId: string })
                                         {deliveryDetails.deliveries.map((d) => (
                                             <div key={d.id} className="p-3 bg-secondary/20 border border-border rounded-xl text-xs flex items-center justify-between">
                                                 <div className="truncate max-w-[220px]">
-                                                    <div className="font-semibold text-foreground truncate">{d.recipientName || 'Parent'}</div>
+                                                    {d.parentId ? (
+                                                        <Link
+                                                            href={`/dashboard/parents/${d.parentId}`}
+                                                            className="font-semibold text-foreground hover:text-primary hover:underline transition-colors block truncate"
+                                                        >
+                                                            {d.recipientName || 'Parent'}
+                                                        </Link>
+                                                    ) : (
+                                                        <div className="font-semibold text-foreground truncate">{d.recipientName || 'Parent'}</div>
+                                                    )}
                                                     <div className="text-[11px] text-muted-foreground truncate">{d.recipientEmail}</div>
                                                 </div>
                                                 <div className="text-right shrink-0">
