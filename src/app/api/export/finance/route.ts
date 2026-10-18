@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { invoices, payments } from '@/db/schema';
 import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { neutralizeCsvFormula } from '@/lib/csv-safety';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -94,9 +95,9 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        // Helper: wrap a value in double-quotes, escaping inner quotes
+        // Helper: wrap a value in double-quotes, escaping inner quotes and formula prefixes
         const esc = (val: string | null | undefined) =>
-            `"${String(val ?? '').replace(/"/g, '""')}"`;
+            `"${neutralizeCsvFormula(String(val ?? '')).replace(/"/g, '""')}"`;
 
         const headers = [
             'Invoice Number',
