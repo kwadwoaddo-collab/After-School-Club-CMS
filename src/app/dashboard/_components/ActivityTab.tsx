@@ -75,7 +75,6 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
         recentBookings,
         recentRegistrations,
         registrationPipelineData,
-        [registrationKpis],
         [bookingKpis],
         [oldestPendingRegistrationData],
     ] = await Promise.all([
@@ -140,18 +139,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
         .from(registrations).where(and(eq(registrations.organisationId, org.id), registrationsCentreCondition))
         .groupBy(registrations.status),
 
-        (!isFunnelOnly && !isFeedOnly)
-            ? db.select({
-                total: sql<number>`count(*)::int`,
-                pending: sql<number>`count(*) filter (where ${registrations.status} = 'awaiting_confirmation')::int`,
-                thisMonth: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetMonthStart.toISOString()} and ${registrations.createdAt} <= ${targetMonthEnd.toISOString()})::int`,
-                thisWeek: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${targetWeekStart.toISOString()} and ${registrations.createdAt} <= ${targetWeekEnd.toISOString()})::int`,
-                activePeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${activeStartDate.toISOString()} and ${registrations.createdAt} <= ${activeEndDate.toISOString()})::int`,
-                prevPeriod: sql<number>`count(*) filter (where ${registrations.createdAt} >= ${prevStartDate.toISOString()} and ${registrations.createdAt} <= ${prevEndDate.toISOString()})::int`
-            }).from(registrations).where(and(eq(registrations.organisationId, org.id), registrationsCentreCondition))
-            : Promise.resolve([{ total: 0, pending: 0, thisMonth: 0, thisWeek: 0, activePeriod: 0, prevPeriod: 0 }]),
-
-        (!isFunnelOnly && !isFeedOnly && hasCentres)
+        (!isFunnelOnly && hasCentres)
             ? db.select({
                 totalAll: sql<number>`count(*)::int`,
                 thisMonth: sql<number>`count(*) filter (where ${bookings.startAt} >= ${targetMonthStart.toISOString()} and ${bookings.startAt} <= ${targetMonthEnd.toISOString()})::int`,
@@ -257,7 +245,7 @@ export default async function ActivityTab({ searchParams, org, activeCentreId, a
     };
 
     const bookingsTrend = calculateTrend(Number(bookingKpis.activePeriod), Number(bookingKpis.prevPeriod));
-    const totalRegistrations = Number(registrationKpis.total);
+    const totalRegistrations = registrationPipelineData.reduce((sum: number, d: any) => sum + Number(d.count || 0), 0);
     const bookingsThisWeek = Number(bookingKpis.thisWeek);
     const bookingsThisMonth = Number(bookingKpis.thisMonth);
 

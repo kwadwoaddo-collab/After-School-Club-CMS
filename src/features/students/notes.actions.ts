@@ -6,7 +6,7 @@ import { db } from '@/db';
 import { studentNotes, children, parents } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
-import { canUserAccessCentre } from '@/lib/permissions';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 
 async function assertChildAccess(childId: string, session: any) {
@@ -41,7 +41,8 @@ async function assertChildAccess(childId: string, session: any) {
 
     const userRole = (session.user as any).role;
     if (userRole !== 'ORG_OWNER') {
-        if (!student.centreId || !(await canUserAccessCentre(session.user.id, student.centreId))) {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (accessibleCentreIds.length === 0 || (student.centreId && !accessibleCentreIds.includes(student.centreId))) {
             throw new Error('Forbidden');
         }
     }
@@ -52,7 +53,11 @@ export async function getStudentNotes(childId: string) {
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
-    await assertChildAccess(childId, session);
+    try {
+        await assertChildAccess(childId, session);
+    } catch {
+        return [];
+    }
 
     const notes = await db.query.studentNotes.findMany({
         where: eq(studentNotes.childId, childId),
