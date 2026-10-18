@@ -19,6 +19,12 @@
   outline-offset: 2px;
 }
 
+/* Keep linked section headings below the fixed header, including mobile. */
+.landing-page .landing-section,
+.landing-page #early-access {
+  scroll-margin-top: 6rem;
+}
+
 .landing-page .landing-muted {
   color: var(--if-text-secondary);
 }
