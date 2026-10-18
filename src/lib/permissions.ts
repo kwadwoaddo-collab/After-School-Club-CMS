@@ -43,8 +43,14 @@ export async function getUserAccessibleCentres(userId: string) {
         return orgCentres;
     }
 
-    // Other roles: return only assigned centres
-    return user.memberships.map((m) => m.centre);
+    // Other roles: return only assigned centres belonging to the user's active organisation
+    return user.memberships
+        .map((m) => m.centre)
+        .filter(
+            (c) =>
+                Boolean(c) &&
+                (!c.organisationId || (Boolean(user.organisationId) && c.organisationId === user.organisationId))
+        );
 }
 
 /**
@@ -73,10 +79,13 @@ export async function canUserAccessCentre(
 
     // ORG_OWNER can access all centres in their org
     if (user.role === 'ORG_OWNER') {
+        if (!user.organisationId) {
+            return false;
+        }
         const centre = await db.query.centres.findFirst({
             where: and(
                 eq(centres.id, centreId),
-                eq(centres.organisationId, user.organisationId!)
+                eq(centres.organisationId, user.organisationId)
             ),
         });
         return !!centre;
@@ -88,9 +97,23 @@ export async function canUserAccessCentre(
             eq(centreMemberships.userId, userId),
             eq(centreMemberships.centreId, centreId)
         ),
+        with: {
+            centre: true,
+        },
     });
 
-    return !!membership;
+    if (!membership) {
+        return false;
+    }
+
+    const membershipCentre = (membership as { centre?: { organisationId?: string } }).centre;
+    if (membershipCentre?.organisationId) {
+        if (!user.organisationId || membershipCentre.organisationId !== user.organisationId) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**
