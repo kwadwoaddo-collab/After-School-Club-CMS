@@ -1098,6 +1098,8 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
 
     const origEnv = { ...process.env };
     try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
       process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
 
       const mockLimitNew = vi.fn().mockResolvedValue([]);
@@ -1142,6 +1144,8 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
 
     const origEnv = { ...process.env };
     try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
       process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
 
       mockFindUser.mockResolvedValueOnce(null); // No existing user
@@ -1191,6 +1195,8 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
 
     const origEnv = { ...process.env };
     try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
       process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
 
       const mockLimitUnverified = vi.fn().mockResolvedValue([{
@@ -1235,6 +1241,8 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
 
     const origEnv = { ...process.env };
     try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
       process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
 
       mockFindUser.mockResolvedValueOnce({
@@ -1276,6 +1284,8 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
 
     const origEnv = { ...process.env };
     try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
       process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
 
       mockFindUser.mockResolvedValueOnce({
@@ -1323,6 +1333,8 @@ describe('MILESTONE PM-2E2.B4 — Account Enumeration & Auth Input Hardening', (
 
     const origEnv = { ...process.env };
     try {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
       process.env.NEXTAUTH_URL = 'https://trusted.sprintscaleit.co.uk';
 
       // Current user query
