@@ -41,7 +41,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: var(--if-accent);
+  background: #0F5F5C;
   color: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -136,14 +136,17 @@
 
 .landing-page .btn-primary-landing,
 .landing-page .btn-login {
-  background: var(--if-accent);
+  background: #0F5F5C;
   color: #ffffff;
   border: 1px solid transparent;
 }
 
 .landing-page .btn-primary-landing:hover,
-.landing-page .btn-login:hover {
-  background: var(--if-accent-hover);
+.landing-page .btn-login:hover,
+.landing-page .btn-primary-landing:focus-visible,
+.landing-page .btn-login:focus-visible {
+  background: #0C4A47;
+  color: #ffffff;
 }
 
 .landing-page .btn-primary-landing {
@@ -242,7 +245,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--if-accent);
+  background: #0F5F5C;
   color: #ffffff;
   display: flex;
   align-items: center;

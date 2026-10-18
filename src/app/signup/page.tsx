@@ -11,13 +11,13 @@ const focusRing =
 const inputClass =
   'w-full px-4 py-3 min-h-[44px] bg-[var(--if-surface)] text-[var(--if-text)] border border-[var(--if-text-muted)] rounded-lg placeholder:text-[var(--if-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)]';
 const labelClass = 'block text-sm font-medium text-[var(--if-text-secondary)] mb-2';
-const primaryBtnClass = `w-full min-h-[44px] py-3 px-4 bg-[var(--if-accent)] text-white font-bold rounded-lg hover:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
+const primaryBtnClass = `w-full min-h-[44px] py-3 px-4 bg-[#0F5F5C] text-white font-bold rounded-lg hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
 const linkClass = `text-[var(--if-accent)] hover:text-[var(--if-accent-hover)] underline underline-offset-2 ${focusRing}`;
 
 function BrandLockup() {
   return (
     <Link href="/" className={`inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] ${focusRing}`} aria-label="After-School Club CMS · by SprintScale IT">
-      <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+      <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
       <span className="flex flex-col leading-tight text-left">
         <span className="font-bold text-sm">After-School Club CMS</span>
         <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
@@ -191,7 +191,7 @@ export default function SignupPage() {
               >
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep >= item.num
-                      ? 'bg-[var(--if-accent)] text-white'
+                      ? 'bg-[#0F5F5C] text-white'
                       : 'bg-[var(--if-border-subtle)] text-[var(--if-text-muted)]'
                     }`}
                 >
@@ -399,7 +399,7 @@ export default function SignupPage() {
                       formData.password !== formData.confirmPassword ||
                       !formData.acceptedTerms
                     }
-                    className={`flex-1 min-h-[44px] py-3 px-4 bg-[var(--if-accent)] text-white font-bold rounded-lg hover:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
+                    className={`flex-1 min-h-[44px] py-3 px-4 bg-[#0F5F5C] text-white font-bold rounded-lg hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     {loading ? 'Creating account...' : 'Create Account'}
                   </button>

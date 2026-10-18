@@ -10,7 +10,7 @@ const inputClass =
   'w-full px-4 py-3 min-h-[44px] rounded-xl bg-[var(--if-surface)] border border-[var(--if-text-muted)] text-[var(--if-text)] placeholder:text-[var(--if-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)] font-medium';
 const labelClass = 'block text-xs font-bold text-[var(--if-text-secondary)] mb-2 uppercase tracking-wider';
 const primaryBtnClass =
-  'w-full min-h-[44px] py-3 rounded-xl bg-[var(--if-accent)] text-white font-bold hover:bg-[var(--if-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--if-accent)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2';
+  'w-full min-h-[44px] py-3 rounded-xl bg-[#0F5F5C] text-white font-bold hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--if-accent)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2';
 const linkClass =
   'text-[var(--if-accent)] hover:text-[var(--if-accent-hover)] font-semibold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)]';
 const errorBoxClass =
@@ -127,7 +127,7 @@ function LoginForm() {
           aria-pressed={mode === 'admin'}
           className={`flex-1 min-h-[44px] py-2.5 text-sm font-bold rounded-xl transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)] ${
             mode === 'admin'
-              ? 'bg-[var(--if-accent)] text-white'
+              ? 'bg-[#0F5F5C] text-white hover:bg-[#0C4A47]'
               : 'text-[var(--if-text-secondary)] hover:text-[var(--if-text)] hover:bg-[var(--if-accent-soft)]'
           }`}
         >
@@ -139,7 +139,7 @@ function LoginForm() {
           aria-pressed={mode === 'staff'}
           className={`flex-1 min-h-[44px] py-2.5 text-sm font-bold rounded-xl transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)] ${
             mode === 'staff'
-              ? 'bg-[var(--if-accent)] text-white'
+              ? 'bg-[#0F5F5C] text-white hover:bg-[#0C4A47]'
               : 'text-[var(--if-text-secondary)] hover:text-[var(--if-text)] hover:bg-[var(--if-accent-soft)]'
           }`}
         >
@@ -351,7 +351,7 @@ function LoginForm() {
 function BrandLockup() {
   return (
     <Link href="/" className="inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--if-accent)]" aria-label="After-School Club CMS · by SprintScale IT">
-      <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+      <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
       <span className="flex flex-col leading-tight">
         <span className="font-bold text-sm">After-School Club CMS</span>
         <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>

@@ -145,7 +145,7 @@ export default function Home() {
                     <div className="hidden md:flex items-center gap-4">
                         <a href="#features" className="landing-navbar-link">Features</a>
                         <a href="#how-it-works" className="landing-navbar-link">How It Works</a>
-                        <a href="#early-access" className="landing-navbar-link">Early Access</a>
+                        <a href="#pricing" className="landing-navbar-link">Early Access</a>
                         <a href="#faq" className="landing-navbar-link">FAQ</a>
                         <Link href="/login" className="landing-navbar-link">Log in</Link>
                         <Link href="/signup" className="btn-login">Get Started</Link>
@@ -223,7 +223,8 @@ export default function Home() {
                 </section>
 
                 {/* Early Access / Enquiry */}
-                <section id="early-access" className="landing-section" aria-labelledby="early-heading">
+                <section id="pricing" className="landing-section" aria-labelledby="early-heading">
+                    <div id="early-access" aria-hidden="true" />
                     <div className="text-center mb-12">
                         <h2 id="early-heading" className="text-3xl md:text-4xl font-bold mb-4">Early Access</h2>
                         <p className="text-lg landing-muted">Pricing and plan terms are not published yet</p>
@@ -337,7 +338,7 @@ export default function Home() {
                             <ul>
                                 <li><a href="#features" className="footer-link">Features</a></li>
                                 <li><a href="#how-it-works" className="footer-link">How It Works</a></li>
-                                <li><a href="#early-access" className="footer-link">Early Access</a></li>
+                                <li><a href="#pricing" className="footer-link">Early Access</a></li>
                                 <li><a href="#faq" className="footer-link">FAQ</a></li>
                                 <li><Link href="/dashboard" className="footer-link">Dashboard</Link></li>
                             </ul>

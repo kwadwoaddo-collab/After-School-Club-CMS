@@ -13,7 +13,7 @@ const inputBase =
 function BrandLockup() {
     return (
         <Link href="/" className={`inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] ${focusRing}`} aria-label="After-School Club CMS · by SprintScale IT">
-            <span className="w-9 h-9 rounded-lg bg-[var(--if-accent)] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+            <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
             <span className="flex flex-col leading-tight text-left">
                 <span className="font-bold text-sm">After-School Club CMS</span>
                 <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
@@ -196,7 +196,7 @@ function ResetPasswordForm() {
                         <button
                             type="submit"
                             disabled={loading || !newPassword || !confirmPassword}
-                            className={`w-full min-h-[44px] py-3 rounded-lg bg-[var(--if-accent)] text-white font-semibold hover:bg-[var(--if-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${focusRing}`}
+                            className={`w-full min-h-[44px] py-3 rounded-lg bg-[#0F5F5C] text-white font-semibold hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${focusRing}`}
                         >
                             {loading ? (
                                 <>
