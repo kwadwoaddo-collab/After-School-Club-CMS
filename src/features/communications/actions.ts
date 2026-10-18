@@ -61,9 +61,14 @@ export async function sendBroadcast(data: {
     return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: only Owner/Manager may send broadcasts' };
   }
 
-  if (data.centreId && data.centreId !== 'all' && userRole !== 'ORG_OWNER') {
-    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-    if (!accessibleCentreIds.includes(data.centreId)) {
+  let accessibleCentreIds: string[] | null = null;
+  if (userRole !== 'ORG_OWNER') {
+    accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    if (data.centreId && data.centreId !== 'all') {
+      if (!accessibleCentreIds.includes(data.centreId)) {
+        return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
+      }
+    } else if (!accessibleCentreIds || accessibleCentreIds.length === 0) {
       return { success: false, count: 0, sent: 0, failed: 0, error: 'Unauthorized: No access to this centre' };
     }
   }
@@ -71,6 +76,18 @@ export async function sendBroadcast(data: {
   if (!data.audienceParentIds || data.audienceParentIds.length === 0) {
     return { success: true, count: 0, sent: 0, failed: 0 };
   }
+
+  const scopedCentreIdsForConsent =
+    data.centreId && data.centreId !== 'all'
+      ? [data.centreId]
+      : userRole !== 'ORG_OWNER' && accessibleCentreIds
+        ? accessibleCentreIds
+        : null;
+
+  const consentBookingFilter =
+    scopedCentreIdsForConsent && scopedCentreIdsForConsent.length > 0
+      ? sql`AND ${inArray(bookings.centreId, scopedCentreIdsForConsent)}`
+      : sql``;
 
   // Re-derive CURRENT consent server-side rather than trusting the client's own filtering.
   // Instead of bool_or (which caused any historical true booking to permanently override later withdrawals),
@@ -84,6 +101,7 @@ export async function sendBroadcast(data: {
         SELECT ${bookings.communicationsConsent}
         FROM ${bookings}
         WHERE ${bookings.parentId} = ${sql`parents.id`}
+        ${consentBookingFilter}
         ORDER BY ${bookings.createdAt} DESC, ${bookings.id} DESC
         LIMIT 1
       ),
@@ -96,7 +114,12 @@ export async function sendBroadcast(data: {
       eq(parents.organisationId, organisationId),
     ));
 
-  const targetParents = consentRows.filter((p) => p.communicationsConsent && p.email);
+  const targetParents = consentRows.filter(
+    (p) =>
+      p.communicationsConsent &&
+      p.email &&
+      (!scopedCentreIdsForConsent || !(p as { centreId?: string }).centreId || scopedCentreIdsForConsent.includes((p as { centreId?: string }).centreId!))
+  );
 
   // PM-2B.C: Deduplicate by destination email address deterministically.
   // If multiple eligible parent records share the same email (e.g. family sharing an account),
@@ -198,26 +221,38 @@ export async function sendBroadcast(data: {
  * finance/actions.ts. Kept as a small local helper rather than a new
  * shared module since it's only used by the three functions in this file.
  */
-async function assertReadableCentre(
+const COMMUNICATIONS_ALLOWED_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+
+async function resolveReadableCentreScope(
   session: TypedSession,
   centreId: string
-): Promise<boolean> {
-  if (centreId === 'all') return true;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session.user.role isn't in the base NextAuth type; same cast pattern used throughout src/features/finance/actions.ts
-  const userRole = (session.user as any).role;
-  if (userRole === 'ORG_OWNER') return true;
+): Promise<{ allowed: boolean; accessibleCentreIds: string[] | null }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (session.user as any).role as string;
+  if (userRole && !COMMUNICATIONS_ALLOWED_ROLES.includes(userRole as (typeof COMMUNICATIONS_ALLOWED_ROLES)[number])) {
+    return { allowed: false, accessibleCentreIds: [] };
+  }
+  if (userRole === 'ORG_OWNER') {
+    return { allowed: true, accessibleCentreIds: null };
+  }
   const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
-  return accessibleCentreIds.includes(centreId);
+  if (centreId === 'all') {
+    return { allowed: accessibleCentreIds.length > 0, accessibleCentreIds };
+  }
+  return { allowed: accessibleCentreIds.includes(centreId), accessibleCentreIds };
 }
 
 export async function getBroadcasts(centreId: string) {
   const session = await requireTenantSession();
   if (!session?.user?.organisationId) return [];
-  if (!(await assertReadableCentre(session, centreId))) return [];
+  const scope = await resolveReadableCentreScope(session, centreId);
+  if (!scope.allowed) return [];
 
   const conditions = [eq(broadcasts.organisationId, session.user.organisationId)];
   if (centreId !== 'all') {
     conditions.push(eq(broadcasts.centreId, centreId));
+  } else if (scope.accessibleCentreIds) {
+    conditions.push(inArray(broadcasts.centreId, scope.accessibleCentreIds));
   }
 
   return db.select()
@@ -229,7 +264,8 @@ export async function getBroadcasts(centreId: string) {
 export async function getClassesForCentre(centreId: string) {
   const session = await requireTenantSession();
   if (!session?.user?.organisationId) return [];
-  if (!(await assertReadableCentre(session, centreId))) return [];
+  const scope = await resolveReadableCentreScope(session, centreId);
+  if (!scope.allowed) return [];
 
   const query = db.select({
       id: clubSessions.id,
@@ -241,9 +277,19 @@ export async function getClassesForCentre(centreId: string) {
   .from(clubSessions);
 
   if (centreId === 'all') {
-    query.where(eq(clubSessions.organisationId, session.user.organisationId));
+    if (scope.accessibleCentreIds) {
+      query.where(and(
+        eq(clubSessions.organisationId, session.user.organisationId),
+        inArray(clubSessions.centreId, scope.accessibleCentreIds)
+      ));
+    } else {
+      query.where(eq(clubSessions.organisationId, session.user.organisationId));
+    }
   } else {
-    query.where(eq(clubSessions.centreId, centreId));
+    query.where(and(
+      eq(clubSessions.organisationId, session.user.organisationId),
+      eq(clubSessions.centreId, centreId)
+    ));
   }
 
   return await query;
@@ -252,7 +298,8 @@ export async function getClassesForCentre(centreId: string) {
 export async function getParentsForCentre(centreId: string, classId?: string) {
   const session = await requireTenantSession();
   if (!session?.user?.organisationId) return [];
-  if (!(await assertReadableCentre(session, centreId))) return [];
+  const scope = await resolveReadableCentreScope(session, centreId);
+  if (!scope.allowed) return [];
 
   const baseQuery = db.select({
     id: parents.id,
@@ -277,6 +324,8 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
 
   if (centreId !== 'all') {
     conditions.push(eq(bookings.centreId, centreId));
+  } else if (scope.accessibleCentreIds) {
+    conditions.push(inArray(bookings.centreId, scope.accessibleCentreIds));
   }
 
   if (classId && classId !== 'all') {
@@ -290,11 +339,17 @@ export async function getParentsForCentre(centreId: string, classId?: string) {
 
 /**
  * PM-2B: Fetches authoritative delivery statistics and ledger records
- * for a broadcast, strictly scoped to the authenticated tenant.
+ * for a broadcast, strictly scoped to the authenticated tenant and accessible centres.
  */
 export async function getBroadcastDeliveryStats(broadcastId: string) {
   const session = await requireTenantSession();
   if (!session?.user?.organisationId) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (session.user as any).role as string;
+  if (userRole && !COMMUNICATIONS_ALLOWED_ROLES.includes(userRole as (typeof COMMUNICATIONS_ALLOWED_ROLES)[number])) {
+    return null;
+  }
 
   const [broadcast] = await db
     .select()
@@ -306,6 +361,13 @@ export async function getBroadcastDeliveryStats(broadcastId: string) {
     .limit(1);
 
   if (!broadcast) return null;
+
+  if (userRole && userRole !== 'ORG_OWNER') {
+    const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+    if (!broadcast.centreId || !accessibleCentreIds.includes(broadcast.centreId)) {
+      return null;
+    }
+  }
 
   const deliveries = await db
     .select({

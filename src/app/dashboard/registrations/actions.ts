@@ -6,11 +6,12 @@ import { logger } from '@/lib/logger';
 import { requireTenantSession } from '@/lib/session';
 import { db } from '@/db';
 import { registrations, registrationChildren, registrationParents, parents, children, organisations, centres } from '@/db/schema';
-import { eq, and, inArray, isNull } from 'drizzle-orm';
+import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emailService } from '@/lib/services/email';
 import { createRegistrationNotification } from '@/app/portal/notifications/actions';
 import { getTrustedApplicationUrl } from '@/lib/base-url';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 
 export async function deleteRegistrations(ids: string[]) {
     const session = await requireTenantSession();
@@ -39,7 +40,6 @@ export async function deleteRegistrations(ids: string[]) {
 
 export async function assignRegistrationCentre(registrationId: string, centreId: string | null) {
     // Milestone 3L D1: role check + org ownership verification of registrationId and centreId.
-    // Previously callable by any authenticated session with no role check and no org boundary.
     const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
 
@@ -54,9 +54,20 @@ export async function assignRegistrationCentre(registrationId: string, centreId:
     // Verify the registration belongs to this org before mutating it
     const existing = await db.query.registrations.findFirst({
         where: and(eq(registrations.id, registrationId), eq(registrations.organisationId, orgId)),
-        columns: { id: true },
+        columns: { id: true, centreId: true },
     });
     if (!existing) throw new Error('Registration not found');
+
+    // Non-owner managers must have access to the registration's current centre (if set) and target centre
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if ((existing as { centreId?: string | null }).centreId && !accessibleCentreIds.includes((existing as { centreId?: string | null }).centreId!)) {
+            throw new Error('Forbidden: No access to this centre');
+        }
+        if (!centreId || !accessibleCentreIds.includes(centreId)) {
+            throw new Error('Forbidden: No access to target centre');
+        }
+    }
 
     // If assigning a centre, verify it belongs to this org (prevents cross-org centreId injection)
     if (centreId) {
@@ -122,7 +133,7 @@ export interface UpdateRegistrationPayload {
 
 export async function updateRegistrationDetails(payload: UpdateRegistrationPayload) {
     // Milestone 3L D2: add role check; also scope parent/child canonical record updates
-    // to the session org to prevent cross-org PII mutation via foreign parentId/childId.
+    // to the session org and registration links to prevent cross-org/cross-centre PII mutation.
     const session = await requireTenantSession();
     if (!session?.user) throw new Error('Unauthorized');
 
@@ -140,9 +151,16 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
             eq(registrations.id, payload.registrationId),
             eq(registrations.organisationId, orgId),
         ),
-        columns: { id: true },
+        columns: { id: true, centreId: true },
     });
     if (!reg) throw new Error('Registration not found');
+
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if ('centreId' in reg && (!reg.centreId || !accessibleCentreIds.includes(reg.centreId))) {
+            throw new Error('Forbidden: No access to this centre');
+        }
+    }
 
     // 1. Update top-level registration
     await db.update(registrations).set({
@@ -155,7 +173,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
         hasSpecialNeeds: payload.hasSpecialNeeds,
         specialNeedsDetails: payload.specialNeedsDetails || null,
         updatedAt: new Date(),
-    }).where(eq(registrations.id, payload.registrationId));
+    }).where(and(eq(registrations.id, payload.registrationId), eq(registrations.organisationId, orgId)));
 
     // 2. Update each parent snapshot + linked parent record
     for (const p of payload.parentsData) {
@@ -171,7 +189,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
             eq(registrationParents.registrationId, reg.id), // D2: must belong to verified registration
         ));
 
-        // Also update linked canonical parent record
+        // Also update linked canonical parent record — strictly verified against registrationParents
         if (p.parentId) {
             await db.update(parents).set({
                 firstName: p.firstName,
@@ -186,6 +204,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
             }).where(and(
                 eq(parents.id, p.parentId),
                 eq(parents.organisationId, orgId), // D2: reject cross-org parentId injection
+                sql`${parents.id} IN (SELECT ${registrationParents.parentId} FROM ${registrationParents} WHERE ${registrationParents.id} = ${p.id} AND ${registrationParents.registrationId} = ${reg.id})`,
             ));
         }
     }
@@ -204,7 +223,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
             eq(registrationChildren.registrationId, reg.id), // D2: must belong to verified registration
         ));
 
-        // Also update linked canonical children record
+        // Also update linked canonical children record — strictly verified against registrationChildren
         if (c.childId) {
             await db.update(children).set({
                 firstName: c.firstName,
@@ -216,6 +235,7 @@ export async function updateRegistrationDetails(payload: UpdateRegistrationPaylo
             }).where(and(
                 eq(children.id, c.childId),
                 eq(children.organisationId, orgId), // D2: reject cross-org childId injection
+                sql`${children.id} IN (SELECT ${registrationChildren.childId} FROM ${registrationChildren} WHERE ${registrationChildren.id} = ${c.id} AND ${registrationChildren.registrationId} = ${reg.id})`,
             ));
         }
     }
@@ -230,20 +250,32 @@ export async function generateRegistrationLink(parentId: string, centreId: strin
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
     const orgId = session.user.organisationId;
     const userId = session.user.id;
-    const userRole = (session.user as any).role;
+    const userRole = (session.user as any).role as string;
+
+    if (!['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden');
+    }
 
     // Enforce centre-level boundaries: non-owners must only generate links for centres they can access
     let targetCentreId = centreId;
     if (userRole !== 'ORG_OWNER') {
-        const { canUserAccessCentre, getUserAccessibleCentreIds } = await import('@/lib/permissions');
-        const hasAccess = await canUserAccessCentre(userId, targetCentreId);
-        if (!hasAccess) {
-            const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
-            if (accessibleCentreIds.length === 0) {
-                throw new Error('Forbidden: You are not assigned to any centre');
-            }
-            targetCentreId = accessibleCentreIds[0];
+        const accessibleCentreIds = await getUserAccessibleCentreIds(userId);
+        if (accessibleCentreIds.length === 0) {
+            throw new Error('Forbidden: You are not assigned to any centre');
         }
+        if (!targetCentreId) {
+            targetCentreId = accessibleCentreIds[0];
+        } else if (!accessibleCentreIds.includes(targetCentreId)) {
+            throw new Error('Forbidden: No access to this centre');
+        }
+    }
+
+    if (parentId && db.query?.parents?.findFirst) {
+        const parentRecord = await db.query.parents.findFirst({
+            where: and(eq(parents.id, parentId), eq(parents.organisationId, orgId)),
+            columns: { id: true },
+        });
+        if (!parentRecord) throw new Error('Parent not found');
     }
 
     // Fetch org slug and centre slug
@@ -306,6 +338,13 @@ export async function updateRegistrationStatus(
 
     if (!existing || existing.organisationId !== orgId) {
         throw new Error('Registration not found');
+    }
+
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (!existing.centreId || !accessibleCentreIds.includes(existing.centreId)) {
+            throw new Error('Forbidden: No access to this centre');
+        }
     }
 
     await db
