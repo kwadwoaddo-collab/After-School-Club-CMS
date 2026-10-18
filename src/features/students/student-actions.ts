@@ -31,16 +31,9 @@ export async function updateStudentSchedule(studentId: string, sessions: string[
         if (!student.centreId) {
             throw new Error('Forbidden: No access to unassigned student');
         }
-        if ('getUserAccessibleCentreIds' in permissions) {
-            const accessibleIds = await permissions.getUserAccessibleCentreIds(session.user.id);
-            if (!accessibleIds.includes(student.centreId)) {
-                throw new Error('Forbidden: No access to this centre');
-            }
-        } else if ('canUserAccessCentre' in permissions) {
-            const hasAccess = await permissions.canUserAccessCentre(session.user.id, student.centreId);
-            if (!hasAccess) {
-                throw new Error('Forbidden: No access to this centre');
-            }
+        const accessibleIds = await permissions.getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleIds.includes(student.centreId)) {
+            throw new Error('Forbidden: No access to this centre');
         }
     }
 
