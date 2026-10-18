@@ -373,7 +373,12 @@ export default function StudentProfile({
                                             <User className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <p className="text-small-body font-medium text-text">{parentFullName}</p>
+                                            <Link
+                                                href={`/dashboard/parents/${student.parent.id}`}
+                                                className="text-small-body font-medium text-text hover:text-accent hover:underline transition-colors"
+                                            >
+                                                {parentFullName}
+                                            </Link>
                                             <p className="text-metadata">Parent / guardian</p>
                                         </div>
                                     </div>
