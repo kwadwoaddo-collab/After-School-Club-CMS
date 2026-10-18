@@ -65,7 +65,7 @@ export default function ReceiptGeneratorClient({ organisation, centres, children
     useEffect(() => {
         setReceiptNo(stableReceiptNo || generateReceiptNumber());
         setDate(new Date().toISOString().split('T')[0]);
-    }, []);
+    }, [stableReceiptNo]);
 
     // Handle student selection
     const handleStudentChange = (childId: string) => {
