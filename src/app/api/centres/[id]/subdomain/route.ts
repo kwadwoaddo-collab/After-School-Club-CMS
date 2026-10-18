@@ -3,6 +3,7 @@ import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
 import { centres, organisations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import * as permissions from '@/lib/permissions';
 
 const RESERVED = new Set(['app', 'www', 'api', 'mail', 'admin', 'dashboard', 'dev', 'staging', 'preview']);
 
@@ -41,8 +42,15 @@ export async function PATCH(
         return NextResponse.json({ error: 'Centre not found' }, { status: 404 });
     }
 
+    if (userRole !== 'ORG_OWNER' && 'getUserAccessibleCentreIds' in permissions) {
+        const accessibleIds = await permissions.getUserAccessibleCentreIds(session.user.id);
+        if (!accessibleIds.includes(centreId)) {
+            return NextResponse.json({ error: 'Forbidden: You do not have access to this centre' }, { status: 403 });
+        }
+    }
+
     if (subdomain === '' || subdomain === null || subdomain === undefined) {
-        await db.update(centres).set({ subdomain: null }).where(eq(centres.id, centreId));
+        await db.update(centres).set({ subdomain: null }).where(and(eq(centres.id, centreId), eq(centres.organisationId, session.user.organisationId)));
         return NextResponse.json({ success: true, subdomain: null });
     }
 
