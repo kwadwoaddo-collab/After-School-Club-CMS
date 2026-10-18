@@ -130,7 +130,7 @@ export default async function CentresPage() {
                 <>
                     {/* Desktop / tablet — table. Collapses to stacked cards below `md`,
                         matching the People-module mobile table pattern. */}
-                    <div className="hidden md:block rounded-lg border border-border bg-surface overflow-hidden">
+                    <div className="hidden md:block rounded-lg border border-border bg-surface overflow-x-auto">
                         <Table caption="Centres list">
                             <TableHeader>
                                 <TableRow>

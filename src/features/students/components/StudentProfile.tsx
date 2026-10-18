@@ -335,13 +335,13 @@ export default function StudentProfile({
             </Card>
 
             {/* ── Tabs ────────────────────────────────────────────────────── */}
-            <div className="flex border-b border-border gap-1">
+            <div className="flex border-b border-border gap-1 overflow-x-auto scrollbar-none">
                 {TABS.map(({ id, label, icon: Icon }) => (
                     <button
                         key={id}
                         onClick={() => setActiveTab(id)}
                         className={cn(
-                            'flex items-center gap-1.5 px-3 py-2.5 text-small-body font-medium border-b-2 -mb-px transition-colors',
+                            'flex items-center gap-1.5 px-3 py-2.5 text-small-body font-medium border-b-2 -mb-px transition-colors shrink-0',
                             activeTab === id
                                 ? 'border-accent text-text'
                                 : 'border-transparent text-text-muted hover:text-text'
