@@ -82,7 +82,15 @@ function ForgivModal({
                 <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
                     <div>
                         <h3 className="text-section-title text-text">Forgive Sessions</h3>
-                        <p className="text-xs text-text-muted mt-0.5">{entry.firstName} {entry.lastName} · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}</p>
+                        <p className="text-xs text-text-muted mt-0.5">
+                            <Link
+                                href={`/dashboard/students/${entry.childId}`}
+                                className="hover:text-accent hover:underline transition-colors"
+                            >
+                                {entry.firstName} {entry.lastName}
+                            </Link>{' '}
+                            · Currently {entry.netBalance < 0 ? `${Math.abs(entry.netBalance)} owed` : 'even/ahead'}
+                        </p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose}>
                         <X className="w-4 h-4" />

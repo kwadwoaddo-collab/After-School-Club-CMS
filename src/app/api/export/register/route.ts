@@ -5,6 +5,7 @@ import { bookings, bookingAttendees, children, parents, centres } from '@/db/sch
 import { eq, and, gte, lte, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserAccessibleCentres } from '@/lib/permissions';
+import { neutralizeCsvFormula } from '@/lib/csv-safety';
 
 /**
  * GET /api/export/register?date=YYYY-MM-DD&centre=centreId
@@ -87,9 +88,9 @@ export async function GET(req: NextRequest) {
             )
             .orderBy(bookings.startAt);
 
-        // Helper: wrap a value in double-quotes, escaping inner quotes
+        // Helper: wrap a value in double-quotes, escaping inner quotes and formula prefixes
         const esc = (val: string | null | undefined) =>
-            `"${String(val ?? '').replace(/"/g, '""')}"`;
+            `"${neutralizeCsvFormula(String(val ?? '')).replace(/"/g, '""')}"`;
 
         // Build CSV
         const headers = [

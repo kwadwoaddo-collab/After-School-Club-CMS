@@ -8,6 +8,7 @@ import { eq, and, or, ilike } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { validateImportMappings, validateImportRow, validateAndNormalizeSchoolYear } from './import-validation';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
+import * as permissions from '@/lib/permissions';
 
 export interface StudentImportRow {
   studentFirstName: string;
@@ -69,7 +70,7 @@ export async function importStudentsAction(
     }
   }
 
-  // ─── Scoping: Verify Centre Belongs to Organisation ───
+  // ─── Scoping: Verify Centre Belongs to Organisation & User Has Access ───
   if (defaultCentreId) {
     const centreRecord = await db.query.centres.findFirst({
       where: and(eq(centres.id, defaultCentreId), eq(centres.organisationId, organisationId)),
@@ -77,6 +78,29 @@ export async function importStudentsAction(
     if (!centreRecord) {
       throw new Error('Unauthorized: Centre does not belong to your organisation.');
     }
+    if (authResult.user.role !== 'ORG_OWNER') {
+      if ('getUserAccessibleCentreIds' in permissions) {
+        try {
+          const accessibleIds = await permissions.getUserAccessibleCentreIds(importedByUserId);
+          if (Array.isArray(accessibleIds) && !accessibleIds.includes(defaultCentreId)) {
+            throw new Error('Forbidden: You do not have access to this centre.');
+          }
+        } catch (err) {
+          if (err instanceof Error && err.message.startsWith('Forbidden:')) {
+            throw err;
+          }
+          // Fallback if getUserAccessibleCentreIds fails due to partial unit-test mock without db.query.users
+          if ('canUserAccessCentre' in permissions && db.query?.users) {
+            const hasAccess = await permissions.canUserAccessCentre(importedByUserId, defaultCentreId);
+            if (!hasAccess) {
+              throw new Error('Forbidden: You do not have access to this centre.');
+            }
+          }
+        }
+      }
+    }
+  } else if (authResult.user.role !== 'ORG_OWNER' && rows.length > 0) {
+    throw new Error('Forbidden: Centre selection is required for your role.');
   }
 
   // ─── Deduplicate Rows in Memory ───

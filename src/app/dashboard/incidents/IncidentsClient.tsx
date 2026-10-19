@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { getIncidents } from '@/features/incidents/actions';
 import { Plus, ShieldAlert, Activity, FileWarning, Search, FileText, AlertTriangle } from 'lucide-react';
 import NewIncidentModal from './NewIncidentModal';
@@ -153,7 +154,12 @@ export default function IncidentsClient({ centreId }: { centreId: string }) {
                                             </div>
                                         </td>
                                         <td className="px-5 py-4 font-medium text-text">
-                                            {incident.childFirstName} {incident.childLastName}
+                                            <Link
+                                                href={`/dashboard/students/${incident.childId}`}
+                                                className="hover:text-accent hover:underline transition-colors"
+                                            >
+                                                {incident.childFirstName} {incident.childLastName}
+                                            </Link>
                                         </td>
                                         <td className="px-5 py-4 max-w-xs truncate text-text-secondary text-sm">
                                             {incident.description}

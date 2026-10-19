@@ -885,6 +885,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
     --if-accent: #2FA39D;
     --if-accent-hover: #45B5AF;
     --if-accent-soft: rgba(47, 163, 157, 0.16);
+    --if-danger: #F87171;
     --if-danger-soft: rgba(179, 38, 30, 0.20);
     --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.25);
   }
@@ -901,6 +902,7 @@ body:not(.landing-page-active) :is(.hover\:bg-white\/10):hover {
   --if-accent: #2FA39D;
   --if-accent-hover: #45B5AF;
   --if-accent-soft: rgba(47, 163, 157, 0.16);
+  --if-danger: #F87171;
   --if-danger-soft: rgba(179, 38, 30, 0.20);
   --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.25);
 }

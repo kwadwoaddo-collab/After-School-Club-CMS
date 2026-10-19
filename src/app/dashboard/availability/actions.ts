@@ -17,8 +17,13 @@ export type DayRule = {
 
 export async function updateAvailability(centreId: string, rules: DayRule[]) {
     const session = await requireTenantSession();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session.user.organisationId) {
         throw new Error('Unauthorized');
+    }
+
+    const userRole = (session.user as { role?: string }).role;
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Forbidden: Only Managers and Owners can update availability');
     }
 
     const hasAccess = await canUserAccessCentre(session.user.id, centreId);

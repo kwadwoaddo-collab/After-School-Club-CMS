@@ -199,7 +199,16 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                             <div key={k.id} className="py-4 border-b border-border/50 last:border-0">
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <p className="text-foreground font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
+                                        {k.childId ? (
+                                            <Link
+                                                href={`/dashboard/students/${k.childId}`}
+                                                className="text-foreground font-medium hover:text-primary hover:underline transition-colors"
+                                            >
+                                                {k.submittedFirstName} {k.submittedLastName}
+                                            </Link>
+                                        ) : (
+                                            <p className="text-foreground font-medium">{k.submittedFirstName} {k.submittedLastName}</p>
+                                        )}
                                         <p className="text-muted-foreground text-sm">{k.submittedSchoolYear}</p>
                                         {k.submittedDateOfBirth && (
                                             <p className="text-muted-foreground text-xs mt-0.5">DOB: {new Date(k.submittedDateOfBirth).toLocaleDateString('en-GB')}</p>

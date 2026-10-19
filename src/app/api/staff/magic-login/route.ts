@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { staffInvites, users } from '@/db/schema';
+import { staffInvites, users, orgMemberships } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { hashToken } from '@/lib/magic-link';
 
 /**
  * GET /api/staff/magic-login?token=xxx
- * Validates an invite token and returns user info for session creation.
- * Used by the CredentialsProvider in auth.ts.
+ * Validates an invite token for passwordless staff magic-login.
+ * Security: Rejects existing password-protected accounts, ORG_OWNER accounts,
+ * and cross-tenant accounts that do not already belong to the invitation's organisation.
  */
 export async function GET(request: NextRequest) {
     const token = request.nextUrl.searchParams.get('token');
@@ -35,11 +36,35 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const existingMemberships = db.query?.orgMemberships?.findMany
+        ? await db.query.orgMemberships.findMany({
+              where: eq(orgMemberships.userId, user.id),
+          })
+        : [];
+
+    const isAlreadyMemberOfInviteOrg =
+        (user.organisationId === invite.organisationId && Boolean(user.emailVerified)) ||
+        existingMemberships.some((m) => m.organisationId === invite.organisationId);
+
+    const isExistingAccount =
+        Boolean(user.passwordHash) ||
+        user.role === 'ORG_OWNER' ||
+        Boolean(user.organisationId && user.organisationId !== invite.organisationId) ||
+        existingMemberships.some((m) => m.organisationId !== invite.organisationId) ||
+        Boolean(user.emailVerified && !isAlreadyMemberOfInviteOrg);
+
+    if (isExistingAccount) {
+        return NextResponse.json(
+            { error: 'Existing accounts cannot be signed in via magic-login token' },
+            { status: 403 }
+        );
+    }
+
     return NextResponse.json({
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
-        organisationId: user.organisationId,
+        role: user.organisationId ? user.role : invite.role,
+        organisationId: user.organisationId || invite.organisationId,
     });
 }

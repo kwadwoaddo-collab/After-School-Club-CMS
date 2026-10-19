@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { CreditCard, AlertCircle, ArrowRight, RefreshCw, Settings2, Users, Loader2 } from 'lucide-react';
 import GenerateInvoiceModal from './GenerateInvoiceModal';
 import BulkInvoiceConfirmModal from './BulkInvoiceConfirmModal';
@@ -87,7 +88,12 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     {/* Card header */}
                     <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                            <p className="text-base font-bold text-foreground truncate tracking-tight">{cycle.familyName}</p>
+                            <Link
+                                href={`/dashboard/parents/${cycle.config.parentId}`}
+                                className="text-base font-bold text-foreground hover:text-primary hover:underline transition-colors block truncate tracking-tight"
+                            >
+                                {cycle.familyName}
+                            </Link>
                             {cycle.centreName && (
                                 <p className="text-xs text-muted-foreground font-medium mt-0.5">{cycle.centreName}</p>
                             )}
@@ -101,12 +107,13 @@ function FamilyBillingCard({ cycle, onGenerated }: { cycle: BillingCycleRow; onG
                     {cycle.coveredChildren.length > 0 && (
                         <div className="px-5 pt-3 flex flex-wrap gap-1.5">
                             {cycle.coveredChildren.map(c => (
-                                <span
+                                <Link
                                     key={c.childId}
-                                    className="px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-xl text-[10px] font-bold"
+                                    href={`/dashboard/students/${c.childId}`}
+                                    className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-bold transition-colors"
                                 >
                                     {c.childName}
-                                </span>
+                                </Link>
                             ))}
                         </div>
                     )}

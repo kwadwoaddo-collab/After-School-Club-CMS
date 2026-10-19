@@ -141,11 +141,30 @@ async function recalculateInvoiceStatus(
 export async function getParents(query: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden: You do not have permission to view parents');
+    }
+
+    let accessibleCentreIds: string[] | null = null;
+    if (userRole !== 'ORG_OWNER') {
+        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (accessibleCentreIds.length === 0) {
+            return [];
+        }
+    }
 
     const matchingChildren = await db.select({ parentId: children.parentId }).from(children).where(
-        or(
-            ilike(children.firstName, `%${query}%`),
-            ilike(children.lastName, `%${query}%`)
+        and(
+            eq(children.organisationId, orgId),
+            isNull(children.deletedAt),
+            accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined,
+            or(
+                ilike(children.firstName, `%${query}%`),
+                ilike(children.lastName, `%${query}%`)
+            )
         )
     ).limit(20);
 
@@ -163,7 +182,11 @@ export async function getParents(query: string) {
 
     const results = await db.query.parents.findMany({
         where: and(
-            eq(parents.organisationId, session.user.organisationId),
+            eq(parents.organisationId, orgId),
+            isNull(parents.deletedAt),
+            accessibleCentreIds !== null
+                ? sql`${parents.id} IN (SELECT ${children.parentId} FROM ${children} WHERE ${children.organisationId} = ${orgId} AND ${inArray(children.centreId, accessibleCentreIds)})`
+                : undefined,
             or(...orClauses)
         ),
         with: {
@@ -172,17 +195,42 @@ export async function getParents(query: string) {
         limit: 10
     });
 
+    if (accessibleCentreIds !== null) {
+        return results.map(parent => ({
+            ...parent,
+            children: (parent.children || []).filter(
+                c => !c.deletedAt && c.centreId !== null && accessibleCentreIds!.includes(c.centreId)
+            ),
+        }));
+    }
+
     return results;
 }
 
 export async function getChildrenByParent(parentId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+    const orgId = session.user.organisationId;
+
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden: You do not have permission to view children');
+    }
+
+    let accessibleCentreIds: string[] | null = null;
+    if (userRole !== 'ORG_OWNER') {
+        accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (accessibleCentreIds.length === 0) {
+            return [];
+        }
+    }
 
     const results = await db.query.children.findMany({
         where: and(
             eq(children.parentId, parentId),
-            eq(children.organisationId, session.user.organisationId)
+            eq(children.organisationId, orgId),
+            isNull(children.deletedAt),
+            accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined
         ),
         with: {
             centre: { columns: { id: true, name: true } }
@@ -368,6 +416,9 @@ export async function createLegacyFamilyAndInvoice(data: {
             throw new Error('Unauthorized: No access to this centre');
         }
     }
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can create invoices');
+    }
     const centreRecord = await db.query.centres.findFirst({
         where: and(eq(centres.id, data.invoice.centreId), eq(centres.organisationId, orgId)),
         columns: { id: true }
@@ -390,6 +441,8 @@ export async function createLegacyFamilyAndInvoice(data: {
         for (const child of data.children) {
             const [newChild] = await tx.insert(children).values({
                 parentId: newParent.id,
+                organisationId: session.user.organisationId!,
+                centreId: data.invoice.centreId,
                 firstName: child.firstName,
                 lastName: child.lastName,
                 schoolYear: child.schoolYear,
@@ -450,6 +503,9 @@ export async function createAdHocInvoice(data: {
         if (!accessibleCentreIds.includes(data.centreId)) {
             throw new Error('Unauthorized: No access to this centre');
         }
+    }
+    if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
+        throw new Error('Unauthorized: Only Managers and Owners can create invoices');
     }
     const centreRecord = await db.query.centres.findFirst({
         where: and(eq(centres.id, data.centreId), eq(centres.organisationId, orgId)),

@@ -1,7 +1,6 @@
-'use server';
 /**
  * Billing queries — pure read-only DB access.
- * NOT a  file — safe to call directly from server components.
+ * NOT a [use server] file — safe to call directly from server components.
  */
 
 import { db } from '@/db';

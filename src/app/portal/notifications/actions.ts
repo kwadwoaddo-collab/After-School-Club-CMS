@@ -55,6 +55,12 @@ export async function createRegistrationNotification({
   childName: string;
   registrationId: string;
 }) {
+  const { getApiSession } = await import('@/lib/session');
+  const session = await getApiSession();
+  if (!session?.user?.organisationId || session.user.organisationId !== organisationId) {
+    return;
+  }
+
   await db.insert(portalNotifications).values({
     parentId,
     organisationId,

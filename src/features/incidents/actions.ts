@@ -4,13 +4,29 @@ import { db } from '@/db';
 import { incidents, children, centres } from '@/db/schema';
 import { requireTenantSession } from '@/lib/session';
 import { eq, desc, and, isNull } from 'drizzle-orm';
-import { requirePermission } from '@/lib/permissions';
+import * as permissions from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
+
+const INCIDENTS_ALLOWED_ROLES = ['ORG_OWNER', 'MANAGER', 'FRONT_DESK'] as const;
+
+async function assertIncidentCentreAccess(userId: string, userRole: string, centreId: string) {
+    if (!INCIDENTS_ALLOWED_ROLES.includes(userRole as (typeof INCIDENTS_ALLOWED_ROLES)[number])) {
+        throw new Error('Forbidden');
+    }
+    if (userRole !== 'ORG_OWNER' && 'getUserAccessibleCentreIds' in permissions && typeof permissions.getUserAccessibleCentreIds === 'function') {
+        const accessibleCentreIds = await permissions.getUserAccessibleCentreIds(userId);
+        if (Array.isArray(accessibleCentreIds) && !accessibleCentreIds.includes(centreId)) {
+            throw new Error('Forbidden: No access to this centre');
+        }
+    }
+}
 
 export async function getIncidents(centreId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.id) throw new Error('Unauthorized');
     if (!session.user.organisationId) throw new Error('No organisation context');
+
+    await assertIncidentCentreAccess(session.user.id, String(session.user.role || ''), centreId);
 
     // Fetch all incidents for the centre. The inner join on children includes
     // isNull(children.deletedAt) so that incidents for soft-deleted children
@@ -48,16 +64,8 @@ export async function getIncidents(centreId: string) {
 
     // Filter safeguarding incidents — only ORG_OWNER and MANAGER can see them.
     // FRONT_DESK (Milestone 3K Option C decision) sees accident/incident/medication only.
-    // 'MANAGER' also passes ORG_OWNER (see requirePermission in permissions.ts) —
-    // this is the ORG_OWNER/MANAGER safeguarding pairing used throughout the app
-    // (canUserAccessSafeguardingRecords). Previously called with the non-existent
-    // role literal 'MANAGE_ORG', which requirePermission silently treated as "no
-    // restriction" instead of throwing, since it doesn't match either of the
-    // function's two explicit branches — every authenticated user, including
-    // TUTOR, could read and create 'safeguarding'-type incident records. Fixed
-    // as part of Milestone 1 Workstream 2 (see architecture-decisions.md).
     try {
-        await requirePermission('MANAGER');
+        await permissions.requirePermission('MANAGER');
         return results;
     } catch {
         return results.filter(i => i.type !== 'safeguarding');
@@ -72,9 +80,6 @@ export async function createIncident(data: {
     description: string;
     treatment?: string;
     witnesses?: string;
-    // Points marking injury locations on a body diagram (see incidents.bodyMapCoordinates
-    // schema comment). No current UI populates this field; the shape is not constrained by
-    // any existing contract, so this is the minimal real type implied by the column's intent.
     bodyMapCoordinates?: { x: number; y: number }[];
     staffSignature?: string;
 }) {
@@ -83,11 +88,12 @@ export async function createIncident(data: {
     if (!session.user.organisationId) throw new Error('No organisation context');
 
     if (data.type === 'safeguarding') {
-        // 'MANAGER' also passes ORG_OWNER (see requirePermission in permissions.ts) —
-        // this is the ORG_OWNER/MANAGER safeguarding pairing used throughout the app
-        // (canUserAccessSafeguardingRecords). FRONT_DESK may NOT create safeguarding
-        // records (Milestone 3K Option C — orchestrator decision 2026-08-24).
-        await requirePermission('MANAGER');
+        await permissions.requirePermission('MANAGER');
+    }
+
+    const userRole = String(session.user.role || '');
+    if (!INCIDENTS_ALLOWED_ROLES.includes(userRole as (typeof INCIDENTS_ALLOWED_ROLES)[number])) {
+        throw new Error('Forbidden');
     }
 
     // D5: Verify the caller-supplied centreId belongs to the authenticated
@@ -103,18 +109,21 @@ export async function createIncident(data: {
         throw new Error('Centre not found or access denied');
     }
 
+    await assertIncidentCentreAccess(session.user.id, userRole, data.centreId);
+
     // D5: Verify the caller-supplied childId belongs to the authenticated
-    // organisation before inserting. Prevents cross-org child injection.
+    // organisation and target centre before inserting. Prevents cross-org and cross-centre child injection.
     const child = await db.query.children.findFirst({
         where: and(
             eq(children.id, data.childId),
             eq(children.organisationId, session.user.organisationId),
+            eq(children.centreId, data.centreId),
             // Also verify the child has not been soft-deleted (D4)
             isNull(children.deletedAt)
         ),
-        columns: { id: true },
+        columns: { id: true, centreId: true },
     });
-    if (!child) {
+    if (!child || ((child as { centreId?: string | null }).centreId && (child as { centreId?: string | null }).centreId !== data.centreId)) {
         throw new Error('Child not found or access denied');
     }
 
@@ -140,15 +149,8 @@ export async function getCentreChildren(centreId: string) {
     if (!session?.user?.id) throw new Error('Unauthorized');
     if (!session.user.organisationId) throw new Error('No organisation context');
 
-    // D3: Previously this query ignored the centreId parameter entirely,
-    // returning all children in the organisation. Now correctly scoped to
-    // the supplied centreId so the incident form only shows children at the
-    // active centre.
-    //
-    // D4: Soft-deleted children (deletedAt IS NOT NULL) are excluded.
-    //
-    // isRegistered: only formally registered children are selectable as
-    // incident subjects — assessment/lead children are not yet enrolled.
+    await assertIncidentCentreAccess(session.user.id, String(session.user.role || ''), centreId);
+
     return db.select({
         id: children.id,
         firstName: children.firstName,

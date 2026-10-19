@@ -3,15 +3,60 @@
 
 
 import { db } from '@/db';
-import { studentNotes } from '@/db/schema';
+import { studentNotes, children, parents } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireTenantSession } from '@/lib/session';
+import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
+
+async function assertChildAccess(childId: string, session: any) {
+    const [student] = await db
+        .select({
+            id: children.id,
+            parentId: children.parentId,
+            centreId: children.centreId,
+            organisationId: children.organisationId,
+        })
+        .from(children)
+        .where(eq(children.id, childId))
+        .limit(1);
+
+    if (!student) {
+        throw new Error('Student not found');
+    }
+
+    let studentOrgId = student.organisationId;
+    if (!studentOrgId && student.parentId) {
+        const [parent] = await db
+            .select({ organisationId: parents.organisationId })
+            .from(parents)
+            .where(eq(parents.id, student.parentId))
+            .limit(1);
+        studentOrgId = parent?.organisationId ?? null;
+    }
+
+    if (!studentOrgId || studentOrgId !== session.user.organisationId) {
+        throw new Error('Forbidden');
+    }
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ORG_OWNER') {
+        const accessibleCentreIds = await getUserAccessibleCentreIds(session.user.id);
+        if (accessibleCentreIds.length === 0 || (student.centreId && !accessibleCentreIds.includes(student.centreId))) {
+            throw new Error('Forbidden');
+        }
+    }
+}
 
 export async function getStudentNotes(childId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
+    }
+    try {
+        await assertChildAccess(childId, session);
+    } catch {
+        return [];
     }
 
     const notes = await db.query.studentNotes.findMany({
@@ -36,6 +81,7 @@ export async function addStudentNote(
     if (!session?.user?.id) {
         throw new Error('Unauthorized');
     }
+    await assertChildAccess(childId, session);
 
     // Try to get name from session user Object
     let authorName = 'Staff Member';
@@ -75,6 +121,7 @@ export async function deleteStudentNote(noteId: string) {
     });
 
     if (!note) throw new Error('Note not found');
+    await assertChildAccess(note.childId, session);
 
     const userRole = (session.user as any).role;
     if (note.userId !== session.user.id && userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
@@ -99,6 +146,7 @@ export async function toggleStudentNotePin(noteId: string, pinned: boolean) {
         where: eq(studentNotes.id, noteId)
     });
     if (!note) throw new Error('Note not found');
+    await assertChildAccess(note.childId, session);
 
     const userRole = (session.user as any).role;
     if (userRole !== 'ORG_OWNER' && userRole !== 'MANAGER') {
@@ -146,6 +194,7 @@ export async function editStudentNote(
     if (!note) {
         throw new Error('Note not found');
     }
+    await assertChildAccess(note.childId, session);
 
     // 4. Authorization check (Author or ORG_OWNER / MANAGER only)
     const userRole = (session.user as any).role;

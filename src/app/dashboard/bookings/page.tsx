@@ -206,48 +206,51 @@ export default async function BookingsPage(props: {
 
     if (!searchActiveAndNoResults) {
         try {
-            // Retrieve aggregations for accurate top-level bubbles (excludes status filter)
-            statusCountsAgg = await db.select({
-                status: bookings.status,
-                count: sql<number>`count(*)::int`
-            })
-            .from(bookings)
-            .where(aggWhere)
-            .groupBy(bookings.status);
-
-            // Set total records for the active filters (includes status filter)
-            const [totalRes] = await db
-                .select({ count: sql<number>`count(*)::int` })
+            const [aggRows, [totalRes], rows] = await Promise.all([
+                // Retrieve aggregations for accurate top-level bubbles (excludes status filter)
+                db.select({
+                    status: bookings.status,
+                    count: sql<number>`count(*)::int`
+                })
                 .from(bookings)
-                .where(finalWhere);
-            totalRecords = totalRes?.count || 0;
+                .where(aggWhere)
+                .groupBy(bookings.status),
 
-            bookingsData = await db.query.bookings.findMany({
-                where: finalWhere,
-                orderBy: [desc(bookings.startAt)],
-                limit: PAGE_SIZE,
-                offset: offset,
-                with: {
-                    centre: true,
-                    parent: true,
-                    attendees: {
-                        columns: {
-                            id: true,
-                            bookingId: true,
-                            childId: true,
-                            feedbackNotes: true,
-                            feedbackScore: true,
-                            feedbackAttachmentBase64: true,
-                            feedbackAttachmentMime: true,
-                            feedbackStatus: true,
-                            feedbackSentAt: true,
-                            updatedAt: true
+                // Set total records for the active filters (includes status filter)
+                db
+                    .select({ count: sql<number>`count(*)::int` })
+                    .from(bookings)
+                    .where(finalWhere),
+
+                db.query.bookings.findMany({
+                    where: finalWhere,
+                    orderBy: [desc(bookings.startAt)],
+                    limit: PAGE_SIZE,
+                    offset: offset,
+                    with: {
+                        centre: true,
+                        parent: true,
+                        attendees: {
+                            columns: {
+                                id: true,
+                                bookingId: true,
+                                childId: true,
+                                feedbackNotes: true,
+                                feedbackScore: true,
+                                feedbackAttachmentMime: true,
+                                feedbackStatus: true,
+                                feedbackSentAt: true,
+                                updatedAt: true
+                            },
+                            with: { child: { with: { notes: true } } }
                         },
-                        with: { child: { with: { notes: true } } }
-                    },
-                    staff: true
-                }
-            });
+                        staff: true
+                    }
+                }),
+            ]);
+            statusCountsAgg = aggRows;
+            totalRecords = totalRes?.count || 0;
+            bookingsData = rows;
         } catch (error) {
             logger.error('Failed to fetch bookings data:', error);
             bookingsData = [];
