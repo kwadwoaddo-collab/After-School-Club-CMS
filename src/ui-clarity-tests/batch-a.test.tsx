@@ -6,6 +6,7 @@ import BookingsTable from '@/features/bookings/components/BookingsTable';
 import { BookingStudentLink } from '@/features/bookings/components/BookingStudentLink';
 import OrganisationInfoForm from '@/features/settings/components/OrganisationInfoForm';
 import DashboardSchedule from '@/app/dashboard/_components/DashboardSchedule';
+import StudentsTable, { type StudentRow } from '@/features/students/components/StudentsTable';
 
 const scheduleFixture = vi.hoisted(() => ({ rows: [] as Array<{ id: string; startAt: string; childName: string; centreName: string; status: string }> }));
 vi.mock('@/db', () => ({ db: { select: () => {
@@ -94,5 +95,32 @@ describe('batch A rendered operator UI', () => {
         const viewer = renderToStaticMarkup(<OrganisationInfoForm org={org} baseUrl="http://localhost" isOwner={false} />);
         expect(viewer).not.toContain('aria-label="Edit organisation');
         expect(viewer).not.toContain('aria-label="Edit subdomain');
+    });
+});
+
+describe('batch B table access', () => {
+    it('provides keyboard-focusable, named scrolling areas for finance and bookings', () => {
+        const finance = renderToStaticMarkup(<FinanceDataGridClient invoices={[invoice]} />);
+        const bookings = renderToStaticMarkup(<BookingsTable bookings={[{ id: 'booking-1', status: 'confirmed', attendees: [] }]} />);
+        for (const [html, name] of [[finance, 'Invoices'], [bookings, 'Bookings']]) {
+            expect(html).toContain(`role="region" aria-label="${name} table, scroll for more columns" tabindex="0"`);
+        }
+        expect(bookings).toContain('aria-controls="booking-actions-booking-1"');
+        expect(bookings).toContain('aria-controls="booking-mobile-actions-booking-1"');
+        expect(bookings).toContain('aria-expanded="false"');
+    });
+
+    it('preserves student profile links, parent links and record actions in the responsive view', () => {
+        const student: StudentRow = {
+            id: 'student-1', firstName: 'Fixture', lastName: 'Child', dateOfBirth: null, schoolYear: null,
+            isRegistered: true, source: 'registration', parentId: 'parent-1', parentFirstName: 'Fixture', parentLastName: 'Parent',
+            parentEmail: null, parentPhone: null, bookingCount: 0, completedCount: 0, attendanceRate: 0,
+            lowAttendance: false, nextAssessment: null, medicalNotes: [], safeguardingNotes: [],
+        };
+        const html = renderToStaticMarkup(<StudentsTable students={[student]} />);
+        expect(html).toContain('aria-label="Students table, scroll for more columns" tabindex="0"');
+        expect(html).toContain('href="/dashboard/students/student-1"');
+        expect(html).toContain('href="/dashboard/parents/parent-1"');
+        expect(html).toContain('Manage');
     });
 });

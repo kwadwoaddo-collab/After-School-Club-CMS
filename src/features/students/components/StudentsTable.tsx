@@ -97,10 +97,11 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
 
   return (
     <>
-      {/* Desktop / tablet — table. Collapses to stacked cards below `md`,
+      {/* Wide desktop — table. Collapses to stacked cards below `xl`,
           per InvoiceFlow's documented mobile table pattern (not a
           horizontally-scrolled desktop table). */}
-      <div className="hidden md:block rounded-lg border border-border bg-surface overflow-hidden">
+      <p className="hidden xl:block text-xs text-text-muted mb-2">Scroll horizontally when needed. Actions stay on the right.</p>
+      <div role="region" aria-label="Students table, scroll for more columns" tabIndex={0} className="hidden xl:block rounded-lg border border-border bg-surface overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent [&>div]:overflow-visible">
         <Table caption="Students list">
           <TableHeader>
             <TableRow>
@@ -111,7 +112,7 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
               <TableHead align="center">Bookings</TableHead>
               <TableHead>Next booking</TableHead>
               <TableHead>Alerts</TableHead>
-              <TableHead align="right">Actions</TableHead>
+              <TableHead align="right" className="sticky right-0 z-10 bg-surface">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,9 +134,9 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-table-value font-medium text-text truncate">
+                          <Link href={`/dashboard/students/${student.id}`} onClick={(event) => event.stopPropagation()} className="text-table-value font-medium text-text hover:underline break-words">
                             {student.firstName} {student.lastName}
-                          </span>
+                          </Link>
                           {student.isRegistered && (
                             <span
                               className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0"
@@ -223,7 +224,7 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
                       )}
                     </div>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" className="sticky right-0 z-10 bg-surface">
                     <StudentActions
                       studentId={student.id}
                       studentName={`${student.firstName} ${student.lastName}`}
@@ -237,7 +238,7 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
       </div>
 
       {/* Mobile — stacked record cards, not a horizontally-scrolled table. */}
-      <div className="md:hidden">
+      <div className="xl:hidden">
         <StudentsGrid students={students} />
       </div>
     </>
