@@ -150,8 +150,8 @@ export default async function AttendancePage(props: {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {[
-                    { label: 'Sessions', value: dayBookings.length, color: 'text-accent', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-accent-soft' },
-                    { label: 'Students', value: totalStudents, color: 'text-text', icon: <Users className="w-4 h-4" />, iconBg: 'bg-page' },
+                    { label: 'Booked sessions', value: dayBookings.length, color: 'text-accent', icon: <CalendarCheck className="w-4 h-4" />, iconBg: 'bg-accent-soft' },
+                    { label: 'Expected register entries', value: totalStudents, color: 'text-text', icon: <Users className="w-4 h-4" />, iconBg: 'bg-page' },
                     { label: 'Present', value: present, color: 'text-emerald-700 dark:text-emerald-400', icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-success-soft' },
                     { label: 'Absent', value: absent, color: 'text-danger', icon: <Users className="w-4 h-4" />, iconBg: 'bg-danger-soft' },
                     {

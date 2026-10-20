@@ -209,6 +209,10 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
 
     return (
         <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+                Totals cover invoices on this page within the current centre and status filters.
+                Draft and void invoices are excluded from these totals.
+            </p>
             {/* Apple-grade KPI Stat Cards Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Stat Card 1: Total Invoiced */}
@@ -230,7 +234,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 {/* Stat Card 2: Total Collected */}
                 <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collected</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collected (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                             <CheckCircle2 className="w-4 h-4" />
                         </div>
@@ -246,7 +250,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 {/* Stat Card 3: Outstanding */}
                 <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Outstanding</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Outstanding (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                             <Clock className="w-4 h-4" />
                         </div>
@@ -262,7 +266,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                 {/* Stat Card 4: Overdue Count */}
                 <div className="bg-card/80 backdrop-blur-md border border-border/60 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overdue</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overdue (Page)</span>
                         <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                             <ShieldAlert className="w-4 h-4" />
                         </div>
@@ -329,6 +333,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                 <th className="p-4 w-12 text-center select-none">
                                     <input 
                                         type="checkbox" 
+                                        aria-label="Select all invoices on this page"
                                         className="rounded border-border accent-primary w-4 h-4 cursor-pointer"
                                         checked={selectedInvoices.size === invoices.length && invoices.length > 0}
                                         onChange={toggleAll}
@@ -376,6 +381,7 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                         <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                                             <input 
                                                 type="checkbox" 
+                                                aria-label={`Select invoice ${invoice.invoiceNumber}`}
                                                 className="rounded border-border accent-primary w-4 h-4 cursor-pointer"
                                                 checked={selectedInvoices.has(invoice.id)}
                                                 onChange={() => toggleSelection(invoice.id)}

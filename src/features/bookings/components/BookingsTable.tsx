@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 import ReassignCentreModal from './ReassignCentreModal';
+import { BookingStudentLink } from './BookingStudentLink';
 
 interface BookingsTableProps {
     bookings: unknown[];
@@ -566,13 +567,12 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 const targetId = firstId || booking.attendees?.[0]?.child?.id || booking.child?.id;
                                                 return (
                                                     <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                                        <Link
-                                                            href={`/dashboard/students/${targetId}`}
+                                                        <BookingStudentLink
+                                                            studentId={targetId}
                                                             className="font-medium text-text group-hover:text-accent transition-colors hover:underline truncate"
-                                                            onClick={(e) => e.stopPropagation()}
                                                         >
                                                             {first}
-                                                        </Link>
+                                                        </BookingStudentLink>
                                                         {rest.length > 0 && (
                                                             <div className="relative group/more flex-shrink-0">
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-page text-text-muted text-[10px] font-semibold cursor-default border border-border">
@@ -796,13 +796,12 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         {getStudentInitials(booking)}
                                     </div>
                                     <div>
-                                        <Link
-                                            href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
+                                        <BookingStudentLink
+                                            studentId={booking.attendees?.[0]?.child?.id || booking.child?.id}
                                             className="text-sm font-medium text-text hover:text-accent hover:underline transition-colors"
-                                            onClick={(e) => e.stopPropagation()}
                                         >
                                             {getStudentNames(booking)}
-                                        </Link>
+                                        </BookingStudentLink>
                                         <p className="text-metadata mt-0.5">{booking.centre?.name}</p>
                                     </div>
                                 </div>

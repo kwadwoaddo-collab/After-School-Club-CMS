@@ -406,6 +406,7 @@ export default function WeeklyReportTab() {
                     <div>
                         <h2 className="font-bold text-foreground text-xl leading-tight">Activity Report</h2>
                         <p className="text-sm text-muted-foreground mt-0.5">Preview and download an executive summary for the selected period</p>
+                        <p className="text-sm text-muted-foreground mt-1">Scope: all centres you have access to, regardless of the active centre.</p>
                     </div>
                 </div>
 

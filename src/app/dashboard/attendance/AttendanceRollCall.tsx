@@ -568,6 +568,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder="Search students or parents…"
+                        aria-label="Search register students or parents"
                         className="w-full h-11 pl-10 pr-10 rounded-sm bg-surface border border-border text-text placeholder:text-text-muted text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent transition-colors"
                     />
                     {searchQuery && (
@@ -817,6 +818,7 @@ export default function AttendanceRollCall({ slots, centreId, dateStr, allStuden
                                                         value={studentSearchQuery}
                                                         onChange={e => setStudentSearchQuery(e.target.value)}
                                                         placeholder="Search by name…"
+                                                        aria-label="Search students for walk-in attendance"
                                                         className={`${formInput} pl-9`}
                                                     />
                                                 </div>
