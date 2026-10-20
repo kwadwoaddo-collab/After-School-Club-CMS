@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 import ReassignCentreModal from './ReassignCentreModal';
+import { BookingStudentLink } from './BookingStudentLink';
+import { BookingActionsPopover } from './BookingActionsPopover';
 
 interface BookingsTableProps {
     bookings: unknown[];
@@ -78,6 +80,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     }, [initialBookings]);
 
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -492,7 +495,8 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
 
             <div className="bg-surface border border-border rounded-lg overflow-hidden relative">
                 {/* Table for Desktop */}
-                <div className="hidden lg:block overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto relative">
+                <p className="hidden xl:block px-4 py-2 text-xs text-text-muted border-b border-border">Scroll horizontally when needed. Actions stay on the right.</p>
+                <div role="region" aria-label="Bookings table, scroll for more columns" tabIndex={0} className="hidden xl:block overflow-x-auto relative focus-visible:outline-2 focus-visible:outline-accent [&>div]:overflow-visible">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -526,7 +530,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         <SortIcon active={sortConfig.key === 'status'} direction={sortConfig.direction} />
                                     </button>
                                 </TableHead>
-                                <TableHead align="right">Actions</TableHead>
+                                <TableHead align="right" className="sticky right-0 z-10 bg-surface">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -566,13 +570,12 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                 const targetId = firstId || booking.attendees?.[0]?.child?.id || booking.child?.id;
                                                 return (
                                                     <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                                        <Link
-                                                            href={`/dashboard/students/${targetId}`}
+                                                        <BookingStudentLink
+                                                            studentId={targetId}
                                                             className="font-medium text-text group-hover:text-accent transition-colors hover:underline truncate"
-                                                            onClick={(e) => e.stopPropagation()}
                                                         >
                                                             {first}
-                                                        </Link>
+                                                        </BookingStudentLink>
                                                         {rest.length > 0 && (
                                                             <div className="relative group/more flex-shrink-0">
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-page text-text-muted text-[10px] font-semibold cursor-default border border-border">
@@ -654,7 +657,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     <TableCell>
                                         <StatusBadge status={booking.status} />
                                     </TableCell>
-                                    <TableCell align="right">
+                                    <TableCell align="right" className={`sticky right-0 bg-surface ${activeDropdown === booking.id ? 'z-30' : 'z-10'}`}>
                                         <div className="flex items-center justify-end gap-1">
                                             {(booking.parent?.email || booking.parent?.phone) && (
                                                 <div className="flex items-center gap-1 mr-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -685,16 +688,19 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     suppressHydrationWarning
                                                     onClick={(e) => {
                                                         e.stopPropagation();
+                                                        setMenuAnchor(e.currentTarget);
                                                         setActiveDropdown(activeDropdown === booking.id ? null : booking.id);
                                                     }}
                                                     className="p-2 hover:bg-page rounded-sm transition-colors"
                                                     aria-label="Booking actions"
+                                                    aria-expanded={activeDropdown === booking.id}
+                                                    aria-controls={`booking-actions-${booking.id}`}
                                                 >
                                                     <MoreVertical className="w-4 h-4 text-text-muted" />
                                                 </button>
 
                                                 {activeDropdown === booking.id && (
-                                                    <div className="absolute right-0 top-full mt-1 w-52 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border py-1.5 z-20">
+                                                    <BookingActionsPopover id={`booking-actions-${booking.id}`} anchor={menuAnchor} desktop={true} onClose={() => setActiveDropdown(null)}>
                                                         <Link
                                                             href={`/dashboard/bookings/${booking.id}`}
                                                             className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors"
@@ -771,7 +777,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                             <Trash2 className="w-4 h-4" />
                                                             Delete Booking
                                                         </button>
-                                                    </div>
+                                                    </BookingActionsPopover>
                                                 )}
                                             </div>
                                         </div>
@@ -783,7 +789,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                 </div>
 
                 {/* Card View for Mobile */}
-                <div className="lg:hidden divide-y divide-border-subtle">
+                <div className="xl:hidden divide-y divide-border-subtle">
                     <div className="p-4 bg-page flex items-center justify-between border-b border-border">
                         <div className="flex items-center gap-3">
                             <input
@@ -817,13 +823,12 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         {getStudentInitials(booking)}
                                     </div>
                                     <div>
-                                        <Link
-                                            href={`/dashboard/students/${booking.attendees?.[0]?.child?.id || booking.child?.id}`}
+                                        <BookingStudentLink
+                                            studentId={booking.attendees?.[0]?.child?.id || booking.child?.id}
                                             className="text-sm font-medium text-text hover:text-accent hover:underline transition-colors"
-                                            onClick={(e) => e.stopPropagation()}
                                         >
                                             {getStudentNames(booking)}
-                                        </Link>
+                                        </BookingStudentLink>
                                         <p className="text-metadata mt-0.5">{booking.centre?.name}</p>
                                     </div>
                                 </div>
@@ -834,16 +839,19 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                             suppressHydrationWarning
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                setMenuAnchor(e.currentTarget);
                                                 setActiveDropdown(activeDropdown === `mobile-${booking.id}` ? null : `mobile-${booking.id}`);
                                             }}
                                             className="p-1.5 hover:bg-page rounded-sm transition-colors -mr-1"
                                             aria-label="Booking actions"
+                                            aria-expanded={activeDropdown === `mobile-${booking.id}`}
+                                            aria-controls={`booking-mobile-actions-${booking.id}`}
                                         >
                                             <MoreVertical className="w-4 h-4 text-text-muted" />
                                         </button>
 
                                         {activeDropdown === `mobile-${booking.id}` && (
-                                            <div className="absolute right-0 top-full mt-1 w-52 bg-surface-elevated rounded-md shadow-[var(--shadow-popover)] border border-border py-1.5 z-20">
+                                            <BookingActionsPopover id={`booking-mobile-actions-${booking.id}`} anchor={menuAnchor} desktop={false} onClose={() => setActiveDropdown(null)}>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleReschedule(booking.id); }}
                                                     className="flex items-center gap-3 px-4 py-2 hover:bg-page text-sm text-text transition-colors w-full text-left"
@@ -902,7 +910,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                     <Trash2 className="w-4 h-4" />
                                                     Delete Booking
                                                 </button>
-                                            </div>
+                                            </BookingActionsPopover>
                                         )}
                                     </div>
                                 </div>

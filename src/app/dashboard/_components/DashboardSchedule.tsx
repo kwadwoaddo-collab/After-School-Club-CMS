@@ -50,7 +50,7 @@ export default async function DashboardSchedule({
             <div className="px-5 py-4 flex items-center justify-between border-b border-border">
                 <div className="flex items-center gap-2">
                     <Calendar className="size-4 text-text-muted" aria-hidden="true" />
-                    <h3 className="font-semibold text-sm text-text">Today's Schedule</h3>
+                    <h3 className="font-semibold text-sm text-text">Today's Bookings</h3>
                     <span className="text-text-muted">·</span>
                     <span className="text-xs text-text-muted">{format(now, 'MMM d, yyyy')}</span>
                 </div>
@@ -65,7 +65,8 @@ export default async function DashboardSchedule({
             {todayBookings.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center gap-2 text-center flex-1 justify-center">
                     <Calendar className="size-8 text-text-muted/30" aria-hidden="true" />
-                    <p className="text-sm font-medium text-text-muted">No sessions scheduled for today</p>
+                    <p className="text-sm font-medium text-text-muted">No bookings recorded for today</p>
+                    <p className="text-xs text-text-muted">Regular attendance schedules are shown in the register.</p>
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto divide-y divide-border-subtle">
@@ -90,6 +91,9 @@ export default async function DashboardSchedule({
                     ))}
                 </div>
             )}
+            <Link href="/dashboard/attendance" className="px-5 py-3 text-sm font-medium text-accent hover:underline border-t border-border">
+                View today's register
+            </Link>
         </Card>
     );
 }

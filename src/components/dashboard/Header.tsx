@@ -279,6 +279,7 @@ export default function Header({ userName, userInitial, userRole, hideSearch }: 
                                     if (searchQuery.trim().length >= 2) setShowSearchResults(true);
                                 }}
                                 placeholder="Search students, bookings…"
+                                aria-label="Search students and bookings"
                                 className="flex-1 h-full bg-transparent px-3 py-0 text-sm text-text placeholder:text-text-muted/60 outline-none"
                             />
                             {isSearching && (

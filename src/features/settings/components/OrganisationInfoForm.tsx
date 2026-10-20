@@ -159,11 +159,11 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                         <div className="flex gap-2">
                             <input id="org-name" type="text" value={name} onChange={e => setName(e.target.value)}
                                 className={inp} autoFocus disabled={saving} />
-                            <button onClick={handleSaveName} disabled={saving}
+                            <button aria-label="Save organisation name" onClick={handleSaveName} disabled={saving}
                                 className="p-2 text-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => { setIsEditingName(false); setName(org.name); setError(null); }}
+                            <button aria-label="Cancel organisation name edit" onClick={() => { setIsEditingName(false); setName(org.name); setError(null); }}
                                 className="p-2 text-muted-foreground hover:bg-secondary/60 rounded-xl transition-all">
                                 <X className="w-3.5 h-3.5" />
                             </button>
@@ -172,8 +172,8 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                         <div className="flex items-center justify-between group">
                             <span className="text-sm font-bold text-foreground">{org.name}</span>
                             {isOwner && (
-                                <button onClick={() => setIsEditingName(true)}
-                                    className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
+                                <button aria-label="Edit organisation name" onClick={() => setIsEditingName(true)}
+                                    className="p-2.5 text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary transition-all rounded-lg">
                                     <Pencil className="w-3.5 h-3.5" />
                                 </button>
                             )}
@@ -192,11 +192,11 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                             <input id="org-slug" type="text" value={slug}
                                 onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                 className={`${inp} font-mono`} autoFocus disabled={saving} />
-                            <button onClick={handleSaveSlug} disabled={saving}
+                            <button aria-label="Save organisation slug" onClick={handleSaveSlug} disabled={saving}
                                 className="p-2 text-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50">
                                 <Check className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => { setIsEditingSlug(false); setSlug(org.slug); setError(null); }}
+                            <button aria-label="Cancel organisation slug edit" onClick={() => { setIsEditingSlug(false); setSlug(org.slug); setError(null); }}
                                 className="p-2 text-muted-foreground hover:bg-secondary/60 rounded-xl transition-all">
                                 <X className="w-3.5 h-3.5" />
                             </button>
@@ -205,8 +205,8 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                         <div className="flex items-center justify-between group">
                             <span className="text-sm font-mono font-bold text-foreground">{org.slug}</span>
                             {isOwner && (
-                                <button onClick={() => setIsEditingSlug(true)}
-                                    className="p-1.5 text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all rounded-lg">
+                                <button aria-label="Edit organisation slug" onClick={() => setIsEditingSlug(true)}
+                                    className="p-2.5 text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary transition-all rounded-lg">
                                     <Pencil className="w-3.5 h-3.5" />
                                 </button>
                             )}
@@ -226,8 +226,8 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                         <span className="text-[10px] bg-primary/10 text-primary px-1 py-0.5 rounded border border-primary/20">Routing</span>
                     </label>
                     {!isEditingSubdomain && isOwner && (
-                        <button onClick={() => setIsEditingSubdomain(true)}
-                            className="p-1.5 text-muted-foreground/60 hover:text-primary transition-all rounded-lg">
+                        <button aria-label="Edit subdomain" onClick={() => setIsEditingSubdomain(true)}
+                            className="p-2.5 text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary transition-all rounded-lg">
                             <Pencil className="w-3.5 h-3.5" />
                         </button>
                     )}
@@ -245,16 +245,17 @@ export default function OrganisationInfoForm({ org, baseUrl, isOwner = true }: O
                                 value={subdomain}
                                 onChange={e => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                 placeholder="yourclub"
+                                aria-label="Organisation subdomain"
                                 className="flex-1 px-3 py-2 bg-transparent text-sm text-foreground font-mono focus:outline-none"
                                 autoFocus disabled={subdomainSaving}
                             />
                             <span className="text-xs text-muted-foreground pr-3 font-mono">.sprintscaleit.co.uk</span>
                         </div>
-                        <button onClick={handleSaveSubdomain} disabled={subdomainSaving}
+                        <button aria-label="Save subdomain" onClick={handleSaveSubdomain} disabled={subdomainSaving}
                             className="p-2 bg-primary text-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
                             <Check className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => { setIsEditingSubdomain(false); setSubdomain(org.subdomain || ''); setSubdomainError(null); }}
+                        <button aria-label="Cancel subdomain edit" onClick={() => { setIsEditingSubdomain(false); setSubdomain(org.subdomain || ''); setSubdomainError(null); }}
                             className="p-2 text-muted-foreground hover:bg-secondary/60 rounded-xl transition-all">
                             <X className="w-3.5 h-3.5" />
                         </button>
