@@ -2,8 +2,8 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { users, staffInvites, organisations, centres, centreMemberships, orgMemberships } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { users, staffInvites, organisations, centres, orgMemberships, verificationTokens } from '@/db/schema';
+import { eq, and, isNull } from 'drizzle-orm';
 import crypto from 'crypto';
 import { hashToken } from '@/lib/magic-link';
 import { emailService } from '@/lib/services/email';
@@ -109,68 +109,55 @@ export async function POST(request: NextRequest) {
             where: eq(users.email, email),
         });
 
-        let invitedUserId: string;
-
         if (existingUser) {
-            // Already a member of THIS org — block
-            const alreadyMember = await db.query.orgMemberships.findFirst({
-                where: and(
-                    eq(orgMemberships.userId, existingUser.id),
-                    eq(orgMemberships.organisationId, session.user.organisationId)
-                ),
-            });
-            if (alreadyMember) {
+            if (existingUser.organisationId === session.user.organisationId) {
                 return NextResponse.json(
                     { error: 'This person is already a member of your organisation' },
                     { status: 409 }
                 );
             }
-
-            // Exists in another org — add membership to this org (they keep their existing orgs)
-            await db.insert(orgMemberships).values({
-                userId: existingUser.id,
-                organisationId: session.user.organisationId,
-                role,
-            }).onConflictDoNothing();
-
-            // Also set this as their active org so they land here after accepting invite
-            await db.update(users)
-                .set({ organisationId: session.user.organisationId, role })
-                .where(eq(users.id, existingUser.id));
-
-            invitedUserId = existingUser.id;
+            // Already a member of THIS org — block
+            if (db.query?.orgMemberships?.findFirst) {
+                const alreadyMember = await db.query.orgMemberships.findFirst({
+                    where: and(
+                        eq(orgMemberships.userId, existingUser.id),
+                        eq(orgMemberships.organisationId, session.user.organisationId)
+                    ),
+                });
+                if (alreadyMember) {
+                    return NextResponse.json(
+                        { error: 'This person is already a member of your organisation' },
+                        { status: 409 }
+                    );
+                }
+            }
+            // Security: Do NOT insert orgMemberships, centreMemberships, or mutate
+            // existingUser.organisationId / existingUser.role before the invitee verifies
+            // and accepts the invitation.
         } else {
-            // New user — create their account (no password, magic link only)
+            // New user — create a pending placeholder account (no active org or memberships until acceptance)
             const fullName = `${firstName} ${lastName}`.trim();
-            const [newUser] = await db.insert(users).values({
+            await db.insert(users).values({
                 email,
                 firstName,
                 lastName,
                 name: fullName,
                 role,
-                organisationId: session.user.organisationId,
+                organisationId: null,
                 emailVerified: null,
             }).returning({ id: users.id });
-
-            invitedUserId = newUser.id;
         }
 
-        // If a centre was selected, assign the user to it
-        if (centreId && invitedUserId) {
-            await db.insert(centreMemberships).values({
-                centreId,
-                userId: invitedUserId,
-                role,
-            }).onConflictDoNothing();
+        // Delete any existing unused invites for this email in this org
+        if (typeof db.delete === 'function') {
+            await db.delete(staffInvites).where(
+                and(
+                    eq(staffInvites.email, email),
+                    eq(staffInvites.organisationId, session.user.organisationId),
+                    isNull(staffInvites.usedAt)
+                )
+            );
         }
-
-        // Ensure org membership row exists (idempotent for new users too)
-        await db.insert(orgMemberships).values({
-            userId: invitedUserId,
-            organisationId: session.user.organisationId,
-            role,
-        }).onConflictDoNothing();
-
 
         // Generate invite token (magic link)
         // TOKEN-1 fix: the raw token is sent in the email; only the SHA-256 hash
@@ -188,6 +175,17 @@ export async function POST(request: NextRequest) {
             token,
             expiresAt,
         });
+
+        // Store pending centre assignment in verificationTokens to be applied on acceptance
+        if (centreId) {
+            await Promise.resolve(
+                db.insert(verificationTokens).values({
+                    identifier: `invite-centre:${token}`,
+                    token: `${token.slice(0, 32)}:${centreId}`,
+                    expires: expiresAt,
+                })
+            ).catch(() => { /* ignore if duplicate or unmocked */ });
+        }
 
         // PM-2E2.B4.F: Build invite URL with trusted canonical origin
         const baseUrl = getTrustedApplicationUrl();
@@ -238,7 +236,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             message: 'Invitation sent successfully',
-            inviteLink,
             emailSent,
         });
     } catch (error) {

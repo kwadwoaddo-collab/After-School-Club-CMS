@@ -285,7 +285,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
     };
 
     // Returns structured list for rendering — first name + overflow count
-    const getStudentList = (booking: any): { first: string; rest: string[]; firstId?: string } => {
+    const getStudentList = (booking: any): { first: string; rest: { name: string; id?: string }[]; firstId?: string } => {
         if (booking.attendees && booking.attendees.length > 0) {
             const all = booking.attendees.map((a: any) => ({
                 name: `${a.child?.firstName || ''} ${a.child?.lastName || ''}`.trim(),
@@ -294,7 +294,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
             return {
                 first: all[0]?.name || 'Unknown',
                 firstId: all[0]?.id,
-                rest: all.slice(1).map((s: { name: string; id: string }) => s.name),
+                rest: all.slice(1),
             };
         }
         if (booking.child) {
@@ -584,10 +584,31 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                                                 <div className="absolute left-0 bottom-full mb-2 hidden group-hover/more:block min-w-[160px] max-w-[220px] p-3 bg-surface-elevated border border-border rounded-md shadow-[var(--shadow-popover)] z-[60]">
                                                                     <p className="text-label text-text-muted mb-2">All Students</p>
                                                                     <div className="flex flex-col gap-1">
-                                                                        <span className="text-sm font-medium text-text">{first}</span>
-                                                                        {rest.map((name, i) => (
-                                                                            <span key={i} className="text-sm font-medium text-text">{name}</span>
-                                                                        ))}
+                                                                        {targetId ? (
+                                                                            <Link
+                                                                                href={`/dashboard/students/${targetId}`}
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                className="text-sm font-medium text-text hover:text-accent hover:underline transition-colors"
+                                                                            >
+                                                                                {first}
+                                                                            </Link>
+                                                                        ) : (
+                                                                            <span className="text-sm font-medium text-text">{first}</span>
+                                                                        )}
+                                                                        {rest.map((s, i) =>
+                                                                            s.id ? (
+                                                                                <Link
+                                                                                    key={s.id || i}
+                                                                                    href={`/dashboard/students/${s.id}`}
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                    className="text-sm font-medium text-text hover:text-accent hover:underline transition-colors"
+                                                                                >
+                                                                                    {s.name}
+                                                                                </Link>
+                                                                            ) : (
+                                                                                <span key={i} className="text-sm font-medium text-text">{s.name}</span>
+                                                                            )
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>

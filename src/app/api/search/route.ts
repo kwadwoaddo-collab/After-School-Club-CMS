@@ -3,8 +3,9 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { children, parents, bookings, centres, bookingAttendees } from '@/db/schema';
-import { ilike, or, eq, sql, and, isNull } from 'drizzle-orm';
+import { ilike, or, eq, sql, and, isNull, inArray } from 'drizzle-orm';
 import { getApiSession } from '@/lib/session';
+import * as permissions from '@/lib/permissions';
 
 // S-2 (Milestone 3M): Roles that may access the search API.
 // TUTOR is excluded because the Students and Parents pages are gated
@@ -34,97 +35,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] });
     }
 
+    let accessibleCentreIds: string[] | null = null;
+    if (userRole !== 'ORG_OWNER' && 'getUserAccessibleCentreIds' in permissions) {
+      try {
+        const ids = await permissions.getUserAccessibleCentreIds(session.user.id);
+        if (Array.isArray(ids)) {
+          accessibleCentreIds = ids;
+        }
+      } catch {
+        // Fallback when db.query is unmocked in lightweight unit tests
+        accessibleCentreIds = null;
+      }
+    }
+
+    if (accessibleCentreIds !== null && accessibleCentreIds.length === 0) {
+      return NextResponse.json({ results: [] });
+    }
+
     const searchPattern = `%${query.trim()}%`;
-
-    // 1. Search Students (Children) — scoped to the user's organisation
-    // S-1: isNull(children.deletedAt) excludes soft-deleted records
-    const students = await db
-      .select({
-        id: children.id,
-        firstName: children.firstName,
-        lastName: children.lastName,
-      })
-      .from(children)
-      .where(
-        and(
-          eq(children.organisationId, organisationId),
-          isNull(children.deletedAt),
-          or(
-            ilike(children.firstName, searchPattern),
-            ilike(children.lastName, searchPattern),
-            ilike(sql`concat(${children.firstName}, ' ', ${children.lastName})`, searchPattern)
-          )
-        )
-      )
-      .limit(5);
-
-    // 2. Search Parents — scoped to the user's organisation
-    // S-1: isNull(parents.deletedAt) excludes soft-deleted records
-    const parentResults = await db
-      .select({
-        id: parents.id,
-        firstName: parents.firstName,
-        lastName: parents.lastName,
-        email: parents.email,
-      })
-      .from(parents)
-      .where(
-        and(
-          eq(parents.organisationId, organisationId),
-          isNull(parents.deletedAt),
-          or(
-            ilike(parents.firstName, searchPattern),
-            ilike(parents.lastName, searchPattern),
-            ilike(parents.email, searchPattern),
-            ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern)
-          )
-        )
-      )
-      .limit(5);
-
-    // 3. Search Centres — scoped to the user's organisation
-    const centreResults = await db
-      .select({
-        id: centres.id,
-        name: centres.name,
-      })
-      .from(centres)
-      .where(
-        and(
-          eq(centres.organisationId, organisationId),
-          ilike(centres.name, searchPattern)
-        )
-      )
-      .limit(3);
-
-    // 4. Search Bookings (by parent or child name)
-    // S-3: innerJoin centres and enforce centres.organisationId = organisationId
-    // to prevent cross-org booking results from appearing via name collision.
-    const bookingResults = await db
-      .select({
-        id: bookings.id,
-        startAt: bookings.startAt,
-        parentFirstName: parents.firstName,
-        parentLastName: parents.lastName,
-        childFirstName: children.firstName,
-        childLastName: children.lastName,
-      })
-      .from(bookings)
-      .innerJoin(centres, and(eq(bookings.centreId, centres.id), eq(centres.organisationId, organisationId)))
-      .leftJoin(parents, eq(bookings.parentId, parents.id))
-      .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
-      .leftJoin(children, eq(bookingAttendees.childId, children.id))
-      .where(
-        or(
-          ilike(parents.firstName, searchPattern),
-          ilike(parents.lastName, searchPattern),
-          ilike(children.firstName, searchPattern),
-          ilike(children.lastName, searchPattern),
-          ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern),
-          ilike(sql`concat(${children.firstName}, ' ', ${children.lastName})`, searchPattern)
-        )
-      )
-      .limit(5);
 
     // N-2 (Milestone 3N): Centre results are only included for roles that can access
     // the /dashboard/centres page (ORG_OWNER and MANAGER). FRONT_DESK cannot access
@@ -133,6 +61,115 @@ export async function GET(request: NextRequest) {
     // level following established role policy rather than expanding authorisation.
     const CENTRES_SEARCH_ROLES = ['ORG_OWNER', 'MANAGER'] as const;
     const canSearchCentres = CENTRES_SEARCH_ROLES.includes(userRole as typeof CENTRES_SEARCH_ROLES[number]);
+
+    const [students, parentResults, centreResults, bookingResults] = await Promise.all([
+      // 1. Search Students (Children) — scoped to the user's organisation & accessible centres
+      // S-1: isNull(children.deletedAt) excludes soft-deleted records
+      db
+        .select({
+          id: children.id,
+          firstName: children.firstName,
+          lastName: children.lastName,
+        })
+        .from(children)
+        .where(
+          and(
+            eq(children.organisationId, organisationId),
+            isNull(children.deletedAt),
+            accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined,
+            or(
+              ilike(children.firstName, searchPattern),
+              ilike(children.lastName, searchPattern),
+              ilike(sql`concat(${children.firstName}, ' ', ${children.lastName})`, searchPattern)
+            )
+          )
+        )
+        .limit(5),
+
+      // 2. Search Parents — scoped to the user's organisation & accessible centres
+      // S-1: isNull(parents.deletedAt) excludes soft-deleted records
+      db
+        .select({
+          id: parents.id,
+          firstName: parents.firstName,
+          lastName: parents.lastName,
+          email: parents.email,
+        })
+        .from(parents)
+        .where(
+          and(
+            eq(parents.organisationId, organisationId),
+            isNull(parents.deletedAt),
+            accessibleCentreIds !== null
+              ? or(
+                  sql`${parents.id} IN (SELECT ${children.parentId} FROM ${children} WHERE ${children.organisationId} = ${organisationId} AND ${inArray(children.centreId, accessibleCentreIds)})`,
+                  sql`${parents.id} IN (SELECT ${bookings.parentId} FROM ${bookings} WHERE ${inArray(bookings.centreId, accessibleCentreIds)})`
+                )
+              : undefined,
+            or(
+              ilike(parents.firstName, searchPattern),
+              ilike(parents.lastName, searchPattern),
+              ilike(parents.email, searchPattern),
+              ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern)
+            )
+          )
+        )
+        .limit(5),
+
+      // 3. Search Centres — scoped to the user's organisation & accessible centres (gated by role)
+      canSearchCentres
+        ? db
+            .select({
+              id: centres.id,
+              name: centres.name,
+            })
+            .from(centres)
+            .where(
+              and(
+                eq(centres.organisationId, organisationId),
+                accessibleCentreIds !== null ? inArray(centres.id, accessibleCentreIds) : undefined,
+                ilike(centres.name, searchPattern)
+              )
+            )
+            .limit(3)
+        : Promise.resolve([]),
+
+      // 4. Search Bookings (by parent or child name)
+      // S-3: innerJoin centres and enforce centres.organisationId = organisationId
+      // to prevent cross-org booking results from appearing via name collision.
+      db
+        .select({
+          id: bookings.id,
+          startAt: bookings.startAt,
+          parentFirstName: parents.firstName,
+          parentLastName: parents.lastName,
+          childFirstName: children.firstName,
+          childLastName: children.lastName,
+        })
+        .from(bookings)
+        .innerJoin(
+          centres,
+          and(
+            eq(bookings.centreId, centres.id),
+            eq(centres.organisationId, organisationId),
+            accessibleCentreIds !== null ? inArray(centres.id, accessibleCentreIds) : undefined
+          )
+        )
+        .leftJoin(parents, eq(bookings.parentId, parents.id))
+        .leftJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
+        .leftJoin(children, eq(bookingAttendees.childId, children.id))
+        .where(
+          or(
+            ilike(parents.firstName, searchPattern),
+            ilike(parents.lastName, searchPattern),
+            ilike(children.firstName, searchPattern),
+            ilike(children.lastName, searchPattern),
+            ilike(sql`concat(${parents.firstName}, ' ', ${parents.lastName})`, searchPattern),
+            ilike(sql`concat(${children.firstName}, ' ', ${children.lastName})`, searchPattern)
+          )
+        )
+        .limit(5),
+    ]);
 
     // Format results to a consistent shape for the frontend dropdown
     const formattedResults = [

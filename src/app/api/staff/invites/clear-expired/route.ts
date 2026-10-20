@@ -3,8 +3,8 @@ import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiSession } from '@/lib/session';
 import { db } from '@/db';
-import { staffInvites } from '@/db/schema';
-import { and, eq, isNull, lt } from 'drizzle-orm';
+import { staffInvites, verificationTokens, users } from '@/db/schema';
+import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 
 // DELETE /api/staff/invites/clear-expired - removes all expired+unused invites for the org
 export async function DELETE(request: NextRequest) {
@@ -28,7 +28,26 @@ export async function DELETE(request: NextRequest) {
                     lt(staffInvites.expiresAt, new Date())
                 )
             )
-            .returning({ id: staffInvites.id });
+            .returning({ id: staffInvites.id, token: staffInvites.token, email: staffInvites.email });
+
+        const tokens = deleted.map((d) => d.token).filter(Boolean);
+        if (tokens.length > 0) {
+            await db.delete(verificationTokens).where(
+                inArray(verificationTokens.identifier, tokens.map((t) => `invite-centre:${t}`))
+            );
+        }
+        for (const inv of deleted) {
+            if (inv.email) {
+                await db.delete(users).where(
+                    and(
+                        eq(users.email, inv.email),
+                        isNull(users.emailVerified),
+                        isNull(users.organisationId),
+                        isNull(users.passwordHash)
+                    )
+                );
+            }
+        }
 
         return NextResponse.json({ success: true, count: deleted.length });
     } catch (error) {

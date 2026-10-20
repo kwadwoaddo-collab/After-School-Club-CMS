@@ -1,8 +1,120 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import "./landing.css";
+
+const CORPORATE_URL = "https://sprintscaleit.co.uk";
+const CONTACT_URL = "https://sprintscaleit.co.uk/#contact";
+const CONTACT_EMAIL = "contact@sprintscaleit.co.uk";
+
+const iconProps = {
+    xmlns: "http://www.w3.org/2000/svg",
+    width: 28,
+    height: 28,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+};
+
+const FEATURES: { title: string; body: string; icon: ReactNode }[] = [
+    {
+        title: "Session & Class Scheduling",
+        body: "Plan sessions and classes and keep your timetable in one place.",
+        icon: (
+            <svg {...iconProps}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+        ),
+    },
+    {
+        title: "Student & Family Records",
+        body: "Keep student details, parent and carer contacts, and registrations together.",
+        icon: (
+            <svg {...iconProps}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+        ),
+    },
+    {
+        title: "Billing & Family Statements",
+        body: "Create invoices, record payments and review statements for each family.",
+        icon: (
+            <svg {...iconProps}>
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+        ),
+    },
+    {
+        title: "Staff & Register Access",
+        body: "Give staff the access they need to take registers and view their sessions.",
+        icon: (
+            <svg {...iconProps}>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+        ),
+    },
+];
+
+const STEPS = [
+    { title: "Create your account", body: "Sign up as an administrator and set up your organisation." },
+    { title: "Set up your centre", body: "Add your centre, classes and sessions, and invite your team." },
+    { title: "Add families", body: "Record students and their parents or carers, then start running sessions." },
+];
+
+const FAQS = [
+    {
+        question: "Who is the After-School Club CMS for?",
+        answer: "It is built for after-school clubs, tuition centres and similar providers that need to manage sessions, student and family records, billing and staff access in one place.",
+    },
+    {
+        question: "Is the CMS available to everyone?",
+        answer: "The CMS is currently in early access. Pricing and plan terms are not published yet, so please get in touch with SprintScale IT to talk about your centre.",
+    },
+    {
+        question: "How do staff sign in?",
+        answer: "Invited staff can request a one-time sign-in link by email from the staff login page. Administrators sign in with their email and password or with Google.",
+    },
+    {
+        question: "Can I manage more than one centre?",
+        answer: "Ask us about your setup. Get in touch with SprintScale IT and we will talk through what you need.",
+    },
+    {
+        question: "How do I get support or ask a question?",
+        answer: `Email ${CONTACT_EMAIL} or use the contact form on the SprintScale IT website.`,
+    },
+];
+
+function BrandLockup({ href, external = false }: { href: string; external?: boolean }) {
+    const inner = (
+        <>
+            <span className="brand-chip" aria-hidden="true">S</span>
+            <span className="brand-text">
+                <span className="font-bold">After-School Club CMS</span>
+                <small>by SprintScale IT</small>
+            </span>
+        </>
+    );
+    return external ? (
+        <a href={href} className="brand-lockup" aria-label="After-School Club CMS · by SprintScale IT">{inner}</a>
+    ) : (
+        <Link href={href} className="brand-lockup" aria-label="After-School Club CMS · by SprintScale IT">{inner}</Link>
+    );
+}
 
 export default function Home() {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -27,494 +139,232 @@ export default function Home() {
     return (
         <div className="landing-page">
             {/* Sticky Navbar */}
-            <nav className={`landing-navbar ${isScrolled ? 'scrolled' : ''}`}>
+            <nav className={`landing-navbar ${isScrolled ? 'scrolled' : ''}`} aria-label="Main">
                 <div className="flex justify-between items-center max-w-7xl mx-auto">
-                    <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                            <span className="text-xl">🚀</span>
-                        </div>
-                        <span className="text-xl font-bold">SprintScale</span>
-                    </div>
-                    <div className="hidden md:flex items-center gap-6">
+                    <BrandLockup href="/" />
+                    <div className="hidden md:flex items-center gap-4">
                         <a href="#features" className="landing-navbar-link">Features</a>
                         <a href="#how-it-works" className="landing-navbar-link">How It Works</a>
-                        <a href="#pricing" className="landing-navbar-link">Pricing</a>
+                        <a href="#pricing" className="landing-navbar-link">Early Access</a>
                         <a href="#faq" className="landing-navbar-link">FAQ</a>
-                        <Link href="/login" className="landing-navbar-link">
-                            Log in
-                        </Link>
-                        <Link href="/signup" className="btn-login">
-                            Get Started
-                        </Link>
+                        <Link href="/login" className="landing-navbar-link">Log in</Link>
+                        <Link href="/signup" className="btn-login">Get Started</Link>
                     </div>
-                    {/* Mobile menu button - simplified */}
-                    <div className="md:hidden flex items-center gap-3">
-                        <Link href="/login" className="landing-navbar-link">
-                            Log in
-                        </Link>
-                        <Link href="/signup" className="btn-login">
-                            Get Started
-                        </Link>
+                    <div className="md:hidden flex items-center gap-1">
+                        <Link href="/login" className="landing-navbar-link">Log in</Link>
+                        <Link href="/signup" className="btn-login">Get Started</Link>
                     </div>
                 </div>
             </nav>
 
-            {/* Hero Section */}
-            <section className="landing-section text-center" style={{ paddingTop: '8rem' }}>
-                <div className="max-w-4xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full"
-                        style={{
-                            background: 'rgba(59, 130, 246, 0.1)',
-                            border: '1px solid rgba(59, 130, 246, 0.2)'
-                        }}>
-                        <span className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                        </span>
-                        <span className="text-sm font-medium">Access for Tuition Centres</span>
-                    </div>
-
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        The One-Stop Shop to<br />
-                        <span className="gradient-text">Manage Your Tuition Business</span>
-                    </h1>
-
-                    <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto"
-                        style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Streamline bookings, student registrations, invoicing, and staff management—all in one place.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-                        <Link href="/signup" className="btn-primary-landing">
-                            Get Started for Free
-                        </Link>
-                        <a href="#features" className="btn-outline-landing">
-                            Explore Features
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            {/* Features Section - Built for Growth */}
-            <section id="features" className="landing-section">
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Built for Growth</h2>
-                    <p className="text-xl" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Everything you need to scale your tuition business
-                    </p>
-                </div>
-
-                <div className="feature-grid">
-                    <div className="feature-card">
-                        <div className="feature-icon orange">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg>
+            <main>
+                {/* Hero Section */}
+                <section className="landing-section text-center" style={{ paddingTop: '6rem' }}>
+                    <div className="max-w-4xl mx-auto">
+                        <div className="eyebrow mb-6">
+                            <span className="relative flex h-3 w-3" aria-hidden="true">
+                                <span className="pulse-dot absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: 'var(--if-accent)' }}></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3" style={{ background: 'var(--if-accent)' }}></span>
+                            </span>
+                            Early Access
                         </div>
-                        <h3 className="text-2xl font-bold mb-3">Smart Bookings</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Automate session scheduling and class bookings with intelligent calendar management
-                        </p>
-                    </div>
 
-                    <div className="feature-card">
-                        <div className="feature-icon purple">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
+                        <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                            Run your after-school club
+                            <br />
+                            <span className="accent-text">from one workspace</span>
+                        </h1>
+
+                        <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto landing-muted">
+                            Session scheduling, student and family records, billing and staff register access for after-school clubs and tuition centres.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+                            <Link href="/signup" className="btn-primary-landing">Create an Account</Link>
+                            <a href="#features" className="btn-outline-landing">Explore Features</a>
                         </div>
-                        <h3 className="text-2xl font-bold mb-3">Easy Registration</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Digital enrollment forms with automated student data management
-                        </p>
+                    </div>
+                </section>
+
+                {/* Features */}
+                <section id="features" className="landing-section" aria-labelledby="features-heading">
+                    <div className="text-center mb-12">
+                        <h2 id="features-heading" className="text-3xl md:text-4xl font-bold mb-4">What the CMS covers</h2>
+                        <p className="text-lg landing-muted">The day-to-day work of running a club, in one place</p>
                     </div>
 
-                    <div className="feature-card">
-                        <div className="feature-icon green">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                <line x1="1" y1="10" x2="23" y2="10"></line>
-                            </svg>
-                        </div>
-                        <h3 className="text-2xl font-bold mb-3">Auto Invoicing</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Automated billing and payment tracking to keep your cash flow healthy
-                        </p>
-                    </div>
-
-                    <div className="feature-card">
-                        <div className="feature-icon pink">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                        </div>
-                        <h3 className="text-2xl font-bold mb-3">Staff Portal</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Manage tutors, track shifts, and streamline payroll in one place
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* How It Works - Process Timeline */}
-            <section id="how-it-works" className="landing-section" style={{ background: 'rgba(59, 130, 246, 0.02)' }}>
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">How It Works</h2>
-                    <p className="text-xl" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Get started in 3 simple steps
-                    </p>
-                </div>
-
-                <div className="process-timeline">
-                    <div className="process-step">
-                        <div className="process-number">1</div>
-                        <h3 className="text-2xl font-bold mb-3">Register Organization</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Create your tuition centre account and set up your organization profile in minutes
-                        </p>
-                    </div>
-
-                    <div className="process-step">
-                        <div className="process-number">2</div>
-                        <h3 className="text-2xl font-bold mb-3">Set Your Availability</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Configure your class schedules, tutor availability, and booking preferences
-                        </p>
-                    </div>
-
-                    <div className="process-step">
-                        <div className="process-number">3</div>
-                        <h3 className="text-2xl font-bold mb-3">Onboard Your Parents</h3>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            Share your booking link and start accepting student registrations instantly
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* Pricing Section */}
-            <section id="pricing" className="landing-section">
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h2>
-                    <p className="text-xl" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Start free, upgrade when you're ready
-                    </p>
-                </div>
-
-                <div className="pricing-grid">
-                    {/* Free Starter */}
-                    <div className="pricing-card active">
-                        <div className="mb-6">
-                            <h3 className="text-2xl font-bold mb-2">Free Starter</h3>
-                            <div className="text-4xl font-bold mb-4">
-                                <span className="gradient-text">$0</span>
+                    <div className="feature-grid">
+                        {FEATURES.map((f) => (
+                            <div key={f.title} className="feature-card">
+                                <div className="feature-icon">{f.icon}</div>
+                                <h3 className="text-xl font-bold mb-3">{f.title}</h3>
+                                <p className="landing-muted">{f.body}</p>
                             </div>
-                            <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                Early Access · Plan limits not currently enforced
+                        ))}
+                    </div>
+                </section>
+
+                {/* How It Works */}
+                <section id="how-it-works" className="landing-section" aria-labelledby="how-heading">
+                    <div className="text-center mb-12">
+                        <h2 id="how-heading" className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+                        <p className="text-lg landing-muted">Getting started in three steps</p>
+                    </div>
+
+                    <div className="process-timeline">
+                        {STEPS.map((s, i) => (
+                            <div key={s.title} className="process-step">
+                                <div className="process-number" aria-hidden="true">{i + 1}</div>
+                                <h3 className="text-xl font-bold mb-3">{s.title}</h3>
+                                <p className="landing-muted">{s.body}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Early Access / Enquiry */}
+                <section id="pricing" className="landing-section" aria-labelledby="early-heading">
+                    <div id="early-access" aria-hidden="true" />
+                    <div className="text-center mb-12">
+                        <h2 id="early-heading" className="text-3xl md:text-4xl font-bold mb-4">Early Access</h2>
+                        <p className="text-lg landing-muted">Pricing and plan terms are not published yet</p>
+                    </div>
+
+                    <div className="pricing-grid">
+                        <div className="pricing-card active">
+                            <h3 className="text-2xl font-bold mb-2">Early Access Workspace</h3>
+                            <p className="landing-muted mb-6">
+                                Create an administrator account and start setting up your centre.
                             </p>
+                            <Link href="/signup" className="btn-primary-landing w-full text-center">Create an Account</Link>
                         </div>
 
-                        <ul className="mb-8 space-y-3">
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Core student & class management</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Smart booking management</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Digital registration forms</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Direct email support</span>
-                            </li>
-                        </ul>
-
-                        <Link href="/signup" className="btn-primary-landing w-full text-center">
-                            Get Started Free
-                        </Link>
-                    </div>
-
-                    {/* Pro Creator - Coming Soon */}
-                    <div className="pricing-card locked">
-                        <span className="coming-soon-badge">Coming Soon</span>
-                        <div className="mb-6">
-                            <h3 className="text-2xl font-bold mb-2">Pro Creator</h3>
-                            <div className="text-4xl font-bold mb-4">
-                                <span className="gradient-text">•••</span>
-                            </div>
-                            <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                For growing centres
+                        <div className="pricing-card">
+                            <h3 className="text-2xl font-bold mb-2">Enquire with SprintScale IT</h3>
+                            <p className="landing-muted mb-6">
+                                Talk to us about your centre and what you need from the CMS.
                             </p>
-                        </div>
-
-                        <ul className="mb-8 space-y-3">
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Unlimited students</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Advanced analytics</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Automated invoicing</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Priority support</span>
-                            </li>
-                        </ul>
-
-                        <button disabled className="btn-primary-landing w-full text-center opacity-50 cursor-not-allowed">
-                            Coming Soon
-                        </button>
-                    </div>
-
-                    {/* Enterprise - Coming Soon */}
-                    <div className="pricing-card locked">
-                        <span className="coming-soon-badge">Coming Soon</span>
-                        <div className="mb-6">
-                            <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-                            <div className="text-4xl font-bold mb-4">
-                                <span className="gradient-text">•••</span>
-                            </div>
-                            <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                For large organizations
-                            </p>
-                        </div>
-
-                        <ul className="mb-8 space-y-3">
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Everything in Pro</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Multi-location support</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Custom integrations</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#10b981' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Dedicated account manager</span>
-                            </li>
-                        </ul>
-
-                        <button disabled className="btn-primary-landing w-full text-center opacity-50 cursor-not-allowed">
-                            Coming Soon
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            {/* Product Overview / Purpose */}
-            <section className="landing-section" style={{ background: 'rgba(139, 92, 246, 0.02)' }}>
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Built for Educational Providers</h2>
-                </div>
-
-                <div className="testimonial-card">
-                    <div className="flex justify-center mb-6">
-                        <div className="flex gap-1">
-                            {[...Array(5)].map((_, i) => (
-                                <svg key={i} className="w-6 h-6" style={{ color: '#f59e0b' }} fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                            ))}
+                            <a href={CONTACT_URL} className="btn-outline-landing w-full text-center">Contact SprintScale IT</a>
                         </div>
                     </div>
-                    <p className="text-2xl mb-6" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                        &quot;A dedicated platform designed to streamline administrative workflows for tuition centres and clubs—from student registrations and session booking to daily attendance and invoicing.&quot;
-                    </p>
-                    <div>
-                        <p className="font-bold text-lg">SprintScale CMS</p>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Childcare & Tuition Management Architecture</p>
+                </section>
+
+                {/* Overview */}
+                <section className="landing-section" aria-labelledby="overview-heading">
+                    <div className="text-center mb-12">
+                        <h2 id="overview-heading" className="text-3xl md:text-4xl font-bold mb-4">Built for Educational Providers</h2>
                     </div>
-                </div>
-            </section>
 
-            {/* FAQ Section */}
-            <section id="faq" className="landing-section">
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Frequently Asked Questions</h2>
-                </div>
+                    <div className="overview-card">
+                        <p className="text-xl mb-6">
+                            A dedicated platform for streamlining the administration of after-school clubs and tuition centres, from student registrations and session scheduling to registers and billing.
+                        </p>
+                        <p className="font-bold">After-School Club CMS</p>
+                        <p className="landing-faint">by SprintScale IT</p>
+                    </div>
+                </section>
 
-                <div className="max-w-3xl mx-auto">
-                    {[
-                        {
-                            question: "Is the free plan really free forever?",
-                            answer: "Yes! Our Free Starter plan is completely free with no hidden costs. You can manage up to 50 students and access core features without any time limits."
-                        },
-                        {
-                            question: "Can I upgrade or downgrade my plan later?",
-                            answer: "Absolutely! Once our paid plans launch, you'll be able to upgrade or downgrade at any time. Your data stays safe throughout the process."
-                        },
-                        {
-                            question: "How secure is my student data?",
-                            answer: "We take security seriously. All data is encrypted in transit and at rest. We comply with GDPR and other data protection regulations to keep your information safe."
-                        },
-                        {
-                            question: "Do you offer customer support?",
-                            answer: "Yes! Free plan users get email support, while paid plans (coming soon) will include priority support and dedicated account management for Enterprise customers."
-                        },
-                        {
-                            question: "Can I use SprintScale for multiple locations?",
-                            answer: "Multi-location support will be available in our Enterprise plan (coming soon). The current version supports single-location management."
-                        }
-                    ].map((faq, index) => (
-                        <div key={index} className={`faq-item ${openFaqIndex === index ? 'open' : ''}`}>
-                            <div className="faq-question" onClick={() => toggleFaq(index)}>
-                                <span>{faq.question}</span>
-                                <svg className="faq-icon w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                            {openFaqIndex === index && (
-                                <div className="faq-answer">
-                                    {faq.answer}
+                {/* FAQ */}
+                <section id="faq" className="landing-section" aria-labelledby="faq-heading">
+                    <div className="text-center mb-12">
+                        <h2 id="faq-heading" className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+                    </div>
+
+                    <div className="max-w-3xl mx-auto">
+                        {FAQS.map((faq, index) => {
+                            const isOpen = openFaqIndex === index;
+                            return (
+                                <div key={faq.question} className={`faq-item ${isOpen ? 'open' : ''}`}>
+                                    <h3>
+                                        <button
+                                            type="button"
+                                            id={`faq-question-${index}`}
+                                            className="faq-question"
+                                            aria-expanded={isOpen}
+                                            aria-controls={`faq-answer-${index}`}
+                                            onClick={() => toggleFaq(index)}
+                                        >
+                                            <span>{faq.question}</span>
+                                            <svg className="faq-icon w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    </h3>
+                                    {isOpen && (
+                                        <div
+                                            id={`faq-answer-${index}`}
+                                            role="region"
+                                            aria-labelledby={`faq-question-${index}`}
+                                            className="faq-answer"
+                                        >
+                                            {faq.answer}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </section>
+                            );
+                        })}
+                    </div>
+                </section>
 
-            {/* Final CTA */}
-            <section className="landing-section text-center" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)' }}>
-                <div className="max-w-3xl mx-auto">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                        Ready to Transform Your Tuition Business?
-                    </h2>
-                    <p className="text-xl mb-8" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Join us today and experience the future of tuition centre management
-                    </p>
-                    <Link href="/signup" className="btn-primary-landing">
-                        Get Started for Free
-                    </Link>
-                </div>
-            </section>
+                {/* Final CTA */}
+                <section className="landing-section">
+                    <div className="cta-band text-center px-6 py-14">
+                        <div className="max-w-3xl mx-auto">
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to set up your club?</h2>
+                            <p className="text-lg mb-8 landing-muted">
+                                Create an administrator account, or get in touch to talk it through first.
+                            </p>
+                            <Link href="/signup" className="btn-primary-landing">Create an Account</Link>
+                        </div>
+                    </div>
+                </section>
+            </main>
 
             {/* Footer */}
-            <footer className="py-16 px-8" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <footer className="landing-footer py-12 px-6 md:px-8">
                 <div className="max-w-7xl mx-auto">
-                    {/* Main Footer Content */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                        {/* Brand Column */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
                         <div>
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                    <span className="text-xl">🚀</span>
-                                </div>
-                                <span className="text-2xl font-bold">SprintScale</span>
+                            <div className="mb-4">
+                                <BrandLockup href={CORPORATE_URL} external />
                             </div>
-                            <p className="text-sm leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                Empowering tuition centres to streamline operations and scale their business with intelligent management tools.
+                            <p className="text-sm leading-relaxed landing-faint">
+                                Administration tools for after-school clubs and tuition centres.
                             </p>
                         </div>
 
-                        {/* Product Column */}
                         <div>
-                            <h3 className="text-lg font-semibold mb-4">Product</h3>
-                            <ul className="space-y-3">
-                                <li>
-                                    <a href="#features" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                        Features
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#pricing" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                        Pricing
-                                    </a>
-                                </li>
-                                <li>
-                                    <Link href="/dashboard" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                        Dashboard
-                                    </Link>
-                                </li>
-                                <li>
-                                    <a href="#how-it-works" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                        How It Works
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#faq" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                        FAQ
-                                    </a>
-                                </li>
+                            <h3 className="text-lg font-semibold mb-3">Product</h3>
+                            <ul>
+                                <li><a href="#features" className="footer-link">Features</a></li>
+                                <li><a href="#how-it-works" className="footer-link">How It Works</a></li>
+                                <li><a href="#pricing" className="footer-link">Early Access</a></li>
+                                <li><a href="#faq" className="footer-link">FAQ</a></li>
+                                <li><Link href="/dashboard" className="footer-link">Dashboard</Link></li>
                             </ul>
                         </div>
 
-                        {/* Contact Column */}
                         <div>
-                            <h3 className="text-lg font-semibold mb-4">Contact</h3>
-                            <div className="space-y-3">
-                                <a
-                                    href="mailto:support@sprintscaleit.co.uk"
-                                    className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-                                    style={{ color: 'rgba(255, 255, 255, 0.6)' }}
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                    support@sprintscaleit.co.uk
-                                </a>
-                            </div>
+                            <h3 className="text-lg font-semibold mb-3">Contact</h3>
+                            <ul>
+                                <li>
+                                    <a href={CONTACT_URL} className="footer-link">Contact SprintScale IT</a>
+                                </li>
+                                <li>
+                                    <a href={`mailto:${CONTACT_EMAIL}`} className="footer-link">{CONTACT_EMAIL}</a>
+                                </li>
+                                <li>
+                                    <a href={CORPORATE_URL} className="footer-link">sprintscaleit.co.uk</a>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 
-                    {/* Bottom Bar */}
-                    <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                            © 2026 SprintScale IT. All rights reserved.
-                        </p>
-                        <div className="flex gap-6">
-                            <Link href="/privacy" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                                Privacy Policy
-                            </Link>
-                            <Link href="/terms" className="text-sm hover:text-white transition-colors" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                                Terms and Conditions
-                            </Link>
+                    <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-2" style={{ borderTop: '1px solid var(--if-border-subtle)' }}>
+                        <p className="text-sm landing-faint">© 2026 SprintScale IT. All rights reserved.</p>
+                        <div className="flex gap-4">
+                            <Link href="/privacy" className="footer-link">Privacy Policy</Link>
+                            <Link href="/terms" className="footer-link">Terms and Conditions</Link>
                         </div>
                     </div>
                 </div>

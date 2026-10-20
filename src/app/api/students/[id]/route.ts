@@ -98,15 +98,33 @@ export async function PATCH(
 
         const data = body.data;
 
-        // If centreId is being changed, verify the new centre belongs to the same org
-        if (data.centreId !== undefined && data.centreId !== null) {
-            const [centre] = await db
-                .select({ organisationId: centres.organisationId })
-                .from(centres)
-                .where(eq(centres.id, data.centreId))
-                .limit(1);
-            if (!centre || centre.organisationId !== orgId) {
-                return NextResponse.json({ error: 'Invalid centre' }, { status: 400 });
+        // If centreId is being changed, verify target centre belongs to org and caller has access
+        if (data.centreId !== undefined) {
+            if (data.centreId === null) {
+                if (role !== 'ORG_OWNER') {
+                    return NextResponse.json(
+                        { error: 'Forbidden: Only organisation owners can unassign a student from a centre' },
+                        { status: 403 }
+                    );
+                }
+            } else {
+                const [centre] = await db
+                    .select({ organisationId: centres.organisationId })
+                    .from(centres)
+                    .where(eq(centres.id, data.centreId))
+                    .limit(1);
+                if (!centre || centre.organisationId !== orgId) {
+                    return NextResponse.json({ error: 'Invalid centre' }, { status: 400 });
+                }
+                if (role !== 'ORG_OWNER') {
+                    const accessibleCentreIds = await getUserAccessibleCentreIds(authResult.user.id);
+                    if (!accessibleCentreIds.includes(data.centreId)) {
+                        return NextResponse.json(
+                            { error: 'Forbidden: No access to target centre' },
+                            { status: 403 }
+                        );
+                    }
+                }
             }
         }
 

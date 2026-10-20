@@ -77,16 +77,20 @@ describe('FIN-M1: UI Code Invariants & Category C Alignment', () => {
         expect(content).toContain('Cannot delete this draft because payment records are associated with it. Review the payment records before continuing.');
     });
 
-    it('CMS-FINANCE-INCIDENT-1: selectively removes only /api/cron/billing from vercel.json while preserving all other crons', () => {
+    it('CMS-FINANCE-INCIDENT-1: configures /api/cron/billing in vercel.json with historical billing safeguards while preserving all other crons', () => {
         const vercelJsonPath = path.join(rootDir, 'vercel.json');
         const vercelConfig = JSON.parse(fs.readFileSync(vercelJsonPath, 'utf8'));
         const cronPaths = (vercelConfig.crons ?? []).map((c: { path: string }) => c.path);
 
-        expect(cronPaths).not.toContain('/api/cron/billing');
+        expect(cronPaths).toContain('/api/cron/billing');
         expect(cronPaths).toContain('/api/cron/reminders');
         expect(cronPaths).toContain('/api/cron/school-year-roll');
         expect(cronPaths).toContain('/api/cron/broadcasts');
         expect(cronPaths).toContain('/api/cron/digest');
+
+        const cronRouteContent = fs.readFileSync(path.join(rootDir, 'src/app/api/cron/billing/route.ts'), 'utf8');
+        expect(cronRouteContent).toContain('isHistoricalBillingPeriod');
+        expect(cronRouteContent).toContain('isEligibleAutomatedBillingSchedule');
     });
 
     it('CMS-FINANCE-INCIDENT-1: ensures draft invoices never become Overdue in FinanceDataGridClient, FinanceDashboardClient, FilterableInvoiceHistorySection, or RevenueWidget', () => {

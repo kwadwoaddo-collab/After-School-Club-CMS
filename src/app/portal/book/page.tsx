@@ -117,7 +117,7 @@ export default async function PortalBookPage({ searchParams }: Props) {
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h1 className="text-lg font-bold text-on-surface flex items-center gap-2">
                             {isRescheduling
                                 ? <><CalendarClock className="w-5 h-5 text-amber-400" /> Reschedule Booking</>
                                 : <><CalendarPlus className="w-5 h-5 text-primary" /> Book a Session</>

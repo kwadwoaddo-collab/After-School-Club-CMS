@@ -6,6 +6,26 @@ import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
+const focusRing =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--if-accent)]';
+const inputClass =
+  'w-full px-4 py-3 min-h-[44px] bg-[var(--if-surface)] text-[var(--if-text)] border border-[var(--if-text-muted)] rounded-lg placeholder:text-[var(--if-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--if-accent)] focus:border-[var(--if-accent)]';
+const labelClass = 'block text-sm font-medium text-[var(--if-text-secondary)] mb-2';
+const primaryBtnClass = `w-full min-h-[44px] py-3 px-4 bg-[#0F5F5C] text-white font-bold rounded-lg hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
+const linkClass = `text-[var(--if-accent)] hover:text-[var(--if-accent-hover)] underline underline-offset-2 ${focusRing}`;
+
+function BrandLockup() {
+  return (
+    <Link href="/" className={`inline-flex items-center gap-2.5 min-h-[44px] w-fit text-[var(--if-text)] ${focusRing}`} aria-label="After-School Club CMS · by SprintScale IT">
+      <span className="w-9 h-9 rounded-lg bg-[#0F5F5C] text-white inline-flex items-center justify-center font-bold text-lg" aria-hidden="true">S</span>
+      <span className="flex flex-col leading-tight text-left">
+        <span className="font-bold text-sm">After-School Club CMS</span>
+        <span className="text-xs text-[var(--if-text-muted)]">by SprintScale IT</span>
+      </span>
+    </Link>
+  );
+}
+
 export default function SignupPage() {
   const router = useRouter();
 
@@ -80,75 +100,78 @@ export default function SignupPage() {
   ];
 
   return (
-    <div className="min-h-screen grid md:grid-cols-2 dark" style={{ backgroundColor: '#05070A', colorScheme: 'dark' }}>
-      {/* Left Side - Marketing Content */}
-      <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden">
-        <Link href="/" className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="min-h-screen grid md:grid-cols-2 bg-[var(--if-page)] text-[var(--if-text)] overflow-x-hidden">
+      {/* Left Side - Product Content */}
+      <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-[var(--if-surface)] border-r border-[var(--if-border-subtle)]">
+        <Link href="/" className={`flex items-center gap-2 min-h-[44px] w-fit text-[var(--if-text-secondary)] hover:text-[var(--if-text)] transition-colors mb-8 ${focusRing}`}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Back to Home
         </Link>
 
         <div className="flex-1 flex flex-col justify-center">
-          <div className="inline-flex items-center gap-2 text-blue-400 text-sm mb-6 w-fit">
-            <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-            Top Rated Tuition Management
-          </div>
+          <BrandLockup />
 
-          <h1 className="text-5xl font-bold text-white mb-6">
-            Unlock Your <br />
-            <span className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-              Business Potential
-            </span>
+          <h1 className="text-4xl lg:text-5xl font-bold mt-10 mb-6">
+            Set up your <br />
+            <span className="text-[var(--if-accent)]">club workspace</span>
           </h1>
 
-          <p className="text-lg mb-12" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-            Streamline bookings, manage students, and grow your tuition centre with our advanced management platform.
+          <p className="text-lg mb-10 text-[var(--if-text-secondary)]">
+            Create an administrator account to manage sessions, student and family records, billing and staff access.
           </p>
 
-          <div className="grid grid-cols-3 gap-4 mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-10">
             {[
-              { value: 'Multi-Centre', label: 'Architecture', color: 'blue' },
-              { value: 'Real-Time', label: 'Attendance', color: 'purple' },
-              { value: 'Automated', label: 'Billing & Invoicing', color: 'yellow' },
+              { value: 'Scheduling', label: 'Sessions & classes' },
+              { value: 'Registers', label: 'Staff register access' },
+              { value: 'Billing', label: 'Invoices & statements' },
             ].map((stat) => (
-              <div key={stat.label} className="p-6 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="text-xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
+              <div key={stat.label} className="p-5 rounded-xl bg-[var(--if-surface-elevated)] border border-[var(--if-border-subtle)]">
+                <div className="text-lg font-bold mb-1">{stat.value}</div>
+                <div className="text-sm text-[var(--if-text-secondary)]">{stat.label}</div>
               </div>
             ))}
           </div>
 
           {/* What happens next */}
           <div className="space-y-4">
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold">After signing up you'll</p>
+            <p className="text-[var(--if-text-muted)] text-xs uppercase tracking-widest font-semibold">After signing up you&apos;ll</p>
             {[
               'Set up your organisation name',
               'Create your first centre',
               'Choose your brand colour',
               'Invite your team',
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-[var(--if-accent-soft)] text-[var(--if-accent)] flex items-center justify-center flex-shrink-0">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span className="text-white/70 text-sm">{item}</span>
+                <span className="text-[var(--if-text-secondary)] text-sm">{item}</span>
               </div>
             ))}
           </div>
         </div>
+
+        <p className="mt-8 pt-6 border-t border-[var(--if-border-subtle)] text-xs text-[var(--if-text-muted)]">
+          After-School Club CMS · by <a href="https://sprintscaleit.co.uk" className={`font-bold text-[var(--if-text-secondary)] hover:text-[var(--if-accent)] hover:underline ${focusRing}`}>SprintScale IT</a>
+        </p>
       </div>
 
       {/* Right Side - Signup Form */}
-      <div className="flex items-center justify-center p-8">
+      <div className="flex flex-col items-center justify-center p-5 sm:p-8 min-w-0">
+        <div className="md:hidden w-full flex justify-between items-center mb-6">
+          <BrandLockup />
+          <Link href="/" className={`min-h-[44px] inline-flex items-center text-sm text-[var(--if-text-secondary)] hover:text-[var(--if-text)] ${focusRing}`}>Home</Link>
+        </div>
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold text-white mb-2">Get Started Free</h2>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Create your account — takes less than a minute
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">Create your account</h2>
+            <p className="text-sm text-[var(--if-text-secondary)]">
+              Create an administrator account to start setting up your centre
             </p>
           </div>
 
@@ -157,25 +180,24 @@ export default function SignupPage() {
             {steps.map((item) => (
               <div
                 key={item.num}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentStep === item.num
-                    ? 'bg-blue-500/20 border-blue-400'
+                aria-current={currentStep === item.num ? 'step' : undefined}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${currentStep === item.num
+                    ? 'bg-[var(--if-accent-soft)] border-[var(--if-accent)]'
                     : currentStep > item.num
-                      ? 'bg-green-500/10 border-green-400/30'
-                      : 'bg-white/5 border-white/10'
+                      ? 'bg-[var(--if-accent-soft)] border-[var(--if-border-subtle)]'
+                      : 'bg-[var(--if-surface)] border-[var(--if-border-subtle)]'
                   }`}
                 style={{ border: '1px solid' }}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep === item.num
-                      ? 'bg-blue-500 text-white'
-                      : currentStep > item.num
-                        ? 'bg-green-500 text-white'
-                        : 'bg-white/10 text-white/50'
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep >= item.num
+                      ? 'bg-[#0F5F5C] text-white'
+                      : 'bg-[var(--if-border-subtle)] text-[var(--if-text-muted)]'
                     }`}
                 >
                   {currentStep > item.num ? '✓' : item.num}
                 </div>
-                <span className={`text-sm hidden md:inline ${currentStep >= item.num ? 'text-white' : 'text-white/40'}`}>
+                <span className={`text-sm hidden sm:inline ${currentStep >= item.num ? 'text-[var(--if-text)]' : 'text-[var(--if-text-muted)]'}`}>
                   {item.label}
                 </span>
               </div>
@@ -183,9 +205,9 @@ export default function SignupPage() {
           </div>
 
           {/* Form Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+          <div className="bg-[var(--if-surface-elevated)] rounded-2xl p-6 sm:p-8 border border-[var(--if-border-subtle)]">
             {error && (
-              <div className="mb-6 p-4 bg-red-500/20 border border-red-400/30 rounded-lg text-red-200 text-sm text-center">
+              <div role="alert" className="mb-6 p-4 bg-[var(--if-danger-soft)] border border-[var(--if-danger)] rounded-lg text-[var(--if-danger)] text-sm text-center">
                 {error}
               </div>
             )}
@@ -206,7 +228,8 @@ export default function SignupPage() {
                   }
                 }}
                 disabled={googleLoading}
-                className="w-full py-3 px-4 rounded-lg bg-secondary/40 text-foreground border border-outline-variant/20 font-semibold hover:bg-card transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                type="button"
+                className={`w-full min-h-[44px] py-3 px-4 rounded-lg bg-[var(--if-surface)] text-[var(--if-text)] border border-[var(--if-text-muted)] font-semibold hover:bg-[var(--if-accent-soft)] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${focusRing}`}
               >
                 {googleLoading ? (
                   <>
@@ -229,43 +252,43 @@ export default function SignupPage() {
                 )}
               </button>
               {googleError && (
-                <p className="text-red-300 text-xs text-center mt-2">{googleError}</p>
+                <p className="text-[var(--if-danger)] text-xs text-center mt-2" role="alert">{googleError}</p>
               )}
             </div>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-px bg-white/20 flex-1" />
-              <span className="text-sm text-white/60 font-medium">OR</span>
-              <div className="h-px bg-white/20 flex-1" />
+              <div className="h-px bg-[var(--if-border-subtle)] flex-1" />
+              <span className="text-sm text-[var(--if-text-muted)] font-medium">OR</span>
+              <div className="h-px bg-[var(--if-border-subtle)] flex-1" />
             </div>
 
             {/* Step 1 — Your Details */}
             {currentStep === 1 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-white/80 mb-2">First Name</label>
+                    <label htmlFor="firstName" className={labelClass}>First Name</label>
                     <input
                       id="firstName"
                       type="text"
                       autoComplete="given-name"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className={inputClass}
                       placeholder="Jane"
                       required
                       autoFocus
                     />
                   </div>
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-white/80 mb-2">Last Name</label>
+                    <label htmlFor="lastName" className={labelClass}>Last Name</label>
                     <input
                       id="lastName"
                       type="text"
                       autoComplete="family-name"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className={inputClass}
                       placeholder="Smith"
                       required
                     />
@@ -273,14 +296,14 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">Work Email</label>
+                  <label htmlFor="email" className={labelClass}>Work Email</label>
                   <input
                     id="email"
                     type="email"
                     autoComplete="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className={inputClass}
                     placeholder="jane@yourcentre.com"
                     required
                   />
@@ -289,14 +312,15 @@ export default function SignupPage() {
                 <button
                   onClick={() => setCurrentStep(2)}
                   disabled={!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()}
-                  className="w-full py-3 px-4 bg-primary text-primary-foreground font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  className={primaryBtnClass}
                 >
                   Continue
                 </button>
 
-                <p className="text-center text-sm text-white/60">
+                <p className="text-center text-sm text-[var(--if-text-secondary)]">
                   Already have an account?{' '}
-                  <Link href="/login" className="text-blue-400 hover:text-blue-300">
+                  <Link href="/login" className={linkClass}>
                     Sign in
                   </Link>
                 </p>
@@ -307,14 +331,14 @@ export default function SignupPage() {
             {currentStep === 2 && (
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="new-password" className="block text-sm font-medium text-white/80 mb-2">Password</label>
+                  <label htmlFor="new-password" className={labelClass}>Password</label>
                   <input
                     id="new-password"
                     type="password"
                     autoComplete="new-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className={inputClass}
                     placeholder="Min. 8 characters"
                     required
                     autoFocus
@@ -322,19 +346,19 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="confirm-password" className="block text-sm font-medium text-white/80 mb-2">Confirm Password</label>
+                  <label htmlFor="confirm-password" className={labelClass}>Confirm Password</label>
                   <input
                     id="confirm-password"
                     type="password"
                     autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/60 text-foreground border border-outline-variant/20 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className={inputClass}
                     placeholder="••••••••"
                     required
                   />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                    <p className="text-red-400 text-xs mt-1">Passwords don't match</p>
+                    <p className="text-[var(--if-danger)] text-xs mt-1">Passwords don&apos;t match</p>
                   )}
                 </div>
 
@@ -344,15 +368,15 @@ export default function SignupPage() {
                     id="terms"
                     checked={formData.acceptedTerms}
                     onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
-                    className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-primary/50"
+                    className={`mt-1 w-5 h-5 rounded accent-[var(--if-accent)] ${focusRing}`}
                   />
-                  <label htmlFor="terms" className="text-sm text-white/60">
+                  <label htmlFor="terms" className="text-sm text-[var(--if-text-secondary)]">
                     I agree to the{' '}
-                    <Link href="/terms" target="_blank" className="text-blue-400 hover:text-blue-300 underline">
+                    <Link href="/terms" target="_blank" className={linkClass}>
                       Terms of Service
                     </Link>{' '}
                     and acknowledge the{' '}
-                    <Link href="/privacy" target="_blank" className="text-blue-400 hover:text-blue-300 underline">
+                    <Link href="/privacy" target="_blank" className={linkClass}>
                       Privacy Policy
                     </Link>
                   </label>
@@ -360,12 +384,14 @@ export default function SignupPage() {
 
                 <div className="flex gap-3">
                   <button
+                    type="button"
                     onClick={() => setCurrentStep(1)}
-                    className="flex-1 py-3 px-4 bg-white/5 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/10 transition-colors"
+                    className={`flex-1 min-h-[44px] py-3 px-4 bg-[var(--if-surface)] border border-[var(--if-text-muted)] text-[var(--if-text)] font-semibold rounded-lg hover:bg-[var(--if-accent-soft)] transition-colors ${focusRing}`}
                   >
                     Back
                   </button>
                   <button
+                    type="button"
                     onClick={handleSubmit}
                     disabled={
                       loading ||
@@ -373,7 +399,7 @@ export default function SignupPage() {
                       formData.password !== formData.confirmPassword ||
                       !formData.acceptedTerms
                     }
-                    className="flex-1 py-3 px-4 bg-primary text-primary-foreground font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`flex-1 min-h-[44px] py-3 px-4 bg-[#0F5F5C] text-white font-bold rounded-lg hover:bg-[#0C4A47] focus-visible:bg-[#0C4A47] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     {loading ? 'Creating account...' : 'Create Account'}
                   </button>

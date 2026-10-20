@@ -28,7 +28,38 @@ vi.mock('@/db', () => ({
             bookings: { findFirst: vi.fn() },
         },
         update: vi.fn(),
+        transaction: vi.fn(),
     },
+}));
+
+vi.mock('next/server', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('next/server')>();
+    return {
+        ...actual,
+        after: vi.fn(),
+    };
+});
+
+vi.mock('next/cache', () => ({
+    revalidatePath: vi.fn(),
+}));
+
+vi.mock('@/lib/services/email-outbox', () => ({
+    OUTBOX_PAYLOAD_VERSION: 1,
+    captureEntryBudget: vi.fn(() => ({})),
+    transitionBookingAndEnqueue: vi.fn(),
+    registerFastPathAfterCommit: vi.fn(),
+}));
+
+vi.mock('@/lib/services/notifications', () => ({
+    notificationService: {
+        sendBookingReschedule: vi.fn(),
+        sendBookingCancellation: vi.fn(),
+    },
+}));
+
+vi.mock('@/lib/db-notifications', () => ({
+    notifyOwners: vi.fn(),
 }));
 
 vi.mock('drizzle-orm', async (importOriginal) => {
@@ -52,18 +83,39 @@ const ORG_ID      = 'org-abc';
 const mockBooking = (centreId = CENTRE_A_ID, orgId = ORG_ID) => ({
     id: BOOKING_ID,
     centreId,
-    centre: { id: centreId, organisationId: orgId },
+    centre: { id: centreId, name: 'Centre A', organisationId: orgId },
+    parent: { id: 'parent-1', firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com' },
+    attendees: [],
+    startAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
     status: 'confirmed',
 });
+
+async function setupDefaultRouteMocks() {
+    const { db } = await import('@/db');
+    (db.transaction as any).mockImplementation(async (cb: any) => cb(db));
+    const { transitionBookingAndEnqueue } = await import('@/lib/services/email-outbox');
+    (transitionBookingAndEnqueue as any).mockImplementation(async (tx: any, opts: any) => {
+        if (opts?.applyBookingChange) {
+            await opts.applyBookingChange(tx);
+        }
+        return { kind: 'enqueued', outboxId: 'outbox-1' };
+    });
+    const { notificationService } = await import('@/lib/services/notifications');
+    (notificationService.sendBookingReschedule as any).mockResolvedValue(undefined);
+    (notificationService.sendBookingCancellation as any).mockResolvedValue(undefined);
+    const { notifyOwners } = await import('@/lib/db-notifications');
+    (notifyOwners as any).mockResolvedValue(undefined);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. POST /api/bookings/[bookingId]/reschedule
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/bookings/[bookingId]/reschedule — org + centre membership', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.resetModules();
         vi.resetAllMocks();
+        await setupDefaultRouteMocks();
     });
 
     const params = Promise.resolve({ bookingId: BOOKING_ID });
@@ -206,9 +258,10 @@ describe('POST /api/bookings/[bookingId]/reschedule — org + centre membership'
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/bookings/[bookingId]/cancel — org + centre membership', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.resetModules();
         vi.resetAllMocks();
+        await setupDefaultRouteMocks();
     });
 
     const params = Promise.resolve({ bookingId: BOOKING_ID });

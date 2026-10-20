@@ -16,7 +16,7 @@ import { validateImageContent } from '@/lib/file-validation';
 import { uploadToBlob } from '@/lib/services/blob';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,13 +51,13 @@ export async function POST(request: NextRequest) {
     // prevents MIME-type spoofing (shared with /api/upload, see file-validation.ts)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const contentError = validateImageContent(file.type, buffer, ALLOWED_TYPES, { allowSvg: true });
+    const contentError = validateImageContent(file.type, buffer, ALLOWED_TYPES);
     if (contentError) {
       return NextResponse.json({ error: contentError }, { status: 400 });
     }
 
     // Get file extension
-    const ext = file.type.split('/')[1].replace('svg+xml', 'svg');
+    const ext = file.type.split('/')[1];
     const filename = `uploads/${session.user.organisationId}/logos/logo-${nanoid(12)}.${ext}`;
 
     let publicUrl: string;

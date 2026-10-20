@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reconcilePayment } from '@/features/billing/actions/reconcile-payment';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +14,8 @@ type InvoiceDto = {
   totalAmount: number;
   remainingBalance: number;
   status: string;
+  parentId?: string | null;
+  childId?: string | null;
   parentFirstName: string | null;
   parentLastName: string | null;
   childTfcRef: string | null;
@@ -131,7 +134,14 @@ export function ReconciliationClient({
               <div className="pb-4 border-b border-border">
                 <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Reconciling for</div>
                 <div className="font-bold text-foreground text-lg">
-                  {invoice?.parentFirstName} {invoice?.parentLastName} ({invoice?.invoiceNumber})
+                  {invoice?.parentId ? (
+                    <Link href={`/dashboard/parents/${invoice.parentId}`} className="hover:text-primary hover:underline transition-colors">
+                      {invoice.parentFirstName} {invoice.parentLastName}
+                    </Link>
+                  ) : (
+                    <span>{invoice?.parentFirstName} {invoice?.parentLastName}</span>
+                  )}{' '}
+                  ({invoice?.invoiceNumber})
                 </div>
               </div>
 

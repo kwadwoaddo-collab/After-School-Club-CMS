@@ -169,6 +169,10 @@ describe('booking email outbox: contention & calibration suite (*.pg-isolated.te
     lockConn = await directSql.reserve();
     await lockConn`SELECT pg_advisory_lock(${ADVISORY_LOCK_KEY})`;
 
+    // Schema-based fresh test databases lack migration 0031's singleton seed.
+    // Initialize our prerequisite without relying on the other suite running first.
+    await directSql`INSERT INTO booking_email_provider_state (id) VALUES (1) ON CONFLICT DO NOTHING`;
+
     // 3. Seed tenant
     await seedContentionTenant();
   }, 600000);

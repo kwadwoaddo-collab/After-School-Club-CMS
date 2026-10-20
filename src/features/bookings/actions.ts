@@ -25,6 +25,11 @@ export async function updateBookingStatus(bookingId: string, status: 'completed'
         throw new Error('Unauthorized');
     }
 
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden: You do not have permission to update booking status');
+    }
+
     // Verify booking belongs to user's organisation
     const booking = await db.query.bookings.findFirst({
         where: eq(bookings.id, bookingId),
@@ -41,12 +46,18 @@ export async function updateBookingStatus(bookingId: string, status: 'completed'
         throw new Error('Unauthorized access to this booking');
     }
 
+    if (userRole !== 'ORG_OWNER') {
+        if (!(await canUserAccessCentre(session.user.id as string, booking.centre.id))) {
+            throw new Error('Unauthorized access to this booking');
+        }
+    }
+
     await db.update(bookings)
         .set({
             status: status,
             updatedAt: new Date()
         })
-        .where(eq(bookings.id, bookingId));
+        .where(and(eq(bookings.id, bookingId), eq(bookings.centreId, booking.centre.id)));
 
     revalidatePath('/dashboard/bookings');
     revalidatePath(`/dashboard/bookings/${bookingId}`); // Revalidate specific booking page
@@ -58,6 +69,11 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
 
     if (!session?.user?.organisationId) {
         throw new Error('Unauthorized');
+    }
+
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK'].includes(userRole)) {
+        throw new Error('Forbidden: You do not have permission to reschedule bookings');
     }
 
     const startAtDate = new Date(newStartAt);
@@ -81,6 +97,12 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
         throw new Error('Unauthorized access to this booking');
     }
 
+    if (userRole !== 'ORG_OWNER') {
+        if (!(await canUserAccessCentre(session.user.id as string, booking.centre.id))) {
+            throw new Error('Unauthorized access to this booking');
+        }
+    }
+
     // Check availability (basic check - could reuse more robust logic from API but simple overlapping check is good here)
     // For now, assuming the client side fetched availability correctly, we just check for double bookings in the DB?
     // Actually, bookings has a unique constraint `unique_time_slot` on (centreId, modality, startAt).
@@ -94,7 +116,7 @@ export async function rescheduleBooking(bookingId: string, newStartAt: string) {
                 status: 'confirmed', // Set to confirmed so it appears as upcoming
                 updatedAt: new Date()
             })
-            .where(eq(bookings.id, bookingId));
+            .where(and(eq(bookings.id, bookingId), eq(bookings.centreId, booking.centre.id)));
     } catch (e) {
         const code = e instanceof Error && 'code' in e ? (e as Error & { code?: unknown }).code : undefined;
         if (code === '23505') { // Postgres unique violation (double booking)
@@ -112,6 +134,11 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
 
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'].includes(userRole)) {
+        throw new Error('Unauthorized access');
+    }
+
     // Security check: verify attendee belongs to org
     const attendee = await db.query.bookingAttendees.findFirst({
         where: eq(bookingAttendees.id, attendeeId),
@@ -128,6 +155,12 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
         throw new Error('Unauthorized access');
     }
 
+    if (userRole !== 'ORG_OWNER') {
+        if (!(await canUserAccessCentre(session.user.id as string, attendee.booking.centre.id))) {
+            throw new Error('Unauthorized access');
+        }
+    }
+
     await db.update(bookingAttendees)
         .set({
             feedbackNotes: data.notes || null,
@@ -138,7 +171,7 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
             feedbackStatus: attendee.feedbackStatus === 'SENT' ? 'SENT' : 'DRAFT',
             updatedAt: new Date(),
         })
-        .where(eq(bookingAttendees.id, attendeeId));
+        .where(and(eq(bookingAttendees.id, attendeeId), eq(bookingAttendees.bookingId, attendee.bookingId)));
 
     revalidatePath(`/dashboard/bookings/${attendee.bookingId}`);
 }
@@ -146,6 +179,11 @@ export async function saveAssessmentFeedback(attendeeId: string, data: { notes?:
 export async function sendAssessmentFeedback(attendeeId: string) {
     const session = await requireTenantSession();
     if (!session?.user?.organisationId) throw new Error('Unauthorized');
+
+    const userRole = (session.user as any).role as string | undefined;
+    if (userRole && !['ORG_OWNER', 'MANAGER', 'FRONT_DESK', 'TUTOR'].includes(userRole)) {
+        throw new Error('Unauthorized access');
+    }
 
     const attendee = await db.query.bookingAttendees.findFirst({
         where: eq(bookingAttendees.id, attendeeId),
@@ -165,6 +203,12 @@ export async function sendAssessmentFeedback(attendeeId: string) {
 
     if (!attendee || !attendee.booking.centre || attendee.booking.centre.organisationId !== session.user.organisationId) {
         throw new Error('Unauthorized access');
+    }
+
+    if (userRole !== 'ORG_OWNER') {
+        if (!(await canUserAccessCentre(session.user.id as string, attendee.booking.centre.id))) {
+            throw new Error('Unauthorized access');
+        }
     }
 
     const parent = attendee.child?.parent;
@@ -193,7 +237,7 @@ export async function sendAssessmentFeedback(attendeeId: string) {
             feedbackSentAt: new Date(),
             updatedAt: new Date(),
         })
-        .where(eq(bookingAttendees.id, attendeeId));
+        .where(and(eq(bookingAttendees.id, attendeeId), eq(bookingAttendees.bookingId, attendee.bookingId)));
 
     revalidatePath(`/dashboard/bookings/${attendee.bookingId}`);
 }

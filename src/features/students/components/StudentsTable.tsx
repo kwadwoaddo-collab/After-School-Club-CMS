@@ -134,7 +134,11 @@ export default function StudentsTable({ students, error, hasActiveFilters }: Stu
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <Link href={`/dashboard/students/${student.id}`} onClick={(event) => event.stopPropagation()} className="text-table-value font-medium text-text hover:underline break-words">
+                          <Link
+                            href={`/dashboard/students/${student.id}`}
+                            onClick={(event) => event.stopPropagation()}
+                            className="text-table-value font-medium text-text hover:text-accent hover:underline transition-colors break-words"
+                          >
                             {student.firstName} {student.lastName}
                           </Link>
                           {student.isRegistered && (

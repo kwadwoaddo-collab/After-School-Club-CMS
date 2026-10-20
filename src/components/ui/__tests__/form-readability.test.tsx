@@ -161,21 +161,15 @@ describe('UX-F1 — Form control readability regression tests', () => {
 
   // ─── Post-Modernisation UI Contrast Invariants (PM-UI-REG-1) ───────────────
 
-  it('signup page container establishes an explicit dark scope and color-scheme', () => {
+  it('signup page container establishes an explicit --if-page and --if-text surface scope', () => {
     const src = readSrc('src/app/signup/page.tsx');
-    expect(src).toContain('grid md:grid-cols-2 dark');
-    expect(src).toContain("colorScheme: 'dark'");
+    expect(src).toContain('bg-[var(--if-page)] text-[var(--if-text)]');
   });
 
   it('signup page inputs do not use compounded opacity on placeholders', () => {
     const src = readSrc('src/app/signup/page.tsx');
-    const inputLines = src.split('\n').filter(line =>
-      line.includes('<input') && line.includes('className') && line.includes('bg-secondary')
-    );
-    for (const line of inputLines) {
-      expect(line).not.toContain('placeholder:text-on-surface-variant/50');
-      expect(line).toContain('placeholder:text-muted-foreground');
-    }
+    expect(src).not.toContain('placeholder:text-on-surface-variant/50');
+    expect(src).toContain('bg-[var(--if-surface)] text-[var(--if-text)] border border-[var(--if-text-muted)] rounded-lg placeholder:text-[var(--if-text-muted)]');
   });
 
   it('globals.css input::placeholder does not dilute token contrast with opacity: 0.6', () => {
@@ -196,15 +190,15 @@ describe('UX-F1 — Form control readability regression tests', () => {
     expect(src).toMatch(/@layer base\s*\{[\s\S]*?:where\([\s\S]*?input\[type="text"\]/);
   });
 
-  it('login page inputs maintain clean white surface and calibrated placeholder', () => {
+  it('login page inputs maintain calibrated surface and placeholder tokens', () => {
     const src = readSrc('src/app/login/page.tsx');
-    expect(src).toContain('bg-white border border-slate-200 text-slate-900 placeholder:text-slate-500');
+    expect(src).toContain('bg-[var(--if-surface)] border border-[var(--if-text-muted)] text-[var(--if-text)] placeholder:text-[var(--if-text-muted)]');
   });
 
-  it('staff-login page email input uses placeholder:text-white/60 to satisfy >= 4.5:1 contrast invariant', () => {
+  it('staff-login page email input uses placeholder:text-[var(--if-text-muted)] to satisfy >= 4.5:1 contrast invariant', () => {
     const src = readSrc('src/app/staff-login/page.tsx');
     expect(src).not.toContain('placeholder-white/30');
-    expect(src).toContain('placeholder:text-white/60');
+    expect(src).toContain('placeholder:text-[var(--if-text-muted)]');
   });
 
   // ─── WCAG 2.1 AA Contrast Verification Math ───────────────────────────────

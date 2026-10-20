@@ -1,6 +1,7 @@
 'use client';
 
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useState, useTransition } from 'react';
 import { deleteStudentNote, toggleStudentNotePin, editStudentNote } from '@/features/students/notes.actions';
@@ -227,7 +228,17 @@ export default function ProgressTimeline({ notes, currentUserId, currentUserRole
 
                                 {/* Footer */}
                                 <p className="text-metadata mt-2">
-                                    {note.authorName} · {format(new Date(note.createdAt), 'MMM d, yyyy · h:mm a')}
+                                    {note.userId ? (
+                                        <Link
+                                            href={`/dashboard/staff/${note.userId}`}
+                                            className="hover:text-accent hover:underline transition-colors"
+                                        >
+                                            {note.authorName}
+                                        </Link>
+                                    ) : (
+                                        note.authorName
+                                    )}{' '}
+                                    · {format(new Date(note.createdAt), 'MMM d, yyyy · h:mm a')}
                                 </p>
                             </div>
                         );

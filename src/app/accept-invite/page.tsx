@@ -12,7 +12,14 @@ function AcceptInviteContent() {
     const token = searchParams.get('token');
 
     const [step, setStep] = useState<'validating' | 'ready' | 'logging-in' | 'success' | 'error'>('validating');
-    const [inviteData, setInviteData] = useState<{ email: string; name: string; role: string } | null>(null);
+    const [inviteData, setInviteData] = useState<{
+        email: string;
+        name?: string;
+        role: string;
+        requiresAuth?: boolean;
+        requiresPassword?: boolean;
+    } | null>(null);
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -46,13 +53,38 @@ function AcceptInviteContent() {
         setStep('logging-in');
 
         try {
-            const result = await signIn('inviteToken', {
-                token,
-                redirect: false,
-            });
+            if (inviteData?.requiresAuth) {
+                const acceptRes = await fetch('/api/staff/accept-invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token,
+                        password: password || undefined,
+                    }),
+                });
+                const acceptBody = await acceptRes.json().catch(() => ({}));
+                if (!acceptRes.ok) {
+                    throw new Error(
+                        acceptBody.error || 'Please sign in to your existing account first to accept this invitation.'
+                    );
+                }
 
-            if (result?.error) {
-                throw new Error('Failed to log in. The link may have already been used.');
+                if (inviteData.requiresPassword && password) {
+                    await signIn('credentials', {
+                        email: inviteData.email,
+                        password,
+                        redirect: false,
+                    });
+                }
+            } else {
+                const result = await signIn('inviteToken', {
+                    token,
+                    redirect: false,
+                });
+
+                if (result?.error) {
+                    throw new Error('Failed to log in. The link may have already been used.');
+                }
             }
 
             setStep('success');
@@ -136,6 +168,24 @@ function AcceptInviteContent() {
                         <div className="w-2 h-2 bg-green-400 rounded-full" />
                         {inviteData?.email}
                     </div>
+
+                    {inviteData?.requiresAuth && (
+                        <div className="mb-6 text-left">
+                            <p className="text-white/70 text-xs mb-2">
+                                This email already has an existing account. Confirm your current password (or ensure you are signed in) to accept this organisation invitation.
+                            </p>
+                            {inviteData.requiresPassword && (
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Current account password"
+                                    aria-label="Current account password"
+                                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                />
+                            )}
+                        </div>
+                    )}
 
                     {/* CTA */}
                     <button

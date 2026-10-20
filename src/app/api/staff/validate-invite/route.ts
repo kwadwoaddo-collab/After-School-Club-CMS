@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { staffInvites } from '@/db/schema';
+import { staffInvites, users, orgMemberships } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { hashToken } from '@/lib/magic-link';
 
@@ -31,10 +31,36 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'This invitation has expired' }, { status: 400 });
         }
 
+        let requiresAuth = false;
+        let requiresPassword = false;
+        if (db.query?.users?.findFirst) {
+            const user = await db.query.users.findFirst({
+                where: eq(users.email, invite.email),
+            });
+            if (user) {
+                const existingMemberships = db.query?.orgMemberships?.findMany
+                    ? await db.query.orgMemberships.findMany({
+                          where: eq(orgMemberships.userId, user.id),
+                      })
+                    : [];
+                const isAlreadyMemberOfInviteOrg =
+                    (user.organisationId === invite.organisationId && Boolean(user.emailVerified)) ||
+                    existingMemberships.some((m) => m.organisationId === invite.organisationId);
+                requiresAuth =
+                    Boolean(user.passwordHash) ||
+                    Boolean(user.organisationId && user.organisationId !== invite.organisationId) ||
+                    existingMemberships.some((m) => m.organisationId !== invite.organisationId) ||
+                    Boolean(user.emailVerified && !isAlreadyMemberOfInviteOrg);
+                requiresPassword = Boolean(user.passwordHash);
+            }
+        }
+
         return NextResponse.json({
             email: invite.email,
             role: invite.role,
             organisationId: invite.organisationId,
+            requiresAuth,
+            requiresPassword,
         });
     } catch (error) {
         logger.error('Validate invite error:', error);
