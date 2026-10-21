@@ -8,7 +8,7 @@
 import { requireTenantSession, TypedSession } from '@/lib/session';
 import { db } from '@/db';
 import { billingConfigs, billingConfigChildren, billingRuns, billingCycleSkips, invoices, children, auditEvents, payments } from '@/db/schema';
-import { eq, and, sql, ne, inArray, isNull, desc } from 'drizzle-orm';
+import { eq, and, sql, ne, inArray, isNull, desc, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { computeNextBillingPeriod, penceToPounds } from '@/lib/billing';
 import {
@@ -19,8 +19,9 @@ import {
 } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
-import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling } from '@/lib/enrolment/finance-eligibility';
+import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling, confirmedEnrolmentChildSql, lifecycleEligibleChildSql, lockBillingConfiguration } from '@/lib/enrolment/finance-eligibility';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
+import { recurringInvoiceOverlapSql } from '@/lib/billing/invoice-overlap';
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -58,6 +59,35 @@ async function getOrgIdAndSession(): Promise<{ orgId: string; session: TypedSess
     return { orgId: session.user.organisationId, session };
 }
 
+/** Called only in the transaction that saves an explicitly reviewed fee/start
+ * and exact family coverage. Activating a student alone never clears this hold. */
+async function confirmRestartFeeReview(
+    tx: Pick<typeof db, 'execute' | 'insert'>,
+    orgId: string,
+    actorId: string,
+    configId: string,
+    childIds: string[],
+    amountPence: number,
+    startDate: string,
+) {
+    if (childIds.length === 0) return;
+    await tx.execute(sql`UPDATE student_enrolment_events reviewed
+        SET fee_review_confirmed = true, billing_reviewed_from = ${startDate}::date
+        WHERE reviewed.organisation_id = ${orgId}
+          AND reviewed.child_id IN (${sql.join(childIds.map(id => sql`${id}::uuid`), sql`, `)})
+          AND reviewed.status = 'active' AND reviewed.fee_review_confirmed = false
+          AND reviewed.id = (SELECT latest.id FROM student_enrolment_events latest
+              WHERE latest.child_id = reviewed.child_id AND latest.organisation_id = reviewed.organisation_id
+                AND latest.effective_date <= ${startDate}::date
+              ORDER BY latest.effective_date DESC, latest.created_at DESC, latest.id DESC LIMIT 1)`);
+    await tx.insert(auditEvents).values({
+        organisationId: orgId,
+        userId: actorId,
+        eventType: 'student_restart_billing_reviewed',
+        eventData: JSON.stringify({ configId, childIds, agreedMonthlyPence: amountPence, billingStartDate: startDate }),
+    });
+}
+
 // ─── Create / Update config ───────────────────────────────────────────────────
 
 export interface BillingConfigData {
@@ -82,6 +112,9 @@ export async function createBillingConfig(data: BillingConfigData) {
     await assertCentreAccess(session, data.centreId);
     assertNotQuarantined(data.parentId, 'Billing configuration');
 
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can review family billing');
+    if (!Number.isInteger(data.agreedMonthlyPence) || data.agreedMonthlyPence <= 0) throw new Error('Enter the agreed family fee before billing review');
+
     if (data.childIds.length === 0) throw new Error('Select at least one confirmed signed-up student for billing');
     if (data.childIds.length > 0) {
         const validChildren = await db.select({ id: children.id })
@@ -93,7 +126,8 @@ export async function createBillingConfig(data: BillingConfigData) {
                     eq(children.parentId, data.parentId),
                     eq(children.centreId, data.centreId),
                     isNull(children.deletedAt),
-                    financeEligibleChildSql()
+                    confirmedEnrolmentChildSql(),
+                    lifecycleEligibleChildSql(data.billingAnchorDate, data.billingAnchorDate, false)
                 )
             );
 
@@ -115,6 +149,14 @@ export async function createBillingConfig(data: BillingConfigData) {
     }
 
     const config = await db.transaction(async (tx) => {
+        await lockEnrolmentForBilling(tx, data.childIds);
+        const reviewedChildren = await tx.select({ id: children.id }).from(children).where(and(
+            inArray(children.id, data.childIds), eq(children.organisationId, orgId),
+            eq(children.parentId, data.parentId), eq(children.centreId, data.centreId),
+            isNull(children.deletedAt), confirmedEnrolmentChildSql(),
+            lifecycleEligibleChildSql(data.billingAnchorDate, data.billingAnchorDate, false),
+        ));
+        assertEligibleBillingCoverage(data.childIds, new Set(reviewedChildren.map(child => child.id)));
         const [newConfig] = await tx.insert(billingConfigs).values({
             organisationId:     orgId,
             centreId:           data.centreId,
@@ -151,6 +193,8 @@ export async function createBillingConfig(data: BillingConfigData) {
             }),
         });
 
+        await confirmRestartFeeReview(tx, orgId, session.user.id, newConfig.id, data.childIds,
+            data.agreedMonthlyPence, data.billingAnchorDate);
         return newConfig;
     });
 
@@ -173,7 +217,7 @@ export async function createBillingConfig(data: BillingConfigData) {
  */
 export async function updateBillingConfig(
     configId: string,
-    data: Partial<Omit<BillingConfigData, 'parentId' | 'centreId' | 'childIds'>>,
+    data: Partial<Omit<BillingConfigData, 'parentId' | 'centreId' | 'childIds'>> & { childIds?: string[] },
 ) {
     const { orgId, session } = await getOrgIdAndSession();
 
@@ -187,7 +231,27 @@ export async function updateBillingConfig(
     await assertCentreAccess(session, existingConfig.centreId);
     assertNotQuarantined(existingConfig.parentId, 'Billing configuration update');
 
-    await db.update(billingConfigs)
+    const childIds = data.childIds ?? (existingConfig.children ?? []).map(link => link.childId);
+    const isFeeReview = data.agreedMonthlyPence !== undefined && data.billingAnchorDate !== undefined;
+    if ((data.agreedMonthlyPence !== undefined || data.billingAnchorDate !== undefined || data.childIds !== undefined) && !['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can review family billing and coverage');
+    if (data.childIds !== undefined && !isFeeReview) throw new Error('Review billing settings with the family fee and start date when changing covered students');
+    if (isFeeReview && (!Number.isInteger(data.agreedMonthlyPence) || data.agreedMonthlyPence! <= 0)) throw new Error('Enter the agreed family fee before billing review');
+    if (data.childIds !== undefined && childIds.length === 0) throw new Error('Select at least one confirmed active student');
+
+    await db.transaction(async tx => {
+        await lockBillingConfiguration(tx, configId);
+        await lockEnrolmentForBilling(tx, [...childIds, ...(existingConfig.children ?? []).map(link => link.childId)]);
+        if (isFeeReview || data.childIds !== undefined) {
+            const startDate = data.billingAnchorDate ?? existingConfig.billingAnchorDate;
+            const valid = await tx.select({ id: children.id }).from(children).where(and(
+                inArray(children.id, childIds), eq(children.organisationId, orgId),
+                eq(children.parentId, existingConfig.parentId), eq(children.centreId, existingConfig.centreId),
+                isNull(children.deletedAt), confirmedEnrolmentChildSql(),
+                lifecycleEligibleChildSql(startDate, startDate, false),
+            ));
+            assertEligibleBillingCoverage(childIds, new Set(valid.map(child => child.id)));
+        }
+        await tx.update(billingConfigs)
         .set({
             ...(data.agreedMonthlyPence !== undefined && { agreedMonthlyPence: data.agreedMonthlyPence }),
             ...(data.billingAnchorDate  !== undefined && { billingAnchorDate:  data.billingAnchorDate }),
@@ -203,7 +267,12 @@ export async function updateBillingConfig(
             eq(billingConfigs.organisationId, orgId),
         ));
 
-    await db.insert(auditEvents).values({
+        if (data.childIds !== undefined) {
+            await tx.delete(billingConfigChildren).where(eq(billingConfigChildren.configId, configId));
+            await tx.insert(billingConfigChildren).values(childIds.map(childId => ({ configId, childId }))).onConflictDoNothing();
+        }
+
+        await tx.insert(auditEvents).values({
         organisationId: orgId,
         userId: session.user.id,
         eventType: 'billing_config_updated',
@@ -211,6 +280,9 @@ export async function updateBillingConfig(
             configId,
             changedFields: Object.keys(data),
         }),
+        });
+        if (isFeeReview) await confirmRestartFeeReview(tx, orgId, session.user.id, configId, childIds,
+            data.agreedMonthlyPence!, data.billingAnchorDate!);
     });
 
     revalidatePath('/dashboard/finance');
@@ -238,6 +310,7 @@ export async function addChildToConfig(configId: string, childId: string) {
     // Verify the config belongs to this org
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
+        with: { children: true },
     });
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
@@ -259,16 +332,7 @@ export async function addChildToConfig(configId: string, childId: string) {
         throw new Error('Child is invalid or does not belong to this family/centre');
     }
 
-    await db.insert(billingConfigChildren).values({ configId, childId }).onConflictDoNothing();
-
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    revalidatePath(`/dashboard/students/${childId}`);
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
-    return { success: true };
+    return updateBillingConfig(configId, { childIds: [...new Set([...(config.children ?? []).map(link => link.childId), childId])] });
 }
 
 /**
@@ -279,25 +343,12 @@ export async function removeChildFromConfig(configId: string, childId: string) {
 
     const config = await db.query.billingConfigs.findFirst({
         where: and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)),
+        with: { children: true },
     });
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
 
-    await db.delete(billingConfigChildren).where(
-        and(
-            eq(billingConfigChildren.configId, configId),
-            eq(billingConfigChildren.childId, childId),
-        )
-    );
-
-    revalidatePath('/dashboard/finance');
-    revalidatePath('/dashboard/students');
-    revalidatePath(`/dashboard/students/${childId}`);
-    revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
-    if (config.parentId) {
-        revalidatePath(`/dashboard/parents/${config.parentId}`);
-    }
-    return { success: true };
+    return updateBillingConfig(configId, { childIds: (config.children ?? []).map(link => link.childId).filter(id => id !== childId) });
 }
 
 // ─── Status management ────────────────────────────────────────────────────────
@@ -310,15 +361,27 @@ async function requireOwnedConfig(configId: string, orgId: string, session: Type
     });
     if (!config) throw new Error('Billing config not found');
     await assertCentreAccess(session, config.centreId);
+    if (!['ORG_OWNER', 'MANAGER'].includes(session.user.role)) throw new Error('Only an Owner or Manager can change billing status');
     return config;
+}
+
+async function setBillingConfigStatus(configId: string, orgId: string, session: TypedSession,
+    config: Awaited<ReturnType<typeof requireOwnedConfig>>, status: 'active' | 'paused' | 'cancelled') {
+    await db.transaction(async tx => {
+        await lockBillingConfiguration(tx, configId);
+        await lockEnrolmentForBilling(tx, (config.children ?? []).map(link => link.childId));
+        await tx.update(billingConfigs).set({ status, updatedAt: new Date() })
+            .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
+        await tx.insert(auditEvents).values({ organisationId: orgId, userId: session.user.id,
+            eventType: 'billing_status_changed', eventData: JSON.stringify({ configId, status }),
+        });
+    });
 }
 
 export async function pauseBillingConfig(configId: string) {
     const { orgId, session } = await getOrgIdAndSession();
     const config = await requireOwnedConfig(configId, orgId, session);
-    await db.update(billingConfigs)
-        .set({ status: 'paused', updatedAt: new Date() })
-        .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
+    await setBillingConfigStatus(configId, orgId, session, config, 'paused');
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
     revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
@@ -334,9 +397,7 @@ export async function pauseBillingConfig(configId: string) {
 export async function resumeBillingConfig(configId: string) {
     const { orgId, session } = await getOrgIdAndSession();
     const config = await requireOwnedConfig(configId, orgId, session);
-    await db.update(billingConfigs)
-        .set({ status: 'active', updatedAt: new Date() })
-        .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
+    await setBillingConfigStatus(configId, orgId, session, config, 'active');
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
     revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
@@ -352,9 +413,7 @@ export async function resumeBillingConfig(configId: string) {
 export async function cancelBillingConfig(configId: string) {
     const { orgId, session } = await getOrgIdAndSession();
     const config = await requireOwnedConfig(configId, orgId, session);
-    await db.update(billingConfigs)
-        .set({ status: 'cancelled', updatedAt: new Date() })
-        .where(and(eq(billingConfigs.id, configId), eq(billingConfigs.organisationId, orgId)));
+    await setBillingConfigStatus(configId, orgId, session, config, 'cancelled');
     revalidatePath('/dashboard/finance');
     revalidatePath('/dashboard/students');
     revalidatePath(`/dashboard/centres/${config.centreId}/billing`);
@@ -672,17 +731,22 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         where: and(
             eq(invoices.organisationId,     orgId),
             eq(invoices.centreId,           config.centreId),
-            eq(invoices.billingConfigId,    config.id),
-            eq(invoices.billingPeriodStart, periodStartDate),
+            eq(invoices.parentId, config.parentId),
+            or(and(eq(invoices.billingConfigId, config.id), eq(invoices.billingPeriodStart, periodStartDate)),
+                recurringInvoiceOverlapSql((config.children ?? []).map(link => link.child.id), periodStartDate, new Date(input.periodEndStr))),
             ne(invoices.status,             'void'),
         ),
     });
     if (existingInvoice) {
+        if (existingInvoice.billingPeriodStart && new Date(existingInvoice.billingPeriodStart).getTime() !== periodStartDate.getTime()) {
+            throw new Error('The selected billing period overlaps an existing family invoice. Review coverage before creating another draft; no automatic proration or credit has been applied.');
+        }
         return { success: true, invoiceId: existingInvoice.id, alreadyGenerated: true };
     }
 
     const coveredIds = (config.children ?? []).map(cc => cc.child.id);
-    assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId }));
+    const servicePeriod = { startDate: input.periodStartStr, endDate: input.periodEndStr };
+    assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId }, servicePeriod));
 
     // Copy-forward resolution (§16, §17, Issue E & 8)
     // Precedence: explicit input > most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
@@ -732,8 +796,10 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
 
     const result = await db.transaction(async (tx) => {
         // PM-2C: Transactional advisory lock to serialize concurrent generation for the same config & period
+        await lockBillingConfiguration(tx, input.configId);
         const lockKey = `billing_config:${input.configId}:${input.periodStartStr}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+        await lockEnrolmentForBilling(tx, coveredIds);
 
         // Re-check inside locked transaction: skip cycle
         const inTxSkip = await tx.query.billingCycleSkips.findFirst({
@@ -765,17 +831,20 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
             where: and(
                 eq(invoices.organisationId,     orgId),
                 eq(invoices.centreId,           config.centreId),
-                eq(invoices.billingConfigId,    config.id),
-                eq(invoices.billingPeriodStart, periodStartDate),
+                eq(invoices.parentId, config.parentId),
+                or(and(eq(invoices.billingConfigId, config.id), eq(invoices.billingPeriodStart, periodStartDate)),
+                    recurringInvoiceOverlapSql(coveredIds, periodStartDate, new Date(input.periodEndStr))),
                 ne(invoices.status,             'void'),
             ),
         });
         if (inTxInvoice) {
+            if (inTxInvoice.billingPeriodStart && new Date(inTxInvoice.billingPeriodStart).getTime() !== periodStartDate.getTime()) {
+                throw new Error('The selected billing period overlaps an existing family invoice. Review coverage before creating another draft.');
+            }
             return { id: inTxInvoice.id, alreadyGenerated: true };
         }
 
-        await lockEnrolmentForBilling(tx, coveredIds);
-        assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, tx, { parentId: config.parentId, centreId: config.centreId }));
+        assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, tx, { parentId: config.parentId, centreId: config.centreId, billingConfig: config }, servicePeriod));
 
         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
         const actualCreatedAt = new Date();

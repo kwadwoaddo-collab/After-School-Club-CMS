@@ -50,6 +50,7 @@ export interface FinanceInvoice {
     childId?: string | null;
     amount: string | number;
     status: string;
+    needsBillingReview?: boolean;
     invoiceDate: string | Date;
     dueDate: string | Date;
     createdAt?: string | Date;
@@ -419,6 +420,9 @@ export default function FinanceDataGridClient({ invoices = [], totalCount = 0, p
                                             </div>
                                         </td>
                                         <td className="p-4">
+                                            {invoice.needsBillingReview && <p className="mb-2 max-w-56 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                                Billing review required: check pause/restart dates, family coverage and fee before issuance. This draft has been preserved.
+                                            </p>}
                                             {invoice.status === 'draft' ? (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
                                                     <FileText className="w-3.5 h-3.5" /> DRAFT

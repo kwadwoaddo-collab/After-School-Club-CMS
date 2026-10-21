@@ -43,6 +43,8 @@ export default function StudentsGrid({ students }: StudentsGridProps) {
                                         <span className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" title="Registered" />
                                     )}
                                 </div>
+                                {(student.enrolmentStatus === 'paused' || student.enrolmentStatus === 'stopped') && <Badge variant="warning">{student.enrolmentStatus === 'paused' ? 'Paused' : 'Stopped'}</Badge>}
+                                {(student.lastContactAt || student.nextContactDate) && <p className="text-xs text-text-muted mt-1">Last contact: {student.lastContactAt ? new Date(student.lastContactAt).toLocaleDateString('en-GB', { timeZone: 'Europe/London' }) : 'Not recorded'}{student.nextContactDate ? ` · Next call: ${student.nextContactDate}` : ''}</p>}
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     {student.schoolYear && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-sm border border-border-subtle bg-page text-text-secondary text-xs font-medium">

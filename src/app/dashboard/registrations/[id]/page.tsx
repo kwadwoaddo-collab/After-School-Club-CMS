@@ -226,8 +226,8 @@ export default async function RegistrationDetailPage({ params }: { params: Promi
                                             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 block mb-2">Matched record</span>
                                         )}
                                         {k.childId && (
-                                            <Link href={`/dashboard/students/${k.childId}`} className="inline-block text-xs text-primary hover:text-blue-400 transition-colors">
-                                                View profile →
+                                            <Link href={`/dashboard/students/${k.childId}#enrolment-follow-up`} className="inline-block text-xs text-primary hover:text-primary/80 transition-colors">
+                                                Enrolment / follow-up →
                                             </Link>
                                         )}
                                     </div>

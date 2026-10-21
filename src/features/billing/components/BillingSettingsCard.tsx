@@ -13,8 +13,6 @@ import {
     pauseBillingConfig,
     resumeBillingConfig,
     cancelBillingConfig,
-    addChildToConfig,
-    removeChildFromConfig,
 } from '@/features/billing/actions';
 import type { StudentBillingConfig, CoveredChild } from '@/features/billing/queries';
 import { isQuarantinedParentId } from '@/lib/data-quality/quarantine';
@@ -213,15 +211,8 @@ function EditForm({
                         leadTimeUnit,
                         leadTimeValue,
                         notes:              notes || undefined,
+                        childIds:           [...selectedChildIds],
                     });
-                    // Sync children — add new ones, remove removed ones
-                    const current  = new Set(existingConfig!.coveredChildren.map(c => c.childId));
-                    const toAdd    = [...selectedChildIds].filter(id => !current.has(id));
-                    const toRemove = [...current].filter(id => !selectedChildIds.has(id));
-                    await Promise.all([
-                        ...toAdd.map(id    => addChildToConfig(existingConfig!.id, id)),
-                        ...toRemove.map(id => removeChildFromConfig(existingConfig!.id, id)),
-                    ]);
                 }
                 onSaved();
             } catch (e) {
