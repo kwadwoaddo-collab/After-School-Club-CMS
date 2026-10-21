@@ -33,7 +33,7 @@ const mockTxDelete = vi.fn();
 const mockTxExecute = vi.fn();
 const mockTxSelect = vi.fn((..._args: any[]) => ({
     from: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue([{ count: 0 }]),
+        where: vi.fn().mockResolvedValue([{ count: 0, id: 'child-1' }]),
     })),
 }));
 
@@ -65,6 +65,7 @@ function makeTxDeleteChain() {
 vi.mock('@/db', () => ({
     db: {
         query: mockDbQuery,
+        select: (...args: any[]) => (mockTxSelect as any)(...args),
         transaction: async (cb: any) => cb({
             query: mockTxQuery,
             select: (...args: any[]) => (mockTxSelect as any)(...args),
@@ -248,7 +249,7 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
                 centreId: 'centre-1',
                 organisationId: 'org-1',
                 status: 'active',
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue({
                 id: 'skip-1',
@@ -277,7 +278,7 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
                 organisationId: 'org-1',
                 status: 'active',
                 billingAnchorDate: '2026-09-01',
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
 
             const { generateInvoiceFromConfig } = await import('../actions');
@@ -300,7 +301,7 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
                 status: 'active',
                 billingAnchorDate: '2025-09-01',
                 agreedMonthlyPence: 50000,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
 
@@ -324,7 +325,7 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
                 status: 'active',
                 billingAnchorDate: '2026-09-06',
                 agreedMonthlyPence: 50000,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
 
             const { generateInvoiceFromConfig } = await import('../actions');
@@ -350,7 +351,7 @@ describe('Billing Scheduler Actions (§26, §27, B7, B8, B9)', () => {
                 status: 'active',
                 billingAnchorDate: '2025-09-01',
                 agreedMonthlyPence: 45000,
-                children: [],
+                children: [{ child: { id: 'child-1', firstName: 'Child', lastName: 'One' } }],
             });
             mockDbQuery.billingCycleSkips.findFirst.mockResolvedValue(null);
             mockDbQuery.billingRuns.findFirst.mockResolvedValue(null);

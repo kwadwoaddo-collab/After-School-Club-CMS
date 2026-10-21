@@ -6,7 +6,7 @@ type Status = 'awaiting_confirmation' | 'signed_up' | 'not_interested';
 
 const OPTIONS: { value: Status; label: string; cls: string }[] = [
     { value: 'awaiting_confirmation', label: 'Awaiting Confirmation', cls: 'text-amber-400 hover:bg-amber-500/10' },
-    { value: 'signed_up', label: 'Signed Up', cls: 'text-emerald-400 hover:bg-emerald-500/10' },
+    { value: 'signed_up', label: 'Confirm Signed Up', cls: 'text-emerald-400 hover:bg-emerald-500/10' },
     { value: 'not_interested', label: 'Not Interested', cls: 'text-slate-400 hover:bg-card' },
 ];
 
@@ -33,6 +33,7 @@ export default function RegistrationStatusUpdater({
 
     const update = async (status: Status) => {
         if (status === currentStatus) { setOpen(false); return; }
+        if (status === 'signed_up' && !window.confirm('Confirm this family has joined? Only the children on this registration will become eligible for billing from their agreed billing start date.')) return;
         setSaving(true);
         setError(null);
         try {
@@ -67,7 +68,7 @@ export default function RegistrationStatusUpdater({
                 aria-expanded={open}
                 className="px-4 py-2 rounded-lg bg-secondary/40 text-foreground text-sm font-medium hover:bg-card transition-colors disabled:opacity-50 border border-outline-variant/10"
             >
-                {saving ? 'Saving…' : 'Update Status ▾'}
+                {saving ? 'Saving…' : 'Update Enrolment Status ▾'}
             </button>
             {error && (
                 <p className="absolute right-0 top-full mt-1 whitespace-nowrap text-xs font-semibold text-destructive bg-background border border-destructive/20 rounded-lg px-3 py-1.5 shadow-lg">

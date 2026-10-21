@@ -12,6 +12,7 @@ import { nanoid } from 'nanoid';
 import { emailService } from '@/lib/services/email';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
 import { notifyOwners } from '@/lib/db-notifications';
+import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling } from '@/lib/enrolment/finance-eligibility';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 import {
     canAcceptStaffPayment,
@@ -160,6 +161,7 @@ export async function getParents(query: string) {
         and(
             eq(children.organisationId, orgId),
             isNull(children.deletedAt),
+            financeEligibleChildSql(),
             accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined,
             or(
                 ilike(children.firstName, `%${query}%`),
@@ -180,17 +182,24 @@ export async function getParents(query: string) {
         orClauses.push(inArray(parents.id, parentIdsFromChildren));
     }
 
+    const eligibleFamilies = await db.select({ parentId: children.parentId }).from(children).where(and(
+        eq(children.organisationId, orgId), isNull(children.deletedAt), financeEligibleChildSql(),
+        accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined,
+    ));
+    const eligibleParentIds = eligibleFamilies.map(child => child.parentId).filter((id): id is string => id !== null);
+    if (eligibleParentIds.length === 0) return [];
     const results = await db.query.parents.findMany({
         where: and(
             eq(parents.organisationId, orgId),
             isNull(parents.deletedAt),
+            inArray(parents.id, eligibleParentIds),
             accessibleCentreIds !== null
                 ? sql`${parents.id} IN (SELECT ${children.parentId} FROM ${children} WHERE ${children.organisationId} = ${orgId} AND ${inArray(children.centreId, accessibleCentreIds)})`
                 : undefined,
             or(...orClauses)
         ),
         with: {
-            children: true
+            children: { where: and(isNull(children.deletedAt), financeEligibleChildSql()) }
         },
         limit: 10
     });
@@ -230,6 +239,7 @@ export async function getChildrenByParent(parentId: string) {
             eq(children.parentId, parentId),
             eq(children.organisationId, orgId),
             isNull(children.deletedAt),
+            financeEligibleChildSql(),
             accessibleCentreIds !== null ? inArray(children.centreId, accessibleCentreIds) : undefined
         ),
         with: {
@@ -301,6 +311,8 @@ export async function createInvoice(data: {
     if (!parentRecord) throw new Error('Parent not found');
     assertNotQuarantined(data.parentId, 'Invoice creation');
 
+    if (data.childIds.length === 0) throw new Error('Select at least one confirmed signed-up student for invoicing');
+
     // Fetch child names for the description if multiple are selected — org-scoped
     const selectedChildren = data.childIds.length > 0
         ? await db.select().from(children).where(
@@ -309,7 +321,8 @@ export async function createInvoice(data: {
                 eq(children.organisationId, orgId),
                 eq(children.parentId, data.parentId),
                 eq(children.centreId, data.centreId),
-                isNull(children.deletedAt)
+                isNull(children.deletedAt),
+                financeEligibleChildSql()
             )
         )
         : [];
@@ -357,6 +370,8 @@ export async function createInvoice(data: {
             }
         }
 
+        await lockEnrolmentForBilling(tx, data.childIds);
+        assertEligibleBillingCoverage(data.childIds, await getFinanceEligibleChildIds(orgId, data.childIds, tx, { parentId: data.parentId, centreId: data.centreId }));
         return await insertInvoiceAndLog(tx, session.user.organisationId!, session.user.id, {
             centreId: data.centreId,
             parentId: data.parentId,
@@ -436,6 +451,8 @@ export async function createLegacyFamilyAndInvoice(data: {
             preferredContact: 'email', // Default
         }).returning();
 
+        if (data.children.length === 0) throw new Error('Create at least one existing enrolled student before invoicing this family');
+
         // 2. Create Children
         const createdChildren = [];
         for (const child of data.children) {
@@ -446,7 +463,15 @@ export async function createLegacyFamilyAndInvoice(data: {
                 firstName: child.firstName,
                 lastName: child.lastName,
                 schoolYear: child.schoolYear,
+                isRegistered: true,
+                registeredAt: new Date(),
             }).returning();
+            await tx.insert(auditEvents).values({
+                organisationId: session.user.organisationId!,
+                userId: session.user.id,
+                eventType: 'manual_student_enrolment_confirmed',
+                eventData: JSON.stringify({ childId: newChild.id, reason: 'Staff-created existing family and invoice', confirmedAt: new Date().toISOString() }),
+            });
             createdChildren.push(newChild);
         }
 
@@ -512,15 +537,26 @@ export async function createAdHocInvoice(data: {
         columns: { id: true }
     });
     if (!centreRecord) throw new Error('Centre not found');
+    let eligibleAdHocChildId: string | undefined;
     if (data.parentId) {
         const existingParent = await db.query.parents.findFirst({
             where: and(eq(parents.id, data.parentId), eq(parents.organisationId, orgId)),
             columns: { id: true }
         });
         if (!existingParent) throw new Error('Parent not found');
+        const eligibleChild = await db.query.children.findFirst({
+            where: and(eq(children.parentId, data.parentId), eq(children.organisationId, orgId), eq(children.centreId, data.centreId), isNull(children.deletedAt), financeEligibleChildSql()),
+            columns: { id: true },
+        });
+        if (!eligibleChild) throw new Error('Confirm student enrolment before creating a new invoice for this family');
+        eligibleAdHocChildId = eligibleChild.id;
     }
 
+    if (!data.parentId) throw new Error('Create and confirm an existing enrolled student before creating an invoice for a new family');
+
     return await db.transaction(async (tx) => {
+        await lockEnrolmentForBilling(tx, [eligibleAdHocChildId!]);
+        assertEligibleBillingCoverage([eligibleAdHocChildId!], await getFinanceEligibleChildIds(orgId, [eligibleAdHocChildId!], tx, { parentId: data.parentId!, centreId: data.centreId }));
         // 1. Resolve parent — either existing or create a minimal new one
         let parentId = data.parentId;
         if (!parentId) {
@@ -1568,6 +1604,28 @@ export async function issueDraftInvoice(invoiceId: string) {
             throw new Error('Invoice cannot be issued without a due date');
         }
 
+        const snapshotIds = Array.isArray(invoice.coveredChildrenJson)
+            ? invoice.coveredChildrenJson.flatMap((child: { id?: string }) => typeof child.id === 'string' ? [child.id] : [])
+            : [];
+        const coveredIds = snapshotIds.length > 0 ? snapshotIds : invoice.childId ? [invoice.childId] : [];
+        if (coveredIds.length > 0) {
+            await lockEnrolmentForBilling(tx, coveredIds);
+            const eligibleCovered = await tx.select({ id: children.id }).from(children).where(and(
+                inArray(children.id, coveredIds), eq(children.parentId, invoice.parentId),
+                eq(children.organisationId, orgId), eq(children.centreId, invoice.centreId),
+                isNull(children.deletedAt), financeEligibleChildSql(),
+            ));
+            assertEligibleBillingCoverage(coveredIds, new Set(eligibleCovered.map(child => child.id)));
+        } else {
+            const eligibleFamily = await tx.select({ id: children.id }).from(children).where(and(
+                eq(children.parentId, invoice.parentId), eq(children.organisationId, orgId),
+                eq(children.centreId, invoice.centreId), isNull(children.deletedAt), financeEligibleChildSql(),
+            )).limit(1);
+            if (eligibleFamily.length === 0) throw new Error('Confirm student enrolment before issuing this draft invoice');
+            await lockEnrolmentForBilling(tx, [eligibleFamily[0].id]);
+            assertEligibleBillingCoverage([eligibleFamily[0].id], await getFinanceEligibleChildIds(orgId, [eligibleFamily[0].id], tx, { parentId: invoice.parentId, centreId: invoice.centreId }));
+        }
+
         const [updated] = await tx.update(invoices)
             .set({ status: 'sent', updatedAt: new Date() })
             .where(eq(invoices.id, invoiceId))
@@ -1692,6 +1750,7 @@ export async function updateDraftInvoice(invoiceId: string, data: UpdateDraftInv
                             eq(children.parentId, invoice.parentId),
                             eq(children.centreId, invoice.centreId),
                             isNull(children.deletedAt),
+                            financeEligibleChildSql(),
                         )
                     );
                 if (validChildren.length !== data.childIds.length) {

@@ -19,6 +19,7 @@ import {
 } from '@/lib/billing/date-engine';
 import { nanoid } from 'nanoid';
 import { getUserAccessibleCentreIds } from '@/lib/permissions';
+import { financeEligibleChildSql, getFinanceEligibleChildIds, assertEligibleBillingCoverage, lockEnrolmentForBilling } from '@/lib/enrolment/finance-eligibility';
 import { assertNotQuarantined } from '@/lib/data-quality/quarantine';
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ export async function createBillingConfig(data: BillingConfigData) {
     await assertCentreAccess(session, data.centreId);
     assertNotQuarantined(data.parentId, 'Billing configuration');
 
+    if (data.childIds.length === 0) throw new Error('Select at least one confirmed signed-up student for billing');
     if (data.childIds.length > 0) {
         const validChildren = await db.select({ id: children.id })
             .from(children)
@@ -90,7 +92,8 @@ export async function createBillingConfig(data: BillingConfigData) {
                     eq(children.organisationId, orgId),
                     eq(children.parentId, data.parentId),
                     eq(children.centreId, data.centreId),
-                    isNull(children.deletedAt)
+                    isNull(children.deletedAt),
+                    financeEligibleChildSql()
                 )
             );
 
@@ -247,7 +250,8 @@ export async function addChildToConfig(configId: string, childId: string) {
                 eq(children.organisationId, orgId),
                 eq(children.parentId, config.parentId),
                 eq(children.centreId, config.centreId),
-                isNull(children.deletedAt)
+                isNull(children.deletedAt),
+                financeEligibleChildSql()
             )
         );
 
@@ -677,6 +681,9 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         return { success: true, invoiceId: existingInvoice.id, alreadyGenerated: true };
     }
 
+    const coveredIds = (config.children ?? []).map(cc => cc.child.id);
+    assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, db, { parentId: config.parentId, centreId: config.centreId }));
+
     // Copy-forward resolution (§16, §17, Issue E & 8)
     // Precedence: explicit input > most recent issued invoice (sent/partially_paid/paid) > agreedMonthlyPence > 0.00 draft
     let finalAmountStr: string;
@@ -766,6 +773,9 @@ export async function generateInvoiceFromConfig(input: GenerateInvoiceInput) {
         if (inTxInvoice) {
             return { id: inTxInvoice.id, alreadyGenerated: true };
         }
+
+        await lockEnrolmentForBilling(tx, coveredIds);
+        assertEligibleBillingCoverage(coveredIds, await getFinanceEligibleChildIds(orgId, coveredIds, tx, { parentId: config.parentId, centreId: config.centreId }));
 
         const invoiceNumber = `INV-${nanoid(6).toUpperCase()}`;
         const actualCreatedAt = new Date();

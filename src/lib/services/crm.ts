@@ -261,8 +261,8 @@ export async function resolveOrCreateChild(
         sunCreamConsent: data.sunCreamConsent ?? false,
         firstAidConsent: data.firstAidConsent ?? false,
         source: 'registration',
-        isRegistered: true,
-        registeredAt: new Date(),
+        isRegistered: false,
+        registeredAt: null,
       }).returning();
       child = insertedChild;
       isNewlyCreated = true;

@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 
+import { requiresAssessmentOutcome } from '../assessment-outcome';
 import ReassignCentreModal from './ReassignCentreModal';
 import { BookingStudentLink } from './BookingStudentLink';
 import { BookingActionsPopover } from './BookingActionsPopover';
@@ -50,7 +51,12 @@ const STATUS_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'error
     rescheduled: 'default',
 };
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, startAt, attendanceStatuses = [] }: { status: string; startAt?: Date | string | null; attendanceStatuses?: Array<string | null | undefined> }) {
+    if (requiresAssessmentOutcome(status, startAt, new Date(), attendanceStatuses)) return <Badge variant="warning">Outcome required</Badge>;
+    if (['confirmed', 'pending'].includes(status) && attendanceStatuses.length > 0 && attendanceStatuses.every(Boolean)) {
+        const noShow = attendanceStatuses.every(value => ['no_show', 'absent', 'excused'].includes(value!));
+        return <Badge variant={noShow ? 'warning' : 'success'}>{noShow ? 'Did not attend' : 'Attendance recorded'}</Badge>;
+    }
     return (
         <Badge variant={STATUS_VARIANTS[status] || 'default'} className={status === 'cancelled' ? 'opacity-70' : ''}>
             {STATUS_LABELS[status] ?? status}
@@ -655,7 +661,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <StatusBadge status={booking.status} />
+                                        <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} />
                                     </TableCell>
                                     <TableCell align="right" className={`sticky right-0 bg-surface ${activeDropdown === booking.id ? 'z-30' : 'z-10'}`}>
                                         <div className="flex items-center justify-end gap-1">
@@ -833,7 +839,7 @@ export default function BookingsTable({ bookings: initialBookings, centres = [],
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <StatusBadge status={booking.status} />
+                                    <StatusBadge status={booking.status} startAt={booking.startAt} attendanceStatuses={(booking.attendees ?? []).map((a: { attendanceStatus?: string | null }) => a.attendanceStatus)} />
                                     <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             suppressHydrationWarning

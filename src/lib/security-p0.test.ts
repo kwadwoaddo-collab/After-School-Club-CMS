@@ -32,7 +32,11 @@ vi.mock('@/db', () => ({
             organisations: { findFirst: vi.fn() },
         },
         update: vi.fn(),
-        insert: vi.fn(),
+        insert: vi.fn(() => ({ values: vi.fn().mockResolvedValue([]) })),
+        transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+            const { db } = await import('@/db');
+            return callback(db);
+        }),
     },
 }));
 
