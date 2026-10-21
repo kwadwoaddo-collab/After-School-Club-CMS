@@ -344,6 +344,9 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                 <ArrowLeft className="w-4 h-4" /> Back to Search
                             </button>
 
+                            <p className="rounded-2xl border border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
+                                Use this route only for a family already enrolled before the app. Saving explicitly confirms these students as enrolled, records your action, and creates a draft invoice. Prospective families must complete registration and receive confirmation first.
+                            </p>
                             {/* Legacy Parent Form */}
                             <div className="bg-secondary/60 rounded-3xl p-6 border border-border space-y-4">
                                 <h3 className="flex items-center gap-2 text-xs font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">
@@ -519,12 +522,12 @@ export default function CreateInvoiceModal({ centres: rawCentres, onClose }: Cre
                                             Search Existing
                                         </button>
                                         <button
-                                            onClick={() => setAdhocUseExistingParent(false)}
+                                            onClick={() => setStep('legacy-onboarding')}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
                                                 !adhocUseExistingParent ? 'bg-primary text-foreground' : 'text-muted-foreground'
                                             }`}
                                         >
-                                            New Parent
+                                            Add Existing Enrolled Student
                                         </button>
                                     </div>
                                 </div>
